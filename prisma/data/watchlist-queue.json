@@ -1,0 +1,2250 @@
+[
+  {
+    "name": "Obsesión",
+    "year": 2026,
+    "kind": "MOVIE",
+    "search": "Obsession 2026",
+    "originalName": "Obsession",
+    "imdbRating": 7.8
+  },
+  {
+    "name": "Sacrificio",
+    "year": 1986,
+    "kind": "MOVIE",
+    "search": "The Sacrifice Tarkovsky 1986",
+    "originalName": "The Sacrifice",
+    "imdbRating": 7.8,
+    "platform": "MAX"
+  },
+  {
+    "name": "A pleno sol",
+    "year": 1960,
+    "kind": "MOVIE",
+    "search": "Purple Noon 1960",
+    "originalName": "Plein soleil",
+    "imdbRating": 7.7
+  },
+  {
+    "name": "El talento de Mr. Ripley",
+    "year": 1999,
+    "kind": "MOVIE",
+    "search": "The Talented Mr. Ripley 1999",
+    "originalName": "The Talented Mr. Ripley",
+    "imdbRating": 7.4
+  },
+  {
+    "name": "La maldición de Widow's Bay",
+    "year": 2026,
+    "kind": "SERIES",
+    "search": "Widow's Bay",
+    "originalName": "Widow's Bay",
+    "imdbRating": 8.1,
+    "platform": "MAX"
+  },
+  {
+    "name": "De culo y cuesta abajo",
+    "year": 2009,
+    "kind": "MOVIE",
+    "search": "The Hangover 2009",
+    "originalName": "The Hangover",
+    "imdbRating": 8.2,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Desaparecida",
+    "year": 1988,
+    "kind": "MOVIE",
+    "search": "The Vanishing 1988",
+    "originalName": "Spoorloos",
+    "imdbRating": 7.6
+  },
+  {
+    "name": "Architecton",
+    "year": 2024,
+    "kind": "MOVIE",
+    "search": "Architecton 2024",
+    "originalName": "Architecton",
+    "imdbRating": 6.4
+  },
+  {
+    "name": "Blade Runner",
+    "year": 1982,
+    "kind": "MOVIE",
+    "search": "Blade Runner 1982",
+    "originalName": "Blade Runner",
+    "imdbRating": 8.1,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Dune (dunas)",
+    "year": 1984,
+    "kind": "MOVIE",
+    "search": "Dune 1984 Lynch",
+    "originalName": "Dune",
+    "imdbRating": 6.2,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Rashomon",
+    "year": 1950,
+    "kind": "MOVIE",
+    "search": "Rashomon 1950",
+    "originalName": "Rashomon",
+    "imdbRating": 8.1,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Petite Maman",
+    "year": 2021,
+    "kind": "MOVIE",
+    "search": "Petite Maman 2021",
+    "originalName": "Petite Maman",
+    "imdbRating": 7.3,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Noche de estreno",
+    "year": 1977,
+    "kind": "MOVIE",
+    "search": "Opening Night Cassavetes 1977",
+    "originalName": "Opening Night",
+    "imdbRating": 7.8
+  },
+  {
+    "name": "El asesinato de un corredor de apuestas chino",
+    "year": 1976,
+    "kind": "MOVIE",
+    "search": "The Killing of a Chinese Bookie",
+    "originalName": "The Killing of a Chinese Bookie",
+    "imdbRating": 7.2
+  },
+  {
+    "name": "Empieza el espectáculo",
+    "year": 1979,
+    "kind": "MOVIE",
+    "search": "All That Jazz 1979",
+    "originalName": "All That Jazz",
+    "imdbRating": 7.8
+  },
+  {
+    "name": "¿Dónde está mi cuerpo?",
+    "year": 2019,
+    "kind": "MOVIE",
+    "search": "I Lost My Body 2019",
+    "originalName": "J'ai perdu mon corps",
+    "imdbRating": 7.5
+  },
+  {
+    "name": "Melancolía",
+    "year": 2011,
+    "kind": "MOVIE",
+    "search": "Melancholia 2011",
+    "originalName": "Melancholia",
+    "imdbRating": 7.1,
+    "platform": "MAX"
+  },
+  {
+    "name": "El imperio de los chimpancés",
+    "year": 2023,
+    "kind": "SERIES",
+    "search": "Chimp Empire",
+    "originalName": "Chimp Empire",
+    "imdbRating": 8.2,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Ronaldo",
+    "year": 2015,
+    "kind": "MOVIE",
+    "search": "Ronaldo 2015",
+    "originalName": "Ronaldo",
+    "imdbRating": 6.3,
+    "platform": "APPLE"
+  },
+  {
+    "name": "El hombre más buscado",
+    "year": 2014,
+    "kind": "MOVIE",
+    "search": "A Most Wanted Man 2014",
+    "originalName": "A Most Wanted Man",
+    "imdbRating": 6.7
+  },
+  {
+    "name": "Legítima defensa, de John Grisham",
+    "year": 1997,
+    "kind": "MOVIE",
+    "search": "The Rainmaker 1997 Coppola",
+    "originalName": "The Rainmaker",
+    "imdbRating": 7.2,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Alabama Monroe",
+    "year": 2012,
+    "kind": "MOVIE",
+    "search": "The Broken Circle Breakdown",
+    "originalName": "The Broken Circle Breakdown",
+    "imdbRating": 7.7,
+    "platform": "MAX"
+  },
+  {
+    "name": "La vida de Chuck",
+    "year": 2025,
+    "kind": "MOVIE",
+    "search": "The Life of Chuck",
+    "originalName": "The Life of Chuck",
+    "imdbRating": 7.3,
+    "platform": "APPLE"
+  },
+  {
+    "name": "No hay otra opción",
+    "year": 2025,
+    "kind": "MOVIE",
+    "search": "No Other Choice Park Chan-wook",
+    "originalName": "No Other Choice",
+    "imdbRating": 7.5,
+    "platform": "MAX"
+  },
+  {
+    "name": "J. Edgar",
+    "year": 2011,
+    "kind": "MOVIE",
+    "search": "J. Edgar 2011",
+    "originalName": "J. Edgar",
+    "imdbRating": 6.5
+  },
+  {
+    "name": "Orígenes",
+    "year": 2014,
+    "kind": "MOVIE",
+    "search": "I Origins 2014",
+    "originalName": "I Origins",
+    "imdbRating": 7.3
+  },
+  {
+    "name": "Confesiones de una mente peligrosa",
+    "year": 2002,
+    "kind": "MOVIE",
+    "search": "Confessions of a Dangerous Mind",
+    "originalName": "Confessions of a Dangerous Mind",
+    "imdbRating": 7.0
+  },
+  {
+    "name": "Contacto",
+    "year": 1997,
+    "kind": "MOVIE",
+    "search": "Contact 1997",
+    "originalName": "Contact",
+    "imdbRating": 7.5,
+    "platform": "APPLE"
+  },
+  {
+    "name": "K-PAX: Un universo aparte",
+    "year": 2001,
+    "kind": "MOVIE",
+    "search": "K-PAX 2001",
+    "originalName": "K-PAX",
+    "imdbRating": 7.4
+  },
+  {
+    "name": "La solución final",
+    "year": 2001,
+    "kind": "MOVIE",
+    "search": "Conspiracy 2001",
+    "originalName": "Conspiracy",
+    "imdbRating": 7.6,
+    "platform": "MAX"
+  },
+  {
+    "name": "La dama de oro",
+    "year": 2015,
+    "kind": "MOVIE",
+    "search": "Woman in Gold 2015",
+    "originalName": "Woman in Gold",
+    "imdbRating": 7.3
+  },
+  {
+    "name": "Resistencia",
+    "year": 2020,
+    "kind": "MOVIE",
+    "search": "Resistance 2020",
+    "originalName": "Resistance",
+    "imdbRating": 6.6,
+    "platform": "APPLE"
+  },
+  {
+    "name": "El cielo... próximamente",
+    "year": 1978,
+    "kind": "MOVIE",
+    "search": "El cielo proximamente",
+    "originalName": "Heaven Can Wait",
+    "imdbRating": 7.2
+  },
+  {
+    "name": "Quiz Show (El dilema)",
+    "year": 1994,
+    "kind": "MOVIE",
+    "search": "Quiz Show 1994",
+    "originalName": "Quiz Show",
+    "imdbRating": 7.5,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Ausencia de malicia",
+    "year": 1981,
+    "kind": "MOVIE",
+    "search": "Absence of Malice 1981",
+    "originalName": "Absence of Malice",
+    "imdbRating": 6.9
+  },
+  {
+    "name": "Tarde de perros",
+    "year": 1975,
+    "kind": "MOVIE",
+    "search": "Dog Day Afternoon 1975",
+    "originalName": "Dog Day Afternoon",
+    "imdbRating": 8.0
+  },
+  {
+    "name": "Fuga de Alcatraz",
+    "year": 1979,
+    "kind": "MOVIE",
+    "search": "Escape from Alcatraz 1979",
+    "originalName": "Escape from Alcatraz",
+    "imdbRating": 7.5
+  },
+  {
+    "name": "Tootsie",
+    "year": 1982,
+    "kind": "MOVIE",
+    "search": "Tootsie 1982",
+    "originalName": "Tootsie",
+    "imdbRating": 7.4,
+    "platform": "MAX"
+  },
+  {
+    "name": "La Duda",
+    "year": 2008,
+    "kind": "MOVIE",
+    "search": "Doubt 2008",
+    "originalName": "Doubt",
+    "imdbRating": 7.5
+  },
+  {
+    "name": "En la habitación",
+    "year": 2001,
+    "kind": "MOVIE",
+    "search": "In the Bedroom 2001",
+    "originalName": "In the Bedroom",
+    "imdbRating": 7.4,
+    "platform": "APPLE"
+  },
+  {
+    "name": "El vicio del poder",
+    "year": 2018,
+    "kind": "MOVIE",
+    "search": "Vice 2018 Cheney",
+    "originalName": "Vice",
+    "imdbRating": 7.2,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Cuando el cielo se equivoca",
+    "year": 2025,
+    "kind": "MOVIE",
+    "search": "Good Fortune 2025",
+    "originalName": "Good Fortune",
+    "imdbRating": 6.4,
+    "platform": "APPLE"
+  },
+  {
+    "name": "La pianista",
+    "year": 2001,
+    "kind": "MOVIE",
+    "search": "The Piano Teacher 2001",
+    "originalName": "La Pianiste",
+    "imdbRating": 7.5
+  },
+  {
+    "name": "Caballeros, princesas y otras bestias",
+    "year": 2024,
+    "kind": "MOVIE",
+    "search": "Caballeros princesas",
+    "originalName": "Knights and Princesses",
+    "imdbRating": 5.5,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Los dioses deben estar locos",
+    "year": 1980,
+    "kind": "MOVIE",
+    "search": "The Gods Must Be Crazy 1980",
+    "originalName": "The Gods Must Be Crazy",
+    "imdbRating": 7.3
+  },
+  {
+    "name": "Quiero ser como Beckham",
+    "year": 2002,
+    "kind": "MOVIE",
+    "search": "Bend It Like Beckham",
+    "originalName": "Bend It Like Beckham",
+    "imdbRating": 6.7
+  },
+  {
+    "name": "Valor sentimental",
+    "year": 2025,
+    "kind": "MOVIE",
+    "search": "Sentimental Value 2025",
+    "originalName": "Sentimental Value",
+    "imdbRating": 7.7,
+    "platform": "MAX"
+  },
+  {
+    "name": "La hermanastra fea",
+    "year": 2025,
+    "kind": "MOVIE",
+    "search": "The Ugly Stepsister 2025",
+    "originalName": "The Ugly Stepsister",
+    "imdbRating": 7.0,
+    "platform": "MAX"
+  },
+  {
+    "name": "Luna Azul",
+    "year": 2025,
+    "kind": "MOVIE",
+    "search": "Blue Moon 2025 Lorenz Hart",
+    "originalName": "Blue Moon",
+    "imdbRating": 6.8
+  },
+  {
+    "name": "Sueño en otro idioma",
+    "year": 2017,
+    "kind": "MOVIE",
+    "search": "Dream in Another Language",
+    "originalName": "Sueño en otro idioma",
+    "imdbRating": 7.4
+  },
+  {
+    "name": "Las dos caras de la verdad",
+    "year": 1996,
+    "kind": "MOVIE",
+    "search": "Primal Fear 1996",
+    "originalName": "Primal Fear",
+    "imdbRating": 7.7,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Hesher",
+    "year": 2010,
+    "kind": "MOVIE",
+    "search": "Hesher 2010",
+    "originalName": "Hesher",
+    "imdbRating": 6.9
+  },
+  {
+    "name": "El topo",
+    "year": 2011,
+    "kind": "MOVIE",
+    "search": "Tinker Tailor Soldier Spy 2011",
+    "originalName": "Tinker Tailor Soldier Spy",
+    "imdbRating": 7.0
+  },
+  {
+    "name": "The Master",
+    "year": 2012,
+    "kind": "MOVIE",
+    "search": "The Master 2012 PTA",
+    "originalName": "The Master",
+    "imdbRating": 7.1
+  },
+  {
+    "name": "Fotógrafo de guerra: El hombre de las fotos",
+    "year": 2025,
+    "kind": "MOVIE",
+    "search": "The Stringer 2025",
+    "originalName": "The Stringer",
+    "imdbRating": 7.3,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "María reina de Escocia",
+    "year": 2018,
+    "kind": "MOVIE",
+    "search": "Mary Queen of Scots 2018",
+    "originalName": "Mary Queen of Scots",
+    "imdbRating": 6.3
+  },
+  {
+    "name": "Togo",
+    "year": 2019,
+    "kind": "MOVIE",
+    "search": "Togo 2019",
+    "originalName": "Togo",
+    "imdbRating": 7.9
+  },
+  {
+    "name": "Bala perdida",
+    "year": 2025,
+    "kind": "MOVIE",
+    "search": "Caught Stealing 2025",
+    "originalName": "Caught Stealing",
+    "imdbRating": 6.8
+  },
+  {
+    "name": "El rey de la comedia",
+    "year": 1982,
+    "kind": "MOVIE",
+    "search": "The King of Comedy 1982",
+    "originalName": "The King of Comedy",
+    "imdbRating": 7.8,
+    "platform": "APPLE"
+  },
+  {
+    "name": "El imperio del sol",
+    "year": 1987,
+    "kind": "MOVIE",
+    "search": "Empire of the Sun 1987",
+    "originalName": "Empire of the Sun",
+    "imdbRating": 7.7
+  },
+  {
+    "name": "Elway",
+    "year": 2025,
+    "kind": "MOVIE",
+    "search": "Elway 2025",
+    "originalName": "Elway",
+    "imdbRating": 7.3,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Adiós pequeña, adiós",
+    "year": 2007,
+    "kind": "MOVIE",
+    "search": "Gone Baby Gone 2007",
+    "originalName": "Gone Baby Gone",
+    "imdbRating": 7.6
+  },
+  {
+    "name": "Cover-Up: Un periodista en las trincheras",
+    "year": 2025,
+    "kind": "MOVIE",
+    "search": "Cover-Up 2025",
+    "originalName": "Cover-Up",
+    "imdbRating": 7.4,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Till: El crimen que lo cambió todo",
+    "year": 2022,
+    "kind": "MOVIE",
+    "search": "Till 2022",
+    "originalName": "Till",
+    "imdbRating": 7.2
+  },
+  {
+    "name": "Salvador",
+    "year": 1986,
+    "kind": "MOVIE",
+    "search": "Salvador 1986 Oliver Stone",
+    "originalName": "Salvador",
+    "imdbRating": 7.3,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Truman Capote",
+    "year": 2005,
+    "kind": "MOVIE",
+    "search": "Capote 2005",
+    "originalName": "Capote",
+    "imdbRating": 7.3
+  },
+  {
+    "name": "Alfa",
+    "year": 2018,
+    "kind": "MOVIE",
+    "search": "Alpha 2018",
+    "originalName": "Alpha",
+    "imdbRating": 6.6
+  },
+  {
+    "name": "Hamlet",
+    "year": 2025,
+    "kind": "MOVIE",
+    "search": "Hamnet 2025",
+    "originalName": "Hamnet",
+    "imdbRating": 7.8
+  },
+  {
+    "name": "Los pecadores",
+    "year": 2025,
+    "kind": "MOVIE",
+    "search": "Sinners 2025 Ryan Coogler",
+    "originalName": "Sinners",
+    "imdbRating": 7.5
+  },
+  {
+    "name": "Sueños de trenes",
+    "year": 2025,
+    "kind": "MOVIE",
+    "search": "Train Dreams 2025",
+    "originalName": "Train Dreams",
+    "imdbRating": 7.5,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "¿Quién llama a mi puerta?",
+    "year": 1968,
+    "kind": "MOVIE",
+    "search": "Who's That Knocking at My Door",
+    "originalName": "Who's That Knocking at My Door",
+    "imdbRating": 6.5
+  },
+  {
+    "name": "Under the Skin",
+    "year": 2014,
+    "kind": "MOVIE",
+    "search": "Under the Skin 2014",
+    "originalName": "Under the Skin",
+    "imdbRating": 6.3
+  },
+  {
+    "name": "El demonio neón",
+    "year": 2016,
+    "kind": "MOVIE",
+    "search": "The Neon Demon 2016",
+    "originalName": "The Neon Demon",
+    "imdbRating": 6.1
+  },
+  {
+    "name": "Luna",
+    "year": 2009,
+    "kind": "MOVIE",
+    "search": "Moon 2009 Duncan Jones",
+    "originalName": "Moon",
+    "imdbRating": 7.8
+  },
+  {
+    "name": "Hierve",
+    "year": 2021,
+    "kind": "MOVIE",
+    "search": "Boiling Point 2021",
+    "originalName": "Boiling Point",
+    "imdbRating": 7.5
+  },
+  {
+    "name": "La casa de Jack",
+    "year": 2018,
+    "kind": "MOVIE",
+    "search": "The House That Jack Built 2018",
+    "originalName": "The House That Jack Built",
+    "imdbRating": 6.8
+  },
+  {
+    "name": "El regalo",
+    "year": 2015,
+    "kind": "MOVIE",
+    "search": "The Gift 2015 Edgerton",
+    "originalName": "The Gift",
+    "imdbRating": 7.0
+  },
+  {
+    "name": "La bruja",
+    "year": 2015,
+    "kind": "MOVIE",
+    "search": "The Witch 2015",
+    "originalName": "The Witch",
+    "imdbRating": 7.0
+  },
+  {
+    "name": "Crudo",
+    "year": 2016,
+    "kind": "MOVIE",
+    "search": "Raw 2016 Ducournau",
+    "originalName": "Raw",
+    "imdbRating": 6.9
+  },
+  {
+    "name": "Devastación",
+    "year": 2002,
+    "kind": "MOVIE",
+    "search": "28 Days Later",
+    "originalName": "28 Days Later",
+    "imdbRating": 7.5
+  },
+  {
+    "name": "La increíble pero cierta historia de Hoodwinked",
+    "year": 2005,
+    "kind": "MOVIE",
+    "search": "Hoodwinked",
+    "originalName": "Hoodwinked!",
+    "imdbRating": 6.5
+  },
+  {
+    "name": "La doncella",
+    "year": 2016,
+    "kind": "MOVIE",
+    "search": "The Handmaiden 2016",
+    "originalName": "The Handmaiden",
+    "imdbRating": 8.1
+  },
+  {
+    "name": "Bienvenido Mr. Chance",
+    "year": 1979,
+    "kind": "MOVIE",
+    "search": "Being There 1979",
+    "originalName": "Being There",
+    "imdbRating": 7.9
+  },
+  {
+    "name": "Todo sobre mi desmadre",
+    "year": 2010,
+    "kind": "MOVIE",
+    "search": "Get Him to the Greek",
+    "originalName": "Get Him to the Greek",
+    "imdbRating": 6.3
+  },
+  {
+    "name": "Cyrus",
+    "year": 2010,
+    "kind": "MOVIE",
+    "search": "Cyrus 2010",
+    "originalName": "Cyrus",
+    "imdbRating": 6.3
+  },
+  {
+    "name": "Corrupción en el poder",
+    "year": 2010,
+    "kind": "MOVIE",
+    "search": "Casino Jack 2010",
+    "originalName": "Casino Jack",
+    "imdbRating": 6.2
+  },
+  {
+    "name": "Supercutres",
+    "year": 2011,
+    "kind": "MOVIE",
+    "search": "Hall Pass 2011",
+    "originalName": "Hall Pass",
+    "imdbRating": 6.7
+  },
+  {
+    "name": "The Inbetweeners",
+    "year": 2008,
+    "kind": "SERIES",
+    "search": "The Inbetweeners",
+    "originalName": "The Inbetweeners",
+    "imdbRating": 8.4
+  },
+  {
+    "name": "Una historia de amor",
+    "year": 2013,
+    "kind": "MOVIE",
+    "search": "The To Do List 2013",
+    "originalName": "The To Do List",
+    "imdbRating": 5.6
+  },
+  {
+    "name": "La salchicha peleona",
+    "year": 1997,
+    "kind": "MOVIE",
+    "search": "8 Heads in a Duffel Bag",
+    "originalName": "8 Heads in a Duffel Bag",
+    "imdbRating": 5.6
+  },
+  {
+    "name": "La venganza se sirve fría",
+    "year": 1997,
+    "kind": "MOVIE",
+    "search": "Warriors of Virtue",
+    "originalName": "The Last Time I Committed Suicide",
+    "imdbRating": 5.8
+  },
+  {
+    "name": "Parthenope: Los Amores de Nápoles",
+    "year": 2024,
+    "kind": "MOVIE",
+    "search": "Parthenope 2024 Sorrentino",
+    "originalName": "Parthenope",
+    "imdbRating": 6.5
+  },
+  {
+    "name": "Negociador",
+    "year": 1998,
+    "kind": "MOVIE",
+    "search": "The Negotiator 1998",
+    "originalName": "The Negotiator",
+    "imdbRating": 7.3,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Sweeney Todd: El barbero diabólico de la calle Fleet",
+    "year": 2007,
+    "kind": "MOVIE",
+    "search": "Sweeney Todd 2007",
+    "originalName": "Sweeney Todd",
+    "imdbRating": 7.3
+  },
+  {
+    "name": "Río místico",
+    "year": 2003,
+    "kind": "MOVIE",
+    "search": "Mystic River 2003",
+    "originalName": "Mystic River",
+    "imdbRating": 7.9,
+    "platform": "MAX"
+  },
+  {
+    "name": "La semilla del diablo",
+    "year": 1968,
+    "kind": "MOVIE",
+    "search": "Rosemary's Baby 1968",
+    "originalName": "Rosemary's Baby",
+    "imdbRating": 8.0
+  },
+  {
+    "name": "Un tipo serio",
+    "year": 2009,
+    "kind": "MOVIE",
+    "search": "A Serious Man 2009",
+    "originalName": "A Serious Man",
+    "imdbRating": 7.0
+  },
+  {
+    "name": "El padre",
+    "year": 2020,
+    "kind": "MOVIE",
+    "search": "The Father 2020 Hopkins",
+    "originalName": "The Father",
+    "imdbRating": 8.2
+  },
+  {
+    "name": "Drive My Car",
+    "year": 2021,
+    "kind": "MOVIE",
+    "search": "Drive My Car 2021",
+    "originalName": "Drive My Car",
+    "imdbRating": 7.5,
+    "platform": "MAX"
+  },
+  {
+    "name": "¿Dónde dices que vas?",
+    "year": 1985,
+    "kind": "MOVIE",
+    "search": "The Sure Thing 1985",
+    "originalName": "The Sure Thing",
+    "imdbRating": 6.7
+  },
+  {
+    "name": "Cruce de caminos",
+    "year": 2012,
+    "kind": "MOVIE",
+    "search": "The Place Beyond the Pines",
+    "originalName": "The Place Beyond the Pines",
+    "imdbRating": 7.3
+  },
+  {
+    "name": "Días perfectos",
+    "year": 2023,
+    "kind": "MOVIE",
+    "search": "Perfect Days 2023",
+    "originalName": "Perfect Days",
+    "imdbRating": 7.9,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Sala de profesores",
+    "year": 2023,
+    "kind": "MOVIE",
+    "search": "The Teachers Lounge 2023",
+    "originalName": "The Teachers' Lounge",
+    "imdbRating": 7.4,
+    "platform": "APPLE"
+  },
+  {
+    "name": "El extraño",
+    "year": 2022,
+    "kind": "MOVIE",
+    "search": "The Stranger 2022 Netflix",
+    "originalName": "The Stranger",
+    "imdbRating": 6.6,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "El asesino del nudo",
+    "year": 2018,
+    "kind": "MOVIE",
+    "search": "The Clovehitch Killer",
+    "originalName": "The Clovehitch Killer",
+    "imdbRating": 6.5
+  },
+  {
+    "name": "Mi hijo",
+    "year": 2021,
+    "kind": "MOVIE",
+    "search": "Mi hijo 2021",
+    "originalName": "Mi hijo",
+    "imdbRating": 6.0
+  },
+  {
+    "name": "Apóyate en mí",
+    "year": 2017,
+    "kind": "MOVIE",
+    "search": "Lean on Pete",
+    "originalName": "Lean on Pete",
+    "imdbRating": 7.1,
+    "platform": "MAX"
+  },
+  {
+    "name": "Animales norteamericanos",
+    "year": 2018,
+    "kind": "MOVIE",
+    "search": "American Animals 2018",
+    "originalName": "American Animals",
+    "imdbRating": 7.0
+  },
+  {
+    "name": "El acontecimiento",
+    "year": 2021,
+    "kind": "MOVIE",
+    "search": "Happening 2021 Ducournau",
+    "originalName": "L'Événement",
+    "imdbRating": 7.4
+  },
+  {
+    "name": "Mad Max II. El guerrero de la carretera",
+    "year": 1981,
+    "kind": "MOVIE",
+    "search": "Mad Max 2 The Road Warrior",
+    "originalName": "Mad Max 2",
+    "imdbRating": 7.6,
+    "platform": "MAX"
+  },
+  {
+    "name": "Dag",
+    "year": 2010,
+    "kind": "SERIES",
+    "search": "Dag TV series",
+    "originalName": "Dag",
+    "imdbRating": 8.5
+  },
+  {
+    "name": "Quemar después de leer",
+    "year": 2008,
+    "kind": "MOVIE",
+    "search": "Burn After Reading 2008",
+    "originalName": "Burn After Reading",
+    "imdbRating": 7.0
+  },
+  {
+    "name": "Asesinos natos",
+    "year": 1994,
+    "kind": "MOVIE",
+    "search": "Natural Born Killers 1994",
+    "originalName": "Natural Born Killers",
+    "imdbRating": 7.2
+  },
+  {
+    "name": "Agárralo como puedas 2½: El aroma del miedo",
+    "year": 1991,
+    "kind": "MOVIE",
+    "search": "The Naked Gun 2 1/2",
+    "originalName": "The Naked Gun 2½",
+    "imdbRating": 6.9
+  },
+  {
+    "name": "Amor ciego",
+    "year": 2001,
+    "kind": "MOVIE",
+    "search": "Shallow Hal 2001",
+    "originalName": "Shallow Hal",
+    "imdbRating": 6.0
+  },
+  {
+    "name": "Atraco en la iglesia",
+    "year": 2008,
+    "kind": "MOVIE",
+    "search": "The Church Heist",
+    "originalName": "The Church Heist",
+    "imdbRating": 4.7
+  },
+  {
+    "name": "Ocean's Eleven. Hagan juego",
+    "year": 2001,
+    "kind": "MOVIE",
+    "search": "Ocean's Eleven 2001",
+    "originalName": "Ocean's Eleven",
+    "imdbRating": 7.7,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Una historia casi divertida",
+    "year": 2010,
+    "kind": "MOVIE",
+    "search": "It's Kind of a Funny Story",
+    "originalName": "It's Kind of a Funny Story",
+    "imdbRating": 7.1
+  },
+  {
+    "name": "Mujeres del siglo XX",
+    "year": 2016,
+    "kind": "MOVIE",
+    "search": "20th Century Women",
+    "originalName": "20th Century Women",
+    "imdbRating": 7.3
+  },
+  {
+    "name": "C'mon C'mon. Siempre adelante",
+    "year": 2021,
+    "kind": "MOVIE",
+    "search": "Cmon Cmon 2021",
+    "originalName": "C'mon C'mon",
+    "imdbRating": 7.3,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Mientras seamos jóvenes",
+    "year": 2014,
+    "kind": "MOVIE",
+    "search": "While We're Young 2014",
+    "originalName": "While We're Young",
+    "imdbRating": 6.3,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Los Meyerowitz: La familia no se elige",
+    "year": 2017,
+    "kind": "MOVIE",
+    "search": "The Meyerowitz Stories",
+    "originalName": "The Meyerowitz Stories",
+    "imdbRating": 6.9,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Déjales hablar",
+    "year": 2020,
+    "kind": "MOVIE",
+    "search": "Let Them All Talk 2020",
+    "originalName": "Let Them All Talk",
+    "imdbRating": 6.1,
+    "platform": "MAX"
+  },
+  {
+    "name": "Kimi: Alguien está escuchando",
+    "year": 2022,
+    "kind": "MOVIE",
+    "search": "Kimi 2022 Soderbergh",
+    "originalName": "Kimi",
+    "imdbRating": 6.3,
+    "platform": "MAX"
+  },
+  {
+    "name": "La vida de Pi",
+    "year": 2012,
+    "kind": "MOVIE",
+    "search": "Life of Pi 2012",
+    "originalName": "Life of Pi",
+    "imdbRating": 7.9
+  },
+  {
+    "name": "El arte de vivir bajo la lluvia",
+    "year": 2019,
+    "kind": "MOVIE",
+    "search": "The Art of Racing in the Rain",
+    "originalName": "The Art of Racing in the Rain",
+    "imdbRating": 7.6
+  },
+  {
+    "name": "Operación final",
+    "year": 2018,
+    "kind": "MOVIE",
+    "search": "Operation Finale 2018",
+    "originalName": "Operation Finale",
+    "imdbRating": 6.6,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "El instante más oscuro",
+    "year": 2017,
+    "kind": "MOVIE",
+    "search": "Darkest Hour 2017",
+    "originalName": "Darkest Hour",
+    "imdbRating": 7.4
+  },
+  {
+    "name": "Stuart: Una vida al revés",
+    "year": 2004,
+    "kind": "MOVIE",
+    "search": "Stuart: A Life Backwards",
+    "originalName": "The Life and Death of Peter Sellers",
+    "imdbRating": 7.6
+  },
+  {
+    "name": "Pink Floyd: El muro",
+    "year": 1982,
+    "kind": "MOVIE",
+    "search": "Pink Floyd The Wall 1982",
+    "originalName": "Pink Floyd: The Wall",
+    "imdbRating": 8.0
+  },
+  {
+    "name": "Einstein y Eddington",
+    "year": 2008,
+    "kind": "MOVIE",
+    "search": "Einstein and Eddington",
+    "originalName": "Einstein and Eddington",
+    "imdbRating": 7.1,
+    "platform": "MAX"
+  },
+  {
+    "name": "El profesor (Detachment)",
+    "year": 2011,
+    "kind": "MOVIE",
+    "search": "Detachment 2011",
+    "originalName": "Detachment",
+    "imdbRating": 7.7
+  },
+  {
+    "name": "Trece vidas",
+    "year": 2022,
+    "kind": "MOVIE",
+    "search": "Thirteen Lives 2022",
+    "originalName": "Thirteen Lives",
+    "imdbRating": 7.8,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Ella dijo",
+    "year": 2022,
+    "kind": "MOVIE",
+    "search": "She Said 2022",
+    "originalName": "She Said",
+    "imdbRating": 7.3,
+    "platform": "MAX"
+  },
+  {
+    "name": "Mala suerte, buena suerte",
+    "year": 2022,
+    "kind": "MOVIE",
+    "search": "Both Sides of the Blade",
+    "originalName": "Both Sides of the Blade",
+    "imdbRating": 7.1
+  },
+  {
+    "name": "Ruido de fondo",
+    "year": 2022,
+    "kind": "MOVIE",
+    "search": "White Noise 2022 Baumbach",
+    "originalName": "White Noise",
+    "imdbRating": 5.7,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "El Conde",
+    "year": 2023,
+    "kind": "MOVIE",
+    "search": "El Conde 2023",
+    "originalName": "El Conde",
+    "imdbRating": 6.3,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Asteroid City",
+    "year": 2023,
+    "kind": "MOVIE",
+    "search": "Asteroid City 2023",
+    "originalName": "Asteroid City",
+    "imdbRating": 6.4
+  },
+  {
+    "name": "Bottle Rocket (Ladrón que roba a ladrón)",
+    "year": 1996,
+    "kind": "MOVIE",
+    "search": "Bottle Rocket 1996",
+    "originalName": "Bottle Rocket",
+    "imdbRating": 6.9
+  },
+  {
+    "name": "Life Aquatic",
+    "year": 2004,
+    "kind": "MOVIE",
+    "search": "The Life Aquatic with Steve Zissou",
+    "originalName": "The Life Aquatic with Steve Zissou",
+    "imdbRating": 7.2
+  },
+  {
+    "name": "Almas en pena de Inisherin",
+    "year": 2022,
+    "kind": "MOVIE",
+    "search": "The Banshees of Inisherin",
+    "originalName": "The Banshees of Inisherin",
+    "imdbRating": 7.6,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Turbo",
+    "year": 2013,
+    "kind": "MOVIE",
+    "search": "Turbo 2013",
+    "originalName": "Turbo",
+    "imdbRating": 6.4,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Lee Miller",
+    "year": 2023,
+    "kind": "MOVIE",
+    "search": "Lee Miller 2023",
+    "originalName": "Lee",
+    "imdbRating": 6.9,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Un viaje de sobriedad",
+    "year": 2024,
+    "kind": "MOVIE",
+    "search": "The Outrun 2024",
+    "originalName": "The Outrun",
+    "imdbRating": 6.9
+  },
+  {
+    "name": "Todos queremos algo",
+    "year": 2016,
+    "kind": "MOVIE",
+    "search": "Everybody Wants Some 2016",
+    "originalName": "Everybody Wants Some!!",
+    "imdbRating": 6.9
+  },
+  {
+    "name": "Mi yo adulta",
+    "year": 2024,
+    "kind": "MOVIE",
+    "search": "My Old Ass 2024",
+    "originalName": "My Old Ass",
+    "imdbRating": 6.9
+  },
+  {
+    "name": "Tornados",
+    "year": 2024,
+    "kind": "MOVIE",
+    "search": "Twisters 2024",
+    "originalName": "Twisters",
+    "imdbRating": 6.5,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "X-Men",
+    "year": 2000,
+    "kind": "MOVIE",
+    "search": "X-Men 2000",
+    "originalName": "X-Men",
+    "imdbRating": 7.3,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Jacuzzi al pasado",
+    "year": 2010,
+    "kind": "MOVIE",
+    "search": "Hot Tub Time Machine",
+    "originalName": "Hot Tub Time Machine",
+    "imdbRating": 6.4
+  },
+  {
+    "name": "El aviador",
+    "year": 2004,
+    "kind": "MOVIE",
+    "search": "The Aviator 2004",
+    "originalName": "The Aviator",
+    "imdbRating": 7.5
+  },
+  {
+    "name": "Watchmen",
+    "year": 2009,
+    "kind": "MOVIE",
+    "search": "Watchmen 2009",
+    "originalName": "Watchmen",
+    "imdbRating": 7.6,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Mr. Holmes",
+    "year": 2015,
+    "kind": "MOVIE",
+    "search": "Mr. Holmes 2015",
+    "originalName": "Mr. Holmes",
+    "imdbRating": 6.8
+  },
+  {
+    "name": "Sonic: La película",
+    "year": 2020,
+    "kind": "MOVIE",
+    "search": "Sonic the Hedgehog 2020",
+    "originalName": "Sonic the Hedgehog",
+    "imdbRating": 6.5
+  },
+  {
+    "name": "El vuelo (Flight)",
+    "year": 2012,
+    "kind": "MOVIE",
+    "search": "Flight 2012 Washington",
+    "originalName": "Flight",
+    "imdbRating": 7.3
+  },
+  {
+    "name": "Cómo hacerse millonario antes de que se acabe el mundo",
+    "year": 2024,
+    "kind": "MOVIE",
+    "search": "How to Make Millions Before Grandma Dies",
+    "originalName": "How to Make Millions Before Grandma Dies",
+    "imdbRating": 7.9,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Érase una vez en América",
+    "year": 1984,
+    "kind": "MOVIE",
+    "search": "Once Upon a Time in America",
+    "originalName": "Once Upon a Time in America",
+    "imdbRating": 8.3
+  },
+  {
+    "name": "Infiltrado",
+    "year": 2016,
+    "kind": "MOVIE",
+    "search": "The Infiltrator 2016",
+    "originalName": "The Infiltrator",
+    "imdbRating": 7.0
+  },
+  {
+    "name": "Barry Seal: el traficante",
+    "year": 2017,
+    "kind": "MOVIE",
+    "search": "American Made 2017",
+    "originalName": "American Made",
+    "imdbRating": 7.2,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Aguas oscuras",
+    "year": 2019,
+    "kind": "MOVIE",
+    "search": "Dark Waters 2019",
+    "originalName": "Dark Waters",
+    "imdbRating": 7.6,
+    "platform": "APPLE"
+  },
+  {
+    "name": "El clan de hierro",
+    "year": 2023,
+    "kind": "MOVIE",
+    "search": "The Iron Claw 2023",
+    "originalName": "The Iron Claw",
+    "imdbRating": 7.5,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Monkey Man: El despertar de la bestia",
+    "year": 2024,
+    "kind": "MOVIE",
+    "search": "Monkey Man 2024",
+    "originalName": "Monkey Man",
+    "imdbRating": 6.8,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Robot salvaje",
+    "year": 2024,
+    "kind": "MOVIE",
+    "search": "The Wild Robot 2024",
+    "originalName": "The Wild Robot",
+    "imdbRating": 8.1,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Un dolor real",
+    "year": 2024,
+    "kind": "MOVIE",
+    "search": "A Real Pain 2024",
+    "originalName": "A Real Pain",
+    "imdbRating": 7.0,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Nuestro hermano idiota",
+    "year": 2011,
+    "kind": "MOVIE",
+    "search": "Our Idiot Brother 2011",
+    "originalName": "Our Idiot Brother",
+    "imdbRating": 6.4
+  },
+  {
+    "name": "La gran enfermedad del amor",
+    "year": 2017,
+    "kind": "MOVIE",
+    "search": "The Big Sick 2017",
+    "originalName": "The Big Sick",
+    "imdbRating": 7.5
+  },
+  {
+    "name": "Jim y Andy",
+    "year": 2017,
+    "kind": "MOVIE",
+    "search": "Jim and Andy The Great Beyond",
+    "originalName": "Jim & Andy: The Great Beyond",
+    "imdbRating": 7.6,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Submarine",
+    "year": 2010,
+    "kind": "MOVIE",
+    "search": "Submarine 2010",
+    "originalName": "Submarine",
+    "imdbRating": 7.3
+  },
+  {
+    "name": "El camino de vuelta",
+    "year": 2013,
+    "kind": "MOVIE",
+    "search": "The Way Way Back",
+    "originalName": "The Way Way Back",
+    "imdbRating": 7.4,
+    "platform": "MAX"
+  },
+  {
+    "name": "It's Such a Beautiful Day",
+    "year": 2012,
+    "kind": "MOVIE",
+    "search": "It's Such a Beautiful Day 2012",
+    "originalName": "It's Such a Beautiful Day",
+    "imdbRating": 8.2
+  },
+  {
+    "name": "Adaptation. El ladrón de orquídeas",
+    "year": 2002,
+    "kind": "MOVIE",
+    "search": "Adaptation 2002",
+    "originalName": "Adaptation",
+    "imdbRating": 7.6
+  },
+  {
+    "name": "El faro",
+    "year": 2019,
+    "kind": "MOVIE",
+    "search": "The Lighthouse 2019",
+    "originalName": "The Lighthouse",
+    "imdbRating": 7.4,
+    "platform": "APPLE"
+  },
+  {
+    "name": "El aguador",
+    "year": 1998,
+    "kind": "MOVIE",
+    "search": "The Waterboy 1998",
+    "originalName": "The Waterboy",
+    "imdbRating": 6.2
+  },
+  {
+    "name": "Billy Madison",
+    "year": 1995,
+    "kind": "MOVIE",
+    "search": "Billy Madison 1995",
+    "originalName": "Billy Madison",
+    "imdbRating": 6.4
+  },
+  {
+    "name": "Cartas de Van Gogh",
+    "year": 2017,
+    "kind": "MOVIE",
+    "search": "Loving Vincent 2017",
+    "originalName": "Loving Vincent",
+    "imdbRating": 7.8
+  },
+  {
+    "name": "Orlando",
+    "year": 1992,
+    "kind": "MOVIE",
+    "search": "Orlando 1992",
+    "originalName": "Orlando",
+    "imdbRating": 7.1
+  },
+  {
+    "name": "Corazón salvaje",
+    "year": 1990,
+    "kind": "MOVIE",
+    "search": "Wild at Heart 1990",
+    "originalName": "Wild at Heart",
+    "imdbRating": 7.2
+  },
+  {
+    "name": "Vellut blau",
+    "year": 1986,
+    "kind": "MOVIE",
+    "search": "Blue Velvet 1986",
+    "originalName": "Blue Velvet",
+    "imdbRating": 7.7
+  },
+  {
+    "name": "Carol",
+    "year": 2015,
+    "kind": "MOVIE",
+    "search": "Carol 2015",
+    "originalName": "Carol",
+    "imdbRating": 7.3,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Trainspotting: Sin límites",
+    "year": 1996,
+    "kind": "MOVIE",
+    "search": "Trainspotting 1996",
+    "originalName": "Trainspotting",
+    "imdbRating": 8.1
+  },
+  {
+    "name": "Apocalypse Now",
+    "year": 1979,
+    "kind": "MOVIE",
+    "search": "Apocalypse Now 1979",
+    "originalName": "Apocalypse Now",
+    "imdbRating": 8.4
+  },
+  {
+    "name": "Tomates verdes fritos",
+    "year": 1991,
+    "kind": "MOVIE",
+    "search": "Fried Green Tomatoes 1991",
+    "originalName": "Fried Green Tomatoes",
+    "imdbRating": 7.7
+  },
+  {
+    "name": "El graduado",
+    "year": 1967,
+    "kind": "MOVIE",
+    "search": "The Graduate 1967",
+    "originalName": "The Graduate",
+    "imdbRating": 8.0
+  },
+  {
+    "name": "El hombre que conoció el infinito",
+    "year": 2015,
+    "kind": "MOVIE",
+    "search": "The Man Who Knew Infinity",
+    "originalName": "The Man Who Knew Infinity",
+    "imdbRating": 7.2
+  },
+  {
+    "name": "Black Hawk derribado",
+    "year": 2001,
+    "kind": "MOVIE",
+    "search": "Black Hawk Down 2001",
+    "originalName": "Black Hawk Down",
+    "imdbRating": 7.7
+  },
+  {
+    "name": "Segundo premio",
+    "year": 2024,
+    "kind": "MOVIE",
+    "search": "Segundo premio 2024",
+    "originalName": "Segundo premio",
+    "imdbRating": 6.4
+  },
+  {
+    "name": "Bird: Emprender el vuelo",
+    "year": 2024,
+    "kind": "MOVIE",
+    "search": "Bird 2024 Andrea Arnold",
+    "originalName": "Bird",
+    "imdbRating": 7.0,
+    "platform": "MAX"
+  },
+  {
+    "name": "El hombre de los sueños",
+    "year": 2023,
+    "kind": "MOVIE",
+    "search": "Dream Scenario 2023",
+    "originalName": "Dream Scenario",
+    "imdbRating": 6.8,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Nimona",
+    "year": 2023,
+    "kind": "MOVIE",
+    "search": "Nimona 2023",
+    "originalName": "Nimona",
+    "imdbRating": 7.5,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "La delgada línea roja",
+    "year": 1998,
+    "kind": "MOVIE",
+    "search": "The Thin Red Line 1998",
+    "originalName": "The Thin Red Line",
+    "imdbRating": 7.6
+  },
+  {
+    "name": "Aftersun",
+    "year": 2022,
+    "kind": "MOVIE",
+    "search": "Aftersun 2022",
+    "originalName": "Aftersun",
+    "imdbRating": 7.6,
+    "platform": "MAX"
+  },
+  {
+    "name": "Close",
+    "year": 2022,
+    "kind": "MOVIE",
+    "search": "Close 2022 Dhont",
+    "originalName": "Close",
+    "imdbRating": 7.8,
+    "platform": "MAX"
+  },
+  {
+    "name": "Los últimos días",
+    "year": 1998,
+    "kind": "MOVIE",
+    "search": "The Last Days 1998",
+    "originalName": "The Last Days",
+    "imdbRating": 7.9,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Amelie",
+    "year": 2001,
+    "kind": "MOVIE",
+    "search": "Amelie 2001",
+    "originalName": "Le Fabuleux Destin d'Amélie Poulain",
+    "imdbRating": 8.2
+  },
+  {
+    "name": "Malas noticias",
+    "year": 2011,
+    "kind": "MOVIE",
+    "search": "Moneyball 2011",
+    "originalName": "Moneyball",
+    "imdbRating": 7.3
+  },
+  {
+    "name": "Paddleton",
+    "year": 2019,
+    "kind": "MOVIE",
+    "search": "Paddleton 2019",
+    "originalName": "Paddleton",
+    "imdbRating": 7.2,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "La estafa (Bad Education)",
+    "year": 2019,
+    "kind": "MOVIE",
+    "search": "Bad Education 2019 Hugh Jackman",
+    "originalName": "Bad Education",
+    "imdbRating": 7.1
+  },
+  {
+    "name": "Los idus de marzo",
+    "year": 2011,
+    "kind": "MOVIE",
+    "search": "The Ides of March 2011",
+    "originalName": "The Ides of March",
+    "imdbRating": 7.1
+  },
+  {
+    "name": "La otra cara de Nelson",
+    "year": 2006,
+    "kind": "MOVIE",
+    "search": "Half Nelson 2006",
+    "originalName": "Half Nelson",
+    "imdbRating": 7.1
+  },
+  {
+    "name": "Nunca me abandones",
+    "year": 2010,
+    "kind": "MOVIE",
+    "search": "Never Let Me Go 2010",
+    "originalName": "Never Let Me Go",
+    "imdbRating": 7.1,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Hombre muerto",
+    "year": 1995,
+    "kind": "MOVIE",
+    "search": "Dead Man 1995 Jarmusch",
+    "originalName": "Dead Man",
+    "imdbRating": 7.5
+  },
+  {
+    "name": "Bowfinger, el pícaro",
+    "year": 1999,
+    "kind": "MOVIE",
+    "search": "Bowfinger 1999",
+    "originalName": "Bowfinger",
+    "imdbRating": 6.5
+  },
+  {
+    "name": "Tenacious D: dando la nota",
+    "year": 2006,
+    "kind": "MOVIE",
+    "search": "Tenacious D Pick of Destiny",
+    "originalName": "Tenacious D in The Pick of Destiny",
+    "imdbRating": 6.8
+  },
+  {
+    "name": "Los Conchords",
+    "year": 2007,
+    "kind": "SERIES",
+    "search": "Flight of the Conchords",
+    "originalName": "Flight of the Conchords",
+    "imdbRating": 8.5,
+    "platform": "MAX"
+  },
+  {
+    "name": "El reportero: La leyenda de Ron Burgundy",
+    "year": 2004,
+    "kind": "MOVIE",
+    "search": "Anchorman The Legend of Ron Burgundy",
+    "originalName": "Anchorman",
+    "imdbRating": 7.1
+  },
+  {
+    "name": "Adrienne",
+    "year": 2021,
+    "kind": "MOVIE",
+    "search": "Adrienne 2021",
+    "originalName": "Adrienne",
+    "imdbRating": 7.4
+  },
+  {
+    "name": "Matrix",
+    "year": 1999,
+    "kind": "MOVIE",
+    "search": "The Matrix 1999",
+    "originalName": "The Matrix",
+    "imdbRating": 8.7
+  },
+  {
+    "name": "Y tu mamá también",
+    "year": 2001,
+    "kind": "MOVIE",
+    "search": "Y tu mama tambien 2001",
+    "originalName": "Y tu mamá también",
+    "imdbRating": 7.7
+  },
+  {
+    "name": "Una mujer bajo la influencia",
+    "year": 1974,
+    "kind": "MOVIE",
+    "search": "A Woman Under the Influence 1974",
+    "originalName": "A Woman Under the Influence",
+    "imdbRating": 8.0
+  },
+  {
+    "name": "Toro salvaje",
+    "year": 1980,
+    "kind": "MOVIE",
+    "search": "Raging Bull 1980",
+    "originalName": "Raging Bull",
+    "imdbRating": 8.1,
+    "platform": "APPLE"
+  },
+  {
+    "name": "El cazador",
+    "year": 1978,
+    "kind": "MOVIE",
+    "search": "The Deer Hunter 1978",
+    "originalName": "The Deer Hunter",
+    "imdbRating": 8.1
+  },
+  {
+    "name": "Nacido el cuatro de julio",
+    "year": 1989,
+    "kind": "MOVIE",
+    "search": "Born on the Fourth of July",
+    "originalName": "Born on the Fourth of July",
+    "imdbRating": 7.2
+  },
+  {
+    "name": "Robot Dreams",
+    "year": 2023,
+    "kind": "MOVIE",
+    "search": "Robot Dreams 2023",
+    "originalName": "Robot Dreams",
+    "imdbRating": 7.6,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Guerra civil",
+    "year": 2024,
+    "kind": "MOVIE",
+    "search": "Civil War 2024 Garland",
+    "originalName": "Civil War",
+    "imdbRating": 7.0,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Foxcatcher",
+    "year": 2014,
+    "kind": "MOVIE",
+    "search": "Foxcatcher 2014",
+    "originalName": "Foxcatcher",
+    "imdbRating": 7.0
+  },
+  {
+    "name": "M.A.S.H.",
+    "year": 1970,
+    "kind": "MOVIE",
+    "search": "MASH 1970 Altman",
+    "originalName": "M*A*S*H",
+    "imdbRating": 7.3,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Infiltrado en el KKKlan",
+    "year": 2018,
+    "kind": "MOVIE",
+    "search": "BlacKkKlansman 2018",
+    "originalName": "BlacKkKlansman",
+    "imdbRating": 7.5,
+    "platform": "MAX"
+  },
+  {
+    "name": "Mi vida como un perro",
+    "year": 1985,
+    "kind": "MOVIE",
+    "search": "My Life as a Dog 1985",
+    "originalName": "Mitt liv som hund",
+    "imdbRating": 7.6
+  },
+  {
+    "name": "Honey Boy: Un niño encantador",
+    "year": 2019,
+    "kind": "MOVIE",
+    "search": "Honey Boy 2019",
+    "originalName": "Honey Boy",
+    "imdbRating": 7.2
+  },
+  {
+    "name": "La familia que tú eliges",
+    "year": 2019,
+    "kind": "MOVIE",
+    "search": "The Peanut Butter Falcon",
+    "originalName": "The Peanut Butter Falcon",
+    "imdbRating": 7.6
+  },
+  {
+    "name": "Morelos",
+    "year": 2012,
+    "kind": "MOVIE",
+    "search": "Morelos 2012",
+    "originalName": "Morelos",
+    "imdbRating": 6.2,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Embriagado de amor",
+    "year": 2002,
+    "kind": "MOVIE",
+    "search": "Punch-Drunk Love 2002",
+    "originalName": "Punch-Drunk Love",
+    "imdbRating": 7.3
+  },
+  {
+    "name": "El árbol de la vida",
+    "year": 2011,
+    "kind": "MOVIE",
+    "search": "The Tree of Life 2011",
+    "originalName": "The Tree of Life",
+    "imdbRating": 6.8
+  },
+  {
+    "name": "Vida oculta",
+    "year": 2019,
+    "kind": "MOVIE",
+    "search": "A Hidden Life 2019",
+    "originalName": "A Hidden Life",
+    "imdbRating": 7.4
+  },
+  {
+    "name": "Al filo de la muerte",
+    "year": 1997,
+    "kind": "MOVIE",
+    "search": "The Game 1997 Fincher",
+    "originalName": "The Game",
+    "imdbRating": 7.7
+  },
+  {
+    "name": "Hasta los dientes",
+    "year": 2017,
+    "kind": "MOVIE",
+    "search": "Hasta los dientes 2018",
+    "originalName": "To the Bone",
+    "imdbRating": 7.9
+  },
+  {
+    "name": "Perdedores",
+    "year": 2019,
+    "kind": "SERIES",
+    "search": "Losers Netflix 2019",
+    "originalName": "Losers",
+    "imdbRating": 7.6,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "La historia del universo",
+    "year": 2010,
+    "kind": "SERIES",
+    "search": "How the Universe Works",
+    "originalName": "How the Universe Works",
+    "imdbRating": 8.9,
+    "platform": "MAX"
+  },
+  {
+    "name": "Norm Macdonald: Nothing Special",
+    "year": 2022,
+    "kind": "MOVIE",
+    "search": "Norm Macdonald Nothing Special",
+    "originalName": "Norm Macdonald: Nothing Special",
+    "imdbRating": 7.5,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "El hundimiento",
+    "year": 2004,
+    "kind": "MOVIE",
+    "search": "Downfall 2004",
+    "originalName": "Der Untergang",
+    "imdbRating": 8.2
+  },
+  {
+    "name": "La cosa (El enigma de otro mundo)",
+    "year": 1982,
+    "kind": "MOVIE",
+    "search": "The Thing 1982 Carpenter",
+    "originalName": "The Thing",
+    "imdbRating": 8.2
+  },
+  {
+    "name": "El pacto",
+    "year": 2023,
+    "kind": "MOVIE",
+    "search": "The Covenant 2023 Guy Ritchie",
+    "originalName": "The Covenant",
+    "imdbRating": 7.5
+  },
+  {
+    "name": "Máxima ansiedad",
+    "year": 1977,
+    "kind": "MOVIE",
+    "search": "High Anxiety 1977",
+    "originalName": "High Anxiety",
+    "imdbRating": 6.6
+  },
+  {
+    "name": "Hermanos por pelotas",
+    "year": 2008,
+    "kind": "MOVIE",
+    "search": "Step Brothers 2008",
+    "originalName": "Step Brothers",
+    "imdbRating": 6.9
+  },
+  {
+    "name": "Tommy Boy",
+    "year": 1995,
+    "kind": "MOVIE",
+    "search": "Tommy Boy 1995",
+    "originalName": "Tommy Boy",
+    "imdbRating": 7.1
+  },
+  {
+    "name": "Popstar",
+    "year": 2016,
+    "kind": "MOVIE",
+    "search": "Popstar Never Stop Never Stopping",
+    "originalName": "Popstar: Never Stop Never Stopping",
+    "imdbRating": 6.7
+  },
+  {
+    "name": "Masacre (Ven y mira)",
+    "year": 1985,
+    "kind": "MOVIE",
+    "search": "Come and See 1985",
+    "originalName": "Come and See",
+    "imdbRating": 8.3
+  },
+  {
+    "name": "Golda",
+    "year": 2023,
+    "kind": "MOVIE",
+    "search": "Golda 2023",
+    "originalName": "Golda",
+    "imdbRating": 6.0,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Sospechosos habituales",
+    "year": 1995,
+    "kind": "MOVIE",
+    "search": "The Usual Suspects 1995",
+    "originalName": "The Usual Suspects",
+    "imdbRating": 8.5
+  },
+  {
+    "name": "Syd Barrett y el origen de Pink Floyd",
+    "year": 2023,
+    "kind": "MOVIE",
+    "search": "Syd Barrett Have You Got It Yet",
+    "originalName": "Have You Got It Yet?",
+    "imdbRating": 7.4
+  },
+  {
+    "name": "Billy Elliot (Quiero bailar)",
+    "year": 2000,
+    "kind": "MOVIE",
+    "search": "Billy Elliot 2000",
+    "originalName": "Billy Elliot",
+    "imdbRating": 7.7
+  },
+  {
+    "name": "El discurso del rey",
+    "year": 2010,
+    "kind": "MOVIE",
+    "search": "The King's Speech 2010",
+    "originalName": "The King's Speech",
+    "imdbRating": 8.0
+  },
+  {
+    "name": "Una mente maravillosa",
+    "year": 2001,
+    "kind": "MOVIE",
+    "search": "A Beautiful Mind 2001",
+    "originalName": "A Beautiful Mind",
+    "imdbRating": 8.2
+  },
+  {
+    "name": "Intocable",
+    "year": 2011,
+    "kind": "MOVIE",
+    "search": "The Intouchables 2011",
+    "originalName": "Intouchables",
+    "imdbRating": 8.5,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Enmig de la natura",
+    "year": 2007,
+    "kind": "MOVIE",
+    "search": "Into the Wild 2007",
+    "originalName": "Into the Wild",
+    "imdbRating": 8.0
+  },
+  {
+    "name": "El hilo invisible",
+    "year": 2017,
+    "kind": "MOVIE",
+    "search": "Phantom Thread 2017",
+    "originalName": "Phantom Thread",
+    "imdbRating": 7.4
+  },
+  {
+    "name": "En tierra hostil",
+    "year": 2008,
+    "kind": "MOVIE",
+    "search": "The Hurt Locker 2008",
+    "originalName": "The Hurt Locker",
+    "imdbRating": 7.5
+  },
+  {
+    "name": "La red social",
+    "year": 2010,
+    "kind": "MOVIE",
+    "search": "The Social Network 2010",
+    "originalName": "The Social Network",
+    "imdbRating": 7.8,
+    "platform": "MAX"
+  },
+  {
+    "name": "El diario de Bridget Jones",
+    "year": 2001,
+    "kind": "MOVIE",
+    "search": "Bridget Jones Diary 2001",
+    "originalName": "Bridget Jones's Diary",
+    "imdbRating": 6.8,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "El curioso caso de Benjamin Button",
+    "year": 2008,
+    "kind": "MOVIE",
+    "search": "The Curious Case of Benjamin Button",
+    "originalName": "The Curious Case of Benjamin Button",
+    "imdbRating": 7.8,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "El cisne negro",
+    "year": 2010,
+    "kind": "MOVIE",
+    "search": "Black Swan 2010",
+    "originalName": "Black Swan",
+    "imdbRating": 8.0,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Drive. Acción a máxima velocidad",
+    "year": 2011,
+    "kind": "MOVIE",
+    "search": "Drive 2011 Refn",
+    "originalName": "Drive",
+    "imdbRating": 7.8
+  },
+  {
+    "name": "Ellas hablan",
+    "year": 2022,
+    "kind": "MOVIE",
+    "search": "Women Talking 2022",
+    "originalName": "Women Talking",
+    "imdbRating": 6.9,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Café Society",
+    "year": 2016,
+    "kind": "MOVIE",
+    "search": "Cafe Society 2016",
+    "originalName": "Café Society",
+    "imdbRating": 6.6,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Medianoche en París",
+    "year": 2011,
+    "kind": "MOVIE",
+    "search": "Midnight in Paris 2011",
+    "originalName": "Midnight in Paris",
+    "imdbRating": 7.6
+  },
+  {
+    "name": "Arma fatal",
+    "year": 2007,
+    "kind": "MOVIE",
+    "search": "Hot Fuzz 2007",
+    "originalName": "Hot Fuzz",
+    "imdbRating": 7.8,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Zombies Party",
+    "year": 2004,
+    "kind": "MOVIE",
+    "search": "Shaun of the Dead 2004",
+    "originalName": "Shaun of the Dead",
+    "imdbRating": 7.8
+  },
+  {
+    "name": "Mi nombre es Harvey Milk",
+    "year": 2008,
+    "kind": "MOVIE",
+    "search": "Milk 2008",
+    "originalName": "Milk",
+    "imdbRating": 7.5
+  },
+  {
+    "name": "Últimos días",
+    "year": 2005,
+    "kind": "MOVIE",
+    "search": "Last Days 2005 Van Sant",
+    "originalName": "Last Days",
+    "imdbRating": 5.7
+  },
+  {
+    "name": "El club de los poetas muertos",
+    "year": 1989,
+    "kind": "MOVIE",
+    "search": "Dead Poets Society 1989",
+    "originalName": "Dead Poets Society",
+    "imdbRating": 8.1,
+    "platform": "APPLE"
+  },
+  {
+    "name": "Mank",
+    "year": 2020,
+    "kind": "MOVIE",
+    "search": "Mank 2020",
+    "originalName": "Mank",
+    "imdbRating": 6.8,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Mi cena con André",
+    "year": 1981,
+    "kind": "MOVIE",
+    "search": "My Dinner with Andre",
+    "originalName": "My Dinner with Andre",
+    "imdbRating": 7.6
+  },
+  {
+    "name": "Salvar al soldado Ryan",
+    "year": 1998,
+    "kind": "MOVIE",
+    "search": "Saving Private Ryan 1998",
+    "originalName": "Saving Private Ryan",
+    "imdbRating": 8.6
+  },
+  {
+    "name": "En busca del arca perdida",
+    "year": 1981,
+    "kind": "MOVIE",
+    "search": "Raiders of the Lost Ark 1981",
+    "originalName": "Raiders of the Lost Ark",
+    "imdbRating": 8.4,
+    "platform": "APPLE"
+  },
+  {
+    "name": "El pianista",
+    "year": 2002,
+    "kind": "MOVIE",
+    "search": "The Pianist 2002",
+    "originalName": "The Pianist",
+    "imdbRating": 8.5,
+    "platform": "MAX"
+  },
+  {
+    "name": "Psicópata Americano",
+    "year": 2000,
+    "kind": "MOVIE",
+    "search": "American Psycho 2000",
+    "originalName": "American Psycho",
+    "imdbRating": 7.6,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "Sin novedad en el frente",
+    "year": 2022,
+    "kind": "MOVIE",
+    "search": "All Quiet on the Western Front 2022",
+    "originalName": "Im Westen nichts Neues",
+    "imdbRating": 7.8,
+    "platform": "NETFLIX"
+  },
+  {
+    "name": "En primera plana",
+    "year": 2015,
+    "kind": "MOVIE",
+    "search": "Spotlight 2015",
+    "originalName": "Spotlight",
+    "imdbRating": 8.1,
+    "platform": "MAX"
+  },
+  {
+    "name": "Amores perros",
+    "year": 2000,
+    "kind": "MOVIE",
+    "search": "Amores perros 2000",
+    "originalName": "Amores perros",
+    "imdbRating": 8.0,
+    "platform": "NETFLIX"
+  }
+]
