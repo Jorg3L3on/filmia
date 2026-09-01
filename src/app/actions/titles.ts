@@ -1,5 +1,6 @@
 "use server";
 
+import { ListKind } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
@@ -52,11 +53,21 @@ const syncLists = async (titleId: string, listIds: string[]) => {
   await prisma.listItem.deleteMany({
     where: {
       titleId,
+      list: { kind: ListKind.COLLECTION },
       listId: { notIn: listIds },
     },
   });
 
   for (const [index, listId] of listIds.entries()) {
+    const list = await prisma.list.findUnique({
+      where: { id: listId },
+      select: { kind: true },
+    });
+
+    if (!list || list.kind !== ListKind.COLLECTION) {
+      continue;
+    }
+
     await prisma.listItem.upsert({
       where: { listId_titleId: { listId, titleId } },
       update: {},

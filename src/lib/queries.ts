@@ -1,5 +1,6 @@
-import { Platform, TitleKind } from "@/generated/prisma/client";
+import { ListKind, Platform, TitleKind } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { WATCHLIST_SLUG } from "@/lib/watchlist";
 
 export const titleInclude = {
   tags: { include: { tag: true } },
@@ -66,6 +67,7 @@ export const getTags = async () => {
 
 export const getLists = async () => {
   return prisma.list.findMany({
+    where: { kind: ListKind.COLLECTION },
     orderBy: { updatedAt: "desc" },
     include: {
       _count: { select: { items: true } },
@@ -74,6 +76,58 @@ export const getLists = async () => {
         include: { title: { include: titleInclude } },
       },
     },
+  });
+};
+
+export const getWatchlist = async () => {
+  const list = await prisma.list.findUnique({
+    where: { slug: WATCHLIST_SLUG },
+    include: {
+      items: {
+        orderBy: { position: "asc" },
+        include: { title: { include: titleInclude } },
+      },
+    },
+  });
+
+  if (!list) {
+    return null;
+  }
+
+  return list;
+};
+
+export const getWatchlistCount = async () => {
+  const list = await prisma.list.findUnique({
+    where: { slug: WATCHLIST_SLUG },
+    select: { _count: { select: { items: true } } },
+  });
+
+  return list?._count.items ?? 0;
+};
+
+export const isTitleInWatchlist = async (titleId: string) => {
+  const list = await prisma.list.findUnique({
+    where: { slug: WATCHLIST_SLUG },
+    select: { id: true },
+  });
+
+  if (!list) {
+    return false;
+  }
+
+  const item = await prisma.listItem.findUnique({
+    where: { listId_titleId: { listId: list.id, titleId } },
+  });
+
+  return Boolean(item);
+};
+
+export const getCollectionLists = async () => {
+  return prisma.list.findMany({
+    where: { kind: ListKind.COLLECTION },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
   });
 };
 

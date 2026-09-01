@@ -4,12 +4,13 @@ import { deleteTitle } from "@/app/actions/titles";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { PosterPlaceholder } from "@/components/PosterPlaceholder";
 import { TagPills } from "@/components/TagPills";
+import { WatchlistToggle } from "@/components/WatchlistToggle";
 import {
   formatRating,
   PLATFORM_LABEL,
   TITLE_KIND_LABEL,
 } from "@/lib/labels";
-import { getTitleById } from "@/lib/queries";
+import { getTitleById, isTitleInWatchlist } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,10 @@ export default async function TitleDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const title = await getTitleById(id);
+  const [title, inWatchlist] = await Promise.all([
+    getTitleById(id),
+    isTitleInWatchlist(id),
+  ]);
 
   if (!title) {
     notFound();
@@ -55,22 +59,31 @@ export default async function TitleDetailPage({
           </p>
         ) : null}
         <TagPills tags={title.tags.map((item) => item.tag)} />
-        {title.listItems.length > 0 ? (
-          <p className="text-sm text-[#99aabb]">
-            En listas:{" "}
-            {title.listItems.map((item, index) => (
-              <span key={item.listId}>
-                {index > 0 ? ", " : ""}
-                <Link
-                  href={`/listas/${item.list.id}`}
-                  className="text-[#00e054] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054]"
-                >
-                  {item.list.name}
-                </Link>
-              </span>
-            ))}
-          </p>
-        ) : null}
+        {(() => {
+          const collections = title.listItems.filter(
+            (item) => item.list.kind === "COLLECTION",
+          );
+          if (collections.length === 0) {
+            return null;
+          }
+          return (
+            <p className="text-sm text-[#99aabb]">
+              En listas:{" "}
+              {collections.map((item, index) => (
+                <span key={item.listId}>
+                  {index > 0 ? ", " : ""}
+                  <Link
+                    href={`/listas/${item.list.id}`}
+                    className="text-[#00e054] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054]"
+                  >
+                    {item.list.name}
+                  </Link>
+                </span>
+              ))}
+            </p>
+          );
+        })()}
+        <WatchlistToggle titleId={title.id} inWatchlist={inWatchlist} />
         {title.review ? (
           <p className="max-w-2xl whitespace-pre-wrap text-[#c8d6e5]">{title.review}</p>
         ) : null}

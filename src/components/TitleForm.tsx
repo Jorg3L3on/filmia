@@ -8,7 +8,7 @@ type TitleFormProps = {
     listItems: Array<{ listId: string }>;
   };
   tags: Tag[];
-  lists: List[];
+  lists: Array<Pick<List, "id" | "name">>;
 };
 
 const fieldClass =

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { TitleForm } from "@/components/TitleForm";
-import { getLists, getTags, getTitleById } from "@/lib/queries";
+import { getCollectionLists, getTags, getTitleById } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ export default async function EditTitlePage({
   const [title, tags, lists] = await Promise.all([
     getTitleById(id),
     getTags(),
-    getLists(),
+    getCollectionLists(),
   ]);
 
   if (!title) {
