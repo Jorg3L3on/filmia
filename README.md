@@ -67,6 +67,20 @@ npm run db:seed
 
 El seed es idempotente por nombre + año.
 
+### Backfill de posters e IMDb
+
+Para títulos ya existentes sin metadata (p. ej. después del seed):
+
+```bash
+# Requiere TMDB_API_KEY (+ OMDB_API_KEY recomendada) en .env
+npm run db:backfill-metadata
+
+# Re-enriquecer todos, aunque ya tengan poster
+npm run db:backfill-metadata -- --force
+```
+
+Busca en TMDB por nombre + año + tipo, guarda poster e IMDb rating vía OMDb.
+
 ## Scripts
 
 | Script | Qué hace |
@@ -76,6 +90,7 @@ El seed es idempotente por nombre + año.
 | `npm run db:migrate` | `prisma migrate dev` |
 | `npm run db:deploy` | `prisma migrate deploy` |
 | `npm run db:seed` | Carga títulos dummy |
+| `npm run db:backfill-metadata` | Posters TMDB + rating IMDb para títulos existentes |
 | `npm run db:generate` | Regenera el client de Prisma |
 | `npm run db:studio` | Prisma Studio |
 

@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { PrismaNeon } from "@prisma/adapter-neon";
-import { PrismaClient, TitleKind } from "../src/generated/prisma/client";
+import { PrismaClient } from "../src/generated/prisma/client";
 import { fetchImdbRating, isOmdbConfigured } from "../src/lib/omdb";
 import {
   getTmdbExternalIds,
@@ -62,7 +62,6 @@ const backfill = async () => {
   }
 
   let updated = 0;
-  let skipped = 0;
   let failed = 0;
 
   for (const title of titles) {
@@ -106,7 +105,7 @@ const backfill = async () => {
   }
 
   console.log(
-    `\nBackfill listo: ${updated} actualizados, ${skipped} omitidos, ${failed} fallidos (${titles.length} procesados).`,
+    `\nBackfill listo: ${updated} actualizados, ${failed} fallidos (${titles.length} procesados).`,
   );
 };
 
