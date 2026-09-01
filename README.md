@@ -2,7 +2,7 @@
 
 App personal para trackear películas y series vistas. UI en español, estética Letterboxd casera. Persistencia real con Prisma + Neon (Postgres).
 
-Single-user / v0: no hay login. No hay integraciones IMDb/JustWatch ni scrapers.
+Single-user / v0: no hay login. Posters vía TMDB + rating IMDb vía OMDb (APIs gratuitas). Sin scrapers.
 
 ## Stack
 
@@ -12,7 +12,7 @@ Single-user / v0: no hay login. No hay integraciones IMDb/JustWatch ni scrapers.
 
 ## Modelo
 
-- **Title**: película o serie, nota 1–10, plataforma opcional, notas, fecha vista
+- **Title**: película o serie, nota personal 1–10, poster (TMDB), rating IMDb (OMDb), plataforma opcional, notas, fecha vista
 - **Tag** + **TitleTag**: categorías libres (épico, sci-fi, etc.)
 - **List** + **ListItem**: listas y membresía
 - **Platform** (enum): Netflix, Prime, Max, Disney+, Claro
@@ -22,6 +22,8 @@ Single-user / v0: no hay login. No hay integraciones IMDb/JustWatch ni scrapers.
 - Node.js 20+
 - Una `DATABASE_URL` de Neon (pooled, hostname con `-pooler`)
 - Una `DATABASE_URL_UNPOOLED` (directa, sin `-pooler`) para migraciones
+- `TMDB_API_KEY` (gratis) para posters
+- `OMDB_API_KEY` (gratis, 1000 req/día) para ratings IMDb
 
 ## Arranque local
 
@@ -65,6 +67,20 @@ npm run db:seed
 
 El seed es idempotente por nombre + año.
 
+### Backfill de posters e IMDb
+
+Para títulos ya existentes sin metadata (p. ej. después del seed):
+
+```bash
+# Requiere TMDB_API_KEY (+ OMDB_API_KEY recomendada) en .env
+npm run db:backfill-metadata
+
+# Re-enriquecer todos, aunque ya tengan poster
+npm run db:backfill-metadata -- --force
+```
+
+Busca en TMDB por nombre + año + tipo, guarda poster e IMDb rating vía OMDb.
+
 ## Scripts
 
 | Script | Qué hace |
@@ -74,6 +90,7 @@ El seed es idempotente por nombre + año.
 | `npm run db:migrate` | `prisma migrate dev` |
 | `npm run db:deploy` | `prisma migrate deploy` |
 | `npm run db:seed` | Carga títulos dummy |
+| `npm run db:backfill-metadata` | Posters TMDB + rating IMDb para títulos existentes |
 | `npm run db:generate` | Regenera el client de Prisma |
 | `npm run db:studio` | Prisma Studio |
 

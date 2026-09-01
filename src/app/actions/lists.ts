@@ -1,5 +1,6 @@
 "use server";
 
+import { ListKind } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseRequiredName } from "@/lib/form-data";
@@ -19,7 +20,7 @@ export const createList = async (formData: FormData) => {
   const description = String(formData.get("description") ?? "").trim() || null;
 
   const list = await prisma.list.create({
-    data: { name, description },
+    data: { name, description, kind: ListKind.COLLECTION },
   });
 
   revalidateLists(list.id);

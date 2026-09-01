@@ -1,0 +1,41 @@
+import Image from "next/image";
+import { cn } from "@/lib/cn";
+
+type LogoProps = {
+  size?: "sm" | "md" | "lg";
+  showWordmark?: boolean;
+  className?: string;
+};
+
+const sizeMap = {
+  sm: { image: 28, wordmark: "text-lg" },
+  md: { image: 36, wordmark: "text-2xl" },
+  lg: { image: 48, wordmark: "text-3xl" },
+} as const;
+
+export const Logo = ({ size = "md", showWordmark = true, className }: LogoProps) => {
+  const { image, wordmark } = sizeMap[size];
+
+  return (
+    <span className={cn("inline-flex items-center gap-2.5", className)}>
+      <Image
+        src="/logo.png"
+        alt=""
+        width={image}
+        height={image}
+        className="rounded-lg"
+        priority
+      />
+      {showWordmark ? (
+        <span
+          className={cn(
+            "bg-gradient-to-r from-[#4fc3ff] via-[#8b5cf6] to-[#f472b6] bg-clip-text font-serif tracking-wide text-transparent",
+            wordmark,
+          )}
+        >
+          Filmia
+        </span>
+      ) : null}
+    </span>
+  );
+};

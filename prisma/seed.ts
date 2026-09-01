@@ -1,11 +1,17 @@
 import "dotenv/config";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import {
+  ListKind,
   Platform,
   PrismaClient,
   TitleKind,
 } from "../src/generated/prisma/client";
 import { slugify } from "../src/lib/labels";
+import {
+  WATCHLIST_DESCRIPTION,
+  WATCHLIST_NAME,
+  WATCHLIST_SLUG,
+} from "../src/lib/watchlist";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -22,11 +28,21 @@ type SeedTitle = {
   originalName?: string;
   kind: TitleKind;
   year: number;
-  rating: number;
-  review: string;
-  platform: Platform;
+  rating?: number;
+  review?: string;
+  platform?: Platform;
   tags: string[];
   lists: string[];
+  watched?: boolean;
+};
+
+type WatchlistSeed = {
+  name: string;
+  year: number;
+  kind: TitleKind;
+  platform?: Platform;
+  queueNote: string;
+  position: number;
 };
 
 const seedTitles: SeedTitle[] = [
@@ -39,6 +55,7 @@ const seedTitles: SeedTitle[] = [
     platform: Platform.PRIME,
     tags: ["épico", "histórico"],
     lists: ["Épicas"],
+    watched: true,
   },
   {
     name: "Troy",
@@ -49,6 +66,7 @@ const seedTitles: SeedTitle[] = [
     platform: Platform.MAX,
     tags: ["épico", "histórico"],
     lists: ["Épicas"],
+    watched: true,
   },
   {
     name: "Athena",
@@ -59,6 +77,7 @@ const seedTitles: SeedTitle[] = [
     platform: Platform.NETFLIX,
     tags: ["thriller", "francés"],
     lists: ["Visto recientemente"],
+    watched: true,
   },
   {
     name: "The Northman",
@@ -69,6 +88,7 @@ const seedTitles: SeedTitle[] = [
     platform: Platform.PRIME,
     tags: ["épico", "histórico"],
     lists: ["Épicas"],
+    watched: true,
   },
   {
     name: "Mad Max: Fury Road",
@@ -79,6 +99,7 @@ const seedTitles: SeedTitle[] = [
     platform: Platform.MAX,
     tags: ["acción", "vibe-mad-max"],
     lists: ["Vibe Mad Max / Tron"],
+    watched: true,
   },
   {
     name: "Tron: Legacy",
@@ -89,6 +110,7 @@ const seedTitles: SeedTitle[] = [
     platform: Platform.DISNEY,
     tags: ["sci-fi", "vibe-tron"],
     lists: ["Vibe Mad Max / Tron"],
+    watched: true,
   },
   {
     name: "Dune: Part Two",
@@ -100,6 +122,34 @@ const seedTitles: SeedTitle[] = [
     platform: Platform.MAX,
     tags: ["sci-fi", "épico"],
     lists: ["Épicas", "Visto recientemente"],
+    watched: true,
+  },
+];
+
+const watchlistQueue: WatchlistSeed[] = [
+  {
+    name: "Blade Runner 2049",
+    year: 2017,
+    kind: TitleKind.MOVIE,
+    platform: Platform.NETFLIX,
+    queueNote: "Revisar la fotografía otra vez.",
+    position: 0,
+  },
+  {
+    name: "Interstellar",
+    year: 2014,
+    kind: TitleKind.MOVIE,
+    platform: Platform.PRIME,
+    queueNote: "Para un domingo largo.",
+    position: 1,
+  },
+  {
+    name: "Severance",
+    year: 2022,
+    kind: TitleKind.SERIES,
+    platform: Platform.MAX,
+    queueNote: "Temporada 2 pendiente.",
+    position: 2,
   },
 ];
 
@@ -118,8 +168,10 @@ const upsertTag = async (name: string) => {
   });
 };
 
-const upsertList = async (name: string) => {
-  const existing = await prisma.list.findFirst({ where: { name } });
+const upsertCollection = async (name: string) => {
+  const existing = await prisma.list.findFirst({
+    where: { name, kind: ListKind.COLLECTION },
+  });
   if (existing) {
     return existing;
   }
@@ -128,9 +180,26 @@ const upsertList = async (name: string) => {
     data: {
       name,
       description: listDescriptions[name],
+      kind: ListKind.COLLECTION,
     },
   });
 };
+
+const ensureWatchlist = async () =>
+  prisma.list.upsert({
+    where: { slug: WATCHLIST_SLUG },
+    update: {
+      name: WATCHLIST_NAME,
+      description: WATCHLIST_DESCRIPTION,
+      kind: ListKind.WATCHLIST,
+    },
+    create: {
+      slug: WATCHLIST_SLUG,
+      name: WATCHLIST_NAME,
+      description: WATCHLIST_DESCRIPTION,
+      kind: ListKind.WATCHLIST,
+    },
+  });
 
 const seed = async () => {
   const tagRecords = new Map<string, { id: string }>();
@@ -144,8 +213,10 @@ const seed = async () => {
   }
 
   for (const listName of uniqueLists) {
-    listRecords.set(listName, await upsertList(listName));
+    listRecords.set(listName, await upsertCollection(listName));
   }
+
+  const watchlist = await ensureWatchlist();
 
   for (const [index, title] of seedTitles.entries()) {
     const existing = await prisma.title.findFirst({
@@ -157,10 +228,12 @@ const seed = async () => {
       originalName: title.originalName,
       kind: title.kind,
       year: title.year,
-      rating: title.rating,
-      review: title.review,
-      platform: title.platform,
-      watchedAt: new Date(`${title.year}-06-15T12:00:00.000Z`),
+      rating: title.rating ?? null,
+      review: title.review ?? null,
+      platform: title.platform ?? null,
+      watchedAt: title.watched
+        ? new Date(`${title.year}-06-15T12:00:00.000Z`)
+        : null,
     };
 
     const saved = existing
@@ -193,7 +266,50 @@ const seed = async () => {
     }
   }
 
-  console.log(`Seed listo: ${seedTitles.length} títulos dummy.`);
+  for (const item of watchlistQueue) {
+    const existing = await prisma.title.findFirst({
+      where: { name: item.name, year: item.year },
+    });
+
+    const saved = existing
+      ? await prisma.title.update({
+          where: { id: existing.id },
+          data: {
+            kind: item.kind,
+            platform: item.platform ?? null,
+            watchedAt: null,
+            rating: null,
+          },
+        })
+      : await prisma.title.create({
+          data: {
+            name: item.name,
+            kind: item.kind,
+            year: item.year,
+            platform: item.platform ?? null,
+          },
+        });
+
+    await prisma.listItem.upsert({
+      where: {
+        listId_titleId: { listId: watchlist.id, titleId: saved.id },
+      },
+      update: {
+        position: item.position,
+        queueNote: item.queueNote,
+      },
+      create: {
+        listId: watchlist.id,
+        titleId: saved.id,
+        position: item.position,
+        queueNote: item.queueNote,
+      },
+    });
+  }
+
+  console.log(
+    `Seed listo: ${seedTitles.length} títulos vistos, ${watchlistQueue.length} en watchlist.`,
+  );
 };
 
 seed()

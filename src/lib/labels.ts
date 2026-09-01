@@ -35,6 +35,14 @@ export const formatRating = (rating: number | null | undefined) => {
   return `${"★".repeat(fullStars)}${hasHalf ? "½" : ""} ${rating}/10`;
 };
 
+export const formatImdbRating = (rating: number | null | undefined) => {
+  if (rating == null) {
+    return null;
+  }
+
+  return `IMDb ${rating.toFixed(1)}/10`;
+};
+
 export const posterTone = (name: string) => {
   const tones = [
     "from-emerald-800 to-slate-900",
