@@ -35,6 +35,10 @@ model Title {
   review       String?    @db.Text
   platform     Platform?
   watchedAt    DateTime?
+  tmdbId       Int?
+  posterPath   String?
+  imdbId       String?
+  imdbRating   Float?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   tags         TitleTag[]
@@ -43,6 +47,8 @@ model Title {
   @@index([kind])
   @@index([rating])
   @@index([name])
+  @@index([tmdbId])
+  @@index([imdbId])
 }
 
 model Tag {

@@ -2,7 +2,7 @@
 
 App personal para trackear películas y series vistas. UI en español, estética Letterboxd casera. Persistencia real con Prisma + Neon (Postgres).
 
-Single-user / v0: no hay login. No hay integraciones IMDb/JustWatch ni scrapers.
+Single-user / v0: no hay login. Posters vía TMDB + rating IMDb vía OMDb (APIs gratuitas). Sin scrapers.
 
 ## Stack
 
@@ -12,7 +12,7 @@ Single-user / v0: no hay login. No hay integraciones IMDb/JustWatch ni scrapers.
 
 ## Modelo
 
-- **Title**: película o serie, nota 1–10, plataforma opcional, notas, fecha vista
+- **Title**: película o serie, nota personal 1–10, poster (TMDB), rating IMDb (OMDb), plataforma opcional, notas, fecha vista
 - **Tag** + **TitleTag**: categorías libres (épico, sci-fi, etc.)
 - **List** + **ListItem**: listas y membresía
 - **Platform** (enum): Netflix, Prime, Max, Disney+, Claro
@@ -22,6 +22,8 @@ Single-user / v0: no hay login. No hay integraciones IMDb/JustWatch ni scrapers.
 - Node.js 20+
 - Una `DATABASE_URL` de Neon (pooled, hostname con `-pooler`)
 - Una `DATABASE_URL_UNPOOLED` (directa, sin `-pooler`) para migraciones
+- `TMDB_API_KEY` (gratis) para posters
+- `OMDB_API_KEY` (gratis, 1000 req/día) para ratings IMDb
 
 ## Arranque local
 

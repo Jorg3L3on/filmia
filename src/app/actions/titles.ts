@@ -14,6 +14,10 @@ import {
   parseYear,
 } from "@/lib/form-data";
 import { slugify } from "@/lib/labels";
+import {
+  enrichMetadataOnSave,
+  readMetadataFields,
+} from "@/lib/metadata";
 import { prisma } from "@/lib/prisma";
 
 const revalidateCatalog = (titleId?: string) => {
@@ -92,6 +96,10 @@ const readTitleFields = (formData: FormData) => ({
 
 export const createTitle = async (formData: FormData) => {
   const fields = readTitleFields(formData);
+  const metadata = await enrichMetadataOnSave(
+    readMetadataFields(formData),
+    fields.kind,
+  );
 
   const title = await prisma.title.create({
     data: {
@@ -103,6 +111,10 @@ export const createTitle = async (formData: FormData) => {
       review: fields.review,
       platform: fields.platform,
       watchedAt: fields.watchedAt,
+      tmdbId: metadata.tmdbId,
+      posterPath: metadata.posterPath,
+      imdbId: metadata.imdbId,
+      imdbRating: metadata.imdbRating,
     },
   });
 
@@ -114,6 +126,10 @@ export const createTitle = async (formData: FormData) => {
 
 export const updateTitle = async (titleId: string, formData: FormData) => {
   const fields = readTitleFields(formData);
+  const metadata = await enrichMetadataOnSave(
+    readMetadataFields(formData),
+    fields.kind,
+  );
 
   await prisma.title.update({
     where: { id: titleId },
@@ -126,6 +142,10 @@ export const updateTitle = async (titleId: string, formData: FormData) => {
       review: fields.review,
       platform: fields.platform,
       watchedAt: fields.watchedAt,
+      tmdbId: metadata.tmdbId,
+      posterPath: metadata.posterPath,
+      imdbId: metadata.imdbId,
+      imdbRating: metadata.imdbRating,
     },
   });
 

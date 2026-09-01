@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { PosterPlaceholder } from "@/components/PosterPlaceholder";
+import { PosterImage } from "@/components/PosterImage";
 import {
+  formatImdbRating,
   PLATFORM_LABEL,
   TITLE_KIND_LABEL,
 } from "@/lib/labels";
@@ -40,6 +41,8 @@ export const WatchlistCard = ({
 }: WatchlistCardProps) => {
   const { title } = item;
 
+  const imdbLabel = formatImdbRating(title.imdbRating);
+
   if (variant === "hero") {
     return (
       <article className="relative overflow-hidden rounded-2xl border border-transparent bg-[#111] p-[1px] shadow-[0_0_40px_rgba(139,92,246,0.15)]">
@@ -49,7 +52,7 @@ export const WatchlistCard = ({
             <div className="absolute -left-2 -top-2 rounded-full bg-gradient-to-r from-[#2563eb] to-[#db2777] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
               Siguiente
             </div>
-            <PosterPlaceholder name={title.name} className="rounded-xl" />
+            <PosterImage name={title.name} posterPath={title.posterPath} className="rounded-xl" />
           </div>
           <div className="flex flex-col justify-between gap-4">
             <div className="space-y-2">
@@ -67,6 +70,9 @@ export const WatchlistCard = ({
               </h2>
               {title.platform ? (
                 <p className="text-sm text-[#99aabb]">{PLATFORM_LABEL[title.platform]}</p>
+              ) : null}
+              {imdbLabel ? (
+                <p className="text-sm font-medium text-[#f5c518]">{imdbLabel}</p>
               ) : null}
               <form action={updateNoteAction} className="space-y-2">
                 <label className="block space-y-1">
@@ -125,7 +131,11 @@ export const WatchlistCard = ({
         className="w-16 shrink-0 overflow-hidden rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]"
         aria-label={title.name}
       >
-        <PosterPlaceholder name={title.name} className="aspect-square rounded-lg" />
+        <PosterImage
+          name={title.name}
+          posterPath={title.posterPath}
+          className="aspect-square rounded-lg"
+        />
       </Link>
       <div className="min-w-0 flex-1 space-y-2">
         <div>
@@ -138,6 +148,9 @@ export const WatchlistCard = ({
           </h3>
           {title.platform ? (
             <p className="text-xs text-[#99aabb]">{PLATFORM_LABEL[title.platform]}</p>
+          ) : null}
+          {imdbLabel ? (
+            <p className="text-xs font-medium text-[#f5c518]">{imdbLabel}</p>
           ) : null}
         </div>
         {item.queueNote ? (

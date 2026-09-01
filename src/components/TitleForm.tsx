@@ -1,4 +1,5 @@
 import { createTitle, updateTitle } from "@/app/actions/titles";
+import { TmdbPicker } from "@/components/TmdbPicker";
 import type { List, Platform, Tag, Title, TitleKind } from "@/generated/prisma/client";
 import { PLATFORM_LABEL, PLATFORMS, TITLE_KIND_LABEL, TITLE_KINDS } from "@/lib/labels";
 
@@ -9,6 +10,7 @@ type TitleFormProps = {
   };
   tags: Tag[];
   lists: Array<Pick<List, "id" | "name">>;
+  metadataConfig: { tmdb: boolean; omdb: boolean };
 };
 
 const fieldClass =
@@ -17,13 +19,21 @@ const fieldClass =
 const toDateInput = (value: Date | null) =>
   value ? value.toISOString().slice(0, 10) : "";
 
-export const TitleForm = ({ title, tags, lists }: TitleFormProps) => {
+export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps) => {
   const action = title ? updateTitle.bind(null, title.id) : createTitle;
   const selectedTagIds = new Set(title?.tags.map((item) => item.tagId) ?? []);
   const selectedListIds = new Set(title?.listItems.map((item) => item.listId) ?? []);
 
   return (
     <form action={action} className="space-y-6">
+      <TmdbPicker
+        configured={metadataConfig}
+        initialTmdbId={title?.tmdbId}
+        initialPosterPath={title?.posterPath}
+        initialImdbId={title?.imdbId}
+        initialImdbRating={title?.imdbRating}
+      />
+
       <div className="grid gap-4 md:grid-cols-2">
         <label className="block space-y-1.5">
           <span className="text-xs uppercase tracking-wide text-[#99aabb]">Nombre</span>
@@ -74,7 +84,7 @@ export const TitleForm = ({ title, tags, lists }: TitleFormProps) => {
         </label>
         <label className="block space-y-1.5">
           <span className="text-xs uppercase tracking-wide text-[#99aabb]">
-            Nota (1–10)
+            Tu nota (1–10)
           </span>
           <input
             name="rating"

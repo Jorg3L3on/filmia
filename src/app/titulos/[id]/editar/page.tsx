@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { TitleForm } from "@/components/TitleForm";
+import { metadataServicesConfigured } from "@/lib/metadata";
 import { getCollectionLists, getTags, getTitleById } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -10,10 +11,11 @@ export default async function EditTitlePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [title, tags, lists] = await Promise.all([
+  const [title, tags, lists, metadataConfig] = await Promise.all([
     getTitleById(id),
     getTags(),
     getCollectionLists(),
+    Promise.resolve(metadataServicesConfigured()),
   ]);
 
   if (!title) {
@@ -26,7 +28,12 @@ export default async function EditTitlePage({
         <p className="text-xs uppercase tracking-[0.2em] text-[#00e054]">Editar</p>
         <h1 className="font-serif text-4xl text-white">{title.name}</h1>
       </div>
-      <TitleForm title={title} tags={tags} lists={lists} />
+      <TitleForm
+        title={title}
+        tags={tags}
+        lists={lists}
+        metadataConfig={metadataConfig}
+      />
     </div>
   );
 }
