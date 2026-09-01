@@ -1,3 +1,88 @@
 # Filmia
 
-App personal para trackear películas y series vistas.
+App personal para trackear películas y series vistas. UI en español, estética Letterboxd casera. Persistencia real con Prisma + Neon (Postgres).
+
+Single-user / v0: no hay login. No hay integraciones IMDb/JustWatch ni scrapers.
+
+## Stack
+
+- Next.js 16 (App Router) + TypeScript + Tailwind CSS 4
+- Prisma 7 + adaptador Neon (`@prisma/adapter-neon`)
+- Postgres en Neon (proyecto `filmia`)
+
+## Modelo
+
+- **Title**: película o serie, nota 1–10, plataforma opcional, notas, fecha vista
+- **Tag** + **TitleTag**: categorías libres (épico, sci-fi, etc.)
+- **List** + **ListItem**: listas y membresía
+- **Platform** (enum): Netflix, Prime, Max, Disney+, Claro
+
+## Requisitos
+
+- Node.js 20+
+- Una `DATABASE_URL` de Neon (pooled, hostname con `-pooler`)
+- Una `DATABASE_URL_UNPOOLED` (directa, sin `-pooler`) para migraciones
+
+## Arranque local
+
+```bash
+cp .env.example .env
+# Pega las URLs del proyecto Neon `filmia` (nunca commitees .env)
+
+npm install
+npx prisma migrate deploy
+npm run db:seed
+npm run dev
+```
+
+Abre [http://localhost:3000](http://localhost:3000).
+
+### Migraciones en desarrollo
+
+Para crear una migración nueva a partir de `prisma/schema.prisma`:
+
+```bash
+npm run db:migrate
+# equivale a: npx prisma migrate dev
+```
+
+En un entorno ya existente (Taller / prod):
+
+```bash
+npx prisma migrate deploy
+npm run db:seed
+```
+
+`prisma.config.ts` usa `DATABASE_URL_UNPOOLED` para el CLI. La app Next.js usa `DATABASE_URL` (pooled) vía el adaptador Neon.
+
+### Seed
+
+Datos dummy (no personales): Gladiator, Troy, Athena (2022), The Northman, Mad Max: Fury Road, Tron: Legacy, Dune: Part Two. Listas: Épicas, Visto recientemente, Vibe Mad Max / Tron.
+
+```bash
+npm run db:seed
+```
+
+El seed es idempotente por nombre + año.
+
+## Scripts
+
+| Script | Qué hace |
+| --- | --- |
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Build de producción |
+| `npm run db:migrate` | `prisma migrate dev` |
+| `npm run db:deploy` | `prisma migrate deploy` |
+| `npm run db:seed` | Carga títulos dummy |
+| `npm run db:generate` | Regenera el client de Prisma |
+| `npm run db:studio` | Prisma Studio |
+
+`postinstall` corre `prisma generate`.
+
+## Notas para Taller
+
+- El schema y las migraciones van en `prisma/`. Aplícalas con `DATABASE_URL` / `DATABASE_URL_UNPOOLED` del proyecto Neon `filmia` (`late-cell-10415663`).
+- Este agente pudo conectar a Neon vía MCP para humo (migrate + seed). Si la VM no tiene `DATABASE_URL`, no hace falta SQLite: apunta Prisma a Neon y corre `migrate deploy`.
+- No hay secretos en el repo. Solo `.env.example`.
+
+Ticket: [JOR-149](https://linear.app/jorg3l3on/issue/JOR-149/scaffold-next-prismaneon-crud-titulos).
