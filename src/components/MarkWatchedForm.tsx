@@ -23,19 +23,26 @@ export const MarkWatchedForm = ({
     >
       <label className="block space-y-1">
         <span className="sr-only">Tu nota al marcarla vista</span>
-        <input
+        <select
           name="rating"
-          type="number"
-          min={1}
-          max={10}
-          placeholder="Tu nota"
+          defaultValue=""
           aria-label="Tu nota del 1 al 10"
           className={
             isCompact
-              ? "w-20 rounded-full border border-[#2c3440] bg-[#0a0a0a] px-3 py-1 text-xs text-white placeholder:text-[#556] focus:border-[#00e054] focus:outline-none"
-              : "w-28 rounded-full border border-[#2c3440] bg-[#0a0a0a] px-3 py-2 text-sm text-white placeholder:text-[#556] focus:border-[#00e054] focus:outline-none"
+              ? "rounded-full border border-[#2c3440] bg-[#0a0a0a] px-3 py-1 text-xs text-white focus:border-[#00e054] focus:outline-none"
+              : "rounded-full border border-[#2c3440] bg-[#0a0a0a] px-3 py-2 text-sm text-white focus:border-[#00e054] focus:outline-none"
           }
-        />
+        >
+          <option value="">Tu nota</option>
+          {Array.from({ length: 10 }, (_, index) => {
+            const value = index + 1;
+            return (
+              <option key={value} value={value}>
+                {value}/10
+              </option>
+            );
+          })}
+        </select>
       </label>
       <button
         type="submit"
