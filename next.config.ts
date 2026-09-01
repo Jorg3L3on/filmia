@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
         hostname: "media.themoviedb.org",
         pathname: "/t/p/**",
       },
+      {
+        protocol: "https",
+        hostname: "upload.wikimedia.org",
+        pathname: "/**",
+      },
     ],
   },
 };

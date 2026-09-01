@@ -2,15 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { deleteTitle } from "@/app/actions/titles";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
+import { ImdbBadge } from "@/components/ImdbBadge";
+import { MarkWatchedForm } from "@/components/MarkWatchedForm";
+import { PersonalRating } from "@/components/PersonalRating";
+import { PlatformBadge } from "@/components/PlatformBadge";
 import { PosterImage } from "@/components/PosterImage";
 import { TagPills } from "@/components/TagPills";
 import { WatchlistToggle } from "@/components/WatchlistToggle";
-import {
-  formatImdbRating,
-  formatRating,
-  PLATFORM_LABEL,
-  TITLE_KIND_LABEL,
-} from "@/lib/labels";
+import { TITLE_KIND_LABEL } from "@/lib/labels";
 import { getTitleById, isTitleInWatchlist } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +30,6 @@ export default async function TitleDetailPage({
   }
 
   const deleteAction = deleteTitle.bind(null, title.id);
-  const imdbLabel = formatImdbRating(title.imdbRating);
 
   return (
     <article className="grid gap-8 md:grid-cols-[220px_1fr]">
@@ -50,13 +48,13 @@ export default async function TitleDetailPage({
         {title.originalName ? (
           <p className="text-sm text-[#99aabb]">{title.originalName}</p>
         ) : null}
-        <p className="text-lg text-[#ff8000]">Tu nota: {formatRating(title.rating)}</p>
-        {imdbLabel ? (
-          <p className="text-lg font-medium text-[#f5c518]">{imdbLabel}</p>
-        ) : null}
-        {title.platform ? (
-          <p className="text-sm text-[#99aabb]">{PLATFORM_LABEL[title.platform]}</p>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-4">
+          <ImdbBadge rating={title.imdbRating} />
+          <PersonalRating rating={title.rating} />
+        </div>
+        <PlatformBadge platform={title.platform} />
+        <TagPills tags={title.tags.map((item) => item.tag)} />
+        <WatchlistToggle titleId={title.id} inWatchlist={inWatchlist} />
         {title.watchedAt ? (
           <p className="text-sm text-[#99aabb]">
             Vista el{" "}
@@ -67,8 +65,9 @@ export default async function TitleDetailPage({
               timeZone: "UTC",
             })}
           </p>
-        ) : null}
-        <TagPills tags={title.tags.map((item) => item.tag)} />
+        ) : (
+          <MarkWatchedForm titleId={title.id} variant="detail" />
+        )}
         {(() => {
           const collections = title.listItems.filter(
             (item) => item.list.kind === "COLLECTION",
@@ -93,7 +92,6 @@ export default async function TitleDetailPage({
             </p>
           );
         })()}
-        <WatchlistToggle titleId={title.id} inWatchlist={inWatchlist} />
         {title.review ? (
           <p className="max-w-2xl whitespace-pre-wrap text-[#c8d6e5]">{title.review}</p>
         ) : null}

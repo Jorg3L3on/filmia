@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   addToWatchlistFromForm,
   ensureWatchlist,
-  markWatchlistItemWatched,
   removeFromWatchlist,
   updateWatchlistNote,
 } from "@/app/actions/watchlist";
@@ -102,7 +101,6 @@ export default async function WatchlistPage() {
               item={hero}
               variant="hero"
               position={1}
-              markWatchedAction={markWatchlistItemWatched.bind(null, hero.titleId)}
               removeAction={removeFromWatchlist.bind(null, hero.titleId)}
               updateNoteAction={updateWatchlistNote.bind(null, hero.titleId)}
             />
@@ -120,7 +118,6 @@ export default async function WatchlistPage() {
                       item={item}
                       variant="queue"
                       position={index + 2}
-                      markWatchedAction={markWatchlistItemWatched.bind(null, item.titleId)}
                       removeAction={removeFromWatchlist.bind(null, item.titleId)}
                       updateNoteAction={updateWatchlistNote.bind(null, item.titleId)}
                     />

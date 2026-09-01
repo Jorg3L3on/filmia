@@ -1,10 +1,10 @@
 import Link from "next/link";
+import { MarkWatchedForm } from "@/components/MarkWatchedForm";
+import { PersonalRating } from "@/components/PersonalRating";
+import { PlatformBadge } from "@/components/PlatformBadge";
 import { PosterImage } from "@/components/PosterImage";
-import {
-  formatImdbRating,
-  PLATFORM_LABEL,
-  TITLE_KIND_LABEL,
-} from "@/lib/labels";
+import { ImdbBadge } from "@/components/ImdbBadge";
+import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { titleInclude } from "@/lib/queries";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -16,32 +16,18 @@ type WatchlistCardProps = {
   item: WatchlistItem;
   variant: "hero" | "queue";
   position: number;
-  markWatchedAction: () => void;
   removeAction: () => void;
   updateNoteAction: (formData: FormData) => void;
 };
-
-const PlayIcon = () => (
-  <svg
-    aria-hidden="true"
-    viewBox="0 0 24 24"
-    className="h-4 w-4 fill-current"
-  >
-    <path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l10.2-6.86a1 1 0 0 0 0-1.72L9.5 4.28A1 1 0 0 0 8 5.14Z" />
-  </svg>
-);
 
 export const WatchlistCard = ({
   item,
   variant,
   position,
-  markWatchedAction,
   removeAction,
   updateNoteAction,
 }: WatchlistCardProps) => {
   const { title } = item;
-
-  const imdbLabel = formatImdbRating(title.imdbRating);
 
   if (variant === "hero") {
     return (
@@ -49,13 +35,13 @@ export const WatchlistCard = ({
         <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#2563eb] via-[#7c3aed] to-[#db2777] opacity-90" />
         <div className="relative grid gap-6 rounded-[15px] bg-[#0a0a0a] p-6 md:grid-cols-[180px_1fr]">
           <div className="relative">
-            <div className="absolute -left-2 -top-2 rounded-full bg-gradient-to-r from-[#2563eb] to-[#db2777] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
+            <div className="absolute -left-2 -top-2 z-10 rounded-full bg-gradient-to-r from-[#2563eb] to-[#db2777] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
               Siguiente
             </div>
             <PosterImage name={title.name} posterPath={title.posterPath} className="rounded-xl" />
           </div>
           <div className="flex flex-col justify-between gap-4">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <p className="text-xs uppercase tracking-[0.2em] text-[#8b5cf6]">
                 #{position} en cola · {TITLE_KIND_LABEL[title.kind]}
                 {title.year ? ` · ${title.year}` : ""}
@@ -68,12 +54,11 @@ export const WatchlistCard = ({
                   {title.name}
                 </Link>
               </h2>
-              {title.platform ? (
-                <p className="text-sm text-[#99aabb]">{PLATFORM_LABEL[title.platform]}</p>
-              ) : null}
-              {imdbLabel ? (
-                <p className="text-sm font-medium text-[#f5c518]">{imdbLabel}</p>
-              ) : null}
+              <PlatformBadge platform={title.platform} />
+              <div className="flex flex-wrap items-center gap-4">
+                <ImdbBadge rating={title.imdbRating} />
+                <PersonalRating rating={title.rating} />
+              </div>
               <form action={updateNoteAction} className="space-y-2">
                 <label className="block space-y-1">
                   <span className="text-xs uppercase tracking-wide text-[#678]">
@@ -94,16 +79,8 @@ export const WatchlistCard = ({
                 </button>
               </form>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <form action={markWatchedAction}>
-                <button
-                  type="submit"
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#2563eb] via-[#7c3aed] to-[#db2777] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                >
-                  <PlayIcon />
-                  Marcar como vista
-                </button>
-              </form>
+            <div className="flex flex-wrap items-end gap-3">
+              <MarkWatchedForm titleId={title.id} variant="hero" />
               <form action={removeAction}>
                 <button
                   type="submit"
@@ -138,7 +115,7 @@ export const WatchlistCard = ({
         />
       </Link>
       <div className="min-w-0 flex-1 space-y-2">
-        <div>
+        <div className="space-y-1.5">
           <p className="text-[10px] uppercase tracking-wider text-[#678]">
             {TITLE_KIND_LABEL[title.kind]}
             {title.year ? ` · ${title.year}` : ""}
@@ -146,26 +123,17 @@ export const WatchlistCard = ({
           <h3 className="truncate font-serif text-lg text-white group-hover:text-[#4fc3ff]">
             <Link href={`/titulos/${title.id}`}>{title.name}</Link>
           </h3>
-          {title.platform ? (
-            <p className="text-xs text-[#99aabb]">{PLATFORM_LABEL[title.platform]}</p>
-          ) : null}
-          {imdbLabel ? (
-            <p className="text-xs font-medium text-[#f5c518]">{imdbLabel}</p>
-          ) : null}
+          <PlatformBadge platform={title.platform} compact />
+          <div className="flex flex-wrap items-center gap-3">
+            <ImdbBadge rating={title.imdbRating} />
+            <PersonalRating rating={title.rating} size="sm" />
+          </div>
         </div>
         {item.queueNote ? (
           <p className="line-clamp-2 text-xs text-[#8899aa]">{item.queueNote}</p>
         ) : null}
-        <div className="flex flex-wrap gap-2">
-          <form action={markWatchedAction}>
-            <button
-              type="submit"
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#1a1a2e] px-3 py-1 text-xs text-[#c4b5fd] hover:bg-[#7c3aed]/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]"
-            >
-              <PlayIcon />
-              Vista
-            </button>
-          </form>
+        <div className="flex flex-wrap items-center gap-2">
+          <MarkWatchedForm titleId={title.id} variant="queue" />
           <form action={removeAction}>
             <button
               type="submit"

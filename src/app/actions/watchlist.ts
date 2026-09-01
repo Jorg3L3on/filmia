@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { ListKind } from "@/generated/prisma/client";
+import { parseRating } from "@/lib/form-data";
 import { prisma } from "@/lib/prisma";
 import {
   WATCHLIST_DESCRIPTION,
@@ -88,25 +89,41 @@ export const removeFromWatchlistById = async (titleId: string) => {
   await removeFromWatchlist(titleId);
 };
 
-export const markWatchlistItemWatched = async (titleId: string) => {
+export const markWatchlistItemWatched = async (
+  titleId: string,
+  formData?: FormData,
+) => {
+  await markTitleWatched(titleId, formData);
+};
+
+export const markTitleWatched = async (
+  titleId: string,
+  formData?: FormData,
+) => {
+  const rating = formData ? parseRating(formData.get("rating")) : null;
+
   const watchlist = await prisma.list.findUnique({
     where: { slug: WATCHLIST_SLUG },
     select: { id: true },
   });
 
-  if (!watchlist) {
-    return;
-  }
-
-  await prisma.$transaction([
-    prisma.title.update({
+  await prisma.$transaction(async (tx) => {
+    await tx.title.update({
       where: { id: titleId },
-      data: { watchedAt: new Date() },
-    }),
-    prisma.listItem.delete({
-      where: { listId_titleId: { listId: watchlist.id, titleId } },
-    }),
-  ]);
+      data: {
+        watchedAt: new Date(),
+        ...(rating != null ? { rating } : {}),
+      },
+    });
+
+    if (!watchlist) {
+      return;
+    }
+
+    await tx.listItem.deleteMany({
+      where: { listId: watchlist.id, titleId },
+    });
+  });
 
   revalidateWatchlist();
   revalidatePath(`/titulos/${titleId}`);
