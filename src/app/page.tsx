@@ -1,5 +1,5 @@
 import { CatalogFilters } from "@/components/CatalogFilters";
-import { TitleCard } from "@/components/TitleCard";
+import { TitleDeckView } from "@/components/TitleDeckView";
 import type { Platform, TitleKind } from "@/generated/prisma/client";
 import { getTags, getTitles } from "@/lib/queries";
 
@@ -60,11 +60,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           No hay títulos todavía. Crea uno o corre el seed.
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {titles.map((title) => (
-            <TitleCard key={title.id} title={title} />
-          ))}
-        </div>
+        <TitleDeckView titles={titles} />
       )}
     </div>
   );

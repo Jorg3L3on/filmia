@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addTitleToList, deleteList, removeTitleFromList } from "@/app/actions/lists";
+import { addTitleToList, deleteList } from "@/app/actions/lists";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
-import { TitleCard } from "@/components/TitleCard";
+import { ListTitlesView } from "@/components/ListTitlesView";
 import { getListById, getTitleOptions } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -87,24 +87,7 @@ export default async function ListDetailPage({
       {list.items.length === 0 ? (
         <p className="text-[#99aabb]">Esta lista está vacía.</p>
       ) : (
-        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {list.items.map((item) => {
-            const removeAction = removeTitleFromList.bind(null, list.id, item.titleId);
-            return (
-              <li key={item.titleId} className="space-y-2">
-                <TitleCard title={item.title} />
-                <form action={removeAction}>
-                  <button
-                    type="submit"
-                    className="w-full text-xs text-[#99aabb] underline-offset-2 hover:text-white hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054]"
-                  >
-                    Quitar de la lista
-                  </button>
-                </form>
-              </li>
-            );
-          })}
-        </ul>
+        <ListTitlesView listId={list.id} items={list.items} />
       )}
     </div>
   );
