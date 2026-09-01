@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { PosterImage } from "@/components/PosterImage";
 import { TagPills } from "@/components/TagPills";
