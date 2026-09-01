@@ -23,7 +23,7 @@ export const Logo = ({ size = "md", showWordmark = true, className }: LogoProps)
         alt=""
         width={image}
         height={image}
-        className="rounded-lg"
+        className="h-auto w-auto rounded-lg"
         priority
       />
       {showWordmark ? (

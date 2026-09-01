@@ -1,5 +1,8 @@
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
 import { PrismaNeon } from "@prisma/adapter-neon";
+
+loadEnv({ path: ".env.local" });
+loadEnv();
 import { PrismaClient } from "../src/generated/prisma/client";
 import { fetchImdbRating, isOmdbConfigured } from "../src/lib/omdb";
 import {
