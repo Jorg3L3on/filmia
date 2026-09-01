@@ -53,7 +53,7 @@ npx prisma migrate deploy
 npm run db:seed
 ```
 
-`prisma.config.ts` usa `DATABASE_URL_UNPOOLED` para el CLI. La app Next.js usa `DATABASE_URL` (pooled) vía el adaptador Neon.
+`prisma.config.ts` lee `DATABASE_URL_UNPOOLED` de forma lazy (sin `env()`), así `prisma generate` / `postinstall` no exige secretos. Migraciones sí necesitan esa URL. La app Next.js usa `DATABASE_URL` (pooled) vía el adaptador Neon.
 
 ### Seed
 
