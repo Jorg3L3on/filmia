@@ -81,6 +81,7 @@ const seedTitles: SeedTitle[] = [
   },
   {
     name: "Athena",
+    originalName: "Athena",
     kind: TitleKind.MOVIE,
     year: 2022,
     rating: 8,
@@ -89,8 +90,8 @@ const seedTitles: SeedTitle[] = [
     tags: ["thriller", "francés"],
     lists: ["Visto recientemente"],
     watched: true,
-    tmdbId: 812425,
-    posterPath: "/5b2b30WtaLS8nyuRY8I3DN5hAxb.jpg",
+    tmdbId: 852046,
+    posterPath: "/posters/athena-2022.png",
   },
   {
     name: "The Northman",

@@ -14,6 +14,14 @@ export const tmdbPosterUrl = (
     return null;
   }
 
+  if (posterPath.startsWith("http://") || posterPath.startsWith("https://")) {
+    return posterPath;
+  }
+
+  if (posterPath.startsWith("/posters/")) {
+    return posterPath;
+  }
+
   return `https://image.tmdb.org/t/p/${size}${posterPath}`;
 };
 
