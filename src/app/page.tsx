@@ -9,7 +9,9 @@ const isTitleKind = (value: string): value is TitleKind =>
   value === "MOVIE" || value === "SERIES";
 
 const isPlatform = (value: string): value is Platform =>
-  ["NETFLIX", "PRIME", "MAX", "DISNEY", "CLARO"].includes(value);
+  ["NETFLIX", "PRIME", "MAX", "DISNEY", "CLARO", "APPLE", "MUBI"].includes(
+    value,
+  );
 
 const isSort = (
   value: string,
@@ -31,6 +33,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
       platform: isPlatform(platformRaw) ? platformRaw : "ALL",
       tag,
       sort: isSort(sortRaw) ? sortRaw : "recent",
+      onlyWatched: true,
     }),
     getTags(),
   ]);
@@ -41,8 +44,8 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         <p className="text-xs uppercase tracking-[0.2em] text-[#00e054]">Diario</p>
         <h1 className="font-serif text-4xl text-white">Lo visto</h1>
         <p className="max-w-2xl text-sm text-[#99aabb]">
-          Catálogo personal de películas y series. Notas, etiquetas y listas, sin
-          IMDb ni scrapers.
+          Catálogo de lo que ya viste. Plataforma, nota de IMDb y tu calificación,
+          aparte de la cola en Por ver.
         </p>
       </div>
 

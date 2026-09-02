@@ -1,5 +1,8 @@
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
 import { PrismaNeon } from "@prisma/adapter-neon";
+
+loadEnv({ path: ".env.local" });
+loadEnv();
 import {
   ListKind,
   Platform,
@@ -34,6 +37,8 @@ type SeedTitle = {
   tags: string[];
   lists: string[];
   watched?: boolean;
+  tmdbId: number;
+  posterPath: string;
 };
 
 type WatchlistSeed = {
@@ -43,6 +48,8 @@ type WatchlistSeed = {
   platform?: Platform;
   queueNote: string;
   position: number;
+  tmdbId: number;
+  posterPath: string;
 };
 
 const seedTitles: SeedTitle[] = [
@@ -56,6 +63,8 @@ const seedTitles: SeedTitle[] = [
     tags: ["épico", "histórico"],
     lists: ["Épicas"],
     watched: true,
+    tmdbId: 98,
+    posterPath: "/wN2xWp1eIwCKOD0BHTcErTBv1Uq.jpg",
   },
   {
     name: "Troy",
@@ -67,9 +76,12 @@ const seedTitles: SeedTitle[] = [
     tags: ["épico", "histórico"],
     lists: ["Épicas"],
     watched: true,
+    tmdbId: 652,
+    posterPath: "/a07wLy4ONfpsjnBqMwhlWTJTcm.jpg",
   },
   {
     name: "Athena",
+    originalName: "Athena",
     kind: TitleKind.MOVIE,
     year: 2022,
     rating: 8,
@@ -78,6 +90,8 @@ const seedTitles: SeedTitle[] = [
     tags: ["thriller", "francés"],
     lists: ["Visto recientemente"],
     watched: true,
+    tmdbId: 852046,
+    posterPath: "/posters/athena-2022.png",
   },
   {
     name: "The Northman",
@@ -89,6 +103,8 @@ const seedTitles: SeedTitle[] = [
     tags: ["épico", "histórico"],
     lists: ["Épicas"],
     watched: true,
+    tmdbId: 639933,
+    posterPath: "/aSSJMnHknzKjlZ6zybwD7eyJ4Po.jpg",
   },
   {
     name: "Mad Max: Fury Road",
@@ -100,6 +116,8 @@ const seedTitles: SeedTitle[] = [
     tags: ["acción", "vibe-mad-max"],
     lists: ["Vibe Mad Max / Tron"],
     watched: true,
+    tmdbId: 76341,
+    posterPath: "/ulcAi4dKpAjHwYGS08vNyx9H6I9.jpg",
   },
   {
     name: "Tron: Legacy",
@@ -111,6 +129,8 @@ const seedTitles: SeedTitle[] = [
     tags: ["sci-fi", "vibe-tron"],
     lists: ["Vibe Mad Max / Tron"],
     watched: true,
+    tmdbId: 20526,
+    posterPath: "/8Nc6R8k7bG8frSiDJo0oLucF7dN.jpg",
   },
   {
     name: "Dune: Part Two",
@@ -123,6 +143,8 @@ const seedTitles: SeedTitle[] = [
     tags: ["sci-fi", "épico"],
     lists: ["Épicas", "Visto recientemente"],
     watched: true,
+    tmdbId: 693134,
+    posterPath: "/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg",
   },
 ];
 
@@ -134,6 +156,8 @@ const watchlistQueue: WatchlistSeed[] = [
     platform: Platform.NETFLIX,
     queueNote: "Revisar la fotografía otra vez.",
     position: 0,
+    tmdbId: 335984,
+    posterPath: "/gajva2L0rPYkEWjzgFlBXCAVBE5.jpg",
   },
   {
     name: "Interstellar",
@@ -142,6 +166,8 @@ const watchlistQueue: WatchlistSeed[] = [
     platform: Platform.PRIME,
     queueNote: "Para un domingo largo.",
     position: 1,
+    tmdbId: 157336,
+    posterPath: "/yQvGrMoipbRoddT0ZR8tPoR7NfX.jpg",
   },
   {
     name: "Severance",
@@ -150,6 +176,8 @@ const watchlistQueue: WatchlistSeed[] = [
     platform: Platform.MAX,
     queueNote: "Temporada 2 pendiente.",
     position: 2,
+    tmdbId: 95396,
+    posterPath: "/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg",
   },
 ];
 
@@ -231,6 +259,8 @@ const seed = async () => {
       rating: title.rating ?? null,
       review: title.review ?? null,
       platform: title.platform ?? null,
+      tmdbId: title.tmdbId,
+      posterPath: title.posterPath,
       watchedAt: title.watched
         ? new Date(`${title.year}-06-15T12:00:00.000Z`)
         : null,
@@ -279,6 +309,8 @@ const seed = async () => {
             platform: item.platform ?? null,
             watchedAt: null,
             rating: null,
+            tmdbId: item.tmdbId,
+            posterPath: item.posterPath,
           },
         })
       : await prisma.title.create({
@@ -287,6 +319,8 @@ const seed = async () => {
             kind: item.kind,
             year: item.year,
             platform: item.platform ?? null,
+            tmdbId: item.tmdbId,
+            posterPath: item.posterPath,
           },
         });
 

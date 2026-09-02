@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { ImdbBadge } from "@/components/ImdbBadge";
+import { PersonalRating } from "@/components/PersonalRating";
+import { PlatformBadge } from "@/components/PlatformBadge";
 import { PosterImage } from "@/components/PosterImage";
 import { TagPills } from "@/components/TagPills";
-import {
-  formatImdbRating,
-  formatRating,
-  PLATFORM_LABEL,
-  TITLE_KIND_LABEL,
-} from "@/lib/labels";
+import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { titleInclude } from "@/lib/queries";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -17,8 +15,6 @@ type TitleCardProps = {
 };
 
 export const TitleCard = ({ title }: TitleCardProps) => {
-  const imdbLabel = formatImdbRating(title.imdbRating);
-
   return (
     <article className="group overflow-hidden rounded-lg border border-[#2c3440] bg-[#1c2228] shadow-sm transition hover:-translate-y-0.5 hover:border-[#00e054]/50">
       <Link
@@ -35,13 +31,11 @@ export const TitleCard = ({ title }: TitleCardProps) => {
           <h2 className="font-serif text-lg leading-tight text-white group-hover:text-[#00e054]">
             {title.name}
           </h2>
-          <p className="text-sm text-[#ff8000]">{formatRating(title.rating)}</p>
-          {imdbLabel ? (
-            <p className="text-xs font-medium text-[#f5c518]">{imdbLabel}</p>
-          ) : null}
-          {title.platform ? (
-            <p className="text-xs text-[#99aabb]">{PLATFORM_LABEL[title.platform]}</p>
-          ) : null}
+          <div className="flex flex-col gap-1.5">
+            <ImdbBadge rating={title.imdbRating} />
+            <PersonalRating rating={title.rating} size="sm" />
+          </div>
+          <PlatformBadge platform={title.platform} compact />
           <TagPills tags={title.tags.map((item) => item.tag)} />
         </div>
       </Link>

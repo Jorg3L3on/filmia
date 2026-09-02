@@ -11,6 +11,28 @@ export const PLATFORM_LABEL: Record<Platform, string> = {
   MAX: "Max",
   DISNEY: "Disney+",
   CLARO: "Claro",
+  APPLE: "Apple TV",
+  MUBI: "MUBI",
+};
+
+export const PLATFORM_WATCH_LABEL: Record<Platform, string> = {
+  NETFLIX: "Ver ahora en Netflix",
+  PRIME: "Ver ahora en Prime",
+  MAX: "Ver ahora en Max",
+  DISNEY: "Ver ahora en Disney+",
+  CLARO: "Ver ahora en Claro",
+  APPLE: "Ver ahora en Apple TV",
+  MUBI: "Ver ahora en MUBI",
+};
+
+export const PLATFORM_CLASS: Record<Platform, string> = {
+  NETFLIX: "bg-[#e50914] text-white",
+  PRIME: "bg-[#00a8e1] text-[#041c2c]",
+  MAX: "bg-[#002be7] text-white",
+  DISNEY: "bg-[#113ccf] text-white",
+  CLARO: "bg-[#da291c] text-white",
+  APPLE: "bg-[#1d1d1f] text-white",
+  MUBI: "bg-[#051c2c] text-white",
 };
 
 export const TITLE_KINDS = Object.keys(TITLE_KIND_LABEL) as TitleKind[];

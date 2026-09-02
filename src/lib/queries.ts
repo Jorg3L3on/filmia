@@ -17,10 +17,11 @@ type TitleFilters = {
   platform?: Platform | "ALL";
   tag?: string;
   sort?: "recent" | "rating" | "name" | "year";
+  onlyWatched?: boolean;
 };
 
 export const getTitles = async (filters: TitleFilters = {}) => {
-  const { q, kind, platform, tag, sort = "recent" } = filters;
+  const { q, kind, platform, tag, sort = "recent", onlyWatched = false } = filters;
 
   return prisma.title.findMany({
     where: {
@@ -38,6 +39,7 @@ export const getTitles = async (filters: TitleFilters = {}) => {
       ...(tag
         ? { tags: { some: { tag: { slug: tag } } } }
         : {}),
+      ...(onlyWatched ? { watchedAt: { not: null } } : {}),
     },
     include: titleInclude,
     orderBy:

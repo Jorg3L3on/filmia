@@ -18,6 +18,8 @@ enum Platform {
   MAX
   DISNEY
   CLARO
+  APPLE
+  MUBI
 }
 
 enum ListKind {

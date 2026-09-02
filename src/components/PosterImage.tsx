@@ -22,6 +22,10 @@ export const PosterImage = ({
     return <PosterPlaceholder name={name} className={className} />;
   }
 
+  const isExternal =
+    src.startsWith("https://") || src.startsWith("http://");
+  const isTmdb = src.includes("image.tmdb.org") || src.includes("media.themoviedb.org");
+
   return (
     <div className={cn("relative aspect-[2/3] w-full overflow-hidden", className)}>
       <Image
@@ -31,6 +35,7 @@ export const PosterImage = ({
         sizes="(max-width: 768px) 50vw, 220px"
         className="object-cover"
         priority={priority}
+        unoptimized={isExternal && !isTmdb}
       />
     </div>
   );
