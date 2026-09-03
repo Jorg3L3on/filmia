@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PosterImage } from "@/components/PosterImage";
+import { WatchProviderChips } from "@/components/WatchProvidersMx";
 import { cn } from "@/lib/cn";
 import {
   formatImdbRating,
@@ -11,6 +12,7 @@ import {
   TITLE_KIND_LABEL,
 } from "@/lib/labels";
 import type { Platform, TitleKind } from "@/generated/prisma/client";
+import type { WatchProviderOffer } from "@/lib/watch-providers";
 
 export type CoverflowTitle = {
   id: string;
@@ -21,6 +23,7 @@ export type CoverflowTitle = {
   posterPath: string | null;
   platform: Platform | null;
   imdbRating: number | null;
+  flatrateProviders?: WatchProviderOffer[];
 };
 
 type CoverflowDeckProps = {
@@ -294,6 +297,13 @@ export const CoverflowDeck = ({ titles, className, footer }: CoverflowDeckProps)
             </p>
             <p className="text-sm text-[#ff8000]">{formatRating(activeTitle.rating)}</p>
           </div>
+          {activeTitle.flatrateProviders && activeTitle.flatrateProviders.length > 0 ? (
+            <WatchProviderChips
+              providers={activeTitle.flatrateProviders}
+              max={5}
+              className="pt-1"
+            />
+          ) : null}
           {footer ? footer(activeTitle, roundedActive, true) : null}
         </div>
       ) : null}

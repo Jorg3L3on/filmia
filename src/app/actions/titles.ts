@@ -19,6 +19,7 @@ import {
   readMetadataFields,
 } from "@/lib/metadata";
 import { prisma } from "@/lib/prisma";
+import { enrichWatchProvidersOnSave } from "@/lib/watch-providers-cache";
 
 const revalidateCatalog = (titleId?: string) => {
   revalidatePath("/");
@@ -120,6 +121,9 @@ export const createTitle = async (formData: FormData) => {
 
   await syncTags(title.id, fields.tagIds, fields.newTags);
   await syncLists(title.id, fields.listIds);
+  if (metadata.tmdbId) {
+    await enrichWatchProvidersOnSave(title.id, metadata.tmdbId, fields.kind);
+  }
   revalidateCatalog(title.id);
   redirect(`/titulos/${title.id}`);
 };
@@ -151,6 +155,9 @@ export const updateTitle = async (titleId: string, formData: FormData) => {
 
   await syncTags(titleId, fields.tagIds, fields.newTags);
   await syncLists(titleId, fields.listIds);
+  if (metadata.tmdbId) {
+    await enrichWatchProvidersOnSave(titleId, metadata.tmdbId, fields.kind);
+  }
   revalidateCatalog(titleId);
   redirect(`/titulos/${titleId}`);
 };

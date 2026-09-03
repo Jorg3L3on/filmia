@@ -5,6 +5,7 @@ import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
 import { DeckViewToggle } from "@/components/DeckViewToggle";
 import { TitleCard } from "@/components/TitleCard";
 import type { titleInclude } from "@/lib/queries";
+import { parseStoredWatchProviders } from "@/lib/watch-providers";
 import type { Prisma } from "@/generated/prisma/client";
 
 type TitlePayload = Prisma.TitleGetPayload<{ include: typeof titleInclude }>;
@@ -13,16 +14,21 @@ type TitleDeckViewProps = {
   titles: TitlePayload[];
 };
 
-const toCoverflowTitle = (title: TitlePayload): CoverflowTitle => ({
-  id: title.id,
-  name: title.name,
-  kind: title.kind,
-  year: title.year,
-  rating: title.rating,
-  posterPath: title.posterPath,
-  platform: title.platform,
-  imdbRating: title.imdbRating,
-});
+const toCoverflowTitle = (title: TitlePayload): CoverflowTitle => {
+  const watchProviders = parseStoredWatchProviders(title.watchProvidersMx);
+
+  return {
+    id: title.id,
+    name: title.name,
+    kind: title.kind,
+    year: title.year,
+    rating: title.rating,
+    posterPath: title.posterPath,
+    platform: title.platform,
+    imdbRating: title.imdbRating,
+    flatrateProviders: watchProviders?.flatrate ?? [],
+  };
+};
 
 export const TitleDeckView = ({ titles }: TitleDeckViewProps) => {
   const [mode, setMode] = useState<"deck" | "grid">("deck");

@@ -9,8 +9,10 @@ import { PlatformBadge } from "@/components/PlatformBadge";
 import { PosterImage } from "@/components/PosterImage";
 import { TagPills } from "@/components/TagPills";
 import { WatchlistToggle } from "@/components/WatchlistToggle";
+import { WatchProvidersMx } from "@/components/WatchProvidersMx";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import { getTitleById, isTitleInWatchlist } from "@/lib/queries";
+import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +30,8 @@ export default async function TitleDetailPage({
   if (!title) {
     notFound();
   }
+
+  const { data: watchProviders } = await getWatchProvidersForTitle(title);
 
   const deleteAction = deleteTitle.bind(null, title.id);
 
@@ -53,6 +57,7 @@ export default async function TitleDetailPage({
           <PersonalRating rating={title.rating} />
         </div>
         <PlatformBadge platform={title.platform} />
+        <WatchProvidersMx data={watchProviders} />
         <TagPills tags={title.tags.map((item) => item.tag)} />
         <WatchlistToggle titleId={title.id} inWatchlist={inWatchlist} />
         {title.watchedAt ? (

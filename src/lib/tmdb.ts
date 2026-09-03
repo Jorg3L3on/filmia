@@ -139,6 +139,50 @@ export const getTmdbExternalIds = async (
   return data.imdb_id ?? null;
 };
 
+export const tmdbProviderLogoUrl = (
+  logoPath: string | null | undefined,
+  size: "w45" | "w92" = "w45",
+) => {
+  if (!logoPath) {
+    return null;
+  }
+
+  return `https://image.tmdb.org/t/p/${size}${logoPath}`;
+};
+
+type TmdbWatchProvidersResponse = {
+  id: number;
+  results?: Record<
+    string,
+    {
+      link?: string;
+      flatrate?: Array<{
+        provider_id: number;
+        provider_name: string;
+        logo_path?: string | null;
+        display_priority?: number;
+      }>;
+      rent?: Array<{
+        provider_id: number;
+        provider_name: string;
+        logo_path?: string | null;
+        display_priority?: number;
+      }>;
+      buy?: Array<{
+        provider_id: number;
+        provider_name: string;
+        logo_path?: string | null;
+        display_priority?: number;
+      }>;
+    }
+  >;
+};
+
+export const getTmdbWatchProviders = async (tmdbId: number, kind: TitleKind) => {
+  const segment = kind === TitleKind.SERIES ? "tv" : "movie";
+  return tmdbFetch<TmdbWatchProvidersResponse>(`/${segment}/${tmdbId}/watch/providers`);
+};
+
 export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
   const segment = kind === TitleKind.SERIES ? "tv" : "movie";
   type MovieDetails = {
