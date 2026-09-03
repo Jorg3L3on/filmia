@@ -128,7 +128,16 @@ export const getMonthGrid = (monthParam: string): CalendarCell[] => {
     });
   }
 
-  return cells;
+  return trimTrailingEmptyWeeks(cells);
+};
+
+export const trimTrailingEmptyWeeks = (cells: CalendarCell[]) => {
+  const lastInMonth = cells.reduce(
+    (last, cell, index) => (cell.inMonth ? index : last),
+    0,
+  );
+  const weekCount = Math.max(4, Math.ceil((lastInMonth + 1) / 7));
+  return cells.slice(0, weekCount * 7);
 };
 
 export const groupTitlesByWatchedDay = <

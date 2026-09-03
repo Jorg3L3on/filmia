@@ -91,18 +91,6 @@ export default async function HomePage({
         }
       />
 
-      <CatalogFilters
-        tags={tags}
-        selectedSlugs={selectedTags}
-        pathname="/"
-        view={view}
-        minePlatforms={minePlatforms}
-        hasStreamingPlatforms={userPlatforms.length > 0}
-        seriesStatus={seriesStatus}
-        month={calendarQuery.month}
-        day={calendarQuery.day}
-      />
-
       {catalog.needsSetup ? (
         <MinePlatformsSetupCta />
       ) : view === "calendar" ? (
@@ -127,7 +115,21 @@ export default async function HomePage({
             />
           )}
         </>
-      ) : titles.length === 0 && minePlatforms ? (
+      ) : null}
+
+      <CatalogFilters
+        tags={tags}
+        selectedSlugs={selectedTags}
+        pathname="/"
+        view={view}
+        minePlatforms={minePlatforms}
+        hasStreamingPlatforms={userPlatforms.length > 0}
+        seriesStatus={seriesStatus}
+        month={calendarQuery.month}
+        day={calendarQuery.day}
+      />
+
+      {catalog.needsSetup || view === "calendar" ? null : titles.length === 0 && minePlatforms ? (
         <>
           <MissingStreamingDataNote count={catalog.missingCache} />
           <MinePlatformsEmpty

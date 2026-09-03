@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { DiaryRecentList } from "@/components/DiaryRecentList";
-import { EmptyState } from "@/components/EmptyState";
+import { PersonalRating } from "@/components/PersonalRating";
 import { PosterImage } from "@/components/PosterImage";
 import { cn } from "@/lib/cn";
 import {
@@ -17,7 +16,7 @@ import {
 } from "@/lib/dates";
 import type { SeriesStatusFilter } from "@/lib/series";
 import { catalogHref } from "@/lib/tags";
-import { focusRing } from "@/lib/ui";
+import { btnLink, focusRing } from "@/lib/ui";
 import type { SeriesStatus, TitleKind } from "@/generated/prisma/client";
 
 export type DiaryCalendarTitle = {
@@ -198,11 +197,12 @@ export const DiaryCalendar = ({
                 href={href}
                 aria-label={ariaLabel}
                 aria-current={isSelected ? "date" : undefined}
+                data-iso-date={cell.isoDate}
                 className={cn(
-                  "relative min-h-[4.25rem] overflow-hidden border-b border-r border-line sm:min-h-[5.5rem] [&:nth-child(7n)]:border-r-0",
+                  "relative min-h-11 overflow-hidden border-b border-r border-line sm:min-h-[4.75rem] [&:nth-child(7n)]:border-r-0 [&:nth-last-child(-n+7)]:border-b-0",
                   focusRing,
                   !cell.inMonth && "bg-canvas-deep/40",
-                  isSelected && "ring-2 ring-inset ring-accent",
+                  isSelected && "z-[1] outline outline-2 outline-offset-[-2px] outline-accent",
                 )}
               >
                 {hasEntries ? <DayCellPosters titles={dayTitles} /> : null}
@@ -241,59 +241,125 @@ export const DiaryCalendar = ({
             );
           })}
         </div>
-      </section>
 
-      {monthTitles.length === 0 ? (
-        <EmptyState
-          title={
-            titles.length === 0 && hasActiveFilters
-              ? "Nada con esos filtros"
-              : titles.length === 0
-                ? "El diario está vacío"
-                : "Nada visto este mes"
-          }
-          description={
-            titles.length === 0 && hasActiveFilters
-              ? "Prueba otra combinación o quita filtros. El estado de serie ignora películas."
-              : titles.length === 0
-                ? "Registra un título o corre el seed para ver tus posters."
-                : "Cambia de mes o registra un visionado con otra fecha."
-          }
-          actionHref={
-            titles.length === 0 && hasActiveFilters
-              ? clearHref
-              : titles.length === 0
-                ? "/buscar"
-                : calendarHref({ ...query, month: currentAdjacentWithEntries(titles, month) })
-          }
-          actionLabel={
-            titles.length === 0 && hasActiveFilters
-              ? "Quitar filtros"
-              : titles.length === 0
-                ? "Buscar en TMDB"
-                : "Ir a un mes con entradas"
-          }
-        />
-      ) : selectedDay ? (
-        selectedTitles.length > 0 ? (
-          <DiaryRecentList
-            titles={selectedTitles}
-            heading={selectedLabel ?? "Ese día"}
-          />
-        ) : (
-          <p className="rounded-md border border-dashed border-chrome bg-well/70 px-4 py-6 text-center text-sm text-fog">
-            No hay visionados el {selectedLabel}. Toca otro día.
-          </p>
-        )
-      ) : (
-        <p className="text-sm text-fog">
-          Toca un día para ver título, nota y comentario. Cada entrada abre la
-          ficha.
-        </p>
-      )}
+        <div className="border-t border-line bg-well/40 px-3 py-4 sm:px-4">
+          {monthTitles.length === 0 ? (
+            <CalendarEmptyFooter
+              titlesCount={titles.length}
+              hasActiveFilters={hasActiveFilters}
+              clearHref={clearHref}
+              monthWithEntriesHref={calendarHref({
+                ...query,
+                month: currentAdjacentWithEntries(titles, month),
+              })}
+            />
+          ) : selectedDay ? (
+            selectedTitles.length > 0 ? (
+              <div className="space-y-3">
+                <h3 className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">
+                  {selectedLabel}
+                </h3>
+                <CalendarDayEntries titles={selectedTitles} />
+              </div>
+            ) : (
+              <p className="text-center text-sm text-fog">
+                No hay visionados el {selectedLabel}. Toca otro día.
+              </p>
+            )
+          ) : (
+            <p className="text-sm text-fog">
+              Toca un día para ver título, nota y comentario. Cada entrada abre
+              la ficha.
+            </p>
+          )}
+        </div>
+      </section>
     </div>
   );
 };
+
+const CalendarEmptyFooter = ({
+  titlesCount,
+  hasActiveFilters,
+  clearHref,
+  monthWithEntriesHref,
+}: {
+  titlesCount: number;
+  hasActiveFilters: boolean;
+  clearHref: string;
+  monthWithEntriesHref: string;
+}) => {
+  const isFilteredEmpty = titlesCount === 0 && hasActiveFilters;
+  const isDiaryEmpty = titlesCount === 0 && !hasActiveFilters;
+  const title = isFilteredEmpty
+    ? "Nada con esos filtros"
+    : isDiaryEmpty
+      ? "El diario está vacío"
+      : "Nada visto este mes";
+  const description = isFilteredEmpty
+    ? "Prueba otra combinación o quita filtros. El estado de serie ignora películas."
+    : isDiaryEmpty
+      ? "Registra un título o corre el seed para ver tus posters."
+      : "Cambia de mes o registra un visionado con otra fecha.";
+  const actionHref = isFilteredEmpty
+    ? clearHref
+    : isDiaryEmpty
+      ? "/buscar"
+      : monthWithEntriesHref;
+  const actionLabel = isFilteredEmpty
+    ? "Quitar filtros"
+    : isDiaryEmpty
+      ? "Buscar en TMDB"
+      : "Ir a un mes con entradas";
+
+  return (
+    <div className="space-y-1.5 text-center">
+      <p className="font-serif text-lg text-white">{title}</p>
+      <p className="text-sm leading-relaxed text-fog">{description}</p>
+      <Link href={actionHref} className={btnLink}>
+        {actionLabel}
+      </Link>
+    </div>
+  );
+};
+
+const CalendarDayEntries = ({ titles }: { titles: DiaryCalendarTitle[] }) => (
+  <ul className="space-y-2">
+    {titles.map((title) => (
+      <li key={title.id}>
+        <Link
+          href={`/titulos/${title.id}`}
+          className={cn(
+            "flex gap-3 rounded-md p-1.5 hover:bg-well",
+            focusRing,
+          )}
+          aria-label={`${title.name}${title.year ? `, ${title.year}` : ""}`}
+        >
+          <span className="block w-10 shrink-0">
+            <PosterImage
+              name={title.name}
+              posterPath={title.posterPath}
+              sizes="40px"
+              className="overflow-hidden rounded-sm"
+            />
+          </span>
+          <span className="min-w-0 flex-1 space-y-0.5">
+            <span className="block truncate font-serif text-base text-white">
+              {title.name}
+              {title.year ? (
+                <span className="font-sans text-xs text-mist"> · {title.year}</span>
+              ) : null}
+            </span>
+            <PersonalRating rating={title.rating} size="sm" />
+            {title.review ? (
+              <span className="block line-clamp-2 text-xs text-fog">{title.review}</span>
+            ) : null}
+          </span>
+        </Link>
+      </li>
+    ))}
+  </ul>
+);
 
 const currentAdjacentWithEntries = (
   titles: DiaryCalendarTitle[],

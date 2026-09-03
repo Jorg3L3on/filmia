@@ -30,7 +30,9 @@ const run = () => {
   assert(shiftMonthParam("2025-12", 1) === "2026-01", "December next wraps the year");
 
   const sept = getMonthGrid("2026-09");
-  assert(sept.length === 42, "Month grid is always 6 weeks");
+  const aug = getMonthGrid("2026-08");
+  assert(sept.length === 35, "Sept 2026 fits in 5 weeks after trimming");
+  assert(aug.length === 42, "August 2026 still needs 6 weeks");
   assert(sept[0]?.isoDate === "2026-08-31", "Sept 2026 starts on Monday Aug 31");
   assert(sept[1]?.isoDate === "2026-09-01" && sept[1]?.inMonth, "Sept 1 is in month");
   assert(sept[0]?.inMonth === false, "Leading August day is out of month");
