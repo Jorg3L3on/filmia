@@ -10,7 +10,7 @@ const navItems = [
   { href: "/", label: "Diario" },
   { href: "/watchlist", label: "Quiero ver" },
   { href: "/listas", label: "Listas" },
-  { href: "/titulos/nuevo", label: "Registrar" },
+  { href: "/buscar", label: "Buscar" },
 ] as const;
 
 export type HeaderUser = {

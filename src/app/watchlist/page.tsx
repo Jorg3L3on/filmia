@@ -88,8 +88,8 @@ export default async function WatchlistPage() {
         <EmptyState
           title="Nada en Quiero ver"
           description="Agrega títulos que quieras ver pronto, o registra uno nuevo."
-          actionHref="/titulos/nuevo"
-          actionLabel="Registrar título"
+          actionHref="/buscar"
+          actionLabel="Buscar en TMDB"
         />
       ) : (
         <div className="space-y-8">

@@ -195,3 +195,42 @@ export const getTitleOptions = async () => {
     orderBy: { name: "asc" },
   });
 };
+
+export type UserTmdbEntry = {
+  titleId: string;
+  tmdbId: number;
+  kind: TitleKind;
+  inWatchlist: boolean;
+};
+
+export const getUserTmdbIndex = async (): Promise<UserTmdbEntry[]> => {
+  const userId = await requireUserId();
+
+  const titles = await prisma.title.findMany({
+    where: { userId, tmdbId: { not: null } },
+    select: {
+      id: true,
+      tmdbId: true,
+      kind: true,
+      listItems: {
+        where: { list: { slug: WATCHLIST_SLUG } },
+        select: { listId: true },
+      },
+    },
+  });
+
+  return titles.flatMap((title) => {
+    if (title.tmdbId == null) {
+      return [];
+    }
+
+    return [
+      {
+        titleId: title.id,
+        tmdbId: title.tmdbId,
+        kind: title.kind,
+        inWatchlist: title.listItems.length > 0,
+      },
+    ];
+  });
+};

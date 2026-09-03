@@ -25,7 +25,7 @@ export const tmdbPosterUrl = (
   return `https://image.tmdb.org/t/p/${size}${posterPath}`;
 };
 
-type TmdbSearchResult = {
+export type TmdbSearchResult = {
   tmdbId: number;
   name: string;
   originalName: string | null;
@@ -34,14 +34,51 @@ type TmdbSearchResult = {
   overview: string | null;
 };
 
+export type TmdbCatalogResult = TmdbSearchResult & {
+  kind: TitleKind;
+};
+
 type TmdbExternalIds = {
   imdb_id: string | null;
+};
+
+export type TmdbErrorCode = "missing_key" | "rate_limit" | "network" | "http";
+
+export class TmdbRequestError extends Error {
+  readonly code: TmdbErrorCode;
+  readonly status: number | null;
+
+  constructor(code: TmdbErrorCode, message: string, status: number | null = null) {
+    super(message);
+    this.name = "TmdbRequestError";
+    this.code = code;
+    this.status = status;
+  }
+}
+
+export const tmdbErrorMessage = (error: unknown) => {
+  if (error instanceof TmdbRequestError) {
+    return error.message;
+  }
+
+  if (error instanceof TypeError) {
+    return "No se pudo conectar con TMDB. Revisa tu red.";
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return "No se pudo completar la petición a TMDB.";
 };
 
 const tmdbFetch = async <T>(path: string, params: Record<string, string> = {}) => {
   const apiKey = getTmdbApiKey();
   if (!apiKey) {
-    throw new Error("TMDB_API_KEY no está configurada.");
+    throw new TmdbRequestError(
+      "missing_key",
+      "Falta TMDB_API_KEY. Agrégala en el entorno para buscar títulos.",
+    );
   }
 
   const url = new URL(`${TMDB_BASE}${path}`);
@@ -51,9 +88,30 @@ const tmdbFetch = async <T>(path: string, params: Record<string, string> = {}) =
     url.searchParams.set(key, value);
   }
 
-  const response = await fetch(url, { next: { revalidate: 86400 } });
+  let response: Response;
+  try {
+    response = await fetch(url, { next: { revalidate: 86400 } });
+  } catch {
+    throw new TmdbRequestError(
+      "network",
+      "No se pudo conectar con TMDB. Revisa tu red.",
+    );
+  }
+
+  if (response.status === 429) {
+    throw new TmdbRequestError(
+      "rate_limit",
+      "TMDB está limitando las peticiones. Espera un momento e inténtalo de nuevo.",
+      429,
+    );
+  }
+
   if (!response.ok) {
-    throw new Error(`TMDB respondió ${response.status}.`);
+    throw new TmdbRequestError(
+      "http",
+      `TMDB respondió ${response.status}.`,
+      response.status,
+    );
   }
 
   return response.json() as Promise<T>;
@@ -128,6 +186,77 @@ export const searchTmdb = async (
       overview: item.overview ?? null,
     };
   });
+};
+
+export const searchTmdbMulti = async (
+  query: string,
+): Promise<TmdbCatalogResult[]> => {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  type MultiResult = {
+    id: number;
+    media_type?: string;
+    title?: string;
+    name?: string;
+    original_title?: string;
+    original_name?: string;
+    release_date?: string;
+    first_air_date?: string;
+    poster_path?: string | null;
+    overview?: string;
+  };
+
+  const data = await tmdbFetch<{ results: MultiResult[] }>("/search/multi", {
+    query: trimmed,
+  });
+
+  const results: TmdbCatalogResult[] = [];
+
+  for (const item of data.results) {
+    if (results.length >= 16) {
+      break;
+    }
+
+    if (item.media_type === "movie") {
+      const name = item.title?.trim() ?? "";
+      if (!name) {
+        continue;
+      }
+
+      results.push({
+        tmdbId: item.id,
+        name,
+        originalName: item.original_title ?? null,
+        year: parseYear(item.release_date),
+        posterPath: item.poster_path ?? null,
+        overview: item.overview ?? null,
+        kind: TitleKind.MOVIE,
+      });
+      continue;
+    }
+
+    if (item.media_type === "tv") {
+      const name = item.name?.trim() ?? "";
+      if (!name) {
+        continue;
+      }
+
+      results.push({
+        tmdbId: item.id,
+        name,
+        originalName: item.original_name ?? null,
+        year: parseYear(item.first_air_date),
+        posterPath: item.poster_path ?? null,
+        overview: item.overview ?? null,
+        kind: TitleKind.SERIES,
+      });
+    }
+  }
+
+  return results;
 };
 
 export const getTmdbExternalIds = async (

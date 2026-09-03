@@ -1,8 +1,9 @@
 "use server";
 
-import { ListKind } from "@/generated/prisma/client";
+import { ListKind, TitleKind } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { addToWatchlist } from "@/app/actions/watchlist";
 import {
   parseIdList,
   parseNewTags,
@@ -14,18 +15,21 @@ import {
   parseTitleKind,
   parseYear,
 } from "@/lib/form-data";
-import { slugify } from "@/lib/labels";
+import { slugify, TITLE_KINDS } from "@/lib/labels";
 import {
   enrichMetadataOnSave,
   readMetadataFields,
+  resolveTitleMetadata,
 } from "@/lib/metadata";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
+import { tmdbErrorMessage } from "@/lib/tmdb";
 import { enrichWatchProvidersOnSave } from "@/lib/watch-providers-cache";
 
 const revalidateCatalog = (titleId?: string) => {
   revalidatePath("/");
   revalidatePath("/listas");
+  revalidatePath("/buscar");
   if (titleId) {
     revalidatePath(`/titulos/${titleId}`);
     revalidatePath(`/titulos/${titleId}/editar`);
@@ -96,6 +100,125 @@ const readTitleFields = (formData: FormData) => ({
   newTags: parseNewTags(formData.get("newTags")),
   listIds: parseIdList(formData, "listIds"),
 });
+
+export type AddTitleFromTmdbInput = {
+  tmdbId: number;
+  kind: TitleKind;
+  name: string;
+  originalName?: string | null;
+  year?: number | null;
+  posterPath?: string | null;
+  addToWatchlist?: boolean;
+};
+
+export type AddTitleFromTmdbResult =
+  | {
+      ok: true;
+      titleId: string;
+      created: boolean;
+      addedToWatchlist: boolean;
+    }
+  | { ok: false; error: string };
+
+const isTitleKind = (value: string): value is TitleKind =>
+  TITLE_KINDS.includes(value as TitleKind);
+
+export const addTitleFromTmdb = async (
+  input: AddTitleFromTmdbInput,
+): Promise<AddTitleFromTmdbResult> => {
+  const userId = await requireUserId();
+  const tmdbId = Number(input.tmdbId);
+  const kind = input.kind;
+  const snapshotName = input.name.trim();
+
+  if (!Number.isInteger(tmdbId) || tmdbId <= 0) {
+    return { ok: false, error: "El identificador de TMDB no es válido." };
+  }
+
+  if (!isTitleKind(kind)) {
+    return { ok: false, error: "El tipo debe ser película o serie." };
+  }
+
+  const existing = await prisma.title.findFirst({
+    where: { userId, tmdbId },
+    select: { id: true },
+  });
+
+  if (existing) {
+    if (input.addToWatchlist) {
+      await addToWatchlist(existing.id);
+    }
+
+    revalidateCatalog(existing.id);
+    return {
+      ok: true,
+      titleId: existing.id,
+      created: false,
+      addedToWatchlist: Boolean(input.addToWatchlist),
+    };
+  }
+
+  let metadata = {
+    tmdbId,
+    name: snapshotName,
+    originalName: input.originalName?.trim() || null,
+    year: input.year ?? null,
+    posterPath: input.posterPath ?? null,
+    imdbId: null as string | null,
+    imdbRating: null as number | null,
+  };
+
+  try {
+    const resolved = await resolveTitleMetadata(tmdbId, kind);
+    metadata = {
+      tmdbId: resolved.tmdbId ?? tmdbId,
+      name: resolved.name?.trim() || snapshotName,
+      originalName: resolved.originalName ?? metadata.originalName,
+      year: resolved.year ?? metadata.year,
+      posterPath: resolved.posterPath ?? metadata.posterPath,
+      imdbId: resolved.imdbId,
+      imdbRating: resolved.imdbRating,
+    };
+  } catch (error) {
+    if (!snapshotName) {
+      return { ok: false, error: tmdbErrorMessage(error) };
+    }
+  }
+
+  if (!metadata.name) {
+    return { ok: false, error: "TMDB no devolvió un nombre para este título." };
+  }
+
+  const title = await prisma.title.create({
+    data: {
+      userId,
+      name: metadata.name,
+      originalName: metadata.originalName,
+      kind,
+      year: metadata.year,
+      tmdbId: metadata.tmdbId,
+      posterPath: metadata.posterPath,
+      imdbId: metadata.imdbId,
+      imdbRating: metadata.imdbRating,
+    },
+  });
+
+  if (metadata.tmdbId) {
+    await enrichWatchProvidersOnSave(title.id, metadata.tmdbId, kind);
+  }
+
+  if (input.addToWatchlist) {
+    await addToWatchlist(title.id);
+  }
+
+  revalidateCatalog(title.id);
+  return {
+    ok: true,
+    titleId: title.id,
+    created: true,
+    addedToWatchlist: Boolean(input.addToWatchlist),
+  };
+};
 
 export const createTitle = async (formData: FormData) => {
   const userId = await requireUserId();

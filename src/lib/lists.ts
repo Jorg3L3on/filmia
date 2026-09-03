@@ -91,7 +91,7 @@ export const emptyStateForList = (slug: string | null) => {
     return {
       title: "Nada en Quiero ver",
       description:
-        "Agrega títulos desde su ficha o con el selector. Aquí vive la cola de lo que sigue.",
+        "Agrega títulos desde TMDB, desde su ficha o con el selector. Aquí vive la cola de lo que sigue.",
     };
   }
 
