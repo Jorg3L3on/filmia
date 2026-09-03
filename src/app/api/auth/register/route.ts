@@ -1,5 +1,6 @@
 import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
+import { ensureDefaultLists } from "@/lib/lists";
 import { prisma } from "@/lib/prisma";
 
 const normalizeEmail = (value: FormDataEntryValue | null) =>
@@ -35,13 +36,15 @@ export const POST = async (request: Request) => {
 
   const passwordHash = await hash(password, 12);
 
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       email,
       passwordHash,
       name,
     },
   });
+
+  await ensureDefaultLists(user.id);
 
   return NextResponse.json({ ok: true });
 };

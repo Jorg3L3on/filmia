@@ -14,7 +14,7 @@ App personal para trackear películas y series vistas. UI en español, estética
 - **User**: cuenta con email, contraseña hasheada (bcrypt) y nombre opcional
 - **Title**: película o serie del usuario, nota personal 1–10, poster (TMDB), rating IMDb (OMDb), plataforma opcional, notas, fecha vista
 - **Tag** + **TitleTag**: categorías libres por usuario (épico, sci-fi, etc.)
-- **List** + **ListItem**: listas y membresía por usuario (incluye watchlist «Por ver»)
+- **List** + **ListItem**: listas y membresía por usuario (Quiero ver, Favoritas, Por rewatch + personalizadas)
 - **Platform** (enum): Netflix, Prime, Max, Disney+, Claro, Apple, Mubi
 
 ## Requisitos

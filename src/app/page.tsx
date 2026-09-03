@@ -27,7 +27,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
       <PageHeader
         eyebrow="Diario"
         title="Lo visto"
-        description="Mazo y cuadrícula de lo que ya viste. La cola vive en Por ver."
+        description="Mazo y cuadrícula de lo que ya viste. La cola vive en Quiero ver."
         actions={
           titles.length > 0 ? (
             <DeckViewToggle mode={view} hrefFor={hrefFor} />

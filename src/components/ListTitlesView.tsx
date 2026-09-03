@@ -1,6 +1,7 @@
 import { removeTitleFromList } from "@/app/actions/lists";
 import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
+import { ListItemOrderControls } from "@/components/ListItemOrderControls";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PosterTile } from "@/components/PosterTile";
 import type { titleInclude } from "@/lib/queries";
@@ -59,7 +60,7 @@ export const ListTitlesView = ({
         />
       ) : (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          {items.map((item) => {
+          {items.map((item, index) => {
             const removeAction = removeTitleFromList.bind(null, listId, item.titleId);
             return (
               <li key={item.titleId} className="space-y-2">
@@ -70,6 +71,12 @@ export const ListTitlesView = ({
                   year={item.title.year}
                   rating={item.title.rating}
                   watchedAt={item.title.watchedAt}
+                />
+                <ListItemOrderControls
+                  listId={listId}
+                  titleId={item.titleId}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < items.length - 1}
                 />
                 {!item.title.watchedAt ? (
                   <MarkWatchedForm

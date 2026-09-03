@@ -1,20 +1,27 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
+import { ListCard } from "@/components/ListCard";
 import { PageHeader } from "@/components/PageHeader";
-import { PosterImage } from "@/components/PosterImage";
-import { getLists, getWatchlistCount } from "@/lib/queries";
-import { btnPrimary, focusRing, posterFrame } from "@/lib/ui";
+import { listHref, partitionUserLists } from "@/lib/lists";
+import { getLists } from "@/lib/queries";
+import { btnPrimary } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Listas",
+} as const;
+
 export default async function ListsPage() {
-  const [lists, watchlistCount] = await Promise.all([getLists(), getWatchlistCount()]);
+  const lists = await getLists();
+  const { fixed, custom } = partitionUserLists(lists);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         eyebrow="Colecciones"
         title="Listas"
+        description="Quiero ver, Favoritas y Por rewatch siempre están. Las personalizadas las armas tú."
         actions={
           <Link href="/listas/nueva" className={btnPrimary}>
             Nueva lista
@@ -22,76 +29,54 @@ export default async function ListsPage() {
         }
       />
 
-      <Link
-        href="/watchlist"
-        className={`block overflow-hidden rounded-md border border-line bg-well p-5 transition hover:border-accent/40 ${focusRing}`}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-y-1">
-            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-accent">
-              Watchlist
-            </p>
-            <h2 className="font-serif text-2xl text-white">Por ver</h2>
-            <p className="text-sm text-fog">
-              Cola personal con orden, notas y botón de “marcar como vista”.
-            </p>
-          </div>
-          <div className="rounded-full bg-canvas px-4 py-2 text-sm font-medium text-accent">
-            {watchlistCount} en cola
-          </div>
-        </div>
-      </Link>
-
-      {lists.length === 0 ? (
-        <EmptyState
-          title="Todavía no hay listas"
-          description="Crea una colección para agrupar títulos con el mismo mood."
-          actionHref="/listas/nueva"
-          actionLabel="Nueva lista"
-        />
-      ) : (
-        <ul className="grid gap-4 md:grid-cols-2">
-          {lists.map((list) => {
-            const posters = list.items.slice(0, 5).map((item) => item.title);
-
-            return (
-              <li key={list.id}>
-                <Link
-                  href={`/listas/${list.id}`}
-                  className={`block rounded-md border border-line bg-well p-5 transition hover:border-accent/40 ${focusRing}`}
-                >
-                  {posters.length > 0 ? (
-                    <div className="mb-4 flex">
-                      {posters.map((title, index) => (
-                        <div
-                          key={title.id}
-                          className={`${posterFrame} w-12 ring-2 ring-well`}
-                          style={{ marginLeft: index === 0 ? 0 : -10 }}
-                        >
-                          <PosterImage
-                            name={title.name}
-                            posterPath={title.posterPath}
-                            sizes="48px"
-                            className="rounded-poster"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                  <h2 className="font-serif text-2xl text-white">{list.name}</h2>
-                  <p className="mt-1 text-sm text-fog">
-                    {list._count.items}{" "}
-                    {list._count.items === 1 ? "título" : "títulos"}
-                  </p>
-                  {list.description ? (
-                    <p className="mt-2 text-sm text-paper/80">{list.description}</p>
-                  ) : null}
-                </Link>
-              </li>
-            );
-          })}
+      <section className="space-y-4">
+        <h2 className="text-xs uppercase tracking-[0.2em] text-mist">
+          Listas diarias
+        </h2>
+        <ul className="grid gap-4 md:grid-cols-3">
+          {fixed.map((list) => (
+            <li key={list.id}>
+              <ListCard
+                href={listHref(list)}
+                name={list.name}
+                slug={list.slug}
+                description={list.description}
+                itemCount={list._count.items}
+                posters={list.items.map((item) => item.title)}
+              />
+            </li>
+          ))}
         </ul>
-      )}
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-xs uppercase tracking-[0.2em] text-mist">
+          Personalizadas
+        </h2>
+        {custom.length === 0 ? (
+          <EmptyState
+            title="Todavía no hay listas propias"
+            description="Crea una colección para un mood, un ciclo o un maratón. Las diarias no se tocan."
+            actionHref="/listas/nueva"
+            actionLabel="Nueva lista"
+          />
+        ) : (
+          <ul className="grid gap-4 md:grid-cols-2">
+            {custom.map((list) => (
+              <li key={list.id}>
+                <ListCard
+                  href={listHref(list)}
+                  name={list.name}
+                  slug={list.slug}
+                  description={list.description}
+                  itemCount={list._count.items}
+                  posters={list.items.map((item) => item.title)}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

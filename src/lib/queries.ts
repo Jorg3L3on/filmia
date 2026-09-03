@@ -1,4 +1,5 @@
 import { ListKind, Platform, TitleKind } from "@/generated/prisma/client";
+import { sortUserLists } from "@/lib/lists";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { WATCHLIST_SLUG } from "@/lib/watchlist";
@@ -77,20 +78,26 @@ export const getTags = async () => {
   });
 };
 
+const listIndexInclude = {
+  _count: { select: { items: true } },
+  items: {
+    orderBy: { position: "asc" as const },
+    take: 5,
+    include: {
+      title: { select: { id: true, name: true, posterPath: true } },
+    },
+  },
+};
+
 export const getLists = async () => {
   const userId = await requireUserId();
 
-  return prisma.list.findMany({
-    where: { userId, kind: ListKind.COLLECTION },
-    orderBy: { updatedAt: "desc" },
-    include: {
-      _count: { select: { items: true } },
-      items: {
-        orderBy: { position: "asc" },
-        include: { title: { include: titleInclude } },
-      },
-    },
+  const lists = await prisma.list.findMany({
+    where: { userId },
+    include: listIndexInclude,
   });
+
+  return sortUserLists(lists);
 };
 
 export const getWatchlist = async () => {
@@ -146,11 +153,23 @@ export const isTitleInWatchlist = async (titleId: string) => {
 export const getCollectionLists = async () => {
   const userId = await requireUserId();
 
-  return prisma.list.findMany({
+  const lists = await prisma.list.findMany({
     where: { userId, kind: ListKind.COLLECTION },
-    orderBy: { name: "asc" },
-    select: { id: true, name: true },
+    select: { id: true, name: true, slug: true },
   });
+
+  return sortUserLists(lists);
+};
+
+export const getAssignableLists = async () => {
+  const userId = await requireUserId();
+
+  const lists = await prisma.list.findMany({
+    where: { userId },
+    select: { id: true, name: true, slug: true, kind: true },
+  });
+
+  return sortUserLists(lists);
 };
 
 export const getListById = async (id: string) => {

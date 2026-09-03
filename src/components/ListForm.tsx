@@ -1,5 +1,6 @@
 import { createList, updateList } from "@/app/actions/lists";
 import type { List } from "@/generated/prisma/client";
+import { isFixedListSlug } from "@/lib/lists";
 import { btnPrimary, fieldClass } from "@/lib/ui";
 
 type ListFormProps = {
@@ -8,6 +9,7 @@ type ListFormProps = {
 
 export const ListForm = ({ list }: ListFormProps) => {
   const action = list ? updateList.bind(null, list.id) : createList;
+  const fixed = isFixedListSlug(list?.slug);
 
   return (
     <form action={action} className="space-y-4">
@@ -15,11 +17,18 @@ export const ListForm = ({ list }: ListFormProps) => {
         <span className="text-xs uppercase tracking-wide text-fog">Nombre</span>
         <input
           name="name"
-          required
+          required={!fixed}
           defaultValue={list?.name ?? ""}
+          readOnly={fixed}
           className={fieldClass}
           autoComplete="off"
+          aria-readonly={fixed || undefined}
         />
+        {fixed ? (
+          <span className="block text-xs text-mist">
+            El nombre de las listas diarias no se puede cambiar.
+          </span>
+        ) : null}
       </label>
       <label className="block space-y-1.5">
         <span className="text-xs uppercase tracking-wide text-fog">

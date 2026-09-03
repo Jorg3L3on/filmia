@@ -11,11 +11,7 @@ import {
   TitleKind,
 } from "../src/generated/prisma/client";
 import { slugify } from "../src/lib/labels";
-import {
-  WATCHLIST_DESCRIPTION,
-  WATCHLIST_NAME,
-  WATCHLIST_SLUG,
-} from "../src/lib/watchlist";
+import { DEFAULT_LISTS, WATCHLIST_SLUG } from "../src/lib/lists";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -66,7 +62,7 @@ const seedTitles: SeedTitle[] = [
     review: "Épica de arena y honor. Seed de gusto, no un diario personal.",
     platform: Platform.PRIME,
     tags: ["épico", "histórico"],
-    lists: ["Épicas"],
+    lists: ["Épicas", "Favoritas"],
     watched: true,
     tmdbId: 98,
     posterPath: "/wN2xWp1eIwCKOD0BHTcErTBv1Uq.jpg",
@@ -106,7 +102,7 @@ const seedTitles: SeedTitle[] = [
     review: "Venganza nórdica, barro y mito.",
     platform: Platform.PRIME,
     tags: ["épico", "histórico"],
-    lists: ["Épicas"],
+    lists: ["Épicas", "Favoritas"],
     watched: true,
     tmdbId: 639933,
     posterPath: "/aSSJMnHknzKjlZ6zybwD7eyJ4Po.jpg",
@@ -119,7 +115,7 @@ const seedTitles: SeedTitle[] = [
     review: "Vibe desierto/cromo. Persecución absoluta.",
     platform: Platform.MAX,
     tags: ["acción", "vibe-mad-max"],
-    lists: ["Vibe Mad Max / Tron"],
+    lists: ["Vibe Mad Max / Tron", "Por rewatch"],
     watched: true,
     tmdbId: 76341,
     posterPath: "/ulcAi4dKpAjHwYGS08vNyx9H6I9.jpg",
@@ -132,7 +128,7 @@ const seedTitles: SeedTitle[] = [
     review: "Neón, grid y soundtrack. Vibe Tron.",
     platform: Platform.DISNEY,
     tags: ["sci-fi", "vibe-tron"],
-    lists: ["Vibe Mad Max / Tron"],
+    lists: ["Vibe Mad Max / Tron", "Por rewatch"],
     watched: true,
     tmdbId: 20526,
     posterPath: "/8Nc6R8k7bG8frSiDJo0oLucF7dN.jpg",
@@ -146,7 +142,7 @@ const seedTitles: SeedTitle[] = [
     review: "Arena, política y mesías. Dummy seed.",
     platform: Platform.MAX,
     tags: ["sci-fi", "épico"],
-    lists: ["Épicas", "Visto recientemente"],
+    lists: ["Épicas", "Visto recientemente", "Favoritas"],
     watched: true,
     tmdbId: 693134,
     posterPath: "/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg",
@@ -190,6 +186,8 @@ const listDescriptions: Record<string, string> = {
   Épicas: "Espadas, arena y discursos largos.",
   "Visto recientemente": "Cola corta de lo último en el seed.",
   "Vibe Mad Max / Tron": "Cromo, desierto, grid y neón.",
+  Favoritas: "Las que se quedan. Tu canon personal, sin fecha de caducidad.",
+  "Por rewatch": "Títulos que merecen una segunda (o tercera) pasada.",
 };
 
 const ensureDemoUser = async (userId: string) => {
@@ -238,22 +236,28 @@ const upsertCollection = async (userId: string, name: string) => {
   });
 };
 
-const ensureWatchlist = async (userId: string) =>
-  prisma.list.upsert({
+const ensureDefaultLists = async (userId: string) => {
+  for (const list of DEFAULT_LISTS) {
+    await prisma.list.upsert({
+      where: { userId_slug: { userId, slug: list.slug } },
+      update: {
+        name: list.name,
+        kind: list.kind,
+      },
+      create: {
+        userId,
+        slug: list.slug,
+        name: list.name,
+        description: list.description,
+        kind: list.kind,
+      },
+    });
+  }
+
+  return prisma.list.findUniqueOrThrow({
     where: { userId_slug: { userId, slug: WATCHLIST_SLUG } },
-    update: {
-      name: WATCHLIST_NAME,
-      description: WATCHLIST_DESCRIPTION,
-      kind: ListKind.WATCHLIST,
-    },
-    create: {
-      userId,
-      slug: WATCHLIST_SLUG,
-      name: WATCHLIST_NAME,
-      description: WATCHLIST_DESCRIPTION,
-      kind: ListKind.WATCHLIST,
-    },
   });
+};
 
 const seed = async () => {
   const demoUser = await ensureDemoUser(DEMO_USER_ID);
@@ -265,6 +269,8 @@ const seed = async () => {
   const uniqueTags = [...new Set(seedTitles.flatMap((title) => title.tags))];
   const uniqueLists = [...new Set(seedTitles.flatMap((title) => title.lists))];
 
+  const watchlist = await ensureDefaultLists(userId);
+
   for (const tagName of uniqueTags) {
     tagRecords.set(tagName, await upsertTag(userId, tagName));
   }
@@ -272,8 +278,6 @@ const seed = async () => {
   for (const listName of uniqueLists) {
     listRecords.set(listName, await upsertCollection(userId, listName));
   }
-
-  const watchlist = await ensureWatchlist(userId);
 
   for (const [index, title] of seedTitles.entries()) {
     const existing = await prisma.title.findFirst({
@@ -373,7 +377,7 @@ const seed = async () => {
   }
 
   console.log(
-    `Seed listo: ${seedTitles.length} títulos vistos, ${watchlistQueue.length} en watchlist.`,
+    `Seed listo: ${seedTitles.length} títulos vistos, ${watchlistQueue.length} en Quiero ver, listas diarias creadas.`,
   );
   console.log(`Usuario demo: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
 };

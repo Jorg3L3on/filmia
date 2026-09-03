@@ -9,12 +9,12 @@ import { PlatformBadge } from "@/components/PlatformBadge";
 import { PosterImage } from "@/components/PosterImage";
 import { TagPills } from "@/components/TagPills";
 import { WatchedBadge } from "@/components/WatchedBadge";
-import { WatchlistToggle } from "@/components/WatchlistToggle";
+import { TitleListsPanel } from "@/components/TitleListsPanel";
 import { WatchProvidersMx } from "@/components/WatchProvidersMx";
 import { formatWatchedDate } from "@/lib/dates";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
-import { getTitleById, isTitleInWatchlist } from "@/lib/queries";
-import { btnDanger, btnPrimary, eyebrowClass, focusRing, posterFrame, wellClass } from "@/lib/ui";
+import { getAssignableLists, getTitleById } from "@/lib/queries";
+import { btnDanger, btnPrimary, eyebrowClass, posterFrame, wellClass } from "@/lib/ui";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 
 export const dynamic = "force-dynamic";
@@ -25,9 +25,9 @@ export default async function TitleDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [title, inWatchlist] = await Promise.all([
+  const [title, assignableLists] = await Promise.all([
     getTitleById(id),
-    isTitleInWatchlist(id),
+    getAssignableLists(),
   ]);
 
   if (!title) {
@@ -65,7 +65,11 @@ export default async function TitleDetailPage({
         <PlatformBadge platform={title.platform} />
         <WatchProvidersMx data={watchProviders} />
         <TagPills tags={title.tags.map((item) => item.tag)} />
-        <WatchlistToggle titleId={title.id} inWatchlist={inWatchlist} />
+        <TitleListsPanel
+          titleId={title.id}
+          lists={assignableLists}
+          memberListIds={title.listItems.map((item) => item.listId)}
+        />
         <section className={`${wellClass} space-y-4 p-5`}>
           <header className="space-y-1">
             <p className={eyebrowClass}>Diario</p>
@@ -79,8 +83,8 @@ export default async function TitleDetailPage({
               </p>
             ) : (
               <p className="text-sm text-fog">
-                Fecha, nota del 1 al 10 y un comentario opcional. Si está en Por
-                ver, sale de la cola.
+                Fecha, nota del 1 al 10 y un comentario opcional. Si está en
+                Quiero ver, sale de la cola.
               </p>
             )}
           </header>
@@ -92,30 +96,6 @@ export default async function TitleDetailPage({
             review={title.review}
           />
         </section>
-        {(() => {
-          const collections = title.listItems.filter(
-            (item) => item.list.kind === "COLLECTION",
-          );
-          if (collections.length === 0) {
-            return null;
-          }
-          return (
-            <p className="text-sm text-fog">
-              En listas:{" "}
-              {collections.map((item, index) => (
-                <span key={item.listId}>
-                  {index > 0 ? ", " : ""}
-                  <Link
-                    href={`/listas/${item.list.id}`}
-                    className={`text-accent underline-offset-2 hover:underline ${focusRing}`}
-                  >
-                    {item.list.name}
-                  </Link>
-                </span>
-              ))}
-            </p>
-          );
-        })()}
         <div className="flex flex-wrap gap-3 pt-2">
           <Link href={`/titulos/${title.id}/editar`} className={btnPrimary}>
             Editar

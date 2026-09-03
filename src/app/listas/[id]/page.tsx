@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { ListKind } from "@/generated/prisma/client";
 import { addTitleToList, deleteList } from "@/app/actions/lists";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { EmptyState } from "@/components/EmptyState";
 import { ListTitlesView } from "@/components/ListTitlesView";
 import { PageHeader } from "@/components/PageHeader";
 import type { DeckViewMode } from "@/components/DeckViewToggle";
+import { emptyStateForList, isFixedListSlug, WATCHLIST_SLUG } from "@/lib/lists";
 import { getListById, getTitleOptions } from "@/lib/queries";
 import { btnDanger, btnPrimary, fieldClass } from "@/lib/ui";
 
@@ -30,29 +32,37 @@ export default async function ListDetailPage({
     notFound();
   }
 
+  if (list.kind === ListKind.WATCHLIST || list.slug === WATCHLIST_SLUG) {
+    redirect("/watchlist");
+  }
+
   const memberIds = new Set(list.items.map((item) => item.titleId));
   const availableTitles = titleOptions.filter((title) => !memberIds.has(title.id));
   const addAction = addTitleToList.bind(null, list.id);
   const deleteAction = deleteList.bind(null, list.id);
+  const fixed = isFixedListSlug(list.slug);
+  const empty = emptyStateForList(list.slug);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Lista"
+        eyebrow={fixed ? "Lista diaria" : "Lista"}
         title={list.name}
         description={list.description ?? undefined}
         actions={
           <>
             <Link href={`/listas/${list.id}/editar`} className={btnPrimary}>
-              Editar
+              {fixed ? "Editar descripción" : "Editar"}
             </Link>
-            <form action={deleteAction}>
-              <ConfirmSubmit
-                label="Borrar lista"
-                confirmMessage={`¿Borrar la lista “${list.name}”?`}
-                className={btnDanger}
-              />
-            </form>
+            {fixed ? null : (
+              <form action={deleteAction}>
+                <ConfirmSubmit
+                  label="Borrar lista"
+                  confirmMessage={`¿Borrar la lista “${list.name}”?`}
+                  className={btnDanger}
+                />
+              </form>
+            )}
           </>
         }
       />
@@ -81,10 +91,7 @@ export default async function ListDetailPage({
       </form>
 
       {list.items.length === 0 ? (
-        <EmptyState
-          title="Esta lista está vacía"
-          description="Agrega títulos desde el selector o regístralos primero en el diario."
-        />
+        <EmptyState title={empty.title} description={empty.description} />
       ) : (
         <ListTitlesView listId={list.id} items={list.items} mode={view} />
       )}

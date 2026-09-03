@@ -1,16 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { ListKind } from "@/generated/prisma/client";
 import { todayDateInput } from "@/lib/dates";
 import { parseOptionalDate, parseOptionalReview, parseRating } from "@/lib/form-data";
+import { ensureDefaultLists, WATCHLIST_SLUG } from "@/lib/lists";
+import { swapAdjacentListItems } from "@/lib/list-order";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
-import {
-  WATCHLIST_DESCRIPTION,
-  WATCHLIST_NAME,
-  WATCHLIST_SLUG,
-} from "@/lib/watchlist";
 
 const revalidateWatchlist = () => {
   revalidatePath("/watchlist");
@@ -25,22 +21,27 @@ const revalidateDiary = (titleId: string) => {
 };
 
 export const ensureWatchlist = async (userId: string) => {
-  return prisma.list.upsert({
+  await ensureDefaultLists(userId);
+
+  const watchlist = await prisma.list.findUnique({
     where: { userId_slug: { userId, slug: WATCHLIST_SLUG } },
-    update: {},
-    create: {
-      userId,
-      slug: WATCHLIST_SLUG,
-      name: WATCHLIST_NAME,
-      description: WATCHLIST_DESCRIPTION,
-      kind: ListKind.WATCHLIST,
-    },
   });
+
+  if (!watchlist) {
+    throw new Error("No se pudo crear Quiero ver.");
+  }
+
+  return watchlist;
 };
 
 export const ensureCurrentUserWatchlist = async () => {
   const userId = await requireUserId();
   return ensureWatchlist(userId);
+};
+
+export const ensureCurrentUserDefaultLists = async () => {
+  const userId = await requireUserId();
+  return ensureDefaultLists(userId);
 };
 
 export const addToWatchlist = async (titleId: string, queueNote?: string) => {
@@ -209,33 +210,6 @@ export const updateWatchlistNote = async (titleId: string, formData: FormData) =
 export const bumpWatchlistItem = async (titleId: string) => {
   const userId = await requireUserId();
   const watchlist = await ensureWatchlist(userId);
-  const items = await prisma.listItem.findMany({
-    where: { listId: watchlist.id },
-    orderBy: { position: "asc" },
-  });
-
-  const index = items.findIndex((item) => item.titleId === titleId);
-  if (index <= 0) {
-    return;
-  }
-
-  const current = items[index];
-  const previous = items[index - 1];
-
-  await prisma.$transaction([
-    prisma.listItem.update({
-      where: {
-        listId_titleId: { listId: watchlist.id, titleId: current.titleId },
-      },
-      data: { position: previous.position },
-    }),
-    prisma.listItem.update({
-      where: {
-        listId_titleId: { listId: watchlist.id, titleId: previous.titleId },
-      },
-      data: { position: current.position },
-    }),
-  ]);
-
+  await swapAdjacentListItems(watchlist.id, titleId, "up");
   revalidateWatchlist();
 };
