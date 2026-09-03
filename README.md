@@ -105,7 +105,7 @@ El seed es idempotente por nombre + año dentro de cada usuario. También crea e
 
 ### Etiquetas (JOR-156)
 
-Cada usuario tiene tags propios (`userId` + `slug` únicos). Al entrar o registrarse, `ensureDefaultTags` siembra las sugeridas. Se pueden crear más desde `/tags` o desde la ficha de un título.
+Cada usuario tiene tags propios (`userId` + `slug` únicos). El unique global de `Tag.name` del init se elimina en la migración `20260903210000_drop_tag_global_name_unique` para que dos cuentas puedan usar el mismo nombre. Al entrar o registrarse, `ensureDefaultTags` siembra las sugeridas. Se pueden crear más desde `/tags` o desde la ficha de un título.
 
 - Filtro en diario (`/`) y listas: una o varias etiquetas, combinadas con **OR** (`?tag=epica-guerra&tag=sci-fi`).
 - Ranking: `/tags` índice y `/tags/[slug]` ordenable por nota o fecha vista.
