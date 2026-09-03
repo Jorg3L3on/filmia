@@ -16,7 +16,7 @@ type TitleFilters = {
   kind?: TitleKind | "ALL";
   platform?: Platform | "ALL";
   tag?: string;
-  sort?: "recent" | "rating" | "name" | "year";
+  sort?: "recent" | "watched" | "rating" | "name" | "year";
   onlyWatched?: boolean;
 };
 
@@ -49,7 +49,9 @@ export const getTitles = async (filters: TitleFilters = {}) => {
           ? { name: "asc" }
           : sort === "year"
             ? [{ year: { sort: "desc", nulls: "last" } }, { name: "asc" }]
-            : { updatedAt: "desc" },
+            : sort === "watched"
+              ? [{ watchedAt: { sort: "desc", nulls: "last" } }, { name: "asc" }]
+              : { updatedAt: "desc" },
   });
 };
 

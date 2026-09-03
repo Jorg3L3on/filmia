@@ -2,6 +2,7 @@ import { createTitle, updateTitle } from "@/app/actions/titles";
 import { TmdbPicker } from "@/components/TmdbPicker";
 import type { List, Platform, Tag, Title, TitleKind } from "@/generated/prisma/client";
 import { PLATFORM_LABEL, PLATFORMS, TITLE_KIND_LABEL, TITLE_KINDS } from "@/lib/labels";
+import { btnPrimary, fieldClass } from "@/lib/ui";
 
 type TitleFormProps = {
   title?: Title & {
@@ -12,9 +13,6 @@ type TitleFormProps = {
   lists: Array<Pick<List, "id" | "name">>;
   metadataConfig: { tmdb: boolean; omdb: boolean };
 };
-
-const fieldClass =
-  "w-full rounded-md border border-[#2c3440] bg-[#14181c] px-3 py-2 text-sm text-white placeholder:text-[#667] focus:border-[#00e054] focus:outline-none";
 
 const toDateInput = (value: Date | null) =>
   value ? value.toISOString().slice(0, 10) : "";
@@ -36,7 +34,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
 
       <div className="grid gap-4 md:grid-cols-2">
         <label className="block space-y-1.5">
-          <span className="text-xs uppercase tracking-wide text-[#99aabb]">Nombre</span>
+          <span className="text-xs uppercase tracking-wide text-fog">Nombre</span>
           <input
             name="name"
             required
@@ -46,7 +44,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
           />
         </label>
         <label className="block space-y-1.5">
-          <span className="text-xs uppercase tracking-wide text-[#99aabb]">
+          <span className="text-xs uppercase tracking-wide text-fog">
             Nombre original
           </span>
           <input
@@ -57,7 +55,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
           />
         </label>
         <label className="block space-y-1.5">
-          <span className="text-xs uppercase tracking-wide text-[#99aabb]">Tipo</span>
+          <span className="text-xs uppercase tracking-wide text-fog">Tipo</span>
           <select
             name="kind"
             required
@@ -72,7 +70,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
           </select>
         </label>
         <label className="block space-y-1.5">
-          <span className="text-xs uppercase tracking-wide text-[#99aabb]">Año</span>
+          <span className="text-xs uppercase tracking-wide text-fog">Año</span>
           <input
             name="year"
             type="number"
@@ -83,7 +81,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
           />
         </label>
         <label className="block space-y-1.5">
-          <span className="text-xs uppercase tracking-wide text-[#99aabb]">
+          <span className="text-xs uppercase tracking-wide text-fog">
             Tu nota (1–10)
           </span>
           <input
@@ -96,7 +94,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
           />
         </label>
         <label className="block space-y-1.5">
-          <span className="text-xs uppercase tracking-wide text-[#99aabb]">
+          <span className="text-xs uppercase tracking-wide text-fog">
             Plataforma
           </span>
           <select
@@ -113,7 +111,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
           </select>
         </label>
         <label className="block space-y-1.5 md:col-span-2">
-          <span className="text-xs uppercase tracking-wide text-[#99aabb]">
+          <span className="text-xs uppercase tracking-wide text-fog">
             Vista el
           </span>
           <input
@@ -124,7 +122,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
           />
         </label>
         <label className="block space-y-1.5 md:col-span-2">
-          <span className="text-xs uppercase tracking-wide text-[#99aabb]">
+          <span className="text-xs uppercase tracking-wide text-fog">
             Notas
           </span>
           <textarea
@@ -137,25 +135,25 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
       </div>
 
       <fieldset className="space-y-2">
-        <legend className="text-xs uppercase tracking-wide text-[#99aabb]">
+        <legend className="text-xs uppercase tracking-wide text-fog">
           Etiquetas
         </legend>
         <div className="flex flex-wrap gap-3">
           {tags.map((tag) => (
-            <label key={tag.id} className="flex items-center gap-2 text-sm text-[#def]">
+            <label key={tag.id} className="flex items-center gap-2 text-sm text-paper">
               <input
                 type="checkbox"
                 name="tagIds"
                 value={tag.id}
                 defaultChecked={selectedTagIds.has(tag.id)}
-                className="accent-[#00e054]"
+                className="accent-accent"
               />
               {tag.name}
             </label>
           ))}
         </div>
         <label className="block space-y-1.5">
-          <span className="text-xs text-[#99aabb]">Nuevas (separadas por coma)</span>
+          <span className="text-xs text-fog">Nuevas (separadas por coma)</span>
           <input
             name="newTags"
             placeholder="épico, sci-fi"
@@ -166,18 +164,18 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
       </fieldset>
 
       <fieldset className="space-y-2">
-        <legend className="text-xs uppercase tracking-wide text-[#99aabb]">
+        <legend className="text-xs uppercase tracking-wide text-fog">
           Listas
         </legend>
         <div className="flex flex-wrap gap-3">
           {lists.map((list) => (
-            <label key={list.id} className="flex items-center gap-2 text-sm text-[#def]">
+            <label key={list.id} className="flex items-center gap-2 text-sm text-paper">
               <input
                 type="checkbox"
                 name="listIds"
                 value={list.id}
                 defaultChecked={selectedListIds.has(list.id)}
-                className="accent-[#00e054]"
+                className="accent-accent"
               />
               {list.name}
             </label>
@@ -185,10 +183,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
         </div>
       </fieldset>
 
-      <button
-        type="submit"
-        className="rounded-full bg-[#00e054] px-5 py-2 text-sm font-semibold text-[#14181c] hover:bg-[#00c030] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-      >
+      <button type="submit" className={btnPrimary}>
         {title ? "Guardar cambios" : "Crear título"}
       </button>
     </form>

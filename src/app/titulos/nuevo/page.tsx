@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/PageHeader";
 import { TitleForm } from "@/components/TitleForm";
 import { metadataServicesConfigured } from "@/lib/metadata";
 import { getCollectionLists, getTags } from "@/lib/queries";
@@ -18,10 +19,11 @@ export default async function NewTitlePage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-[#00e054]">Alta</p>
-        <h1 className="font-serif text-4xl text-white">Nuevo título</h1>
-      </div>
+      <PageHeader
+        eyebrow="Alta"
+        title="Registrar título"
+        description="Busca el poster en TMDB, anota tu calificación y súbelo al diario."
+      />
       <TitleForm tags={tags} lists={lists} metadataConfig={metadataConfig} />
     </div>
   );

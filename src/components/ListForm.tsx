@@ -1,12 +1,10 @@
 import { createList, updateList } from "@/app/actions/lists";
 import type { List } from "@/generated/prisma/client";
+import { btnPrimary, fieldClass } from "@/lib/ui";
 
 type ListFormProps = {
   list?: List;
 };
-
-const fieldClass =
-  "w-full rounded-md border border-[#2c3440] bg-[#14181c] px-3 py-2 text-sm text-white placeholder:text-[#667] focus:border-[#00e054] focus:outline-none";
 
 export const ListForm = ({ list }: ListFormProps) => {
   const action = list ? updateList.bind(null, list.id) : createList;
@@ -14,7 +12,7 @@ export const ListForm = ({ list }: ListFormProps) => {
   return (
     <form action={action} className="space-y-4">
       <label className="block space-y-1.5">
-        <span className="text-xs uppercase tracking-wide text-[#99aabb]">Nombre</span>
+        <span className="text-xs uppercase tracking-wide text-fog">Nombre</span>
         <input
           name="name"
           required
@@ -24,7 +22,7 @@ export const ListForm = ({ list }: ListFormProps) => {
         />
       </label>
       <label className="block space-y-1.5">
-        <span className="text-xs uppercase tracking-wide text-[#99aabb]">
+        <span className="text-xs uppercase tracking-wide text-fog">
           Descripción
         </span>
         <textarea
@@ -34,10 +32,7 @@ export const ListForm = ({ list }: ListFormProps) => {
           className={fieldClass}
         />
       </label>
-      <button
-        type="submit"
-        className="rounded-full bg-[#00e054] px-5 py-2 text-sm font-semibold text-[#14181c] hover:bg-[#00c030] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-      >
+      <button type="submit" className={btnPrimary}>
         {list ? "Guardar lista" : "Crear lista"}
       </button>
     </form>

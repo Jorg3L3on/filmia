@@ -12,7 +12,7 @@ export const TagPills = ({ tags }: TagPillsProps) => {
       {tags.map((tag) => (
         <li
           key={tag.id}
-          className="rounded-full bg-[#2c3440] px-2 py-0.5 text-xs text-[#c8d6e5]"
+          className="rounded-full bg-chrome px-2 py-0.5 text-xs text-fog"
         >
           {tag.name}
         </li>

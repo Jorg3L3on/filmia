@@ -2,17 +2,25 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { addTitleToList, deleteList } from "@/app/actions/lists";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
+import { EmptyState } from "@/components/EmptyState";
 import { ListTitlesView } from "@/components/ListTitlesView";
+import { PageHeader } from "@/components/PageHeader";
+import type { DeckViewMode } from "@/components/DeckViewToggle";
 import { getListById, getTitleOptions } from "@/lib/queries";
+import { btnDanger, btnPrimary, fieldClass } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function ListDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ view?: string }>;
 }) {
   const { id } = await params;
+  const query = await searchParams;
+  const view: DeckViewMode = query.view === "grid" ? "grid" : "deck";
   const [list, titleOptions] = await Promise.all([
     getListById(id),
     getTitleOptions(),
@@ -29,44 +37,35 @@ export default async function ListDetailPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-[#00e054]">Lista</p>
-          <h1 className="font-serif text-4xl text-white">{list.name}</h1>
-          {list.description ? (
-            <p className="mt-2 max-w-2xl text-sm text-[#99aabb]">{list.description}</p>
-          ) : null}
-        </div>
-        <div className="flex gap-3">
-          <Link
-            href={`/listas/${list.id}/editar`}
-            className="rounded-full bg-[#00e054] px-4 py-2 text-sm font-semibold text-[#14181c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-          >
-            Editar
-          </Link>
-          <form action={deleteAction}>
-            <ConfirmSubmit
-              label="Borrar lista"
-              confirmMessage={`¿Borrar la lista “${list.name}”?`}
-              className="rounded-full border border-[#5a2a2a] px-4 py-2 text-sm text-[#ff8a80] hover:bg-[#2a1616] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff8a80]"
-            />
-          </form>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Lista"
+        title={list.name}
+        description={list.description ?? undefined}
+        actions={
+          <>
+            <Link href={`/listas/${list.id}/editar`} className={btnPrimary}>
+              Editar
+            </Link>
+            <form action={deleteAction}>
+              <ConfirmSubmit
+                label="Borrar lista"
+                confirmMessage={`¿Borrar la lista “${list.name}”?`}
+                className={btnDanger}
+              />
+            </form>
+          </>
+        }
+      />
 
       <form
         action={addAction}
-        className="flex flex-col items-stretch gap-3 rounded-lg border border-[#2c3440] bg-[#1c2228] p-4 sm:flex-row sm:flex-wrap sm:items-end"
+        className="flex flex-col items-stretch gap-3 rounded-md border border-line bg-well p-4 sm:flex-row sm:flex-wrap sm:items-end"
       >
         <label className="block min-w-0 flex-1 space-y-1">
-          <span className="text-xs uppercase tracking-wide text-[#99aabb]">
+          <span className="text-xs uppercase tracking-wide text-fog">
             Agregar título
           </span>
-          <select
-            name="titleId"
-            required
-            className="w-full rounded-md border border-[#2c3440] bg-[#14181c] px-3 py-2 text-sm text-white focus:border-[#00e054] focus:outline-none"
-          >
+          <select name="titleId" required className={fieldClass}>
             <option value="">Elige un título</option>
             {availableTitles.map((title) => (
               <option key={title.id} value={title.id}>
@@ -76,18 +75,18 @@ export default async function ListDetailPage({
             ))}
           </select>
         </label>
-        <button
-          type="submit"
-          className="w-full rounded-full bg-[#2c3440] px-4 py-2 text-sm text-white hover:bg-[#3a4452] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054] sm:w-auto"
-        >
+        <button type="submit" className={`${btnPrimary} w-full sm:w-auto`}>
           Agregar
         </button>
       </form>
 
       {list.items.length === 0 ? (
-        <p className="text-[#99aabb]">Esta lista está vacía.</p>
+        <EmptyState
+          title="Esta lista está vacía"
+          description="Agrega títulos desde el selector o regístralos primero en el diario."
+        />
       ) : (
-        <ListTitlesView listId={list.id} items={list.items} />
+        <ListTitlesView listId={list.id} items={list.items} mode={view} />
       )}
     </div>
   );

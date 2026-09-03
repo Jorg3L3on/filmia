@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ListForm } from "@/components/ListForm";
+import { PageHeader } from "@/components/PageHeader";
 import { getListById } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -18,10 +19,7 @@ export default async function EditListPage({
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
-      <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-[#00e054]">Editar</p>
-        <h1 className="font-serif text-4xl text-white">{list.name}</h1>
-      </div>
+      <PageHeader eyebrow="Editar" title={list.name} />
       <ListForm list={list} />
     </div>
   );

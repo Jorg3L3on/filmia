@@ -1,12 +1,15 @@
-import Link from "next/link";
 import {
   addToWatchlistFromForm,
   ensureWatchlist,
   removeFromWatchlist,
   updateWatchlistNote,
 } from "@/app/actions/watchlist";
+import { EmptyState } from "@/components/EmptyState";
+import { PageHeader } from "@/components/PageHeader";
 import { WatchlistCard } from "@/components/WatchlistCard";
+import { TitlePosterRail } from "@/components/TitlePosterRail";
 import { getTitleOptions, getWatchlist } from "@/lib/queries";
+import { btnPrimary, fieldClass } from "@/lib/ui";
 import { WATCHLIST_DESCRIPTION, WATCHLIST_NAME } from "@/lib/watchlist";
 
 export const dynamic = "force-dynamic";
@@ -29,31 +32,25 @@ export default async function WatchlistPage() {
 
   return (
     <div className="space-y-8">
-      <div className="space-y-3">
-        <p className="text-xs uppercase tracking-[0.25em] text-[#8b5cf6]">Watchlist</p>
-        <h1 className="bg-gradient-to-r from-[#4fc3ff] via-[#a78bfa] to-[#f472b6] bg-clip-text font-serif text-4xl text-transparent md:text-5xl">
-          {WATCHLIST_NAME}
-        </h1>
-        <p className="max-w-2xl text-sm text-[#99aabb]">{WATCHLIST_DESCRIPTION}</p>
-        <p className="text-xs text-[#678]">
-          {items.length}{" "}
-          {items.length === 1 ? "título en cola" : "títulos en cola"}
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Watchlist"
+        title={WATCHLIST_NAME}
+        description={WATCHLIST_DESCRIPTION}
+      />
+      <p className="text-xs text-mist">
+        {items.length}{" "}
+        {items.length === 1 ? "título en cola" : "títulos en cola"}
+      </p>
 
       <form
         action={addToWatchlistFromForm}
-        className="flex flex-wrap items-end gap-3 rounded-2xl border border-[#2c3440] bg-[#111] p-5"
+        className="flex flex-wrap items-end gap-3 rounded-md border border-line bg-well p-5"
       >
         <label className="block min-w-56 flex-1 space-y-1">
-          <span className="text-xs uppercase tracking-wide text-[#99aabb]">
+          <span className="text-xs uppercase tracking-wide text-fog">
             Agregar a la cola
           </span>
-          <select
-            name="titleId"
-            required
-            className="w-full rounded-xl border border-[#2c3440] bg-[#0a0a0a] px-3 py-2 text-sm text-white focus:border-[#8b5cf6] focus:outline-none"
-          >
+          <select name="titleId" required className={fieldClass}>
             <option value="">Elige un título</option>
             {availableTitles.map((title) => (
               <option key={title.id} value={title.id}>
@@ -64,38 +61,34 @@ export default async function WatchlistPage() {
           </select>
         </label>
         <label className="block min-w-48 flex-1 space-y-1">
-          <span className="text-xs uppercase tracking-wide text-[#99aabb]">
+          <span className="text-xs uppercase tracking-wide text-fog">
             Nota (opcional)
           </span>
           <input
             name="queueNote"
             placeholder="Recomendación, mood, etc."
-            className="w-full rounded-xl border border-[#2c3440] bg-[#0a0a0a] px-3 py-2 text-sm text-white placeholder:text-[#556] focus:border-[#8b5cf6] focus:outline-none"
+            className={fieldClass}
           />
         </label>
-        <button
-          type="submit"
-          className="rounded-full bg-gradient-to-r from-[#2563eb] via-[#7c3aed] to-[#db2777] px-5 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-        >
+        <button type="submit" className={btnPrimary}>
           Encolar
         </button>
       </form>
 
       {items.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[#3a3a3a] bg-[#111]/50 p-12 text-center">
-          <p className="font-serif text-2xl text-[#99aabb]">La cola está vacía</p>
-          <p className="mt-2 text-sm text-[#678]">
-            Agrega títulos que quieras ver pronto, o crea uno nuevo.
-          </p>
-          <Link
-            href="/titulos/nuevo"
-            className="mt-6 inline-block rounded-full border border-[#7c3aed]/50 px-4 py-2 text-sm text-[#c4b5fd] hover:bg-[#7c3aed]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]"
-          >
-            Nuevo título
-          </Link>
-        </div>
+        <EmptyState
+          title="La cola está vacía"
+          description="Agrega títulos que quieras ver pronto, o registra uno nuevo."
+          actionHref="/titulos/nuevo"
+          actionLabel="Registrar título"
+        />
       ) : (
         <div className="space-y-8">
+          <TitlePosterRail
+            title="En cola"
+            ariaLabel="Posters de la cola"
+            titles={items.slice(0, 12).map((item) => item.title)}
+          />
           {hero ? (
             <WatchlistCard
               item={hero}
@@ -108,8 +101,8 @@ export default async function WatchlistPage() {
 
           {queue.length > 0 ? (
             <section className="space-y-4">
-              <h2 className="text-xs uppercase tracking-[0.2em] text-[#678]">
-                En cola
+              <h2 className="text-xs uppercase tracking-[0.2em] text-mist">
+                Siguen
               </h2>
               <ul className="space-y-3">
                 {queue.map((item, index) => (

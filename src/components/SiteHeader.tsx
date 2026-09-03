@@ -3,28 +3,30 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { cn } from "@/lib/cn";
+import { focusRing } from "@/lib/ui";
 
 const navItems = [
   { href: "/", label: "Diario" },
   { href: "/watchlist", label: "Por ver" },
   { href: "/listas", label: "Listas" },
-  { href: "/titulos/nuevo", label: "Nuevo título" },
+  { href: "/titulos/nuevo", label: "Registrar" },
 ] as const;
 
 export const SiteHeader = () => {
   const currentPath = usePathname();
 
   return (
-    <header className="border-b border-[#2c3440] bg-[#0a0a0a]/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+    <header className="sticky top-0 z-40 border-b border-line bg-canvas/90 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <Link
           href="/"
-          className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8b5cf6]"
+          className={focusRing}
           aria-label="Filmia, ir al inicio"
         >
           <Logo size="md" />
         </Link>
-        <nav aria-label="Principal" className="flex flex-wrap items-center gap-1.5 text-sm sm:gap-2">
+        <nav aria-label="Principal" className="hidden items-center gap-1 text-sm sm:flex">
           {navItems.map((item) => {
             const isCurrent =
               item.href === "/"
@@ -36,13 +38,13 @@ export const SiteHeader = () => {
                 key={item.href}
                 href={item.href}
                 aria-current={isCurrent ? "page" : undefined}
-                className={
+                className={cn(
+                  "rounded-full px-3 py-1.5 transition",
+                  focusRing,
                   isCurrent
-                    ? item.href === "/watchlist"
-                      ? "rounded-full bg-gradient-to-r from-[#2563eb] via-[#7c3aed] to-[#db2777] px-2.5 py-1.5 font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:px-3"
-                      : "rounded-full bg-[#00e054] px-2.5 py-1.5 font-medium text-[#14181c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:px-3"
-                    : "rounded-full px-2.5 py-1.5 text-[#99aabb] hover:bg-[#2c3440] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6] sm:px-3"
-                }
+                    ? "bg-accent font-medium text-ink"
+                    : "text-fog hover:bg-chrome hover:text-white",
+                )}
               >
                 {item.label}
               </Link>

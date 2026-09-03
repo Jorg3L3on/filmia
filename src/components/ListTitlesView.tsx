@@ -1,11 +1,9 @@
-"use client";
-
-import { useState } from "react";
 import { removeTitleFromList } from "@/app/actions/lists";
 import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
-import { DeckViewToggle } from "@/components/DeckViewToggle";
-import { TitleCard } from "@/components/TitleCard";
+import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
+import { PosterTile } from "@/components/PosterTile";
 import type { titleInclude } from "@/lib/queries";
+import { btnLink } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -16,6 +14,7 @@ type ListItemPayload = Prisma.ListItemGetPayload<{
 type ListTitlesViewProps = {
   listId: string;
   items: ListItemPayload[];
+  mode?: DeckViewMode;
 };
 
 const toCoverflowTitle = (item: ListItemPayload): CoverflowTitle => {
@@ -34,13 +33,20 @@ const toCoverflowTitle = (item: ListItemPayload): CoverflowTitle => {
   };
 };
 
-export const ListTitlesView = ({ listId, items }: ListTitlesViewProps) => {
-  const [mode, setMode] = useState<"deck" | "grid">("deck");
+export const ListTitlesView = ({
+  listId,
+  items,
+  mode = "deck",
+}: ListTitlesViewProps) => {
+  const hrefFor = (nextMode: DeckViewMode) =>
+    nextMode === "deck"
+      ? `/listas/${listId}`
+      : `/listas/${listId}?view=${nextMode}`;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <DeckViewToggle mode={mode} onChange={setMode} />
+        <DeckViewToggle mode={mode} hrefFor={hrefFor} />
       </div>
 
       {mode === "deck" ? (
@@ -50,10 +56,7 @@ export const ListTitlesView = ({ listId, items }: ListTitlesViewProps) => {
             const removeAction = removeTitleFromList.bind(null, listId, title.id);
             return (
               <form action={removeAction} className="pt-1">
-                <button
-                  type="submit"
-                  className="text-xs text-[#99aabb] underline-offset-2 hover:text-white hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054]"
-                >
+                <button type="submit" className={btnLink}>
                   Quitar de la lista
                 </button>
               </form>
@@ -61,17 +64,20 @@ export const ListTitlesView = ({ listId, items }: ListTitlesViewProps) => {
           }}
         />
       ) : (
-        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {items.map((item) => {
             const removeAction = removeTitleFromList.bind(null, listId, item.titleId);
             return (
               <li key={item.titleId} className="space-y-2">
-                <TitleCard title={item.title} />
+                <PosterTile
+                  href={`/titulos/${item.title.id}`}
+                  name={item.title.name}
+                  posterPath={item.title.posterPath}
+                  year={item.title.year}
+                  rating={item.title.rating}
+                />
                 <form action={removeAction}>
-                  <button
-                    type="submit"
-                    className="w-full text-xs text-[#99aabb] underline-offset-2 hover:text-white hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054]"
-                  >
+                  <button type="submit" className={`${btnLink} w-full`}>
                     Quitar de la lista
                   </button>
                 </form>
