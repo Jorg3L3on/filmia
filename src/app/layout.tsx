@@ -3,6 +3,7 @@ import { Fraunces, Geist } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import { auth } from "@/lib/auth";
 import { ensureDefaultLists } from "@/lib/lists";
+import { ensureDefaultTags } from "@/lib/tags";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -35,7 +36,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const session = await auth();
 
   if (session?.user?.id) {
-    await ensureDefaultLists(session.user.id);
+    await Promise.all([
+      ensureDefaultLists(session.user.id),
+      ensureDefaultTags(session.user.id),
+    ]);
   }
 
   return (

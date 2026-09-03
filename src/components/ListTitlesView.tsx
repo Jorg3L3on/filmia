@@ -5,6 +5,7 @@ import { ListItemOrderControls } from "@/components/ListItemOrderControls";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PosterTile } from "@/components/PosterTile";
 import type { titleInclude } from "@/lib/queries";
+import { catalogHref } from "@/lib/tags";
 import { btnLink } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
 import type { Prisma } from "@/generated/prisma/client";
@@ -17,6 +18,7 @@ type ListTitlesViewProps = {
   listId: string;
   items: ListItemPayload[];
   mode?: DeckViewMode;
+  selectedTags?: string[];
 };
 
 const toCoverflowTitle = (item: ListItemPayload): CoverflowTitle => {
@@ -41,11 +43,13 @@ export const ListTitlesView = ({
   listId,
   items,
   mode = "deck",
+  selectedTags = [],
 }: ListTitlesViewProps) => {
   const hrefFor = (nextMode: DeckViewMode) =>
-    nextMode === "deck"
-      ? `/listas/${listId}`
-      : `/listas/${listId}?view=${nextMode}`;
+    catalogHref(`/listas/${listId}`, {
+      tags: selectedTags,
+      view: nextMode,
+    });
 
   return (
     <div className="space-y-4">
@@ -71,13 +75,16 @@ export const ListTitlesView = ({
                   year={item.title.year}
                   rating={item.title.rating}
                   watchedAt={item.title.watchedAt}
+                  tags={item.title.tags.map((entry) => entry.tag)}
                 />
-                <ListItemOrderControls
-                  listId={listId}
-                  titleId={item.titleId}
-                  canMoveUp={index > 0}
-                  canMoveDown={index < items.length - 1}
-                />
+                {selectedTags.length === 0 ? (
+                  <ListItemOrderControls
+                    listId={listId}
+                    titleId={item.titleId}
+                    canMoveUp={index > 0}
+                    canMoveDown={index < items.length - 1}
+                  />
+                ) : null}
                 {!item.title.watchedAt ? (
                   <MarkWatchedForm
                     titleId={item.title.id}

@@ -12,6 +12,7 @@ import {
 } from "../src/generated/prisma/client";
 import { slugify } from "../src/lib/labels";
 import { DEFAULT_LISTS, WATCHLIST_SLUG } from "../src/lib/lists";
+import { DEFAULT_TAG_NAMES } from "../src/lib/tags";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -61,7 +62,7 @@ const seedTitles: SeedTitle[] = [
     rating: 9,
     review: "Épica de arena y honor. Seed de gusto, no un diario personal.",
     platform: Platform.PRIME,
-    tags: ["épico", "histórico"],
+    tags: ["Épica / guerra", "Histórico"],
     lists: ["Épicas", "Favoritas"],
     watched: true,
     tmdbId: 98,
@@ -74,7 +75,7 @@ const seedTitles: SeedTitle[] = [
     rating: 7,
     review: "Homero con bloquebuster: bronce, playa y discurso.",
     platform: Platform.MAX,
-    tags: ["épico", "histórico"],
+    tags: ["Épica / guerra", "Histórico"],
     lists: ["Épicas"],
     watched: true,
     tmdbId: 652,
@@ -88,7 +89,7 @@ const seedTitles: SeedTitle[] = [
     rating: 8,
     review: "Romain Gavras. Tensión urbana en un solo aliento.",
     platform: Platform.NETFLIX,
-    tags: ["thriller", "francés"],
+    tags: ["Thriller", "francés"],
     lists: ["Visto recientemente"],
     watched: true,
     tmdbId: 852046,
@@ -101,7 +102,7 @@ const seedTitles: SeedTitle[] = [
     rating: 8,
     review: "Venganza nórdica, barro y mito.",
     platform: Platform.PRIME,
-    tags: ["épico", "histórico"],
+    tags: ["Épica / guerra", "Histórico"],
     lists: ["Épicas", "Favoritas"],
     watched: true,
     tmdbId: 639933,
@@ -114,7 +115,7 @@ const seedTitles: SeedTitle[] = [
     rating: 10,
     review: "Vibe desierto/cromo. Persecución absoluta.",
     platform: Platform.MAX,
-    tags: ["acción", "vibe-mad-max"],
+    tags: ["Visual / espectáculo", "Vibe Mad Max"],
     lists: ["Vibe Mad Max / Tron", "Por rewatch"],
     watched: true,
     tmdbId: 76341,
@@ -127,7 +128,7 @@ const seedTitles: SeedTitle[] = [
     rating: 7,
     review: "Neón, grid y soundtrack. Vibe Tron.",
     platform: Platform.DISNEY,
-    tags: ["sci-fi", "vibe-tron"],
+    tags: ["Sci-fi", "Visual / espectáculo", "Vibe Tron"],
     lists: ["Vibe Mad Max / Tron", "Por rewatch"],
     watched: true,
     tmdbId: 20526,
@@ -141,7 +142,7 @@ const seedTitles: SeedTitle[] = [
     rating: 9,
     review: "Arena, política y mesías. Dummy seed.",
     platform: Platform.MAX,
-    tags: ["sci-fi", "épico"],
+    tags: ["Sci-fi", "Épica / guerra", "Visual / espectáculo"],
     lists: ["Épicas", "Visto recientemente", "Favoritas"],
     watched: true,
     tmdbId: 693134,
@@ -266,7 +267,9 @@ const seed = async () => {
   const tagRecords = new Map<string, { id: string }>();
   const listRecords = new Map<string, { id: string }>();
 
-  const uniqueTags = [...new Set(seedTitles.flatMap((title) => title.tags))];
+  const uniqueTags = [
+    ...new Set([...DEFAULT_TAG_NAMES, ...seedTitles.flatMap((title) => title.tags)]),
+  ];
   const uniqueLists = [...new Set(seedTitles.flatMap((title) => title.lists))];
 
   const watchlist = await ensureDefaultLists(userId);

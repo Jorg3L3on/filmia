@@ -5,6 +5,7 @@ import { PersonalRating } from "@/components/PersonalRating";
 import { PlatformBadge } from "@/components/PlatformBadge";
 import { PosterImage } from "@/components/PosterImage";
 import { ImdbBadge } from "@/components/ImdbBadge";
+import { TagPills } from "@/components/TagPills";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { titleInclude } from "@/lib/queries";
 import { btnGhost, btnLink, eyebrowClass, fieldClass, focusRing, posterFrame } from "@/lib/ui";
@@ -69,6 +70,7 @@ export const WatchlistCard = ({
                 <ImdbBadge rating={title.imdbRating} />
                 <PersonalRating rating={title.rating} />
               </div>
+              <TagPills tags={title.tags.map((item) => item.tag)} />
               <form action={updateNoteAction} className="space-y-2">
                 <label className="block space-y-1">
                   <span className="text-xs uppercase tracking-wide text-mist">
@@ -144,6 +146,7 @@ export const WatchlistCard = ({
             <ImdbBadge rating={title.imdbRating} />
             <PersonalRating rating={title.rating} size="sm" />
           </div>
+          <TagPills tags={title.tags.map((item) => item.tag)} compact />
         </div>
         {item.queueNote ? (
           <p className="line-clamp-2 text-xs text-fog">{item.queueNote}</p>

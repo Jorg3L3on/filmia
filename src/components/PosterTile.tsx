@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PosterImage } from "@/components/PosterImage";
+import { TagPills } from "@/components/TagPills";
 import { WatchedBadge } from "@/components/WatchedBadge";
 import { cn } from "@/lib/cn";
 import { formatRating } from "@/lib/labels";
@@ -15,6 +16,7 @@ type PosterTileProps = {
   caption?: string;
   className?: string;
   sizes?: string;
+  tags?: Array<{ id: string; name: string; slug: string }>;
 };
 
 export const PosterTile = ({
@@ -27,6 +29,7 @@ export const PosterTile = ({
   caption,
   className,
   sizes,
+  tags = [],
 }: PosterTileProps) => {
   const watched = Boolean(watchedAt);
   const meta = [year, rating != null ? formatRating(rating) : null]
@@ -61,6 +64,11 @@ export const PosterTile = ({
           <p className="truncate text-[11px] text-mist">{caption ?? meta}</p>
         ) : null}
       </Link>
+      {tags.length > 0 ? (
+        <div className="mt-1.5">
+          <TagPills tags={tags} compact />
+        </div>
+      ) : null}
     </article>
   );
 };

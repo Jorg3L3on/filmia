@@ -78,6 +78,7 @@ export const TitleDeckView = ({
                   year={title.year}
                   rating={title.rating}
                   watchedAt={title.watchedAt}
+                  tags={title.tags.map((item) => item.tag)}
                 />
             </li>
           ))}
