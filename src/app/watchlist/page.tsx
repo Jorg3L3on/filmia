@@ -1,6 +1,6 @@
 import {
   addToWatchlistFromForm,
-  ensureWatchlist,
+  ensureCurrentUserWatchlist,
   removeFromWatchlist,
   updateWatchlistNote,
 } from "@/app/actions/watchlist";
@@ -19,7 +19,7 @@ export const metadata = {
 };
 
 export default async function WatchlistPage() {
-  await ensureWatchlist();
+  await ensureCurrentUserWatchlist();
   const [watchlist, titleOptions] = await Promise.all([
     getWatchlist(),
     getTitleOptions(),

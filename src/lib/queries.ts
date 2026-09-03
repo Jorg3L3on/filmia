@@ -1,5 +1,6 @@
 import { ListKind, Platform, TitleKind } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
 import { WATCHLIST_SLUG } from "@/lib/watchlist";
 
 export const titleInclude = {
@@ -21,10 +22,12 @@ type TitleFilters = {
 };
 
 export const getTitles = async (filters: TitleFilters = {}) => {
+  const userId = await requireUserId();
   const { q, kind, platform, tag, sort = "recent", onlyWatched = false } = filters;
 
   return prisma.title.findMany({
     where: {
+      userId,
       ...(q
         ? {
             OR: [
@@ -37,7 +40,7 @@ export const getTitles = async (filters: TitleFilters = {}) => {
       ...(kind && kind !== "ALL" ? { kind } : {}),
       ...(platform && platform !== "ALL" ? { platform } : {}),
       ...(tag
-        ? { tags: { some: { tag: { slug: tag } } } }
+        ? { tags: { some: { tag: { slug: tag, userId } } } }
         : {}),
       ...(onlyWatched ? { watchedAt: { not: null } } : {}),
     },
@@ -56,22 +59,29 @@ export const getTitles = async (filters: TitleFilters = {}) => {
 };
 
 export const getTitleById = async (id: string) => {
-  return prisma.title.findUnique({
-    where: { id },
+  const userId = await requireUserId();
+
+  return prisma.title.findFirst({
+    where: { id, userId },
     include: titleInclude,
   });
 };
 
 export const getTags = async () => {
+  const userId = await requireUserId();
+
   return prisma.tag.findMany({
+    where: { userId },
     orderBy: { name: "asc" },
     include: { _count: { select: { titles: true } } },
   });
 };
 
 export const getLists = async () => {
+  const userId = await requireUserId();
+
   return prisma.list.findMany({
-    where: { kind: ListKind.COLLECTION },
+    where: { userId, kind: ListKind.COLLECTION },
     orderBy: { updatedAt: "desc" },
     include: {
       _count: { select: { items: true } },
@@ -84,8 +94,10 @@ export const getLists = async () => {
 };
 
 export const getWatchlist = async () => {
+  const userId = await requireUserId();
+
   const list = await prisma.list.findUnique({
-    where: { slug: WATCHLIST_SLUG },
+    where: { userId_slug: { userId, slug: WATCHLIST_SLUG } },
     include: {
       items: {
         orderBy: { position: "asc" },
@@ -102,8 +114,10 @@ export const getWatchlist = async () => {
 };
 
 export const getWatchlistCount = async () => {
+  const userId = await requireUserId();
+
   const list = await prisma.list.findUnique({
-    where: { slug: WATCHLIST_SLUG },
+    where: { userId_slug: { userId, slug: WATCHLIST_SLUG } },
     select: { _count: { select: { items: true } } },
   });
 
@@ -111,8 +125,10 @@ export const getWatchlistCount = async () => {
 };
 
 export const isTitleInWatchlist = async (titleId: string) => {
+  const userId = await requireUserId();
+
   const list = await prisma.list.findUnique({
-    where: { slug: WATCHLIST_SLUG },
+    where: { userId_slug: { userId, slug: WATCHLIST_SLUG } },
     select: { id: true },
   });
 
@@ -128,16 +144,20 @@ export const isTitleInWatchlist = async (titleId: string) => {
 };
 
 export const getCollectionLists = async () => {
+  const userId = await requireUserId();
+
   return prisma.list.findMany({
-    where: { kind: ListKind.COLLECTION },
+    where: { userId, kind: ListKind.COLLECTION },
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });
 };
 
 export const getListById = async (id: string) => {
-  return prisma.list.findUnique({
-    where: { id },
+  const userId = await requireUserId();
+
+  return prisma.list.findFirst({
+    where: { id, userId },
     include: {
       items: {
         orderBy: { position: "asc" },
@@ -148,7 +168,10 @@ export const getListById = async (id: string) => {
 };
 
 export const getTitleOptions = async () => {
+  const userId = await requireUserId();
+
   return prisma.title.findMany({
+    where: { userId },
     select: { id: true, name: true, year: true },
     orderBy: { name: "asc" },
   });

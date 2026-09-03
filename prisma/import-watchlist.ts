@@ -14,6 +14,8 @@ import {
   WATCHLIST_SLUG,
 } from "../src/lib/watchlist";
 
+const DEMO_USER_ID = "cm4demofilmia00000000001";
+
 loadEnv({ path: ".env.local" });
 loadEnv();
 
@@ -129,13 +131,14 @@ const importQueue = async () => {
   const films = JSON.parse(readFileSync(filePath, "utf8")) as QueueFilm[];
 
   const watchlist = await prisma.list.upsert({
-    where: { slug: WATCHLIST_SLUG },
+    where: { userId_slug: { userId: DEMO_USER_ID, slug: WATCHLIST_SLUG } },
     update: {
       name: WATCHLIST_NAME,
       description: WATCHLIST_DESCRIPTION,
       kind: ListKind.WATCHLIST,
     },
     create: {
+      userId: DEMO_USER_ID,
       slug: WATCHLIST_SLUG,
       name: WATCHLIST_NAME,
       description: WATCHLIST_DESCRIPTION,
@@ -155,7 +158,7 @@ const importQueue = async () => {
 
   for (const film of films) {
     const existing = await prisma.title.findFirst({
-      where: { name: film.name, year: film.year },
+      where: { userId: DEMO_USER_ID, name: film.name, year: film.year },
     });
 
     const posterPath = existing?.posterPath
@@ -167,6 +170,7 @@ const importQueue = async () => {
     }
 
     const data = {
+      userId: DEMO_USER_ID,
       name: film.name,
       originalName: film.originalName ?? existing?.originalName ?? null,
       kind: film.kind === "SERIES" ? TitleKind.SERIES : TitleKind.MOVIE,
