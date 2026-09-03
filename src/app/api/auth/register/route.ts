@@ -1,6 +1,7 @@
 import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { ensureDefaultLists } from "@/lib/lists";
+import { ensureDefaultTags } from "@/lib/tags";
 import { prisma } from "@/lib/prisma";
 
 const normalizeEmail = (value: FormDataEntryValue | null) =>
@@ -44,7 +45,10 @@ export const POST = async (request: Request) => {
     },
   });
 
-  await ensureDefaultLists(user.id);
+  await Promise.all([
+    ensureDefaultLists(user.id),
+    ensureDefaultTags(user.id),
+  ]);
 
   return NextResponse.json({ ok: true });
 };

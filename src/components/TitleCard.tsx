@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ImdbBadge } from "@/components/ImdbBadge";
 import { PersonalRating } from "@/components/PersonalRating";
 import { PosterImage } from "@/components/PosterImage";
+import { TagPills } from "@/components/TagPills";
 import { WatchedBadge } from "@/components/WatchedBadge";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { titleInclude } from "@/lib/queries";
@@ -47,6 +48,9 @@ export const TitleCard = ({ title }: TitleCardProps) => {
           </div>
         </div>
       </Link>
+      <div className="pt-1.5">
+        <TagPills tags={title.tags.map((item) => item.tag)} compact />
+      </div>
     </article>
   );
 };

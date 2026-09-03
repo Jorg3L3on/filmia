@@ -18,14 +18,15 @@ type TitleFilters = {
   q?: string;
   kind?: TitleKind | "ALL";
   platform?: Platform | "ALL";
-  tag?: string;
+  tags?: string[];
   sort?: "recent" | "watched" | "rating" | "name" | "year";
   onlyWatched?: boolean;
 };
 
 export const getTitles = async (filters: TitleFilters = {}) => {
   const userId = await requireUserId();
-  const { q, kind, platform, tag, sort = "recent", onlyWatched = false } = filters;
+  const { q, kind, platform, tags, sort = "recent", onlyWatched = false } = filters;
+  const tagSlugs = [...new Set((tags ?? []).map((slug) => slug.trim()).filter(Boolean))];
 
   return prisma.title.findMany({
     where: {
@@ -41,8 +42,9 @@ export const getTitles = async (filters: TitleFilters = {}) => {
         : {}),
       ...(kind && kind !== "ALL" ? { kind } : {}),
       ...(platform && platform !== "ALL" ? { platform } : {}),
-      ...(tag
-        ? { tags: { some: { tag: { slug: tag, userId } } } }
+      // Varios slugs: OR (el título tiene cualquiera de las etiquetas).
+      ...(tagSlugs.length > 0
+        ? { tags: { some: { tag: { slug: { in: tagSlugs }, userId } } } }
         : {}),
       ...(onlyWatched ? { watchedAt: { not: null } } : {}),
     },
@@ -75,6 +77,15 @@ export const getTags = async () => {
   return prisma.tag.findMany({
     where: { userId },
     orderBy: { name: "asc" },
+    include: { _count: { select: { titles: true } } },
+  });
+};
+
+export const getTagBySlug = async (slug: string) => {
+  const userId = await requireUserId();
+
+  return prisma.tag.findUnique({
+    where: { userId_slug: { userId, slug } },
     include: { _count: { select: { titles: true } } },
   });
 };

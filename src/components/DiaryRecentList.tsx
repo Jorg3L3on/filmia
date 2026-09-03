@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PersonalRating } from "@/components/PersonalRating";
 import { PosterImage } from "@/components/PosterImage";
+import { TagPills } from "@/components/TagPills";
 import { formatWatchedDate } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { eyebrowClass, focusRing, posterFrame } from "@/lib/ui";
@@ -13,6 +14,7 @@ type DiaryTitle = {
   review: string | null;
   watchedAt: Date | null;
   posterPath: string | null;
+  tags?: Array<{ tag: { id: string; name: string; slug: string } }>;
 };
 
 type DiaryRecentListProps = {
@@ -32,23 +34,23 @@ export const DiaryRecentList = ({ titles }: DiaryRecentListProps) => {
           const watchedLabel = title.watchedAt
             ? formatWatchedDate(title.watchedAt, "short")
             : null;
+          const tagItems = title.tags?.map((item) => item.tag) ?? [];
 
           return (
-            <li key={title.id}>
-              <Link
-                href={`/titulos/${title.id}`}
-                className={cn(
-                  "flex gap-3 p-3 transition hover:bg-well",
-                  focusRing,
-                )}
-                aria-label={`${title.name}${watchedLabel ? `, vista el ${watchedLabel}` : ""}`}
-              >
-                <PosterImage
-                  name={title.name}
-                  posterPath={title.posterPath}
-                  sizes="48px"
-                  className={cn(posterFrame, "w-12 shrink-0")}
-                />
+            <li key={title.id} className="p-3">
+              <div className="flex gap-3">
+                <Link
+                  href={`/titulos/${title.id}`}
+                  className={cn("shrink-0", focusRing)}
+                  aria-label={`${title.name}${watchedLabel ? `, vista el ${watchedLabel}` : ""}`}
+                >
+                  <PosterImage
+                    name={title.name}
+                    posterPath={title.posterPath}
+                    sizes="48px"
+                    className={cn(posterFrame, "w-12")}
+                  />
+                </Link>
                 <div className="min-w-0 flex-1 space-y-1">
                   {watchedLabel ? (
                     <p className="text-[11px] uppercase tracking-wider text-accent">
@@ -56,7 +58,12 @@ export const DiaryRecentList = ({ titles }: DiaryRecentListProps) => {
                     </p>
                   ) : null}
                   <h3 className="truncate font-serif text-base text-white">
-                    {title.name}
+                    <Link
+                      href={`/titulos/${title.id}`}
+                      className={`hover:text-accent ${focusRing}`}
+                    >
+                      {title.name}
+                    </Link>
                     {title.year ? (
                       <span className="font-sans text-xs text-mist">
                         {" "}
@@ -68,8 +75,9 @@ export const DiaryRecentList = ({ titles }: DiaryRecentListProps) => {
                   {title.review ? (
                     <p className="line-clamp-2 text-xs text-fog">{title.review}</p>
                   ) : null}
+                  <TagPills tags={tagItems} compact />
                 </div>
-              </Link>
+              </div>
             </li>
           );
         })}

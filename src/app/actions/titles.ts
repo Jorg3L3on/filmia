@@ -34,6 +34,7 @@ const revalidateCatalog = (titleId?: string) => {
   revalidatePath("/");
   revalidatePath("/listas");
   revalidatePath("/buscar");
+  revalidatePath("/tags");
   if (titleId) {
     revalidatePath(`/titulos/${titleId}`);
     revalidatePath(`/titulos/${titleId}/editar`);

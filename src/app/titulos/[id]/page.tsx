@@ -7,13 +7,13 @@ import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PersonalRating } from "@/components/PersonalRating";
 import { PlatformBadge } from "@/components/PlatformBadge";
 import { PosterImage } from "@/components/PosterImage";
-import { TagPills } from "@/components/TagPills";
+import { TitleTagsPanel } from "@/components/TitleTagsPanel";
 import { WatchedBadge } from "@/components/WatchedBadge";
 import { TitleListsPanel } from "@/components/TitleListsPanel";
 import { WatchProvidersMx } from "@/components/WatchProvidersMx";
 import { formatWatchedDate } from "@/lib/dates";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
-import { getAssignableLists, getTitleById, getUserStreamingPlatforms } from "@/lib/queries";
+import { getAssignableLists, getTags, getTitleById, getUserStreamingPlatforms } from "@/lib/queries";
 import { btnDanger, btnPrimary, eyebrowClass, posterFrame, wellClass } from "@/lib/ui";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 
@@ -25,10 +25,11 @@ export default async function TitleDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [title, assignableLists, userPlatforms] = await Promise.all([
+  const [title, assignableLists, userPlatforms, tags] = await Promise.all([
     getTitleById(id),
     getAssignableLists(),
     getUserStreamingPlatforms(),
+    getTags(),
   ]);
 
   if (!title) {
@@ -65,7 +66,11 @@ export default async function TitleDetailPage({
         </div>
         <PlatformBadge platform={title.platform} />
         <WatchProvidersMx data={watchProviders} userPlatforms={userPlatforms} />
-        <TagPills tags={title.tags.map((item) => item.tag)} />
+        <TitleTagsPanel
+          titleId={title.id}
+          tags={tags}
+          selectedTagIds={title.tags.map((item) => item.tagId)}
+        />
         <TitleListsPanel
           titleId={title.id}
           lists={assignableLists}

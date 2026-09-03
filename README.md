@@ -13,7 +13,7 @@ App personal para trackear películas y series vistas. UI en español, estética
 
 - **User**: cuenta con email, contraseña hasheada (bcrypt), nombre opcional y `streamingPlatforms` (JSON: claves del enum `Platform`)
 - **Title**: película o serie del usuario, nota personal 1–10, poster (TMDB), rating IMDb (OMDb), plataforma opcional, notas, fecha vista
-- **Tag** + **TitleTag**: categorías libres por usuario (épico, sci-fi, etc.)
+- **Tag** + **TitleTag**: categorías libres por usuario (épica/guerra, visual/espectáculo, etc.). El filtro de diario y listas combina varias etiquetas con **OR**. Ranking en `/tags/[slug]`.
 - **List** + **ListItem**: listas y membresía por usuario (Quiero ver, Favoritas, Por rewatch + personalizadas)
 - **Platform** (enum): Netflix, Prime, Max, Disney+, Claro, Apple, Mubi
 
@@ -101,7 +101,15 @@ Datos dummy (no personales): Gladiator, Troy, Athena (2022), The Northman, Mad M
 npm run db:seed
 ```
 
-El seed es idempotente por nombre + año dentro de cada usuario.
+El seed es idempotente por nombre + año dentro de cada usuario. También crea etiquetas sugeridas (`Épica / guerra`, `Visual / espectáculo`, `Vibe Mad Max`, `Vibe Tron`, etc.).
+
+### Etiquetas (JOR-156)
+
+Cada usuario tiene tags propios (`userId` + `slug` únicos). Al entrar o registrarse, `ensureDefaultTags` siembra las sugeridas. Se pueden crear más desde `/tags` o desde la ficha de un título.
+
+- Filtro en diario (`/`) y listas: una o varias etiquetas, combinadas con **OR** (`?tag=epica-guerra&tag=sci-fi`).
+- Ranking: `/tags` índice y `/tags/[slug]` ordenable por nota o fecha vista.
+- Pastillas rápidas en la ficha para asignar/quitar sin pasar por editar.
 
 ### Backfill de posters e IMDb
 
