@@ -1,5 +1,5 @@
-import { Platform, TitleKind } from "@/generated/prisma/client";
-import { PLATFORMS, TITLE_KINDS } from "@/lib/labels";
+import { Platform, SeriesStatus, TitleKind } from "@/generated/prisma/client";
+import { PLATFORMS, SERIES_STATUSES, TITLE_KINDS } from "@/lib/labels";
 
 const asString = (value: FormDataEntryValue | null) =>
   typeof value === "string" ? value.trim() : "";
@@ -109,3 +109,32 @@ export const parseNewTags = (value: FormDataEntryValue | null) =>
     .split(",")
     .map((tag) => tag.trim())
     .filter(Boolean);
+
+export const parseSeriesStatus = (
+  value: FormDataEntryValue | null,
+): SeriesStatus | null => {
+  const status = asString(value);
+  if (!status || status === "NONE") {
+    return null;
+  }
+
+  if (SERIES_STATUSES.includes(status as SeriesStatus)) {
+    return status as SeriesStatus;
+  }
+
+  throw new Error("El estado de la serie no es válido.");
+};
+
+export const parseSeriesSeason = (value: FormDataEntryValue | null) => {
+  const raw = asString(value);
+  if (!raw) {
+    return null;
+  }
+
+  const season = Number(raw);
+  if (!Number.isInteger(season) || season < 1 || season > 100) {
+    throw new Error("La temporada debe ser un entero entre 1 y 100.");
+  }
+
+  return season;
+};

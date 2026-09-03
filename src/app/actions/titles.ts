@@ -1,6 +1,6 @@
 "use server";
 
-import { ListKind } from "@/generated/prisma/client";
+import { ListKind, TitleKind, type SeriesStatus } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
@@ -11,6 +11,7 @@ import {
   parsePlatform,
   parseRating,
   parseRequiredName,
+  parseSeriesSeason,
   parseTitleKind,
   parseYear,
 } from "@/lib/form-data";
@@ -19,7 +20,7 @@ import {
   type AddTitleFromTmdbInput,
   type AddTitleFromTmdbResult,
 } from "@/lib/add-title-from-tmdb";
-import { slugify } from "@/lib/labels";
+import { slugify, SERIES_STATUSES } from "@/lib/labels";
 import {
   enrichMetadataOnSave,
   readMetadataFields,
@@ -33,13 +34,21 @@ export type { AddTitleFromTmdbInput, AddTitleFromTmdbResult };
 const revalidateCatalog = (titleId?: string) => {
   revalidatePath("/");
   revalidatePath("/listas");
+  revalidatePath("/listas", "layout");
+  revalidatePath("/watchlist");
   revalidatePath("/buscar");
   revalidatePath("/tags");
+  revalidatePath("/tags", "layout");
   if (titleId) {
     revalidatePath(`/titulos/${titleId}`);
     revalidatePath(`/titulos/${titleId}/editar`);
   }
 };
+
+const seriesProgressData = (kind: TitleKind) =>
+  kind === TitleKind.SERIES
+    ? {}
+    : { seriesStatus: null, seriesSeason: null };
 
 const syncTags = async (userId: string, titleId: string, tagIds: string[], newTags: string[]) => {
   const created = await Promise.all(
@@ -143,6 +152,7 @@ export const createTitle = async (formData: FormData) => {
       posterPath: metadata.posterPath,
       imdbId: metadata.imdbId,
       imdbRating: metadata.imdbRating,
+      ...seriesProgressData(fields.kind),
     },
   });
 
@@ -187,6 +197,7 @@ export const updateTitle = async (titleId: string, formData: FormData) => {
       posterPath: metadata.posterPath,
       imdbId: metadata.imdbId,
       imdbRating: metadata.imdbRating,
+      ...seriesProgressData(fields.kind),
     },
   });
 
@@ -214,4 +225,62 @@ export const deleteTitle = async (titleId: string) => {
   await prisma.title.delete({ where: { id: titleId } });
   revalidateCatalog(titleId);
   redirect("/");
+};
+
+const requireOwnedSeries = async (titleId: string) => {
+  const userId = await requireUserId();
+  const title = await prisma.title.findFirst({
+    where: { id: titleId, userId },
+    select: { id: true, kind: true },
+  });
+
+  if (!title) {
+    throw new Error("Título no encontrado.");
+  }
+
+  if (title.kind !== TitleKind.SERIES) {
+    throw new Error("El estado de seguimiento solo aplica a series.");
+  }
+
+  return title;
+};
+
+export const setSeriesStatus = async (
+  titleId: string,
+  status: SeriesStatus | "NONE",
+) => {
+  await requireOwnedSeries(titleId);
+
+  const nextStatus =
+    status === "NONE"
+      ? null
+      : SERIES_STATUSES.includes(status)
+        ? status
+        : null;
+
+  if (status !== "NONE" && nextStatus == null) {
+    throw new Error("El estado de la serie no es válido.");
+  }
+
+  await prisma.title.update({
+    where: { id: titleId },
+    data: {
+      seriesStatus: nextStatus,
+      ...(nextStatus == null ? { seriesSeason: null } : {}),
+    },
+  });
+
+  revalidateCatalog(titleId);
+};
+
+export const setSeriesSeason = async (titleId: string, formData: FormData) => {
+  await requireOwnedSeries(titleId);
+  const seriesSeason = parseSeriesSeason(formData.get("seriesSeason"));
+
+  await prisma.title.update({
+    where: { id: titleId },
+    data: { seriesSeason },
+  });
+
+  revalidateCatalog(titleId);
 };

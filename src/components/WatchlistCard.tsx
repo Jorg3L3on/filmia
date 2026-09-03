@@ -6,6 +6,7 @@ import { PlatformBadge } from "@/components/PlatformBadge";
 import { PosterImage } from "@/components/PosterImage";
 import { ImdbBadge } from "@/components/ImdbBadge";
 import { TagPills } from "@/components/TagPills";
+import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { titleInclude } from "@/lib/queries";
 import { btnGhost, btnLink, eyebrowClass, fieldClass, focusRing, posterFrame } from "@/lib/ui";
@@ -60,6 +61,9 @@ export const WatchlistCard = ({
                 #{position} en cola · {TITLE_KIND_LABEL[title.kind]}
                 {title.year ? ` · ${title.year}` : ""}
               </p>
+              {title.kind === "SERIES" ? (
+                <SeriesStatusBadge status={title.seriesStatus} />
+              ) : null}
               <h2 className="font-serif text-3xl text-white md:text-4xl">
                 <Link href={`/titulos/${title.id}`} className={`hover:text-accent ${focusRing}`}>
                   {title.name}
@@ -138,6 +142,9 @@ export const WatchlistCard = ({
             {TITLE_KIND_LABEL[title.kind]}
             {title.year ? ` · ${title.year}` : ""}
           </p>
+          {title.kind === "SERIES" ? (
+            <SeriesStatusBadge status={title.seriesStatus} compact />
+          ) : null}
           <h3 className="truncate font-serif text-lg text-white group-hover:text-accent">
             <Link href={`/titulos/${title.id}`}>{title.name}</Link>
           </h3>

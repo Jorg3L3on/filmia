@@ -6,12 +6,14 @@ import {
   type CatalogSort,
 } from "@/lib/tags";
 import { focusRing } from "@/lib/ui";
+import type { SeriesStatusFilter } from "@/lib/series";
 
 type TagSortLinksProps = {
   pathname: string;
   current: CatalogSort;
   view?: string;
   minePlatforms?: boolean;
+  seriesStatus?: SeriesStatusFilter;
 };
 
 export const TagSortLinks = ({
@@ -19,6 +21,7 @@ export const TagSortLinks = ({
   current,
   view,
   minePlatforms = false,
+  seriesStatus,
 }: TagSortLinksProps) => {
   return (
     <div
@@ -35,6 +38,7 @@ export const TagSortLinks = ({
               view,
               sort: option.id === "rating" ? null : option.id,
               minePlatforms,
+              seriesStatus,
             })}
             aria-current={isCurrent ? "page" : undefined}
             className={cn(

@@ -1,5 +1,6 @@
 import { slugify } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
+import type { SeriesStatusFilter } from "@/lib/series";
 
 /**
  * Etiquetas sugeridas al gusto de Jorge (guerra/épica, visual Mad Max–Tron, etc.).
@@ -86,6 +87,7 @@ type CatalogQuery = {
   view?: string | null;
   sort?: string | null;
   minePlatforms?: boolean;
+  seriesStatus?: SeriesStatusFilter | null;
 };
 
 export const catalogSearchParams = ({
@@ -93,6 +95,7 @@ export const catalogSearchParams = ({
   view,
   sort,
   minePlatforms,
+  seriesStatus,
 }: CatalogQuery) => {
   const params = new URLSearchParams();
 
@@ -110,6 +113,10 @@ export const catalogSearchParams = ({
 
   if (minePlatforms) {
     params.set(MINE_PLATFORMS_PARAM, "1");
+  }
+
+  if (seriesStatus) {
+    params.set("seriesStatus", seriesStatus);
   }
 
   return params;

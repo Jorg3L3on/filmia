@@ -12,6 +12,12 @@ enum TitleKind {
   SERIES
 }
 
+enum SeriesStatus {
+  WATCHING
+  FINISHED
+  DROPPED
+}
+
 enum Platform {
   NETFLIX
   PRIME
@@ -52,6 +58,8 @@ model Title {
   review                  String?    @db.Text
   platform                Platform?
   watchedAt               DateTime?
+  seriesStatus            SeriesStatus?
+  seriesSeason            Int?
   tmdbId                  Int?
   posterPath              String?
   imdbId                  String?
@@ -70,6 +78,8 @@ model Title {
   @@index([name])
   @@index([tmdbId])
   @@index([imdbId])
+  @@index([seriesStatus])
+  @@index([userId, seriesStatus])
 }
 
 model Tag {

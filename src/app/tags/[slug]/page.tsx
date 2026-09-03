@@ -20,6 +20,7 @@ import {
   tagHref,
   type CatalogSort,
 } from "@/lib/tags";
+import { parseSeriesStatusFilter } from "@/lib/series";
 import { btnGhost } from "@/lib/ui";
 import Link from "next/link";
 
@@ -31,6 +32,7 @@ type TagDetailPageProps = {
     view?: string;
     sort?: string;
     minePlatforms?: string | string[];
+    seriesStatus?: string | string[];
   }>;
 };
 
@@ -52,10 +54,11 @@ export default async function TagDetailPage({
   const view: DeckViewMode = isView(query.view) ? query.view : "deck";
   const sort: CatalogSort = isCatalogSort(query.sort) ? query.sort : "rating";
   const minePlatforms = parseMinePlatforms(query.minePlatforms);
+  const seriesStatus = parseSeriesStatusFilter(query.seriesStatus);
 
   const [tag, taggedTitles, userPlatforms] = await Promise.all([
     getTagBySlug(slug),
-    getTitles({ tags: [slug], sort }),
+    getTitles({ tags: [slug], sort, seriesStatus }),
     getUserStreamingPlatforms(),
   ]);
 
@@ -75,6 +78,7 @@ export default async function TagDetailPage({
       view: mode,
       sort: sort === "rating" ? null : sort,
       minePlatforms,
+      seriesStatus,
     });
   const clearHref = catalogHref(pathname, {
     view,
@@ -89,7 +93,7 @@ export default async function TagDetailPage({
       <PageHeader
         eyebrow="Ranking"
         title={tag.name}
-        description={`${countLabel} con esta etiqueta. Ordena por nota o por fecha vista. Filtra por tus plataformas.`}
+        description={`${countLabel} con esta etiqueta. Ordena por nota o por fecha vista. Filtra por estado de serie o por tus plataformas.`}
         actions={
           <Link href="/tags" className={btnGhost}>
             Todas las etiquetas
@@ -106,6 +110,7 @@ export default async function TagDetailPage({
         minePlatforms={minePlatforms}
         hasStreamingPlatforms={userPlatforms.length > 0}
         showTagFilters={false}
+        seriesStatus={seriesStatus}
       />
 
       <TagSortLinks
@@ -113,6 +118,7 @@ export default async function TagDetailPage({
         current={sort}
         view={view}
         minePlatforms={minePlatforms}
+        seriesStatus={seriesStatus}
       />
 
       {catalog.needsSetup ? (

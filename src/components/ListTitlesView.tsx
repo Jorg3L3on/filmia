@@ -9,6 +9,7 @@ import { catalogHref } from "@/lib/tags";
 import { btnLink } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
 import type { Prisma } from "@/generated/prisma/client";
+import type { SeriesStatusFilter } from "@/lib/series";
 
 type ListItemPayload = Prisma.ListItemGetPayload<{
   include: { title: { include: typeof titleInclude } };
@@ -20,6 +21,7 @@ type ListTitlesViewProps = {
   mode?: DeckViewMode;
   selectedTags?: string[];
   minePlatforms?: boolean;
+  seriesStatus?: SeriesStatusFilter;
 };
 
 const toCoverflowTitle = (item: ListItemPayload): CoverflowTitle => {
@@ -36,6 +38,8 @@ const toCoverflowTitle = (item: ListItemPayload): CoverflowTitle => {
     imdbRating: item.title.imdbRating,
     watched: Boolean(item.title.watchedAt),
     review: item.title.review,
+    seriesStatus: item.title.kind === "SERIES" ? item.title.seriesStatus : null,
+    seriesSeason: item.title.kind === "SERIES" ? item.title.seriesSeason : null,
     flatrateProviders: watchProviders?.flatrate ?? [],
   };
 };
@@ -46,12 +50,14 @@ export const ListTitlesView = ({
   mode = "deck",
   selectedTags = [],
   minePlatforms = false,
+  seriesStatus,
 }: ListTitlesViewProps) => {
   const hrefFor = (nextMode: DeckViewMode) =>
     catalogHref(`/listas/${listId}`, {
       tags: selectedTags,
       view: nextMode,
       minePlatforms,
+      seriesStatus,
     });
 
   return (
@@ -79,8 +85,11 @@ export const ListTitlesView = ({
                   rating={item.title.rating}
                   watchedAt={item.title.watchedAt}
                   tags={item.title.tags.map((entry) => entry.tag)}
+                  seriesStatus={
+                    item.title.kind === "SERIES" ? item.title.seriesStatus : null
+                  }
                 />
-                {selectedTags.length === 0 && !minePlatforms ? (
+                {selectedTags.length === 0 && !minePlatforms && !seriesStatus ? (
                   <ListItemOrderControls
                     listId={listId}
                     titleId={item.titleId}

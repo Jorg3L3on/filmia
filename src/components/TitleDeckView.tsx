@@ -31,6 +31,8 @@ const toCoverflowTitle = (title: TitlePayload): CoverflowTitle => {
     imdbRating: title.imdbRating,
     watched: Boolean(title.watchedAt),
     review: title.review,
+    seriesStatus: title.kind === "SERIES" ? title.seriesStatus : null,
+    seriesSeason: title.kind === "SERIES" ? title.seriesSeason : null,
     flatrateProviders: watchProviders?.flatrate ?? [],
   };
 };
@@ -79,6 +81,7 @@ export const TitleDeckView = ({
                   rating={title.rating}
                   watchedAt={title.watchedAt}
                   tags={title.tags.map((item) => item.tag)}
+                  seriesStatus={title.kind === "SERIES" ? title.seriesStatus : null}
                 />
             </li>
           ))}

@@ -3,6 +3,8 @@ import { PersonalRating } from "@/components/PersonalRating";
 import { PosterImage } from "@/components/PosterImage";
 import { TagPills } from "@/components/TagPills";
 import { formatWatchedDate } from "@/lib/dates";
+import { SERIES_STATUS_LABEL, formatSeriesSeason } from "@/lib/labels";
+import type { SeriesStatus, TitleKind } from "@/generated/prisma/client";
 import { cn } from "@/lib/cn";
 import { eyebrowClass, focusRing, posterFrame } from "@/lib/ui";
 
@@ -14,6 +16,9 @@ type DiaryTitle = {
   review: string | null;
   watchedAt: Date | null;
   posterPath: string | null;
+  kind?: TitleKind;
+  seriesStatus?: SeriesStatus | null;
+  seriesSeason?: number | null;
   tags?: Array<{ tag: { id: string; name: string; slug: string } }>;
 };
 
@@ -72,6 +77,14 @@ export const DiaryRecentList = ({ titles }: DiaryRecentListProps) => {
                     ) : null}
                   </h3>
                   <PersonalRating rating={title.rating} size="sm" />
+                  {title.kind === "SERIES" && title.seriesStatus ? (
+                    <p className="text-[11px] uppercase tracking-wider text-mist">
+                      {SERIES_STATUS_LABEL[title.seriesStatus]}
+                      {formatSeriesSeason(title.seriesSeason)
+                        ? ` · ${formatSeriesSeason(title.seriesSeason)}`
+                        : ""}
+                    </p>
+                  ) : null}
                   {title.review ? (
                     <p className="line-clamp-2 text-xs text-fog">{title.review}</p>
                   ) : null}

@@ -1,8 +1,20 @@
-import { Platform, TitleKind } from "@/generated/prisma/client";
+import { Platform, SeriesStatus, TitleKind } from "@/generated/prisma/client";
 
 export const TITLE_KIND_LABEL: Record<TitleKind, string> = {
   MOVIE: "Película",
   SERIES: "Serie",
+};
+
+export const SERIES_STATUS_LABEL: Record<SeriesStatus, string> = {
+  WATCHING: "Viendo",
+  FINISHED: "Terminada",
+  DROPPED: "Abandonada",
+};
+
+export const SERIES_STATUS_CLASS: Record<SeriesStatus, string> = {
+  WATCHING: "bg-accent text-ink",
+  FINISHED: "bg-chrome text-white",
+  DROPPED: "border border-danger-line bg-danger-well text-danger",
 };
 
 export const PLATFORM_LABEL: Record<Platform, string> = {
@@ -46,7 +58,16 @@ export const PLATFORM_CLASS: Record<Platform, string> = {
 };
 
 export const TITLE_KINDS = Object.keys(TITLE_KIND_LABEL) as TitleKind[];
+export const SERIES_STATUSES = Object.keys(SERIES_STATUS_LABEL) as SeriesStatus[];
 export const PLATFORMS = Object.keys(PLATFORM_LABEL) as Platform[];
+
+export const formatSeriesSeason = (season: number | null | undefined) => {
+  if (season == null) {
+    return null;
+  }
+
+  return `Temporada ${season}`;
+};
 
 export const slugify = (value: string) =>
   value
