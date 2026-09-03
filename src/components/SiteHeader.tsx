@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { Logo } from "@/components/Logo";
 import { LogoutButton } from "@/components/LogoutButton";
 import { cn } from "@/lib/cn";
@@ -14,13 +13,18 @@ const navItems = [
   { href: "/titulos/nuevo", label: "Registrar" },
 ] as const;
 
+export type HeaderUser = {
+  name?: string | null;
+  email?: string | null;
+} | null;
+
 type SiteHeaderProps = {
   pathname: string;
+  user: HeaderUser;
 };
 
-export const SiteHeader = ({ pathname: currentPath }: SiteHeaderProps) => {
-  const { data: session } = useSession();
-  const displayName = session?.user?.name ?? session?.user?.email ?? "Cuenta";
+export const SiteHeader = ({ pathname: currentPath, user }: SiteHeaderProps) => {
+  const displayName = user?.name ?? user?.email ?? "Cuenta";
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-canvas/90 backdrop-blur">

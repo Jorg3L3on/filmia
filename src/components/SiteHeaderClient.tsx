@@ -1,10 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SiteHeader } from "@/components/SiteHeader";
+import { SiteHeader, type HeaderUser } from "@/components/SiteHeader";
 
-export const SiteHeaderClient = () => {
+export type { HeaderUser };
+
+type SiteHeaderClientProps = {
+  user: HeaderUser;
+};
+
+export const SiteHeaderClient = ({ user }: SiteHeaderClientProps) => {
   const pathname = usePathname();
-  return <SiteHeader pathname={pathname} />;
+  return <SiteHeader pathname={pathname} user={user} />;
 };

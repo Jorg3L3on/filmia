@@ -1,24 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME } from "@/lib/auth";
+import NextAuth from "next-auth";
+import { NextResponse } from "next/server";
+import { authConfig } from "@/lib/auth.config";
 
 const LOGIN_PATH = "/login";
 const SIGNUP_PATH = "/registro";
 
-const PUBLIC_PATHS = [
-  LOGIN_PATH,
-  SIGNUP_PATH,
-  "/api/auth",
-];
+const PUBLIC_PATHS = [LOGIN_PATH, SIGNUP_PATH, "/api/auth"];
 
-const SESSION_COOKIE_NAMES = [
-  SESSION_COOKIE_NAME,
-  `__Secure-${SESSION_COOKIE_NAME}`,
-  "__Secure-authjs.session-token",
-  "authjs.session-token",
-];
-
-const hasSessionCookie = (request: NextRequest) =>
-  SESSION_COOKIE_NAMES.some((name) => Boolean(request.cookies.get(name)?.value));
+const { auth } = NextAuth(authConfig);
 
 const isPublicPath = (pathname: string) =>
   PUBLIC_PATHS.some(
@@ -31,18 +20,14 @@ const isStaticAsset = (pathname: string) =>
   pathname === "/logo.png" ||
   pathname.startsWith("/posters/");
 
-export const proxy = (request: NextRequest) => {
+export const proxy = auth((request) => {
   const { pathname } = request.nextUrl;
 
-  if (isStaticAsset(pathname)) {
+  if (isStaticAsset(pathname) || pathname.startsWith("/api/auth")) {
     return NextResponse.next();
   }
 
-  if (pathname.startsWith("/api/auth")) {
-    return NextResponse.next();
-  }
-
-  const loggedIn = hasSessionCookie(request);
+  const loggedIn = Boolean(request.auth?.user?.id);
 
   if (isPublicPath(pathname)) {
     if (loggedIn && (pathname === LOGIN_PATH || pathname === SIGNUP_PATH)) {
@@ -61,7 +46,7 @@ export const proxy = (request: NextRequest) => {
   }
 
   return NextResponse.next();
-};
+});
 
 export const config = {
   matcher: [
