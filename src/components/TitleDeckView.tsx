@@ -1,8 +1,8 @@
 import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
-import { DiaryCalendar } from "@/components/DiaryCalendar";
 import { PosterTile } from "@/components/PosterTile";
 import type { titleInclude } from "@/lib/queries";
+import { eyebrowClass } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -12,7 +12,9 @@ type TitleDeckViewProps = {
   titles: TitlePayload[];
   mode?: DeckViewMode;
   modes?: DeckViewMode[];
-  hrefFor: (mode: DeckViewMode) => string;
+  hrefFor?: (mode: DeckViewMode) => string;
+  heading?: string;
+  showToggle?: boolean;
 };
 
 const toCoverflowTitle = (title: TitlePayload): CoverflowTitle => {
@@ -36,16 +38,32 @@ export const TitleDeckView = ({
   mode = "deck",
   modes = ["deck", "grid"],
   hrefFor,
+  heading,
+  showToggle = true,
 }: TitleDeckViewProps) => {
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <DeckViewToggle mode={mode} hrefFor={hrefFor} modes={modes} />
-      </div>
+  if (titles.length === 0) {
+    return null;
+  }
 
-      {mode === "calendar" ? (
-        <DiaryCalendar titles={titles} />
-      ) : mode === "deck" ? (
+  const showToolbar = Boolean(heading) || (showToggle && hrefFor);
+
+  return (
+    <section className="space-y-4" aria-label={heading}>
+      {showToolbar ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {heading ? <h2 className={eyebrowClass}>{heading}</h2> : null}
+          {showToggle && hrefFor ? (
+            <DeckViewToggle
+              mode={mode}
+              hrefFor={hrefFor}
+              modes={modes}
+              className={heading ? undefined : "ml-auto"}
+            />
+          ) : null}
+        </div>
+      ) : null}
+
+      {mode === "deck" ? (
         <CoverflowDeck titles={titles.map(toCoverflowTitle)} />
       ) : (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
@@ -62,6 +80,6 @@ export const TitleDeckView = ({
           ))}
         </ul>
       )}
-    </div>
+    </section>
   );
 };
