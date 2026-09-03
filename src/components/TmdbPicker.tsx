@@ -5,6 +5,7 @@ import { useCallback, useState, useTransition } from "react";
 import { enrichFromTmdb, searchTmdb } from "@/app/actions/metadata";
 import type { TitleKind } from "@/generated/prisma/client";
 import { tmdbPosterUrl } from "@/lib/tmdb";
+import { btnGhost, btnPrimary, fieldClass, focusRing } from "@/lib/ui";
 
 type TmdbPickerProps = {
   initialTmdbId?: number | null;
@@ -15,9 +16,6 @@ type TmdbPickerProps = {
 };
 
 type SearchResult = Awaited<ReturnType<typeof searchTmdb>>[number];
-
-const fieldClass =
-  "w-full rounded-md border border-[#2c3440] bg-[#14181c] px-3 py-2 text-sm text-white placeholder:text-[#667] focus:border-[#8b5cf6] focus:outline-none";
 
 export const TmdbPicker = ({
   initialTmdbId = null,
@@ -96,10 +94,10 @@ export const TmdbPicker = ({
 
   if (!configured.tmdb) {
     return (
-      <p className="rounded-lg border border-dashed border-[#2c3440] p-4 text-sm text-[#99aabb]">
-        Agrega <code className="text-[#c4b5fd]">TMDB_API_KEY</code> y{" "}
-        <code className="text-[#c4b5fd]">OMDB_API_KEY</code> en{" "}
-        <code className="text-[#c4b5fd]">.env</code> para buscar posters e IMDb
+      <p className="rounded-md border border-dashed border-chrome p-4 text-sm text-fog">
+        Agrega <code className="text-accent">TMDB_API_KEY</code> y{" "}
+        <code className="text-accent">OMDB_API_KEY</code> en{" "}
+        <code className="text-accent">.env</code> para buscar posters e IMDb
         (tiers gratuitos).
       </p>
     );
@@ -108,8 +106,8 @@ export const TmdbPicker = ({
   const previewUrl = tmdbPosterUrl(selected?.posterPath, "w185");
 
   return (
-    <fieldset className="space-y-4 rounded-lg border border-[#2c3440] bg-[#111] p-4">
-      <legend className="px-1 text-xs uppercase tracking-wide text-[#8b5cf6]">
+    <fieldset className="space-y-4 rounded-md border border-line bg-well p-4">
+      <legend className="px-1 text-xs uppercase tracking-wide text-accent">
         Poster y rating IMDb (TMDB + OMDb)
       </legend>
 
@@ -124,7 +122,7 @@ export const TmdbPicker = ({
 
       <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
         <label className="block space-y-1">
-          <span className="text-xs text-[#99aabb]">Buscar en TMDB</span>
+          <span className="text-xs text-fog">Buscar en TMDB</span>
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -134,7 +132,7 @@ export const TmdbPicker = ({
           />
         </label>
         <label className="block space-y-1">
-          <span className="text-xs text-[#99aabb]">Tipo búsqueda</span>
+          <span className="text-xs text-fog">Tipo búsqueda</span>
           <select
             value={kind}
             onChange={(event) => setKind(event.target.value as TitleKind)}
@@ -145,7 +143,7 @@ export const TmdbPicker = ({
           </select>
         </label>
         <label className="block space-y-1">
-          <span className="text-xs text-[#99aabb]">Año (opc.)</span>
+          <span className="text-xs text-fog">Año (opc.)</span>
           <input
             value={year}
             onChange={(event) => setYear(event.target.value)}
@@ -162,47 +160,43 @@ export const TmdbPicker = ({
           type="button"
           onClick={handleSearch}
           disabled={isPending || !query.trim()}
-          className="rounded-full bg-gradient-to-r from-[#2563eb] via-[#7c3aed] to-[#db2777] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          className={`${btnPrimary} disabled:opacity-50`}
         >
           {isPending ? "Buscando…" : "Buscar poster"}
         </button>
         {selected ? (
-          <button
-            type="button"
-            onClick={handleClear}
-            className="rounded-full border border-[#3a3a3a] px-4 py-2 text-sm text-[#99aabb] hover:text-white"
-          >
+          <button type="button" onClick={handleClear} className={btnGhost}>
             Quitar selección
           </button>
         ) : null}
       </div>
 
-      {error ? <p className="text-sm text-[#ff8a80]">{error}</p> : null}
+      {error ? <p className="text-sm text-danger">{error}</p> : null}
 
       {selected ? (
-        <div className="flex items-center gap-4 rounded-lg border border-[#2c3440] bg-[#0a0a0a] p-3">
+        <div className="flex items-center gap-4 rounded-md border border-line bg-canvas-deep p-3">
           {previewUrl ? (
             <Image
               src={previewUrl}
               alt=""
               width={60}
               height={90}
-              className="rounded-md"
+              className="rounded-poster"
             />
           ) : (
-            <div className="flex h-[90px] w-[60px] items-center justify-center rounded-md bg-[#1c2228] text-xs text-[#678]">
+            <div className="flex h-[90px] w-[60px] items-center justify-center rounded-poster bg-surface text-xs text-mist">
               Sin poster
             </div>
           )}
           <div className="space-y-1 text-sm">
             <p className="font-medium text-white">{selected.label}</p>
-            <p className="text-[#99aabb]">TMDB #{selected.tmdbId}</p>
+            <p className="text-fog">TMDB #{selected.tmdbId}</p>
             {selected.imdbRating != null ? (
-              <p className="text-[#f5c518]">IMDb {selected.imdbRating.toFixed(1)}/10</p>
+              <p className="text-imdb">IMDb {selected.imdbRating.toFixed(1)}/10</p>
             ) : configured.omdb ? (
-              <p className="text-[#678]">IMDb no disponible</p>
+              <p className="text-mist">IMDb no disponible</p>
             ) : (
-              <p className="text-[#678]">OMDB_API_KEY pendiente</p>
+              <p className="text-mist">OMDB_API_KEY pendiente</p>
             )}
           </div>
         </div>
@@ -218,7 +212,7 @@ export const TmdbPicker = ({
                   type="button"
                   onClick={() => handleSelect(result)}
                   disabled={isPending}
-                  className="w-full overflow-hidden rounded-lg border border-[#2c3440] bg-[#1c2228] text-left transition hover:border-[#8b5cf6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]"
+                  className={`w-full overflow-hidden rounded-poster border border-line bg-surface text-left transition hover:border-accent/50 ${focusRing}`}
                 >
                   {url ? (
                     <Image
@@ -229,7 +223,7 @@ export const TmdbPicker = ({
                       className="aspect-[2/3] w-full object-cover"
                     />
                   ) : (
-                    <div className="flex aspect-[2/3] items-center justify-center bg-[#14181c] text-xs text-[#678]">
+                    <div className="flex aspect-[2/3] items-center justify-center bg-well text-xs text-mist">
                       Sin poster
                     </div>
                   )}
@@ -238,7 +232,7 @@ export const TmdbPicker = ({
                       {result.name}
                     </p>
                     {result.year ? (
-                      <p className="text-[10px] text-[#678]">{result.year}</p>
+                      <p className="text-[10px] text-mist">{result.year}</p>
                     ) : null}
                   </div>
                 </button>

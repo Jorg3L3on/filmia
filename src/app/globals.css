@@ -1,18 +1,52 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ddeeff;
-  --brand-cyan: #4fc3ff;
-  --brand-violet: #8b5cf6;
-  --brand-magenta: #f472b6;
+  --background: #14181c;
+  --foreground: #eef2f5;
+  --canvas: #14181c;
+  --canvas-deep: #0b0e11;
+  --well: #0f1317;
+  --surface: #1c2228;
+  --chrome: #2c3440;
+  --line: #1f262d;
+  --accent: #00e054;
+  --accent-hover: #00c848;
+  --ink: #14181c;
+  --paper: #eef2f5;
+  --fog: #99aabb;
+  --mist: #667788;
+  --faint: #556677;
+  --star: #ff8000;
+  --imdb: #f5c518;
+  --danger: #ff8a80;
+  --danger-well: #2a1616;
+  --danger-line: #5a2a2a;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-serif: var(--font-fraunces);
+  --color-background: var(--canvas);
+  --color-foreground: var(--paper);
+  --color-canvas: var(--canvas);
+  --color-canvas-deep: var(--canvas-deep);
+  --color-well: var(--well);
+  --color-surface: var(--surface);
+  --color-chrome: var(--chrome);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-fog: var(--fog);
+  --color-mist: var(--mist);
+  --color-faint: var(--faint);
+  --color-star: var(--star);
+  --color-imdb: var(--imdb);
+  --color-danger: var(--danger);
+  --color-danger-well: var(--danger-well);
+  --color-danger-line: var(--danger-line);
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces", "Fraunces Fallback", ui-serif, Georgia, serif;
+  --radius-poster: 0.25rem;
 }
 
 html {
@@ -20,12 +54,21 @@ html {
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--canvas);
+  color: var(--paper);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   overflow-x: clip;
 }
 
 .font-serif {
   font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+}
+
+.rail {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.rail::-webkit-scrollbar {
+  display: none;
 }

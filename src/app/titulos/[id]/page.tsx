@@ -12,6 +12,7 @@ import { WatchlistToggle } from "@/components/WatchlistToggle";
 import { WatchProvidersMx } from "@/components/WatchProvidersMx";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import { getTitleById, isTitleInWatchlist } from "@/lib/queries";
+import { btnDanger, btnPrimary, eyebrowClass, focusRing, posterFrame } from "@/lib/ui";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 
 export const dynamic = "force-dynamic";
@@ -36,21 +37,24 @@ export default async function TitleDetailPage({
   const deleteAction = deleteTitle.bind(null, title.id);
 
   return (
-    <article className="grid gap-8 md:grid-cols-[220px_1fr]">
+    <article className="grid gap-10 md:grid-cols-[280px_1fr]">
       <PosterImage
         name={title.name}
         posterPath={title.posterPath}
-        className="rounded-lg"
+        className={`${posterFrame} md:sticky md:top-24`}
         priority
+        sizes="(max-width: 768px) 90vw, 280px"
       />
-      <div className="space-y-4">
-        <p className="text-xs uppercase tracking-[0.2em] text-[#00e054]">
+      <div className="space-y-5">
+        <p className={eyebrowClass}>
           {TITLE_KIND_LABEL[title.kind]}
           {title.year ? ` · ${title.year}` : ""}
         </p>
-        <h1 className="font-serif text-4xl text-white">{title.name}</h1>
+        <h1 className="font-serif text-4xl leading-tight tracking-tight text-white md:text-5xl">
+          {title.name}
+        </h1>
         {title.originalName ? (
-          <p className="text-sm text-[#99aabb]">{title.originalName}</p>
+          <p className="text-sm text-fog">{title.originalName}</p>
         ) : null}
         <div className="flex flex-wrap items-center gap-4">
           <ImdbBadge rating={title.imdbRating} />
@@ -61,7 +65,7 @@ export default async function TitleDetailPage({
         <TagPills tags={title.tags.map((item) => item.tag)} />
         <WatchlistToggle titleId={title.id} inWatchlist={inWatchlist} />
         {title.watchedAt ? (
-          <p className="text-sm text-[#99aabb]">
+          <p className="text-sm text-fog">
             Vista el{" "}
             {title.watchedAt.toLocaleDateString("es-MX", {
               year: "numeric",
@@ -81,14 +85,14 @@ export default async function TitleDetailPage({
             return null;
           }
           return (
-            <p className="text-sm text-[#99aabb]">
+            <p className="text-sm text-fog">
               En listas:{" "}
               {collections.map((item, index) => (
                 <span key={item.listId}>
                   {index > 0 ? ", " : ""}
                   <Link
                     href={`/listas/${item.list.id}`}
-                    className="text-[#00e054] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054]"
+                    className={`text-accent underline-offset-2 hover:underline ${focusRing}`}
                   >
                     {item.list.name}
                   </Link>
@@ -98,20 +102,19 @@ export default async function TitleDetailPage({
           );
         })()}
         {title.review ? (
-          <p className="max-w-2xl whitespace-pre-wrap text-[#c8d6e5]">{title.review}</p>
+          <p className="max-w-2xl whitespace-pre-wrap text-base leading-relaxed text-paper/90">
+            {title.review}
+          </p>
         ) : null}
         <div className="flex flex-wrap gap-3 pt-2">
-          <Link
-            href={`/titulos/${title.id}/editar`}
-            className="rounded-full bg-[#00e054] px-4 py-2 text-sm font-semibold text-[#14181c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-          >
+          <Link href={`/titulos/${title.id}/editar`} className={btnPrimary}>
             Editar
           </Link>
           <form action={deleteAction}>
             <ConfirmSubmit
               label="Borrar"
               confirmMessage={`¿Borrar “${title.name}”?`}
-              className="rounded-full border border-[#5a2a2a] px-4 py-2 text-sm text-[#ff8a80] hover:bg-[#2a1616] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff8a80]"
+              className={btnDanger}
             />
           </form>
         </div>

@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist } from "next/font/google";
+import { BottomNav } from "@/components/BottomNav";
 import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
 
@@ -25,19 +26,26 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: "#14181c",
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
       className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-[#0a0a0a] text-[#def]">
+      <body className="flex min-h-full flex-col bg-canvas text-paper">
         <SiteHeader />
-        <main className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 py-8">{children}</main>
-        <footer className="border-t border-[#2c3440] px-4 py-6 text-center text-xs text-[#678]">
-          Filmia · single-user v0 · sin scrapers
+        <main className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 pb-24 pt-6 sm:pb-10 sm:pt-8">
+          {children}
+        </main>
+        <footer className="hidden border-t border-line px-4 py-5 text-center text-xs text-mist sm:block">
+          Filmia · diario personal · sin scrapers
         </footer>
+        <BottomNav />
       </body>
     </html>
   );
-}
+};

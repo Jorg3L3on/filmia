@@ -1,4 +1,5 @@
 import { markTitleWatched } from "@/app/actions/watchlist";
+import { btnPrimary, btnSecondary, fieldClass } from "@/lib/ui";
 
 type MarkWatchedFormProps = {
   titleId: string;
@@ -29,8 +30,8 @@ export const MarkWatchedForm = ({
           aria-label="Tu nota del 1 al 10"
           className={
             isCompact
-              ? "rounded-full border border-[#2c3440] bg-[#0a0a0a] px-3 py-1 text-xs text-white focus:border-[#00e054] focus:outline-none"
-              : "rounded-full border border-[#2c3440] bg-[#0a0a0a] px-3 py-2 text-sm text-white focus:border-[#00e054] focus:outline-none"
+              ? `${fieldClass} w-auto rounded-full px-3 py-1 text-xs`
+              : `${fieldClass} w-auto rounded-full`
           }
         >
           <option value="">Tu nota</option>
@@ -46,13 +47,7 @@ export const MarkWatchedForm = ({
       </label>
       <button
         type="submit"
-        className={
-          variant === "hero"
-            ? "inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#2563eb] via-[#7c3aed] to-[#db2777] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-            : variant === "queue"
-              ? "inline-flex items-center gap-1.5 rounded-full bg-[#1a1a2e] px-3 py-1 text-xs text-[#c4b5fd] hover:bg-[#7c3aed]/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]"
-              : "inline-flex items-center gap-2 rounded-full bg-[#00e054] px-4 py-2 text-sm font-semibold text-[#14181c] hover:bg-[#00c030] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-        }
+        className={isCompact ? `${btnSecondary} px-3 py-1 text-xs` : btnPrimary}
       >
         Ya la vi
       </button>

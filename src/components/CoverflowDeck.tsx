@@ -147,10 +147,10 @@ const DeckCard = ({
         onClick={handleClick}
         onDragStart={handleDragStart}
         className={cn(
-          "relative block h-full overflow-hidden rounded-2xl border bg-[#1c2228] [&_img]:pointer-events-none",
+          "relative block h-full overflow-hidden rounded-poster border bg-surface [&_img]:pointer-events-none",
           isDragging ? "cursor-grabbing" : "cursor-grab",
-          metrics.isActive ? "border-[#00e054]/40" : "border-white/10",
-          "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054]",
+          metrics.isActive ? "border-accent/40" : "border-white/10",
+          "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
         )}
         draggable={false}
       >
@@ -173,7 +173,7 @@ const DeckCard = ({
           <p className="truncate font-serif text-sm leading-tight text-white">
             {title.name}
           </p>
-          <p className="truncate text-xs text-[#ff8000]">
+          <p className="truncate text-xs text-star">
             {formatRating(title.rating)}
             {imdbLabel ? ` · ${imdbLabel}` : ""}
           </p>
@@ -500,7 +500,7 @@ export const CoverflowDeck = ({ titles, className, footer }: CoverflowDeckProps)
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onClickCapture={handleClickCapture}
-        className="relative min-w-0 cursor-grab touch-none select-none overflow-hidden rounded-2xl border border-[#1f262d] bg-gradient-to-b from-[#0c1014] via-[#14181c] to-[#0a0d10] px-1 pb-9 pt-4 outline-none focus-visible:ring-2 focus-visible:ring-[#00e054]/60 active:cursor-grabbing sm:px-8 sm:pb-14 sm:pt-14"
+        className="relative min-w-0 cursor-grab touch-none select-none overflow-hidden rounded-md border border-line bg-gradient-to-b from-canvas-deep via-canvas to-[#0a0d10] px-1 pb-9 pt-4 outline-none focus-visible:ring-2 focus-visible:ring-accent/60 active:cursor-grabbing sm:px-8 sm:pb-14 sm:pt-14"
       >
         <div
           ref={stageRef}
@@ -539,7 +539,7 @@ export const CoverflowDeck = ({ titles, className, footer }: CoverflowDeckProps)
           </div>
         </div>
 
-        <p className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[11px] uppercase tracking-[0.18em] text-[#556]">
+        <p className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[11px] uppercase tracking-[0.18em] text-faint">
           Arrastra · rueda · desliza
         </p>
       </div>
@@ -547,25 +547,25 @@ export const CoverflowDeck = ({ titles, className, footer }: CoverflowDeckProps)
       {activeTitle ? (
         <div className="mx-auto max-w-xl space-y-3 text-center">
           <div className="space-y-1">
-            <p className="text-xs uppercase tracking-[0.2em] text-[#00e054]">
+            <p className="text-xs uppercase tracking-[0.2em] text-accent">
               {roundedActive + 1} / {titles.length}
             </p>
             <h2 className="font-serif text-2xl text-white sm:text-3xl">
               <Link
                 href={`/titulos/${activeTitle.id}`}
-                className="hover:text-[#00e054] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054]"
+                className="hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 {activeTitle.name}
               </Link>
             </h2>
-            <p className="text-sm text-[#99aabb]">
+            <p className="text-sm text-fog">
               {TITLE_KIND_LABEL[activeTitle.kind]}
               {activeTitle.year ? ` · ${activeTitle.year}` : ""}
               {activeTitle.platform
                 ? ` · ${PLATFORM_LABEL[activeTitle.platform]}`
                 : ""}
             </p>
-            <p className="text-sm text-[#ff8000]">{formatRating(activeTitle.rating)}</p>
+            <p className="text-sm text-star">{formatRating(activeTitle.rating)}</p>
           </div>
           {activeTitle.flatrateProviders && activeTitle.flatrateProviders.length > 0 ? (
             <WatchProviderChips

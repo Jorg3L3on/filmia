@@ -8,6 +8,8 @@ type PosterImageProps = {
   posterPath?: string | null;
   className?: string;
   priority?: boolean;
+  sizes?: string;
+  ratio?: "poster" | "fill";
 };
 
 export const PosterImage = ({
@@ -15,11 +17,18 @@ export const PosterImage = ({
   posterPath,
   className,
   priority = false,
+  sizes = "(max-width: 768px) 50vw, 220px",
+  ratio = "poster",
 }: PosterImageProps) => {
   const src = tmdbPosterUrl(posterPath, "w342");
 
   if (!src) {
-    return <PosterPlaceholder name={name} className={className} />;
+    return (
+      <PosterPlaceholder
+        name={name}
+        className={cn(ratio === "fill" ? "h-full aspect-auto" : undefined, className)}
+      />
+    );
   }
 
   const isExternal =
@@ -27,12 +36,18 @@ export const PosterImage = ({
   const isTmdb = src.includes("image.tmdb.org") || src.includes("media.themoviedb.org");
 
   return (
-    <div className={cn("relative aspect-[2/3] w-full overflow-hidden", className)}>
+    <div
+      className={cn(
+        "relative w-full overflow-hidden",
+        ratio === "poster" ? "aspect-[2/3]" : "h-full",
+        className,
+      )}
+    >
       <Image
         src={src}
         alt={`Poster de ${name}`}
         fill
-        sizes="(max-width: 768px) 50vw, 220px"
+        sizes={sizes}
         className="object-cover"
         priority={priority}
         unoptimized={isExternal && !isTmdb}

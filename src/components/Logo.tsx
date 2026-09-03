@@ -23,16 +23,11 @@ export const Logo = ({ size = "md", showWordmark = true, className }: LogoProps)
         alt=""
         width={image}
         height={image}
-        className="h-auto w-auto rounded-lg"
+        className="h-auto w-auto rounded-poster"
         priority
       />
       {showWordmark ? (
-        <span
-          className={cn(
-            "bg-gradient-to-r from-[#4fc3ff] via-[#8b5cf6] to-[#f472b6] bg-clip-text font-serif tracking-wide text-transparent",
-            wordmark,
-          )}
-        >
+        <span className={cn("font-serif tracking-wide text-white", wordmark)}>
           Filmia
         </span>
       ) : null}

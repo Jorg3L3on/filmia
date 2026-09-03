@@ -12,7 +12,7 @@ export const PlatformBadge = ({
 }: PlatformBadgeProps) => {
   if (!platform) {
     return (
-      <span className="inline-flex rounded-md border border-dashed border-[#2c3440] px-2 py-1 text-[11px] text-[#678]">
+      <span className="inline-flex rounded-sm border border-dashed border-chrome px-2 py-1 text-[11px] text-mist">
         Plataforma por definir
       </span>
     );
@@ -20,7 +20,7 @@ export const PlatformBadge = ({
 
   return (
     <span
-      className={`inline-flex items-center rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${PLATFORM_CLASS[platform]}`}
+      className={`inline-flex items-center rounded-sm px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${PLATFORM_CLASS[platform]}`}
     >
       {compact ? platformWatchShort(platform) : PLATFORM_WATCH_LABEL[platform]}
     </span>

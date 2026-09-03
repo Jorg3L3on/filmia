@@ -13,7 +13,7 @@ export const PosterPlaceholder = ({ name, className }: PosterPlaceholderProps) =
     <div
       aria-hidden="true"
       className={cn(
-        "flex aspect-[2/3] w-full items-end bg-gradient-to-br p-3",
+        "flex aspect-[2/3] w-full items-end bg-gradient-to-br p-3 rounded-poster",
         posterTone(name),
         className,
       )}

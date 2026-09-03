@@ -20,10 +20,10 @@ export const PersonalRating = ({
       }
       title="Tu nota personal"
     >
-      <span className="text-[10px] uppercase tracking-wide text-[#99aabb]">
+      <span className="text-[10px] uppercase tracking-wide text-fog">
         Tu nota
       </span>
-      <span className={isEmpty ? "text-[#678]" : "font-medium text-[#ff8000]"}>
+      <span className={isEmpty ? "text-mist" : "font-medium text-star"}>
         {formatRating(rating)}
       </span>
     </span>
