@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PosterImage } from "@/components/PosterImage";
+import { WatchedBadge } from "@/components/WatchedBadge";
 import { WatchProviderChips } from "@/components/WatchProvidersMx";
 import { cn } from "@/lib/cn";
 import {
@@ -23,6 +24,8 @@ export type CoverflowTitle = {
   posterPath: string | null;
   platform: Platform | null;
   imdbRating: number | null;
+  watched?: boolean;
+  review?: string | null;
   flatrateProviders?: WatchProviderOffer[];
 };
 
@@ -160,6 +163,9 @@ const DeckCard = ({
           priority={metrics.isActive}
           className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
         />
+        {title.watched ? (
+          <WatchedBadge compact className="absolute left-2 top-2 z-10" />
+        ) : null}
         <div
           className={cn(
             "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-10",
@@ -565,7 +571,10 @@ export const CoverflowDeck = ({ titles, className, footer }: CoverflowDeckProps)
                 ? ` · ${PLATFORM_LABEL[activeTitle.platform]}`
                 : ""}
             </p>
-            <p className="text-sm text-star">{formatRating(activeTitle.rating)}</p>
+            <p className="text-sm text-star">
+              {activeTitle.watched ? "Visto · " : ""}
+              {formatRating(activeTitle.rating)}
+            </p>
           </div>
           {activeTitle.flatrateProviders && activeTitle.flatrateProviders.length > 0 ? (
             <WatchProviderChips

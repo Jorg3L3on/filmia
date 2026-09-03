@@ -13,6 +13,7 @@ import {
   TITLE_KIND_LABEL,
   TITLE_KINDS,
 } from "@/lib/labels";
+import { toDateInput } from "@/lib/dates";
 import {
   btnPrimary,
   eyebrowClass,
@@ -31,9 +32,6 @@ type TitleFormProps = {
   lists: Array<Pick<List, "id" | "name">>;
   metadataConfig: { tmdb: boolean; omdb: boolean };
 };
-
-const toDateInput = (value: Date | null) =>
-  value ? value.toISOString().slice(0, 10) : "";
 
 const fieldLabel = "text-[11px] font-medium uppercase tracking-[0.18em] text-fog";
 
@@ -277,7 +275,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
                 name="watchedAt"
                 type="date"
                 defaultValue={toDateInput(title?.watchedAt ?? null)}
-                className={fieldClass}
+                className={`${fieldClass} [color-scheme:dark]`}
               />
             </label>
 
@@ -288,6 +286,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
                 rows={4}
                 defaultValue={title?.review ?? ""}
                 placeholder="Una línea, un spoiler, un veredicto…"
+                maxLength={1000}
                 className={fieldClass}
               />
             </label>

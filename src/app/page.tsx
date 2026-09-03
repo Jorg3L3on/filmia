@@ -1,4 +1,5 @@
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
+import { DiaryRecentList } from "@/components/DiaryRecentList";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { TitleDeckView } from "@/components/TitleDeckView";
@@ -49,6 +50,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
             mode={view}
             showToggle={false}
           />
+          <DiaryRecentList titles={recentTitles} />
           {titles.length > recentTitles.length ? (
             <TitleDeckView
               heading="Todos"

@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { ListKind } from "@/generated/prisma/client";
-import { parseRating } from "@/lib/form-data";
+import { todayDateInput } from "@/lib/dates";
+import { parseOptionalDate, parseOptionalReview, parseRating } from "@/lib/form-data";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import {
@@ -14,7 +15,13 @@ import {
 const revalidateWatchlist = () => {
   revalidatePath("/watchlist");
   revalidatePath("/");
-  revalidatePath("/listas");
+  revalidatePath("/listas", "layout");
+};
+
+const revalidateDiary = (titleId: string) => {
+  revalidateWatchlist();
+  revalidatePath(`/titulos/${titleId}`);
+  revalidatePath(`/titulos/${titleId}/editar`);
 };
 
 export const ensureWatchlist = async (userId: string) => {
@@ -120,7 +127,15 @@ export const markTitleWatched = async (
   formData?: FormData,
 ) => {
   const userId = await requireUserId();
-  const rating = formData ? parseRating(formData.get("rating")) : null;
+  const rating = formData ? parseRating(formData.get("rating")) : undefined;
+  const review = formData ? parseOptionalReview(formData.get("review")) : undefined;
+  const watchedAt =
+    parseOptionalDate(formData?.get("watchedAt") ?? null) ??
+    parseOptionalDate(todayDateInput());
+
+  if (!watchedAt) {
+    throw new Error("La fecha vista no es válida.");
+  }
 
   const title = await prisma.title.findFirst({
     where: { id: titleId, userId },
@@ -140,8 +155,9 @@ export const markTitleWatched = async (
     await tx.title.update({
       where: { id: titleId },
       data: {
-        watchedAt: new Date(),
-        ...(rating != null ? { rating } : {}),
+        watchedAt,
+        ...(rating !== undefined ? { rating } : {}),
+        ...(review !== undefined ? { review } : {}),
       },
     });
 
@@ -154,8 +170,27 @@ export const markTitleWatched = async (
     });
   });
 
-  revalidateWatchlist();
-  revalidatePath(`/titulos/${titleId}`);
+  revalidateDiary(titleId);
+};
+
+/**
+ * Quita el título del diario: solo limpia `watchedAt`.
+ * Conserva `rating` y `review` para que sigan editables en la ficha
+ * o al volver a marcar “Vi esto”.
+ */
+export const clearTitleWatched = async (titleId: string) => {
+  const userId = await requireUserId();
+
+  const result = await prisma.title.updateMany({
+    where: { id: titleId, userId },
+    data: { watchedAt: null },
+  });
+
+  if (result.count === 0) {
+    throw new Error("Título no encontrado.");
+  }
+
+  revalidateDiary(titleId);
 };
 
 export const updateWatchlistNote = async (titleId: string, formData: FormData) => {
