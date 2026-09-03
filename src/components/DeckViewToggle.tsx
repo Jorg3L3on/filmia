@@ -2,7 +2,9 @@ import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
 
-export type DeckViewMode = "deck" | "grid";
+export type DeckViewMode = "deck" | "grid" | "calendar";
+
+export const DIARY_VIEW_MODES: DeckViewMode[] = ["deck", "grid", "calendar"];
 
 type DeckViewToggleProps = {
   mode: DeckViewMode;
@@ -14,6 +16,7 @@ type DeckViewToggleProps = {
 const MODE_LABEL: Record<DeckViewMode, string> = {
   deck: "Mazo",
   grid: "Cuadrícula",
+  calendar: "Calendario",
 };
 
 export const DeckViewToggle = ({

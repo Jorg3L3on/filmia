@@ -24,16 +24,20 @@ type DiaryTitle = {
 
 type DiaryRecentListProps = {
   titles: DiaryTitle[];
+  heading?: string;
 };
 
-export const DiaryRecentList = ({ titles }: DiaryRecentListProps) => {
+export const DiaryRecentList = ({
+  titles,
+  heading = "Entradas recientes",
+}: DiaryRecentListProps) => {
   if (titles.length === 0) {
     return null;
   }
 
   return (
-    <section className="space-y-3" aria-label="Entradas recientes del diario">
-      <h2 className={eyebrowClass}>Entradas recientes</h2>
+    <section className="space-y-3" aria-label={heading}>
+      <h2 className={eyebrowClass}>{heading}</h2>
       <ol className="divide-y divide-line overflow-hidden rounded-md border border-line bg-surface">
         {titles.map((title) => {
           const watchedLabel = title.watchedAt

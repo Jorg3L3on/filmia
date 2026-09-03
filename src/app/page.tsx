@@ -1,5 +1,6 @@
-import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
+import { DeckViewToggle, DIARY_VIEW_MODES, type DeckViewMode } from "@/components/DeckViewToggle";
 import { CatalogFilters } from "@/components/CatalogFilters";
+import { DiaryCalendar } from "@/components/DiaryCalendar";
 import { DiaryRecentList } from "@/components/DiaryRecentList";
 import { EmptyState } from "@/components/EmptyState";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@/components/MinePlatformsNotice";
 import { PageHeader } from "@/components/PageHeader";
 import { TitleDeckView } from "@/components/TitleDeckView";
+import { parseDayParam, parseMonthParam } from "@/lib/dates";
 import { getTags, getTitles, getUserStreamingPlatforms } from "@/lib/queries";
 import { resolveMinePlatformsCatalog } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs } from "@/lib/tags";
@@ -17,7 +19,7 @@ import { parseSeriesStatusFilter } from "@/lib/series";
 export const dynamic = "force-dynamic";
 
 const isView = (value: string | undefined): value is DeckViewMode =>
-  value === "deck" || value === "grid";
+  value === "deck" || value === "grid" || value === "calendar";
 
 export default async function HomePage({
   searchParams,
@@ -27,6 +29,8 @@ export default async function HomePage({
     tag?: string | string[];
     minePlatforms?: string | string[];
     seriesStatus?: string | string[];
+    month?: string | string[];
+    day?: string | string[];
   }>;
 }) {
   const params = await searchParams;
@@ -34,6 +38,12 @@ export default async function HomePage({
   const selectedTags = parseTagSlugs(params.tag);
   const minePlatforms = parseMinePlatforms(params.minePlatforms);
   const seriesStatus = parseSeriesStatusFilter(params.seriesStatus);
+  const month = parseMonthParam(params.month);
+  const selectedDay = parseDayParam(params.day, month);
+  const calendarQuery =
+    view === "calendar"
+      ? { month, day: selectedDay }
+      : { month: undefined, day: undefined };
 
   const [taggedTitles, tags, userPlatforms] = await Promise.all([
     getTitles({
@@ -55,18 +65,28 @@ export default async function HomePage({
   const recentTitles = titles.slice(0, 12);
   const hasActiveFilters = selectedTags.length > 0 || minePlatforms || Boolean(seriesStatus);
   const hrefFor = (mode: DeckViewMode) =>
-    catalogHref("/", { tags: selectedTags, view: mode, minePlatforms, seriesStatus });
-  const clearHref = catalogHref("/", { view });
+    catalogHref("/", {
+      tags: selectedTags,
+      view: mode,
+      minePlatforms,
+      seriesStatus,
+      ...(mode === "calendar" ? { month, day: selectedDay } : {}),
+    });
+  const clearHref = catalogHref("/", { view, ...calendarQuery });
 
   return (
     <div className="space-y-8">
       <PageHeader
         eyebrow="Diario"
         title="Lo visto"
-        description="Mazo y cuadrícula de lo que ya viste. Filtra por etiqueta (OR), estado de serie o por las plataformas que tienes."
+        description="Mazo, cuadrícula o calendario de lo que ya viste. Filtra por etiqueta (OR), estado de serie o por las plataformas que tienes."
         actions={
-          titles.length > 0 || hasActiveFilters ? (
-            <DeckViewToggle mode={view} hrefFor={hrefFor} />
+          titles.length > 0 || hasActiveFilters || view === "calendar" ? (
+            <DeckViewToggle
+              mode={view}
+              hrefFor={hrefFor}
+              modes={DIARY_VIEW_MODES}
+            />
           ) : undefined
         }
       />
@@ -79,10 +99,34 @@ export default async function HomePage({
         minePlatforms={minePlatforms}
         hasStreamingPlatforms={userPlatforms.length > 0}
         seriesStatus={seriesStatus}
+        month={calendarQuery.month}
+        day={calendarQuery.day}
       />
 
       {catalog.needsSetup ? (
         <MinePlatformsSetupCta />
+      ) : view === "calendar" ? (
+        <>
+          <MissingStreamingDataNote count={catalog.missingCache} />
+          {titles.length === 0 && minePlatforms ? (
+            <MinePlatformsEmpty
+              userPlatforms={userPlatforms}
+              actionHref={clearHref}
+              hasTagFilters={selectedTags.length > 0 || Boolean(seriesStatus)}
+            />
+          ) : (
+            <DiaryCalendar
+              titles={titles}
+              month={month}
+              selectedDay={selectedDay}
+              tags={selectedTags}
+              minePlatforms={minePlatforms}
+              seriesStatus={seriesStatus}
+              hasActiveFilters={hasActiveFilters}
+              clearHref={clearHref}
+            />
+          )}
+        </>
       ) : titles.length === 0 && minePlatforms ? (
         <>
           <MissingStreamingDataNote count={catalog.missingCache} />
