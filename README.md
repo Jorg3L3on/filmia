@@ -11,7 +11,7 @@ App personal para trackear películas y series vistas. UI en español, estética
 
 ## Modelo
 
-- **User**: cuenta con email, contraseña hasheada (bcrypt) y nombre opcional
+- **User**: cuenta con email, contraseña hasheada (bcrypt), nombre opcional y `streamingPlatforms` (JSON: claves del enum `Platform`)
 - **Title**: película o serie del usuario, nota personal 1–10, poster (TMDB), rating IMDb (OMDb), plataforma opcional, notas, fecha vista
 - **Tag** + **TitleTag**: categorías libres por usuario (épico, sci-fi, etc.)
 - **List** + **ListItem**: listas y membresía por usuario (Quiero ver, Favoritas, Por rewatch + personalizadas)
@@ -45,6 +45,7 @@ Abre [http://localhost:3000](http://localhost:3000). Las rutas de la app requier
 - **Registro**: `/registro` — email, contraseña (mín. 8 caracteres), nombre opcional
 - **Login**: `/login` — credenciales vía Auth.js
 - **Logout**: botón «Salir» en la cabecera
+- **Perfil**: `/perfil` — plataformas de streaming contratadas (México)
 - Rutas protegidas redirigen a `/login` si no hay sesión (proxy + comprobaciones en servidor)
 
 Usuario demo del seed (datos dummy):
@@ -77,6 +78,20 @@ npm run db:seed
 ```
 
 `prisma.config.ts` lee `DATABASE_URL_UNPOOLED` de forma lazy (sin `env()`), así `prisma generate` / `postinstall` no exige secretos. Migraciones sí necesitan esa URL. La app Next.js usa `DATABASE_URL` (pooled) vía el adaptador Neon.
+
+### JOR-152 — plataformas de streaming del usuario
+
+Nueva columna `User.streamingPlatforms` (`JSONB NOT NULL DEFAULT '[]'`): array de claves del enum `Platform` (`NETFLIX`, `PRIME`, `MAX`, `DISNEY`, `CLARO`, `APPLE`, `MUBI`).
+
+En Neon (proyecto `filmia`, `late-cell-10415663`):
+
+```bash
+npx prisma migrate deploy
+```
+
+No hace falta seed ni backfill: prefs vacías son válidas. `/perfil` y «dónde ver» muestran el CTA «Elige tus plataformas».
+
+El filtro de biblioteca (JOR-157) puede leer este JSON y usar `titleAvailableOnUserPlatforms` / `STREAMING_PLATFORM_TMDB` en `src/lib/streaming-platforms.ts`. No se aplica el filtro en este cambio.
 
 ### Seed
 

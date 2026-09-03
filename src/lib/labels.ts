@@ -15,6 +15,16 @@ export const PLATFORM_LABEL: Record<Platform, string> = {
   MUBI: "MUBI",
 };
 
+export const PLATFORM_SERVICE_LABEL: Record<Platform, string> = {
+  NETFLIX: "Netflix",
+  PRIME: "Prime Video",
+  MAX: "Max",
+  DISNEY: "Disney+",
+  CLARO: "Claro video",
+  APPLE: "Apple TV",
+  MUBI: "MUBI",
+};
+
 export const PLATFORM_WATCH_LABEL: Record<Platform, string> = {
   NETFLIX: "Ver ahora en Netflix",
   PRIME: "Ver ahora en Prime",

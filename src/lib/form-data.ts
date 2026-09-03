@@ -93,6 +93,17 @@ export const parseIdList = (formData: FormData, key: string) =>
     .getAll(key)
     .filter((value): value is string => typeof value === "string" && value.length > 0);
 
+export const parseStreamingPlatforms = (formData: FormData): Platform[] => {
+  const values = parseIdList(formData, "platforms");
+  const invalid = values.some((value) => !PLATFORMS.includes(value as Platform));
+  if (invalid) {
+    throw new Error("Plataforma no válida.");
+  }
+
+  const selected = new Set(values as Platform[]);
+  return PLATFORMS.filter((platform) => selected.has(platform));
+};
+
 export const parseNewTags = (value: FormDataEntryValue | null) =>
   asString(value)
     .split(",")
