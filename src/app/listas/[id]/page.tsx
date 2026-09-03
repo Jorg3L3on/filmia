@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { addTitleToList, deleteList } from "@/app/actions/lists";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
