@@ -29,7 +29,7 @@ type TmdbPickerProps = {
   onCleared?: () => void;
 };
 
-type SearchResult = Awaited<ReturnType<typeof searchTmdb>>[number];
+type SearchResult = Awaited<ReturnType<typeof searchTmdb>>["results"][number];
 
 export const TmdbPicker = ({
   initialTmdbId = null,
@@ -68,8 +68,16 @@ export const TmdbPicker = ({
     startTransition(async () => {
       setError(null);
       const yearNum = year.trim() ? Number(year) : null;
-      const hits = await searchTmdb(query, kind, yearNum);
+      const { results: hits, error: searchError } = await searchTmdb(
+        query,
+        kind,
+        yearNum,
+      );
       setResults(hits);
+      if (searchError) {
+        setError(searchError);
+        return;
+      }
       if (hits.length === 0) {
         setError("Nada en TMDB con esa búsqueda.");
       }

@@ -5,6 +5,7 @@ import {
   getTmdbExternalIds,
   isTmdbConfigured,
   searchTmdb,
+  searchTmdbMulti,
 } from "@/lib/tmdb";
 
 export type TitleMetadata = {
@@ -45,6 +46,7 @@ export const resolveTitleMetadata = async (
 };
 
 export const searchTmdbTitles = searchTmdb;
+export const searchTmdbCatalog = searchTmdbMulti;
 
 export const parseOptionalTmdbId = (value: FormDataEntryValue | null) => {
   const raw = typeof value === "string" ? value.trim() : "";

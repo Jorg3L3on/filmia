@@ -39,8 +39,8 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         <EmptyState
           title="El diario está vacío"
           description="Registra un título o corre el seed para ver tus posters."
-          actionHref="/titulos/nuevo"
-          actionLabel="Registrar título"
+          actionHref="/buscar"
+          actionLabel="Buscar en TMDB"
         />
       ) : (
         <>

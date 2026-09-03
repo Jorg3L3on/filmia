@@ -14,6 +14,11 @@ import {
   parseTitleKind,
   parseYear,
 } from "@/lib/form-data";
+import {
+  upsertTitleFromTmdbForUser,
+  type AddTitleFromTmdbInput,
+  type AddTitleFromTmdbResult,
+} from "@/lib/add-title-from-tmdb";
 import { slugify } from "@/lib/labels";
 import {
   enrichMetadataOnSave,
@@ -23,9 +28,12 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { enrichWatchProvidersOnSave } from "@/lib/watch-providers-cache";
 
+export type { AddTitleFromTmdbInput, AddTitleFromTmdbResult };
+
 const revalidateCatalog = (titleId?: string) => {
   revalidatePath("/");
   revalidatePath("/listas");
+  revalidatePath("/buscar");
   if (titleId) {
     revalidatePath(`/titulos/${titleId}`);
     revalidatePath(`/titulos/${titleId}/editar`);
@@ -96,6 +104,20 @@ const readTitleFields = (formData: FormData) => ({
   newTags: parseNewTags(formData.get("newTags")),
   listIds: parseIdList(formData, "listIds"),
 });
+
+export const addTitleFromTmdb = async (
+  input: AddTitleFromTmdbInput,
+): Promise<AddTitleFromTmdbResult> => {
+  const userId = await requireUserId();
+  const result = await upsertTitleFromTmdbForUser(userId, input);
+
+  if (result.ok) {
+    revalidateCatalog(result.titleId);
+    revalidatePath("/watchlist");
+  }
+
+  return result;
+};
 
 export const createTitle = async (formData: FormData) => {
   const userId = await requireUserId();

@@ -4,8 +4,13 @@ import { TitleKind } from "@/generated/prisma/client";
 import {
   metadataServicesConfigured,
   resolveTitleMetadata,
+  searchTmdbCatalog,
   searchTmdbTitles,
 } from "@/lib/metadata";
+import { tmdbErrorMessage } from "@/lib/tmdb";
+
+const missingKeyError =
+  "Falta TMDB_API_KEY. Agrégala en el entorno para buscar títulos.";
 
 export const getMetadataConfig = async () => metadataServicesConfigured();
 
@@ -15,19 +20,33 @@ export const searchTmdb = async (
   year?: number | null,
 ) => {
   if (!metadataServicesConfigured().tmdb) {
-    return [];
+    return { results: [], error: missingKeyError };
   }
 
   try {
-    return await searchTmdbTitles(query, kind, year);
-  } catch {
-    return [];
+    const results = await searchTmdbTitles(query, kind, year);
+    return { results, error: null };
+  } catch (error) {
+    return { results: [], error: tmdbErrorMessage(error) };
+  }
+};
+
+export const searchTmdbDiscover = async (query: string) => {
+  if (!metadataServicesConfigured().tmdb) {
+    return { results: [], error: missingKeyError };
+  }
+
+  try {
+    const results = await searchTmdbCatalog(query);
+    return { results, error: null };
+  } catch (error) {
+    return { results: [], error: tmdbErrorMessage(error) };
   }
 };
 
 export const enrichFromTmdb = async (tmdbId: number, kind: TitleKind) => {
   if (!metadataServicesConfigured().tmdb) {
-    throw new Error("TMDB no está configurado.");
+    throw new Error(missingKeyError);
   }
 
   return resolveTitleMetadata(tmdbId, kind);
