@@ -88,6 +88,8 @@ type CatalogQuery = {
   sort?: string | null;
   minePlatforms?: boolean;
   seriesStatus?: SeriesStatusFilter | null;
+  month?: string | null;
+  day?: string | null;
 };
 
 export const catalogSearchParams = ({
@@ -96,6 +98,8 @@ export const catalogSearchParams = ({
   sort,
   minePlatforms,
   seriesStatus,
+  month,
+  day,
 }: CatalogQuery) => {
   const params = new URLSearchParams();
 
@@ -117,6 +121,14 @@ export const catalogSearchParams = ({
 
   if (seriesStatus) {
     params.set("seriesStatus", seriesStatus);
+  }
+
+  if (view === "calendar" && month) {
+    params.set("month", month);
+  }
+
+  if (view === "calendar" && day) {
+    params.set("day", day);
   }
 
   return params;

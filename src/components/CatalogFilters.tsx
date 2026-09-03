@@ -25,6 +25,8 @@ type CatalogFiltersProps = {
   hasStreamingPlatforms?: boolean;
   showTagFilters?: boolean;
   seriesStatus?: SeriesStatusFilter;
+  month?: string;
+  day?: string | null;
 };
 
 export const CatalogFilters = ({
@@ -37,9 +39,11 @@ export const CatalogFilters = ({
   hasStreamingPlatforms = false,
   showTagFilters = true,
   seriesStatus,
+  month,
+  day,
 }: CatalogFiltersProps) => {
   const selected = new Set(selectedSlugs);
-  const queryBase = { view, sort, minePlatforms, seriesStatus };
+  const queryBase = { view, sort, minePlatforms, seriesStatus, month, day };
   const hasActiveFilters = selected.size > 0 || minePlatforms || Boolean(seriesStatus);
 
   return (
@@ -55,6 +59,8 @@ export const CatalogFilters = ({
         minePlatforms={minePlatforms}
         hasStreamingPlatforms={hasStreamingPlatforms}
         seriesStatus={seriesStatus}
+        month={month}
+        day={day}
       />
 
       <div className="space-y-3 border-t border-line pt-4">
@@ -117,7 +123,7 @@ export const CatalogFilters = ({
             <div className="flex flex-wrap gap-3">
               {hasActiveFilters ? (
                 <Link
-                  href={catalogHref(pathname, { view, sort })}
+                  href={catalogHref(pathname, { view, sort, month, day })}
                   className={`text-xs text-fog underline-offset-2 hover:text-white hover:underline ${focusRing}`}
                 >
                   Quitar filtros
@@ -182,7 +188,7 @@ export const CatalogFilters = ({
         </div>
       ) : hasActiveFilters ? (
         <Link
-          href={catalogHref(pathname, { view, sort })}
+          href={catalogHref(pathname, { view, sort, month, day })}
           className={`text-xs text-fog underline-offset-2 hover:text-white hover:underline ${focusRing}`}
         >
           Quitar filtros

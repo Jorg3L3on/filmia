@@ -12,6 +12,8 @@ type MinePlatformsToggleProps = {
   minePlatforms: boolean;
   hasStreamingPlatforms: boolean;
   seriesStatus?: SeriesStatusFilter;
+  month?: string;
+  day?: string | null;
 };
 
 export const MinePlatformsToggle = ({
@@ -22,6 +24,8 @@ export const MinePlatformsToggle = ({
   minePlatforms,
   hasStreamingPlatforms,
   seriesStatus,
+  month,
+  day,
 }: MinePlatformsToggleProps) => {
   if (!hasStreamingPlatforms) {
     return (
@@ -44,7 +48,15 @@ export const MinePlatformsToggle = ({
     );
   }
 
-  const query = { tags, view, sort, minePlatforms: !minePlatforms, seriesStatus };
+  const query = {
+    tags,
+    view,
+    sort,
+    minePlatforms: !minePlatforms,
+    seriesStatus,
+    month,
+    day,
+  };
 
   return (
     <div className="space-y-2">

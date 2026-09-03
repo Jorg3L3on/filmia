@@ -69,7 +69,7 @@ export const TitleDeckView = ({
 
       {mode === "deck" ? (
         <CoverflowDeck titles={titles.map(toCoverflowTitle)} />
-      ) : (
+      ) : mode === "calendar" ? null : (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {titles.map((title) => (
             <li key={title.id}>
