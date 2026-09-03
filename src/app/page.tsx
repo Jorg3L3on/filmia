@@ -12,6 +12,7 @@ import { TitleDeckView } from "@/components/TitleDeckView";
 import { getTags, getTitles, getUserStreamingPlatforms } from "@/lib/queries";
 import { resolveMinePlatformsCatalog } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs } from "@/lib/tags";
+import { parseSeriesStatusFilter } from "@/lib/series";
 
 export const dynamic = "force-dynamic";
 
@@ -25,18 +26,21 @@ export default async function HomePage({
     view?: string;
     tag?: string | string[];
     minePlatforms?: string | string[];
+    seriesStatus?: string | string[];
   }>;
 }) {
   const params = await searchParams;
   const view = isView(params.view) ? params.view : "deck";
   const selectedTags = parseTagSlugs(params.tag);
   const minePlatforms = parseMinePlatforms(params.minePlatforms);
+  const seriesStatus = parseSeriesStatusFilter(params.seriesStatus);
 
   const [taggedTitles, tags, userPlatforms] = await Promise.all([
     getTitles({
       sort: "watched",
       onlyWatched: true,
       tags: selectedTags,
+      seriesStatus,
     }),
     getTags(),
     getUserStreamingPlatforms(),
@@ -49,9 +53,9 @@ export default async function HomePage({
   );
   const titles = catalog.titles;
   const recentTitles = titles.slice(0, 12);
-  const hasActiveFilters = selectedTags.length > 0 || minePlatforms;
+  const hasActiveFilters = selectedTags.length > 0 || minePlatforms || Boolean(seriesStatus);
   const hrefFor = (mode: DeckViewMode) =>
-    catalogHref("/", { tags: selectedTags, view: mode, minePlatforms });
+    catalogHref("/", { tags: selectedTags, view: mode, minePlatforms, seriesStatus });
   const clearHref = catalogHref("/", { view });
 
   return (
@@ -59,7 +63,7 @@ export default async function HomePage({
       <PageHeader
         eyebrow="Diario"
         title="Lo visto"
-        description="Mazo y cuadrícula de lo que ya viste. Filtra por etiqueta (OR) o por las plataformas que tienes."
+        description="Mazo y cuadrícula de lo que ya viste. Filtra por etiqueta (OR), estado de serie o por las plataformas que tienes."
         actions={
           titles.length > 0 || hasActiveFilters ? (
             <DeckViewToggle mode={view} hrefFor={hrefFor} />
@@ -74,6 +78,7 @@ export default async function HomePage({
         view={view}
         minePlatforms={minePlatforms}
         hasStreamingPlatforms={userPlatforms.length > 0}
+        seriesStatus={seriesStatus}
       />
 
       {catalog.needsSetup ? (
@@ -84,19 +89,19 @@ export default async function HomePage({
           <MinePlatformsEmpty
             userPlatforms={userPlatforms}
             actionHref={clearHref}
-            hasTagFilters={selectedTags.length > 0}
+            hasTagFilters={selectedTags.length > 0 || Boolean(seriesStatus)}
           />
         </>
       ) : titles.length === 0 ? (
         <EmptyState
           title={
-            selectedTags.length > 0
-              ? "Nada con esas etiquetas"
+            selectedTags.length > 0 || seriesStatus
+              ? "Nada con esos filtros"
               : "El diario está vacío"
           }
           description={
-            selectedTags.length > 0
-              ? "Prueba otra combinación o quita filtros. Un título entra si tiene cualquiera de las etiquetas."
+            selectedTags.length > 0 || seriesStatus
+              ? "Prueba otra combinación o quita filtros. El estado de serie ignora películas."
               : "Registra un título o corre el seed para ver tus posters."
           }
           actionHref={hasActiveFilters ? clearHref : "/buscar"}

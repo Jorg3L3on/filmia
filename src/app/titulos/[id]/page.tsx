@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TitleKind } from "@/generated/prisma/client";
 import { deleteTitle } from "@/app/actions/titles";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { ImdbBadge } from "@/components/ImdbBadge";
@@ -7,6 +8,7 @@ import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PersonalRating } from "@/components/PersonalRating";
 import { PlatformBadge } from "@/components/PlatformBadge";
 import { PosterImage } from "@/components/PosterImage";
+import { SeriesStatusPanel } from "@/components/SeriesStatusPanel";
 import { TitleTagsPanel } from "@/components/TitleTagsPanel";
 import { WatchedBadge } from "@/components/WatchedBadge";
 import { TitleListsPanel } from "@/components/TitleListsPanel";
@@ -76,6 +78,13 @@ export default async function TitleDetailPage({
           lists={assignableLists}
           memberListIds={title.listItems.map((item) => item.listId)}
         />
+        {title.kind === TitleKind.SERIES ? (
+          <SeriesStatusPanel
+            titleId={title.id}
+            seriesStatus={title.seriesStatus}
+            seriesSeason={title.seriesSeason}
+          />
+        ) : null}
         <section className={`${wellClass} space-y-4 p-5`}>
           <header className="space-y-1">
             <p className={eyebrowClass}>Diario</p>

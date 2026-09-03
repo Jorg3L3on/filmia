@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { catalogHref } from "@/lib/tags";
 import { focusRing } from "@/lib/ui";
+import type { SeriesStatusFilter } from "@/lib/series";
 
 type MinePlatformsToggleProps = {
   pathname: string;
@@ -10,6 +11,7 @@ type MinePlatformsToggleProps = {
   sort?: string;
   minePlatforms: boolean;
   hasStreamingPlatforms: boolean;
+  seriesStatus?: SeriesStatusFilter;
 };
 
 export const MinePlatformsToggle = ({
@@ -19,6 +21,7 @@ export const MinePlatformsToggle = ({
   sort,
   minePlatforms,
   hasStreamingPlatforms,
+  seriesStatus,
 }: MinePlatformsToggleProps) => {
   if (!hasStreamingPlatforms) {
     return (
@@ -41,7 +44,7 @@ export const MinePlatformsToggle = ({
     );
   }
 
-  const query = { tags, view, sort, minePlatforms: !minePlatforms };
+  const query = { tags, view, sort, minePlatforms: !minePlatforms, seriesStatus };
 
   return (
     <div className="space-y-2">

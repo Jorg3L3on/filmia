@@ -6,6 +6,7 @@ import { PersonalRating } from "@/components/PersonalRating";
 import { PosterImage } from "@/components/PosterImage";
 import { TagPills } from "@/components/TagPills";
 import { WatchedBadge } from "@/components/WatchedBadge";
+import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { titleInclude } from "@/lib/queries";
 import { cn } from "@/lib/cn";
@@ -32,6 +33,13 @@ export const TitleCard = ({ title }: TitleCardProps) => {
           />
           {title.watchedAt ? (
             <WatchedBadge compact className="absolute left-2 top-2" />
+          ) : null}
+          {title.kind === "SERIES" && title.seriesStatus ? (
+            <SeriesStatusBadge
+              status={title.seriesStatus}
+              compact
+              className="absolute right-2 top-2"
+            />
           ) : null}
         </div>
         <div className="space-y-1.5 pt-2">

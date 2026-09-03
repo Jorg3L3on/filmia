@@ -23,6 +23,7 @@ import {
 } from "@/lib/queries";
 import { resolveMinePlatformsCatalog } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
+import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
 import { btnGhost, btnPrimary, fieldClass } from "@/lib/ui";
 import { WATCHLIST_DESCRIPTION, WATCHLIST_NAME } from "@/lib/watchlist";
 
@@ -38,12 +39,14 @@ export default async function WatchlistPage({
   searchParams: Promise<{
     tag?: string | string[];
     minePlatforms?: string | string[];
+    seriesStatus?: string | string[];
   }>;
 }) {
   await ensureCurrentUserWatchlist();
   const params = await searchParams;
   const selectedTags = parseTagSlugs(params.tag);
   const minePlatforms = parseMinePlatforms(params.minePlatforms);
+  const seriesStatus = parseSeriesStatusFilter(params.seriesStatus);
 
   const [watchlist, titleOptions, tags, userPlatforms] = await Promise.all([
     getWatchlist(),
@@ -57,8 +60,11 @@ export default async function WatchlistPage({
     selectedTags.length > 0
       ? rawItems.filter((item) => titleMatchesAnyTag(item.title.tags, selectedTags))
       : rawItems;
+  const statusItems = taggedItems.filter((item) =>
+    titleMatchesSeriesStatus(item.title, seriesStatus),
+  );
   const catalog = resolveMinePlatformsCatalog(
-    taggedItems.map((item) => item.title),
+    statusItems.map((item) => item.title),
     minePlatforms,
     userPlatforms,
   );
@@ -66,14 +72,14 @@ export default async function WatchlistPage({
   const items = catalog.needsSetup
     ? []
     : minePlatforms
-      ? taggedItems.filter((item) => visibleIds.has(item.title.id))
-      : taggedItems;
+      ? statusItems.filter((item) => visibleIds.has(item.title.id))
+      : statusItems;
 
   const listId = watchlist?.id ?? "";
   const memberIds = new Set(rawItems.map((item) => item.titleId));
   const availableTitles = titleOptions.filter((title) => !memberIds.has(title.id));
   const [hero, ...queue] = items;
-  const hasActiveFilters = selectedTags.length > 0 || minePlatforms;
+  const hasActiveFilters = selectedTags.length > 0 || minePlatforms || Boolean(seriesStatus);
   const clearHref = catalogHref("/watchlist");
 
   return (
@@ -106,6 +112,7 @@ export default async function WatchlistPage({
         pathname="/watchlist"
         minePlatforms={minePlatforms}
         hasStreamingPlatforms={userPlatforms.length > 0}
+        seriesStatus={seriesStatus}
       />
 
       <form
@@ -156,13 +163,13 @@ export default async function WatchlistPage({
           <MinePlatformsEmpty
             userPlatforms={userPlatforms}
             actionHref={clearHref}
-            hasTagFilters={selectedTags.length > 0}
+            hasTagFilters={selectedTags.length > 0 || Boolean(seriesStatus)}
           />
         </>
       ) : items.length === 0 ? (
         <EmptyState
-          title="Nada con esas etiquetas"
-          description="Esta cola no tiene títulos con las etiquetas elegidas. El filtro es OR: basta con una."
+          title="Nada con esos filtros"
+          description="Esta cola no tiene títulos con las etiquetas o el estado de serie elegidos. El estado ignora películas."
           actionHref={clearHref}
           actionLabel="Quitar filtros"
         />

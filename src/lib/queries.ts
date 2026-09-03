@@ -2,6 +2,7 @@ import { ListKind, Platform, TitleKind } from "@/generated/prisma/client";
 import { sortUserLists } from "@/lib/lists";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
+import { seriesStatusWhere, type SeriesStatusFilter } from "@/lib/series";
 import { parseStoredStreamingPlatforms } from "@/lib/streaming-platforms";
 import { WATCHLIST_SLUG } from "@/lib/watchlist";
 
@@ -21,11 +22,20 @@ type TitleFilters = {
   tags?: string[];
   sort?: "recent" | "watched" | "rating" | "name" | "year";
   onlyWatched?: boolean;
+  seriesStatus?: SeriesStatusFilter;
 };
 
 export const getTitles = async (filters: TitleFilters = {}) => {
   const userId = await requireUserId();
-  const { q, kind, platform, tags, sort = "recent", onlyWatched = false } = filters;
+  const {
+    q,
+    kind,
+    platform,
+    tags,
+    sort = "recent",
+    onlyWatched = false,
+    seriesStatus,
+  } = filters;
   const tagSlugs = [...new Set((tags ?? []).map((slug) => slug.trim()).filter(Boolean))];
 
   return prisma.title.findMany({
@@ -47,6 +57,7 @@ export const getTitles = async (filters: TitleFilters = {}) => {
         ? { tags: { some: { tag: { slug: { in: tagSlugs }, userId } } } }
         : {}),
       ...(onlyWatched ? { watchedAt: { not: null } } : {}),
+      ...seriesStatusWhere(seriesStatus),
     },
     include: titleInclude,
     orderBy:

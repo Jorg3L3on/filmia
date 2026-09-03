@@ -17,6 +17,7 @@ import { emptyStateForList, isFixedListSlug, WATCHLIST_SLUG } from "@/lib/lists"
 import { getListById, getTags, getTitleOptions, getUserStreamingPlatforms } from "@/lib/queries";
 import { resolveMinePlatformsCatalog } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
+import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
 import { btnDanger, btnPrimary, fieldClass } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +31,7 @@ export default async function ListDetailPage({
     view?: string;
     tag?: string | string[];
     minePlatforms?: string | string[];
+    seriesStatus?: string | string[];
   }>;
 }) {
   const { id } = await params;
@@ -37,6 +39,7 @@ export default async function ListDetailPage({
   const view: DeckViewMode = query.view === "grid" ? "grid" : "deck";
   const selectedTags = parseTagSlugs(query.tag);
   const minePlatforms = parseMinePlatforms(query.minePlatforms);
+  const seriesStatus = parseSeriesStatusFilter(query.seriesStatus);
   const [list, titleOptions, tags, userPlatforms] = await Promise.all([
     getListById(id),
     getTitleOptions(),
@@ -57,8 +60,11 @@ export default async function ListDetailPage({
   const taggedItems = list.items.filter((item) =>
     titleMatchesAnyTag(item.title.tags, selectedTags),
   );
+  const statusItems = taggedItems.filter((item) =>
+    titleMatchesSeriesStatus(item.title, seriesStatus),
+  );
   const catalog = resolveMinePlatformsCatalog(
-    taggedItems.map((item) => item.title),
+    statusItems.map((item) => item.title),
     minePlatforms,
     userPlatforms,
   );
@@ -66,8 +72,8 @@ export default async function ListDetailPage({
   const visibleItems = catalog.needsSetup
     ? []
     : minePlatforms
-      ? taggedItems.filter((item) => visibleIds.has(item.title.id))
-      : taggedItems;
+      ? statusItems.filter((item) => visibleIds.has(item.title.id))
+      : statusItems;
   const addAction = addTitleToList.bind(null, list.id);
   const deleteAction = deleteList.bind(null, list.id);
   const fixed = isFixedListSlug(list.slug);
@@ -106,6 +112,7 @@ export default async function ListDetailPage({
         view={view}
         minePlatforms={minePlatforms}
         hasStreamingPlatforms={userPlatforms.length > 0}
+        seriesStatus={seriesStatus}
       />
 
       <form
@@ -141,13 +148,13 @@ export default async function ListDetailPage({
           <MinePlatformsEmpty
             userPlatforms={userPlatforms}
             actionHref={clearHref}
-            hasTagFilters={selectedTags.length > 0}
+            hasTagFilters={selectedTags.length > 0 || Boolean(seriesStatus)}
           />
         </>
       ) : filteredEmpty ? (
         <EmptyState
-          title="Nada con esas etiquetas"
-          description="Esta lista no tiene títulos con las etiquetas elegidas. El filtro es OR: basta con una."
+          title="Nada con esos filtros"
+          description="Esta lista no tiene títulos con las etiquetas o el estado de serie elegidos. El estado ignora películas."
           actionHref={clearHref}
           actionLabel="Quitar filtros"
         />
@@ -160,6 +167,7 @@ export default async function ListDetailPage({
             mode={view}
             selectedTags={selectedTags}
             minePlatforms={minePlatforms}
+            seriesStatus={seriesStatus}
           />
         </div>
       )}

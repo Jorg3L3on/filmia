@@ -2,9 +2,11 @@ import Link from "next/link";
 import { PosterImage } from "@/components/PosterImage";
 import { TagPills } from "@/components/TagPills";
 import { WatchedBadge } from "@/components/WatchedBadge";
+import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
 import { cn } from "@/lib/cn";
 import { formatRating } from "@/lib/labels";
 import { focusRing, posterFrame } from "@/lib/ui";
+import type { SeriesStatus } from "@/generated/prisma/client";
 
 type PosterTileProps = {
   href: string;
@@ -13,6 +15,7 @@ type PosterTileProps = {
   year?: number | null;
   rating?: number | null;
   watchedAt?: Date | null;
+  seriesStatus?: SeriesStatus | null;
   caption?: string;
   className?: string;
   sizes?: string;
@@ -26,6 +29,7 @@ export const PosterTile = ({
   year,
   rating,
   watchedAt,
+  seriesStatus,
   caption,
   className,
   sizes,
@@ -55,6 +59,13 @@ export const PosterTile = ({
           />
           {watched ? (
             <WatchedBadge compact className="absolute left-2 top-2" />
+          ) : null}
+          {seriesStatus ? (
+            <SeriesStatusBadge
+              status={seriesStatus}
+              compact
+              className="absolute right-2 top-2"
+            />
           ) : null}
         </div>
         <h2 className="mt-2 truncate font-serif text-sm leading-tight text-white group-hover:text-accent">

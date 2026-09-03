@@ -8,6 +8,7 @@ import {
   ListKind,
   Platform,
   PrismaClient,
+  SeriesStatus,
   TitleKind,
 } from "../src/generated/prisma/client";
 import { slugify } from "../src/lib/labels";
@@ -39,6 +40,8 @@ type SeedTitle = {
   tags: string[];
   lists: string[];
   watched?: boolean;
+  seriesStatus?: SeriesStatus;
+  seriesSeason?: number;
   tmdbId: number;
   posterPath: string;
 };
@@ -52,6 +55,8 @@ type WatchlistSeed = {
   position: number;
   tmdbId: number;
   posterPath: string;
+  seriesStatus?: SeriesStatus;
+  seriesSeason?: number;
 };
 
 const seedTitles: SeedTitle[] = [
@@ -148,6 +153,35 @@ const seedTitles: SeedTitle[] = [
     tmdbId: 693134,
     posterPath: "/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg",
   },
+  {
+    name: "Breaking Bad",
+    kind: TitleKind.SERIES,
+    year: 2008,
+    rating: 10,
+    review: "Canon. Terminada, sin checklist de episodios.",
+    platform: Platform.NETFLIX,
+    tags: ["Thriller"],
+    lists: ["Favoritas"],
+    watched: true,
+    seriesStatus: SeriesStatus.FINISHED,
+    tmdbId: 1396,
+    posterPath: "/ztkUQFLlC19CCMYHW9o1zWhT7eW.jpg",
+  },
+  {
+    name: "The Last of Us",
+    kind: TitleKind.SERIES,
+    year: 2023,
+    rating: 9,
+    review: "Viendo. Temporada actual, sin progreso por capítulo.",
+    platform: Platform.MAX,
+    tags: ["Thriller"],
+    lists: ["Visto recientemente"],
+    watched: true,
+    seriesStatus: SeriesStatus.WATCHING,
+    seriesSeason: 2,
+    tmdbId: 100088,
+    posterPath: "/dmo6TYjN9W6FbdC8pQO3nWKmGvl.jpg",
+  },
 ];
 
 const watchlistQueue: WatchlistSeed[] = [
@@ -180,6 +214,8 @@ const watchlistQueue: WatchlistSeed[] = [
     position: 2,
     tmdbId: 95396,
     posterPath: "/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg",
+    seriesStatus: SeriesStatus.WATCHING,
+    seriesSeason: 2,
   },
 ];
 
@@ -301,6 +337,8 @@ const seed = async () => {
       watchedAt: title.watched
         ? new Date(`${title.year}-06-15T12:00:00.000Z`)
         : null,
+      seriesStatus: title.kind === TitleKind.SERIES ? (title.seriesStatus ?? null) : null,
+      seriesSeason: title.kind === TitleKind.SERIES ? (title.seriesSeason ?? null) : null,
     };
 
     const saved = existing
@@ -348,6 +386,10 @@ const seed = async () => {
             rating: null,
             tmdbId: item.tmdbId,
             posterPath: item.posterPath,
+            seriesStatus:
+              item.kind === TitleKind.SERIES ? (item.seriesStatus ?? null) : null,
+            seriesSeason:
+              item.kind === TitleKind.SERIES ? (item.seriesSeason ?? null) : null,
           },
         })
       : await prisma.title.create({
@@ -359,6 +401,10 @@ const seed = async () => {
             platform: item.platform ?? null,
             tmdbId: item.tmdbId,
             posterPath: item.posterPath,
+            seriesStatus:
+              item.kind === TitleKind.SERIES ? (item.seriesStatus ?? null) : null,
+            seriesSeason:
+              item.kind === TitleKind.SERIES ? (item.seriesSeason ?? null) : null,
           },
         });
 

@@ -5,17 +5,20 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { removeTitleFromList } from "@/app/actions/lists";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PosterImage } from "@/components/PosterImage";
+import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
 import { WatchedBadge } from "@/components/WatchedBadge";
 import { WatchProviderChips } from "@/components/WatchProvidersMx";
 import { cn } from "@/lib/cn";
 import {
   formatImdbRating,
   formatRating,
+  formatSeriesSeason,
   PLATFORM_LABEL,
+  SERIES_STATUS_LABEL,
   TITLE_KIND_LABEL,
 } from "@/lib/labels";
 import { btnLink } from "@/lib/ui";
-import type { Platform, TitleKind } from "@/generated/prisma/client";
+import type { Platform, SeriesStatus, TitleKind } from "@/generated/prisma/client";
 import type { WatchProviderOffer } from "@/lib/watch-providers";
 
 export type CoverflowTitle = {
@@ -29,6 +32,8 @@ export type CoverflowTitle = {
   imdbRating: number | null;
   watched?: boolean;
   review?: string | null;
+  seriesStatus?: SeriesStatus | null;
+  seriesSeason?: number | null;
   flatrateProviders?: WatchProviderOffer[];
 };
 
@@ -168,6 +173,13 @@ const DeckCard = ({
         />
         {title.watched ? (
           <WatchedBadge compact className="absolute left-2 top-2 z-10" />
+        ) : null}
+        {title.kind === "SERIES" && title.seriesStatus ? (
+          <SeriesStatusBadge
+            status={title.seriesStatus}
+            compact
+            className="absolute right-2 top-2 z-10"
+          />
         ) : null}
         <div
           className={cn(
@@ -578,6 +590,14 @@ export const CoverflowDeck = ({ titles, className, listId }: CoverflowDeckProps)
               {activeTitle.watched ? "Visto · " : ""}
               {formatRating(activeTitle.rating)}
             </p>
+            {activeTitle.kind === "SERIES" && activeTitle.seriesStatus ? (
+              <p className="text-sm text-fog">
+                {SERIES_STATUS_LABEL[activeTitle.seriesStatus]}
+                {formatSeriesSeason(activeTitle.seriesSeason)
+                  ? ` · ${formatSeriesSeason(activeTitle.seriesSeason)}`
+                  : ""}
+              </p>
+            ) : null}
           </div>
           {activeTitle.flatrateProviders && activeTitle.flatrateProviders.length > 0 ? (
             <WatchProviderChips

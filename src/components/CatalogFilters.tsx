@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { MinePlatformsToggle } from "@/components/MinePlatformsToggle";
 import { cn } from "@/lib/cn";
+import {
+  SERIES_STATUS_FILTER_OPTIONS,
+  type SeriesStatusFilter,
+} from "@/lib/series";
 import { catalogHref } from "@/lib/tags";
 import { focusRing } from "@/lib/ui";
 
@@ -20,6 +24,7 @@ type CatalogFiltersProps = {
   minePlatforms?: boolean;
   hasStreamingPlatforms?: boolean;
   showTagFilters?: boolean;
+  seriesStatus?: SeriesStatusFilter;
 };
 
 export const CatalogFilters = ({
@@ -31,10 +36,11 @@ export const CatalogFilters = ({
   minePlatforms = false,
   hasStreamingPlatforms = false,
   showTagFilters = true,
+  seriesStatus,
 }: CatalogFiltersProps) => {
   const selected = new Set(selectedSlugs);
-  const queryBase = { view, sort, minePlatforms };
-  const hasActiveFilters = selected.size > 0 || minePlatforms;
+  const queryBase = { view, sort, minePlatforms, seriesStatus };
+  const hasActiveFilters = selected.size > 0 || minePlatforms || Boolean(seriesStatus);
 
   return (
     <section
@@ -48,7 +54,52 @@ export const CatalogFilters = ({
         sort={sort}
         minePlatforms={minePlatforms}
         hasStreamingPlatforms={hasStreamingPlatforms}
+        seriesStatus={seriesStatus}
       />
+
+      <div className="space-y-3 border-t border-line pt-4">
+        <div className="space-y-1">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-mist">
+            Estado de serie
+          </p>
+          <p className="text-sm text-fog">
+            Solo series. Las películas no entran en este filtro.
+          </p>
+        </div>
+        <ul className="flex flex-wrap gap-2">
+          {SERIES_STATUS_FILTER_OPTIONS.map((option) => {
+            const isSelected = seriesStatus === option.id;
+            const nextStatus = isSelected ? undefined : option.id;
+
+            return (
+              <li key={option.id}>
+                <Link
+                  href={catalogHref(pathname, {
+                    ...queryBase,
+                    tags: selectedSlugs,
+                    seriesStatus: nextStatus,
+                  })}
+                  aria-pressed={isSelected}
+                  aria-label={
+                    isSelected
+                      ? `Quitar filtro ${option.label}`
+                      : `Filtrar series ${option.label}`
+                  }
+                  className={cn(
+                    "inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-wide transition",
+                    focusRing,
+                    isSelected
+                      ? "border-accent bg-accent text-ink"
+                      : "border-chrome text-fog hover:border-[#555] hover:text-white",
+                  )}
+                >
+                  {option.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
 
       {showTagFilters ? (
         <div className="space-y-3 border-t border-line pt-4">
