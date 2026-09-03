@@ -56,9 +56,9 @@ export default async function ListDetailPage({
 
       <form
         action={addAction}
-        className="flex flex-wrap items-end gap-3 rounded-lg border border-[#2c3440] bg-[#1c2228] p-4"
+        className="flex flex-col items-stretch gap-3 rounded-lg border border-[#2c3440] bg-[#1c2228] p-4 sm:flex-row sm:flex-wrap sm:items-end"
       >
-        <label className="block min-w-56 flex-1 space-y-1">
+        <label className="block min-w-0 flex-1 space-y-1">
           <span className="text-xs uppercase tracking-wide text-[#99aabb]">
             Agregar título
           </span>
@@ -78,7 +78,7 @@ export default async function ListDetailPage({
         </label>
         <button
           type="submit"
-          className="rounded-full bg-[#2c3440] px-4 py-2 text-sm text-white hover:bg-[#3a4452] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054]"
+          className="w-full rounded-full bg-[#2c3440] px-4 py-2 text-sm text-white hover:bg-[#3a4452] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054] sm:w-auto"
         >
           Agregar
         </button>

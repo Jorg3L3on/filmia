@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PosterImage } from "@/components/PosterImage";
 import { WatchProviderChips } from "@/components/WatchProvidersMx";
 import { cn } from "@/lib/cn";
@@ -33,15 +33,14 @@ type CoverflowDeckProps = {
 };
 
 const CARD_WIDTH = 236;
-const CARD_WIDTH_MOBILE = 168;
+const CARD_WIDTH_MIN = 128;
 const DRAG_THRESHOLD = 6;
 const WHEEL_SENSITIVITY = 0.0036;
 const SNAP_LERP = 0.14;
 const COAST_FRICTION = 0.94;
 const COAST_MIN_VELOCITY = 0.0024;
 const WHEEL_SNAP_MS = 90;
-const VISIBLE_BEFORE = 5;
-const VISIBLE_AFTER = 5;
+const VISIBLE_SPAN = 5;
 
 type CardMetrics = {
   rotateY: number;
@@ -59,17 +58,19 @@ type CardMetrics = {
 const clampIndex = (value: number, max: number) =>
   Math.min(Math.max(value, 0), Math.max(max, 0));
 
-const getCardMetrics = (offset: number, cardWidth: number): CardMetrics => {
+const getCardMetrics = (offset: number, sideRoom: number): CardMetrics => {
   const distance = Math.abs(offset);
   const side = Math.sign(offset) || 0;
   const isActive = distance < 0.45;
-  const spread = (cardWidth * 0.7 * distance) / (1 + 0.16 * distance);
+  const fittedRoom = Math.max(10, sideRoom);
+  const spread = fittedRoom * (1 - Math.exp(-distance * 0.72));
+  const rotateCap = fittedRoom < 90 ? 14 : 26;
 
   return {
-    rotateY: -side * Math.min(distance * 7.5, 26),
+    rotateY: -side * Math.min(distance * 7.5, rotateCap),
     translateX: side * spread,
-    translateZ: -Math.min(distance * 18, 70),
-    translateY: isActive ? -8 : Math.min(distance * 4, 14),
+    translateZ: -Math.min(distance * 14, 48),
+    translateY: isActive ? -6 : Math.min(distance * 3, 10),
     scale: 1 - Math.min(distance * 0.015, 0.05),
     brightness: Math.max(0.72, 1 - distance * 0.08),
     opacity: distance > 5.2 ? Math.max(0, 1 - (distance - 5.2) * 1.4) : 1,
@@ -85,7 +86,7 @@ type DeckCardProps = {
   title: CoverflowTitle;
   index: number;
   offset: number;
-  cardWidth: number;
+  sideRoom: number;
   isDragging: boolean;
   onSelect: (index: number) => void;
   onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
@@ -95,12 +96,12 @@ const DeckCard = ({
   title,
   index,
   offset,
-  cardWidth,
+  sideRoom,
   isDragging,
   onSelect,
   onPointerDown,
 }: DeckCardProps) => {
-  const metrics = getCardMetrics(offset, cardWidth);
+  const metrics = getCardMetrics(offset, sideRoom);
   const imdbLabel = formatImdbRating(title.imdbRating);
   const showCaption = Math.abs(offset) < 3.2;
 
@@ -186,6 +187,7 @@ export const CoverflowDeck = ({ titles, className, footer }: CoverflowDeckProps)
   const [displayIndex, setDisplayIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [cardWidth, setCardWidth] = useState(CARD_WIDTH);
+  const [stageWidth, setStageWidth] = useState(480);
   const dragStartX = useRef(0);
   const dragStartIndex = useRef(0);
   const targetIndexRef = useRef(0);
@@ -201,6 +203,7 @@ export const CoverflowDeck = ({ titles, className, footer }: CoverflowDeckProps)
   const rafRef = useRef<number | null>(null);
   const wheelSnapTimeout = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
 
   displayIndexRef.current = displayIndex;
   titlesLengthRef.current = titles.length;
@@ -452,15 +455,26 @@ export const CoverflowDeck = ({ titles, className, footer }: CoverflowDeckProps)
     setDisplayIndex(displayIndexRef.current);
   }, [titles.length]);
 
-  useEffect(() => {
-    const updateWidth = () => {
-      setCardWidth(window.innerWidth < 640 ? CARD_WIDTH_MOBILE : CARD_WIDTH);
+  useLayoutEffect(() => {
+    const node = stageRef.current;
+    if (!node) {
+      return;
+    }
+
+    const measure = () => {
+      const stage = node.clientWidth;
+      const nextCard = Math.round(
+        Math.min(CARD_WIDTH, Math.max(CARD_WIDTH_MIN, stage * 0.46)),
+      );
+      setStageWidth(stage);
+      setCardWidth(nextCard);
     };
 
-    updateWidth();
-    window.addEventListener("resize", updateWidth);
-    return () => window.removeEventListener("resize", updateWidth);
-  }, []);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [titles.length]);
 
   if (titles.length === 0) {
     return null;
@@ -468,12 +482,14 @@ export const CoverflowDeck = ({ titles, className, footer }: CoverflowDeckProps)
 
   const roundedActive = Math.round(displayIndex);
   const activeTitle = titles[roundedActive];
-  const firstVisible = Math.max(0, Math.floor(displayIndex) - VISIBLE_BEFORE);
-  const lastVisible = Math.min(titles.length - 1, Math.ceil(displayIndex) + VISIBLE_AFTER);
+  const sideRoom = Math.max(8, (stageWidth - cardWidth) / 2 - 12);
+  const visibleSpan = stageWidth < 500 ? 3 : VISIBLE_SPAN;
+  const firstVisible = Math.max(0, Math.floor(displayIndex) - visibleSpan);
+  const lastVisible = Math.min(titles.length - 1, Math.ceil(displayIndex) + visibleSpan);
   const visibleTitles = titles.slice(firstVisible, lastVisible + 1);
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn("min-w-0 space-y-6", className)}>
       <div
         ref={containerRef}
         role="listbox"
@@ -484,15 +500,14 @@ export const CoverflowDeck = ({ titles, className, footer }: CoverflowDeckProps)
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onClickCapture={handleClickCapture}
-        className="relative cursor-grab touch-none select-none overflow-visible rounded-2xl border border-[#1f262d] bg-gradient-to-b from-[#0c1014] via-[#14181c] to-[#0a0d10] px-2 py-10 outline-none focus-visible:ring-2 focus-visible:ring-[#00e054]/60 active:cursor-grabbing sm:px-8 sm:py-14"
+        className="relative min-w-0 cursor-grab touch-none select-none overflow-hidden rounded-2xl border border-[#1f262d] bg-gradient-to-b from-[#0c1014] via-[#14181c] to-[#0a0d10] px-1 pb-9 pt-4 outline-none focus-visible:ring-2 focus-visible:ring-[#00e054]/60 active:cursor-grabbing sm:px-8 sm:pb-14 sm:pt-14"
       >
         <div
-          className="relative mx-auto"
+          ref={stageRef}
+          className="relative mx-auto w-full"
           style={{
-            height: cardWidth * 1.62,
-            maxWidth: "100%",
-            overflow: "visible",
-            perspective: "1600px",
+            height: cardWidth * 1.5,
+            perspective: "1200px",
             perspectiveOrigin: "50% 48%",
           }}
         >
@@ -514,7 +529,7 @@ export const CoverflowDeck = ({ titles, className, footer }: CoverflowDeckProps)
                   title={title}
                   index={index}
                   offset={index - displayIndex}
-                  cardWidth={cardWidth}
+                  sideRoom={sideRoom}
                   isDragging={isDragging}
                   onSelect={handleSelectCard}
                   onPointerDown={handlePointerDown}
