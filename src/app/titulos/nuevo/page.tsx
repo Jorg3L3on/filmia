@@ -22,7 +22,7 @@ export default async function NewTitlePage() {
       <PageHeader
         eyebrow="Alta"
         title="Registrar título"
-        description="Busca el poster, ponle tu nota y súbelo al diario. La cola de pendientes vive en Por ver."
+        description="Busca el poster, ponle tu nota y súbelo al diario. La cola de pendientes vive en Quiero ver."
       />
       <TitleForm tags={tags} lists={lists} metadataConfig={metadataConfig} />
     </div>

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import { auth } from "@/lib/auth";
+import { ensureDefaultLists } from "@/lib/lists";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,6 +33,10 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const session = await auth();
+
+  if (session?.user?.id) {
+    await ensureDefaultLists(session.user.id);
+  }
 
   return (
     <html

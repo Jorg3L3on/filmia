@@ -29,7 +29,7 @@ type TitleFormProps = {
     listItems: Array<{ listId: string }>;
   };
   tags: Tag[];
-  lists: Array<Pick<List, "id" | "name">>;
+  lists: Array<Pick<List, "id" | "name" | "slug">>;
   metadataConfig: { tmdb: boolean; omdb: boolean };
 };
 
@@ -331,7 +331,10 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
             <fieldset className="space-y-3">
               <legend className={fieldLabel}>Listas</legend>
               {lists.length === 0 ? (
-                <p className="text-sm text-mist">Todavía no hay listas de colección.</p>
+                <p className="text-sm text-mist">
+                  Todavía no hay listas de colección. Favoritas y Por rewatch
+                  aparecen al entrar.
+                </p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {lists.map((list) => (

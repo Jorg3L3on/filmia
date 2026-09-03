@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   addToWatchlistFromForm,
   ensureCurrentUserWatchlist,
@@ -9,13 +10,13 @@ import { PageHeader } from "@/components/PageHeader";
 import { WatchlistCard } from "@/components/WatchlistCard";
 import { TitlePosterRail } from "@/components/TitlePosterRail";
 import { getTitleOptions, getWatchlist } from "@/lib/queries";
-import { btnPrimary, fieldClass } from "@/lib/ui";
+import { btnGhost, btnPrimary, fieldClass } from "@/lib/ui";
 import { WATCHLIST_DESCRIPTION, WATCHLIST_NAME } from "@/lib/watchlist";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Por ver",
+  title: "Quiero ver",
 };
 
 export default async function WatchlistPage() {
@@ -26,6 +27,7 @@ export default async function WatchlistPage() {
   ]);
 
   const items = watchlist?.items ?? [];
+  const listId = watchlist?.id ?? "";
   const memberIds = new Set(items.map((item) => item.titleId));
   const availableTitles = titleOptions.filter((title) => !memberIds.has(title.id));
   const [hero, ...queue] = items;
@@ -33,9 +35,16 @@ export default async function WatchlistPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Watchlist"
+        eyebrow="Lista diaria"
         title={WATCHLIST_NAME}
         description={WATCHLIST_DESCRIPTION}
+        actions={
+          watchlist ? (
+            <Link href={`/listas/${watchlist.id}/editar`} className={btnGhost}>
+              Editar descripción
+            </Link>
+          ) : null
+        }
       />
       <p className="text-xs text-mist">
         {items.length}{" "}
@@ -77,7 +86,7 @@ export default async function WatchlistPage() {
 
       {items.length === 0 ? (
         <EmptyState
-          title="La cola está vacía"
+          title="Nada en Quiero ver"
           description="Agrega títulos que quieras ver pronto, o registra uno nuevo."
           actionHref="/titulos/nuevo"
           actionLabel="Registrar título"
@@ -94,6 +103,9 @@ export default async function WatchlistPage() {
               item={hero}
               variant="hero"
               position={1}
+              listId={listId}
+              canMoveUp={false}
+              canMoveDown={queue.length > 0}
               removeAction={removeFromWatchlist.bind(null, hero.titleId)}
               updateNoteAction={updateWatchlistNote.bind(null, hero.titleId)}
             />
@@ -111,6 +123,9 @@ export default async function WatchlistPage() {
                       item={item}
                       variant="queue"
                       position={index + 2}
+                      listId={listId}
+                      canMoveUp
+                      canMoveDown={index < queue.length - 1}
                       removeAction={removeFromWatchlist.bind(null, item.titleId)}
                       updateNoteAction={updateWatchlistNote.bind(null, item.titleId)}
                     />

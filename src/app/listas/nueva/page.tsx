@@ -12,7 +12,7 @@ export default function NewListPage() {
       <PageHeader
         eyebrow="Alta"
         title="Nueva lista"
-        description="Una colección con posters, no una fila de texto."
+        description="Una colección con posters, no una fila de texto. Quiero ver, Favoritas y Por rewatch ya existen."
       />
       <ListForm />
     </div>

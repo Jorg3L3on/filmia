@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ListItemOrderControls } from "@/components/ListItemOrderControls";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PersonalRating } from "@/components/PersonalRating";
 import { PlatformBadge } from "@/components/PlatformBadge";
@@ -17,6 +18,9 @@ type WatchlistCardProps = {
   item: WatchlistItem;
   variant: "hero" | "queue";
   position: number;
+  listId: string;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
   removeAction: () => void;
   updateNoteAction: (formData: FormData) => void;
 };
@@ -25,6 +29,9 @@ export const WatchlistCard = ({
   item,
   variant,
   position,
+  listId,
+  canMoveUp,
+  canMoveDown,
   removeAction,
   updateNoteAction,
 }: WatchlistCardProps) => {
@@ -80,6 +87,12 @@ export const WatchlistCard = ({
               </form>
             </div>
             <div className="space-y-3">
+              <ListItemOrderControls
+                listId={listId}
+                titleId={item.titleId}
+                canMoveUp={canMoveUp}
+                canMoveDown={canMoveDown}
+              />
               <MarkWatchedForm
                 titleId={title.id}
                 variant="hero"
@@ -88,7 +101,7 @@ export const WatchlistCard = ({
               />
               <form action={removeAction}>
                 <button type="submit" className={btnGhost}>
-                  Quitar de la cola
+                  Quitar de Quiero ver
                 </button>
               </form>
             </div>
@@ -136,6 +149,12 @@ export const WatchlistCard = ({
           <p className="line-clamp-2 text-xs text-fog">{item.queueNote}</p>
         ) : null}
         <div className="flex flex-wrap items-center gap-2">
+          <ListItemOrderControls
+            listId={listId}
+            titleId={item.titleId}
+            canMoveUp={canMoveUp}
+            canMoveDown={canMoveDown}
+          />
           <MarkWatchedForm
             titleId={title.id}
             variant="queue"

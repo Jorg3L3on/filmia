@@ -225,7 +225,7 @@ const importQueue = async () => {
   }
 
   console.log(
-    `\nImport listo: ${created} títulos nuevos, ${queued} agregados a Por ver, ${posters}/${films.length} con poster.`,
+    `\nImport listo: ${created} títulos nuevos, ${queued} agregados a Quiero ver, ${posters}/${films.length} con poster.`,
   );
 };
 
