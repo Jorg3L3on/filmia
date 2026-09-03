@@ -33,8 +33,8 @@ export const WatchlistCard = ({
   if (variant === "hero") {
     return (
       <article className="relative overflow-hidden rounded-md border border-line bg-well p-5 md:p-6">
-        <div className="grid gap-6 md:grid-cols-[180px_1fr]">
-          <div className="relative">
+        <div className="grid grid-cols-[128px_1fr] items-start gap-4 sm:grid-cols-[160px_1fr] md:grid-cols-[180px_1fr] md:gap-6">
+          <div className="relative w-full max-w-[180px]">
             <div className="absolute -left-1 -top-1 z-10 rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink">
               Siguiente
             </div>
@@ -42,6 +42,7 @@ export const WatchlistCard = ({
               name={title.name}
               posterPath={title.posterPath}
               className={posterFrame}
+              sizes="180px"
               priority
             />
           </div>

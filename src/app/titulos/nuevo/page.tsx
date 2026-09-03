@@ -18,11 +18,11 @@ export default async function NewTitlePage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-8">
       <PageHeader
         eyebrow="Alta"
         title="Registrar título"
-        description="Busca el poster en TMDB, anota tu calificación y súbelo al diario."
+        description="Busca el poster, ponle tu nota y súbelo al diario. La cola de pendientes vive en Por ver."
       />
       <TitleForm tags={tags} lists={lists} metadataConfig={metadataConfig} />
     </div>
