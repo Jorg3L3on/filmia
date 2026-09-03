@@ -28,7 +28,7 @@ export default async function ProfilePage({
       <PageHeader
         eyebrow="Cuenta"
         title="Perfil"
-        description="Elige las plataformas que tienes contratadas. Filmia las recuerda y las destaca en cada ficha."
+        description="Elige las plataformas que tienes contratadas. Filmia las destaca en cada ficha y filtra el diario, Quiero ver y las listas."
       />
 
       {saved ? (

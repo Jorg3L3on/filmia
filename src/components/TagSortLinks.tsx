@@ -11,12 +11,14 @@ type TagSortLinksProps = {
   pathname: string;
   current: CatalogSort;
   view?: string;
+  minePlatforms?: boolean;
 };
 
 export const TagSortLinks = ({
   pathname,
   current,
   view,
+  minePlatforms = false,
 }: TagSortLinksProps) => {
   return (
     <div
@@ -32,6 +34,7 @@ export const TagSortLinks = ({
             href={catalogHref(pathname, {
               view,
               sort: option.id === "rating" ? null : option.id,
+              minePlatforms,
             })}
             aria-current={isCurrent ? "page" : undefined}
             className={cn(

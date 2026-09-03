@@ -63,13 +63,37 @@ export const titleMatchesAnyTag = (
 
 export const tagHref = (slug: string) => `/tags/${slug}`;
 
+export const MINE_PLATFORMS_PARAM = "minePlatforms";
+
+/**
+ * `?minePlatforms=1` (también `true` / `on`) activa “Solo en mis plataformas”.
+ */
+export const parseMinePlatforms = (value: unknown): boolean => {
+  if (Array.isArray(value)) {
+    return value.some((item) => parseMinePlatforms(item));
+  }
+
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "on";
+};
+
 type CatalogQuery = {
   tags?: string[];
   view?: string | null;
   sort?: string | null;
+  minePlatforms?: boolean;
 };
 
-export const catalogSearchParams = ({ tags = [], view, sort }: CatalogQuery) => {
+export const catalogSearchParams = ({
+  tags = [],
+  view,
+  sort,
+  minePlatforms,
+}: CatalogQuery) => {
   const params = new URLSearchParams();
 
   for (const slug of uniqueSlugs(tags)) {
@@ -82,6 +106,10 @@ export const catalogSearchParams = ({ tags = [], view, sort }: CatalogQuery) => 
 
   if (sort) {
     params.set("sort", sort);
+  }
+
+  if (minePlatforms) {
+    params.set(MINE_PLATFORMS_PARAM, "1");
   }
 
   return params;

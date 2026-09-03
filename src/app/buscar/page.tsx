@@ -3,9 +3,10 @@ import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { TmdbSearchAdd } from "@/components/TmdbSearchAdd";
 import { metadataServicesConfigured, searchTmdbCatalog } from "@/lib/metadata";
-import { getUserTmdbIndex } from "@/lib/queries";
+import { getUserStreamingPlatforms, getUserTmdbIndex } from "@/lib/queries";
+import { catalogHref } from "@/lib/tags";
 import { tmdbErrorMessage } from "@/lib/tmdb";
-import { btnGhost } from "@/lib/ui";
+import { btnGhost, btnLink, focusRing, wellClass } from "@/lib/ui";
 
 export const metadata: Metadata = {
   title: "Buscar",
@@ -21,7 +22,11 @@ export default async function SearchPage({
   const params = await searchParams;
   const initialQuery = typeof params.q === "string" ? params.q : "";
   const metadataConfig = metadataServicesConfigured();
-  const existing = await getUserTmdbIndex();
+  const [existing, userPlatforms] = await Promise.all([
+    getUserTmdbIndex(),
+    getUserStreamingPlatforms(),
+  ]);
+  const hasStreamingPlatforms = userPlatforms.length > 0;
 
   let initialResults: Awaited<ReturnType<typeof searchTmdbCatalog>> = [];
   let initialError: string | null = null;
@@ -49,6 +54,39 @@ export default async function SearchPage({
           </Link>
         }
       />
+      <section className={`${wellClass} space-y-2 p-4`} aria-label="Filtro de plataformas">
+        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-mist">
+          Mis plataformas
+        </p>
+        <p className="text-sm text-fog">
+          La búsqueda de TMDB no filtra por streaming (aún no hay cache). Para
+          ver solo lo incluido en tus suscripciones, usa el diario o Quiero ver.
+        </p>
+        {hasStreamingPlatforms ? (
+          <p className="text-sm">
+            <Link
+              href={catalogHref("/", { minePlatforms: true })}
+              className={`text-accent underline-offset-2 hover:underline ${focusRing}`}
+            >
+              Diario: solo en mis plataformas
+            </Link>
+            {" · "}
+            <Link
+              href={catalogHref("/watchlist", { minePlatforms: true })}
+              className={`text-accent underline-offset-2 hover:underline ${focusRing}`}
+            >
+              Quiero ver
+            </Link>
+          </p>
+        ) : (
+          <p className="text-sm">
+            <Link href="/perfil" className={btnLink} aria-label="Elige tus plataformas en el perfil">
+              Elige tus plataformas
+            </Link>{" "}
+            para filtrar el diario y Quiero ver.
+          </p>
+        )}
+      </section>
       <TmdbSearchAdd
         configured={metadataConfig}
         existing={existing}

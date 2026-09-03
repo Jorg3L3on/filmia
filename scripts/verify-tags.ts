@@ -2,6 +2,7 @@ import { slugify } from "../src/lib/labels";
 import {
   catalogHref,
   DEFAULT_TAG_NAMES,
+  parseMinePlatforms,
   parseTagSlugs,
   titleMatchesAnyTag,
 } from "../src/lib/tags";
@@ -68,6 +69,22 @@ const run = () => {
       "/tags/sci-fi?view=grid&sort=watched",
     "Tag ranking href should keep sort and view",
   );
+  assert(
+    catalogHref("/", { tags: ["sci-fi"], view: "grid", minePlatforms: true }) ===
+      "/?tag=sci-fi&view=grid&minePlatforms=1",
+    "Catalog href should keep minePlatforms=1 with tags and view",
+  );
+  assert(
+    catalogHref("/watchlist", { minePlatforms: true }) ===
+      "/watchlist?minePlatforms=1",
+    "Watchlist href should emit minePlatforms",
+  );
+  assert(parseMinePlatforms("1"), "minePlatforms=1 should be on");
+  assert(parseMinePlatforms("true"), "minePlatforms=true should be on");
+  assert(parseMinePlatforms("on"), "minePlatforms=on should be on");
+  assert(!parseMinePlatforms("0"), "minePlatforms=0 should be off");
+  assert(!parseMinePlatforms(undefined), "Missing minePlatforms should be off");
+  assert(parseMinePlatforms(["0", "1"]), "Repeated minePlatforms should turn on if any is 1");
 
   for (const name of DEFAULT_TAG_NAMES) {
     const slug = slugify(name);

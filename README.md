@@ -91,7 +91,7 @@ npx prisma migrate deploy
 
 No hace falta seed ni backfill: prefs vacías son válidas. `/perfil` y «dónde ver» muestran el CTA «Elige tus plataformas».
 
-El filtro de biblioteca (JOR-157) puede leer este JSON y usar `titleAvailableOnUserPlatforms` / `STREAMING_PLATFORM_TMDB` en `src/lib/streaming-platforms.ts`. No se aplica el filtro en este cambio.
+El filtro de biblioteca (JOR-157) lee este JSON y `watchProvidersMx` con `titleAvailableOnUserPlatforms` / `applyMinePlatformsFilter`. Toggle `?minePlatforms=1` en diario, Quiero ver, listas y ranking de tags. Solo cuenta **flatrate** (incluido en suscripción); rent/buy no. Títulos sin cache de providers se excluyen y se anota «sin datos de streaming». Si no hay prefs, CTA a `/perfil`.
 
 ### Seed
 
@@ -107,7 +107,7 @@ El seed es idempotente por nombre + año dentro de cada usuario. También crea e
 
 Cada usuario tiene tags propios (`userId` + `slug` únicos). El unique global de `Tag.name` del init se elimina en la migración `20260903210000_drop_tag_global_name_unique` para que dos cuentas puedan usar el mismo nombre. Al entrar o registrarse, `ensureDefaultTags` siembra las sugeridas. Se pueden crear más desde `/tags` o desde la ficha de un título.
 
-- Filtro en diario (`/`) y listas: una o varias etiquetas, combinadas con **OR** (`?tag=epica-guerra&tag=sci-fi`).
+- Filtro en diario (`/`) y listas: una o varias etiquetas, combinadas con **OR** (`?tag=epica-guerra&tag=sci-fi`), más `?minePlatforms=1` para lo incluido en tus suscripciones.
 - Ranking: `/tags` índice y `/tags/[slug]` ordenable por nota o fecha vista.
 - Pastillas rápidas en la ficha para asignar/quitar sin pasar por editar.
 
