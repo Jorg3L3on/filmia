@@ -11,6 +11,7 @@ const navItems = [
   { href: "/watchlist", label: "Quiero ver" },
   { href: "/listas", label: "Listas" },
   { href: "/buscar", label: "Buscar" },
+  { href: "/perfil", label: "Perfil" },
 ] as const;
 
 export type HeaderUser = {
@@ -62,12 +63,21 @@ export const SiteHeader = ({ pathname: currentPath, user }: SiteHeaderProps) => 
           })}
         </nav>
         <div className="flex items-center gap-2">
-          <span
-            className="hidden max-w-[10rem] truncate text-xs text-mist sm:inline"
+          <Link
+            href="/perfil"
             title={displayName}
+            aria-label={`Perfil de ${displayName}`}
+            aria-current={currentPath.startsWith("/perfil") ? "page" : undefined}
+            className={cn(
+              "max-w-[8rem] truncate rounded-full px-3 py-1.5 text-xs transition sm:max-w-[10rem]",
+              focusRing,
+              currentPath.startsWith("/perfil")
+                ? "bg-accent font-medium text-ink"
+                : "text-mist hover:bg-chrome hover:text-white",
+            )}
           >
-            {displayName}
-          </span>
+            {user?.name?.trim() || "Perfil"}
+          </Link>
           <LogoutButton />
         </div>
       </div>

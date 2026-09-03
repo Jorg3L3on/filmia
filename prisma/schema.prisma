@@ -28,14 +28,15 @@ enum ListKind {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String?
-  createdAt    DateTime @default(now())
-  titles       Title[]
-  lists        List[]
-  tags         Tag[]
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  passwordHash       String
+  name               String?
+  streamingPlatforms Json     @default("[]")
+  createdAt          DateTime @default(now())
+  titles             Title[]
+  lists              List[]
+  tags               Tag[]
 
   @@index([email])
 }

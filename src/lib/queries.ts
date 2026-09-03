@@ -2,6 +2,7 @@ import { ListKind, Platform, TitleKind } from "@/generated/prisma/client";
 import { sortUserLists } from "@/lib/lists";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
+import { parseStoredStreamingPlatforms } from "@/lib/streaming-platforms";
 import { WATCHLIST_SLUG } from "@/lib/watchlist";
 
 export const titleInclude = {
@@ -194,6 +195,39 @@ export const getTitleOptions = async () => {
     select: { id: true, name: true, year: true },
     orderBy: { name: "asc" },
   });
+};
+
+export const getUserStreamingPlatforms = async () => {
+  const userId = await requireUserId();
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { streamingPlatforms: true },
+  });
+
+  return parseStoredStreamingPlatforms(user?.streamingPlatforms);
+};
+
+export const getCurrentUserProfile = async () => {
+  const userId = await requireUserId();
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      streamingPlatforms: true,
+      createdAt: true,
+    },
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  return {
+    ...user,
+    streamingPlatforms: parseStoredStreamingPlatforms(user.streamingPlatforms),
+  };
 };
 
 export type UserTmdbEntry = {

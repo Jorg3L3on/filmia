@@ -380,6 +380,7 @@ const seed = async () => {
     `Seed listo: ${seedTitles.length} títulos vistos, ${watchlistQueue.length} en Quiero ver, listas diarias creadas.`,
   );
   console.log(`Usuario demo: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
+  console.log("Plataformas de streaming del demo: vacías (elige las tuyas en /perfil).");
 };
 
 seed()

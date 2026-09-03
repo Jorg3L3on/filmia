@@ -13,7 +13,7 @@ import { TitleListsPanel } from "@/components/TitleListsPanel";
 import { WatchProvidersMx } from "@/components/WatchProvidersMx";
 import { formatWatchedDate } from "@/lib/dates";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
-import { getAssignableLists, getTitleById } from "@/lib/queries";
+import { getAssignableLists, getTitleById, getUserStreamingPlatforms } from "@/lib/queries";
 import { btnDanger, btnPrimary, eyebrowClass, posterFrame, wellClass } from "@/lib/ui";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 
@@ -25,9 +25,10 @@ export default async function TitleDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [title, assignableLists] = await Promise.all([
+  const [title, assignableLists, userPlatforms] = await Promise.all([
     getTitleById(id),
     getAssignableLists(),
+    getUserStreamingPlatforms(),
   ]);
 
   if (!title) {
@@ -63,7 +64,7 @@ export default async function TitleDetailPage({
           <PersonalRating rating={title.rating} />
         </div>
         <PlatformBadge platform={title.platform} />
-        <WatchProvidersMx data={watchProviders} />
+        <WatchProvidersMx data={watchProviders} userPlatforms={userPlatforms} />
         <TagPills tags={title.tags.map((item) => item.tag)} />
         <TitleListsPanel
           titleId={title.id}

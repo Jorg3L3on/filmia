@@ -1,7 +1,10 @@
 import Image from "next/image";
-import type { WatchProviderOffer, WatchProvidersMxData } from "@/lib/watch-providers";
+import Link from "next/link";
+import type { Platform } from "@/generated/prisma/client";
 import { cn } from "@/lib/cn";
-import { focusRing } from "@/lib/ui";
+import { isUserStreamingProvider } from "@/lib/streaming-platforms";
+import { btnLink, focusRing } from "@/lib/ui";
+import type { WatchProviderOffer, WatchProvidersMxData } from "@/lib/watch-providers";
 
 type WatchProviderChipsProps = {
   providers: WatchProviderOffer[];
@@ -66,12 +69,30 @@ type ProviderSectionProps = {
   label: string;
   providers: WatchProviderOffer[];
   link?: string | null;
+  userPlatforms: Platform[];
 };
 
-const ProviderSection = ({ label, providers, link }: ProviderSectionProps) => {
+const sortProvidersForUser = (
+  providers: WatchProviderOffer[],
+  userPlatforms: Platform[],
+) =>
+  [...providers].sort((left, right) => {
+    const leftMine = isUserStreamingProvider(left, userPlatforms) ? 0 : 1;
+    const rightMine = isUserStreamingProvider(right, userPlatforms) ? 0 : 1;
+    return leftMine - rightMine;
+  });
+
+const ProviderSection = ({
+  label,
+  providers,
+  link,
+  userPlatforms,
+}: ProviderSectionProps) => {
   if (providers.length === 0) {
     return null;
   }
+
+  const ordered = sortProvidersForUser(providers, userPlatforms);
 
   return (
     <div className="space-y-2">
@@ -79,34 +100,52 @@ const ProviderSection = ({ label, providers, link }: ProviderSectionProps) => {
         {label}
       </p>
       <ul className="flex flex-wrap gap-2">
-        {providers.map((provider) => (
-          <li key={`${label}-${provider.providerId}`}>
-            {link ? (
-              <a
-                href={link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-sm border border-chrome bg-surface px-2.5 py-1.5 text-sm text-paper transition hover:border-accent/40 hover:text-white",
-                  focusRing,
-                )}
-                aria-label={`${provider.name} en ${label.toLowerCase()}`}
-              >
-                <ProviderLogo provider={provider} />
-                <span>{provider.name}</span>
-              </a>
-            ) : (
-              <span className="inline-flex items-center gap-2 rounded-sm border border-chrome bg-surface px-2.5 py-1.5 text-sm text-paper">
-                <ProviderLogo provider={provider} />
-                <span>{provider.name}</span>
-              </span>
-            )}
-          </li>
-        ))}
+        {ordered.map((provider) => {
+          const isMine = isUserStreamingProvider(provider, userPlatforms);
+          const chipClass = cn(
+            "inline-flex items-center gap-2 rounded-sm border px-2.5 py-1.5 text-sm transition",
+            isMine
+              ? "border-accent bg-accent/10 text-white"
+              : "border-chrome bg-surface text-paper hover:border-accent/40 hover:text-white",
+          );
+          const ariaLabel = isMine
+            ? `${provider.name} en ${label.toLowerCase()} (tu plataforma)`
+            : `${provider.name} en ${label.toLowerCase()}`;
+
+          return (
+            <li key={`${label}-${provider.providerId}`}>
+              {link ? (
+                <a
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(chipClass, focusRing)}
+                  aria-label={ariaLabel}
+                >
+                  <ProviderLogo provider={provider} />
+                  <span>{provider.name}</span>
+                  {isMine ? <YoursBadge /> : null}
+                </a>
+              ) : (
+                <span className={chipClass} aria-label={ariaLabel}>
+                  <ProviderLogo provider={provider} />
+                  <span>{provider.name}</span>
+                  {isMine ? <YoursBadge /> : null}
+                </span>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
 };
+
+const YoursBadge = () => (
+  <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">
+    Tuya
+  </span>
+);
 
 const ProviderLogo = ({ provider }: { provider: WatchProviderOffer }) => {
   if (!provider.logoUrl) {
@@ -131,9 +170,13 @@ const ProviderLogo = ({ provider }: { provider: WatchProviderOffer }) => {
 
 type WatchProvidersMxProps = {
   data: WatchProvidersMxData | null;
+  userPlatforms?: Platform[];
 };
 
-export const WatchProvidersMx = ({ data }: WatchProvidersMxProps) => {
+export const WatchProvidersMx = ({
+  data,
+  userPlatforms = [],
+}: WatchProvidersMxProps) => {
   const hasData =
     data &&
     (data.flatrate.length > 0 || data.rent.length > 0 || data.buy.length > 0);
@@ -153,13 +196,37 @@ export const WatchProvidersMx = ({ data }: WatchProvidersMxProps) => {
         <p className="text-xs text-mist">Disponibilidad en México</p>
       </div>
 
+      {userPlatforms.length === 0 ? (
+        <p className="text-sm text-fog">
+          <Link href="/perfil" className={btnLink}>
+            Elige tus plataformas
+          </Link>{" "}
+          para marcar cuáles son tuyas.
+        </p>
+      ) : null}
+
       {!hasData ? (
         <p className="text-sm text-fog">No hay datos de streaming en MX.</p>
       ) : (
         <div className="space-y-4">
-          <ProviderSection label="Incluido" providers={data.flatrate} link={data.link} />
-          <ProviderSection label="Rentar" providers={data.rent} link={data.link} />
-          <ProviderSection label="Comprar" providers={data.buy} link={data.link} />
+          <ProviderSection
+            label="Incluido"
+            providers={data.flatrate}
+            link={data.link}
+            userPlatforms={userPlatforms}
+          />
+          <ProviderSection
+            label="Rentar"
+            providers={data.rent}
+            link={data.link}
+            userPlatforms={userPlatforms}
+          />
+          <ProviderSection
+            label="Comprar"
+            providers={data.buy}
+            link={data.link}
+            userPlatforms={userPlatforms}
+          />
         </div>
       )}
 
