@@ -55,29 +55,7 @@ export const ListTitlesView = ({
       {mode === "deck" ? (
         <CoverflowDeck
           titles={items.map(toCoverflowTitle)}
-          footer={(title) => {
-            const removeAction = removeTitleFromList.bind(null, listId, title.id);
-            return (
-              <div className="space-y-3 pt-1">
-                {!title.watched ? (
-                  <div className="mx-auto max-w-md text-left">
-                    <MarkWatchedForm
-                      titleId={title.id}
-                      variant="queue"
-                      rating={title.rating}
-                      review={title.review}
-                      collapsed
-                    />
-                  </div>
-                ) : null}
-                <form action={removeAction}>
-                  <button type="submit" className={btnLink}>
-                    Quitar de la lista
-                  </button>
-                </form>
-              </div>
-            );
-          }}
+          listId={listId}
         />
       ) : (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">

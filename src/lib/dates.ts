@@ -1,6 +1,15 @@
 /** Calendar value (`YYYY-MM-DD`) for `<input type="date">`. Dates are stored at noon UTC. */
-export const toDateInput = (value: Date | null | undefined) =>
-  value ? value.toISOString().slice(0, 10) : "";
+export const toDateInput = (value: Date | string | null | undefined) => {
+  if (!value) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value.slice(0, 10);
+  }
+
+  return value.toISOString().slice(0, 10);
+};
 
 /** Local calendar day — used as the default “vista el” when marking a title. */
 export const todayDateInput = () => {

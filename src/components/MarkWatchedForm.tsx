@@ -1,3 +1,5 @@
+"use client";
+
 import { clearTitleWatched, markTitleWatched } from "@/app/actions/watchlist";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { todayDateInput, toDateInput } from "@/lib/dates";
@@ -12,7 +14,7 @@ import {
 type MarkWatchedFormProps = {
   titleId: string;
   variant?: "hero" | "queue" | "detail";
-  watchedAt?: Date | null;
+  watchedAt?: Date | string | null;
   rating?: number | null;
   review?: string | null;
   collapsed?: boolean;
