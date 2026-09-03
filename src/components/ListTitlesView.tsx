@@ -1,6 +1,3 @@
-"use client";
-
-import { useState } from "react";
 import { removeTitleFromList } from "@/app/actions/lists";
 import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
@@ -17,6 +14,7 @@ type ListItemPayload = Prisma.ListItemGetPayload<{
 type ListTitlesViewProps = {
   listId: string;
   items: ListItemPayload[];
+  mode?: DeckViewMode;
 };
 
 const toCoverflowTitle = (item: ListItemPayload): CoverflowTitle => {
@@ -35,13 +33,20 @@ const toCoverflowTitle = (item: ListItemPayload): CoverflowTitle => {
   };
 };
 
-export const ListTitlesView = ({ listId, items }: ListTitlesViewProps) => {
-  const [mode, setMode] = useState<DeckViewMode>("deck");
+export const ListTitlesView = ({
+  listId,
+  items,
+  mode = "deck",
+}: ListTitlesViewProps) => {
+  const hrefFor = (nextMode: DeckViewMode) =>
+    nextMode === "deck"
+      ? `/listas/${listId}`
+      : `/listas/${listId}?view=${nextMode}`;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <DeckViewToggle mode={mode} onChange={setMode} />
+        <DeckViewToggle mode={mode} hrefFor={hrefFor} />
       </div>
 
       {mode === "deck" ? (

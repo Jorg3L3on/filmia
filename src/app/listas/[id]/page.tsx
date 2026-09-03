@@ -5,6 +5,7 @@ import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { EmptyState } from "@/components/EmptyState";
 import { ListTitlesView } from "@/components/ListTitlesView";
 import { PageHeader } from "@/components/PageHeader";
+import type { DeckViewMode } from "@/components/DeckViewToggle";
 import { getListById, getTitleOptions } from "@/lib/queries";
 import { btnDanger, btnPrimary, fieldClass } from "@/lib/ui";
 
@@ -12,10 +13,14 @@ export const dynamic = "force-dynamic";
 
 export default async function ListDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ view?: string }>;
 }) {
   const { id } = await params;
+  const query = await searchParams;
+  const view: DeckViewMode = query.view === "grid" ? "grid" : "deck";
   const [list, titleOptions] = await Promise.all([
     getListById(id),
     getTitleOptions(),
@@ -81,7 +86,7 @@ export default async function ListDetailPage({
           description="Agrega títulos desde el selector o regístralos primero en el diario."
         />
       ) : (
-        <ListTitlesView listId={list.id} items={list.items} />
+        <ListTitlesView listId={list.id} items={list.items} mode={view} />
       )}
     </div>
   );

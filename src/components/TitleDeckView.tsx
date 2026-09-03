@@ -1,6 +1,3 @@
-"use client";
-
-import { useState } from "react";
 import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
 import { DiaryCalendar } from "@/components/DiaryCalendar";
@@ -13,8 +10,9 @@ type TitlePayload = Prisma.TitleGetPayload<{ include: typeof titleInclude }>;
 
 type TitleDeckViewProps = {
   titles: TitlePayload[];
-  defaultMode?: DeckViewMode;
+  mode?: DeckViewMode;
   modes?: DeckViewMode[];
+  hrefFor: (mode: DeckViewMode) => string;
 };
 
 const toCoverflowTitle = (title: TitlePayload): CoverflowTitle => {
@@ -35,15 +33,14 @@ const toCoverflowTitle = (title: TitlePayload): CoverflowTitle => {
 
 export const TitleDeckView = ({
   titles,
-  defaultMode = "deck",
+  mode = "deck",
   modes = ["deck", "grid"],
+  hrefFor,
 }: TitleDeckViewProps) => {
-  const [mode, setMode] = useState<DeckViewMode>(defaultMode);
-
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <DeckViewToggle mode={mode} onChange={setMode} modes={modes} />
+        <DeckViewToggle mode={mode} hrefFor={hrefFor} modes={modes} />
       </div>
 
       {mode === "calendar" ? (

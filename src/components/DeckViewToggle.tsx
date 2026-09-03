@@ -1,5 +1,4 @@
-"use client";
-
+import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
 
@@ -7,7 +6,7 @@ export type DeckViewMode = "calendar" | "deck" | "grid";
 
 type DeckViewToggleProps = {
   mode: DeckViewMode;
-  onChange: (mode: DeckViewMode) => void;
+  hrefFor: (mode: DeckViewMode) => string;
   modes?: DeckViewMode[];
   className?: string;
 };
@@ -20,7 +19,7 @@ const MODE_LABEL: Record<DeckViewMode, string> = {
 
 export const DeckViewToggle = ({
   mode,
-  onChange,
+  hrefFor,
   modes = ["deck", "grid"],
   className,
 }: DeckViewToggleProps) => {
@@ -33,23 +32,25 @@ export const DeckViewToggle = ({
         className,
       )}
     >
-      {modes.map((item) => (
-        <button
-          key={item}
-          type="button"
-          aria-pressed={mode === item}
-          onClick={() => onChange(item)}
-          className={cn(
-            "rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-wide transition",
-            focusRing,
-            mode === item
-              ? "bg-accent text-ink"
-              : "text-fog hover:text-white",
-          )}
-        >
-          {MODE_LABEL[item]}
-        </button>
-      ))}
+      {modes.map((item) => {
+        const isCurrent = mode === item;
+        return (
+          <Link
+            key={item}
+            href={hrefFor(item)}
+            aria-current={isCurrent ? "page" : undefined}
+            className={cn(
+              "rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-wide transition",
+              focusRing,
+              isCurrent
+                ? "bg-accent text-ink"
+                : "text-fog hover:text-white",
+            )}
+          >
+            {MODE_LABEL[item]}
+          </Link>
+        );
+      })}
     </div>
   );
 };

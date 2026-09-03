@@ -3,6 +3,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { TitleDeckView } from "@/components/TitleDeckView";
 import { TitlePosterRail } from "@/components/TitlePosterRail";
+import type { DeckViewMode } from "@/components/DeckViewToggle";
 import type { Platform, TitleKind } from "@/generated/prisma/client";
 import { getTags, getTitles } from "@/lib/queries";
 
@@ -21,6 +22,9 @@ const isSort = (
 ): value is "recent" | "watched" | "rating" | "name" | "year" =>
   ["recent", "watched", "rating", "name", "year"].includes(value);
 
+const isView = (value: string): value is DeckViewMode =>
+  value === "calendar" || value === "deck" || value === "grid";
+
 export default async function HomePage({ searchParams }: PageProps<"/">) {
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q : "";
@@ -28,6 +32,8 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
   const platformRaw = typeof params.platform === "string" ? params.platform : "ALL";
   const tag = typeof params.tag === "string" ? params.tag : "";
   const sortRaw = typeof params.sort === "string" ? params.sort : "watched";
+  const viewRaw = typeof params.view === "string" ? params.view : "calendar";
+  const view = isView(viewRaw) ? viewRaw : "calendar";
 
   const [titles, tags] = await Promise.all([
     getTitles({
@@ -55,6 +61,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         platform={platformRaw}
         tag={tag}
         sort={sortRaw}
+        view={view}
         tags={tags}
       />
 
@@ -74,8 +81,19 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           />
           <TitleDeckView
             titles={titles}
-            defaultMode="calendar"
+            mode={view}
             modes={["calendar", "deck", "grid"]}
+            hrefFor={(mode) => {
+              const query = new URLSearchParams();
+              if (q) query.set("q", q);
+              if (kindRaw !== "ALL") query.set("kind", kindRaw);
+              if (platformRaw !== "ALL") query.set("platform", platformRaw);
+              if (tag) query.set("tag", tag);
+              if (sortRaw !== "watched") query.set("sort", sortRaw);
+              if (mode !== "calendar") query.set("view", mode);
+              const encoded = query.toString();
+              return encoded ? `/?${encoded}` : "/";
+            }}
           />
         </>
       )}

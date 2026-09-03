@@ -87,7 +87,7 @@ export default async function WatchlistPage() {
           <TitlePosterRail
             title="En cola"
             ariaLabel="Posters de la cola"
-            titles={items.map((item) => item.title)}
+            titles={items.slice(0, 12).map((item) => item.title)}
           />
           {hero ? (
             <WatchlistCard

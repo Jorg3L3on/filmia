@@ -7,6 +7,7 @@ type CatalogFiltersProps = {
   platform: string;
   tag: string;
   sort: string;
+  view?: string;
   tags: Array<{ slug: string; name: string }>;
 };
 
@@ -16,6 +17,7 @@ export const CatalogFilters = ({
   platform,
   tag,
   sort,
+  view,
   tags,
 }: CatalogFiltersProps) => {
   return (
@@ -25,6 +27,9 @@ export const CatalogFilters = ({
       role="search"
       aria-label="Filtrar títulos"
     >
+      {view && view !== "calendar" ? (
+        <input type="hidden" name="view" value={view} />
+      ) : null}
       <label className="block space-y-1 md:col-span-2">
         <span className="text-xs uppercase tracking-wide text-fog">Buscar</span>
         <input
