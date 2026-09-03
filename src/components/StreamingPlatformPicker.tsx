@@ -21,8 +21,8 @@ export const StreamingPlatformPicker = ({
         <h2 className="font-serif text-2xl text-white">Tus plataformas</h2>
         <p className="text-sm leading-relaxed text-fog">
           {hasSelection
-            ? `${selected.length} ${selected.length === 1 ? "contratada" : "contratadas"} en México. Las marcamos en «dónde ver» de cada ficha.`
-            : "Elige tus plataformas para marcar cuáles son tuyas cuando un título esté en streaming."}
+            ? `${selected.length} ${selected.length === 1 ? "contratada" : "contratadas"} en México. Las marcamos en «dónde ver» y filtran «Solo en mis plataformas».`
+            : "Elige tus plataformas para marcar cuáles son tuyas y filtrar el diario por lo incluido en tus suscripciones."}
         </p>
       </header>
 

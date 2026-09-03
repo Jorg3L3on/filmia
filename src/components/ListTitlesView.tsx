@@ -19,6 +19,7 @@ type ListTitlesViewProps = {
   items: ListItemPayload[];
   mode?: DeckViewMode;
   selectedTags?: string[];
+  minePlatforms?: boolean;
 };
 
 const toCoverflowTitle = (item: ListItemPayload): CoverflowTitle => {
@@ -44,11 +45,13 @@ export const ListTitlesView = ({
   items,
   mode = "deck",
   selectedTags = [],
+  minePlatforms = false,
 }: ListTitlesViewProps) => {
   const hrefFor = (nextMode: DeckViewMode) =>
     catalogHref(`/listas/${listId}`, {
       tags: selectedTags,
       view: nextMode,
+      minePlatforms,
     });
 
   return (
@@ -77,7 +80,7 @@ export const ListTitlesView = ({
                   watchedAt={item.title.watchedAt}
                   tags={item.title.tags.map((entry) => entry.tag)}
                 />
-                {selectedTags.length === 0 ? (
+                {selectedTags.length === 0 && !minePlatforms ? (
                   <ListItemOrderControls
                     listId={listId}
                     titleId={item.titleId}

@@ -1,9 +1,12 @@
 import { Platform } from "../src/generated/prisma/client";
 import { parseStreamingPlatforms } from "../src/lib/form-data";
 import {
+  applyMinePlatformsFilter,
+  formatUserPlatformsList,
   isUserStreamingProvider,
   matchWatchProviderPlatform,
   parseStoredStreamingPlatforms,
+  resolveMinePlatformsCatalog,
   titleAvailableOnUserPlatforms,
   userStreamingProviderIds,
 } from "../src/lib/streaming-platforms";
@@ -138,6 +141,58 @@ const run = () => {
   assert(
     !titleAvailableOnUserPlatforms(null, [Platform.NETFLIX]),
     "JOR-157 helper: missing providers is not available",
+  );
+
+  const netflixTitle = {
+    id: "n",
+    watchProvidersMx: {
+      link: null,
+      flatrate: [provider(8, "Netflix")],
+      rent: [],
+      buy: [],
+    },
+  };
+  const primeTitle = {
+    id: "p",
+    watchProvidersMx: {
+      link: null,
+      flatrate: [provider(119, "Amazon Prime Video")],
+      rent: [],
+      buy: [],
+    },
+  };
+  const maxRentOnly = {
+    id: "m",
+    watchProvidersMx: {
+      link: null,
+      flatrate: [],
+      rent: [provider(1899, "Max")],
+      buy: [],
+    },
+  };
+  const noCacheTitle = { id: "x", watchProvidersMx: null };
+  const mineNetflixDisney = [Platform.NETFLIX, Platform.DISNEY];
+
+  const filtered = applyMinePlatformsFilter(
+    [netflixTitle, primeTitle, maxRentOnly, noCacheTitle],
+    mineNetflixDisney,
+  );
+  assert(
+    filtered.visible.map((title) => title.id).join(",") === "n",
+    "Filter should keep Netflix and hide Prime/Max rent/no-cache",
+  );
+  assert(filtered.missingCache === 1, "Titles without watchProvidersMx should be excluded and counted");
+
+  const setup = resolveMinePlatformsCatalog([netflixTitle], true, []);
+  assert(setup.needsSetup, "Empty prefs with filter on should signal perfil CTA");
+  assert(setup.titles.length === 0, "Empty prefs should not yield misleading matches");
+
+  const off = resolveMinePlatformsCatalog([primeTitle], false, mineNetflixDisney);
+  assert(off.titles.length === 1, "Filter off should keep Prime-only titles");
+
+  assert(
+    formatUserPlatformsList([Platform.NETFLIX, Platform.DISNEY]) === "Netflix o Disney+",
+    "Platform list should join two names with o",
   );
 
   const ids = userStreamingProviderIds([Platform.NETFLIX, Platform.APPLE]);

@@ -5,11 +5,24 @@ import {
   removeFromWatchlist,
   updateWatchlistNote,
 } from "@/app/actions/watchlist";
+import { CatalogFilters } from "@/components/CatalogFilters";
 import { EmptyState } from "@/components/EmptyState";
+import {
+  MinePlatformsEmpty,
+  MinePlatformsSetupCta,
+  MissingStreamingDataNote,
+} from "@/components/MinePlatformsNotice";
 import { PageHeader } from "@/components/PageHeader";
 import { WatchlistCard } from "@/components/WatchlistCard";
 import { TitlePosterRail } from "@/components/TitlePosterRail";
-import { getTitleOptions, getWatchlist } from "@/lib/queries";
+import {
+  getTags,
+  getTitleOptions,
+  getUserStreamingPlatforms,
+  getWatchlist,
+} from "@/lib/queries";
+import { resolveMinePlatformsCatalog } from "@/lib/streaming-platforms";
+import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
 import { btnGhost, btnPrimary, fieldClass } from "@/lib/ui";
 import { WATCHLIST_DESCRIPTION, WATCHLIST_NAME } from "@/lib/watchlist";
 
@@ -19,18 +32,49 @@ export const metadata = {
   title: "Quiero ver",
 };
 
-export default async function WatchlistPage() {
+export default async function WatchlistPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    tag?: string | string[];
+    minePlatforms?: string | string[];
+  }>;
+}) {
   await ensureCurrentUserWatchlist();
-  const [watchlist, titleOptions] = await Promise.all([
+  const params = await searchParams;
+  const selectedTags = parseTagSlugs(params.tag);
+  const minePlatforms = parseMinePlatforms(params.minePlatforms);
+
+  const [watchlist, titleOptions, tags, userPlatforms] = await Promise.all([
     getWatchlist(),
     getTitleOptions(),
+    getTags(),
+    getUserStreamingPlatforms(),
   ]);
 
-  const items = watchlist?.items ?? [];
+  const rawItems = watchlist?.items ?? [];
+  const taggedItems =
+    selectedTags.length > 0
+      ? rawItems.filter((item) => titleMatchesAnyTag(item.title.tags, selectedTags))
+      : rawItems;
+  const catalog = resolveMinePlatformsCatalog(
+    taggedItems.map((item) => item.title),
+    minePlatforms,
+    userPlatforms,
+  );
+  const visibleIds = new Set(catalog.titles.map((title) => title.id));
+  const items = catalog.needsSetup
+    ? []
+    : minePlatforms
+      ? taggedItems.filter((item) => visibleIds.has(item.title.id))
+      : taggedItems;
+
   const listId = watchlist?.id ?? "";
-  const memberIds = new Set(items.map((item) => item.titleId));
+  const memberIds = new Set(rawItems.map((item) => item.titleId));
   const availableTitles = titleOptions.filter((title) => !memberIds.has(title.id));
   const [hero, ...queue] = items;
+  const hasActiveFilters = selectedTags.length > 0 || minePlatforms;
+  const clearHref = catalogHref("/watchlist");
 
   return (
     <div className="space-y-8">
@@ -47,9 +91,22 @@ export default async function WatchlistPage() {
         }
       />
       <p className="text-xs text-mist">
-        {items.length}{" "}
-        {items.length === 1 ? "título en cola" : "títulos en cola"}
+        {hasActiveFilters
+          ? `${items.length} de ${rawItems.length} ${
+              rawItems.length === 1 ? "título en cola" : "títulos en cola"
+            }`
+          : `${rawItems.length} ${
+              rawItems.length === 1 ? "título en cola" : "títulos en cola"
+            }`}
       </p>
+
+      <CatalogFilters
+        tags={tags}
+        selectedSlugs={selectedTags}
+        pathname="/watchlist"
+        minePlatforms={minePlatforms}
+        hasStreamingPlatforms={userPlatforms.length > 0}
+      />
 
       <form
         action={addToWatchlistFromForm}
@@ -84,15 +141,34 @@ export default async function WatchlistPage() {
         </button>
       </form>
 
-      {items.length === 0 ? (
+      {rawItems.length === 0 ? (
         <EmptyState
           title="Nada en Quiero ver"
           description="Agrega títulos que quieras ver pronto, o registra uno nuevo."
           actionHref="/buscar"
           actionLabel="Buscar en TMDB"
         />
+      ) : catalog.needsSetup ? (
+        <MinePlatformsSetupCta />
+      ) : items.length === 0 && minePlatforms ? (
+        <>
+          <MissingStreamingDataNote count={catalog.missingCache} />
+          <MinePlatformsEmpty
+            userPlatforms={userPlatforms}
+            actionHref={clearHref}
+            hasTagFilters={selectedTags.length > 0}
+          />
+        </>
+      ) : items.length === 0 ? (
+        <EmptyState
+          title="Nada con esas etiquetas"
+          description="Esta cola no tiene títulos con las etiquetas elegidas. El filtro es OR: basta con una."
+          actionHref={clearHref}
+          actionLabel="Quitar filtros"
+        />
       ) : (
         <div className="space-y-8">
+          <MissingStreamingDataNote count={catalog.missingCache} />
           <TitlePosterRail
             title="En cola"
             ariaLabel="Posters de la cola"
@@ -105,7 +181,7 @@ export default async function WatchlistPage() {
               position={1}
               listId={listId}
               canMoveUp={false}
-              canMoveDown={queue.length > 0}
+              canMoveDown={!hasActiveFilters && queue.length > 0}
               removeAction={removeFromWatchlist.bind(null, hero.titleId)}
               updateNoteAction={updateWatchlistNote.bind(null, hero.titleId)}
             />
@@ -124,8 +200,8 @@ export default async function WatchlistPage() {
                       variant="queue"
                       position={index + 2}
                       listId={listId}
-                      canMoveUp
-                      canMoveDown={index < queue.length - 1}
+                      canMoveUp={!hasActiveFilters}
+                      canMoveDown={!hasActiveFilters && index < queue.length - 1}
                       removeAction={removeFromWatchlist.bind(null, item.titleId)}
                       updateNoteAction={updateWatchlistNote.bind(null, item.titleId)}
                     />
