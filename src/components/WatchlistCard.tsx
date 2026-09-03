@@ -79,8 +79,13 @@ export const WatchlistCard = ({
                 </button>
               </form>
             </div>
-            <div className="flex flex-wrap items-end gap-3">
-              <MarkWatchedForm titleId={title.id} variant="hero" />
+            <div className="space-y-3">
+              <MarkWatchedForm
+                titleId={title.id}
+                variant="hero"
+                rating={title.rating}
+                review={title.review}
+              />
               <form action={removeAction}>
                 <button type="submit" className={btnGhost}>
                   Quitar de la cola
@@ -131,7 +136,12 @@ export const WatchlistCard = ({
           <p className="line-clamp-2 text-xs text-fog">{item.queueNote}</p>
         ) : null}
         <div className="flex flex-wrap items-center gap-2">
-          <MarkWatchedForm titleId={title.id} variant="queue" />
+          <MarkWatchedForm
+            titleId={title.id}
+            variant="queue"
+            rating={title.rating}
+            review={title.review}
+          />
           <form action={removeAction}>
             <button
               type="submit"

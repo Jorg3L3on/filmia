@@ -29,6 +29,8 @@ const toCoverflowTitle = (title: TitlePayload): CoverflowTitle => {
     posterPath: title.posterPath,
     platform: title.platform,
     imdbRating: title.imdbRating,
+    watched: Boolean(title.watchedAt),
+    review: title.review,
     flatrateProviders: watchProviders?.flatrate ?? [],
   };
 };
@@ -70,12 +72,13 @@ export const TitleDeckView = ({
           {titles.map((title) => (
             <li key={title.id}>
               <PosterTile
-                href={`/titulos/${title.id}`}
-                name={title.name}
-                posterPath={title.posterPath}
-                year={title.year}
-                rating={title.rating}
-              />
+                  href={`/titulos/${title.id}`}
+                  name={title.name}
+                  posterPath={title.posterPath}
+                  year={title.year}
+                  rating={title.rating}
+                  watchedAt={title.watchedAt}
+                />
             </li>
           ))}
         </ul>

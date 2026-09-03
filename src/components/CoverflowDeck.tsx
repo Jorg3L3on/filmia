@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { removeTitleFromList } from "@/app/actions/lists";
+import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PosterImage } from "@/components/PosterImage";
+import { WatchedBadge } from "@/components/WatchedBadge";
 import { WatchProviderChips } from "@/components/WatchProvidersMx";
 import { cn } from "@/lib/cn";
 import {
@@ -11,6 +14,7 @@ import {
   PLATFORM_LABEL,
   TITLE_KIND_LABEL,
 } from "@/lib/labels";
+import { btnLink } from "@/lib/ui";
 import type { Platform, TitleKind } from "@/generated/prisma/client";
 import type { WatchProviderOffer } from "@/lib/watch-providers";
 
@@ -23,13 +27,15 @@ export type CoverflowTitle = {
   posterPath: string | null;
   platform: Platform | null;
   imdbRating: number | null;
+  watched?: boolean;
+  review?: string | null;
   flatrateProviders?: WatchProviderOffer[];
 };
 
 type CoverflowDeckProps = {
   titles: CoverflowTitle[];
   className?: string;
-  footer?: (title: CoverflowTitle, index: number, isActive: boolean) => React.ReactNode;
+  listId?: string;
 };
 
 const CARD_WIDTH = 236;
@@ -160,6 +166,9 @@ const DeckCard = ({
           priority={metrics.isActive}
           className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
         />
+        {title.watched ? (
+          <WatchedBadge compact className="absolute left-2 top-2 z-10" />
+        ) : null}
         <div
           className={cn(
             "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-10",
@@ -183,7 +192,7 @@ const DeckCard = ({
   );
 };
 
-export const CoverflowDeck = ({ titles, className, footer }: CoverflowDeckProps) => {
+export const CoverflowDeck = ({ titles, className, listId }: CoverflowDeckProps) => {
   const [displayIndex, setDisplayIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [cardWidth, setCardWidth] = useState(CARD_WIDTH);
@@ -565,7 +574,10 @@ export const CoverflowDeck = ({ titles, className, footer }: CoverflowDeckProps)
                 ? ` · ${PLATFORM_LABEL[activeTitle.platform]}`
                 : ""}
             </p>
-            <p className="text-sm text-star">{formatRating(activeTitle.rating)}</p>
+            <p className="text-sm text-star">
+              {activeTitle.watched ? "Visto · " : ""}
+              {formatRating(activeTitle.rating)}
+            </p>
           </div>
           {activeTitle.flatrateProviders && activeTitle.flatrateProviders.length > 0 ? (
             <WatchProviderChips
@@ -574,7 +586,24 @@ export const CoverflowDeck = ({ titles, className, footer }: CoverflowDeckProps)
               className="pt-1"
             />
           ) : null}
-          {footer ? footer(activeTitle, roundedActive, true) : null}
+          {!activeTitle.watched ? (
+            <div className="mx-auto max-w-md text-left">
+              <MarkWatchedForm
+                titleId={activeTitle.id}
+                variant="queue"
+                rating={activeTitle.rating}
+                review={activeTitle.review}
+                collapsed
+              />
+            </div>
+          ) : null}
+          {listId ? (
+            <form action={removeTitleFromList.bind(null, listId, activeTitle.id)}>
+              <button type="submit" className={btnLink}>
+                Quitar de la lista
+              </button>
+            </form>
+          ) : null}
         </div>
       ) : null}
     </div>

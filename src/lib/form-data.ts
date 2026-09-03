@@ -67,6 +67,19 @@ export const parseOptionalDate = (value: FormDataEntryValue | null) => {
   return date;
 };
 
+export const parseOptionalReview = (value: FormDataEntryValue | null) => {
+  const review = asString(value);
+  if (!review) {
+    return null;
+  }
+
+  if (review.length > 1000) {
+    throw new Error("La nota es demasiado larga (máximo 1000 caracteres).");
+  }
+
+  return review;
+};
+
 export const parseRequiredName = (value: FormDataEntryValue | null) => {
   const name = asString(value);
   if (!name) {

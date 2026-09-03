@@ -8,11 +8,13 @@ import { PersonalRating } from "@/components/PersonalRating";
 import { PlatformBadge } from "@/components/PlatformBadge";
 import { PosterImage } from "@/components/PosterImage";
 import { TagPills } from "@/components/TagPills";
+import { WatchedBadge } from "@/components/WatchedBadge";
 import { WatchlistToggle } from "@/components/WatchlistToggle";
 import { WatchProvidersMx } from "@/components/WatchProvidersMx";
+import { formatWatchedDate } from "@/lib/dates";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import { getTitleById, isTitleInWatchlist } from "@/lib/queries";
-import { btnDanger, btnPrimary, eyebrowClass, focusRing, posterFrame } from "@/lib/ui";
+import { btnDanger, btnPrimary, eyebrowClass, focusRing, posterFrame, wellClass } from "@/lib/ui";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 
 export const dynamic = "force-dynamic";
@@ -64,19 +66,32 @@ export default async function TitleDetailPage({
         <WatchProvidersMx data={watchProviders} />
         <TagPills tags={title.tags.map((item) => item.tag)} />
         <WatchlistToggle titleId={title.id} inWatchlist={inWatchlist} />
-        {title.watchedAt ? (
-          <p className="text-sm text-fog">
-            Vista el{" "}
-            {title.watchedAt.toLocaleDateString("es-MX", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              timeZone: "UTC",
-            })}
-          </p>
-        ) : (
-          <MarkWatchedForm titleId={title.id} variant="detail" />
-        )}
+        <section className={`${wellClass} space-y-4 p-5`}>
+          <header className="space-y-1">
+            <p className={eyebrowClass}>Diario</p>
+            <h2 className="font-serif text-xl text-white">
+              {title.watchedAt ? "Tu entrada" : "¿Ya la viste?"}
+            </h2>
+            {title.watchedAt ? (
+              <p className="flex flex-wrap items-center gap-2 text-sm text-fog">
+                <WatchedBadge />
+                Vista el {formatWatchedDate(title.watchedAt)}
+              </p>
+            ) : (
+              <p className="text-sm text-fog">
+                Fecha, nota del 1 al 10 y un comentario opcional. Si está en Por
+                ver, sale de la cola.
+              </p>
+            )}
+          </header>
+          <MarkWatchedForm
+            titleId={title.id}
+            variant="detail"
+            watchedAt={title.watchedAt}
+            rating={title.rating}
+            review={title.review}
+          />
+        </section>
         {(() => {
           const collections = title.listItems.filter(
             (item) => item.list.kind === "COLLECTION",
@@ -101,11 +116,6 @@ export default async function TitleDetailPage({
             </p>
           );
         })()}
-        {title.review ? (
-          <p className="max-w-2xl whitespace-pre-wrap text-base leading-relaxed text-paper/90">
-            {title.review}
-          </p>
-        ) : null}
         <div className="flex flex-wrap gap-3 pt-2">
           <Link href={`/titulos/${title.id}/editar`} className={btnPrimary}>
             Editar

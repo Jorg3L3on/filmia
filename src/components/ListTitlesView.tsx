@@ -1,6 +1,7 @@
 import { removeTitleFromList } from "@/app/actions/lists";
 import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
+import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PosterTile } from "@/components/PosterTile";
 import type { titleInclude } from "@/lib/queries";
 import { btnLink } from "@/lib/ui";
@@ -29,6 +30,8 @@ const toCoverflowTitle = (item: ListItemPayload): CoverflowTitle => {
     posterPath: item.title.posterPath,
     platform: item.title.platform,
     imdbRating: item.title.imdbRating,
+    watched: Boolean(item.title.watchedAt),
+    review: item.title.review,
     flatrateProviders: watchProviders?.flatrate ?? [],
   };
 };
@@ -52,16 +55,7 @@ export const ListTitlesView = ({
       {mode === "deck" ? (
         <CoverflowDeck
           titles={items.map(toCoverflowTitle)}
-          footer={(title) => {
-            const removeAction = removeTitleFromList.bind(null, listId, title.id);
-            return (
-              <form action={removeAction} className="pt-1">
-                <button type="submit" className={btnLink}>
-                  Quitar de la lista
-                </button>
-              </form>
-            );
-          }}
+          listId={listId}
         />
       ) : (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
@@ -75,7 +69,17 @@ export const ListTitlesView = ({
                   posterPath={item.title.posterPath}
                   year={item.title.year}
                   rating={item.title.rating}
+                  watchedAt={item.title.watchedAt}
                 />
+                {!item.title.watchedAt ? (
+                  <MarkWatchedForm
+                    titleId={item.title.id}
+                    variant="queue"
+                    rating={item.title.rating}
+                    review={item.title.review}
+                    collapsed
+                  />
+                ) : null}
                 <form action={removeAction}>
                   <button type="submit" className={`${btnLink} w-full`}>
                     Quitar de la lista
