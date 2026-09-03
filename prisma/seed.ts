@@ -1,4 +1,5 @@
 import { config as loadEnv } from "dotenv";
+import { hash } from "bcryptjs";
 import { PrismaNeon } from "@prisma/adapter-neon";
 
 loadEnv({ path: ".env.local" });
@@ -25,6 +26,10 @@ if (!connectionString) {
 const prisma = new PrismaClient({
   adapter: new PrismaNeon({ connectionString }),
 });
+
+const DEMO_USER_ID = "cm4demofilmia00000000001";
+const DEMO_EMAIL = "demo@filmia.local";
+const DEMO_PASSWORD = "filmia-demo";
 
 type SeedTitle = {
   name: string;
@@ -187,18 +192,37 @@ const listDescriptions: Record<string, string> = {
   "Vibe Mad Max / Tron": "Cromo, desierto, grid y neón.",
 };
 
-const upsertTag = async (name: string) => {
-  const slug = slugify(name);
-  return prisma.tag.upsert({
-    where: { slug },
-    update: { name },
-    create: { name, slug },
+const ensureDemoUser = async (userId: string) => {
+  const passwordHash = await hash(DEMO_PASSWORD, 12);
+
+  return prisma.user.upsert({
+    where: { id: userId },
+    update: {
+      email: DEMO_EMAIL,
+      name: "Demo Filmia",
+      passwordHash,
+    },
+    create: {
+      id: userId,
+      email: DEMO_EMAIL,
+      name: "Demo Filmia",
+      passwordHash,
+    },
   });
 };
 
-const upsertCollection = async (name: string) => {
+const upsertTag = async (userId: string, name: string) => {
+  const slug = slugify(name);
+  return prisma.tag.upsert({
+    where: { userId_slug: { userId, slug } },
+    update: { name },
+    create: { userId, name, slug },
+  });
+};
+
+const upsertCollection = async (userId: string, name: string) => {
   const existing = await prisma.list.findFirst({
-    where: { name, kind: ListKind.COLLECTION },
+    where: { userId, name, kind: ListKind.COLLECTION },
   });
   if (existing) {
     return existing;
@@ -206,6 +230,7 @@ const upsertCollection = async (name: string) => {
 
   return prisma.list.create({
     data: {
+      userId,
       name,
       description: listDescriptions[name],
       kind: ListKind.COLLECTION,
@@ -213,15 +238,16 @@ const upsertCollection = async (name: string) => {
   });
 };
 
-const ensureWatchlist = async () =>
+const ensureWatchlist = async (userId: string) =>
   prisma.list.upsert({
-    where: { slug: WATCHLIST_SLUG },
+    where: { userId_slug: { userId, slug: WATCHLIST_SLUG } },
     update: {
       name: WATCHLIST_NAME,
       description: WATCHLIST_DESCRIPTION,
       kind: ListKind.WATCHLIST,
     },
     create: {
+      userId,
       slug: WATCHLIST_SLUG,
       name: WATCHLIST_NAME,
       description: WATCHLIST_DESCRIPTION,
@@ -230,6 +256,9 @@ const ensureWatchlist = async () =>
   });
 
 const seed = async () => {
+  const demoUser = await ensureDemoUser(DEMO_USER_ID);
+  const userId = demoUser.id;
+
   const tagRecords = new Map<string, { id: string }>();
   const listRecords = new Map<string, { id: string }>();
 
@@ -237,21 +266,22 @@ const seed = async () => {
   const uniqueLists = [...new Set(seedTitles.flatMap((title) => title.lists))];
 
   for (const tagName of uniqueTags) {
-    tagRecords.set(tagName, await upsertTag(tagName));
+    tagRecords.set(tagName, await upsertTag(userId, tagName));
   }
 
   for (const listName of uniqueLists) {
-    listRecords.set(listName, await upsertCollection(listName));
+    listRecords.set(listName, await upsertCollection(userId, listName));
   }
 
-  const watchlist = await ensureWatchlist();
+  const watchlist = await ensureWatchlist(userId);
 
   for (const [index, title] of seedTitles.entries()) {
     const existing = await prisma.title.findFirst({
-      where: { name: title.name, year: title.year },
+      where: { userId, name: title.name, year: title.year },
     });
 
     const data = {
+      userId,
       name: title.name,
       originalName: title.originalName,
       kind: title.kind,
@@ -298,7 +328,7 @@ const seed = async () => {
 
   for (const item of watchlistQueue) {
     const existing = await prisma.title.findFirst({
-      where: { name: item.name, year: item.year },
+      where: { userId, name: item.name, year: item.year },
     });
 
     const saved = existing
@@ -315,6 +345,7 @@ const seed = async () => {
         })
       : await prisma.title.create({
           data: {
+            userId,
             name: item.name,
             kind: item.kind,
             year: item.year,
@@ -344,6 +375,7 @@ const seed = async () => {
   console.log(
     `Seed listo: ${seedTitles.length} títulos vistos, ${watchlistQueue.length} en watchlist.`,
   );
+  console.log(`Usuario demo: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
 };
 
 seed()

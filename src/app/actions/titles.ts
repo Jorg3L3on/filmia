@@ -19,6 +19,7 @@ import {
   readMetadataFields,
 } from "@/lib/metadata";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
 import { enrichWatchProvidersOnSave } from "@/lib/watch-providers-cache";
 
 const revalidateCatalog = (titleId?: string) => {
@@ -30,14 +31,14 @@ const revalidateCatalog = (titleId?: string) => {
   }
 };
 
-const syncTags = async (titleId: string, tagIds: string[], newTags: string[]) => {
+const syncTags = async (userId: string, titleId: string, tagIds: string[], newTags: string[]) => {
   const created = await Promise.all(
     newTags.map(async (name) => {
       const slug = slugify(name) || `tag-${crypto.randomUUID().slice(0, 8)}`;
       return prisma.tag.upsert({
-        where: { slug },
-        update: {},
-        create: { name, slug },
+        where: { userId_slug: { userId, slug } },
+        update: { name },
+        create: { userId, name, slug },
       });
     }),
   );
@@ -54,18 +55,18 @@ const syncTags = async (titleId: string, tagIds: string[], newTags: string[]) =>
   });
 };
 
-const syncLists = async (titleId: string, listIds: string[]) => {
+const syncLists = async (userId: string, titleId: string, listIds: string[]) => {
   await prisma.listItem.deleteMany({
     where: {
       titleId,
-      list: { kind: ListKind.COLLECTION },
+      list: { userId, kind: ListKind.COLLECTION },
       listId: { notIn: listIds },
     },
   });
 
   for (const [index, listId] of listIds.entries()) {
-    const list = await prisma.list.findUnique({
-      where: { id: listId },
+    const list = await prisma.list.findFirst({
+      where: { id: listId, userId },
       select: { kind: true },
     });
 
@@ -96,6 +97,7 @@ const readTitleFields = (formData: FormData) => ({
 });
 
 export const createTitle = async (formData: FormData) => {
+  const userId = await requireUserId();
   const fields = readTitleFields(formData);
   const metadata = await enrichMetadataOnSave(
     readMetadataFields(formData),
@@ -104,6 +106,7 @@ export const createTitle = async (formData: FormData) => {
 
   const title = await prisma.title.create({
     data: {
+      userId,
       name: fields.name,
       originalName: fields.originalName,
       kind: fields.kind,
@@ -119,8 +122,8 @@ export const createTitle = async (formData: FormData) => {
     },
   });
 
-  await syncTags(title.id, fields.tagIds, fields.newTags);
-  await syncLists(title.id, fields.listIds);
+  await syncTags(userId, title.id, fields.tagIds, fields.newTags);
+  await syncLists(userId, title.id, fields.listIds);
   if (metadata.tmdbId) {
     await enrichWatchProvidersOnSave(title.id, metadata.tmdbId, fields.kind);
   }
@@ -129,11 +132,21 @@ export const createTitle = async (formData: FormData) => {
 };
 
 export const updateTitle = async (titleId: string, formData: FormData) => {
+  const userId = await requireUserId();
   const fields = readTitleFields(formData);
   const metadata = await enrichMetadataOnSave(
     readMetadataFields(formData),
     fields.kind,
   );
+
+  const existing = await prisma.title.findFirst({
+    where: { id: titleId, userId },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    throw new Error("Título no encontrado.");
+  }
 
   await prisma.title.update({
     where: { id: titleId },
@@ -153,8 +166,8 @@ export const updateTitle = async (titleId: string, formData: FormData) => {
     },
   });
 
-  await syncTags(titleId, fields.tagIds, fields.newTags);
-  await syncLists(titleId, fields.listIds);
+  await syncTags(userId, titleId, fields.tagIds, fields.newTags);
+  await syncLists(userId, titleId, fields.listIds);
   if (metadata.tmdbId) {
     await enrichWatchProvidersOnSave(titleId, metadata.tmdbId, fields.kind);
   }
@@ -163,6 +176,17 @@ export const updateTitle = async (titleId: string, formData: FormData) => {
 };
 
 export const deleteTitle = async (titleId: string) => {
+  const userId = await requireUserId();
+
+  const existing = await prisma.title.findFirst({
+    where: { id: titleId, userId },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    throw new Error("Título no encontrado.");
+  }
+
   await prisma.title.delete({ where: { id: titleId } });
   revalidateCatalog(titleId);
   redirect("/");

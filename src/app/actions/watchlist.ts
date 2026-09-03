@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { ListKind } from "@/generated/prisma/client";
 import { parseRating } from "@/lib/form-data";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
 import {
   WATCHLIST_DESCRIPTION,
   WATCHLIST_NAME,
@@ -16,11 +17,12 @@ const revalidateWatchlist = () => {
   revalidatePath("/listas");
 };
 
-export const ensureWatchlist = async () => {
+export const ensureWatchlist = async (userId: string) => {
   return prisma.list.upsert({
-    where: { slug: WATCHLIST_SLUG },
+    where: { userId_slug: { userId, slug: WATCHLIST_SLUG } },
     update: {},
     create: {
+      userId,
       slug: WATCHLIST_SLUG,
       name: WATCHLIST_NAME,
       description: WATCHLIST_DESCRIPTION,
@@ -29,8 +31,23 @@ export const ensureWatchlist = async () => {
   });
 };
 
+export const ensureCurrentUserWatchlist = async () => {
+  const userId = await requireUserId();
+  return ensureWatchlist(userId);
+};
+
 export const addToWatchlist = async (titleId: string, queueNote?: string) => {
-  const watchlist = await ensureWatchlist();
+  const userId = await requireUserId();
+  const watchlist = await ensureWatchlist(userId);
+
+  const title = await prisma.title.findFirst({
+    where: { id: titleId, userId },
+    select: { id: true },
+  });
+
+  if (!title) {
+    throw new Error("Título no encontrado.");
+  }
 
   const last = await prisma.listItem.findFirst({
     where: { listId: watchlist.id },
@@ -68,8 +85,10 @@ export const addToWatchlistFromForm = async (formData: FormData) => {
 };
 
 export const removeFromWatchlist = async (titleId: string) => {
+  const userId = await requireUserId();
+
   const watchlist = await prisma.list.findUnique({
-    where: { slug: WATCHLIST_SLUG },
+    where: { userId_slug: { userId, slug: WATCHLIST_SLUG } },
     select: { id: true },
   });
 
@@ -100,10 +119,20 @@ export const markTitleWatched = async (
   titleId: string,
   formData?: FormData,
 ) => {
+  const userId = await requireUserId();
   const rating = formData ? parseRating(formData.get("rating")) : null;
 
+  const title = await prisma.title.findFirst({
+    where: { id: titleId, userId },
+    select: { id: true },
+  });
+
+  if (!title) {
+    throw new Error("Título no encontrado.");
+  }
+
   const watchlist = await prisma.list.findUnique({
-    where: { slug: WATCHLIST_SLUG },
+    where: { userId_slug: { userId, slug: WATCHLIST_SLUG } },
     select: { id: true },
   });
 
@@ -130,7 +159,8 @@ export const markTitleWatched = async (
 };
 
 export const updateWatchlistNote = async (titleId: string, formData: FormData) => {
-  const watchlist = await ensureWatchlist();
+  const userId = await requireUserId();
+  const watchlist = await ensureWatchlist(userId);
   const queueNote = String(formData.get("queueNote") ?? "").trim() || null;
 
   await prisma.listItem.update({
@@ -142,7 +172,8 @@ export const updateWatchlistNote = async (titleId: string, formData: FormData) =
 };
 
 export const bumpWatchlistItem = async (titleId: string) => {
-  const watchlist = await ensureWatchlist();
+  const userId = await requireUserId();
+  const watchlist = await ensureWatchlist(userId);
   const items = await prisma.listItem.findMany({
     where: { listId: watchlist.id },
     orderBy: { position: "asc" },

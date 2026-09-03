@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseRequiredName } from "@/lib/form-data";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
 
 const revalidateLists = (listId?: string) => {
   revalidatePath("/");
@@ -16,11 +17,12 @@ const revalidateLists = (listId?: string) => {
 };
 
 export const createList = async (formData: FormData) => {
+  const userId = await requireUserId();
   const name = parseRequiredName(formData.get("name"));
   const description = String(formData.get("description") ?? "").trim() || null;
 
   const list = await prisma.list.create({
-    data: { name, description, kind: ListKind.COLLECTION },
+    data: { userId, name, description, kind: ListKind.COLLECTION },
   });
 
   revalidateLists(list.id);
@@ -28,8 +30,18 @@ export const createList = async (formData: FormData) => {
 };
 
 export const updateList = async (listId: string, formData: FormData) => {
+  const userId = await requireUserId();
   const name = parseRequiredName(formData.get("name"));
   const description = String(formData.get("description") ?? "").trim() || null;
+
+  const existing = await prisma.list.findFirst({
+    where: { id: listId, userId },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    throw new Error("Lista no encontrada.");
+  }
 
   await prisma.list.update({
     where: { id: listId },
@@ -41,15 +53,45 @@ export const updateList = async (listId: string, formData: FormData) => {
 };
 
 export const deleteList = async (listId: string) => {
+  const userId = await requireUserId();
+
+  const existing = await prisma.list.findFirst({
+    where: { id: listId, userId },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    throw new Error("Lista no encontrada.");
+  }
+
   await prisma.list.delete({ where: { id: listId } });
   revalidateLists(listId);
   redirect("/listas");
 };
 
 export const addTitleToList = async (listId: string, formData: FormData) => {
+  const userId = await requireUserId();
   const titleId = String(formData.get("titleId") ?? "").trim();
   if (!titleId) {
     throw new Error("Elige un título para agregar.");
+  }
+
+  const list = await prisma.list.findFirst({
+    where: { id: listId, userId },
+    select: { id: true },
+  });
+
+  if (!list) {
+    throw new Error("Lista no encontrada.");
+  }
+
+  const title = await prisma.title.findFirst({
+    where: { id: titleId, userId },
+    select: { id: true },
+  });
+
+  if (!title) {
+    throw new Error("Título no encontrado.");
   }
 
   const last = await prisma.listItem.findFirst({
@@ -71,6 +113,17 @@ export const addTitleToList = async (listId: string, formData: FormData) => {
 };
 
 export const removeTitleFromList = async (listId: string, titleId: string) => {
+  const userId = await requireUserId();
+
+  const list = await prisma.list.findFirst({
+    where: { id: listId, userId },
+    select: { id: true },
+  });
+
+  if (!list) {
+    throw new Error("Lista no encontrada.");
+  }
+
   await prisma.listItem.delete({
     where: { listId_titleId: { listId, titleId } },
   });

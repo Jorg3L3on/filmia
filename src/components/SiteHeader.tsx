@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Logo } from "@/components/Logo";
+import { LogoutButton } from "@/components/LogoutButton";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
 
@@ -13,8 +14,13 @@ const navItems = [
   { href: "/titulos/nuevo", label: "Registrar" },
 ] as const;
 
-export const SiteHeader = () => {
-  const currentPath = usePathname();
+type SiteHeaderProps = {
+  pathname: string;
+};
+
+export const SiteHeader = ({ pathname: currentPath }: SiteHeaderProps) => {
+  const { data: session } = useSession();
+  const displayName = session?.user?.name ?? session?.user?.email ?? "Cuenta";
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-canvas/90 backdrop-blur">
@@ -51,6 +57,15 @@ export const SiteHeader = () => {
             );
           })}
         </nav>
+        <div className="flex items-center gap-2">
+          <span
+            className="hidden max-w-[10rem] truncate text-xs text-mist sm:inline"
+            title={displayName}
+          >
+            {displayName}
+          </span>
+          <LogoutButton />
+        </div>
       </div>
     </header>
   );
