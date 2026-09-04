@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@/generated/prisma/client";
 
@@ -19,15 +20,16 @@ const createPrismaClient = () => {
   });
 };
 
-const getPrismaClient = () => {
-  const client = globalForPrisma.prisma ?? createPrismaClient();
-
+// Un cliente por petición en Workers (evita reutilizar conexiones entre requests).
+// En local, singleton global para HMR.
+const getPrismaClient = cache(() => {
   if (process.env.NODE_ENV !== "production") {
-    globalForPrisma.prisma = client;
+    globalForPrisma.prisma ??= createPrismaClient();
+    return globalForPrisma.prisma;
   }
 
-  return client;
-};
+  return createPrismaClient();
+});
 
 // Lazy so `next build` can import this module without Neon secrets.
 // Runtime queries still require DATABASE_URL from the environment.

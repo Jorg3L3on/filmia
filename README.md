@@ -6,8 +6,10 @@ App personal para trackear películas y series vistas. UI en español, estética
 
 - Next.js 16 (App Router) + TypeScript + Tailwind CSS 4
 - Auth.js v5 (`next-auth`) con credenciales (email + contraseña, JWT)
-- Prisma 7 + adaptador Neon (`@prisma/adapter-neon`)
+- Prisma 7 + adaptador Neon (`@prisma/adapter-neon` + `@neondatabase/serverless`)
 - Postgres en Neon (proyecto `filmia`)
+- **Producción**: Cloudflare Workers vía [OpenNext](https://opennext.js.org/cloudflare) (`@opennextjs/cloudflare`)
+- Vercel (`vercel.json`) queda como respaldo opcional desactivado
 
 ## Modelo
 
@@ -59,7 +61,7 @@ Variables de entorno:
 | --- | --- |
 | `AUTH_SECRET` | Firma de JWT (obligatoria) |
 | `NEXTAUTH_SECRET` | Alias aceptado por Auth.js |
-| `NEXTAUTH_URL` | Opcional en local (`http://localhost:3000`); Vercel lo infiere |
+| `AUTH_URL` / `NEXTAUTH_URL` | URL pública de la app. Local: `http://localhost:3000`. **Obligatoria en Cloudflare Workers** |
 
 ### Migraciones en desarrollo
 
@@ -77,7 +79,9 @@ npx prisma migrate deploy
 npm run db:seed
 ```
 
-`prisma.config.ts` lee `DATABASE_URL_UNPOOLED` de forma lazy (sin `env()`), así `prisma generate` / `postinstall` no exige secretos. Migraciones sí necesitan esa URL. La app Next.js usa `DATABASE_URL` (pooled) vía el adaptador Neon.
+`prisma.config.ts` lee `DATABASE_URL_UNPOOLED` de forma lazy (sin `env()`), así `prisma generate` / `postinstall` no exige secretos. Migraciones sí necesitan esa URL. La app Next.js usa `DATABASE_URL` (pooled) vía el adaptador Neon serverless.
+
+**Cloudflare Workers**: el runtime usa `DATABASE_URL` (pooled). Las migraciones **no** corren dentro del Worker; aplícalas desde CI o local con `DATABASE_URL_UNPOOLED` (ver [Despliegue en Cloudflare](#despliegue-en-cloudflare)).
 
 ### JOR-152 — plataformas de streaming del usuario
 
@@ -129,8 +133,13 @@ Busca en TMDB por nombre + año + tipo, guarda poster e IMDb rating vía OMDb.
 
 | Script | Qué hace |
 | --- | --- |
-| `npm run dev` | Servidor de desarrollo |
-| `npm run build` | Build de producción |
+| `npm run dev` | Servidor de desarrollo (Node.js, sin cambios) |
+| `npm run build` | Build de producción Next.js (Node) |
+| `npm run cf:build` | Build OpenNext para Cloudflare Workers |
+| `npm run cf:preview` | Build + preview local en runtime Workers (`wrangler dev`) |
+| `npm run cf:deploy` | Build + deploy a Cloudflare Workers |
+| `npm run cf:upload` | Build + sube versión sin promover |
+| `npm run cf:typegen` | Genera tipos TypeScript de bindings Wrangler |
 | `npm run db:migrate` | `prisma migrate dev` |
 | `npm run db:deploy` | `prisma migrate deploy` |
 | `npm run db:seed` | Carga títulos dummy + usuario demo |
@@ -140,11 +149,105 @@ Busca en TMDB por nombre + año + tipo, guarda poster e IMDb rating vía OMDb.
 
 `postinstall` corre `prisma generate`.
 
+## Despliegue en Cloudflare
+
+Filmia se despliega en **Cloudflare Workers** con `@opennextjs/cloudflare`. Neon Postgres no cambia.
+
+### Requisitos
+
+- Cuenta Cloudflare con Workers habilitado
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/) (incluido como devDependency)
+- URLs Neon del proyecto `filmia` (mismas que local)
+
+### Variables de entorno (Cloudflare)
+
+| Variable | Tipo | Uso |
+| --- | --- | --- |
+| `DATABASE_URL` | Secreto | URL **pooled** de Neon (runtime Worker) |
+| `AUTH_SECRET` | Secreto | JWT Auth.js (`openssl rand -base64 32`) |
+| `AUTH_URL` | Variable | URL pública del Worker, p. ej. `https://filmia.<account>.workers.dev` |
+| `TMDB_API_KEY` | Secreto | Posters TMDB |
+| `OMDB_API_KEY` | Secreto | Ratings IMDb (opcional pero recomendado) |
+
+`DATABASE_URL_UNPOOLED` **no** hace falta en el Worker; solo para migraciones locales/CI.
+
+### Configurar secretos
+
+```bash
+npx wrangler login
+
+# Secretos (no aparecen en logs)
+npx wrangler secret put DATABASE_URL
+npx wrangler secret put AUTH_SECRET
+npx wrangler secret put TMDB_API_KEY
+npx wrangler secret put OMDB_API_KEY
+
+# Variable pública (dashboard Workers → Settings → Variables, o wrangler.jsonc vars)
+# AUTH_URL = https://tu-worker.workers.dev
+```
+
+Para preview local en runtime Workers, copia `.dev.vars.example` → `.dev.vars` y pega tus valores.
+
+### Migraciones (Neon, fuera del Worker)
+
+Prisma migrate no corre dentro de Cloudflare Workers. Desde `sandbox` o local:
+
+```bash
+export DATABASE_URL_UNPOOLED="postgresql://..."  # URL directa (sin -pooler)
+npx prisma migrate deploy
+```
+
+En CI, usa el mismo comando con `DATABASE_URL_UNPOOLED` como secreto del pipeline.
+
+### Desplegar desde `sandbox`
+
+```bash
+git checkout sandbox
+git pull origin sandbox
+npm install
+npm run cf:deploy
+```
+
+O conecta el repo en Cloudflare Dashboard → Workers → Builds (rama `sandbox`).
+
+### Imágenes (`next/image`)
+
+`wrangler.jsonc` declara el binding `IMAGES` (Cloudflare Images) para optimizar posters TMDB. Los dominios remotos están en `next.config.ts` → `images.remotePatterns`. Si Cloudflare Images no está habilitado en la cuenta, los posters pueden servirse sin optimizar (fallback de Next).
+
+### Caché incremental (opcional)
+
+Para ISR/caché persistente con R2, crea un bucket y añade en `wrangler.jsonc`:
+
+```jsonc
+"r2_buckets": [
+  { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "filmia-cache" }
+]
+```
+
+Y en `open-next.config.ts` importa `r2IncrementalCache` (ver [docs OpenNext](https://opennext.js.org/cloudflare/caching)).
+
+### Checklist de humo post-deploy
+
+1. **Login** en `/login` con usuario demo o cuenta propia
+2. **Registro** en `/registro` (cuenta nueva)
+3. **CRUD títulos**: crear, editar, borrar un título
+4. **Proveedores MX**: ficha de título muestra dónde ver (flatrate)
+5. **Diario / listas / tags / series status / calendario** sin regresiones
+6. **Logout** («Salir» en cabecera) y redirección a `/login` en rutas protegidas
+
+### Limitaciones conocidas
+
+- **Edge runtime** no soportado; no uses `export const runtime = "edge"`.
+- **Migraciones Prisma**: solo CI/local contra Neon, no en el Worker.
+- **Vercel**: `vercel.json` desactiva auto-deploy; Cloudflare es el host principal.
+- **Cloudflare Images**: puede tener coste extra según uso; binding `IMAGES` en `wrangler.jsonc`.
+
 ## Notas para Taller
 
 - El schema y las migraciones van en `prisma/`. Aplícalas con `DATABASE_URL` / `DATABASE_URL_UNPOOLED` del proyecto Neon `filmia` (`late-cell-10415663`).
 - Este agente pudo conectar a Neon vía MCP para humo (migrate + seed). Si la VM no tiene `DATABASE_URL`, no hace falta SQLite: apunta Prisma a Neon y corre `migrate deploy`.
-- No hay secretos en el repo. Solo `.env.example`.
-- Añade `AUTH_SECRET` en Vercel (Settings → Environment Variables) antes de desplegar.
+- No hay secretos en el repo. Solo `.env.example` y `.dev.vars.example`.
+- Producción: secretos en Cloudflare (`wrangler secret put`). Vercel queda como respaldo opcional desactivado.
 
-Ticket: [JOR-149](https://linear.app/jorg3l3on/issue/JOR-149/scaffold-next-prismaneon-crud-titulos).
+Ticket scaffold: [JOR-149](https://linear.app/jorg3l3on/issue/JOR-149/scaffold-next-prismaneon-crud-titulos).
+Migración Cloudflare: [JOR-160](https://linear.app/jorg3l3on/issue/JOR-160/deploy-migrar-host-de-vercel-a-cloudflare-opennext).
