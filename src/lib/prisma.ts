@@ -2,8 +2,11 @@ import { cache } from "react";
 import { neonConfig } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@/generated/prisma/client";
+import { resolveDatabaseUrl } from "@/lib/database-url";
 
 // HTTP fetch pooler for Cloudflare Workers (TCP is unavailable without nodejs_compat).
+// PrismaNeon@7 builds a Neon `Pool` from this config on connect(); do not pass
+// an already-constructed Pool (the factory only accepts PoolConfig).
 neonConfig.poolQueryViaFetch = true;
 
 const globalForPrisma = globalThis as unknown as {
@@ -11,13 +14,7 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 const createPrismaClient = () => {
-  const connectionString = process.env.DATABASE_URL;
-
-  if (!connectionString) {
-    throw new Error(
-      "DATABASE_URL no está definida. Copia .env.example a .env y pega las URLs de Neon.",
-    );
-  }
+  const connectionString = resolveDatabaseUrl();
 
   return new PrismaClient({
     adapter: new PrismaNeon({ connectionString }),

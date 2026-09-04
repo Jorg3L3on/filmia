@@ -171,7 +171,7 @@ Cloudflare **workerd** no permite compilar WASM en runtime (`WebAssembly.compile
    }
    ```
 
-2. **`src/lib/prisma.ts`**: adaptador Neon serverless + `neonConfig.poolQueryViaFetch = true` (HTTP al pooler; recomendado en Workers).
+2. **`src/lib/prisma.ts`**: adaptador Neon serverless + `neonConfig.poolQueryViaFetch = true` (HTTP al pooler; recomendado en Workers). `DATABASE_URL` se recorta, se le quitan comillas envolventes y se valida (`postgresql:` / `postgres:`) **antes** de pasarla al adaptador.
 
 3. **`wrangler.jsonc`**: flag `nodejs_compat` (ya presente) para el stack TCP/Node del adaptador.
 
@@ -210,6 +210,17 @@ npx wrangler secret put OMDB_API_KEY
 
 # Variable pública (dashboard Workers → Settings → Variables, o wrangler.jsonc vars)
 # AUTH_URL = https://tu-worker.workers.dev
+```
+
+Al pegar `DATABASE_URL` en `wrangler secret put`, escribe **solo** la URL (`postgresql://…`) **sin comillas ni saltos de línea**. Un secreto con `"postgresql://…"` o un `\n` final hace que Neon lance `Invalid URL string` y el login falle (Auth.js lo puede enmascarar como credenciales incorrectas).
+
+Para comprobar que el secreto no trae basura (sin imprimirlo):
+
+```bash
+npx wrangler secret list
+# Confirma que DATABASE_URL existe. Si el login sigue fallando de forma intermitente,
+# vuelve a poner el secreto: pega la URL pooled (hostname con -pooler) en una sola línea,
+# Enter, y termina con Ctrl+D / EOF — sin comillas alrededor.
 ```
 
 Para preview local en runtime Workers, copia `.dev.vars.example` → `.dev.vars` y pega tus valores.
