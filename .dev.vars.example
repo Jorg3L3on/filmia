@@ -1,9 +1,0 @@
-# Copia a .dev.vars para `npm run cf:preview` (no commitees secretos).
-NEXTJS_ENV=development
-
-# Mismas variables que .env (ver .env.example). Ejemplo:
-# DATABASE_URL="postgresql://..."
-# AUTH_SECRET=""
-# AUTH_URL="http://localhost:8787"
-# TMDB_API_KEY=""
-# OMDB_API_KEY=""

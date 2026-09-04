@@ -6,11 +6,6 @@
     "dev": "prisma generate && next dev",
     "build": "next build",
     "start": "next start",
-    "cf:build": "opennextjs-cloudflare build",
-    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf:upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
-    "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "lint": "eslint",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
@@ -23,7 +18,6 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
-    "@opennextjs/cloudflare": "^1.20.6",
     "@prisma/adapter-neon": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "bcryptjs": "^3.0.3",
@@ -44,7 +38,6 @@
     "prisma": "^7.10.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
-    "typescript": "^5",
-    "wrangler": "^4.129.0"
+    "typescript": "^5"
   }
 }
