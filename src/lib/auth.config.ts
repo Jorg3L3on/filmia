@@ -26,12 +26,29 @@ export const authConfig = {
   },
   providers: [],
   callbacks: {
-    jwt({ token, user }) {
+    jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
       }
+
+      if (trigger === "update" && session) {
+        const nextUser =
+          session && typeof session === "object" && "user" in session
+            ? session.user
+            : session;
+        if (nextUser && typeof nextUser === "object") {
+          if ("name" in nextUser) {
+            token.name =
+              typeof nextUser.name === "string" ? nextUser.name : undefined;
+          }
+          if (typeof nextUser.email === "string") {
+            token.email = nextUser.email;
+          }
+        }
+      }
+
       return token;
     },
     session({ session, token }) {
@@ -42,9 +59,8 @@ export const authConfig = {
         if (typeof token.email === "string") {
           session.user.email = token.email;
         }
-        if (typeof token.name === "string") {
-          session.user.name = token.name;
-        }
+        session.user.name =
+          typeof token.name === "string" ? token.name : null;
       }
       return session;
     },

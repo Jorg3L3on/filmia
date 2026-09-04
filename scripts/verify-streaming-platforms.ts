@@ -1,5 +1,6 @@
 import { Platform } from "../src/generated/prisma/client";
 import { parseStreamingPlatforms } from "../src/lib/form-data";
+import { PLATFORMS } from "../src/lib/labels";
 import {
   applyMinePlatformsFilter,
   formatUserPlatformsList,
@@ -7,6 +8,8 @@ import {
   matchWatchProviderPlatform,
   parseStoredStreamingPlatforms,
   resolveMinePlatformsCatalog,
+  STREAMING_PLATFORM_TMDB,
+  streamingPlatformLogoUrl,
   titleAvailableOnUserPlatforms,
   userStreamingProviderIds,
 } from "../src/lib/streaming-platforms";
@@ -91,6 +94,38 @@ const run = () => {
   assert(
     matchWatchProviderPlatform(provider(11, "MUBI")) === Platform.MUBI,
     "MUBI should match by TMDB id",
+  );
+  assert(
+    matchWatchProviderPlatform(provider(531, "Paramount Plus")) === Platform.PARAMOUNT,
+    "Paramount Plus should match by TMDB id",
+  );
+  assert(
+    matchWatchProviderPlatform(provider(9999, "Paramount+")) === Platform.PARAMOUNT,
+    "Paramount+ should match by name",
+  );
+  assert(
+    matchWatchProviderPlatform(provider(283, "Crunchyroll")) === Platform.CRUNCHYROLL,
+    "Crunchyroll should match by TMDB id",
+  );
+  assert(
+    matchWatchProviderPlatform(provider(457, "VIX ")) === Platform.VIX,
+    "ViX should match by TMDB id even with trailing space",
+  );
+  assert(
+    matchWatchProviderPlatform(provider(300, "Pluto TV")) === Platform.PLUTO,
+    "Pluto TV should match by TMDB id",
+  );
+  assert(
+    matchWatchProviderPlatform(provider(526, "AMC+")) === Platform.AMCPLUS,
+    "AMC+ should match by TMDB id",
+  );
+  assert(
+    matchWatchProviderPlatform(provider(9999, "Curiosity Stream")) === Platform.CURIOSITY,
+    "Curiosity Stream should match by name",
+  );
+  assert(
+    matchWatchProviderPlatform(provider(561, "Lionsgate Play")) === Platform.LIONSGATE,
+    "Lionsgate Play should match by TMDB id",
   );
   assert(
     matchWatchProviderPlatform(provider(10, "Amazon Video")) === null,
@@ -197,6 +232,15 @@ const run = () => {
 
   const ids = userStreamingProviderIds([Platform.NETFLIX, Platform.APPLE]);
   assert(ids.includes(8) && ids.includes(2) && ids.includes(350), "TMDB id map should expand Apple + Netflix");
+
+  for (const platform of PLATFORMS) {
+    const meta = STREAMING_PLATFORM_TMDB[platform];
+    assert(meta.logoPath.startsWith("/"), `${platform} should have a JustWatch/TMDB logo path`);
+    assert(
+      streamingPlatformLogoUrl(platform)?.includes("image.tmdb.org"),
+      `${platform} should resolve to a TMDB logo URL`,
+    );
+  }
 
   console.log("✓ Streaming platform prefs parse, match, and highlight helpers");
   console.log("All streaming platform checks passed.");

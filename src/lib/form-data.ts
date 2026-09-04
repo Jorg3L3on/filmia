@@ -104,6 +104,62 @@ export const parseStreamingPlatforms = (formData: FormData): Platform[] => {
   return PLATFORMS.filter((platform) => selected.has(platform));
 };
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export const parseOptionalDisplayName = (value: FormDataEntryValue | null) => {
+  const name = asString(value);
+  if (!name) {
+    return null;
+  }
+
+  if (name.length > 80) {
+    throw new Error("El nombre es demasiado largo (máximo 80 caracteres).");
+  }
+
+  return name;
+};
+
+export const parseAccountEmail = (value: FormDataEntryValue | null) => {
+  const email = asString(value).toLowerCase();
+  if (!email) {
+    throw new Error("El correo es obligatorio.");
+  }
+
+  if (email.length > 254) {
+    throw new Error("El correo es demasiado largo.");
+  }
+
+  if (!EMAIL_PATTERN.test(email)) {
+    throw new Error("El correo no es válido.");
+  }
+
+  return email;
+};
+
+export const parsePasswordChange = (formData: FormData) => {
+  const currentPassword = String(formData.get("currentPassword") ?? "");
+  const newPassword = String(formData.get("newPassword") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (!currentPassword) {
+    throw new Error("Escribe tu contraseña actual.");
+  }
+
+  if (newPassword.length < 8) {
+    throw new Error("La nueva contraseña debe tener al menos 8 caracteres.");
+  }
+
+  if (newPassword !== confirmPassword) {
+    throw new Error("Las contraseñas nuevas no coinciden.");
+  }
+
+  if (currentPassword === newPassword) {
+    throw new Error("La nueva contraseña debe ser distinta a la actual.");
+  }
+
+  return { currentPassword, newPassword };
+};
+
 export const parseNewTags = (value: FormDataEntryValue | null) =>
   asString(value)
     .split(",")
