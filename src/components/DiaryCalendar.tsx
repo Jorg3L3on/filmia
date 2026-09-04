@@ -17,7 +17,7 @@ import {
 import type { SeriesStatusFilter } from "@/lib/series";
 import { catalogHref } from "@/lib/tags";
 import { btnLink, focusRing } from "@/lib/ui";
-import type { SeriesStatus, TitleKind } from "@/generated/prisma/client";
+import type { SeriesStatus, TitleKind } from "@/generated/prisma/browser";
 
 export type DiaryCalendarTitle = {
   id: string;

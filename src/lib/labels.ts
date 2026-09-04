@@ -1,4 +1,4 @@
-import { Platform, SeriesStatus, TitleKind } from "@/generated/prisma/client";
+import { Platform, SeriesStatus, TitleKind } from "@/generated/prisma/browser";
 
 export const TITLE_KIND_LABEL: Record<TitleKind, string> = {
   MOVIE: "Película",

@@ -2,12 +2,8 @@ import { config as loadEnv } from "dotenv";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import {
-  ListKind,
-  Platform,
-  PrismaClient,
-  TitleKind,
-} from "../src/generated/prisma/client";
+import { PrismaClient } from "../src/generated/prisma/client";
+import { ListKind, Platform, TitleKind } from "../src/generated/prisma/browser";
 import {
   WATCHLIST_DESCRIPTION,
   WATCHLIST_NAME,

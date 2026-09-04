@@ -1,4 +1,4 @@
-import { Platform } from "../src/generated/prisma/client";
+import { Platform } from "../src/generated/prisma/browser";
 import { parseStreamingPlatforms } from "../src/lib/form-data";
 import {
   applyMinePlatformsFilter,

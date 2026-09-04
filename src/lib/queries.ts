@@ -1,4 +1,4 @@
-import { ListKind, Platform, TitleKind } from "@/generated/prisma/client";
+import { ListKind, Platform, TitleKind } from "@/generated/prisma/browser";
 import { sortUserLists } from "@/lib/lists";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";

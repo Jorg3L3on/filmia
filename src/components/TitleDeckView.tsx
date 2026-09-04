@@ -4,7 +4,7 @@ import { PosterTile } from "@/components/PosterTile";
 import type { titleInclude } from "@/lib/queries";
 import { eyebrowClass } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma/browser";
 
 type TitlePayload = Prisma.TitleGetPayload<{ include: typeof titleInclude }>;
 

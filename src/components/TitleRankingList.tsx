@@ -4,7 +4,7 @@ import { PosterImage } from "@/components/PosterImage";
 import { TagPills } from "@/components/TagPills";
 import { formatWatchedDate } from "@/lib/dates";
 import { SERIES_STATUS_LABEL, formatSeriesSeason } from "@/lib/labels";
-import type { SeriesStatus, TitleKind } from "@/generated/prisma/client";
+import type { SeriesStatus, TitleKind } from "@/generated/prisma/browser";
 import { cn } from "@/lib/cn";
 import { eyebrowClass, focusRing, posterFrame } from "@/lib/ui";
 

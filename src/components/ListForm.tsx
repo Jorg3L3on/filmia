@@ -1,5 +1,5 @@
 import { createList, updateList } from "@/app/actions/lists";
-import type { List } from "@/generated/prisma/client";
+import type { List } from "@/generated/prisma/browser";
 import { isFixedListSlug } from "@/lib/lists";
 import { btnPrimary, fieldClass } from "@/lib/ui";
 

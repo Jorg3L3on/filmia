@@ -1,5 +1,5 @@
-import type { TitleKind } from "@/generated/prisma/client";
-import { Prisma } from "@/generated/prisma/client";
+import type { TitleKind } from "@/generated/prisma/browser";
+import { Prisma } from "@/generated/prisma/browser";
 import { prisma } from "@/lib/prisma";
 import { isTmdbConfigured } from "@/lib/tmdb";
 import {

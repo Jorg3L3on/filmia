@@ -1,7 +1,7 @@
 import { parseMxWatchProviders } from "../src/lib/watch-providers";
 import { fetchMxWatchProviders } from "../src/lib/watch-providers";
 import { isTmdbConfigured } from "../src/lib/tmdb";
-import { TitleKind } from "../src/generated/prisma/client";
+import { TitleKind } from "../src/generated/prisma/browser";
 
 const mockResponse = {
   id: 550,

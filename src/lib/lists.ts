@@ -1,4 +1,4 @@
-import { ListKind } from "@/generated/prisma/client";
+import { ListKind } from "@/generated/prisma/browser";
 import { prisma } from "@/lib/prisma";
 
 export const WATCHLIST_SLUG = "watchlist" as const;

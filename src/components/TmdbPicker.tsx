@@ -2,7 +2,7 @@
 
 import { useCallback, useState, useTransition } from "react";
 import { enrichFromTmdb, searchTmdb } from "@/app/actions/metadata";
-import type { TitleKind } from "@/generated/prisma/client";
+import type { TitleKind } from "@/generated/prisma/browser";
 import { cn } from "@/lib/cn";
 import { tmdbPosterUrl } from "@/lib/tmdb";
 import { btnGhost, btnPrimary, fieldClass, focusRing } from "@/lib/ui";
