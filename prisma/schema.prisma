@@ -27,6 +27,13 @@ enum Platform {
   CLARO
   APPLE
   MUBI
+  PARAMOUNT
+  CRUNCHYROLL
+  VIX
+  PLUTO
+  AMCPLUS
+  CURIOSITY
+  LIONSGATE
 }
 
 enum ListKind {
