@@ -152,6 +152,7 @@ export const createTitle = async (formData: FormData) => {
       posterPath: metadata.posterPath,
       imdbId: metadata.imdbId,
       imdbRating: metadata.imdbRating,
+      tmdbGenres: metadata.tmdbGenres,
       ...seriesProgressData(fields.kind),
     },
   });
@@ -197,6 +198,7 @@ export const updateTitle = async (titleId: string, formData: FormData) => {
       posterPath: metadata.posterPath,
       imdbId: metadata.imdbId,
       imdbRating: metadata.imdbRating,
+      tmdbGenres: metadata.tmdbGenres,
       ...seriesProgressData(fields.kind),
     },
   });

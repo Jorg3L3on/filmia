@@ -38,6 +38,11 @@ export type TmdbCatalogResult = TmdbSearchResult & {
   kind: TitleKind;
 };
 
+export type TmdbGenre = {
+  id: number;
+  name: string;
+};
+
 type TmdbExternalIds = {
   imdb_id: string | null;
 };
@@ -312,6 +317,33 @@ export const getTmdbWatchProviders = async (tmdbId: number, kind: TitleKind) => 
   return tmdbFetch<TmdbWatchProvidersResponse>(`/${segment}/${tmdbId}/watch/providers`);
 };
 
+export const parseTmdbGenres = (value: unknown): TmdbGenre[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const genres: TmdbGenre[] = [];
+  const seen = new Set<number>();
+
+  for (const item of value) {
+    if (!item || typeof item !== "object") {
+      continue;
+    }
+
+    const raw = item as { id?: unknown; name?: unknown };
+    const id = Number(raw.id);
+    const name = typeof raw.name === "string" ? raw.name.trim() : "";
+    if (!Number.isInteger(id) || id <= 0 || !name || seen.has(id)) {
+      continue;
+    }
+
+    seen.add(id);
+    genres.push({ id, name });
+  }
+
+  return genres;
+};
+
 export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
   const segment = kind === TitleKind.SERIES ? "tv" : "movie";
   type MovieDetails = {
@@ -320,6 +352,7 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
     original_title?: string;
     release_date?: string;
     poster_path?: string | null;
+    genres?: Array<{ id?: number; name?: string }>;
   };
   type TvDetails = {
     id: number;
@@ -327,9 +360,11 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
     original_name?: string;
     first_air_date?: string;
     poster_path?: string | null;
+    genres?: Array<{ id?: number; name?: string }>;
   };
 
   const data = await tmdbFetch<MovieDetails | TvDetails>(`/${segment}/${tmdbId}`);
+  const genres = parseTmdbGenres(data.genres);
 
   if ("title" in data) {
     return {
@@ -338,6 +373,7 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
       originalName: data.original_title ?? null,
       year: parseYear(data.release_date),
       posterPath: data.poster_path ?? null,
+      genres,
     };
   }
 
@@ -347,5 +383,6 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
     originalName: data.original_name ?? null,
     year: parseYear(data.first_air_date),
     posterPath: data.poster_path ?? null,
+    genres,
   };
 };

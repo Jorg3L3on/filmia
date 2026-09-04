@@ -46,6 +46,23 @@ type SeedTitle = {
   posterPath: string;
 };
 
+type SeedGenre = {
+  id: number;
+  name: string;
+};
+
+type SeedWatchProviders = {
+  link: string | null;
+  flatrate: Array<{
+    providerId: number;
+    name: string;
+    logoPath: string | null;
+    logoUrl: string | null;
+  }>;
+  rent: [];
+  buy: [];
+};
+
 type WatchlistSeed = {
   name: string;
   year: number;
@@ -57,6 +74,32 @@ type WatchlistSeed = {
   posterPath: string;
   seriesStatus?: SeriesStatus;
   seriesSeason?: number;
+  imdbRating?: number;
+  tmdbGenres?: SeedGenre[];
+  watchProvidersMx?: SeedWatchProviders;
+};
+
+const netflixMx: SeedWatchProviders = {
+  link: null,
+  flatrate: [{ providerId: 8, name: "Netflix", logoPath: null, logoUrl: null }],
+  rent: [],
+  buy: [],
+};
+
+const primeMx: SeedWatchProviders = {
+  link: null,
+  flatrate: [
+    { providerId: 119, name: "Amazon Prime Video", logoPath: null, logoUrl: null },
+  ],
+  rent: [],
+  buy: [],
+};
+
+const maxMx: SeedWatchProviders = {
+  link: null,
+  flatrate: [{ providerId: 1899, name: "Max", logoPath: null, logoUrl: null }],
+  rent: [],
+  buy: [],
 };
 
 const seedTitles: SeedTitle[] = [
@@ -194,6 +237,12 @@ const watchlistQueue: WatchlistSeed[] = [
     position: 0,
     tmdbId: 335984,
     posterPath: "/gajva2L0rPYkEWjzgFlBXCAVBE5.jpg",
+    imdbRating: 8.0,
+    tmdbGenres: [
+      { id: 878, name: "Ciencia ficción" },
+      { id: 18, name: "Drama" },
+    ],
+    watchProvidersMx: netflixMx,
   },
   {
     name: "Interstellar",
@@ -204,6 +253,13 @@ const watchlistQueue: WatchlistSeed[] = [
     position: 1,
     tmdbId: 157336,
     posterPath: "/yQvGrMoipbRoddT0ZR8tPoR7NfX.jpg",
+    imdbRating: 8.7,
+    tmdbGenres: [
+      { id: 12, name: "Aventura" },
+      { id: 18, name: "Drama" },
+      { id: 878, name: "Ciencia ficción" },
+    ],
+    watchProvidersMx: primeMx,
   },
   {
     name: "Severance",
@@ -216,6 +272,88 @@ const watchlistQueue: WatchlistSeed[] = [
     posterPath: "/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg",
     seriesStatus: SeriesStatus.WATCHING,
     seriesSeason: 2,
+    imdbRating: 8.7,
+    tmdbGenres: [
+      { id: 18, name: "Drama" },
+      { id: 9648, name: "Misterio" },
+    ],
+    watchProvidersMx: maxMx,
+  },
+  {
+    name: "The Dark Knight",
+    year: 2008,
+    kind: TitleKind.MOVIE,
+    platform: Platform.MAX,
+    queueNote: "Nolan otra vez.",
+    position: 3,
+    tmdbId: 155,
+    posterPath: "/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+    imdbRating: 9.0,
+    tmdbGenres: [
+      { id: 28, name: "Acción" },
+      { id: 80, name: "Crimen" },
+      { id: 18, name: "Drama" },
+    ],
+    watchProvidersMx: maxMx,
+  },
+  {
+    name: "Superbad",
+    year: 2007,
+    kind: TitleKind.MOVIE,
+    platform: Platform.NETFLIX,
+    queueNote: "Comedia rápida.",
+    position: 4,
+    tmdbId: 8363,
+    posterPath: "/ek8e8d58kcOZhSxWOsZHCJ9Ym2w.jpg",
+    imdbRating: 7.6,
+    tmdbGenres: [{ id: 35, name: "Comedia" }],
+    watchProvidersMx: netflixMx,
+  },
+  {
+    name: "John Wick",
+    year: 2014,
+    kind: TitleKind.MOVIE,
+    platform: Platform.NETFLIX,
+    queueNote: "Acción limpia.",
+    position: 5,
+    tmdbId: 245891,
+    posterPath: "/fZPSd91yGE9fCcCe6OoQr6E3Bev.jpg",
+    imdbRating: 7.4,
+    tmdbGenres: [
+      { id: 28, name: "Acción" },
+      { id: 53, name: "Suspense" },
+    ],
+    watchProvidersMx: netflixMx,
+  },
+  {
+    name: "Parasite",
+    year: 2019,
+    kind: TitleKind.MOVIE,
+    platform: Platform.MAX,
+    queueNote: "Drama y comedia negra.",
+    position: 6,
+    tmdbId: 496243,
+    posterPath: "/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg",
+    imdbRating: 8.5,
+    tmdbGenres: [
+      { id: 35, name: "Comedia" },
+      { id: 53, name: "Suspense" },
+      { id: 18, name: "Drama" },
+    ],
+    watchProvidersMx: maxMx,
+  },
+  {
+    name: "The Grand Budapest Hotel",
+    year: 2014,
+    kind: TitleKind.MOVIE,
+    platform: Platform.PRIME,
+    queueNote: "Wes Anderson.",
+    position: 7,
+    tmdbId: 120467,
+    posterPath: "/eWdyYQreja6JGCzqKVFnKoBHORP.jpg",
+    imdbRating: 8.1,
+    tmdbGenres: [{ id: 35, name: "Comedia" }],
+    watchProvidersMx: primeMx,
   },
 ];
 
@@ -236,12 +374,14 @@ const ensureDemoUser = async (userId: string) => {
       email: DEMO_EMAIL,
       name: "Demo Filmia",
       passwordHash,
+      streamingPlatforms: [Platform.NETFLIX, Platform.PRIME, Platform.MAX],
     },
     create: {
       id: userId,
       email: DEMO_EMAIL,
       name: "Demo Filmia",
       passwordHash,
+      streamingPlatforms: [Platform.NETFLIX, Platform.PRIME, Platform.MAX],
     },
   });
 };
@@ -376,35 +516,35 @@ const seed = async () => {
       where: { userId, name: item.name, year: item.year },
     });
 
+    const queueData = {
+      kind: item.kind,
+      platform: item.platform ?? null,
+      tmdbId: item.tmdbId,
+      posterPath: item.posterPath,
+      imdbRating: item.imdbRating ?? null,
+      tmdbGenres: item.tmdbGenres ?? [],
+      watchProvidersMx: item.watchProvidersMx ?? undefined,
+      seriesStatus:
+        item.kind === TitleKind.SERIES ? (item.seriesStatus ?? null) : null,
+      seriesSeason:
+        item.kind === TitleKind.SERIES ? (item.seriesSeason ?? null) : null,
+    };
+
     const saved = existing
       ? await prisma.title.update({
           where: { id: existing.id },
           data: {
-            kind: item.kind,
-            platform: item.platform ?? null,
+            ...queueData,
             watchedAt: null,
             rating: null,
-            tmdbId: item.tmdbId,
-            posterPath: item.posterPath,
-            seriesStatus:
-              item.kind === TitleKind.SERIES ? (item.seriesStatus ?? null) : null,
-            seriesSeason:
-              item.kind === TitleKind.SERIES ? (item.seriesSeason ?? null) : null,
           },
         })
       : await prisma.title.create({
           data: {
             userId,
             name: item.name,
-            kind: item.kind,
             year: item.year,
-            platform: item.platform ?? null,
-            tmdbId: item.tmdbId,
-            posterPath: item.posterPath,
-            seriesStatus:
-              item.kind === TitleKind.SERIES ? (item.seriesStatus ?? null) : null,
-            seriesSeason:
-              item.kind === TitleKind.SERIES ? (item.seriesSeason ?? null) : null,
+            ...queueData,
           },
         });
 
@@ -429,7 +569,7 @@ const seed = async () => {
     `Seed listo: ${seedTitles.length} títulos vistos, ${watchlistQueue.length} en Quiero ver, listas diarias creadas.`,
   );
   console.log(`Usuario demo: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
-  console.log("Plataformas de streaming del demo: vacías (elige las tuyas en /perfil).");
+  console.log("Plataformas de streaming del demo: Netflix, Prime Video y Max.");
 };
 
 seed()

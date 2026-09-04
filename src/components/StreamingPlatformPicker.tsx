@@ -1,7 +1,8 @@
 import { updateStreamingPlatforms } from "@/app/actions/profile";
+import { PlatformLogo } from "@/components/PlatformLogo";
 import type { Platform } from "@/generated/prisma/browser";
 import { cn } from "@/lib/cn";
-import { PLATFORM_CLASS, PLATFORM_SERVICE_LABEL, PLATFORMS } from "@/lib/labels";
+import { PLATFORM_SERVICE_LABEL, PLATFORMS } from "@/lib/labels";
 import { btnPrimary, eyebrowClass, focusRing, wellClass } from "@/lib/ui";
 
 type StreamingPlatformPickerProps = {
@@ -28,7 +29,7 @@ export const StreamingPlatformPicker = ({
 
       <fieldset className={cn(wellClass, "space-y-3 p-4 sm:p-5")}>
         <legend className="sr-only">Plataformas de streaming en México</legend>
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {PLATFORMS.map((platform) => {
             const isSelected = selectedSet.has(platform);
 
@@ -49,15 +50,7 @@ export const StreamingPlatformPicker = ({
                     defaultChecked={isSelected}
                     className="peer sr-only"
                   />
-                  <span
-                    className={cn(
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-[10px] font-bold uppercase tracking-wide",
-                      PLATFORM_CLASS[platform],
-                    )}
-                    aria-hidden
-                  >
-                    {platformMonogram(platform)}
-                  </span>
+                  <PlatformLogo platform={platform} size={36} />
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-medium text-white">
                       {PLATFORM_SERVICE_LABEL[platform]}
@@ -81,6 +74,17 @@ export const StreamingPlatformPicker = ({
             );
           })}
         </ul>
+        <p className="text-[10px] text-faint">
+          Logos y catálogo de{" "}
+          <a
+            href="https://www.justwatch.com/mx"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline-offset-2 hover:text-fog hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            JustWatch
+          </a>
+        </p>
       </fieldset>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -93,14 +97,4 @@ export const StreamingPlatformPicker = ({
       </div>
     </form>
   );
-};
-
-const platformMonogram = (platform: Platform) => {
-  if (platform === "DISNEY") {
-    return "D+";
-  }
-  if (platform === "APPLE") {
-    return "TV";
-  }
-  return PLATFORM_SERVICE_LABEL[platform].slice(0, 2);
 };

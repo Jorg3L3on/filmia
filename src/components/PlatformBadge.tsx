@@ -29,10 +29,16 @@ export const PlatformBadge = ({
 
 const platformWatchShort = (platform: Platform) => {
   if (platform === "APPLE") {
-    return "Apple TV";
+    return "Apple TV+";
   }
   if (platform === "DISNEY") {
     return "Disney+";
+  }
+  if (platform === "PARAMOUNT") {
+    return "Paramount+";
+  }
+  if (platform === "AMCPLUS") {
+    return "AMC+";
   }
   return PLATFORM_WATCH_LABEL[platform].replace("Ver ahora en ", "");
 };

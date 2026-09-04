@@ -1,30 +1,102 @@
 import { Platform } from "@/generated/prisma/browser";
 import { PLATFORM_SERVICE_LABEL, PLATFORMS } from "@/lib/labels";
+import { tmdbProviderLogoUrl } from "@/lib/tmdb";
 import {
   parseStoredWatchProviders,
   type WatchProviderOffer,
   type WatchProvidersMxData,
 } from "@/lib/watch-providers";
 
+type StreamingPlatformTmdb = {
+  providerIds: number[];
+  nameHints: string[];
+  logoPath: string;
+};
+
 /**
- * Mapa Platform → ids TMDB (watch/providers, región MX) y pistas de nombre.
+ * Mapa Platform → ids TMDB (watch/providers, región MX), logos JustWatch y pistas de nombre.
  *
  * JOR-157 (“Solo en mis plataformas”) usa `titleAvailableOnUserPlatforms` /
  * `applyMinePlatformsFilter`. Solo cuenta **flatrate** (incluido en la
  * suscripción). Rent y buy no califican.
+ *
+ * `logoPath` es el logo oficial de JustWatch vía TMDB (`/watch/providers`).
  */
-export const STREAMING_PLATFORM_TMDB: Record<
-  Platform,
-  { providerIds: number[]; nameHints: string[] }
-> = {
-  NETFLIX: { providerIds: [8], nameHints: ["netflix"] },
-  PRIME: { providerIds: [9, 119], nameHints: ["prime video", "amazon prime"] },
-  MAX: { providerIds: [1899, 384], nameHints: ["max", "hbo max"] },
-  DISNEY: { providerIds: [337], nameHints: ["disney plus", "disney+"] },
-  CLARO: { providerIds: [167], nameHints: ["claro video", "claro"] },
-  APPLE: { providerIds: [2, 350], nameHints: ["apple tv"] },
-  MUBI: { providerIds: [11], nameHints: ["mubi"] },
+export const STREAMING_PLATFORM_TMDB: Record<Platform, StreamingPlatformTmdb> = {
+  NETFLIX: {
+    providerIds: [8],
+    nameHints: ["netflix"],
+    logoPath: "/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg",
+  },
+  PRIME: {
+    providerIds: [9, 119],
+    nameHints: ["prime video", "amazon prime"],
+    logoPath: "/pvske1MyAoymrs5bguRfVqYiM9a.jpg",
+  },
+  DISNEY: {
+    providerIds: [337],
+    nameHints: ["disney plus", "disney+"],
+    logoPath: "/97yvRBw1GzX7fXprcF80er19ot.jpg",
+  },
+  MAX: {
+    providerIds: [1899, 384],
+    nameHints: ["max", "hbo max"],
+    logoPath: "/fksCUZ9QDWZMUwL2LgMtLckROUN.jpg",
+  },
+  APPLE: {
+    providerIds: [350, 2],
+    nameHints: ["apple tv"],
+    logoPath: "/2E03IAZsX4ZaUqM7tXlctEPMGWS.jpg",
+  },
+  PARAMOUNT: {
+    providerIds: [531],
+    nameHints: ["paramount plus", "paramount+"],
+    logoPath: "/h5DcR0J2EESLitnhR8xLG1QymTE.jpg",
+  },
+  CRUNCHYROLL: {
+    providerIds: [283],
+    nameHints: ["crunchyroll"],
+    logoPath: "/mXeC4TrcgdU6ltE9bCBCEORwSQR.jpg",
+  },
+  VIX: {
+    providerIds: [457],
+    nameHints: ["vix"],
+    logoPath: "/jwRPknT20dfU1GeVqbcDXFyvtdG.jpg",
+  },
+  CLARO: {
+    providerIds: [167],
+    nameHints: ["claro video", "claro"],
+    logoPath: "/21M5CpiOYGOhHj2sVPXqwt6yeTO.jpg",
+  },
+  MUBI: {
+    providerIds: [11],
+    nameHints: ["mubi"],
+    logoPath: "/fj9Y8iIMFUC6952HwxbGixTQPb7.jpg",
+  },
+  PLUTO: {
+    providerIds: [300],
+    nameHints: ["pluto tv", "pluto"],
+    logoPath: "/dB8G41Q6tSL5NBisrIeqByfepBc.jpg",
+  },
+  AMCPLUS: {
+    providerIds: [526],
+    nameHints: ["amc plus", "amc+"],
+    logoPath: "/ovmu6uot1XVvsemM2dDySXLiX57.jpg",
+  },
+  CURIOSITY: {
+    providerIds: [190],
+    nameHints: ["curiosity"],
+    logoPath: "/oR1aNm1Qu9jQBkW4VrGPWhqbC3P.jpg",
+  },
+  LIONSGATE: {
+    providerIds: [561],
+    nameHints: ["lionsgate"],
+    logoPath: "/e2hCUg2Z3sJ6yWF9NLU24SIKeWa.jpg",
+  },
 };
+
+export const streamingPlatformLogoUrl = (platform: Platform) =>
+  tmdbProviderLogoUrl(STREAMING_PLATFORM_TMDB[platform].logoPath, "w92");
 
 export const parseStoredStreamingPlatforms = (value: unknown): Platform[] => {
   if (!Array.isArray(value)) {
@@ -51,34 +123,33 @@ const normalizeProviderName = (name: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
-const nameMatchesPlatform = (normalized: string, platform: Platform) => {
-  if (platform === "NETFLIX") {
-    return normalized.includes("netflix");
-  }
-  if (platform === "PRIME") {
-    return (
-      normalized.includes("prime video") ||
-      normalized.includes("amazon prime") ||
-      normalized === "prime"
-    );
-  }
-  if (platform === "MAX") {
-    return normalized === "max" || normalized.includes("hbo max");
-  }
-  if (platform === "DISNEY") {
-    return normalized.includes("disney");
-  }
-  if (platform === "CLARO") {
-    return normalized.includes("claro");
-  }
-  if (platform === "APPLE") {
-    return normalized.includes("apple tv");
-  }
-  if (platform === "MUBI") {
-    return normalized.includes("mubi");
-  }
-  return false;
+const PLATFORM_NAME_MATCH: Record<Platform, (normalized: string) => boolean> = {
+  NETFLIX: (normalized) => normalized.includes("netflix"),
+  PRIME: (normalized) =>
+    normalized.includes("prime video") ||
+    normalized.includes("amazon prime") ||
+    normalized === "prime",
+  DISNEY: (normalized) => normalized.includes("disney"),
+  MAX: (normalized) => normalized === "max" || normalized.includes("hbo max"),
+  APPLE: (normalized) => normalized.includes("apple tv"),
+  PARAMOUNT: (normalized) => normalized.includes("paramount"),
+  CRUNCHYROLL: (normalized) => normalized.includes("crunchyroll"),
+  VIX: (normalized) =>
+    normalized === "vix" ||
+    normalized.startsWith("vix ") ||
+    normalized.includes(" vix"),
+  CLARO: (normalized) => normalized.includes("claro"),
+  MUBI: (normalized) => normalized.includes("mubi"),
+  PLUTO: (normalized) =>
+    normalized === "pluto" || normalized.includes("pluto tv"),
+  AMCPLUS: (normalized) =>
+    normalized.includes("amc plus") || normalized === "amc+",
+  CURIOSITY: (normalized) => normalized.includes("curiosity"),
+  LIONSGATE: (normalized) => normalized.includes("lionsgate"),
 };
+
+const nameMatchesPlatform = (normalized: string, platform: Platform) =>
+  PLATFORM_NAME_MATCH[platform](normalized);
 
 export const matchWatchProviderPlatform = (
   provider: Pick<WatchProviderOffer, "providerId" | "name">,

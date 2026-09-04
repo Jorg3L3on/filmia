@@ -6,6 +6,7 @@ import {
   isTmdbConfigured,
   searchTmdb,
   searchTmdbMulti,
+  type TmdbGenre,
 } from "@/lib/tmdb";
 
 export type TitleMetadata = {
@@ -13,6 +14,7 @@ export type TitleMetadata = {
   posterPath: string | null;
   imdbId: string | null;
   imdbRating: number | null;
+  tmdbGenres: TmdbGenre[];
   name?: string;
   originalName?: string | null;
   year?: number | null;
@@ -39,6 +41,7 @@ export const resolveTitleMetadata = async (
     posterPath: details.posterPath,
     imdbId,
     imdbRating,
+    tmdbGenres: details.genres,
     name: details.name,
     originalName: details.originalName,
     year: details.year,
@@ -77,6 +80,7 @@ export const readMetadataFields = (formData: FormData): TitleMetadata => ({
   posterPath: String(formData.get("posterPath") ?? "").trim() || null,
   imdbId: String(formData.get("imdbId") ?? "").trim() || null,
   imdbRating: parseOptionalImdbRating(formData.get("imdbRating")),
+  tmdbGenres: [],
 });
 
 export const enrichMetadataOnSave = async (
@@ -98,6 +102,8 @@ export const enrichMetadataOnSave = async (
       posterPath: resolved.posterPath ?? metadata.posterPath,
       imdbId: resolved.imdbId ?? metadata.imdbId,
       imdbRating: resolved.imdbRating ?? metadata.imdbRating,
+      tmdbGenres:
+        resolved.tmdbGenres.length > 0 ? resolved.tmdbGenres : metadata.tmdbGenres,
     };
   } catch {
     return metadata;

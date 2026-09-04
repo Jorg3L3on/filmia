@@ -26,6 +26,13 @@ enum Platform {
   CLARO
   APPLE
   MUBI
+  PARAMOUNT
+  CRUNCHYROLL
+  VIX
+  PLUTO
+  AMCPLUS
+  CURIOSITY
+  LIONSGATE
 }
 
 enum ListKind {
@@ -64,6 +71,7 @@ model Title {
   posterPath              String?
   imdbId                  String?
   imdbRating              Float?
+  tmdbGenres              Json       @default("[]")
   watchProvidersMx        Json?
   watchProvidersFetchedAt DateTime?
   createdAt               DateTime   @default(now())

@@ -257,6 +257,7 @@ export type UserTmdbEntry = {
   tmdbId: number;
   kind: TitleKind;
   inWatchlist: boolean;
+  watched: boolean;
 };
 
 export const getUserTmdbIndex = async (): Promise<UserTmdbEntry[]> => {
@@ -268,6 +269,7 @@ export const getUserTmdbIndex = async (): Promise<UserTmdbEntry[]> => {
       id: true,
       tmdbId: true,
       kind: true,
+      watchedAt: true,
       listItems: {
         where: { list: { slug: WATCHLIST_SLUG } },
         select: { listId: true },
@@ -286,6 +288,7 @@ export const getUserTmdbIndex = async (): Promise<UserTmdbEntry[]> => {
         tmdbId: title.tmdbId,
         kind: title.kind,
         inWatchlist: title.listItems.length > 0,
+        watched: title.watchedAt != null,
       },
     ];
   });

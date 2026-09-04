@@ -12,7 +12,6 @@ const navItems = [
   { href: "/listas", label: "Listas" },
   { href: "/tags", label: "Etiquetas" },
   { href: "/buscar", label: "Buscar" },
-  { href: "/perfil", label: "Perfil" },
 ] as const;
 
 export type HeaderUser = {
@@ -26,7 +25,9 @@ type SiteHeaderProps = {
 };
 
 export const SiteHeader = ({ pathname: currentPath, user }: SiteHeaderProps) => {
-  const displayName = user?.name ?? user?.email ?? "Cuenta";
+  const displayName = user?.name?.trim() || user?.email || "Perfil";
+  const initial = displayName.slice(0, 1).toUpperCase();
+  const isProfile = currentPath.startsWith("/perfil");
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-canvas/90 backdrop-blur">
@@ -66,18 +67,27 @@ export const SiteHeader = ({ pathname: currentPath, user }: SiteHeaderProps) => 
         <div className="flex items-center gap-2">
           <Link
             href="/perfil"
-            title={displayName}
+            title="Perfil"
             aria-label={`Perfil de ${displayName}`}
-            aria-current={currentPath.startsWith("/perfil") ? "page" : undefined}
+            aria-current={isProfile ? "page" : undefined}
             className={cn(
-              "max-w-[8rem] truncate rounded-full px-3 py-1.5 text-xs transition sm:max-w-[10rem]",
+              "flex max-w-[11rem] items-center gap-2 rounded-full py-1 pr-3 pl-1 text-xs transition sm:max-w-[14rem]",
               focusRing,
-              currentPath.startsWith("/perfil")
+              isProfile
                 ? "bg-accent font-medium text-ink"
                 : "text-mist hover:bg-chrome hover:text-white",
             )}
           >
-            {user?.name?.trim() || "Perfil"}
+            <span
+              className={cn(
+                "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
+                isProfile ? "bg-ink/15 text-ink" : "bg-chrome text-white",
+              )}
+              aria-hidden
+            >
+              {initial}
+            </span>
+            <span className="min-w-0 truncate">{displayName}</span>
           </Link>
           <LogoutButton />
         </div>
