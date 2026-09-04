@@ -1,4 +1,4 @@
-import { Platform, SeriesStatus, TitleKind } from "@/generated/prisma/client";
+import { Platform, SeriesStatus, TitleKind } from "@/generated/prisma/browser";
 import { PLATFORMS, SERIES_STATUSES, TITLE_KINDS } from "@/lib/labels";
 
 const asString = (value: FormDataEntryValue | null) =>

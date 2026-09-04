@@ -4,13 +4,13 @@ import { PrismaNeon } from "@prisma/adapter-neon";
 
 loadEnv({ path: ".env.local" });
 loadEnv();
+import { PrismaClient } from "../src/generated/prisma/client";
 import {
   ListKind,
   Platform,
-  PrismaClient,
   SeriesStatus,
   TitleKind,
-} from "../src/generated/prisma/client";
+} from "../src/generated/prisma/browser";
 import { slugify } from "../src/lib/labels";
 import { DEFAULT_LISTS, WATCHLIST_SLUG } from "../src/lib/lists";
 import { DEFAULT_TAG_NAMES } from "../src/lib/tags";

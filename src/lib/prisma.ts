@@ -1,13 +1,6 @@
-import { cache } from "react";
-import { neonConfig } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@/generated/prisma/client";
 import { resolveDatabaseUrl } from "@/lib/database-url";
-
-// HTTP fetch pooler for Cloudflare Workers (TCP is unavailable without nodejs_compat).
-// PrismaNeon@7 builds a Neon `Pool` from this config on connect(); do not pass
-// an already-constructed Pool (the factory only accepts PoolConfig).
-neonConfig.poolQueryViaFetch = true;
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -21,16 +14,15 @@ const createPrismaClient = () => {
   });
 };
 
-// Un cliente por petición en Workers (evita reutilizar conexiones entre requests).
-// En local, singleton global para HMR.
-const getPrismaClient = cache(() => {
+const getPrismaClient = () => {
+  const client = globalForPrisma.prisma ?? createPrismaClient();
+
   if (process.env.NODE_ENV !== "production") {
-    globalForPrisma.prisma ??= createPrismaClient();
-    return globalForPrisma.prisma;
+    globalForPrisma.prisma = client;
   }
 
-  return createPrismaClient();
-});
+  return client;
+};
 
 // Lazy so `next build` can import this module without Neon secrets.
 // Runtime queries still require DATABASE_URL from the environment.

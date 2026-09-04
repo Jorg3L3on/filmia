@@ -1,4 +1,4 @@
-import { SeriesStatus, TitleKind } from "../src/generated/prisma/client";
+import { SeriesStatus, TitleKind } from "../src/generated/prisma/browser";
 import { parseSeriesSeason, parseSeriesStatus } from "../src/lib/form-data";
 import {
   parseSeriesStatusFilter,

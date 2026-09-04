@@ -6,7 +6,7 @@ import { useCallback, useMemo, useState, useTransition } from "react";
 import { searchTmdbDiscover } from "@/app/actions/metadata";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { PosterImage } from "@/components/PosterImage";
-import type { TitleKind } from "@/generated/prisma/client";
+import type { TitleKind } from "@/generated/prisma/browser";
 import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL, TITLE_KINDS } from "@/lib/labels";
 import type { TmdbCatalogResult } from "@/lib/tmdb";

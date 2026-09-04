@@ -10,7 +10,7 @@ import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { titleInclude } from "@/lib/queries";
 import { btnGhost, btnLink, eyebrowClass, fieldClass, focusRing, posterFrame } from "@/lib/ui";
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma/browser";
 
 type WatchlistItem = Prisma.ListItemGetPayload<{
   include: { title: { include: typeof titleInclude } };

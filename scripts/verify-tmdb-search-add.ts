@@ -4,7 +4,7 @@ import { hash } from "bcryptjs";
 loadEnv({ path: ".env.local" });
 loadEnv();
 
-import { TitleKind } from "../src/generated/prisma/client";
+import { TitleKind } from "../src/generated/prisma/browser";
 import { upsertTitleFromTmdbForUser } from "../src/lib/add-title-from-tmdb";
 import { prisma } from "../src/lib/prisma";
 import {

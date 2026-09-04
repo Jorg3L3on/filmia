@@ -3,5 +3,11 @@
   "github": {
     "enabled": false
   },
+  "git": {
+    "deploymentEnabled": {
+      "*": false,
+      "sandbox": false
+    }
+  },
   "ignoreCommand": "exit 0"
 }

@@ -11,7 +11,7 @@ import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { titleInclude } from "@/lib/queries";
 import { cn } from "@/lib/cn";
 import { focusRing, posterFrame } from "@/lib/ui";
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma/browser";
 
 type TitleCardProps = {
   title: Prisma.TitleGetPayload<{ include: typeof titleInclude }>;

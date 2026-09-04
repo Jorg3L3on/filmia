@@ -6,7 +6,7 @@ import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
 import { cn } from "@/lib/cn";
 import { formatRating } from "@/lib/labels";
 import { focusRing, posterFrame } from "@/lib/ui";
-import type { SeriesStatus } from "@/generated/prisma/client";
+import type { SeriesStatus } from "@/generated/prisma/browser";
 
 type PosterTileProps = {
   href: string;

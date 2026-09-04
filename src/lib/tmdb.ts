@@ -1,4 +1,4 @@
-import { TitleKind } from "@/generated/prisma/client";
+import { TitleKind } from "@/generated/prisma/browser";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ListKind } from "@/generated/prisma/client";
+import { ListKind } from "@/generated/prisma/browser";
 import { addTitleToList, deleteList } from "@/app/actions/lists";
 import { CatalogFilters } from "@/components/CatalogFilters";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";

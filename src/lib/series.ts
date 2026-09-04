@@ -1,4 +1,4 @@
-import { SeriesStatus, TitleKind } from "@/generated/prisma/client";
+import { SeriesStatus, TitleKind } from "@/generated/prisma/browser";
 import { SERIES_STATUS_LABEL, SERIES_STATUSES } from "@/lib/labels";
 
 export type SeriesStatusFilter = SeriesStatus | "NONE";

@@ -1,4 +1,4 @@
-import { TitleKind } from "@/generated/prisma/client";
+import { TitleKind } from "@/generated/prisma/browser";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { resolveTitleMetadata } from "@/lib/metadata";
 import { prisma } from "@/lib/prisma";

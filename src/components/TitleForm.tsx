@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createTitle, updateTitle } from "@/app/actions/titles";
 import { TmdbPicker, type TmdbPick } from "@/components/TmdbPicker";
 import { PosterImage } from "@/components/PosterImage";
-import type { List, Platform, Tag, Title, TitleKind } from "@/generated/prisma/client";
+import type { List, Platform, Tag, Title, TitleKind } from "@/generated/prisma/browser";
 import { cn } from "@/lib/cn";
 import {
   PLATFORM_CLASS,

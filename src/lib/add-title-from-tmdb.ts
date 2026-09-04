@@ -1,4 +1,4 @@
-import { TitleKind } from "@/generated/prisma/client";
+import { TitleKind } from "@/generated/prisma/browser";
 import { TITLE_KINDS } from "@/lib/labels";
 import { ensureDefaultLists, WATCHLIST_SLUG } from "@/lib/lists";
 import { resolveTitleMetadata } from "@/lib/metadata";

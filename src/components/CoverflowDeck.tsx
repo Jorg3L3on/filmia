@@ -18,7 +18,7 @@ import {
   TITLE_KIND_LABEL,
 } from "@/lib/labels";
 import { btnLink } from "@/lib/ui";
-import type { Platform, SeriesStatus, TitleKind } from "@/generated/prisma/client";
+import type { Platform, SeriesStatus, TitleKind } from "@/generated/prisma/browser";
 import type { WatchProviderOffer } from "@/lib/watch-providers";
 
 export type CoverflowTitle = {

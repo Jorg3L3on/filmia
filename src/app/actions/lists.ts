@@ -1,6 +1,6 @@
 "use server";
 
-import { ListKind } from "@/generated/prisma/client";
+import { ListKind } from "@/generated/prisma/browser";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseRequiredName } from "@/lib/form-data";

@@ -1,4 +1,4 @@
-import { TitleKind } from "@/generated/prisma/client";
+import { TitleKind } from "@/generated/prisma/browser";
 import { fetchImdbRating, isOmdbConfigured } from "@/lib/omdb";
 import {
   getTmdbDetails,

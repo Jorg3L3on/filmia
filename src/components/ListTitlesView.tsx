@@ -8,7 +8,7 @@ import type { titleInclude } from "@/lib/queries";
 import { catalogHref } from "@/lib/tags";
 import { btnLink } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma/browser";
 import type { SeriesStatusFilter } from "@/lib/series";
 
 type ListItemPayload = Prisma.ListItemGetPayload<{
