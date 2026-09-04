@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
+import { messageForSignInError } from "@/lib/auth-errors";
 import { btnPrimary, eyebrowClass, fieldClass, focusRing } from "@/lib/ui";
 
 export const SignupForm = () => {
@@ -43,8 +44,8 @@ export const SignupForm = () => {
 
     setIsLoading(false);
 
-    if (result?.error) {
-      setError("Cuenta creada, pero no se pudo iniciar sesión. Prueba en Entrar.");
+    if (result?.error || result?.ok === false) {
+      setError(messageForSignInError(result.error, "register"));
       return;
     }
 

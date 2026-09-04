@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
+import { messageForSignInError } from "@/lib/auth-errors";
 import { btnPrimary, eyebrowClass, fieldClass, focusRing } from "@/lib/ui";
 
 export const LoginForm = () => {
@@ -31,8 +32,8 @@ export const LoginForm = () => {
 
     setIsLoading(false);
 
-    if (result?.error) {
-      setError("Correo o contraseña incorrectos.");
+    if (result?.error || result?.ok === false) {
+      setError(messageForSignInError(result.error));
       return;
     }
 
