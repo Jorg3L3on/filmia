@@ -11,6 +11,27 @@ App personal para trackear películas y series vistas. UI en español, estética
 - **Producción**: Cloudflare Workers vía [OpenNext](https://opennext.js.org/cloudflare) (`@opennextjs/cloudflare`)
 - Vercel (`vercel.json`) queda como respaldo opcional desactivado
 
+## Ramas
+
+| Rama | Uso |
+| --- | --- |
+| `sandbox` | Integración. Aquí aterrizan los PRs y se despliega Cloudflare. |
+| `main` | Rama por defecto de GitHub. No abrir features contra `main`. |
+| `jl/<descripción>-xxxx` | Feature de vida corta. Se borra al mergear el PR. |
+
+Flujo:
+
+1. Parte de `sandbox`: `git checkout sandbox && git pull origin sandbox`
+2. Crea `jl/<qué-hace>-xxxx` y abre el PR **hacia `sandbox`**
+3. Tras el merge, borra la rama remota (GitHub no lo hace solo):
+
+```bash
+git push origin --delete jl/nombre-de-la-rama
+git fetch --prune
+```
+
+`main` y `sandbox` se conservan. No dejes ramas `jl/` huérfanas: GitHub las lista aunque el PR ya esté cerrado o mergeado.
+
 ## Modelo
 
 - **User**: cuenta con email, contraseña hasheada (bcrypt), nombre opcional y `streamingPlatforms` (JSON: claves del enum `Platform`)
