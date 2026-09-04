@@ -1,6 +1,10 @@
 import { cache } from "react";
+import { neonConfig } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@/generated/prisma/client";
+
+// HTTP fetch pooler for Cloudflare Workers (TCP is unavailable without nodejs_compat).
+neonConfig.poolQueryViaFetch = true;
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;

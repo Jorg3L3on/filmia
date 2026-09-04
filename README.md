@@ -153,6 +153,32 @@ Busca en TMDB por nombre + año + tipo, guarda poster e IMDb rating vía OMDb.
 
 Filmia se despliega en **Cloudflare Workers** con `@opennextjs/cloudflare`. Neon Postgres no cambia.
 
+### Prisma en Workers (runtime `cloudflare`)
+
+Cloudflare **workerd** no permite compilar WASM en runtime (`WebAssembly.compileStreaming` / `WebAssembly.Module()` con bytes dinámicos). Prisma 7 con el generador clásico `prisma-client-js` fallaba en login/registro con:
+
+`CompileError: WebAssembly.Module(): Wasm code generation disallowed by embedder`
+
+**Solución aplicada** (ver [guía Prisma + Workers](https://www.prisma.io/docs/guides/deployment/cloudflare-workers)):
+
+1. **`prisma/schema.prisma`**: generador edge con runtime explícito:
+
+   ```prisma
+   generator client {
+     provider = "prisma-client"
+     runtime  = "cloudflare"
+     output   = "../src/generated/prisma"
+   }
+   ```
+
+2. **`src/lib/prisma.ts`**: adaptador Neon serverless + `neonConfig.poolQueryViaFetch = true` (HTTP al pooler; recomendado en Workers).
+
+3. **`wrangler.jsonc`**: flag `nodejs_compat` (ya presente) para el stack TCP/Node del adaptador.
+
+4. **OpenNext `@opennextjs/cloudflare` ≥ 1.20.6**: parchea el loader WASM de Next 16.3 (`loadWasmChunk` en lugar de `compileStreaming` en el bundle). Tras `npm run cf:build`, el worker no debe contener llamadas activas a `compileStreaming` en código Prisma.
+
+Regenerar client tras cambiar el schema: `npm run db:generate` (también corre en `postinstall`).
+
 ### Requisitos
 
 - Cuenta Cloudflare con Workers habilitado
