@@ -65,6 +65,7 @@ model Title {
   posterPath              String?
   imdbId                  String?
   imdbRating              Float?
+  tmdbGenres              Json       @default("[]")
   watchProvidersMx        Json?
   watchProvidersFetchedAt DateTime?
   createdAt               DateTime   @default(now())
