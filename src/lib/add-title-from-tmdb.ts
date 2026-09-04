@@ -3,8 +3,10 @@ import { TITLE_KINDS } from "@/lib/labels";
 import { ensureDefaultLists, WATCHLIST_SLUG } from "@/lib/lists";
 import { resolveTitleMetadata } from "@/lib/metadata";
 import { prisma } from "@/lib/prisma";
-import { tmdbErrorMessage } from "@/lib/tmdb";
+import { tmdbErrorMessage, type TmdbGenre } from "@/lib/tmdb";
 import { enrichWatchProvidersOnSave } from "@/lib/watch-providers-cache";
+
+export type AddTitleDestination = "watchlist" | "watched";
 
 export type AddTitleFromTmdbInput = {
   tmdbId: number;
@@ -14,6 +16,7 @@ export type AddTitleFromTmdbInput = {
   year?: number | null;
   posterPath?: string | null;
   addToWatchlist?: boolean;
+  destination?: AddTitleDestination;
 };
 
 export type AddTitleFromTmdbResult =
@@ -22,11 +25,23 @@ export type AddTitleFromTmdbResult =
       titleId: string;
       created: boolean;
       addedToWatchlist: boolean;
+      markedWatched: boolean;
     }
   | { ok: false; error: string };
 
 const isTitleKind = (value: string): value is TitleKind =>
   TITLE_KINDS.includes(value as TitleKind);
+
+const resolveDestination = (input: AddTitleFromTmdbInput) => {
+  if (input.destination === "watched") {
+    return { addToWatchlist: false, markWatched: true };
+  }
+
+  return {
+    addToWatchlist: Boolean(input.addToWatchlist || input.destination === "watchlist"),
+    markWatched: false,
+  };
+};
 
 const enqueueInWatchlist = async (userId: string, titleId: string) => {
   await ensureDefaultLists(userId);
@@ -56,6 +71,30 @@ const enqueueInWatchlist = async (userId: string, titleId: string) => {
   });
 };
 
+const markExistingWatched = async (userId: string, titleId: string) => {
+  await ensureDefaultLists(userId);
+
+  const watchlist = await prisma.list.findUnique({
+    where: { userId_slug: { userId, slug: WATCHLIST_SLUG } },
+    select: { id: true },
+  });
+
+  await prisma.$transaction(async (tx) => {
+    await tx.title.update({
+      where: { id: titleId },
+      data: { watchedAt: new Date() },
+    });
+
+    if (!watchlist) {
+      return;
+    }
+
+    await tx.listItem.deleteMany({
+      where: { listId: watchlist.id, titleId },
+    });
+  });
+};
+
 export const upsertTitleFromTmdbForUser = async (
   userId: string,
   input: AddTitleFromTmdbInput,
@@ -63,6 +102,7 @@ export const upsertTitleFromTmdbForUser = async (
   const tmdbId = Number(input.tmdbId);
   const kind = input.kind;
   const snapshotName = input.name.trim();
+  const { addToWatchlist, markWatched } = resolveDestination(input);
 
   if (!Number.isInteger(tmdbId) || tmdbId <= 0) {
     return { ok: false, error: "El identificador de TMDB no es válido." };
@@ -78,7 +118,9 @@ export const upsertTitleFromTmdbForUser = async (
   });
 
   if (existing) {
-    if (input.addToWatchlist) {
+    if (markWatched) {
+      await markExistingWatched(userId, existing.id);
+    } else if (addToWatchlist) {
       await enqueueInWatchlist(userId, existing.id);
     }
 
@@ -86,7 +128,8 @@ export const upsertTitleFromTmdbForUser = async (
       ok: true,
       titleId: existing.id,
       created: false,
-      addedToWatchlist: Boolean(input.addToWatchlist),
+      addedToWatchlist: addToWatchlist,
+      markedWatched: markWatched,
     };
   }
 
@@ -98,6 +141,7 @@ export const upsertTitleFromTmdbForUser = async (
     posterPath: input.posterPath ?? null,
     imdbId: null as string | null,
     imdbRating: null as number | null,
+    tmdbGenres: [] as TmdbGenre[],
   };
 
   try {
@@ -110,6 +154,7 @@ export const upsertTitleFromTmdbForUser = async (
       posterPath: resolved.posterPath ?? metadata.posterPath,
       imdbId: resolved.imdbId,
       imdbRating: resolved.imdbRating,
+      tmdbGenres: resolved.tmdbGenres,
     };
   } catch (error) {
     if (!snapshotName) {
@@ -132,6 +177,8 @@ export const upsertTitleFromTmdbForUser = async (
       posterPath: metadata.posterPath,
       imdbId: metadata.imdbId,
       imdbRating: metadata.imdbRating,
+      tmdbGenres: metadata.tmdbGenres,
+      watchedAt: markWatched ? new Date() : null,
     },
   });
 
@@ -139,7 +186,7 @@ export const upsertTitleFromTmdbForUser = async (
     await enrichWatchProvidersOnSave(title.id, metadata.tmdbId, kind);
   }
 
-  if (input.addToWatchlist) {
+  if (addToWatchlist) {
     await enqueueInWatchlist(userId, title.id);
   }
 
@@ -147,6 +194,7 @@ export const upsertTitleFromTmdbForUser = async (
     ok: true,
     titleId: title.id,
     created: true,
-    addedToWatchlist: Boolean(input.addToWatchlist),
+    addedToWatchlist: addToWatchlist,
+    markedWatched: markWatched,
   };
 };

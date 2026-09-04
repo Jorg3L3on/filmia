@@ -1,10 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "_comment": "Respaldo opcional. El host principal es Cloudflare Workers (OpenNext).",
-  "git": {
-    "deploymentEnabled": {
-      "*": false,
-      "sandbox": false
-    }
-  }
+  "github": {
+    "enabled": false
+  },
+  "ignoreCommand": "exit 0"
 }

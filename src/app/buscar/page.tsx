@@ -65,10 +65,10 @@ export default async function SearchPage({
         {hasStreamingPlatforms ? (
           <p className="text-sm">
             <Link
-              href={catalogHref("/", { minePlatforms: true })}
+              href="/"
               className={`text-accent underline-offset-2 hover:underline ${focusRing}`}
             >
-              Diario: solo en mis plataformas
+              Diario: picks en tus plataformas
             </Link>
             {" · "}
             <Link
@@ -83,7 +83,7 @@ export default async function SearchPage({
             <Link href="/perfil" className={btnLink} aria-label="Elige tus plataformas en el perfil">
               Elige tus plataformas
             </Link>{" "}
-            para filtrar el diario y Quiero ver.
+            para ver picks en el Diario y filtrar Quiero ver.
           </p>
         )}
       </section>

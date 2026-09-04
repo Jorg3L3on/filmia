@@ -1,178 +1,134 @@
-import { DeckViewToggle, DIARY_VIEW_MODES, type DeckViewMode } from "@/components/DeckViewToggle";
-import { CatalogFilters } from "@/components/CatalogFilters";
-import { DiaryCalendar } from "@/components/DiaryCalendar";
-import { DiaryRecentList } from "@/components/DiaryRecentList";
+import { DiaryAddTitleFab } from "@/components/DiaryAddTitleFab";
+import { DiaryGenreToggle } from "@/components/DiaryGenreToggle";
 import { EmptyState } from "@/components/EmptyState";
-import {
-  MinePlatformsEmpty,
-  MinePlatformsSetupCta,
-  MissingStreamingDataNote,
-} from "@/components/MinePlatformsNotice";
+import { MissingStreamingDataNote } from "@/components/MinePlatformsNotice";
 import { PageHeader } from "@/components/PageHeader";
 import { TitleDeckView } from "@/components/TitleDeckView";
-import { parseDayParam, parseMonthParam } from "@/lib/dates";
-import { getTags, getTitles, getUserStreamingPlatforms } from "@/lib/queries";
-import { resolveMinePlatformsCatalog } from "@/lib/streaming-platforms";
-import { catalogHref, parseMinePlatforms, parseTagSlugs } from "@/lib/tags";
-import { parseSeriesStatusFilter } from "@/lib/series";
+import { ensureCurrentUserWatchlist } from "@/app/actions/watchlist";
+import { enrichDiaryWatchlistTitles } from "@/lib/diary-enrich";
+import {
+  diaryHref,
+  parseCategorySlug,
+  pickDiaryCategories,
+  resolveDiaryCategory,
+  titlesForDiaryCategory,
+} from "@/lib/diary-picks";
+import { metadataServicesConfigured } from "@/lib/metadata";
+import {
+  getUserStreamingPlatforms,
+  getUserTmdbIndex,
+  getWatchlist,
+} from "@/lib/queries";
+import { applyMinePlatformsFilter } from "@/lib/streaming-platforms";
 
 export const dynamic = "force-dynamic";
-
-const isView = (value: string | undefined): value is DeckViewMode =>
-  value === "deck" || value === "grid" || value === "calendar";
 
 export default async function HomePage({
   searchParams,
 }: {
   searchParams: Promise<{
-    view?: string;
-    tag?: string | string[];
-    minePlatforms?: string | string[];
-    seriesStatus?: string | string[];
-    month?: string | string[];
-    day?: string | string[];
+    categoria?: string | string[];
   }>;
 }) {
-  const params = await searchParams;
-  const view = isView(params.view) ? params.view : "deck";
-  const selectedTags = parseTagSlugs(params.tag);
-  const minePlatforms = parseMinePlatforms(params.minePlatforms);
-  const seriesStatus = parseSeriesStatusFilter(params.seriesStatus);
-  const month = parseMonthParam(params.month);
-  const selectedDay = parseDayParam(params.day, month);
-  const calendarQuery =
-    view === "calendar"
-      ? { month, day: selectedDay }
-      : { month: undefined, day: undefined };
+  await ensureCurrentUserWatchlist();
 
-  const [taggedTitles, tags, userPlatforms] = await Promise.all([
-    getTitles({
-      sort: "watched",
-      onlyWatched: true,
-      tags: selectedTags,
-      seriesStatus,
-    }),
-    getTags(),
+  const params = await searchParams;
+  const categorySlug = parseCategorySlug(params.categoria);
+  const metadataConfig = metadataServicesConfigured();
+
+  const [watchlist, userPlatforms, existing] = await Promise.all([
+    getWatchlist(),
     getUserStreamingPlatforms(),
+    getUserTmdbIndex(),
   ]);
 
-  const catalog = resolveMinePlatformsCatalog(
-    taggedTitles,
-    minePlatforms,
-    userPlatforms,
+  const rawTitles = watchlist?.items.map((item) => item.title) ?? [];
+  const fab = (
+    <DiaryAddTitleFab configured={metadataConfig} existing={existing} />
   );
-  const titles = catalog.titles;
-  const recentTitles = titles.slice(0, 12);
-  const hasActiveFilters = selectedTags.length > 0 || minePlatforms || Boolean(seriesStatus);
-  const hrefFor = (mode: DeckViewMode) =>
-    catalogHref("/", {
-      tags: selectedTags,
-      view: mode,
-      minePlatforms,
-      seriesStatus,
-      ...(mode === "calendar" ? { month, day: selectedDay } : {}),
-    });
-  const clearHref = catalogHref("/", { view, ...calendarQuery });
+
+  if (userPlatforms.length === 0) {
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          eyebrow="Diario"
+          title="Qué ver"
+          description="Cinco picks de Quiero ver, en mazo, de las categorías que ya tienes y solo en las plataformas que contrataste."
+        />
+        <EmptyState
+          title="Elige tus plataformas"
+          description="El Diario solo muestra títulos incluidos en tus suscripciones de México. Indica cuáles tienes en el perfil."
+          actionHref="/perfil"
+          actionLabel="Ir a perfil"
+        />
+        {fab}
+      </div>
+    );
+  }
+
+  const enrichedTitles = await enrichDiaryWatchlistTitles(rawTitles);
+  const catalog = applyMinePlatformsFilter(enrichedTitles, userPlatforms);
+  const titles = catalog.visible;
+  const categories = pickDiaryCategories(titles);
+  const activeCategory = resolveDiaryCategory(categories, categorySlug);
+  const picks = activeCategory
+    ? titlesForDiaryCategory(titles, activeCategory.id)
+    : [];
 
   return (
     <div className="space-y-8">
       <PageHeader
         eyebrow="Diario"
-        title="Lo visto"
-        description="Mazo, cuadrícula o calendario de lo que ya viste. Filtra por etiqueta (OR), estado de serie o por las plataformas que tienes."
+        title="Qué ver"
+        description="Hasta cinco títulos de Quiero ver por categoría, los mejor calificados en IMDb y disponibles en tus plataformas."
         actions={
-          titles.length > 0 || hasActiveFilters || view === "calendar" ? (
-            <DeckViewToggle
-              mode={view}
-              hrefFor={hrefFor}
-              modes={DIARY_VIEW_MODES}
+          activeCategory ? (
+            <DiaryGenreToggle
+              categories={categories}
+              activeSlug={activeCategory.slug}
             />
           ) : undefined
         }
       />
 
-      {catalog.needsSetup ? (
-        <MinePlatformsSetupCta />
-      ) : view === "calendar" ? (
-        <>
-          <MissingStreamingDataNote count={catalog.missingCache} />
-          {titles.length === 0 && minePlatforms ? (
-            <MinePlatformsEmpty
-              userPlatforms={userPlatforms}
-              actionHref={clearHref}
-              hasTagFilters={selectedTags.length > 0 || Boolean(seriesStatus)}
-            />
-          ) : (
-            <DiaryCalendar
-              titles={titles}
-              month={month}
-              selectedDay={selectedDay}
-              tags={selectedTags}
-              minePlatforms={minePlatforms}
-              seriesStatus={seriesStatus}
-              hasActiveFilters={hasActiveFilters}
-              clearHref={clearHref}
-            />
-          )}
-        </>
-      ) : null}
+      <MissingStreamingDataNote count={catalog.missingCache} />
 
-      <CatalogFilters
-        tags={tags}
-        selectedSlugs={selectedTags}
-        pathname="/"
-        view={view}
-        minePlatforms={minePlatforms}
-        hasStreamingPlatforms={userPlatforms.length > 0}
-        seriesStatus={seriesStatus}
-        month={calendarQuery.month}
-        day={calendarQuery.day}
-      />
-
-      {catalog.needsSetup || view === "calendar" ? null : titles.length === 0 && minePlatforms ? (
-        <>
-          <MissingStreamingDataNote count={catalog.missingCache} />
-          <MinePlatformsEmpty
-            userPlatforms={userPlatforms}
-            actionHref={clearHref}
-            hasTagFilters={selectedTags.length > 0 || Boolean(seriesStatus)}
-          />
-        </>
+      {rawTitles.length === 0 ? (
+        <EmptyState
+          title="Quiero ver está vacío"
+          description="Usa el botón de abajo a la derecha para buscar un título en TMDB y agregarlo a Quiero ver."
+        />
       ) : titles.length === 0 ? (
         <EmptyState
-          title={
-            selectedTags.length > 0 || seriesStatus
-              ? "Nada con esos filtros"
-              : "El diario está vacío"
-          }
-          description={
-            selectedTags.length > 0 || seriesStatus
-              ? "Prueba otra combinación o quita filtros. El estado de serie ignora películas."
-              : "Registra un título o corre el seed para ver tus posters."
-          }
-          actionHref={hasActiveFilters ? clearHref : "/buscar"}
-          actionLabel={hasActiveFilters ? "Quitar filtros" : "Buscar en TMDB"}
+          title="Nada en tus plataformas"
+          description="Hay títulos en Quiero ver, pero ninguno está incluido (suscripción) en las plataformas que elegiste."
+          actionHref="/perfil"
+          actionLabel="Revisar plataformas"
+        />
+      ) : !activeCategory ? (
+        <EmptyState
+          title="Sin categorías todavía"
+          description="Esos títulos no tienen género de TMDB. Agrégalos de nuevo desde el buscador o espera a que se enriquezcan."
+          actionHref="/buscar"
+          actionLabel="Buscar en TMDB"
+        />
+      ) : picks.length === 0 ? (
+        <EmptyState
+          title="Nada en esta categoría"
+          description="Prueba otra pestaña o agrega más títulos a Quiero ver."
+          actionHref={diaryHref(categories[0]?.slug)}
+          actionLabel="Ver otra categoría"
         />
       ) : (
-        <>
-          <MissingStreamingDataNote count={catalog.missingCache} />
-          <TitleDeckView
-            heading="Recientes"
-            titles={recentTitles}
-            mode={view}
-            showToggle={false}
-          />
-          <DiaryRecentList titles={recentTitles} />
-          {titles.length > recentTitles.length ? (
-            <TitleDeckView
-              heading="Todos"
-              titles={titles}
-              mode={view}
-              showToggle={false}
-            />
-          ) : null}
-        </>
+        <TitleDeckView
+          heading={activeCategory.name}
+          titles={picks}
+          mode="deck"
+          showToggle={false}
+        />
       )}
+
+      {fab}
     </div>
   );
 }
