@@ -241,7 +241,7 @@ export const getTitleOptions = async () => {
 
   return prisma.title.findMany({
     where: { userId },
-    select: { id: true, name: true, year: true },
+    select: { id: true, name: true, year: true, posterPath: true },
     orderBy: { name: "asc" },
   });
 };

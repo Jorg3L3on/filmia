@@ -114,7 +114,7 @@ export const emptyStateForList = (slug: string | null) => {
   return {
     title: "Esta lista está vacía",
     description:
-      "Agrega títulos desde el selector, desde la ficha, o regístralos primero en el diario.",
+      "Agrega títulos con + Agregar título, desde la ficha, o regístralos primero en Buscar.",
   };
 };
 

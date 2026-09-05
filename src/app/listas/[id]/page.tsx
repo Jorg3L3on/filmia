@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ListKind } from "@/generated/prisma/browser";
-import { addTitleToList, deleteList } from "@/app/actions/lists";
+import { deleteList } from "@/app/actions/lists";
+import { AddTitleToListCta } from "@/components/AddTitleToListCta";
 import { CatalogFilters } from "@/components/CatalogFilters";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { EmptyState } from "@/components/EmptyState";
@@ -18,7 +19,7 @@ import { getListById, getTags, getTitleOptions, getUserStreamingPlatforms } from
 import { resolveMinePlatformsCatalog } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
-import { btnDanger, btnPrimary, fieldClass } from "@/lib/ui";
+import { btnDanger, btnPrimary } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -74,7 +75,6 @@ export default async function ListDetailPage({
     : minePlatforms
       ? statusItems.filter((item) => visibleIds.has(item.title.id))
       : statusItems;
-  const addAction = addTitleToList.bind(null, list.id);
   const deleteAction = deleteList.bind(null, list.id);
   const fixed = isFixedListSlug(list.slug);
   const empty = emptyStateForList(list.slug);
@@ -115,28 +115,7 @@ export default async function ListDetailPage({
         seriesStatus={seriesStatus}
       />
 
-      <form
-        action={addAction}
-        className="flex flex-col items-stretch gap-3 rounded-md border border-line bg-well p-4 sm:flex-row sm:flex-wrap sm:items-end"
-      >
-        <label className="block min-w-0 flex-1 space-y-1">
-          <span className="text-xs uppercase tracking-wide text-fog">
-            Agregar título
-          </span>
-          <select name="titleId" required className={fieldClass}>
-            <option value="">Elige un título</option>
-            {availableTitles.map((title) => (
-              <option key={title.id} value={title.id}>
-                {title.name}
-                {title.year ? ` (${title.year})` : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="submit" className={`${btnPrimary} w-full sm:w-auto`}>
-          Agregar
-        </button>
-      </form>
+      <AddTitleToListCta listId={list.id} titles={availableTitles} />
 
       {list.items.length === 0 ? (
         <EmptyState title={empty.title} description={empty.description} />
