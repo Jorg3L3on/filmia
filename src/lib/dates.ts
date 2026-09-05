@@ -31,6 +31,19 @@ export const todayDateInput = (now = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
+/** Local calendar day for “Ayer” in the Marqué visto sheet. */
+export const yesterdayDateInput = (now = new Date()) => {
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  return todayDateInput(yesterday);
+};
+
+export type WatchedDatePreset = "today" | "yesterday" | "custom";
+
+export const dateInputForPreset = (
+  preset: Exclude<WatchedDatePreset, "custom">,
+  now = new Date(),
+) => (preset === "yesterday" ? yesterdayDateInput(now) : todayDateInput(now));
+
 export const toMonthParam = (year: number, month: number) =>
   `${year}-${String(month).padStart(2, "0")}`;
 
