@@ -6,10 +6,9 @@ import { PosterPlatformBadge } from "@/components/PosterPlatformBadge";
 import { SharedPoster } from "@/components/SharedPoster";
 import { WatchlistMarkSeenButton } from "@/components/WatchlistMarkSeenButton";
 import { cn } from "@/lib/cn";
-import { compactGenreLabel } from "@/lib/diary-picks";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { titleInclude } from "@/lib/queries";
-import { titleSynopsis } from "@/lib/title-overview";
+import { compactGenreLabel, titleSynopsis } from "@/lib/title-overview";
 import { btnGhost, focusRing } from "@/lib/ui";
 import type { Platform, Prisma } from "@/generated/prisma/browser";
 
@@ -44,8 +43,6 @@ export const WatchlistCard = ({
 }: WatchlistCardProps) => {
   const { title } = item;
   const yearLabel = title.year ? String(title.year) : TITLE_KIND_LABEL[title.kind];
-  const synopsis = titleSynopsis(title.overview);
-  const genreLabel = compactGenreLabel(title.tmdbGenres);
 
   if (variant === "hero") {
     return (
@@ -77,7 +74,6 @@ export const WatchlistCard = ({
                 <p className="text-sm text-fog">
                   {yearLabel}
                   {title.year ? ` · ${TITLE_KIND_LABEL[title.kind]}` : ""}
-                  {genreLabel ? ` · ${genreLabel}` : ""}
                 </p>
               </div>
             </div>
@@ -107,6 +103,9 @@ export const WatchlistCard = ({
       </article>
     );
   }
+
+  const synopsis = titleSynopsis(title.overview);
+  const genreLabel = compactGenreLabel(title.tmdbGenres);
 
   return (
     <article className="flex items-center gap-3 rounded-2xl px-1 py-2">

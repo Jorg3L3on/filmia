@@ -1,5 +1,8 @@
-import { compactGenreLabel } from "../src/lib/diary-picks";
-import { titleOverviewMap, titleSynopsis } from "../src/lib/title-overview";
+import {
+  compactGenreLabel,
+  titleOverviewMap,
+  titleSynopsis,
+} from "../src/lib/title-overview";
 
 const assert = (condition: unknown, message: string) => {
   if (!condition) {
