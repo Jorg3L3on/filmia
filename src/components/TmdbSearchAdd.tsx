@@ -197,6 +197,8 @@ export const TmdbSearchAdd = ({
         variant="buscar"
         title="Busca un título"
         description="Falta la clave de TMDB en el entorno. Sin ella no se puede buscar."
+        actionHref="/watchlist"
+        actionLabel="Ir a Quiero ver"
       />
     );
   }
