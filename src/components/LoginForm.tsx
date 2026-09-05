@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
-import { Logo } from "@/components/Logo";
+import { PasswordField } from "@/components/PasswordField";
 import { messageForSignInError } from "@/lib/auth-errors";
-import { btnPrimary, eyebrowClass, fieldClass, focusRing } from "@/lib/ui";
+import { btnPrimary, fieldClass, focusRing } from "@/lib/ui";
 
 export const LoginForm = () => {
   const router = useRouter();
@@ -42,28 +42,22 @@ export const LoginForm = () => {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-8 px-4 py-16">
-      <div className="space-y-4 text-center">
-        <Link href="/" className={`inline-flex ${focusRing}`} aria-label="Filmia">
-          <Logo size="lg" />
-        </Link>
-        <div className="space-y-2">
-          <p className={eyebrowClass}>Acceso</p>
-          <h1 className="font-serif text-3xl text-paper">Entrar a Filmia</h1>
-          <p className="text-sm text-mist">
-            Tu diario personal de películas y series.
-          </p>
-        </div>
-      </div>
-
+    <div className="mx-auto flex min-h-[80vh] w-full max-w-md items-center px-4 py-12">
       <form
         onSubmit={handleSubmit}
-        className="space-y-4 rounded-md border border-line bg-surface p-6 shadow-[0_24px_60px_rgba(0,0,0,0.45)]"
+        className="w-full space-y-6 rounded-3xl border border-line bg-surface/90 p-7 shadow-[0_24px_60px_rgba(0,0,0,0.45)]"
       >
+        <div className="space-y-2 text-center">
+          <h1 className="font-serif text-4xl text-paper">Filmia</h1>
+          <p className="text-[11px] font-medium tracking-[0.22em] text-mist">
+            CINE. HISTORIAS. EMOCIONES.
+          </p>
+        </div>
+
         {error ? (
           <p
             role="alert"
-            className="rounded-sm border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger"
+            className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger"
           >
             {error}
           </p>
@@ -71,7 +65,7 @@ export const LoginForm = () => {
 
         <label className="block space-y-1.5">
           <span className="text-xs font-medium uppercase tracking-wide text-fog">
-            Correo
+            Correo electrónico
           </span>
           <input
             type="email"
@@ -79,23 +73,15 @@ export const LoginForm = () => {
             autoComplete="email"
             required
             className={fieldClass}
-            placeholder="tu@correo.com"
+            placeholder="tu@email.com"
           />
         </label>
 
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-wide text-fog">
-            Contraseña
-          </span>
-          <input
-            type="password"
-            name="password"
-            autoComplete="current-password"
-            required
-            className={fieldClass}
-            placeholder="••••••••"
-          />
-        </label>
+        <PasswordField
+          name="password"
+          label="Contraseña"
+          autoComplete="current-password"
+        />
 
         <button
           type="submit"
@@ -104,14 +90,19 @@ export const LoginForm = () => {
         >
           {isLoading ? "Entrando…" : "Entrar"}
         </button>
-      </form>
 
-      <p className="text-center text-sm text-mist">
-        ¿No tienes cuenta?{" "}
-        <Link href="/registro" className="text-accent underline-offset-2 hover:underline">
-          Crear cuenta
-        </Link>
-      </p>
+        <div className="flex items-center gap-3 text-xs text-mist">
+          <span className="h-px flex-1 bg-line" />
+          o
+          <span className="h-px flex-1 bg-line" />
+        </div>
+
+        <p className="text-center text-sm">
+          <Link href="/registro" className={`text-accent hover:text-accent-hover ${focusRing}`}>
+            Crear cuenta
+          </Link>
+        </p>
+      </form>
     </div>
   );
 };

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHeader } from "@/components/PageHeader";
 import { TitleForm } from "@/components/TitleForm";
 import { metadataServicesConfigured } from "@/lib/metadata";
 import { getCollectionLists, getTags } from "@/lib/queries";
-import { btnPrimary, wellClass } from "@/lib/ui";
+import { btnPrimary, focusRing, wellClass } from "@/lib/ui";
+import { cn } from "@/lib/cn";
 
 export const metadata: Metadata = {
-  title: "Nuevo título",
+  title: "Registrar título",
 };
 
 export const dynamic = "force-dynamic";
@@ -20,31 +20,33 @@ export default async function NewTitlePage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
-      <PageHeader
-        eyebrow="Alta"
-        title="Registrar título"
-        description="Busca el poster, ponle tu nota y súbelo al diario. La cola de pendientes vive en Quiero ver."
-        actions={
-          <Link href="/buscar" className={btnPrimary}>
-            Buscar en TMDB
-          </Link>
-        }
-      />
+    <div className="mx-auto max-w-3xl space-y-8">
+      <header className="flex items-center justify-between gap-3">
+        <Link
+          href="/buscar"
+          className={cn("text-sm text-fog hover:text-paper", focusRing)}
+        >
+          ←
+        </Link>
+        <h1 className="font-serif text-2xl text-paper">Registrar título</h1>
+        <Link href="/buscar" className="text-sm font-medium text-accent hover:text-accent-hover">
+          Buscar en TMDB
+        </Link>
+      </header>
+
       <Link
         href="/buscar"
-        className={`${wellClass} block p-5 transition hover:border-accent/50`}
+        className={`${wellClass} flex items-center justify-between gap-4 border-accent/30 p-5 transition hover:border-accent`}
       >
-        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">
-          Camino rápido
-        </p>
-        <p className="mt-1 font-serif text-xl text-white">
-          Buscar y agregar desde TMDB
-        </p>
-        <p className="mt-1 text-sm text-fog">
-          Poster, año y tipo en un toque. También puedes mandarlo a Quiero ver.
-        </p>
+        <div className="space-y-1">
+          <p className="font-medium text-paper">¿No encuentras la película o serie?</p>
+          <p className="text-sm text-fog">
+            Busca en TMDB y añade títulos con toda su información en un solo paso.
+          </p>
+        </div>
+        <span className={btnPrimary}>Buscar en TMDB</span>
       </Link>
+
       <TitleForm tags={tags} lists={lists} metadataConfig={metadataConfig} />
     </div>
   );

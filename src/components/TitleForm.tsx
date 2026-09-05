@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { createTitle, updateTitle } from "@/app/actions/titles";
 import { TmdbPicker, type TmdbPick } from "@/components/TmdbPicker";
 import { PosterImage } from "@/components/PosterImage";
@@ -111,12 +111,14 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
         </aside>
 
         <div className="space-y-6">
-          <section className={cn(wellClass, "space-y-4 p-5")}>
+          <section className={cn(wellClass, "space-y-4 border-accent/30 p-5")}>
             <header className="space-y-1">
-              <p className={eyebrowClass}>1 · Encuéntralo</p>
-              <h2 className="font-serif text-xl text-white">Busca el título</h2>
+              <p className={eyebrowClass}>TMDB</p>
+              <h2 className="font-serif text-xl text-white">
+                ¿No encuentras la película o serie?
+              </h2>
               <p className="text-sm text-fog">
-                Elige un resultado y rellenamos nombre, año y poster.
+                Busca en TMDB y añade títulos con toda su información en un solo paso.
               </p>
             </header>
             <div className="space-y-3">
@@ -159,9 +161,10 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
             />
           </section>
 
+          <ManualBlock title={Boolean(title)}>
           <section className={cn(wellClass, "space-y-4 p-5")}>
             <header className="space-y-1">
-              <p className={eyebrowClass}>2 · Ficha</p>
+              <p className={eyebrowClass}>Ficha</p>
               <h2 className="font-serif text-xl text-white">Identidad</h2>
             </header>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -203,7 +206,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
 
           <section className={cn(wellClass, "space-y-5 p-5")}>
             <header className="space-y-1">
-              <p className={eyebrowClass}>3 · Tu vista</p>
+              <p className={eyebrowClass}>Tu vista</p>
               <h2 className="font-serif text-xl text-white">Cómo lo viste</h2>
             </header>
 
@@ -294,7 +297,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
 
           <section className={cn(wellClass, "space-y-5 p-5")}>
             <header className="space-y-1">
-              <p className={eyebrowClass}>4 · Colección</p>
+              <p className={eyebrowClass}>Colección</p>
               <h2 className="font-serif text-xl text-white">Etiquetas y listas</h2>
             </header>
 
@@ -356,18 +359,39 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
               )}
             </fieldset>
           </section>
+          </ManualBlock>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
         <p className="text-sm text-mist">
-          {name ? name : "Sin título todavía"}
-          {year ? ` · ${year}` : ""}
+          Siempre puedes editar la información más tarde.
         </p>
         <button type="submit" className={btnPrimary}>
           {title ? "Guardar cambios" : "Registrar en el diario"}
         </button>
       </div>
     </form>
+  );
+};
+
+const ManualBlock = ({
+  title,
+  children,
+}: {
+  title: boolean;
+  children: ReactNode;
+}) => {
+  if (title) {
+    return <>{children}</>;
+  }
+
+  return (
+    <details className="group rounded-2xl border border-line bg-surface open:bg-surface">
+      <summary className="cursor-pointer list-none px-5 py-4 text-sm text-fog [&::-webkit-details-marker]:hidden">
+        O regístralo manualmente
+      </summary>
+      <div className="space-y-6 border-t border-line px-5 pb-5 pt-4">{children}</div>
+    </details>
   );
 };

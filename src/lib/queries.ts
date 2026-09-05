@@ -107,7 +107,15 @@ export const getTags = async () => {
   return prisma.tag.findMany({
     where: { userId },
     orderBy: { name: "asc" },
-    include: { _count: { select: { titles: true } } },
+    include: {
+      _count: { select: { titles: true } },
+      titles: {
+        take: 3,
+        include: {
+          title: { select: { id: true, name: true, posterPath: true } },
+        },
+      },
+    },
   });
 };
 
