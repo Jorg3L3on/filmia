@@ -14,6 +14,8 @@ import {
   titlesInMonth,
   toDateInput,
   todayDateInput,
+  yesterdayDateInput,
+  dateInputForPreset,
 } from "../src/lib/dates";
 import { dayCellOpensSheet, extraDayBadge } from "../src/lib/diary-day";
 import { catalogHref } from "../src/lib/tags";
@@ -27,6 +29,13 @@ const assert = (condition: unknown, message: string) => {
 const run = () => {
   const now = new Date(2026, 8, 3, 18, 0, 0);
   assert(todayDateInput(now) === "2026-09-03", "Local today should be YYYY-MM-DD");
+  assert(yesterdayDateInput(now) === "2026-09-02", "Local yesterday is the previous civil day");
+  assert(
+    yesterdayDateInput(new Date(2026, 0, 1, 8, 0, 0)) === "2025-12-31",
+    "Yesterday wraps the year",
+  );
+  assert(dateInputForPreset("today", now) === "2026-09-03", "Hoy preset uses today");
+  assert(dateInputForPreset("yesterday", now) === "2026-09-02", "Ayer preset uses yesterday");
   assert(currentMonthParam(now) === "2026-09", "Current month should be YYYY-MM");
   assert(parseMonthParam("2026-09", now) === "2026-09", "Valid month param is kept");
   assert(parseMonthParam("2026-13", now) === "2026-09", "Invalid month falls back to now");

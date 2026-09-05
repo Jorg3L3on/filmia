@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ListItemOrderControls } from "@/components/ListItemOrderControls";
 import { PosterImage } from "@/components/PosterImage";
 import { SharedPoster } from "@/components/SharedPoster";
+import { WatchlistMarkSeenButton } from "@/components/WatchlistMarkSeenButton";
+import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { titleInclude } from "@/lib/queries";
 import { btnGhost, focusRing } from "@/lib/ui";
@@ -37,21 +39,14 @@ export const WatchlistCard = ({
     return (
       <article className="card-physics overflow-hidden rounded-card border border-line bg-surface p-4 sm:p-5">
         <div className="flex gap-4">
-          <Link
-            href={`/titulos/${title.id}`}
-            aria-label={title.name}
-            className={`w-[112px] shrink-0 sm:w-[140px] ${focusRing}`}
-          >
-            <SharedPoster titleId={title.id}>
-              <PosterImage
-                name={title.name}
-                posterPath={title.posterPath}
-                className="rounded-poster"
-                sizes="140px"
-                priority
-              />
-            </SharedPoster>
-          </Link>
+          <WatchlistPoster
+            title={title}
+            size="hero"
+            className="w-[112px] shrink-0 sm:w-[140px]"
+            posterClassName="rounded-poster"
+            sizes="140px"
+            priority
+          />
           <div className="min-w-0 flex-1 space-y-3">
             <div className="flex items-start gap-3">
               <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-sm font-bold text-ink">
@@ -102,20 +97,13 @@ export const WatchlistCard = ({
       <span className="w-5 shrink-0 text-center text-sm font-semibold text-mist">
         {position}
       </span>
-      <Link
-        href={`/titulos/${title.id}`}
-        aria-label={title.name}
-        className={`w-14 shrink-0 overflow-hidden rounded-lg ${focusRing}`}
-      >
-        <SharedPoster titleId={title.id}>
-          <PosterImage
-            name={title.name}
-            posterPath={title.posterPath}
-            className="rounded-lg"
-            sizes="56px"
-          />
-        </SharedPoster>
-      </Link>
+      <WatchlistPoster
+        title={title}
+        size="queue"
+        className="w-14 shrink-0"
+        posterClassName="rounded-lg"
+        sizes="56px"
+      />
       <div className="min-w-0 flex-1">
         <h3 className="truncate font-medium text-paper">
           <Link href={`/titulos/${title.id}`} className={`hover:text-accent ${focusRing}`}>
@@ -133,3 +121,44 @@ export const WatchlistCard = ({
     </article>
   );
 };
+
+const WatchlistPoster = ({
+  title,
+  size,
+  className,
+  posterClassName,
+  sizes,
+  priority = false,
+}: {
+  title: WatchlistItem["title"];
+  size: "hero" | "queue";
+  className: string;
+  posterClassName: string;
+  sizes: string;
+  priority?: boolean;
+}) => (
+  <div className={cn("relative", className)}>
+    <Link
+      href={`/titulos/${title.id}`}
+      aria-label={title.name}
+      className={cn("block", focusRing)}
+    >
+      <SharedPoster titleId={title.id}>
+        <PosterImage
+          name={title.name}
+          posterPath={title.posterPath}
+          className={posterClassName}
+          sizes={sizes}
+          priority={priority}
+        />
+      </SharedPoster>
+    </Link>
+    <WatchlistMarkSeenButton
+      titleId={title.id}
+      titleName={title.name}
+      rating={title.rating}
+      review={title.review}
+      size={size}
+    />
+  </div>
+);
