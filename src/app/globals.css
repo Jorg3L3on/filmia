@@ -138,6 +138,10 @@ body {
   animation: spring-pop 420ms var(--spring);
 }
 
+.sheet-rise {
+  animation: sheet-rise 480ms var(--spring) both;
+}
+
 .spring-fill {
   transition:
     background-color 200ms var(--spring),
@@ -231,6 +235,17 @@ body {
   }
 }
 
+@keyframes sheet-rise {
+  from {
+    opacity: 0;
+    transform: translateY(22%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes shimmer {
   0% {
     background-position: 120% 0;
@@ -300,7 +315,8 @@ body {
   .stagger-in,
   .fade-up,
   .fade-up-late,
-  .spring-pop {
+  .spring-pop,
+  .sheet-rise {
     transform: none;
     filter: none;
     animation: none;

@@ -1,5 +1,8 @@
 import {
   currentMonthParam,
+  formatDayCountLabel,
+  formatDaySheetHeading,
+  formatDaySheetParts,
   getMonthGrid,
   groupTitlesByWatchedDay,
   hasExplicitMonthParam,
@@ -12,6 +15,7 @@ import {
   toDateInput,
   todayDateInput,
 } from "../src/lib/dates";
+import { dayCellOpensSheet, extraDayBadge } from "../src/lib/diary-day";
 import { catalogHref } from "../src/lib/tags";
 
 const assert = (condition: unknown, message: string) => {
@@ -103,6 +107,19 @@ const run = () => {
     catalogHref("/", { view: "calendar" }) === "/?view=calendar",
     "Calendar without month still sets view",
   );
+
+  assert(formatDaySheetHeading("2025-06-01") === "Domingo 1", "Sheet heading is weekday + day");
+  assert(formatDayCountLabel(1) === "1 título", "Singular title count");
+  assert(formatDayCountLabel(4) === "4 títulos", "Plural title count");
+  assert(
+    formatDaySheetParts("2025-06-03", 4).label === "Martes 3 · 4 títulos",
+    "Sheet title matches wireframe pattern",
+  );
+  assert(extraDayBadge(1) === null, "Single title has no +N badge");
+  assert(extraDayBadge(2) === "+1", "Two titles badge is +1");
+  assert(extraDayBadge(4) === "+3", "Four titles badge is +3");
+  assert(!dayCellOpensSheet(1), "Single title opens the ficha");
+  assert(dayCellOpensSheet(4), "Multi-title day opens the sheet");
 
   console.log("✓ Diary calendar month/day params, grouping and catalog hrefs");
 };

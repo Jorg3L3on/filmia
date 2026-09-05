@@ -219,3 +219,30 @@ export const formatWatchedDate = (
     day: "numeric",
     timeZone: "UTC",
   });
+
+const capitalizeEs = (value: string) =>
+  value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : value;
+
+/** `{Weekday} {day}` — e.g. `Martes 1`. */
+export const formatDaySheetHeading = (isoDate: string) => {
+  const date = isoDateToUtcNoon(isoDate);
+  const weekday = date.toLocaleDateString("es-MX", {
+    weekday: "long",
+    timeZone: "UTC",
+  });
+  return `${capitalizeEs(weekday)} ${date.getUTCDate()}`;
+};
+
+export const formatDayCountLabel = (count: number) =>
+  count === 1 ? "1 título" : `${count} títulos`;
+
+/** `{Weekday} {day} · {N} títulos` — e.g. `Martes 1 · 4 títulos`. */
+export const formatDaySheetParts = (isoDate: string, count: number) => {
+  const heading = formatDaySheetHeading(isoDate);
+  const countLabel = formatDayCountLabel(count);
+  return {
+    heading,
+    countLabel,
+    label: `${heading} · ${countLabel}`,
+  };
+};

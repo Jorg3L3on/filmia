@@ -21,6 +21,7 @@ import {
   titlesInMonth,
   todayDateInput,
 } from "@/lib/dates";
+import { dayCellOpensSheet, extraDayBadge } from "@/lib/diary-day";
 import { staggerStyle, useLongPress } from "@/lib/motion";
 import type { CatalogKindFilter } from "@/lib/catalog-href";
 import type { SeriesStatusFilter } from "@/lib/series";
@@ -80,7 +81,7 @@ const calendarHref = ({
 
 const DayCellPosters = ({ titles }: { titles: DiaryCalendarTitle[] }) => {
   const shown = titles.slice(0, 2);
-  const extra = titles.length - 2;
+  const badge = extraDayBadge(titles.length);
 
   return (
     <div className="absolute inset-0 overflow-hidden rounded-[8px]" aria-hidden="true">
@@ -103,9 +104,9 @@ const DayCellPosters = ({ titles }: { titles: DiaryCalendarTitle[] }) => {
         </SharedPoster>
       ))}
       <div className="absolute inset-0 bg-gradient-to-t from-canvas-deep/80 via-transparent to-canvas-deep/20" />
-      {extra > 0 ? (
+      {badge ? (
         <span className="absolute right-1 bottom-1 z-10 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-ink">
-          +{titles.length}
+          {badge}
         </span>
       ) : null}
     </div>
@@ -152,9 +153,6 @@ export const DiaryCalendar = ({
     monthTitles.length === 1 ? "1 entrada" : `${monthTitles.length} entradas`;
   const [sheetDay, setSheetDay] = useState<string | null>(null);
   const sheetTitles = sheetDay ? (byDay.get(sheetDay) ?? []) : [];
-  const sheetLabel = sheetDay
-    ? formatWatchedDate(isoDateToUtcNoon(sheetDay), "long")
-    : "";
 
   return (
     <div className="space-y-5 px-0">
@@ -223,7 +221,7 @@ export const DiaryCalendar = ({
                 cell={cell}
                 titles={dayTitles}
                 today={today}
-                selected={selectedDay === cell.isoDate}
+                selected={selectedDay === cell.isoDate || sheetDay === cell.isoDate}
                 query={query}
                 index={index}
                 onOpenSheet={() => setSheetDay(cell.isoDate)}
@@ -260,8 +258,8 @@ export const DiaryCalendar = ({
       </section>
 
       <DayLogSheet
-        open={Boolean(sheetDay && sheetTitles.length > 0)}
-        label={sheetLabel}
+        open={Boolean(sheetDay && sheetTitles.length > 1)}
+        isoDate={sheetDay}
         titles={sheetTitles}
         onClose={() => setSheetDay(null)}
       />
@@ -291,26 +289,16 @@ const CalendarDayCell = ({
   onOpenSheet: () => void;
 }) => {
   const hasEntries = titles.length > 0;
+  const opensSheet = dayCellOpensSheet(titles.length);
   const isToday = cell.isoDate === today;
   const primary = titles[0];
   const emptyHref = `/buscar?fecha=${cell.isoDate}&destino=visto`;
   const titleHref = primary ? `/titulos/${primary.id}` : emptyHref;
   const longPress = useLongPress(() => {
-    if (hasEntries) {
+    if (opensSheet) {
       onOpenSheet();
     }
   });
-
-  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    if (!hasEntries) {
-      return;
-    }
-
-    if (titles.length > 1 && event.shiftKey) {
-      event.preventDefault();
-      onOpenSheet();
-    }
-  };
 
   const dateLabel = formatWatchedDate(isoDateToUtcNoon(cell.isoDate), "long");
   const countLabel =
@@ -323,23 +311,17 @@ const CalendarDayCell = ({
     .filter(Boolean)
     .join(", ");
 
-  return (
-    <Link
-      href={hasEntries ? titleHref : emptyHref}
-      aria-label={ariaLabel}
-      aria-current={selected ? "date" : undefined}
-      data-iso-date={cell.isoDate}
-      onClick={handleClick}
-      className={cn(
-        "relative aspect-square overflow-hidden rounded-[8px] press-scale stagger-in",
-        focusRing,
-        hasEntries ? "bg-well" : "bg-well",
-        !cell.inMonth && "opacity-40",
-        isToday && !hasEntries && "ring-1 ring-accent/40",
-      )}
-      style={staggerStyle(index, 50)}
-      {...(hasEntries ? longPress : {})}
-    >
+  const cellClass = cn(
+    "relative aspect-square w-full overflow-hidden rounded-[8px] border-0 p-0 press-scale stagger-in",
+    focusRing,
+    "bg-well",
+    !cell.inMonth && "opacity-40",
+    selected && "ring-2 ring-accent",
+    isToday && !hasEntries && !selected && "ring-1 ring-accent/40",
+  );
+
+  const inner = (
+    <>
       {hasEntries ? <DayCellPosters titles={titles} /> : null}
       <span
         className={cn(
@@ -353,6 +335,39 @@ const CalendarDayCell = ({
       >
         {cell.day}
       </span>
+    </>
+  );
+
+  if (opensSheet) {
+    return (
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        aria-haspopup="dialog"
+        aria-expanded={selected}
+        aria-current={selected ? "date" : undefined}
+        data-iso-date={cell.isoDate}
+        data-opens-sheet="true"
+        onClick={onOpenSheet}
+        className={cellClass}
+        style={staggerStyle(index, 50)}
+        {...longPress}
+      >
+        {inner}
+      </button>
+    );
+  }
+
+  return (
+    <Link
+      href={hasEntries ? titleHref : emptyHref}
+      aria-label={ariaLabel}
+      aria-current={selected ? "date" : undefined}
+      data-iso-date={cell.isoDate}
+      className={cellClass}
+      style={staggerStyle(index, 50)}
+    >
+      {inner}
     </Link>
   );
 };

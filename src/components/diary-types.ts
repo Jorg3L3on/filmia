@@ -1,4 +1,4 @@
-import type { SeriesStatus, TitleKind } from "@/generated/prisma/browser";
+import type { Platform, SeriesStatus, TitleKind } from "@/generated/prisma/browser";
 
 export type DiaryCalendarTitle = {
   id: string;
@@ -9,6 +9,8 @@ export type DiaryCalendarTitle = {
   watchedAt: Date | null;
   posterPath: string | null;
   kind?: TitleKind;
+  platform?: Platform | null;
+  imdbRating?: number | null;
   seriesStatus?: SeriesStatus | null;
   seriesSeason?: number | null;
   tags?: Array<{ tag: { id: string; name: string; slug: string } }>;
