@@ -24,7 +24,13 @@ import {
   resolveDiaryCategory,
   titlesForDiaryCategory,
 } from "@/lib/diary-picks";
-import { parseDayParam, parseMonthParam, titlesInMonth } from "@/lib/dates";
+import {
+  hasExplicitMonthParam,
+  latestMonthWithEntries,
+  parseDayParam,
+  parseMonthParam,
+  titlesInMonth,
+} from "@/lib/dates";
 import { metadataServicesConfigured } from "@/lib/metadata";
 import {
   getTags,
@@ -192,8 +198,7 @@ const HistorialHome = async ({
   const selectedTags = parseTagSlugs(params.tag);
   const minePlatforms = parseMinePlatforms(params.minePlatforms);
   const seriesStatus = parseSeriesStatusFilter(params.seriesStatus);
-  const month = parseMonthParam(params.month);
-  const selectedDay = parseDayParam(params.day, month);
+  const requestedMonth = parseMonthParam(params.month);
 
   const [taggedTitles, tags, userPlatforms] = await Promise.all([
     getTitles({
@@ -212,6 +217,10 @@ const HistorialHome = async ({
     userPlatforms,
   );
   const titles = catalog.titles;
+  const month = hasExplicitMonthParam(params.month)
+    ? requestedMonth
+    : latestMonthWithEntries(titles, requestedMonth);
+  const selectedDay = parseDayParam(params.day, month);
   const monthTitles = titlesInMonth(titles, month);
   const hasActiveFilters =
     selectedTags.length > 0 || minePlatforms || Boolean(seriesStatus);

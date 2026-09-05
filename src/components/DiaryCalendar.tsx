@@ -16,7 +16,6 @@ import {
   getMonthGrid,
   groupTitlesByWatchedDay,
   isoDateToUtcNoon,
-  monthFromIsoDate,
   shiftMonthParam,
   titlesInMonth,
   todayDateInput,
@@ -354,18 +353,4 @@ const ChevronIcon = ({ direction }: { direction: "prev" | "next" }) => (
   </svg>
 );
 
-export const currentAdjacentWithEntries = (
-  titles: DiaryCalendarTitle[],
-  fallbackMonth: string,
-) => {
-  const grouped = groupTitlesByWatchedDay(titles);
-  const months = [...grouped.keys()]
-    .map((isoDate) => monthFromIsoDate(isoDate))
-    .sort();
-
-  if (months.length === 0) {
-    return fallbackMonth;
-  }
-
-  return months[months.length - 1] ?? fallbackMonth;
-};
+export { latestMonthWithEntries as currentAdjacentWithEntries } from "@/lib/dates";

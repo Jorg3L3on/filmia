@@ -2,7 +2,9 @@ import {
   currentMonthParam,
   getMonthGrid,
   groupTitlesByWatchedDay,
+  hasExplicitMonthParam,
   isValidIsoDate,
+  latestMonthWithEntries,
   parseDayParam,
   parseMonthParam,
   shiftMonthParam,
@@ -70,6 +72,12 @@ const run = () => {
   assert(toDateInput(titles[0]?.watchedAt) === "2000-06-15", "Stored noon UTC stays date-only");
   assert(titlesInMonth(titles, "2021-06").length === 2, "Month filter uses YYYY-MM prefix");
   assert(titlesInMonth(titles, "2026-09").length === 0, "Empty month has no titles");
+  assert(!hasExplicitMonthParam(undefined), "Missing month is not explicit");
+  assert(hasExplicitMonthParam("2021-06"), "Valid month is explicit");
+  assert(
+    latestMonthWithEntries(titles, "2026-09") === "2021-06",
+    "Historial without month opens the latest watched month",
+  );
 
   assert(
     catalogHref("/", { view: "calendar", month: "2026-09" }) ===

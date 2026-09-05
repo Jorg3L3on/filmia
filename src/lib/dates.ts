@@ -48,6 +48,29 @@ export const parseMonthParam = (value: unknown, now = new Date()) => {
   return currentMonthParam(now);
 };
 
+export const hasExplicitMonthParam = (value: unknown) => {
+  const raw = asSingleString(value).trim();
+  if (!MONTH_PARAM_RE.test(raw)) {
+    return false;
+  }
+
+  const year = Number(raw.slice(0, 4));
+  return year >= 1900 && year <= 2100;
+};
+
+export const latestMonthWithEntries = <
+  T extends { watchedAt: Date | string | null | undefined },
+>(
+  titles: T[],
+  fallbackMonth: string,
+) => {
+  const months = [...groupTitlesByWatchedDay(titles).keys()]
+    .map((isoDate) => monthFromIsoDate(isoDate))
+    .sort();
+
+  return months.at(-1) ?? fallbackMonth;
+};
+
 export const isValidIsoDate = (value: string) => {
   if (!DAY_PARAM_RE.test(value)) {
     return false;
