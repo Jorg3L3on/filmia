@@ -119,3 +119,68 @@ export const useLongPress = (
     onPointerLeave: clear,
   };
 };
+
+/** Vertical drag-to-dismiss for bottom sheets. Ignores `[data-no-sheet-drag]`. */
+export const useSheetDragDismiss = (onClose: () => void, threshold = 96) => {
+  const [offsetY, setOffsetY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const startY = useRef<number | null>(null);
+  const offsetRef = useRef(0);
+
+  const handlePointerDown = (event: ReactPointerEvent) => {
+    if (event.button !== 0) {
+      return;
+    }
+
+    if ((event.target as HTMLElement).closest("[data-no-sheet-drag]")) {
+      return;
+    }
+
+    startY.current = event.clientY;
+    offsetRef.current = 0;
+    setDragging(true);
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent) => {
+    if (startY.current == null) {
+      return;
+    }
+
+    const dy = Math.max(0, event.clientY - startY.current);
+    offsetRef.current = dy;
+    setOffsetY(dy);
+  };
+
+  const handlePointerUp = () => {
+    if (startY.current == null) {
+      return;
+    }
+
+    const shouldClose = offsetRef.current >= threshold;
+    startY.current = null;
+    offsetRef.current = 0;
+    setDragging(false);
+    setOffsetY(0);
+    if (shouldClose) {
+      onClose();
+    }
+  };
+
+  return {
+    offsetY,
+    dragging,
+    sheetStyle:
+      dragging || offsetY > 0
+        ? ({
+            transform: `translateY(${offsetY}px)`,
+            transition: dragging ? "none" : "transform 420ms var(--spring)",
+          } as CSSProperties)
+        : undefined,
+    dragHandlers: {
+      onPointerDown: handlePointerDown,
+      onPointerMove: handlePointerMove,
+      onPointerUp: handlePointerUp,
+      onPointerCancel: handlePointerUp,
+    },
+  };
+};
