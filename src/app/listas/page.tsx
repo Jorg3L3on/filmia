@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
 import { ListCard } from "@/components/ListCard";
-import { PageHeader } from "@/components/PageHeader";
 import { listHref, partitionUserLists } from "@/lib/lists";
 import { getLists } from "@/lib/queries";
 import { btnPrimary } from "@/lib/ui";
@@ -18,22 +17,21 @@ export default async function ListsPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        eyebrow="Colecciones"
-        title="Listas"
-        description="Quiero ver, Favoritas y Por rewatch siempre están. Las personalizadas las armas tú."
-        actions={
-          <Link href="/listas/nueva" className={btnPrimary}>
-            Nueva lista
-          </Link>
-        }
-      />
+      <header className="flex items-center justify-between gap-3">
+        <h1 className="font-serif text-4xl tracking-tight text-paper">Listas</h1>
+        <Link href="/listas/nueva" className={btnPrimary}>
+          Nueva lista
+        </Link>
+      </header>
 
       <section className="space-y-4">
-        <h2 className="text-xs uppercase tracking-[0.2em] text-mist">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-paper">
+          <span className="text-accent" aria-hidden="true">
+            ▦
+          </span>
           Listas diarias
         </h2>
-        <ul className="grid gap-4 md:grid-cols-3">
+        <ul className="rail -mx-4 flex gap-4 overflow-x-auto px-4 pb-2">
           {fixed.map((list) => (
             <li key={list.id}>
               <ListCard
@@ -50,18 +48,21 @@ export default async function ListsPage() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-xs uppercase tracking-[0.2em] text-mist">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-paper">
+          <span className="text-accent" aria-hidden="true">
+            ★
+          </span>
           Personalizadas
         </h2>
         {custom.length === 0 ? (
           <EmptyState
             title="Todavía no hay listas propias"
-            description="Crea una colección para un mood, un ciclo o un maratón. Las diarias no se tocan."
+            description="Crea una colección para un mood, un ciclo o un maratón."
             actionHref="/listas/nueva"
             actionLabel="Nueva lista"
           />
         ) : (
-          <ul className="grid gap-4 md:grid-cols-2">
+          <ul className="rail -mx-4 flex gap-4 overflow-x-auto px-4 pb-2">
             {custom.map((list) => (
               <li key={list.id}>
                 <ListCard

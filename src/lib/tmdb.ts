@@ -57,6 +57,7 @@ export type TmdbSearchResult = {
   originalName: string | null;
   year: number | null;
   posterPath: string | null;
+  backdropPath: string | null;
   overview: string | null;
 };
 
@@ -179,6 +180,7 @@ export const searchTmdb = async (
     original_title?: string;
     release_date?: string;
     poster_path?: string | null;
+    backdrop_path?: string | null;
     overview?: string;
   };
 
@@ -188,6 +190,7 @@ export const searchTmdb = async (
     original_name?: string;
     first_air_date?: string;
     poster_path?: string | null;
+    backdrop_path?: string | null;
     overview?: string;
   };
 
@@ -204,6 +207,7 @@ export const searchTmdb = async (
         originalName: item.original_title ?? null,
         year: parseYear(item.release_date),
         posterPath: item.poster_path ?? null,
+        backdropPath: item.backdrop_path ?? null,
         overview: item.overview ?? null,
       };
     }
@@ -214,6 +218,7 @@ export const searchTmdb = async (
       originalName: item.original_name ?? null,
       year: parseYear(item.first_air_date),
       posterPath: item.poster_path ?? null,
+      backdropPath: item.backdrop_path ?? null,
       overview: item.overview ?? null,
     };
   });
@@ -237,6 +242,7 @@ export const searchTmdbMulti = async (
     release_date?: string;
     first_air_date?: string;
     poster_path?: string | null;
+    backdrop_path?: string | null;
     overview?: string;
   };
 
@@ -263,6 +269,7 @@ export const searchTmdbMulti = async (
         originalName: item.original_title ?? null,
         year: parseYear(item.release_date),
         posterPath: item.poster_path ?? null,
+        backdropPath: item.backdrop_path ?? null,
         overview: item.overview ?? null,
         kind: TitleKind.MOVIE,
       });
@@ -281,6 +288,7 @@ export const searchTmdbMulti = async (
         originalName: item.original_name ?? null,
         year: parseYear(item.first_air_date),
         posterPath: item.poster_path ?? null,
+        backdropPath: item.backdrop_path ?? null,
         overview: item.overview ?? null,
         kind: TitleKind.SERIES,
       });
