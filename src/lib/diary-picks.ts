@@ -4,6 +4,17 @@ import { parseTmdbGenres, type TmdbGenre } from "@/lib/tmdb";
 export const DIARY_PICKS_LIMIT = 5;
 export const DIARY_CATEGORY_LIMIT = 4;
 export const DIARY_CATEGORY_PARAM = "categoria";
+export const DIARY_MODE_PARAM = "mode";
+
+export type DiaryMode = "picks" | "historial";
+
+export const parseDiaryMode = (value: unknown): DiaryMode => {
+  const raw = Array.isArray(value) ? value.at(-1) : value;
+  return raw === "historial" ? "historial" : "picks";
+};
+
+export const diaryModeHref = (mode: DiaryMode) =>
+  mode === "historial" ? `/?${DIARY_MODE_PARAM}=historial` : "/";
 
 export type DiaryPickTitle = {
   id: string;

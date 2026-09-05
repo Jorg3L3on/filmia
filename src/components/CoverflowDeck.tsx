@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { removeTitleFromList } from "@/app/actions/lists";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PosterImage } from "@/components/PosterImage";
+import { SharedPoster } from "@/components/SharedPoster";
 import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
 import { WatchedBadge } from "@/components/WatchedBadge";
 import { WatchProviderChips } from "@/components/WatchProvidersMx";
@@ -17,7 +18,7 @@ import {
   SERIES_STATUS_LABEL,
   TITLE_KIND_LABEL,
 } from "@/lib/labels";
-import { btnLink } from "@/lib/ui";
+import { btnGhost, btnLink } from "@/lib/ui";
 import type { Platform, SeriesStatus, TitleKind } from "@/generated/prisma/browser";
 import type { WatchProviderOffer } from "@/lib/watch-providers";
 
@@ -87,7 +88,7 @@ const getCardMetrics = (offset: number, sideRoom: number): CardMetrics => {
     opacity: distance > 5.2 ? Math.max(0, 1 - (distance - 5.2) * 1.4) : 1,
     zIndex: Math.round(900 - distance * 80),
     shadow: isActive
-      ? "0 28px 50px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 224, 84, 0.22)"
+      ? "0 28px 50px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(124, 156, 255, 0.28)"
       : "0 14px 28px rgba(0, 0, 0, 0.38)",
     isActive,
   };
@@ -165,12 +166,14 @@ const DeckCard = ({
         )}
         draggable={false}
       >
-        <PosterImage
-          name={title.name}
-          posterPath={title.posterPath}
-          priority={metrics.isActive}
-          className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
-        />
+        <SharedPoster titleId={title.id} className="absolute inset-0">
+          <PosterImage
+            name={title.name}
+            posterPath={title.posterPath}
+            priority={metrics.isActive}
+            className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
+          />
+        </SharedPoster>
         {title.watched ? (
           <WatchedBadge compact className="absolute left-2 top-2 z-10" />
         ) : null}
@@ -560,9 +563,17 @@ export const CoverflowDeck = ({ titles, className, listId }: CoverflowDeckProps)
           </div>
         </div>
 
-        <p className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[11px] uppercase tracking-[0.18em] text-faint">
-          Arrastra · rueda · desliza
-        </p>
+        <div className="pointer-events-none absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+          {titles.map((title, index) => (
+            <span
+              key={title.id}
+              className={cn(
+                "h-1.5 rounded-full transition",
+                index === roundedActive ? "w-4 bg-accent" : "w-1.5 bg-chrome",
+              )}
+            />
+          ))}
+        </div>
       </div>
 
       {activeTitle ? (
@@ -580,16 +591,30 @@ export const CoverflowDeck = ({ titles, className, listId }: CoverflowDeckProps)
               </Link>
             </h2>
             <p className="text-sm text-fog">
+              {activeTitle.year ? `${activeTitle.year} · ` : ""}
               {TITLE_KIND_LABEL[activeTitle.kind]}
-              {activeTitle.year ? ` · ${activeTitle.year}` : ""}
               {activeTitle.platform
                 ? ` · ${PLATFORM_LABEL[activeTitle.platform]}`
                 : ""}
             </p>
-            <p className="text-sm text-star">
-              {activeTitle.watched ? "Visto · " : ""}
-              {formatRating(activeTitle.rating)}
-            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+              {activeTitle.imdbRating != null ? (
+                <span className="rounded-full border border-chrome bg-well px-2.5 py-1 text-xs text-star">
+                  ★ {formatImdbRating(activeTitle.imdbRating)}
+                </span>
+              ) : null}
+              {formatRating(activeTitle.rating) !== "Sin nota" ? (
+                <span className="rounded-full border border-chrome bg-well px-2.5 py-1 text-xs text-paper">
+                  {formatRating(activeTitle.rating)}
+                </span>
+              ) : null}
+              <Link
+                href={`/titulos/${activeTitle.id}`}
+                className={cn(btnGhost, "text-xs")}
+              >
+                Ver ficha
+              </Link>
+            </div>
             {activeTitle.kind === "SERIES" && activeTitle.seriesStatus ? (
               <p className="text-sm text-fog">
                 {SERIES_STATUS_LABEL[activeTitle.seriesStatus]}

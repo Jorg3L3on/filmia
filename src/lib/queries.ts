@@ -82,13 +82,40 @@ export const getTitleById = async (id: string) => {
   });
 };
 
+export const getRelatedTitles = async (titleId: string, tagIds: string[]) => {
+  if (tagIds.length === 0) {
+    return [];
+  }
+
+  const userId = await requireUserId();
+
+  return prisma.title.findMany({
+    where: {
+      userId,
+      id: { not: titleId },
+      tags: { some: { tagId: { in: tagIds } } },
+    },
+    include: titleInclude,
+    orderBy: [{ watchedAt: { sort: "desc", nulls: "last" } }, { name: "asc" }],
+    take: 12,
+  });
+};
+
 export const getTags = async () => {
   const userId = await requireUserId();
 
   return prisma.tag.findMany({
     where: { userId },
     orderBy: { name: "asc" },
-    include: { _count: { select: { titles: true } } },
+    include: {
+      _count: { select: { titles: true } },
+      titles: {
+        take: 3,
+        include: {
+          title: { select: { id: true, name: true, posterPath: true } },
+        },
+      },
+    },
   });
 };
 

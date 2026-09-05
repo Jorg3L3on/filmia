@@ -48,6 +48,29 @@ export const parseMonthParam = (value: unknown, now = new Date()) => {
   return currentMonthParam(now);
 };
 
+export const hasExplicitMonthParam = (value: unknown) => {
+  const raw = asSingleString(value).trim();
+  if (!MONTH_PARAM_RE.test(raw)) {
+    return false;
+  }
+
+  const year = Number(raw.slice(0, 4));
+  return year >= 1900 && year <= 2100;
+};
+
+export const latestMonthWithEntries = <
+  T extends { watchedAt: Date | string | null | undefined },
+>(
+  titles: T[],
+  fallbackMonth: string,
+) => {
+  const months = [...groupTitlesByWatchedDay(titles).keys()]
+    .map((isoDate) => monthFromIsoDate(isoDate))
+    .sort();
+
+  return months.at(-1) ?? fallbackMonth;
+};
+
 export const isValidIsoDate = (value: string) => {
   if (!DAY_PARAM_RE.test(value)) {
     return false;
@@ -86,6 +109,20 @@ export const formatMonthHeading = (monthParam: string) => {
     year: "numeric",
     timeZone: "UTC",
   });
+};
+
+export const formatMonthName = (monthParam: string) => {
+  const year = Number(monthParam.slice(0, 4));
+  const month = Number(monthParam.slice(5, 7));
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString("es-MX", {
+    month: "long",
+    timeZone: "UTC",
+  });
+};
+
+export const parseOptionalIsoDate = (value: unknown) => {
+  const raw = asSingleString(value).trim();
+  return isValidIsoDate(raw) ? raw : null;
 };
 
 export const isoDateToUtcNoon = (isoDate: string) =>

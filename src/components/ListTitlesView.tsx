@@ -78,6 +78,7 @@ export const ListTitlesView = ({
             return (
               <li key={item.titleId} className="space-y-2">
                 <PosterTile
+                  titleId={item.title.id}
                   href={`/titulos/${item.title.id}`}
                   name={item.title.name}
                   posterPath={item.title.posterPath}

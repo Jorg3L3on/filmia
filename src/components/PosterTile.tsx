@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PosterImage } from "@/components/PosterImage";
+import { SharedPoster } from "@/components/SharedPoster";
 import { TagPills } from "@/components/TagPills";
 import { WatchedBadge } from "@/components/WatchedBadge";
 import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
@@ -9,6 +10,7 @@ import { focusRing, posterFrame } from "@/lib/ui";
 import type { SeriesStatus } from "@/generated/prisma/browser";
 
 type PosterTileProps = {
+  titleId?: string;
   href: string;
   name: string;
   posterPath?: string | null;
@@ -23,6 +25,7 @@ type PosterTileProps = {
 };
 
 export const PosterTile = ({
+  titleId,
   href,
   name,
   posterPath,
@@ -47,16 +50,24 @@ export const PosterTile = ({
         aria-label={`${name}${year ? ` (${year})` : ""}${watched ? ", visto" : ""}`}
         className={cn("group block", focusRing)}
       >
-        <div className="relative">
-          <PosterImage
-            name={name}
-            posterPath={posterPath}
-            sizes={sizes}
-            className={cn(
-              posterFrame,
-              "transition duration-200 group-hover:brightness-110",
-            )}
-          />
+        <div className="relative card-physics press-scale">
+          {titleId ? (
+            <SharedPoster titleId={titleId}>
+              <PosterImage
+                name={name}
+                posterPath={posterPath}
+                sizes={sizes}
+                className={posterFrame}
+              />
+            </SharedPoster>
+          ) : (
+            <PosterImage
+              name={name}
+              posterPath={posterPath}
+              sizes={sizes}
+              className={posterFrame}
+            />
+          )}
           {watched ? (
             <WatchedBadge compact className="absolute left-2 top-2" />
           ) : null}

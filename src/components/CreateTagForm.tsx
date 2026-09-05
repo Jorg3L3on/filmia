@@ -8,18 +8,13 @@ type CreateTagFormProps = {
 
 export const CreateTagForm = ({
   action,
-  submitLabel = "Crear etiqueta",
-  placeholder = "épica / guerra, visual…",
+  submitLabel = "Crear",
+  placeholder = "Nueva etiqueta",
 }: CreateTagFormProps) => {
   return (
-    <form
-      action={action}
-      className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end"
-    >
-      <label className="block min-w-0 flex-1 space-y-1">
-        <span className="text-xs uppercase tracking-wide text-fog">
-          Nueva etiqueta
-        </span>
+    <form action={action} className="flex items-center gap-2">
+      <label className="min-w-0 flex-1">
+        <span className="sr-only">Nueva etiqueta</span>
         <input
           name="name"
           required
@@ -29,7 +24,7 @@ export const CreateTagForm = ({
           aria-label="Nombre de la nueva etiqueta"
         />
       </label>
-      <button type="submit" className={`${btnPrimary} w-full sm:w-auto`}>
+      <button type="submit" className={btnPrimary}>
         {submitLabel}
       </button>
     </form>

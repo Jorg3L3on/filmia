@@ -116,6 +116,20 @@ export const formatRating = (rating: number | null | undefined) => {
   return `${"★".repeat(fullStars)}${hasHalf ? "½" : ""} ${rating}/10`;
 };
 
+export const formatRuntime = (minutes: number | null | undefined) => {
+  if (minutes == null || minutes <= 0) {
+    return null;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) {
+    return `${rest} min`;
+  }
+
+  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+};
+
 export const formatImdbRating = (rating: number | null | undefined) => {
   if (rating == null) {
     return null;

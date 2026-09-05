@@ -1,13 +1,6 @@
 import Link from "next/link";
-import { PosterImage } from "@/components/PosterImage";
-import { isFixedListSlug } from "@/lib/lists";
-import { focusRing, posterFrame } from "@/lib/ui";
-
-type ListCardPoster = {
-  id: string;
-  name: string;
-  posterPath: string | null;
-};
+import { PosterStack, type PosterStackItem } from "@/components/PosterStack";
+import { focusRing } from "@/lib/ui";
 
 type ListCardProps = {
   href: string;
@@ -15,66 +8,20 @@ type ListCardProps = {
   slug?: string | null;
   description?: string | null;
   itemCount: number;
-  posters: ListCardPoster[];
+  posters: PosterStackItem[];
 };
 
-export const ListCard = ({
-  href,
-  name,
-  slug,
-  description,
-  itemCount,
-  posters,
-}: ListCardProps) => {
-  const fixed = isFixedListSlug(slug);
-  const countLabel = itemCount === 1 ? "1 título" : `${itemCount} títulos`;
+export const ListCard = ({ href, name, itemCount, posters }: ListCardProps) => {
+  const countLabel = itemCount === 1 ? "1 película" : `${itemCount} películas`;
 
   return (
     <Link
       href={href}
-      className={`block h-full rounded-md border border-line bg-well p-5 transition hover:border-accent/40 ${focusRing}`}
+      className={`block w-[168px] shrink-0 snap-start sm:w-[188px] ${focusRing}`}
     >
       <PosterStack posters={posters} />
-      <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-accent">
-        {fixed ? "Lista diaria" : "Personalizada"}
-      </p>
-      <h2 className="mt-1 font-serif text-2xl text-white">{name}</h2>
-      <p className="mt-1 text-sm text-fog">{countLabel}</p>
-      {description ? (
-        <p className="mt-2 line-clamp-2 text-sm text-paper/80">{description}</p>
-      ) : null}
+      <h2 className="mt-3 truncate text-base font-semibold text-paper">{name}</h2>
+      <p className="mt-0.5 text-sm text-fog">{countLabel}</p>
     </Link>
-  );
-};
-
-const PosterStack = ({ posters }: { posters: ListCardPoster[] }) => {
-  if (posters.length === 0) {
-    return (
-      <div className="mb-4 flex h-[84px] items-center justify-center rounded-md border border-dashed border-chrome text-xs text-mist">
-        Sin posters aún
-      </div>
-    );
-  }
-
-  return (
-    <div className="mb-4 flex" aria-hidden="true">
-      {posters.map((title, index) => (
-        <div
-          key={title.id}
-          className={`${posterFrame} w-14 ring-2 ring-well`}
-          style={{
-            marginLeft: index === 0 ? 0 : -14,
-            zIndex: posters.length - index,
-          }}
-        >
-          <PosterImage
-            name={title.name}
-            posterPath={title.posterPath}
-            sizes="56px"
-            className="rounded-poster"
-          />
-        </div>
-      ))}
-    </div>
   );
 };
