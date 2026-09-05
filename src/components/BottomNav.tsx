@@ -4,15 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/cn";
-import { isCurrentPath } from "@/lib/nav";
+import { isCurrentPath, mobileNavItems, type MobileNavIcon } from "@/lib/nav";
 import { focusRing } from "@/lib/ui";
-
-const navItems = [
-  { href: "/", label: "Diario", icon: "diary" },
-  { href: "/watchlist", label: "Quiero ver", icon: "queue" },
-  { href: "/buscar", label: "Buscar", icon: "search" },
-  { href: "/listas", label: "Listas", icon: "lists" },
-] as const;
 
 export const BottomNav = () => {
   const pathname = usePathname();
@@ -36,8 +29,8 @@ export const BottomNav = () => {
       aria-label="Principal móvil"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-canvas/95 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur sm:hidden"
     >
-      <ul className="mx-auto grid max-w-lg grid-cols-4 items-end px-1">
-        {navItems.map((item) => {
+      <ul className="mx-auto grid max-w-lg grid-cols-5 items-end px-1">
+        {mobileNavItems.map((item) => {
           const isCurrent = isCurrentPath(item.href, pathname);
           const isSearch = item.icon === "search";
 
@@ -50,7 +43,7 @@ export const BottomNav = () => {
                 data-nav={item.icon}
                 data-active={isCurrent ? "true" : "false"}
                 className={cn(
-                  "flex min-w-[56px] flex-col items-center gap-1 px-1 py-1 text-[10px] uppercase tracking-[0.12em] outline-none",
+                  "flex min-w-0 flex-col items-center gap-1 px-0.5 py-1 text-[10px] uppercase tracking-[0.08em] outline-none",
                   focusRing,
                   isCurrent ? "text-accent" : "text-mist hover:text-paper",
                 )}
@@ -70,7 +63,7 @@ export const BottomNav = () => {
                 >
                   <NavIcon name={item.icon} />
                 </span>
-                <span>{item.label}</span>
+                <span className="text-center leading-tight">{item.label}</span>
               </Link>
             </li>
           );
@@ -80,7 +73,7 @@ export const BottomNav = () => {
   );
 };
 
-const NavIcon = ({ name }: { name: (typeof navItems)[number]["icon"] }) => {
+const NavIcon = ({ name }: { name: MobileNavIcon }) => {
   const common = {
     viewBox: "0 0 24 24",
     fill: "none",
@@ -125,6 +118,19 @@ const NavIcon = ({ name }: { name: (typeof navItems)[number]["icon"] }) => {
       <svg {...common} className="h-6 w-6">
         <circle cx="11" cy="11" r="5.5" />
         <path strokeLinecap="round" d="m15.5 15.5 4 4" />
+      </svg>
+    );
+  }
+
+  if (name === "profile") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="8.25" r="3.15" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M5.6 18.75c.85-3.05 2.95-4.75 6.4-4.75s5.55 1.7 6.4 4.75"
+        />
       </svg>
     );
   }
