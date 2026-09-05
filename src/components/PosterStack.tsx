@@ -25,7 +25,7 @@ export const PosterStack = ({
     return (
       <div
         className={cn(
-          "flex items-center justify-center rounded-2xl border border-dashed border-chrome bg-well text-xs text-mist",
+          "flex items-center justify-center overflow-hidden rounded-2xl border border-dashed border-chrome bg-well text-xs text-mist",
           isSmall ? "h-[120px]" : "aspect-[2/3]",
         )}
       >
@@ -36,7 +36,12 @@ export const PosterStack = ({
 
   return (
     <div
-      className={cn("relative w-full", isSmall ? "h-[120px]" : "h-[210px] sm:h-[236px]")}
+      className={cn(
+        "relative w-full",
+        isSmall
+          ? "h-[120px] overflow-hidden rounded-2xl"
+          : "h-[126px] overflow-visible sm:h-[142px]",
+      )}
       aria-hidden="true"
     >
       {shown.map((title, index) => (

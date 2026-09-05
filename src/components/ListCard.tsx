@@ -17,7 +17,7 @@ export const ListCard = ({ href, name, itemCount, posters }: ListCardProps) => {
   return (
     <Link
       href={href}
-      className={`block w-[168px] shrink-0 snap-start sm:w-[188px] ${focusRing}`}
+      className={`block w-[110px] shrink-0 snap-start sm:w-[124px] ${focusRing}`}
     >
       <div className="relative">
         <PosterStack posters={posters} />
