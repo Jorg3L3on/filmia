@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { ListCard } from "@/components/ListCard";
 import { listHref, partitionUserLists } from "@/lib/lists";
@@ -10,6 +11,13 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Listas",
 } as const;
+
+const listCollectionClassName =
+  "rail -mx-4 flex gap-8 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4";
+
+const ListCollection = ({ children }: { children: ReactNode }) => (
+  <ul className={listCollectionClassName}>{children}</ul>
+);
 
 export default async function ListsPage() {
   const lists = await getLists();
@@ -31,9 +39,9 @@ export default async function ListsPage() {
           </span>
           Listas diarias
         </h2>
-        <ul className="rail -mx-4 flex gap-8 overflow-x-auto px-4 pb-3 sm:gap-10">
+        <ListCollection>
           {fixed.map((list) => (
-            <li key={list.id}>
+            <li key={list.id} className="min-w-0">
               <ListCard
                 href={listHref(list)}
                 name={list.name}
@@ -44,7 +52,7 @@ export default async function ListsPage() {
               />
             </li>
           ))}
-        </ul>
+        </ListCollection>
       </section>
 
       <section className="space-y-4 pt-2">
@@ -63,9 +71,9 @@ export default async function ListsPage() {
             actionLabel="Nueva lista"
           />
         ) : (
-          <ul className="rail -mx-4 flex gap-8 overflow-x-auto px-4 pb-3 sm:gap-10">
+          <ListCollection>
             {custom.map((list) => (
-              <li key={list.id}>
+              <li key={list.id} className="min-w-0">
                 <ListCard
                   href={listHref(list)}
                   name={list.name}
@@ -76,7 +84,7 @@ export default async function ListsPage() {
                 />
               </li>
             ))}
-          </ul>
+          </ListCollection>
         )}
       </section>
     </div>
