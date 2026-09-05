@@ -1,3 +1,4 @@
+import { LogoutButton } from "@/components/LogoutButton";
 import { SuccessToast } from "@/components/SuccessToast";
 import { ProfileAccountForm } from "@/components/ProfileAccountForm";
 import { ProfilePasswordForm } from "@/components/ProfilePasswordForm";
@@ -51,12 +52,17 @@ export default async function ProfilePage({
     <div className="mx-auto max-w-xl space-y-6">
       <header className="flex items-center justify-between gap-3">
         <h1 className="font-serif text-4xl tracking-tight text-paper">Perfil</h1>
-        <span
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-well text-sm font-semibold text-paper"
-          aria-hidden="true"
-        >
-          {initial}
-        </span>
+        <div className="flex items-center gap-3">
+          <span
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-well text-sm font-semibold text-paper"
+            aria-hidden="true"
+          >
+            {initial}
+          </span>
+          <span className="sm:hidden">
+            <LogoutButton />
+          </span>
+        </div>
       </header>
 
       {toast ? <SuccessToast title={toast.title} description={toast.description} /> : null}

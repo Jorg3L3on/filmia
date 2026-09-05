@@ -82,7 +82,7 @@ export default async function TitleDetailPage({
 
   return (
     <article className="space-y-8">
-      <div className="relative -mx-4 overflow-hidden sm:-mx-0 sm:rounded-2xl">
+      <div className="relative -mx-4 min-h-[280px] overflow-hidden sm:-mx-0 sm:min-h-0 sm:rounded-2xl">
         {backdropSrc ? (
           <div className="absolute inset-0" aria-hidden="true">
             <Image
@@ -90,17 +90,17 @@ export default async function TitleDetailPage({
               alt=""
               fill
               sizes="100vw"
-              className="object-cover opacity-40 blur-xl scale-110"
+              className="object-cover opacity-50 blur-2xl scale-110 sm:opacity-40 sm:blur-xl"
               priority
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/70 to-canvas/30" />
+            <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/75 to-canvas/25" />
           </div>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-b from-well to-canvas" />
         )}
 
-        <div className="relative flex flex-col items-center gap-6 px-4 pb-8 pt-10 sm:flex-row sm:items-end sm:px-8 sm:pt-16">
-          <SharedPoster titleId={title.id} className="w-[42vw] max-w-[220px] shrink-0 sm:w-52">
+        <div className="relative flex items-end gap-4 px-4 pb-6 pt-20 sm:gap-6 sm:px-8 sm:pb-8 sm:pt-16">
+          <SharedPoster titleId={title.id} className="w-[38vw] max-w-[176px] shrink-0 sm:w-52 sm:max-w-none">
             <PosterImage
               name={title.name}
               posterPath={title.posterPath}
@@ -109,7 +109,7 @@ export default async function TitleDetailPage({
               sizes="220px"
             />
           </SharedPoster>
-          <div className="fade-up-late w-full space-y-3 text-center sm:text-left">
+          <div className="fade-up-late min-w-0 flex-1 space-y-3 text-left">
             <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-accent">
               {metaBits.join(" · ")}
             </p>
@@ -119,7 +119,7 @@ export default async function TitleDetailPage({
             {title.originalName && title.originalName !== title.name ? (
               <p className="text-sm text-fog">{title.originalName}</p>
             ) : null}
-            <div className="flex flex-wrap items-center justify-center gap-4 sm:justify-start">
+            <div className="flex flex-wrap items-center justify-start gap-4">
               <ImdbBadge rating={title.imdbRating} />
               <PersonalRating rating={title.rating} />
               {title.watchedAt ? <WatchedBadge /> : null}

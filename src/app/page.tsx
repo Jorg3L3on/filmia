@@ -1,4 +1,3 @@
-import { DiaryAddTitleFab } from "@/components/DiaryAddTitleFab";
 import { DiaryGenreToggle } from "@/components/DiaryGenreToggle";
 import { DiaryModeToggle } from "@/components/DiaryModeToggle";
 import { CatalogFilters } from "@/components/CatalogFilters";
@@ -31,12 +30,10 @@ import {
   parseMonthParam,
   titlesInMonth,
 } from "@/lib/dates";
-import { metadataServicesConfigured } from "@/lib/metadata";
 import {
   getTags,
   getTitles,
   getUserStreamingPlatforms,
-  getUserTmdbIndex,
   getWatchlist,
 } from "@/lib/queries";
 import { parseSeriesStatusFilter } from "@/lib/series";
@@ -80,18 +77,13 @@ const PicksHome = async ({
   await ensureCurrentUserWatchlist();
 
   const categorySlug = parseCategorySlug(categoria);
-  const metadataConfig = metadataServicesConfigured();
 
-  const [watchlist, userPlatforms, existing] = await Promise.all([
+  const [watchlist, userPlatforms] = await Promise.all([
     getWatchlist(),
     getUserStreamingPlatforms(),
-    getUserTmdbIndex(),
   ]);
 
   const rawTitles = watchlist?.items.map((item) => item.title) ?? [];
-  const fab = (
-    <DiaryAddTitleFab configured={metadataConfig} existing={existing} />
-  );
   const modeToggle = <DiaryModeToggle mode="picks" />;
 
   if (userPlatforms.length === 0) {
@@ -109,7 +101,6 @@ const PicksHome = async ({
           actionHref="/perfil"
           actionLabel="Ir a perfil"
         />
-        {fab}
       </div>
     );
   }
@@ -138,7 +129,9 @@ const PicksHome = async ({
       {rawTitles.length === 0 ? (
         <EmptyState
           title="Quiero ver está vacío"
-          description="Usa el botón de abajo a la derecha para buscar un título en TMDB y agregarlo a Quiero ver."
+          description="Usa Buscar para encontrar un título en TMDB y agregarlo a Quiero ver."
+          actionHref="/buscar"
+          actionLabel="Buscar en TMDB"
         />
       ) : titles.length === 0 ? (
         <EmptyState
@@ -169,8 +162,6 @@ const PicksHome = async ({
           showToggle={false}
         />
       )}
-
-      {fab}
     </div>
   );
 };
@@ -253,6 +244,20 @@ const HistorialHome = async ({
 
       {catalog.needsSetup ? <MinePlatformsSetupCta /> : null}
 
+      <CatalogFilters
+        tags={tags}
+        selectedSlugs={selectedTags}
+        pathname="/"
+        view={view}
+        defaultView="calendar"
+        mode="historial"
+        minePlatforms={minePlatforms}
+        hasStreamingPlatforms={userPlatforms.length > 0}
+        seriesStatus={seriesStatus}
+        month={month}
+        day={selectedDay}
+      />
+
       <div className="space-y-6">
           {catalog.needsSetup ? null : view === "calendar" ? (
             <>
@@ -313,20 +318,6 @@ const HistorialHome = async ({
             </>
           )}
       </div>
-
-      <CatalogFilters
-        tags={tags}
-        selectedSlugs={selectedTags}
-        pathname="/"
-        view={view}
-        defaultView="calendar"
-        mode="historial"
-        minePlatforms={minePlatforms}
-        hasStreamingPlatforms={userPlatforms.length > 0}
-        seriesStatus={seriesStatus}
-        month={month}
-        day={selectedDay}
-      />
     </div>
   );
 };
