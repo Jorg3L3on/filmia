@@ -193,9 +193,11 @@ export const TmdbSearchAdd = ({
 
   if (!configured.tmdb) {
     return (
-      <p role="alert" className="rounded-2xl border border-dashed border-chrome bg-well/70 p-5 text-sm text-fog">
-        Falta la clave de TMDB en el entorno. Sin ella no se puede buscar.
-      </p>
+      <EmptyState
+        variant="buscar"
+        title="Busca un título"
+        description="Falta la clave de TMDB en el entorno. Sin ella no se puede buscar."
+      />
     );
   }
 

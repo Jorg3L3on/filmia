@@ -76,7 +76,7 @@ export const RatingSheet = ({
   }
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
       <button
         type="button"
         aria-label="Cerrar tu nota"

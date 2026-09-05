@@ -74,7 +74,7 @@ export const RatingStars = ({
           );
         })}
       </div>
-      {showValue ? (
+      {showValue && value != null ? (
         <p
           className="font-serif text-5xl tracking-tight text-star"
           aria-live="polite"

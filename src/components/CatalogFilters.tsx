@@ -262,24 +262,11 @@ export const CatalogFilters = ({
                   disponibilidad en México.
                 </p>
               ) : null}
-              <ul className="flex flex-wrap gap-2">
-                {MX_SHEET_PLATFORMS.map((platform) => {
-                  const isSelected = draft.platforms.includes(platform);
-                  return (
-                    <li key={platform}>
-                      <button
-                        type="button"
-                        aria-pressed={isSelected}
-                        onClick={() => handleTogglePlatform(platform)}
-                        className={sheetChipClass(isSelected)}
-                      >
-                        <PlatformLogo platform={platform} size={18} />
-                        {PLATFORM_LABEL[platform]}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+              <PlatformChipList
+                platforms={MX_SHEET_PLATFORMS.slice(0, 4)}
+                selected={draft.platforms}
+                onToggle={handleTogglePlatform}
+              />
             </SheetSection>
           ) : null}
 
@@ -307,6 +294,16 @@ export const CatalogFilters = ({
                   );
                 })}
               </div>
+            </SheetSection>
+          ) : null}
+
+          {showPlatforms ? (
+            <SheetSection title="Más plataformas">
+              <PlatformChipList
+                platforms={MX_SHEET_PLATFORMS.slice(4)}
+                selected={draft.platforms}
+                onToggle={handleTogglePlatform}
+              />
             </SheetSection>
           ) : null}
 
@@ -398,6 +395,35 @@ export const CatalogFilters = ({
 
 const TitleKindMovie = "MOVIE" as const;
 const TitleKindSeries = "SERIES" as const;
+
+const PlatformChipList = ({
+  platforms,
+  selected,
+  onToggle,
+}: {
+  platforms: Platform[];
+  selected: Platform[];
+  onToggle: (platform: Platform) => void;
+}) => (
+  <ul className="flex flex-wrap gap-2">
+    {platforms.map((platform) => {
+      const isSelected = selected.includes(platform);
+      return (
+        <li key={platform}>
+          <button
+            type="button"
+            aria-pressed={isSelected}
+            onClick={() => onToggle(platform)}
+            className={sheetChipClass(isSelected)}
+          >
+            <PlatformLogo platform={platform} size={18} />
+            {PLATFORM_LABEL[platform]}
+          </button>
+        </li>
+      );
+    })}
+  </ul>
+);
 
 const SheetSection = ({
   title,

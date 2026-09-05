@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { DayLogSheet } from "@/components/DayLogSheet";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
+import { EmptyState } from "@/components/EmptyState";
 import { SharedPoster } from "@/components/SharedPoster";
 import { PosterImage } from "@/components/PosterImage";
 import type { DiaryCalendarTitle } from "@/components/diary-types";
@@ -25,7 +26,7 @@ import type { CatalogKindFilter } from "@/lib/catalog-href";
 import type { SeriesStatusFilter } from "@/lib/series";
 import { catalogHref } from "@/lib/catalog-href";
 import type { CatalogSort } from "@/lib/tags";
-import { btnPrimary, focusRing } from "@/lib/ui";
+import { focusRing } from "@/lib/ui";
 import type { Platform } from "@/generated/prisma/browser";
 
 export type { DiaryCalendarTitle };
@@ -232,32 +233,29 @@ export const DiaryCalendar = ({
         </div>
 
         {monthTitles.length === 0 ? (
-          <div className="mt-6 space-y-3 text-center">
-            <p className="font-serif text-xl text-paper">
-              {hasActiveFilters
+          <EmptyState
+            variant="historial"
+            title={
+              hasActiveFilters
                 ? "Nada con esos filtros"
                 : titles.length === 0
                   ? "Tu historial está vacío"
-                  : `Nada visto en ${monthName}`}
-            </p>
-            <p className="text-sm text-fog">
-              {hasActiveFilters
+                  : `Nada visto en ${monthName}`
+            }
+            description={
+              hasActiveFilters
                 ? "Prueba otra combinación o quita filtros."
                 : titles.length === 0
                   ? "Registra lo que viste y llenará el calendario."
-                  : `Registra tu primera de ${monthName}`}
-            </p>
-            <Link
-              href={
-                hasActiveFilters
-                  ? clearHref
-                  : `/buscar?fecha=${month}-01&destino=visto`
-              }
-              className={btnPrimary}
-            >
-              {hasActiveFilters ? "Quitar filtros" : "Registrar título"}
-            </Link>
-          </div>
+                  : `Registra tu primera de ${monthName}.`
+            }
+            actionHref={
+              hasActiveFilters
+                ? clearHref
+                : `/buscar?fecha=${month}-01&destino=visto`
+            }
+            actionLabel={hasActiveFilters ? "Quitar filtros" : "Registrar título"}
+          />
         ) : null}
       </section>
 
