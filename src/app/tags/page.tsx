@@ -42,7 +42,9 @@ export default async function TagsPage() {
                   href={tagHref(tag.slug)}
                   className={`block overflow-hidden rounded-2xl border border-line bg-surface p-4 transition hover:border-accent/40 ${focusRing}`}
                 >
-                  <PosterStack posters={posters} size="sm" emptyLabel="Sin posters" />
+                  <div className="overflow-hidden rounded-2xl">
+                    <PosterStack posters={posters} size="sm" emptyLabel="Sin posters" />
+                  </div>
                   <h2 className="mt-3 text-center font-serif text-xl text-paper">{tag.name}</h2>
                   <p className="text-center text-sm text-fog">{countLabel}</p>
                 </Link>

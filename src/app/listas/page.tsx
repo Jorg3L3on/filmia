@@ -31,7 +31,7 @@ export default async function ListsPage() {
           </span>
           Listas diarias
         </h2>
-        <ul className="rail -mx-4 flex gap-7 overflow-x-auto px-4 pb-3 sm:gap-8">
+        <ul className="rail -mx-4 flex gap-8 overflow-x-auto px-4 pb-3 sm:gap-10">
           {fixed.map((list) => (
             <li key={list.id}>
               <ListCard
@@ -63,7 +63,7 @@ export default async function ListsPage() {
             actionLabel="Nueva lista"
           />
         ) : (
-          <ul className="rail -mx-4 flex gap-7 overflow-x-auto px-4 pb-3 sm:gap-8">
+          <ul className="rail -mx-4 flex gap-8 overflow-x-auto px-4 pb-3 sm:gap-10">
             {custom.map((list) => (
               <li key={list.id}>
                 <ListCard
