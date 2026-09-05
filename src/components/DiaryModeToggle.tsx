@@ -15,7 +15,7 @@ const MODES: Array<{ id: DiaryMode; label: string }> = [
 export const DiaryModeToggle = ({ mode }: DiaryModeToggleProps) => {
   return (
     <div
-      role="group"
+      role="tablist"
       aria-label="Modo del diario"
       className="inline-flex rounded-full border border-chrome bg-well p-1"
     >
@@ -25,11 +25,13 @@ export const DiaryModeToggle = ({ mode }: DiaryModeToggleProps) => {
           <Link
             key={item.id}
             href={diaryModeHref(item.id)}
+            role="tab"
+            aria-selected={isCurrent}
             aria-current={isCurrent ? "page" : undefined}
             className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-wide transition",
+              "rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition spring-fill",
               focusRing,
-              isCurrent ? "bg-accent text-ink" : "text-fog hover:text-paper",
+              isCurrent ? "bg-accent text-ink shadow-[0_6px_16px_rgba(124,156,255,0.28)]" : "text-fog hover:text-paper",
             )}
           >
             {item.label}

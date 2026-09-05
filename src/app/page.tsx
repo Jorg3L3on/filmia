@@ -1,4 +1,3 @@
-import { ViewTransition } from "react";
 import { DiaryAddTitleFab } from "@/components/DiaryAddTitleFab";
 import { DiaryGenreToggle } from "@/components/DiaryGenreToggle";
 import { DiaryModeToggle } from "@/components/DiaryModeToggle";
@@ -27,7 +26,6 @@ import {
 } from "@/lib/diary-picks";
 import { parseDayParam, parseMonthParam, titlesInMonth } from "@/lib/dates";
 import { metadataServicesConfigured } from "@/lib/metadata";
-import { DIARY_STAGE_NAME } from "@/lib/motion-ids";
 import {
   getTags,
   getTitles,
@@ -97,8 +95,8 @@ const PicksHome = async ({
           eyebrow="Diario"
           title="Qué ver"
           description="Cinco picks de Quiero ver, en mazo, de las categorías que ya tienes y solo en las plataformas que contrataste."
-          actions={modeToggle}
         />
+        {modeToggle}
         <EmptyState
           title="Elige tus plataformas"
           description="El Diario solo muestra títulos incluidos en tus suscripciones de México. Indica cuáles tienes en el perfil."
@@ -125,18 +123,16 @@ const PicksHome = async ({
         eyebrow="Diario"
         title="Qué ver"
         description="Hasta cinco títulos de Quiero ver por categoría, los mejor calificados en IMDb y disponibles en tus plataformas."
-        actions={
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            {modeToggle}
-            {activeCategory ? (
-              <DiaryGenreToggle
-                categories={categories}
-                activeSlug={activeCategory.slug}
-              />
-            ) : null}
-          </div>
-        }
       />
+      <div className="flex flex-col gap-3">
+        {modeToggle}
+        {activeCategory ? (
+          <DiaryGenreToggle
+            categories={categories}
+            activeSlug={activeCategory.slug}
+          />
+        ) : null}
+      </div>
 
       <MissingStreamingDataNote count={catalog.missingCache} />
 
@@ -244,8 +240,8 @@ const HistorialHome = async ({
         eyebrow="Diario"
         title="Historial"
         description="Tu diario personal: lo que ya viste, por mes. Sin feed social."
-        actions={<DiaryModeToggle mode="historial" />}
       />
+      <DiaryModeToggle mode="historial" />
 
       {view === "calendar" ? null : (
         <DiaryViewHeader
@@ -260,14 +256,7 @@ const HistorialHome = async ({
 
       {catalog.needsSetup ? <MinePlatformsSetupCta /> : null}
 
-      <ViewTransition
-        name={DIARY_STAGE_NAME}
-        default="none"
-        enter="diary-morph"
-        exit="diary-morph"
-        share="diary-morph"
-      >
-        <div className="space-y-6">
+      <div className="space-y-6">
           {catalog.needsSetup ? null : view === "calendar" ? (
             <>
               <MissingStreamingDataNote count={catalog.missingCache} />
@@ -327,8 +316,7 @@ const HistorialHome = async ({
               />
             </>
           )}
-        </div>
-      </ViewTransition>
+      </div>
 
       <CatalogFilters
         tags={tags}

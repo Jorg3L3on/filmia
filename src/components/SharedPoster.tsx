@@ -1,3 +1,5 @@
+"use client";
+
 import { ViewTransition } from "react";
 import { posterTransitionName } from "@/lib/motion-ids";
 

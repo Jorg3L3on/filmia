@@ -1,7 +1,9 @@
 import {
   diaryHref,
+  diaryModeHref,
   genreSlug,
   parseCategorySlug,
+  parseDiaryMode,
   parseStoredTmdbGenres,
   pickDiaryCategories,
   resolveDiaryCategory,
@@ -40,6 +42,11 @@ const run = () => {
   assert(parseCategorySlug(["drama", "comedia"]) === "comedia", "Repeated categoria keeps last");
   assert(parseCategorySlug("  ") === null, "Blank categoria is ignored");
   assert(diaryHref("drama") === "/?categoria=drama", "Diary href encodes categoria");
+  assert(parseDiaryMode(undefined) === "picks", "Missing mode defaults to Qué ver");
+  assert(parseDiaryMode("historial") === "historial", "Historial mode is explicit");
+  assert(parseDiaryMode(["picks", "historial"]) === "historial", "Repeated mode keeps last");
+  assert(diaryModeHref("picks") === "/", "Qué ver href is the Diario home");
+  assert(diaryModeHref("historial") === "/?mode=historial", "Historial href uses mode param");
 
   const titles = [
     title("a", 9.0, [

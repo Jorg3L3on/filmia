@@ -1,6 +1,5 @@
 "use client";
 
-import { ViewTransition } from "react";
 import Link from "next/link";
 import { useState } from "react";
 import { DayLogSheet } from "@/components/DayLogSheet";
@@ -22,7 +21,6 @@ import {
   titlesInMonth,
   todayDateInput,
 } from "@/lib/dates";
-import { DIARY_MONTH_NAME } from "@/lib/motion-ids";
 import { staggerStyle, useLongPress } from "@/lib/motion";
 import type { SeriesStatusFilter } from "@/lib/series";
 import { catalogHref } from "@/lib/catalog-href";
@@ -186,30 +184,23 @@ export const DiaryCalendar = ({
           ))}
         </div>
 
-        <ViewTransition
-          name={DIARY_MONTH_NAME}
-          default="none"
-          enter="diary-slide-left"
-          exit="diary-slide-right"
-        >
-          <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-            {cells.map((cell, index) => {
-              const dayTitles = byDay.get(cell.isoDate) ?? [];
-              return (
-                <CalendarDayCell
-                  key={cell.isoDate}
-                  cell={cell}
-                  titles={dayTitles}
-                  today={today}
-                  selected={selectedDay === cell.isoDate}
-                  query={query}
-                  index={index}
-                  onOpenSheet={() => setSheetDay(cell.isoDate)}
-                />
-              );
-            })}
-          </div>
-        </ViewTransition>
+        <div className="diary-month grid grid-cols-7 gap-1.5 sm:gap-2">
+          {cells.map((cell, index) => {
+            const dayTitles = byDay.get(cell.isoDate) ?? [];
+            return (
+              <CalendarDayCell
+                key={cell.isoDate}
+                cell={cell}
+                titles={dayTitles}
+                today={today}
+                selected={selectedDay === cell.isoDate}
+                query={query}
+                index={index}
+                onOpenSheet={() => setSheetDay(cell.isoDate)}
+              />
+            );
+          })}
+        </div>
 
         {monthTitles.length === 0 ? (
           <div className="mt-6 space-y-3 text-center">
