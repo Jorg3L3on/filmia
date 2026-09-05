@@ -276,7 +276,6 @@ const HistorialHome = async ({
                   seriesStatus={seriesStatus}
                   hasActiveFilters={hasActiveFilters}
                   clearHref={clearHref}
-                  hrefFor={hrefFor}
                 />
               )}
               <DiaryMonthList titles={titles} month={month} />

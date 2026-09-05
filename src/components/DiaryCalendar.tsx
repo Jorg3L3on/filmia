@@ -37,7 +37,6 @@ type DiaryCalendarProps = {
   seriesStatus?: SeriesStatusFilter;
   hasActiveFilters?: boolean;
   clearHref: string;
-  hrefFor?: (mode: DeckViewMode) => string;
 };
 
 const calendarHref = ({
@@ -107,7 +106,6 @@ export const DiaryCalendar = ({
   seriesStatus,
   hasActiveFilters = false,
   clearHref,
-  hrefFor,
 }: DiaryCalendarProps) => {
   const today = todayDateInput();
   const cells = getMonthGrid(month);
@@ -118,6 +116,17 @@ export const DiaryCalendar = ({
   const prevMonth = shiftMonthParam(month, -1);
   const nextMonth = shiftMonthParam(month, 1);
   const query = { tags, minePlatforms, seriesStatus };
+  const hrefFor = (mode: DeckViewMode) =>
+    catalogHref("/", {
+      tags,
+      view: mode,
+      defaultView: "calendar",
+      mode: "historial",
+      minePlatforms,
+      seriesStatus,
+      month,
+      day: mode === "calendar" ? selectedDay : undefined,
+    });
   const monthCountLabel =
     monthTitles.length === 1 ? "1 entrada" : `${monthTitles.length} entradas`;
   const [sheetDay, setSheetDay] = useState<string | null>(null);
