@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/prisma";
+import { and, asc, eq } from "drizzle-orm";
+import { db, listItems } from "@/db";
 
 export type ListMoveDirection = "up" | "down";
 
@@ -7,9 +8,9 @@ export const swapAdjacentListItems = async (
   titleId: string,
   direction: ListMoveDirection,
 ) => {
-  const items = await prisma.listItem.findMany({
-    where: { listId },
-    orderBy: { position: "asc" },
+  const items = await db.query.listItems.findMany({
+    where: eq(listItems.listId, listId),
+    orderBy: [asc(listItems.position)],
   });
 
   const index = items.findIndex((item) => item.titleId === titleId);
@@ -19,23 +20,19 @@ export const swapAdjacentListItems = async (
     return false;
   }
 
-  const current = items[index];
-  const neighbor = items[swapIndex];
+  const current = items[index]!;
+  const neighbor = items[swapIndex]!;
 
-  await prisma.$transaction([
-    prisma.listItem.update({
-      where: {
-        listId_titleId: { listId, titleId: current.titleId },
-      },
-      data: { position: neighbor.position },
-    }),
-    prisma.listItem.update({
-      where: {
-        listId_titleId: { listId, titleId: neighbor.titleId },
-      },
-      data: { position: current.position },
-    }),
-  ]);
+  await db.transaction(async (tx) => {
+    await tx
+      .update(listItems)
+      .set({ position: neighbor.position })
+      .where(and(eq(listItems.listId, listId), eq(listItems.titleId, current.titleId)));
+    await tx
+      .update(listItems)
+      .set({ position: current.position })
+      .where(and(eq(listItems.listId, listId), eq(listItems.titleId, neighbor.titleId)));
+  });
 
   return true;
 };

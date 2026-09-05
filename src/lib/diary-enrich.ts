@@ -1,7 +1,7 @@
-import { TitleKind } from "@/generated/prisma/client";
+import { eq } from "drizzle-orm";
+import { db, titles, type TitleKind } from "@/db";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { resolveTitleMetadata } from "@/lib/metadata";
-import { prisma } from "@/lib/prisma";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
 import { refreshWatchProvidersMx } from "@/lib/watch-providers-cache";
 
@@ -18,10 +18,10 @@ type DiaryEnrichTitle = {
 const hasGenres = (value: unknown) => parseStoredTmdbGenres(value).length > 0;
 
 export const enrichDiaryWatchlistTitles = async <T extends DiaryEnrichTitle>(
-  titles: T[],
+  titleRows: T[],
 ): Promise<T[]> => {
   return Promise.all(
-    titles.map(async (title) => {
+    titleRows.map(async (title) => {
       if (!title.tmdbId) {
         return title;
       }
@@ -38,13 +38,13 @@ export const enrichDiaryWatchlistTitles = async <T extends DiaryEnrichTitle>(
           const imdbRating = resolved.imdbRating ?? title.imdbRating;
           const imdbId = resolved.imdbId ?? title.imdbId;
 
-          await prisma.title.update({
-            where: { id: title.id },
-            data: {
+          await db
+            .update(titles)
+            .set({
               ...(needsGenres ? { tmdbGenres } : {}),
               ...(needsImdb && imdbRating != null ? { imdbRating, imdbId } : {}),
-            },
-          });
+            })
+            .where(eq(titles.id, title.id));
 
           next = {
             ...next,

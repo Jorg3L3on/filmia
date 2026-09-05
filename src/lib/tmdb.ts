@@ -1,4 +1,4 @@
-import { TitleKind } from "@/generated/prisma/client";
+import { TitleKind } from "@/db";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
@@ -141,7 +141,7 @@ export const searchTmdb = async (
     return [];
   }
 
-  const endpoint = kind === TitleKind.SERIES ? "/search/tv" : "/search/movie";
+  const endpoint = kind === "SERIES" ? "/search/tv" : "/search/movie";
   const params: Record<string, string> = { query: trimmed };
   if (year) {
     params.year = String(year);
@@ -238,7 +238,7 @@ export const searchTmdbMulti = async (
         year: parseYear(item.release_date),
         posterPath: item.poster_path ?? null,
         overview: item.overview ?? null,
-        kind: TitleKind.MOVIE,
+        kind: "MOVIE",
       });
       continue;
     }
@@ -256,7 +256,7 @@ export const searchTmdbMulti = async (
         year: parseYear(item.first_air_date),
         posterPath: item.poster_path ?? null,
         overview: item.overview ?? null,
-        kind: TitleKind.SERIES,
+        kind: "SERIES",
       });
     }
   }
@@ -268,7 +268,7 @@ export const getTmdbExternalIds = async (
   tmdbId: number,
   kind: TitleKind,
 ): Promise<string | null> => {
-  const segment = kind === TitleKind.SERIES ? "tv" : "movie";
+  const segment = kind === "SERIES" ? "tv" : "movie";
   const data = await tmdbFetch<TmdbExternalIds>(`/${segment}/${tmdbId}/external_ids`);
   return data.imdb_id ?? null;
 };
@@ -313,7 +313,7 @@ type TmdbWatchProvidersResponse = {
 };
 
 export const getTmdbWatchProviders = async (tmdbId: number, kind: TitleKind) => {
-  const segment = kind === TitleKind.SERIES ? "tv" : "movie";
+  const segment = kind === "SERIES" ? "tv" : "movie";
   return tmdbFetch<TmdbWatchProvidersResponse>(`/${segment}/${tmdbId}/watch/providers`);
 };
 
@@ -345,7 +345,7 @@ export const parseTmdbGenres = (value: unknown): TmdbGenre[] => {
 };
 
 export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
-  const segment = kind === TitleKind.SERIES ? "tv" : "movie";
+  const segment = kind === "SERIES" ? "tv" : "movie";
   type MovieDetails = {
     id: number;
     title: string;

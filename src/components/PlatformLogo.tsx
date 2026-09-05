@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { Platform } from "@/generated/prisma/client";
+import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
 import { PLATFORM_CLASS, PLATFORM_SERVICE_LABEL } from "@/lib/labels";
 import { streamingPlatformLogoUrl } from "@/lib/streaming-platforms";

@@ -1,4 +1,4 @@
-import { SeriesStatus, TitleKind } from "@/generated/prisma/client";
+import { type SeriesStatus, type TitleKind } from "@/db";
 import { SERIES_STATUS_LABEL, SERIES_STATUSES } from "@/lib/labels";
 
 export type SeriesStatusFilter = SeriesStatus | "NONE";
@@ -13,10 +13,6 @@ export const isSeriesStatusFilter = (
 ): value is SeriesStatusFilter =>
   value === "NONE" || SERIES_STATUSES.includes(value as SeriesStatus);
 
-/**
- * `?seriesStatus=WATCHING|FINISHED|DROPPED|NONE`
- * NONE = series without a status. Movies never match a series-status filter.
- */
 export const parseSeriesStatusFilter = (value: unknown): SeriesStatusFilter | undefined => {
   if (Array.isArray(value)) {
     const last = value.at(-1);
@@ -39,7 +35,7 @@ export const titleMatchesSeriesStatus = (
     return true;
   }
 
-  if (title.kind !== TitleKind.SERIES) {
+  if (title.kind !== "SERIES") {
     return false;
   }
 
@@ -48,15 +44,4 @@ export const titleMatchesSeriesStatus = (
   }
 
   return title.seriesStatus === filter;
-};
-
-export const seriesStatusWhere = (filter: SeriesStatusFilter | undefined) => {
-  if (!filter) {
-    return {};
-  }
-
-  return {
-    kind: TitleKind.SERIES,
-    seriesStatus: filter === "NONE" ? null : filter,
-  };
 };

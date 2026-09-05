@@ -1,15 +1,14 @@
 # Filmia
 
-App personal para trackear películas y series vistas. UI en español, estética Letterboxd casera. Persistencia real con Prisma + Neon (Postgres). Cada usuario tiene su propio diario, listas y watchlist.
+App personal para trackear películas y series vistas. UI en español, estética Letterboxd casera. Persistencia con Drizzle + Neon (Postgres). Cada usuario tiene su propio diario, listas y watchlist.
 
 ## Stack
 
 - Next.js 16 (App Router) + TypeScript + Tailwind CSS 4
-- Auth.js v5 (`next-auth`) con credenciales (email + contraseña, JWT)
-- Prisma 7 + adaptador Neon (`@prisma/adapter-neon` + `@neondatabase/serverless`)
+- Auth liviana: JWT (`jose`) + cookie httpOnly + PBKDF2 (Web Crypto)
+- Drizzle ORM + Neon serverless HTTP (`@neondatabase/serverless`)
 - Postgres en Neon (proyecto `filmia`)
-- **Producción**: Cloudflare Workers vía [OpenNext](https://opennext.js.org/cloudflare) (`@opennextjs/cloudflare`)
-- Vercel (`vercel.json`) queda como respaldo opcional desactivado
+- **Producción prevista**: Vercel (sin deploy configurado aún)
 
 ## Modelo
 

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { Platform } from "@/generated/prisma/client";
+import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
 import { isUserStreamingProvider } from "@/lib/streaming-platforms";
 import { btnLink, focusRing } from "@/lib/ui";

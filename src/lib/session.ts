@@ -1,11 +1,12 @@
+import { readSessionCookie } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 
-export const getCurrentSession = async () => auth();
+export const getCurrentSession = async () => readSessionCookie();
+
+export const auth = readSessionCookie;
 
 export const requireUser = async () => {
-  const session = await auth();
-
+  const session = await getCurrentSession();
   if (!session?.user?.id) {
     redirect("/login");
   }

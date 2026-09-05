@@ -1,6 +1,6 @@
 import { EmptyState } from "@/components/EmptyState";
 import { formatUserPlatformsList } from "@/lib/streaming-platforms";
-import type { Platform } from "@/generated/prisma/client";
+import type { Platform } from "@/db";
 
 type MissingStreamingDataNoteProps = {
   count: number;

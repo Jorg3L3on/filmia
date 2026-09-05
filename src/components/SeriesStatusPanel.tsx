@@ -1,5 +1,5 @@
 import { setSeriesSeason, setSeriesStatus } from "@/app/actions/titles";
-import type { SeriesStatus } from "@/generated/prisma/client";
+import type { SeriesStatus } from "@/db";
 import { cn } from "@/lib/cn";
 import {
   SERIES_STATUS_LABEL,

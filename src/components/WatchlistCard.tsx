@@ -8,13 +8,13 @@ import { ImdbBadge } from "@/components/ImdbBadge";
 import { TagPills } from "@/components/TagPills";
 import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
-import type { titleInclude } from "@/lib/queries";
+import type { TitleWithRelations } from "@/lib/queries";
 import { btnGhost, btnLink, eyebrowClass, fieldClass, focusRing, posterFrame } from "@/lib/ui";
-import type { Prisma } from "@/generated/prisma/client";
+import type { ListItem } from "@/db";
 
-type WatchlistItem = Prisma.ListItemGetPayload<{
-  include: { title: { include: typeof titleInclude } };
-}>;
+type WatchlistItem = ListItem & {
+  title: TitleWithRelations;
+};
 
 type WatchlistCardProps = {
   item: WatchlistItem;

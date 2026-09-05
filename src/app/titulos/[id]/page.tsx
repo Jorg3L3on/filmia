@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TitleKind } from "@/generated/prisma/client";
+import { TitleKind } from "@/db";
 import { deleteTitle } from "@/app/actions/titles";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { ImdbBadge } from "@/components/ImdbBadge";
@@ -78,7 +78,7 @@ export default async function TitleDetailPage({
           lists={assignableLists}
           memberListIds={title.listItems.map((item) => item.listId)}
         />
-        {title.kind === TitleKind.SERIES ? (
+        {title.kind === "SERIES" ? (
           <SeriesStatusPanel
             titleId={title.id}
             seriesStatus={title.seriesStatus}

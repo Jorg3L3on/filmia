@@ -1,13 +1,14 @@
 "use server";
 
-import { ListKind } from "@/generated/prisma/client";
+import { createId } from "@paralleldrive/cuid2";
+import { and, desc, eq, inArray, notInArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { db, listItems, lists, titleTags, titles } from "@/db";
 import { parseRequiredName } from "@/lib/form-data";
 import { slugify } from "@/lib/labels";
 import { isFixedListSlug, isReservedListSlug, listHref } from "@/lib/lists";
 import { type ListMoveDirection, swapAdjacentListItems } from "@/lib/list-order";
-import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 
 const revalidateLists = (listId?: string, titleId?: string) => {
@@ -25,9 +26,9 @@ const revalidateLists = (listId?: string, titleId?: string) => {
 };
 
 const requireOwnedList = async (listId: string, userId: string) => {
-  const list = await prisma.list.findFirst({
-    where: { id: listId, userId },
-    select: { id: true, slug: true, kind: true, name: true },
+  const list = await db.query.lists.findFirst({
+    where: and(eq(lists.id, listId), eq(lists.userId, userId)),
+    columns: { id: true, slug: true, kind: true, name: true },
   });
 
   if (!list) {
@@ -46,12 +47,17 @@ export const createList = async (formData: FormData) => {
     throw new Error("Ese nombre está reservado para una lista diaria.");
   }
 
-  const list = await prisma.list.create({
-    data: { userId, name, description, kind: ListKind.COLLECTION },
+  const listId = createId();
+  await db.insert(lists).values({
+    id: listId,
+    userId,
+    name,
+    description,
+    kind: "COLLECTION",
   });
 
-  revalidateLists(list.id);
-  redirect(`/listas/${list.id}`);
+  revalidateLists(listId);
+  redirect(`/listas/${listId}`);
 };
 
 export const updateList = async (listId: string, formData: FormData) => {
@@ -66,10 +72,7 @@ export const updateList = async (listId: string, formData: FormData) => {
     throw new Error("Ese nombre está reservado para una lista diaria.");
   }
 
-  await prisma.list.update({
-    where: { id: listId },
-    data: { name, description },
-  });
+  await db.update(lists).set({ name, description }).where(eq(lists.id, listId));
 
   revalidateLists(listId);
   redirect(listHref(existing));
@@ -83,7 +86,7 @@ export const deleteList = async (listId: string) => {
     throw new Error("Las listas diarias no se pueden borrar.");
   }
 
-  await prisma.list.delete({ where: { id: listId } });
+  await db.delete(lists).where(eq(lists.id, listId));
   revalidateLists(listId);
   redirect("/listas");
 };
@@ -97,29 +100,28 @@ export const addTitleToList = async (listId: string, formData: FormData) => {
 
   await requireOwnedList(listId, userId);
 
-  const title = await prisma.title.findFirst({
-    where: { id: titleId, userId },
-    select: { id: true },
+  const title = await db.query.titles.findFirst({
+    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
+    columns: { id: true },
   });
 
   if (!title) {
     throw new Error("Título no encontrado.");
   }
 
-  const last = await prisma.listItem.findFirst({
-    where: { listId },
-    orderBy: { position: "desc" },
+  const last = await db.query.listItems.findFirst({
+    where: eq(listItems.listId, listId),
+    orderBy: [desc(listItems.position)],
   });
 
-  await prisma.listItem.upsert({
-    where: { listId_titleId: { listId, titleId } },
-    update: {},
-    create: {
+  await db
+    .insert(listItems)
+    .values({
       listId,
       titleId,
       position: (last?.position ?? -1) + 1,
-    },
-  });
+    })
+    .onConflictDoNothing();
 
   revalidateLists(listId, titleId);
 };
@@ -128,9 +130,9 @@ export const removeTitleFromList = async (listId: string, titleId: string) => {
   const userId = await requireUserId();
   await requireOwnedList(listId, userId);
 
-  await prisma.listItem.delete({
-    where: { listId_titleId: { listId, titleId } },
-  });
+  await db
+    .delete(listItems)
+    .where(and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)));
   revalidateLists(listId, titleId);
 };
 
@@ -138,35 +140,33 @@ export const toggleTitleInList = async (listId: string, titleId: string) => {
   const userId = await requireUserId();
   await requireOwnedList(listId, userId);
 
-  const title = await prisma.title.findFirst({
-    where: { id: titleId, userId },
-    select: { id: true },
+  const title = await db.query.titles.findFirst({
+    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
+    columns: { id: true },
   });
 
   if (!title) {
     throw new Error("Título no encontrado.");
   }
 
-  const existing = await prisma.listItem.findUnique({
-    where: { listId_titleId: { listId, titleId } },
+  const existing = await db.query.listItems.findFirst({
+    where: and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)),
   });
 
   if (existing) {
-    await prisma.listItem.delete({
-      where: { listId_titleId: { listId, titleId } },
-    });
+    await db
+      .delete(listItems)
+      .where(and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)));
   } else {
-    const last = await prisma.listItem.findFirst({
-      where: { listId },
-      orderBy: { position: "desc" },
+    const last = await db.query.listItems.findFirst({
+      where: eq(listItems.listId, listId),
+      orderBy: [desc(listItems.position)],
     });
 
-    await prisma.listItem.create({
-      data: {
-        listId,
-        titleId,
-        position: (last?.position ?? -1) + 1,
-      },
+    await db.insert(listItems).values({
+      listId,
+      titleId,
+      position: (last?.position ?? -1) + 1,
     });
   }
 

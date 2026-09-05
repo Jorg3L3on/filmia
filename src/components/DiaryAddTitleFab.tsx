@@ -5,7 +5,7 @@ import { useCallback, useEffect, useId, useRef, useState, useTransition } from "
 import { searchTmdbDiscover } from "@/app/actions/metadata";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { PosterImage } from "@/components/PosterImage";
-import type { TitleKind } from "@/generated/prisma/client";
+import type { TitleKind } from "@/db";
 import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { UserTmdbEntry } from "@/lib/queries";

@@ -1,5 +1,6 @@
-import { ListKind } from "@/generated/prisma/client";
-import { prisma } from "@/lib/prisma";
+import { createId } from "@paralleldrive/cuid2";
+import { and, eq, inArray } from "drizzle-orm";
+import { db, lists, type ListKind } from "@/db";
 
 export const WATCHLIST_SLUG = "watchlist" as const;
 export const FAVORITAS_SLUG = "favoritas" as const;
@@ -29,19 +30,19 @@ export const DEFAULT_LISTS = [
     slug: WATCHLIST_SLUG,
     name: WATCHLIST_NAME,
     description: WATCHLIST_DESCRIPTION,
-    kind: ListKind.WATCHLIST,
+    kind: "WATCHLIST" as ListKind,
   },
   {
     slug: FAVORITAS_SLUG,
     name: FAVORITAS_NAME,
     description: FAVORITAS_DESCRIPTION,
-    kind: ListKind.COLLECTION,
+    kind: "COLLECTION" as ListKind,
   },
   {
     slug: POR_REWATCH_SLUG,
     name: POR_REWATCH_NAME,
     description: POR_REWATCH_DESCRIPTION,
-    kind: ListKind.COLLECTION,
+    kind: "COLLECTION" as ListKind,
   },
 ] as const;
 
@@ -54,19 +55,19 @@ export const isReservedListSlug = (slug: string | null | undefined) =>
   isFixedListSlug(slug) || slug === "quiero-ver";
 
 export const listHref = (list: { id: string; slug: string | null; kind?: ListKind }) =>
-  list.slug === WATCHLIST_SLUG || list.kind === ListKind.WATCHLIST
+  list.slug === WATCHLIST_SLUG || list.kind === "WATCHLIST"
     ? "/watchlist"
     : `/listas/${list.id}`;
 
 export const sortUserLists = <T extends { slug: string | null; name: string }>(
-  lists: T[],
+  listRows: T[],
 ) => {
   const rank = (slug: string | null) => {
     const index = FIXED_LIST_SLUGS.indexOf(slug as FixedListSlug);
     return index === -1 ? FIXED_LIST_SLUGS.length + 1 : index;
   };
 
-  return [...lists].sort((left, right) => {
+  return [...listRows].sort((left, right) => {
     const delta = rank(left.slug) - rank(right.slug);
     if (delta !== 0) {
       return delta;
@@ -77,9 +78,9 @@ export const sortUserLists = <T extends { slug: string | null; name: string }>(
 };
 
 export const partitionUserLists = <T extends { slug: string | null; name: string }>(
-  lists: T[],
+  listRows: T[],
 ) => {
-  const ordered = sortUserLists(lists);
+  const ordered = sortUserLists(listRows);
   return {
     fixed: ordered.filter((list) => isFixedListSlug(list.slug)),
     custom: ordered.filter((list) => !isFixedListSlug(list.slug)),
@@ -119,9 +120,9 @@ export const emptyStateForList = (slug: string | null) => {
 };
 
 export const ensureDefaultLists = async (userId: string) => {
-  const existing = await prisma.list.findMany({
-    where: { userId, slug: { in: [...FIXED_LIST_SLUGS] } },
-    select: { id: true, slug: true, name: true, kind: true },
+  const existing = await db.query.lists.findMany({
+    where: and(eq(lists.userId, userId), inArray(lists.slug, [...FIXED_LIST_SLUGS])),
+    columns: { id: true, slug: true, name: true, kind: true },
   });
   const bySlug = new Map(existing.map((list) => [list.slug, list]));
 
@@ -130,28 +131,24 @@ export const ensureDefaultLists = async (userId: string) => {
       const current = bySlug.get(list.slug);
 
       if (!current) {
-        await prisma.list.create({
-          data: {
-            userId,
-            slug: list.slug,
-            name: list.name,
-            description: list.description,
-            kind: list.kind,
-          },
+        await db.insert(lists).values({
+          id: createId(),
+          userId,
+          slug: list.slug,
+          name: list.name,
+          description: list.description,
+          kind: list.kind,
         });
         return;
       }
 
       if (current.name !== list.name || current.kind !== list.kind) {
-        await prisma.list.update({
-          where: { id: current.id },
-          data: { name: list.name, kind: list.kind },
-        });
+        await db.update(lists).set({ name: list.name, kind: list.kind }).where(eq(lists.id, current.id));
       }
     }),
   );
 
-  return prisma.list.findMany({
-    where: { userId, slug: { in: [...FIXED_LIST_SLUGS] } },
+  return db.query.lists.findMany({
+    where: and(eq(lists.userId, userId), inArray(lists.slug, [...FIXED_LIST_SLUGS])),
   });
 };

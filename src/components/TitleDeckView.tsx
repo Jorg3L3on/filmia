@@ -1,15 +1,12 @@
 import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
 import { PosterTile } from "@/components/PosterTile";
-import type { titleInclude } from "@/lib/queries";
+import type { TitleWithRelations } from "@/lib/queries";
 import { eyebrowClass } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
-import type { Prisma } from "@/generated/prisma/client";
-
-type TitlePayload = Prisma.TitleGetPayload<{ include: typeof titleInclude }>;
 
 type TitleDeckViewProps = {
-  titles: TitlePayload[];
+  titles: TitleWithRelations[];
   mode?: DeckViewMode;
   modes?: DeckViewMode[];
   hrefFor?: (mode: DeckViewMode) => string;
@@ -17,7 +14,7 @@ type TitleDeckViewProps = {
   showToggle?: boolean;
 };
 
-const toCoverflowTitle = (title: TitlePayload): CoverflowTitle => {
+const toCoverflowTitle = (title: TitleWithRelations): CoverflowTitle => {
   const watchProviders = parseStoredWatchProviders(title.watchProvidersMx);
 
   return {

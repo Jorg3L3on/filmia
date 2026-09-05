@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ListKind } from "@/generated/prisma/client";
+import { ListKind } from "@/db";
 import { addTitleToList, deleteList } from "@/app/actions/lists";
 import { CatalogFilters } from "@/components/CatalogFilters";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
@@ -51,7 +51,7 @@ export default async function ListDetailPage({
     notFound();
   }
 
-  if (list.kind === ListKind.WATCHLIST || list.slug === WATCHLIST_SLUG) {
+  if (list.kind === "WATCHLIST" || list.slug === WATCHLIST_SLUG) {
     redirect("/watchlist");
   }
 

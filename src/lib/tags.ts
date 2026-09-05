@@ -1,11 +1,9 @@
+import { createId } from "@paralleldrive/cuid2";
+import { and, eq } from "drizzle-orm";
+import { db, tags } from "@/db";
 import { slugify } from "@/lib/labels";
-import { prisma } from "@/lib/prisma";
 import type { SeriesStatusFilter } from "@/lib/series";
 
-/**
- * Etiquetas sugeridas al gusto de Jorge (guerra/épica, visual Mad Max–Tron, etc.).
- * Se crean por usuario con ensureDefaultTags; no pisan nombres ya existentes.
- */
 export const DEFAULT_TAG_NAMES = [
   "Épica / guerra",
   "Visual / espectáculo",
@@ -28,10 +26,6 @@ export const TAG_SORT_OPTIONS = [
 export const isCatalogSort = (value: string | undefined): value is CatalogSort =>
   TAG_SORT_OPTIONS.some((option) => option.id === value) || value === "year";
 
-/**
- * Varios `?tag=` se combinan con OR: basta con que el título tenga
- * cualquiera de las etiquetas elegidas.
- */
 export const parseTagSlugs = (value: unknown): string[] => {
   if (typeof value === "string") {
     return uniqueSlugs(value.split(","));
@@ -51,7 +45,7 @@ const uniqueSlugs = (values: string[]) => [
 ];
 
 export const titleMatchesAnyTag = (
-  titleTags: Array<{ tag: { slug: string } }>,
+  titleTagsList: Array<{ tag: { slug: string } }>,
   slugs: string[],
 ) => {
   if (slugs.length === 0) {
@@ -59,16 +53,13 @@ export const titleMatchesAnyTag = (
   }
 
   const selected = new Set(slugs);
-  return titleTags.some((item) => selected.has(item.tag.slug));
+  return titleTagsList.some((item) => selected.has(item.tag.slug));
 };
 
 export const tagHref = (slug: string) => `/tags/${slug}`;
 
 export const MINE_PLATFORMS_PARAM = "minePlatforms";
 
-/**
- * `?minePlatforms=1` (también `true` / `on`) activa “Solo en mis plataformas”.
- */
 export const parseMinePlatforms = (value: unknown): boolean => {
   if (Array.isArray(value)) {
     return value.some((item) => parseMinePlatforms(item));
@@ -93,7 +84,7 @@ type CatalogQuery = {
 };
 
 export const catalogSearchParams = ({
-  tags = [],
+  tags: tagSlugs = [],
   view,
   sort,
   minePlatforms,
@@ -103,7 +94,7 @@ export const catalogSearchParams = ({
 }: CatalogQuery) => {
   const params = new URLSearchParams();
 
-  for (const slug of uniqueSlugs(tags)) {
+  for (const slug of uniqueSlugs(tagSlugs)) {
     params.append("tag", slug);
   }
 
@@ -147,11 +138,18 @@ export const ensureDefaultTags = async (userId: string) => {
         return;
       }
 
-      await prisma.tag.upsert({
-        where: { userId_slug: { userId, slug } },
-        update: {},
-        create: { userId, name, slug },
-      });
+      await db
+        .insert(tags)
+        .values({
+          id: createId(),
+          userId,
+          name,
+          slug,
+        })
+        .onConflictDoUpdate({
+          target: [tags.userId, tags.slug],
+          set: { name },
+        });
     }),
   );
 };

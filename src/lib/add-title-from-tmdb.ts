@@ -1,8 +1,9 @@
-import { TitleKind } from "@/generated/prisma/client";
+import { createId } from "@paralleldrive/cuid2";
+import { and, desc, eq } from "drizzle-orm";
+import { db, listItems, lists, titles, type TitleKind } from "@/db";
 import { TITLE_KINDS } from "@/lib/labels";
 import { ensureDefaultLists, WATCHLIST_SLUG } from "@/lib/lists";
 import { resolveTitleMetadata } from "@/lib/metadata";
-import { prisma } from "@/lib/prisma";
 import { tmdbErrorMessage, type TmdbGenre } from "@/lib/tmdb";
 import { enrichWatchProvidersOnSave } from "@/lib/watch-providers-cache";
 
@@ -46,52 +47,51 @@ const resolveDestination = (input: AddTitleFromTmdbInput) => {
 const enqueueInWatchlist = async (userId: string, titleId: string) => {
   await ensureDefaultLists(userId);
 
-  const watchlist = await prisma.list.findUnique({
-    where: { userId_slug: { userId, slug: WATCHLIST_SLUG } },
-    select: { id: true },
+  const watchlist = await db.query.lists.findFirst({
+    where: and(eq(lists.userId, userId), eq(lists.slug, WATCHLIST_SLUG)),
+    columns: { id: true },
   });
 
   if (!watchlist) {
     throw new Error("No se pudo crear Quiero ver.");
   }
 
-  const last = await prisma.listItem.findFirst({
-    where: { listId: watchlist.id },
-    orderBy: { position: "desc" },
+  const last = await db.query.listItems.findFirst({
+    where: eq(listItems.listId, watchlist.id),
+    orderBy: [desc(listItems.position)],
   });
 
-  await prisma.listItem.upsert({
-    where: { listId_titleId: { listId: watchlist.id, titleId } },
-    update: {},
-    create: {
+  await db
+    .insert(listItems)
+    .values({
       listId: watchlist.id,
       titleId,
       position: (last?.position ?? -1) + 1,
-    },
-  });
+    })
+    .onConflictDoNothing();
 };
 
 const markExistingWatched = async (userId: string, titleId: string) => {
   await ensureDefaultLists(userId);
 
-  const watchlist = await prisma.list.findUnique({
-    where: { userId_slug: { userId, slug: WATCHLIST_SLUG } },
-    select: { id: true },
+  const watchlist = await db.query.lists.findFirst({
+    where: and(eq(lists.userId, userId), eq(lists.slug, WATCHLIST_SLUG)),
+    columns: { id: true },
   });
 
-  await prisma.$transaction(async (tx) => {
-    await tx.title.update({
-      where: { id: titleId },
-      data: { watchedAt: new Date() },
-    });
+  await db.transaction(async (tx) => {
+    await tx
+      .update(titles)
+      .set({ watchedAt: new Date() })
+      .where(eq(titles.id, titleId));
 
     if (!watchlist) {
       return;
     }
 
-    await tx.listItem.deleteMany({
-      where: { listId: watchlist.id, titleId },
-    });
+    await tx
+      .delete(listItems)
+      .where(and(eq(listItems.listId, watchlist.id), eq(listItems.titleId, titleId)));
   });
 };
 
@@ -112,9 +112,9 @@ export const upsertTitleFromTmdbForUser = async (
     return { ok: false, error: "El tipo debe ser película o serie." };
   }
 
-  const existing = await prisma.title.findFirst({
-    where: { userId, tmdbId },
-    select: { id: true },
+  const existing = await db.query.titles.findFirst({
+    where: and(eq(titles.userId, userId), eq(titles.tmdbId, tmdbId)),
+    columns: { id: true },
   });
 
   if (existing) {
@@ -166,33 +166,33 @@ export const upsertTitleFromTmdbForUser = async (
     return { ok: false, error: "TMDB no devolvió un nombre para este título." };
   }
 
-  const title = await prisma.title.create({
-    data: {
-      userId,
-      name: metadata.name,
-      originalName: metadata.originalName,
-      kind,
-      year: metadata.year,
-      tmdbId: metadata.tmdbId,
-      posterPath: metadata.posterPath,
-      imdbId: metadata.imdbId,
-      imdbRating: metadata.imdbRating,
-      tmdbGenres: metadata.tmdbGenres,
-      watchedAt: markWatched ? new Date() : null,
-    },
+  const titleId = createId();
+  await db.insert(titles).values({
+    id: titleId,
+    userId,
+    name: metadata.name,
+    originalName: metadata.originalName,
+    kind,
+    year: metadata.year,
+    tmdbId: metadata.tmdbId,
+    posterPath: metadata.posterPath,
+    imdbId: metadata.imdbId,
+    imdbRating: metadata.imdbRating,
+    tmdbGenres: metadata.tmdbGenres,
+    watchedAt: markWatched ? new Date() : null,
   });
 
   if (metadata.tmdbId) {
-    await enrichWatchProvidersOnSave(title.id, metadata.tmdbId, kind);
+    await enrichWatchProvidersOnSave(titleId, metadata.tmdbId, kind);
   }
 
   if (addToWatchlist) {
-    await enqueueInWatchlist(userId, title.id);
+    await enqueueInWatchlist(userId, titleId);
   }
 
   return {
     ok: true,
-    titleId: title.id,
+    titleId,
     created: true,
     addedToWatchlist: addToWatchlist,
     markedWatched: markWatched,
