@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { removeTitleFromList } from "@/app/actions/lists";
+import { MarkSeenEye } from "@/components/MarkSeenEye";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { PosterImage } from "@/components/PosterImage";
@@ -19,6 +20,7 @@ import {
   SERIES_STATUS_LABEL,
   TITLE_KIND_LABEL,
 } from "@/lib/labels";
+import { PICKS_SAVE_LABEL } from "@/lib/mark-seen";
 import { useSpringFeedback } from "@/lib/motion";
 import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { btnGhost, btnLink } from "@/lib/ui";
@@ -47,6 +49,7 @@ type CoverflowDeckProps = {
   listId?: string;
   variant?: "page" | "sheet";
   onActiveChange?: (index: number, title: CoverflowTitle) => void;
+  /** `watched` = Qué ver picks: eye on unwatched posters, no footer form. */
   footer?: "full" | "watched";
 };
 
@@ -115,6 +118,7 @@ type DeckCardProps = {
   sideRoom: number;
   isDragging: boolean;
   compact?: boolean;
+  showMarkSeenEye?: boolean;
   onSelect: (index: number) => void;
   onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
 };
@@ -162,6 +166,7 @@ const DeckCard = ({
   sideRoom,
   isDragging,
   compact = false,
+  showMarkSeenEye = false,
   onSelect,
   onPointerDown,
 }: DeckCardProps) => {
@@ -251,7 +256,10 @@ const DeckCard = ({
         {!compact && title.watched ? (
           <WatchedBadge compact className="absolute left-2 top-2 z-10" />
         ) : null}
-        {!compact && title.kind === "SERIES" && title.seriesStatus ? (
+        {!compact &&
+        title.kind === "SERIES" &&
+        title.seriesStatus &&
+        !(showMarkSeenEye && !title.watched) ? (
           <SeriesStatusBadge
             status={title.seriesStatus}
             compact
@@ -278,6 +286,16 @@ const DeckCard = ({
           </p>
         </div>
       </Link>
+      {showMarkSeenEye && !title.watched ? (
+        <MarkSeenEye
+          titleId={title.id}
+          titleName={title.name}
+          rating={title.rating}
+          review={title.review}
+          size={compact ? "queue" : "hero"}
+          saveLabel={PICKS_SAVE_LABEL}
+        />
+      ) : null}
     </article>
   );
 };
@@ -613,6 +631,7 @@ export const CoverflowDeck = ({
 
   const roundedActive = Math.round(displayIndex);
   const activeTitle = titles[roundedActive];
+  const showMarkSeenEye = footer === "watched" && !isSheet;
   const activePlatform =
     footer === "full" && !isSheet && activeTitle
       ? primaryAvailabilityPlatform(activeTitle.flatrateProviders, activeTitle.platform)
@@ -673,6 +692,7 @@ export const CoverflowDeck = ({
                   sideRoom={sideRoom}
                   isDragging={isDragging}
                   compact={isSheet}
+                  showMarkSeenEye={showMarkSeenEye}
                   onSelect={handleSelectCard}
                   onPointerDown={handlePointerDown}
                 />
@@ -721,19 +741,7 @@ export const CoverflowDeck = ({
                 .join(" · ")}
             </p>
           </div>
-        ) : footer === "watched" ? (
-          !activeTitle.watched ? (
-            <div className="mx-auto max-w-md">
-              <MarkWatchedForm
-                titleId={activeTitle.id}
-                variant="queue"
-                rating={activeTitle.rating}
-                review={activeTitle.review}
-                collapsed
-              />
-            </div>
-          ) : null
-        ) : (
+        ) : footer === "watched" ? null : (
           <div className="mx-auto max-w-xl space-y-3 text-center">
             <div className="space-y-1">
               <h2 className="font-serif text-2xl text-white sm:text-3xl">

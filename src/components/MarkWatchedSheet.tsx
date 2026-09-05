@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { markTitleWatched } from "@/app/actions/watchlist";
 import { RatingStars } from "@/components/RatingStars";
 import { cn } from "@/lib/cn";
@@ -9,6 +10,7 @@ import {
   todayDateInput,
   type WatchedDatePreset,
 } from "@/lib/dates";
+import { WATCHLIST_SAVE_LABEL } from "@/lib/mark-seen";
 import { useSheetDragDismiss } from "@/lib/motion";
 import { btnGhost, btnPrimary, fieldClass, focusRing } from "@/lib/ui";
 
@@ -26,6 +28,7 @@ type MarkWatchedSheetProps = {
   titleName: string;
   rating?: number | null;
   review?: string | null;
+  saveLabel?: string;
   onClose: () => void;
 };
 
@@ -35,6 +38,7 @@ export const MarkWatchedSheet = ({
   titleName,
   rating = null,
   review = "",
+  saveLabel = WATCHLIST_SAVE_LABEL,
   onClose,
 }: MarkWatchedSheetProps) => {
   const titleDomId = useId();
@@ -118,11 +122,11 @@ export const MarkWatchedSheet = ({
     });
   };
 
-  if (!open) {
+  if (!open || typeof document === "undefined") {
     return null;
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
       <button
         type="button"
@@ -255,12 +259,13 @@ export const MarkWatchedSheet = ({
               disabled={isPending}
               className={cn(btnPrimary, "w-full flex-1 py-3", focusRing)}
             >
-              {isPending ? "Guardando…" : "Guardar y quitar de Quiero ver"}
+              {isPending ? "Guardando…" : saveLabel}
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

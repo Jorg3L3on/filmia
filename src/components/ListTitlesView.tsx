@@ -30,7 +30,10 @@ type ListTitlesViewProps = {
   sort?: CatalogSort | null;
 };
 
-const toCoverflowTitle = (item: ListItemPayload): CoverflowTitle => {
+const toCoverflowTitle = (
+  item: ListItemPayload,
+  userPlatforms: readonly Platform[] = [],
+): CoverflowTitle => {
   const watchProviders = parseStoredWatchProviders(item.title.watchProvidersMx);
 
   return {
@@ -43,7 +46,7 @@ const toCoverflowTitle = (item: ListItemPayload): CoverflowTitle => {
     platform: primaryAvailabilityPlatform(
       watchProviders?.flatrate,
       item.title.platform,
-      platforms,
+      userPlatforms,
     ),
     imdbRating: item.title.imdbRating,
     watched: Boolean(item.title.watchedAt),
@@ -84,7 +87,7 @@ export const ListTitlesView = ({
 
       {mode === "deck" ? (
         <CoverflowDeck
-          titles={items.map(toCoverflowTitle)}
+          titles={items.map((item) => toCoverflowTitle(item, platforms))}
           listId={listId}
         />
       ) : (
