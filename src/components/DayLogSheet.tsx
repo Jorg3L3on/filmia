@@ -137,7 +137,7 @@ export const DayLogSheet = ({ open, isoDate, titles, onClose }: DayLogSheetProps
             >
               <span className="flex items-center gap-2.5">
                 <DiaryIcon />
-                Ver en diario
+                Ver ficha
               </span>
               <ChevronIcon />
             </Link>
