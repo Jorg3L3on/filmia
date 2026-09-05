@@ -37,24 +37,25 @@ export const BottomNav = () => {
                 className={cn(
                   "flex min-w-[56px] flex-col items-center gap-1 px-1 py-1 text-[10px] uppercase tracking-[0.12em]",
                   focusRing,
-                  isSearch
-                    ? "text-ink"
-                    : isCurrent
-                      ? "text-accent"
-                      : "text-mist hover:text-paper",
+                  isCurrent ? "text-accent" : "text-mist hover:text-paper",
                 )}
               >
                 <span
                   className={cn(
                     "flex items-center justify-center",
                     isSearch
-                      ? "mb-0.5 h-12 w-12 -translate-y-2 rounded-full bg-accent text-ink shadow-[0_8px_20px_rgba(124,156,255,0.32)]"
+                      ? cn(
+                          "mb-0.5 h-12 w-12 -translate-y-2 rounded-full",
+                          isCurrent
+                            ? "bg-accent text-ink shadow-[0_8px_20px_rgba(124,156,255,0.32)]"
+                            : "bg-chrome text-paper shadow-[0_8px_20px_rgba(0,0,0,0.35)]",
+                        )
                       : "h-6 w-6",
                   )}
                 >
                   <NavIcon name={item.icon} />
                 </span>
-                <span className={isSearch ? "text-accent" : undefined}>{item.label}</span>
+                <span>{item.label}</span>
               </Link>
             </li>
           );
@@ -80,8 +81,14 @@ const NavIcon = ({ name }: { name: (typeof navItems)[number]["icon"] }) => {
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
-          d="M6.5 5.5h11A1.5 1.5 0 0 1 19 7v12.5l-7-3-7 3V7A1.5 1.5 0 0 1 6.5 5.5Z"
+          d="M6 5.25h5.25A1.75 1.75 0 0 1 13 7v12.25H7.75A1.75 1.75 0 0 1 6 17.5V5.25Z"
         />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M13 7h4.25A1.75 1.75 0 0 1 19 8.75V19.25H13"
+        />
+        <path strokeLinecap="round" d="M8.25 8.75h2.5M8.25 11.5h2.5" />
       </svg>
     );
   }
