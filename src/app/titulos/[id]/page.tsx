@@ -11,6 +11,7 @@ import { SeriesStatusPanel } from "@/components/SeriesStatusPanel";
 import { TitleActionRow } from "@/components/TitleActionRow";
 import { TitleHero } from "@/components/TitleHero";
 import { TitleListsPanel } from "@/components/TitleListsPanel";
+import { TitleSaveCta } from "@/components/TitleSaveCta";
 import { TitlePosterRail } from "@/components/TitlePosterRail";
 import { TitleTagsPanel } from "@/components/TitleTagsPanel";
 import { TitleSynopsis } from "@/components/TitleSynopsis";
@@ -65,6 +66,8 @@ export default async function TitleDetailPage({
   const inWatchlist = title.listItems.some(
     (item) => item.list.slug === WATCHLIST_SLUG,
   );
+  const memberLists = title.listItems.map((item) => item.list);
+  const inCustomList = memberLists.some((list) => list.slug !== WATCHLIST_SLUG);
   const backdropSrc = extras?.backdropPath
     ? tmdbBackdropUrl(extras.backdropPath, "w1280")
     : title.posterPath
@@ -88,11 +91,26 @@ export default async function TitleDetailPage({
         watched={Boolean(title.watchedAt)}
       />
 
+      <TitleSaveCta
+        titleId={title.id}
+        inWatchlist={inWatchlist}
+        memberLists={memberLists}
+        listsPanel={
+          <TitleListsPanel
+            titleId={title.id}
+            lists={assignableLists}
+            memberListIds={title.listItems.map((item) => item.listId)}
+          />
+        }
+      />
+
       <TitleActionRow
         titleId={title.id}
         watched={Boolean(title.watchedAt)}
         inWatchlist={inWatchlist}
+        inCustomList={inCustomList}
         rating={title.rating}
+        review={title.review}
         listsPanel={
           <TitleListsPanel
             titleId={title.id}

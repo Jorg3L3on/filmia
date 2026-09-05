@@ -96,8 +96,8 @@ const run = () => {
   );
   assert(
     catalogHref("/", { view: "grid", month: "2026-09", day: "2026-09-03" }) ===
-      "/?view=grid",
-    "Month and day should not leak into non-calendar views",
+      "/?view=grid&month=2026-09",
+    "Day should not leak into non-calendar views; month stays for historial",
   );
   assert(
     catalogHref("/", { view: "calendar" }) === "/?view=calendar",

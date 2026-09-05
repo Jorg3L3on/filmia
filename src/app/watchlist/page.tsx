@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { TitleKind } from "@/generated/prisma/browser";
 import { ensureCurrentUserWatchlist, removeFromWatchlist } from "@/app/actions/watchlist";
+import { CatalogFilters } from "@/components/CatalogFilters";
 import { EmptyState } from "@/components/EmptyState";
 import {
   MinePlatformsEmpty,
@@ -8,11 +8,19 @@ import {
   MissingStreamingDataNote,
 } from "@/components/MinePlatformsNotice";
 import { WatchlistCard } from "@/components/WatchlistCard";
-import { getUserStreamingPlatforms, getWatchlist } from "@/lib/queries";
-import { resolveMinePlatformsCatalog } from "@/lib/streaming-platforms";
-import { catalogHref, parseMinePlatforms } from "@/lib/tags";
+import {
+  parseCatalogOrder,
+  parseKindFilter,
+  parsePlatformFilters,
+  sortCatalogByTitle,
+  titleMatchesKind,
+} from "@/lib/catalog-filters";
+import { getTags, getUserStreamingPlatforms, getWatchlist } from "@/lib/queries";
+import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
+import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
+import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
 import { cn } from "@/lib/cn";
-import { btnPrimary, focusRing } from "@/lib/ui";
+import { focusRing } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -20,57 +28,62 @@ export const metadata = {
   title: "Quiero ver",
 };
 
-const KIND_CHIPS = [
-  { value: "ALL", label: "Todos" },
-  { value: TitleKind.MOVIE, label: "Películas" },
-  { value: TitleKind.SERIES, label: "Series" },
-] as const;
-
-const parseKindFilter = (value: unknown) => {
-  const raw = Array.isArray(value) ? value.at(-1) : value;
-  return raw === TitleKind.MOVIE || raw === TitleKind.SERIES ? raw : "ALL";
-};
-
-const kindHref = (kind: (typeof KIND_CHIPS)[number]["value"]) =>
-  kind === "ALL" ? "/watchlist" : `/watchlist?kind=${kind}`;
-
 export default async function WatchlistPage({
   searchParams,
 }: {
   searchParams: Promise<{
     kind?: string | string[];
     minePlatforms?: string | string[];
+    platform?: string | string[];
+    sort?: string | string[];
+    tag?: string | string[];
+    seriesStatus?: string | string[];
   }>;
 }) {
   await ensureCurrentUserWatchlist();
   const params = await searchParams;
   const kindFilter = parseKindFilter(params.kind);
   const minePlatforms = parseMinePlatforms(params.minePlatforms);
+  const platforms = parsePlatformFilters(params.platform);
+  const sort = parseCatalogOrder(params.sort);
+  const selectedTags = parseTagSlugs(params.tag);
+  const seriesStatus = parseSeriesStatusFilter(params.seriesStatus);
 
-  const [watchlist, userPlatforms] = await Promise.all([
+  const [watchlist, userPlatforms, tags] = await Promise.all([
     getWatchlist(),
     getUserStreamingPlatforms(),
+    getTags(),
   ]);
 
   const rawItems = watchlist?.items ?? [];
-  const kindItems =
-    kindFilter === "ALL"
-      ? rawItems
-      : rawItems.filter((item) => item.title.kind === kindFilter);
-  const catalog = resolveMinePlatformsCatalog(
+  const kindItems = rawItems.filter(
+    (item) =>
+      titleMatchesKind(item.title.kind, kindFilter) &&
+      titleMatchesAnyTag(item.title.tags, selectedTags) &&
+      titleMatchesSeriesStatus(item.title, seriesStatus),
+  );
+  const catalog = resolveCatalogAvailability(
     kindItems.map((item) => item.title),
-    minePlatforms,
-    userPlatforms,
+    { platforms, minePlatforms, userPlatforms },
   );
   const visibleIds = new Set(catalog.titles.map((title) => title.id));
-  const items = catalog.needsSetup
-    ? []
-    : minePlatforms
-      ? kindItems.filter((item) => visibleIds.has(item.title.id))
-      : kindItems;
+  const filteredItems =
+    catalog.needsSetup
+      ? []
+      : platforms.length > 0 || minePlatforms
+        ? kindItems.filter((item) => visibleIds.has(item.title.id))
+        : kindItems;
+  const items = sortCatalogByTitle(filteredItems, sort);
 
   const listId = watchlist?.id ?? "";
   const [hero, ...queue] = items;
+  const hasActiveFilters =
+    kindFilter !== "ALL" ||
+    selectedTags.length > 0 ||
+    minePlatforms ||
+    platforms.length > 0 ||
+    Boolean(seriesStatus) ||
+    Boolean(sort);
   const clearHref = catalogHref("/watchlist");
 
   return (
@@ -89,54 +102,46 @@ export default async function WatchlistPage({
         </Link>
       </header>
 
-      <div
-        role="group"
-        aria-label="Filtro por tipo"
-        className="rail flex gap-2 overflow-x-auto"
-      >
-        {KIND_CHIPS.map((chip) => {
-          const isCurrent = kindFilter === chip.value;
-          return (
-            <Link
-              key={chip.value}
-              href={kindHref(chip.value)}
-              aria-current={isCurrent ? "page" : undefined}
-              className={cn(
-                "shrink-0 rounded-full px-4 py-2 text-sm font-medium",
-                focusRing,
-                isCurrent
-                  ? "bg-accent text-ink"
-                  : "border border-chrome text-fog hover:text-paper",
-              )}
-            >
-              {chip.label}
-            </Link>
-          );
-        })}
-      </div>
+      <CatalogFilters
+        tags={tags}
+        selectedSlugs={selectedTags}
+        pathname="/watchlist"
+        kind={kindFilter}
+        platforms={platforms}
+        sort={sort ?? undefined}
+        minePlatforms={minePlatforms}
+        hasStreamingPlatforms={userPlatforms.length > 0}
+        seriesStatus={seriesStatus}
+      />
 
       {rawItems.length === 0 ? (
         <EmptyState
-          title="Nada en Quiero ver"
-          description="Agrega títulos que quieras ver pronto."
+          variant="watchlist"
+          title="Aún no hay nada en Quiero ver"
+          description="Añade títulos desde Buscar o desde una ficha."
           actionHref="/buscar"
-          actionLabel="Agregar a Quiero ver"
+          actionLabel="Ir a Buscar"
         />
       ) : catalog.needsSetup ? (
         <MinePlatformsSetupCta />
-      ) : items.length === 0 && minePlatforms ? (
+      ) : items.length === 0 && (minePlatforms || platforms.length > 0) ? (
         <>
           <MissingStreamingDataNote count={catalog.missingCache} />
           <MinePlatformsEmpty
-            userPlatforms={userPlatforms}
+            userPlatforms={platforms.length > 0 ? platforms : userPlatforms}
             actionHref={clearHref}
-            hasTagFilters={kindFilter !== "ALL"}
+            hasTagFilters={
+              kindFilter !== "ALL" ||
+              selectedTags.length > 0 ||
+              Boolean(seriesStatus)
+            }
           />
         </>
       ) : items.length === 0 ? (
         <EmptyState
+          variant="watchlist"
           title="Nada con ese filtro"
-          description="Prueba otra pestaña o agrega más títulos."
+          description="Prueba otra pestaña o quita filtros."
           actionHref="/watchlist"
           actionLabel="Ver todos"
         />
@@ -150,7 +155,7 @@ export default async function WatchlistPage({
               position={1}
               listId={listId}
               canMoveUp={false}
-              canMoveDown={kindFilter === "ALL" && queue.length > 0}
+              canMoveDown={!hasActiveFilters && queue.length > 0}
               removeAction={removeFromWatchlist.bind(null, hero.titleId)}
             />
           ) : null}
@@ -164,8 +169,8 @@ export default async function WatchlistPage({
                     variant="queue"
                     position={index + 2}
                     listId={listId}
-                    canMoveUp={kindFilter === "ALL"}
-                    canMoveDown={kindFilter === "ALL" && index < queue.length - 1}
+                    canMoveUp={!hasActiveFilters}
+                    canMoveDown={!hasActiveFilters && index < queue.length - 1}
                     removeAction={removeFromWatchlist.bind(null, item.titleId)}
                   />
                 </li>
@@ -174,12 +179,6 @@ export default async function WatchlistPage({
           ) : null}
         </div>
       )}
-
-      <div className="sticky bottom-20 z-20 bg-canvas/95 py-3 sm:bottom-4">
-        <Link href="/buscar" className={`${btnPrimary} w-full`}>
-          + Agregar a Quiero ver
-        </Link>
-      </div>
     </div>
   );
 }

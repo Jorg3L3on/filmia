@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { DayLogSheet } from "@/components/DayLogSheet";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
+import { EmptyState } from "@/components/EmptyState";
 import { SharedPoster } from "@/components/SharedPoster";
 import { PosterImage } from "@/components/PosterImage";
 import type { DiaryCalendarTitle } from "@/components/diary-types";
@@ -21,9 +22,12 @@ import {
   todayDateInput,
 } from "@/lib/dates";
 import { staggerStyle, useLongPress } from "@/lib/motion";
+import type { CatalogKindFilter } from "@/lib/catalog-href";
 import type { SeriesStatusFilter } from "@/lib/series";
 import { catalogHref } from "@/lib/catalog-href";
-import { btnPrimary, focusRing } from "@/lib/ui";
+import type { CatalogSort } from "@/lib/tags";
+import { focusRing } from "@/lib/ui";
+import type { Platform } from "@/generated/prisma/browser";
 
 export type { DiaryCalendarTitle };
 
@@ -34,6 +38,9 @@ type DiaryCalendarProps = {
   tags?: string[];
   minePlatforms?: boolean;
   seriesStatus?: SeriesStatusFilter;
+  kind?: CatalogKindFilter;
+  platforms?: Platform[];
+  sort?: CatalogSort | null;
   hasActiveFilters?: boolean;
   clearHref: string;
 };
@@ -44,12 +51,18 @@ const calendarHref = ({
   tags,
   minePlatforms,
   seriesStatus,
+  kind,
+  platforms,
+  sort,
 }: {
   month: string;
   day?: string | null;
   tags?: string[];
   minePlatforms?: boolean;
   seriesStatus?: SeriesStatusFilter;
+  kind?: CatalogKindFilter;
+  platforms?: Platform[];
+  sort?: CatalogSort | null;
 }) =>
   catalogHref("/", {
     view: "calendar",
@@ -60,6 +73,9 @@ const calendarHref = ({
     tags,
     minePlatforms,
     seriesStatus,
+    kind,
+    platforms,
+    sort,
   });
 
 const DayCellPosters = ({ titles }: { titles: DiaryCalendarTitle[] }) => {
@@ -103,6 +119,9 @@ export const DiaryCalendar = ({
   tags = [],
   minePlatforms = false,
   seriesStatus,
+  kind,
+  platforms,
+  sort,
   hasActiveFilters = false,
   clearHref,
 }: DiaryCalendarProps) => {
@@ -114,7 +133,7 @@ export const DiaryCalendar = ({
   const monthName = formatMonthName(month);
   const prevMonth = shiftMonthParam(month, -1);
   const nextMonth = shiftMonthParam(month, 1);
-  const query = { tags, minePlatforms, seriesStatus };
+  const query = { tags, minePlatforms, seriesStatus, kind, platforms, sort };
   const hrefFor = (mode: DeckViewMode) =>
     catalogHref("/", {
       tags,
@@ -125,6 +144,9 @@ export const DiaryCalendar = ({
       seriesStatus,
       month,
       day: mode === "calendar" ? selectedDay : undefined,
+      kind,
+      platforms,
+      sort,
     });
   const monthCountLabel =
     monthTitles.length === 1 ? "1 entrada" : `${monthTitles.length} entradas`;
@@ -211,30 +233,29 @@ export const DiaryCalendar = ({
         </div>
 
         {monthTitles.length === 0 ? (
-          <div className="mt-6 space-y-3 text-center">
-            <p className="font-serif text-xl text-paper">
-              {hasActiveFilters
+          <EmptyState
+            variant="historial"
+            title={
+              hasActiveFilters
                 ? "Nada con esos filtros"
                 : titles.length === 0
-                  ? "El diario está vacío"
-                  : `Nada visto en ${monthName}`}
-            </p>
-            <p className="text-sm text-fog">
-              {hasActiveFilters
+                  ? "Tu historial está vacío"
+                  : `Nada visto en ${monthName}`
+            }
+            description={
+              hasActiveFilters
                 ? "Prueba otra combinación o quita filtros."
-                : `Registra tu primera de ${monthName}`}
-            </p>
-            <Link
-              href={
-                hasActiveFilters
-                  ? clearHref
-                  : `/buscar?fecha=${month}-01&destino=visto`
-              }
-              className={btnPrimary}
-            >
-              {hasActiveFilters ? "Quitar filtros" : `Registra tu primera de ${monthName}`}
-            </Link>
-          </div>
+                : titles.length === 0
+                  ? "Registra lo que viste y llenará el calendario."
+                  : `Registra tu primera de ${monthName}.`
+            }
+            actionHref={
+              hasActiveFilters
+                ? clearHref
+                : `/buscar?fecha=${month}-01&destino=visto`
+            }
+            actionLabel={hasActiveFilters ? "Quitar filtros" : "Registrar título"}
+          />
         ) : null}
       </section>
 

@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { createTitle, updateTitle } from "@/app/actions/titles";
+import { RatingStars } from "@/components/RatingStars";
 import { TmdbPicker, type TmdbPick } from "@/components/TmdbPicker";
 import { PosterImage } from "@/components/PosterImage";
 import type { List, Platform, Tag, Title, TitleKind } from "@/generated/prisma/browser";
@@ -72,11 +73,6 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
     setPosterPath(title?.posterPath ?? null);
     setImdbRating(title?.imdbRating ?? null);
     setPickedLabel(title?.name ?? "");
-  };
-
-  const handleRatingClick = (value: number) => {
-    const next = String(value);
-    setRating((current) => (current === next ? "" : next));
   };
 
   return (
@@ -212,28 +208,11 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
 
             <div className="space-y-2">
               <p className={fieldLabel}>Tu nota</p>
-              <div role="group" aria-label="Tu nota del 1 al 10" className="flex flex-wrap gap-1.5">
-                {Array.from({ length: 10 }, (_, index) => index + 1).map((value) => {
-                  const isCurrent = rating === String(value);
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      aria-pressed={isCurrent}
-                      onClick={() => handleRatingClick(value)}
-                      className={cn(
-                        "h-9 w-9 rounded-full text-sm font-medium",
-                        focusRing,
-                        isCurrent
-                          ? "bg-star text-ink"
-                          : "border border-chrome text-fog hover:border-star hover:text-star",
-                      )}
-                    >
-                      {value}
-                    </button>
-                  );
-                })}
-              </div>
+              <RatingStars
+                value={rating ? Number(rating) : null}
+                onChange={(next) => setRating(String(next))}
+                size="md"
+              />
               <input type="hidden" name="rating" value={rating} />
             </div>
 

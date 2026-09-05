@@ -1,10 +1,17 @@
+import { Platform, TitleKind } from "@/generated/prisma/browser";
+import { PLATFORMS } from "@/lib/labels";
 import type { SeriesStatusFilter } from "@/lib/series";
+
+const uniquePlatforms = (values: Platform[]) =>
+  PLATFORMS.filter((platform) => values.includes(platform));
 
 export const MINE_PLATFORMS_PARAM = "minePlatforms";
 
 const uniqueSlugs = (values: string[]) => [
   ...new Set(values.map((value) => value.trim()).filter(Boolean)),
 ];
+
+export type CatalogKindFilter = TitleKind | "ALL";
 
 export type CatalogQuery = {
   tags?: string[];
@@ -16,6 +23,8 @@ export type CatalogQuery = {
   day?: string | null;
   defaultView?: string | null;
   mode?: string | null;
+  kind?: CatalogKindFilter | null;
+  platforms?: Platform[];
 };
 
 export const catalogSearchParams = ({
@@ -28,6 +37,8 @@ export const catalogSearchParams = ({
   day,
   defaultView = "deck",
   mode,
+  kind,
+  platforms = [],
 }: CatalogQuery) => {
   const params = new URLSearchParams();
 
@@ -55,12 +66,21 @@ export const catalogSearchParams = ({
     params.set("month", month);
   }
 
-  if (day) {
+  const isCalendar = view === "calendar" || (!view && defaultView === "calendar");
+  if (day && isCalendar) {
     params.set("day", day);
   }
 
   if (mode && mode !== "picks") {
     params.set("mode", mode);
+  }
+
+  if (kind && kind !== "ALL") {
+    params.set("kind", kind);
+  }
+
+  for (const platform of uniquePlatforms(platforms)) {
+    params.append("platform", platform);
   }
 
   return params;

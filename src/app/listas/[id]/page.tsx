@@ -14,9 +14,16 @@ import {
 } from "@/components/MinePlatformsNotice";
 import { PageHeader } from "@/components/PageHeader";
 import type { DeckViewMode } from "@/components/DeckViewToggle";
+import {
+  parseCatalogOrder,
+  parseKindFilter,
+  parsePlatformFilters,
+  sortCatalogByTitle,
+  titleMatchesKind,
+} from "@/lib/catalog-filters";
 import { emptyStateForList, isFixedListSlug, WATCHLIST_SLUG } from "@/lib/lists";
 import { getListById, getTags, getTitleOptions, getUserStreamingPlatforms } from "@/lib/queries";
-import { resolveMinePlatformsCatalog } from "@/lib/streaming-platforms";
+import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
 import { btnDanger, btnPrimary } from "@/lib/ui";
@@ -33,6 +40,9 @@ export default async function ListDetailPage({
     tag?: string | string[];
     minePlatforms?: string | string[];
     seriesStatus?: string | string[];
+    kind?: string | string[];
+    platform?: string | string[];
+    sort?: string | string[];
   }>;
 }) {
   const { id } = await params;
@@ -41,6 +51,9 @@ export default async function ListDetailPage({
   const selectedTags = parseTagSlugs(query.tag);
   const minePlatforms = parseMinePlatforms(query.minePlatforms);
   const seriesStatus = parseSeriesStatusFilter(query.seriesStatus);
+  const kindFilter = parseKindFilter(query.kind);
+  const platforms = parsePlatformFilters(query.platform);
+  const sort = parseCatalogOrder(query.sort);
   const [list, titleOptions, tags, userPlatforms] = await Promise.all([
     getListById(id),
     getTitleOptions(),
@@ -58,23 +71,27 @@ export default async function ListDetailPage({
 
   const memberIds = new Set(list.items.map((item) => item.titleId));
   const availableTitles = titleOptions.filter((title) => !memberIds.has(title.id));
-  const taggedItems = list.items.filter((item) =>
-    titleMatchesAnyTag(item.title.tags, selectedTags),
+  const taggedItems = list.items.filter(
+    (item) =>
+      titleMatchesKind(item.title.kind, kindFilter) &&
+      titleMatchesAnyTag(item.title.tags, selectedTags),
   );
   const statusItems = taggedItems.filter((item) =>
     titleMatchesSeriesStatus(item.title, seriesStatus),
   );
-  const catalog = resolveMinePlatformsCatalog(
+  const catalog = resolveCatalogAvailability(
     statusItems.map((item) => item.title),
-    minePlatforms,
-    userPlatforms,
+    { platforms, minePlatforms, userPlatforms },
   );
   const visibleIds = new Set(catalog.titles.map((title) => title.id));
-  const visibleItems = catalog.needsSetup
-    ? []
-    : minePlatforms
-      ? statusItems.filter((item) => visibleIds.has(item.title.id))
-      : statusItems;
+  const visibleItems = sortCatalogByTitle(
+    catalog.needsSetup
+      ? []
+      : platforms.length > 0 || minePlatforms
+        ? statusItems.filter((item) => visibleIds.has(item.title.id))
+        : statusItems,
+    sort,
+  );
   const deleteAction = deleteList.bind(null, list.id);
   const fixed = isFixedListSlug(list.slug);
   const empty = emptyStateForList(list.slug);
@@ -110,6 +127,9 @@ export default async function ListDetailPage({
         selectedSlugs={selectedTags}
         pathname={`/listas/${list.id}`}
         view={view}
+        kind={kindFilter}
+        platforms={platforms}
+        sort={sort ?? undefined}
         minePlatforms={minePlatforms}
         hasStreamingPlatforms={userPlatforms.length > 0}
         seriesStatus={seriesStatus}
@@ -118,7 +138,13 @@ export default async function ListDetailPage({
       <AddTitleToListCta listId={list.id} titles={availableTitles} />
 
       {list.items.length === 0 ? (
-        <EmptyState title={empty.title} description={empty.description} />
+        <EmptyState
+          variant={empty.variant}
+          title={empty.title}
+          description={empty.description}
+          actionHref={empty.actionHref}
+          actionLabel={empty.actionLabel}
+        />
       ) : catalog.needsSetup ? (
         <MinePlatformsSetupCta />
       ) : filteredEmpty && minePlatforms ? (
@@ -147,6 +173,9 @@ export default async function ListDetailPage({
             selectedTags={selectedTags}
             minePlatforms={minePlatforms}
             seriesStatus={seriesStatus}
+            kind={kindFilter}
+            platforms={platforms}
+            sort={sort}
           />
         </div>
       )}

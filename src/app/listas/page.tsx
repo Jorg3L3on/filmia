@@ -56,6 +56,7 @@ export default async function ListsPage() {
         </h2>
         {custom.length === 0 ? (
           <EmptyState
+            variant="listas"
             title="Todavía no hay listas propias"
             description="Crea una colección para un mood, un ciclo o un maratón."
             actionHref="/listas/nueva"

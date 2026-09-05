@@ -106,6 +106,23 @@ export const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
+export const ratingToStars = (rating: number | null | undefined) => {
+  if (rating == null) {
+    return null;
+  }
+
+  return rating / 2;
+};
+
+export const formatStarScore = (rating: number | null | undefined) => {
+  const stars = ratingToStars(rating);
+  if (stars == null) {
+    return "—";
+  }
+
+  return stars.toFixed(1);
+};
+
 export const formatRating = (rating: number | null | undefined) => {
   if (rating == null) {
     return "Sin nota";
@@ -113,7 +130,7 @@ export const formatRating = (rating: number | null | undefined) => {
 
   const fullStars = Math.floor(rating / 2);
   const hasHalf = rating % 2 === 1;
-  return `${"★".repeat(fullStars)}${hasHalf ? "½" : ""} ${rating}/10`;
+  return `${"★".repeat(fullStars)}${hasHalf ? "½" : ""} ${formatStarScore(rating)}`;
 };
 
 export const formatRuntime = (minutes: number | null | undefined) => {

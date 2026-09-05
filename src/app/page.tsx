@@ -37,7 +37,14 @@ import {
   getWatchlist,
 } from "@/lib/queries";
 import { parseSeriesStatusFilter } from "@/lib/series";
-import { applyMinePlatformsFilter, resolveMinePlatformsCatalog } from "@/lib/streaming-platforms";
+import {
+  parseCatalogOrder,
+  parseKindFilter,
+  parsePlatformFilters,
+  sortCatalogItems,
+  titleMatchesKind,
+} from "@/lib/catalog-filters";
+import { applyMinePlatformsFilter, resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
@@ -57,6 +64,9 @@ export default async function HomePage({
     seriesStatus?: string | string[];
     month?: string | string[];
     day?: string | string[];
+    kind?: string | string[];
+    platform?: string | string[];
+    sort?: string | string[];
   }>;
 }) {
   const params = await searchParams;
@@ -128,10 +138,11 @@ const PicksHome = async ({
 
       {rawTitles.length === 0 ? (
         <EmptyState
-          title="Quiero ver está vacío"
-          description="Usa Buscar para encontrar un título en TMDB y agregarlo a Quiero ver."
+          variant="watchlist"
+          title="Aún no hay nada en Quiero ver"
+          description="Añade títulos desde Buscar o desde una ficha."
           actionHref="/buscar"
-          actionLabel="Buscar en TMDB"
+          actionLabel="Ir a Buscar"
         />
       ) : titles.length === 0 ? (
         <EmptyState
@@ -176,12 +187,18 @@ const HistorialHome = async ({
     seriesStatus?: string | string[];
     month?: string | string[];
     day?: string | string[];
+    kind?: string | string[];
+    platform?: string | string[];
+    sort?: string | string[];
   };
 }) => {
   const view = isView(params.view) ? params.view : "calendar";
   const selectedTags = parseTagSlugs(params.tag);
   const minePlatforms = parseMinePlatforms(params.minePlatforms);
   const seriesStatus = parseSeriesStatusFilter(params.seriesStatus);
+  const kindFilter = parseKindFilter(params.kind);
+  const platforms = parsePlatformFilters(params.platform);
+  const sort = parseCatalogOrder(params.sort);
   const requestedMonth = parseMonthParam(params.month);
 
   const [taggedTitles, tags, userPlatforms] = await Promise.all([
@@ -195,19 +212,32 @@ const HistorialHome = async ({
     getUserStreamingPlatforms(),
   ]);
 
-  const catalog = resolveMinePlatformsCatalog(
-    taggedTitles,
+  const kindTitles = taggedTitles.filter((title) =>
+    titleMatchesKind(title.kind, kindFilter),
+  );
+  const catalog = resolveCatalogAvailability(kindTitles, {
+    platforms,
     minePlatforms,
     userPlatforms,
-  );
-  const titles = catalog.titles;
+  });
+  const titles = sortCatalogItems(catalog.titles, sort);
   const month = hasExplicitMonthParam(params.month)
     ? requestedMonth
     : latestMonthWithEntries(titles, requestedMonth);
   const selectedDay = parseDayParam(params.day, month);
   const monthTitles = titlesInMonth(titles, month);
   const hasActiveFilters =
-    selectedTags.length > 0 || minePlatforms || Boolean(seriesStatus);
+    selectedTags.length > 0 ||
+    minePlatforms ||
+    Boolean(seriesStatus) ||
+    kindFilter !== "ALL" ||
+    platforms.length > 0 ||
+    Boolean(sort);
+  const queryExtra = {
+    kind: kindFilter,
+    platforms,
+    sort,
+  };
   const hrefFor = (mode: DeckViewMode) =>
     catalogHref("/", {
       tags: selectedTags,
@@ -218,6 +248,7 @@ const HistorialHome = async ({
       seriesStatus,
       month,
       day: mode === "calendar" ? selectedDay : undefined,
+      ...queryExtra,
     });
   const clearHref = catalogHref("/", {
     view,
@@ -239,6 +270,9 @@ const HistorialHome = async ({
           tags={selectedTags}
           minePlatforms={minePlatforms}
           seriesStatus={seriesStatus}
+          kind={kindFilter}
+          platforms={platforms}
+          sort={sort}
         />
       )}
 
@@ -256,6 +290,9 @@ const HistorialHome = async ({
         seriesStatus={seriesStatus}
         month={month}
         day={selectedDay}
+        kind={kindFilter}
+        platforms={platforms}
+        sort={sort ?? undefined}
       />
 
       <div className="space-y-6">
@@ -276,6 +313,9 @@ const HistorialHome = async ({
                   tags={selectedTags}
                   minePlatforms={minePlatforms}
                   seriesStatus={seriesStatus}
+                  kind={kindFilter}
+                  platforms={platforms}
+                  sort={sort}
                   hasActiveFilters={hasActiveFilters}
                   clearHref={clearHref}
                 />
@@ -293,18 +333,19 @@ const HistorialHome = async ({
             </>
           ) : titles.length === 0 ? (
             <EmptyState
+              variant="historial"
               title={
-                selectedTags.length > 0 || seriesStatus
+                hasActiveFilters
                   ? "Nada con esos filtros"
-                  : "El diario está vacío"
+                  : "Tu historial está vacío"
               }
               description={
-                selectedTags.length > 0 || seriesStatus
+                hasActiveFilters
                   ? "Prueba otra combinación o quita filtros. El estado de serie ignora películas."
-                  : "Registra un título o corre el seed para ver tus posters."
+                  : "Registra lo que viste y llenará el calendario."
               }
-              actionHref={hasActiveFilters ? clearHref : "/buscar"}
-              actionLabel={hasActiveFilters ? "Quitar filtros" : "Buscar en TMDB"}
+              actionHref={hasActiveFilters ? clearHref : "/buscar?destino=visto"}
+              actionLabel={hasActiveFilters ? "Quitar filtros" : "Registrar título"}
             />
           ) : (
             <>
