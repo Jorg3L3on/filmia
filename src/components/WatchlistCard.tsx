@@ -1,13 +1,15 @@
 import Link from "next/link";
+import { ImdbBadge } from "@/components/ImdbBadge";
 import { ListItemOrderControls } from "@/components/ListItemOrderControls";
 import { PosterImage } from "@/components/PosterImage";
+import { PosterPlatformBadge } from "@/components/PosterPlatformBadge";
 import { SharedPoster } from "@/components/SharedPoster";
 import { WatchlistMarkSeenButton } from "@/components/WatchlistMarkSeenButton";
 import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { titleInclude } from "@/lib/queries";
 import { btnGhost, focusRing } from "@/lib/ui";
-import type { Prisma } from "@/generated/prisma/browser";
+import type { Platform, Prisma } from "@/generated/prisma/browser";
 
 type WatchlistItem = Prisma.ListItemGetPayload<{
   include: { title: { include: typeof titleInclude } };
@@ -21,6 +23,9 @@ type WatchlistCardProps = {
   canMoveUp: boolean;
   canMoveDown: boolean;
   removeAction: () => void;
+  preferredPlatforms?: readonly Platform[];
+  swapUpTitleId?: string | null;
+  swapDownTitleId?: string | null;
 };
 
 export const WatchlistCard = ({
@@ -31,9 +36,13 @@ export const WatchlistCard = ({
   canMoveUp,
   canMoveDown,
   removeAction,
+  preferredPlatforms = [],
+  swapUpTitleId,
+  swapDownTitleId,
 }: WatchlistCardProps) => {
   const { title } = item;
   const yearLabel = title.year ? String(title.year) : TITLE_KIND_LABEL[title.kind];
+  const synopsis = title.overview?.trim() || null;
 
   if (variant === "hero") {
     return (
@@ -42,9 +51,10 @@ export const WatchlistCard = ({
           <WatchlistPoster
             title={title}
             size="hero"
-            className="w-[112px] shrink-0 sm:w-[140px]"
+            className="isolate z-0 w-[112px] shrink-0 sm:w-[140px]"
             posterClassName="rounded-poster"
             sizes="140px"
+            preferredPlatforms={preferredPlatforms}
             priority
           />
           <div className="min-w-0 flex-1 space-y-3">
@@ -79,6 +89,8 @@ export const WatchlistCard = ({
                 titleId={item.titleId}
                 canMoveUp={canMoveUp}
                 canMoveDown={canMoveDown}
+                swapUpTitleId={swapUpTitleId}
+                swapDownTitleId={swapDownTitleId}
               />
               <form action={removeAction}>
                 <button type="submit" className={btnGhost}>
@@ -100,23 +112,34 @@ export const WatchlistCard = ({
       <WatchlistPoster
         title={title}
         size="queue"
-        className="w-14 shrink-0"
+        className="isolate z-0 w-14 shrink-0"
         posterClassName="rounded-lg"
         sizes="56px"
+        preferredPlatforms={preferredPlatforms}
       />
-      <div className="min-w-0 flex-1">
+      <div className="w-[7.25rem] shrink-0 sm:w-[11rem]">
         <h3 className="truncate font-medium text-paper">
           <Link href={`/titulos/${title.id}`} className={`hover:text-accent ${focusRing}`}>
             {title.name}
           </Link>
         </h3>
         <p className="text-sm text-fog">{yearLabel}</p>
+        <ImdbBadge rating={title.imdbRating} compact />
       </div>
+      {synopsis ? (
+        <p className="min-w-0 flex-1 line-clamp-2 text-sm leading-5 text-fog">
+          {synopsis}
+        </p>
+      ) : (
+        <span className="min-w-0 flex-1" />
+      )}
       <ListItemOrderControls
         listId={listId}
         titleId={item.titleId}
         canMoveUp={canMoveUp}
         canMoveDown={canMoveDown}
+        swapUpTitleId={swapUpTitleId}
+        swapDownTitleId={swapDownTitleId}
       />
     </article>
   );
@@ -128,6 +151,7 @@ const WatchlistPoster = ({
   className,
   posterClassName,
   sizes,
+  preferredPlatforms = [],
   priority = false,
 }: {
   title: WatchlistItem["title"];
@@ -135,6 +159,7 @@ const WatchlistPoster = ({
   className: string;
   posterClassName: string;
   sizes: string;
+  preferredPlatforms?: readonly Platform[];
   priority?: boolean;
 }) => (
   <div className={cn("relative", className)}>
@@ -158,6 +183,11 @@ const WatchlistPoster = ({
       titleName={title.name}
       rating={title.rating}
       review={title.review}
+      size={size}
+    />
+    <PosterPlatformBadge
+      watchProvidersMx={title.watchProvidersMx}
+      preferredPlatforms={preferredPlatforms}
       size={size}
     />
   </div>

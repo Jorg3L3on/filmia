@@ -16,6 +16,7 @@ import {
   titleMatchesKind,
 } from "@/lib/catalog-filters";
 import { getTags, getUserStreamingPlatforms, getWatchlist } from "@/lib/queries";
+import { hydrateMissingTitleOverviews } from "@/lib/title-overview";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
@@ -74,16 +75,10 @@ export default async function WatchlistPage({
         ? kindItems.filter((item) => visibleIds.has(item.title.id))
         : kindItems;
   const items = sortCatalogByTitle(filteredItems, sort);
+  await hydrateMissingTitleOverviews(items.map((item) => item.title));
 
   const listId = watchlist?.id ?? "";
   const [hero, ...queue] = items;
-  const hasActiveFilters =
-    kindFilter !== "ALL" ||
-    selectedTags.length > 0 ||
-    minePlatforms ||
-    platforms.length > 0 ||
-    Boolean(seriesStatus) ||
-    Boolean(sort);
   const clearHref = catalogHref("/watchlist");
 
   return (
@@ -155,26 +150,34 @@ export default async function WatchlistPage({
               position={1}
               listId={listId}
               canMoveUp={false}
-              canMoveDown={!hasActiveFilters && queue.length > 0}
+              canMoveDown={queue.length > 0}
+              swapDownTitleId={queue[0]?.titleId}
               removeAction={removeFromWatchlist.bind(null, hero.titleId)}
+              preferredPlatforms={userPlatforms}
             />
           ) : null}
 
           {queue.length > 0 ? (
             <ul className="divide-y divide-line">
-              {queue.map((item, index) => (
-                <li key={item.titleId}>
-                  <WatchlistCard
-                    item={item}
-                    variant="queue"
-                    position={index + 2}
-                    listId={listId}
-                    canMoveUp={!hasActiveFilters}
-                    canMoveDown={!hasActiveFilters && index < queue.length - 1}
-                    removeAction={removeFromWatchlist.bind(null, item.titleId)}
-                  />
-                </li>
-              ))}
+              {queue.map((item, index) => {
+                const visibleIndex = index + 1;
+                return (
+                  <li key={item.titleId}>
+                    <WatchlistCard
+                      item={item}
+                      variant="queue"
+                      position={index + 2}
+                      listId={listId}
+                      canMoveUp
+                      canMoveDown={index < queue.length - 1}
+                      swapUpTitleId={items[visibleIndex - 1]?.titleId}
+                      swapDownTitleId={items[visibleIndex + 1]?.titleId}
+                      removeAction={removeFromWatchlist.bind(null, item.titleId)}
+                      preferredPlatforms={userPlatforms}
+                    />
+                  </li>
+                );
+              })}
             </ul>
           ) : null}
         </div>

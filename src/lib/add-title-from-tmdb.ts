@@ -150,6 +150,7 @@ export const upsertTitleFromTmdbForUser = async (
     posterPath: input.posterPath ?? null,
     imdbId: null as string | null,
     imdbRating: null as number | null,
+    overview: null as string | null,
     tmdbGenres: [] as TmdbGenre[],
   };
 
@@ -163,6 +164,7 @@ export const upsertTitleFromTmdbForUser = async (
       posterPath: resolved.posterPath ?? metadata.posterPath,
       imdbId: resolved.imdbId,
       imdbRating: resolved.imdbRating,
+      overview: resolved.overview ?? null,
       tmdbGenres: resolved.tmdbGenres,
     };
   } catch (error) {
@@ -186,6 +188,7 @@ export const upsertTitleFromTmdbForUser = async (
       posterPath: metadata.posterPath,
       imdbId: metadata.imdbId,
       imdbRating: metadata.imdbRating,
+      overview: metadata.overview,
       tmdbGenres: metadata.tmdbGenres,
       watchedAt: markWatched ? resolveWatchedAt(input.watchedAt) : null,
     },

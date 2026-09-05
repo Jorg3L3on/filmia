@@ -1,3 +1,6 @@
+"use client";
+
+import { type MouseEvent, type PointerEvent } from "react";
 import { moveListItem } from "@/app/actions/lists";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
@@ -7,6 +10,8 @@ type ListItemOrderControlsProps = {
   titleId: string;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  swapUpTitleId?: string | null;
+  swapDownTitleId?: string | null;
 };
 
 export const ListItemOrderControls = ({
@@ -14,12 +19,18 @@ export const ListItemOrderControls = ({
   titleId,
   canMoveUp,
   canMoveDown,
+  swapUpTitleId,
+  swapDownTitleId,
 }: ListItemOrderControlsProps) => {
-  const moveUp = moveListItem.bind(null, listId, titleId, "up");
-  const moveDown = moveListItem.bind(null, listId, titleId, "down");
+  const moveUp = moveListItem.bind(null, listId, titleId, "up", swapUpTitleId);
+  const moveDown = moveListItem.bind(null, listId, titleId, "down", swapDownTitleId);
 
   return (
-    <div className="flex items-center gap-1" role="group" aria-label="Orden en la lista">
+    <div
+      className="relative z-20 flex shrink-0 items-center gap-1"
+      role="group"
+      aria-label="Orden en la lista"
+    >
       <OrderButton
         action={moveUp}
         disabled={!canMoveUp}
@@ -36,6 +47,10 @@ export const ListItemOrderControls = ({
   );
 };
 
+const stopRowEvent = (event: MouseEvent | PointerEvent) => {
+  event.stopPropagation();
+};
+
 const OrderButton = ({
   action,
   disabled,
@@ -48,13 +63,13 @@ const OrderButton = ({
   icon: "up" | "down";
 }) => {
   return (
-    <form action={action}>
+    <form action={action} onClick={stopRowEvent} onPointerDown={stopRowEvent}>
       <button
         type="submit"
         disabled={disabled}
         aria-label={label}
         className={cn(
-          "inline-flex h-8 w-8 items-center justify-center rounded-full border border-chrome text-fog transition",
+          "relative z-20 inline-flex h-8 w-8 pointer-events-auto items-center justify-center rounded-full border border-chrome text-fog transition",
           focusRing,
           disabled
             ? "cursor-not-allowed opacity-35"

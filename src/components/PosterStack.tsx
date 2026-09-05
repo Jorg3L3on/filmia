@@ -25,8 +25,8 @@ export const PosterStack = ({
     return (
       <div
         className={cn(
-          "flex items-center justify-center rounded-2xl border border-dashed border-chrome bg-well text-xs text-mist",
-          isSmall ? "h-[120px]" : "aspect-[2/3]",
+          "flex items-center justify-center overflow-hidden rounded-2xl border border-dashed border-chrome bg-well text-xs text-mist",
+          isSmall ? "h-[120px]" : "h-[126px] sm:h-[142px]",
         )}
       >
         {emptyLabel}
@@ -36,21 +36,26 @@ export const PosterStack = ({
 
   return (
     <div
-      className={cn("relative w-full", isSmall ? "h-[120px]" : "h-[210px] sm:h-[236px]")}
+      className={cn(
+        "relative w-full overflow-hidden rounded-2xl",
+        isSmall ? "h-[120px]" : "h-[126px] sm:h-[142px]",
+      )}
       aria-hidden="true"
     >
+      <div className={cn("absolute inset-y-0 left-0", isSmall ? "right-0" : "right-[18%]")}>
       {shown.map((title, index) => (
         <div
           key={title.id}
           className={cn(
             "absolute top-0 overflow-hidden rounded-2xl border border-canvas bg-well shadow-[0_10px_24px_rgba(0,0,0,0.45)]",
-            index === 0 ? "left-0 z-30 h-full w-[72%]" : "h-[88%] w-[58%]",
+            index === 0 ? "left-0 z-30 h-full w-[72%]" : "h-[88%]",
+            index === 0 ? undefined : isSmall ? "w-[50%]" : "w-[58%]",
           )}
           style={
             index === 0
               ? undefined
               : {
-                  left: `${28 + index * 18}%`,
+                  left: `${isSmall ? 18 + index * 14 : 28 + index * 18}%`,
                   top: `${6 * index}%`,
                   zIndex: 30 - index,
                 }
@@ -65,6 +70,7 @@ export const PosterStack = ({
           />
         </div>
       ))}
+      </div>
     </div>
   );
 };

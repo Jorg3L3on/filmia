@@ -69,7 +69,7 @@ export const SiteHeader = ({ pathname: currentPath, user }: SiteHeaderProps) => 
             aria-label={`Perfil de ${displayName}`}
             aria-current={isProfile ? "page" : undefined}
             className={cn(
-              "flex items-center gap-2 rounded-full p-0.5 text-xs transition sm:max-w-[14rem] sm:py-1 sm:pr-3 sm:pl-1",
+              "hidden items-center gap-2 rounded-full p-0.5 text-xs transition sm:flex sm:max-w-[14rem] sm:py-1 sm:pr-3 sm:pl-1",
               focusRing,
               isProfile
                 ? "bg-accent font-medium text-ink"

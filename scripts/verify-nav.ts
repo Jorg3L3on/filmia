@@ -1,4 +1,4 @@
-import { isCurrentPath } from "../src/lib/nav";
+import { isCurrentPath, mobileNavItems } from "../src/lib/nav";
 
 const assert = (condition: unknown, message: string) => {
   if (!condition) {
@@ -21,6 +21,9 @@ const cases: Array<{ href: string; pathname: string; expected: boolean }> = [
   { href: "/watchlist", pathname: "/", expected: false },
   { href: "/buscar", pathname: "/buscar", expected: true },
   { href: "/buscar", pathname: "/titulos/abc", expected: false },
+  { href: "/perfil", pathname: "/perfil", expected: true },
+  { href: "/perfil", pathname: "/perfil?guardado=cuenta", expected: true },
+  { href: "/perfil", pathname: "/", expected: false },
 ];
 
 for (const item of cases) {
@@ -36,4 +39,14 @@ for (const pathname of onListas) {
   assert(isCurrentPath("/listas", pathname), `Listas must be active on ${pathname}`);
 }
 
+assert(mobileNavItems.length === 5, "Mobile nav should have 5 items so Buscar is centered");
+assert(
+  mobileNavItems.map((item) => item.label).join("|") ===
+    "Diario|Quiero ver|Buscar|Listas|Perfil",
+  "Mobile nav order must be Diario, Quiero ver, Buscar, Listas, Perfil",
+);
+assert(mobileNavItems[2]?.href === "/buscar", "Buscar must be the middle (3rd) mobile nav item");
+assert(mobileNavItems[4]?.href === "/perfil", "Perfil must be the last mobile nav item");
+
 console.log("✓ BottomNav path matcher: Diario exact /, Listas prefix only");
+console.log("✓ Mobile nav is 5 items with Buscar centered and Perfil at the end");

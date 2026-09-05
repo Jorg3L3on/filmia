@@ -212,6 +212,47 @@ export const primaryAvailabilityPlatform = (
   return fallback;
 };
 
+export type PosterAvailabilityBadge = {
+  platform: Platform | null;
+  extraCount: number;
+  firstProvider: WatchProviderOffer | null;
+};
+
+/** Badge for poster corners: preferred MX flatrate, else first available. No data → null. */
+export const resolvePosterAvailabilityBadge = (
+  watchProvidersMx: unknown,
+  preferredPlatforms: readonly Platform[] = [],
+): PosterAvailabilityBadge | null => {
+  const data = parseStoredWatchProviders(watchProvidersMx);
+  const flatrate = data?.flatrate ?? [];
+  if (flatrate.length === 0) {
+    return null;
+  }
+
+  const platform = primaryAvailabilityPlatform(flatrate, null, preferredPlatforms);
+  const matched = new Set<Platform>();
+  for (const provider of flatrate) {
+    const mapped = matchWatchProviderPlatform(provider);
+    if (mapped) {
+      matched.add(mapped);
+    }
+  }
+
+  if (platform) {
+    return {
+      platform,
+      extraCount: Math.max(0, matched.size - 1),
+      firstProvider: null,
+    };
+  }
+
+  return {
+    platform: null,
+    extraCount: Math.max(0, flatrate.length - 1),
+    firstProvider: flatrate[0] ?? null,
+  };
+};
+
 /**
  * El título está incluido (flatrate) en al menos una plataforma del usuario.
  * Rent/buy no cuentan: el filtro es “disponible en mis suscripciones”.

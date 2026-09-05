@@ -16,7 +16,7 @@ export default async function ListsPage() {
   const { fixed, custom } = partitionUserLists(lists);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
       <header className="flex items-center justify-between gap-3">
         <h1 className="font-serif text-4xl tracking-tight text-paper">Listas</h1>
         <Link href="/listas/nueva" className={btnPrimary}>
@@ -31,7 +31,7 @@ export default async function ListsPage() {
           </span>
           Listas diarias
         </h2>
-        <ul className="rail -mx-4 flex gap-4 overflow-x-auto px-4 pb-2">
+        <ul className="rail -mx-4 flex gap-8 overflow-x-auto px-4 pb-3 sm:gap-10">
           {fixed.map((list) => (
             <li key={list.id}>
               <ListCard
@@ -47,7 +47,7 @@ export default async function ListsPage() {
         </ul>
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-4 pt-2">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-paper">
           <span className="text-accent" aria-hidden="true">
             ★
@@ -63,7 +63,7 @@ export default async function ListsPage() {
             actionLabel="Nueva lista"
           />
         ) : (
-          <ul className="rail -mx-4 flex gap-4 overflow-x-auto px-4 pb-2">
+          <ul className="rail -mx-4 flex gap-8 overflow-x-auto px-4 pb-3 sm:gap-10">
             {custom.map((list) => (
               <li key={list.id}>
                 <ListCard
