@@ -175,9 +175,11 @@ export default async function WatchlistPage({
         </div>
       )}
 
-      <Link href="/buscar" className={`${btnPrimary} w-full`}>
-        + Agregar a Quiero ver
-      </Link>
+      <div className="sticky bottom-20 z-20 bg-canvas/95 py-3 sm:bottom-4">
+        <Link href="/buscar" className={`${btnPrimary} w-full`}>
+          + Agregar a Quiero ver
+        </Link>
+      </div>
     </div>
   );
 }
