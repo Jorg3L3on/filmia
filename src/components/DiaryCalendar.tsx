@@ -88,8 +88,8 @@ const DayCellPosters = ({ titles }: { titles: DiaryCalendarTitle[] }) => {
       ))}
       <div className="absolute inset-0 bg-gradient-to-t from-canvas-deep/80 via-transparent to-canvas-deep/20" />
       {extra > 0 ? (
-        <span className="absolute right-1 bottom-1 z-10 rounded-full bg-canvas/85 px-1.5 text-[10px] font-semibold text-paper">
-          +{extra}
+        <span className="absolute right-1 bottom-1 z-10 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-ink">
+          +{titles.length}
         </span>
       ) : null}
     </div>

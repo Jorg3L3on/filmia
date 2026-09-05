@@ -124,21 +124,14 @@ const PicksHome = async ({
     : [];
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        eyebrow="Diario"
-        title="Qué ver"
-        description="Hasta cinco títulos de Quiero ver por categoría, los mejor calificados en IMDb y disponibles en tus plataformas."
-      />
-      <div className="flex flex-col gap-3">
-        {modeToggle}
-        {activeCategory ? (
-          <DiaryGenreToggle
-            categories={categories}
-            activeSlug={activeCategory.slug}
-          />
-        ) : null}
-      </div>
+    <div className="space-y-6">
+      {modeToggle}
+      {activeCategory ? (
+        <DiaryGenreToggle
+          categories={categories}
+          activeSlug={activeCategory.slug}
+        />
+      ) : null}
 
       <MissingStreamingDataNote count={catalog.missingCache} />
 
@@ -245,11 +238,6 @@ const HistorialHome = async ({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Diario"
-        title="Historial"
-        description="Tu diario personal: lo que ya viste, por mes. Sin feed social."
-      />
       <DiaryModeToggle mode="historial" />
 
       {view === "calendar" ? null : (

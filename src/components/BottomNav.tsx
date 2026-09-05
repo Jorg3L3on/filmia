@@ -6,11 +6,10 @@ import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
 
 const navItems = [
-  { href: "/", label: "Diario", icon: "home" },
-  { href: "/watchlist", label: "Por ver", icon: "queue" },
-  { href: "/buscar", label: "Registrar", icon: "log" },
+  { href: "/", label: "Diario", icon: "diary" },
+  { href: "/watchlist", label: "Quiero ver", icon: "queue" },
+  { href: "/buscar", label: "Buscar", icon: "search" },
   { href: "/listas", label: "Listas", icon: "lists" },
-  { href: "/perfil", label: "Perfil", icon: "profile" },
 ] as const;
 
 const isCurrentPath = (href: string, pathname: string) =>
@@ -24,10 +23,10 @@ export const BottomNav = () => {
       aria-label="Principal móvil"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-canvas/95 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur sm:hidden"
     >
-      <ul className="mx-auto grid max-w-lg grid-cols-5 items-end px-1">
+      <ul className="mx-auto grid max-w-lg grid-cols-4 items-end px-1">
         {navItems.map((item) => {
           const isCurrent = isCurrentPath(item.href, pathname);
-          const isLog = item.icon === "log";
+          const isSearch = item.icon === "search";
 
           return (
             <li key={item.href} className="flex justify-center">
@@ -38,7 +37,7 @@ export const BottomNav = () => {
                 className={cn(
                   "flex min-w-[56px] flex-col items-center gap-1 px-1 py-1 text-[10px] uppercase tracking-[0.12em]",
                   focusRing,
-                  isLog
+                  isSearch
                     ? "text-ink"
                     : isCurrent
                       ? "text-accent"
@@ -48,14 +47,14 @@ export const BottomNav = () => {
                 <span
                   className={cn(
                     "flex items-center justify-center",
-                    isLog
-                      ? "mb-0.5 h-11 w-11 -translate-y-2 rounded-full bg-accent text-ink shadow-[0_8px_20px_rgba(124,156,255,0.32)]"
+                    isSearch
+                      ? "mb-0.5 h-12 w-12 -translate-y-2 rounded-full bg-accent text-ink shadow-[0_8px_20px_rgba(124,156,255,0.32)]"
                       : "h-6 w-6",
                   )}
                 >
                   <NavIcon name={item.icon} />
                 </span>
-                <span className={isLog ? "text-accent" : undefined}>{item.label}</span>
+                <span className={isSearch ? "text-accent" : undefined}>{item.label}</span>
               </Link>
             </li>
           );
@@ -75,13 +74,13 @@ const NavIcon = ({ name }: { name: (typeof navItems)[number]["icon"] }) => {
     "aria-hidden": true,
   } as const;
 
-  if (name === "home") {
+  if (name === "diary") {
     return (
       <svg {...common}>
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
-          d="M4.5 10.5 12 4l7.5 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5.5a1 1 0 0 1-1-1v-9.5Z"
+          d="M6.5 5.5h11A1.5 1.5 0 0 1 19 7v12.5l-7-3-7 3V7A1.5 1.5 0 0 1 6.5 5.5Z"
         />
       </svg>
     );
@@ -99,27 +98,11 @@ const NavIcon = ({ name }: { name: (typeof navItems)[number]["icon"] }) => {
     );
   }
 
-  if (name === "log") {
+  if (name === "search") {
     return (
       <svg {...common} className="h-6 w-6">
-        <path strokeLinecap="round" d="M12 6.5v11M6.5 12h11" />
-      </svg>
-    );
-  }
-
-  if (name === "profile") {
-    return (
-      <svg {...common}>
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 12.5a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5Z"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M5.5 19.2c.7-2.4 3-3.7 6.5-3.7s5.8 1.3 6.5 3.7"
-        />
+        <circle cx="11" cy="11" r="5.5" />
+        <path strokeLinecap="round" d="m15.5 15.5 4 4" />
       </svg>
     );
   }

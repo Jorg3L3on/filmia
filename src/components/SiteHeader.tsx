@@ -8,7 +8,7 @@ import { focusRing } from "@/lib/ui";
 
 const navItems = [
   { href: "/", label: "Diario" },
-  { href: "/watchlist", label: "Por ver" },
+  { href: "/watchlist", label: "Quiero ver" },
   { href: "/listas", label: "Listas" },
   { href: "/tags", label: "Etiquetas" },
   { href: "/buscar", label: "Buscar" },

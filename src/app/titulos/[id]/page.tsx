@@ -165,7 +165,7 @@ export default async function TitleDetailPage({
         <section className={`${wellClass} space-y-4 p-5`}>
           <header className="space-y-1">
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-success">
-              Tu entrada
+              Mi registro
             </p>
             <h2 className="font-serif text-xl text-paper">{title.name}</h2>
             <p className="flex flex-wrap items-center gap-2 text-sm text-fog">

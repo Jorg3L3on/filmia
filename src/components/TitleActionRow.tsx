@@ -83,7 +83,7 @@ export const TitleActionRow = ({
             )}
           >
             <WatchlistIcon filled={inWatchlist} />
-            Por ver
+            En lista
           </button>
         </form>
 
@@ -118,7 +118,7 @@ export const TitleActionRow = ({
           )}
         >
           <PlusListIcon />
-          + Lista
+          Lista
         </button>
 
         <button
@@ -132,7 +132,7 @@ export const TitleActionRow = ({
           )}
         >
           <TagIcon />
-          Tags
+          Etiquetas
         </button>
       </div>
 
