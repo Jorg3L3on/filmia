@@ -183,14 +183,23 @@ const DeckCard = ({
         )}
         draggable={false}
       >
-        <SharedPoster titleId={title.id} className="absolute inset-0">
+        {compact ? (
           <PosterImage
             name={title.name}
             posterPath={title.posterPath}
             priority={metrics.isActive}
             className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
           />
-        </SharedPoster>
+        ) : (
+          <SharedPoster titleId={title.id} className="absolute inset-0">
+            <PosterImage
+              name={title.name}
+              posterPath={title.posterPath}
+              priority={metrics.isActive}
+              className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
+            />
+          </SharedPoster>
+        )}
         {!compact && title.watched ? (
           <WatchedBadge compact className="absolute left-2 top-2 z-10" />
         ) : null}
@@ -650,7 +659,7 @@ export const CoverflowDeck = ({
             <h2
               className={cn(
                 "font-serif text-white",
-                isSheet ? "text-xl" : "text-2xl sm:text-3xl",
+                isSheet ? "truncate px-6 text-xl" : "text-2xl sm:text-3xl",
               )}
             >
               <Link
