@@ -109,9 +109,8 @@ export const CatalogMoreFilters = ({
               <button
                 type="button"
                 onClick={onClear}
-                className={cn(btnGhost, "flex-1 gap-2")}
+                className={cn(btnGhost, "flex-1")}
               >
-                <FunnelIcon />
                 Limpiar
               </button>
               <button

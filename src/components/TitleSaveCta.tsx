@@ -60,7 +60,11 @@ export const TitleSaveCta = ({
           <ChevronIcon />
         </button>
       ) : (
-        <WatchlistButton titleId={titleId} inWatchlist={inWatchlist} />
+        <WatchlistButton
+          titleId={titleId}
+          inWatchlist={inWatchlist}
+          label={copy.label}
+        />
       )}
 
       <p className={cn("text-center text-sm", isInList ? "text-accent" : "text-mist")}>
@@ -75,9 +79,11 @@ export const TitleSaveCta = ({
 const WatchlistButton = ({
   titleId,
   inWatchlist,
+  label,
 }: {
   titleId: string;
   inWatchlist: boolean;
+  label: string;
 }) => {
   const action = inWatchlist
     ? removeFromWatchlistById.bind(null, titleId)
@@ -89,15 +95,15 @@ const WatchlistButton = ({
         type="submit"
         aria-pressed={inWatchlist}
         className={cn(
-          "flex w-full items-center justify-center gap-3 rounded-2xl border px-5 py-3.5 font-medium",
+          "flex w-full items-center justify-center gap-3 rounded-2xl px-5 py-3.5 font-semibold",
           focusRing,
           inWatchlist
-            ? "border-accent bg-accent/15 text-accent"
-            : "border-paper/70 bg-transparent text-paper",
+            ? "bg-accent text-ink"
+            : "border border-paper/70 bg-transparent font-medium text-paper",
         )}
       >
         <BookmarkIcon filled={inWatchlist} />
-        Quiero ver
+        {label}
       </button>
     </form>
   );

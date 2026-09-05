@@ -106,10 +106,10 @@ export const RatingSheet = ({
               onChange={(event) => setNote(event.target.value.slice(0, NOTE_MAX))}
               maxLength={NOTE_MAX}
               rows={3}
-              placeholder="Un clásico inolvidable. Cada detalle cuenta una historia."
+              placeholder="Escribe una nota corta (opcional)"
               className={cn(fieldClass, "resize-none bg-canvas")}
             />
-            <span className="block text-right text-[11px] text-mist">
+            <span className="block text-right text-[11px] text-mist" aria-live="polite">
               {note.length}/{NOTE_MAX}
             </span>
           </label>

@@ -80,7 +80,8 @@ const queued = titleListMembership([
   { id: "w", name: "Quiero ver", slug: WATCHLIST_MEMBERSHIP_SLUG },
 ]);
 assert(queued.state === "watchlist", "watchlist membership");
-assert(membershipCopy(queued).label === "Quiero ver", "watchlist stays Quiero ver");
+assert(membershipCopy(queued).label === "En Quiero ver", "watchlist uses active copy");
+assert(membershipCopy(queued).label !== "Quiero ver", "watchlist is not idle copy");
 assert(membershipCopy(queued).label !== "En lista", "watchlist never says En lista");
 
 const saved = titleListMembership([

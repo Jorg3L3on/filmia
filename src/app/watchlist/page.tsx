@@ -20,7 +20,7 @@ import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
 import { cn } from "@/lib/cn";
-import { btnPrimary, focusRing } from "@/lib/ui";
+import { focusRing } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -179,14 +179,6 @@ export default async function WatchlistPage({
           ) : null}
         </div>
       )}
-
-      {rawItems.length > 0 ? (
-        <div className="sticky bottom-20 z-20 bg-canvas/95 py-3 sm:bottom-4">
-          <Link href="/buscar" className={`${btnPrimary} w-full`}>
-            Ir a Buscar
-          </Link>
-        </div>
-      ) : null}
     </div>
   );
 }

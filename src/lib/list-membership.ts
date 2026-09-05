@@ -57,7 +57,7 @@ export const membershipCopy = (membership: TitleListMembership) => {
 
   if (membership.state === "watchlist") {
     return {
-      label: "Quiero ver",
+      label: "En Quiero ver",
       detail: null,
       hint: "Ya está en Quiero ver.",
     };
