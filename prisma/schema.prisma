@@ -71,6 +71,7 @@ model Title {
   posterPath              String?
   imdbId                  String?
   imdbRating              Float?
+  overview                String?    @db.Text
   tmdbGenres              Json       @default("[]")
   watchProvidersMx        Json?
   watchProvidersFetchedAt DateTime?

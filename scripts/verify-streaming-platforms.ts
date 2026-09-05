@@ -9,6 +9,7 @@ import {
   parseStoredStreamingPlatforms,
   primaryAvailabilityPlatform,
   resolveMinePlatformsCatalog,
+  resolvePosterAvailabilityBadge,
   STREAMING_PLATFORM_TMDB,
   streamingPlatformLogoUrl,
   titleAvailableOnUserPlatforms,
@@ -270,6 +271,38 @@ const run = () => {
       `${platform} should resolve to a TMDB logo URL`,
     );
   }
+
+  const badgeNone = resolvePosterAvailabilityBadge(null, [Platform.NETFLIX]);
+  assert(badgeNone === null, "Poster badge should stay empty without MX flatrate data");
+
+  const badgePreferred = resolvePosterAvailabilityBadge(
+    {
+      link: null,
+      flatrate: [provider(8, "Netflix"), provider(337, "Disney Plus")],
+      rent: [],
+      buy: [],
+    },
+    [Platform.DISNEY],
+  );
+  assert(badgePreferred?.platform === Platform.DISNEY, "Poster badge should prefer the user's platform");
+  assert(badgePreferred?.extraCount === 1, "Poster badge should expose extra MX platforms as +N");
+
+  const badgeFirst = resolvePosterAvailabilityBadge({
+    link: null,
+    flatrate: [provider(8, "Netflix"), provider(119, "Amazon Prime Video")],
+    rent: [],
+    buy: [],
+  });
+  assert(badgeFirst?.platform === Platform.NETFLIX, "Without prefs, poster badge should take first mapped flatrate");
+
+  const badgeUnmapped = resolvePosterAvailabilityBadge({
+    link: null,
+    flatrate: [provider(9999, "Mystery Stream")],
+    rent: [],
+    buy: [],
+  });
+  assert(badgeUnmapped?.platform === null, "Unmapped flatrate should not invent a Platform");
+  assert(badgeUnmapped?.firstProvider?.name === "Mystery Stream", "Unmapped flatrate should still show first provider");
 
   console.log("✓ Streaming platform prefs parse, match, and highlight helpers");
   console.log("All streaming platform checks passed.");

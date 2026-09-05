@@ -26,7 +26,6 @@ export const MarkSeenEye = ({
   const isHero = size === "hero";
 
   const handleOpen = (event: MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
     event.stopPropagation();
     setOpen(true);
   };
