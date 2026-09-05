@@ -6,8 +6,10 @@ import { PosterPlatformBadge } from "@/components/PosterPlatformBadge";
 import { SharedPoster } from "@/components/SharedPoster";
 import { WatchlistMarkSeenButton } from "@/components/WatchlistMarkSeenButton";
 import { cn } from "@/lib/cn";
+import { compactGenreLabel } from "@/lib/diary-picks";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { titleInclude } from "@/lib/queries";
+import { titleSynopsis } from "@/lib/title-overview";
 import { btnGhost, focusRing } from "@/lib/ui";
 import type { Platform, Prisma } from "@/generated/prisma/browser";
 
@@ -42,7 +44,8 @@ export const WatchlistCard = ({
 }: WatchlistCardProps) => {
   const { title } = item;
   const yearLabel = title.year ? String(title.year) : TITLE_KIND_LABEL[title.kind];
-  const synopsis = title.overview?.trim() || null;
+  const synopsis = titleSynopsis(title.overview);
+  const genreLabel = compactGenreLabel(title.tmdbGenres);
 
   if (variant === "hero") {
     return (
@@ -74,6 +77,7 @@ export const WatchlistCard = ({
                 <p className="text-sm text-fog">
                   {yearLabel}
                   {title.year ? ` · ${TITLE_KIND_LABEL[title.kind]}` : ""}
+                  {genreLabel ? ` · ${genreLabel}` : ""}
                 </p>
               </div>
             </div>
@@ -117,22 +121,22 @@ export const WatchlistCard = ({
         sizes="56px"
         preferredPlatforms={preferredPlatforms}
       />
-      <div className="w-[7.25rem] shrink-0 sm:w-[11rem]">
+      <div className="min-w-0 w-[8.5rem] shrink-0 sm:w-[13rem]">
         <h3 className="truncate font-medium text-paper">
           <Link href={`/titulos/${title.id}`} className={`hover:text-accent ${focusRing}`}>
             {title.name}
           </Link>
         </h3>
-        <p className="text-sm text-fog">{yearLabel}</p>
+        <p className="truncate text-sm text-fog">
+          {genreLabel ? `${yearLabel} · ${genreLabel}` : yearLabel}
+        </p>
         <ImdbBadge rating={title.imdbRating} compact />
       </div>
       {synopsis ? (
-        <p className="min-w-0 flex-1 line-clamp-2 text-sm leading-5 text-fog">
+        <p className="hidden min-w-0 flex-1 line-clamp-2 text-sm leading-5 text-fog sm:block">
           {synopsis}
         </p>
-      ) : (
-        <span className="min-w-0 flex-1" />
-      )}
+      ) : null}
       <ListItemOrderControls
         listId={listId}
         titleId={item.titleId}

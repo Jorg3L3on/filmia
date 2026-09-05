@@ -382,6 +382,7 @@ export type TmdbTitleExtras = {
   overview: string | null;
   runtimeMinutes: number | null;
   backdropPath: string | null;
+  genres: TmdbGenre[];
 };
 
 const parseRuntimeMinutes = (data: {
@@ -493,6 +494,7 @@ export const getTmdbTitleExtras = async (
       overview: details.overview,
       runtimeMinutes: details.runtimeMinutes,
       backdropPath: details.backdropPath,
+      genres: details.genres,
     };
   } catch {
     return null;
