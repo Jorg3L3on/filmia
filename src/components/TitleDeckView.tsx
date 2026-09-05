@@ -101,9 +101,11 @@ export const TitleDeckView = ({
                   posterPath={title.posterPath}
                   year={title.year}
                   rating={title.rating}
+                  review={title.review}
                   watchedAt={title.watchedAt}
                   tags={title.tags.map((item) => item.tag)}
                   seriesStatus={title.kind === "SERIES" ? title.seriesStatus : null}
+                  showMarkSeenEye={footer === "watched"}
                 />
             </li>
           ))}
