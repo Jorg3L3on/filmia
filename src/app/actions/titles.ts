@@ -250,10 +250,14 @@ const requireOwnedSeries = async (titleId: string) => {
 export const setTitleRating = async (titleId: string, formData: FormData) => {
   const userId = await requireUserId();
   const rating = parseRating(formData.get("rating"));
+  const review = parseOptionalReview(formData.get("review"));
 
   const result = await prisma.title.updateMany({
     where: { id: titleId, userId },
-    data: { rating },
+    data: {
+      rating,
+      ...(formData.has("review") ? { review } : {}),
+    },
   });
 
   if (result.count === 0) {

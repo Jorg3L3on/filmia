@@ -23,8 +23,11 @@ export default async function TagsPage() {
 
       {tags.length === 0 ? (
         <EmptyState
+          variant="listas"
           title="Todavía no hay etiquetas"
           description="Crea la primera o espera a que Filmia siembre las sugeridas al entrar."
+          actionHref="/buscar"
+          actionLabel="Ir a Buscar"
         />
       ) : (
         <ul className="grid grid-cols-2 gap-4">

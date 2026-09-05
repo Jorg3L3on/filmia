@@ -5,10 +5,12 @@ import { ListItemOrderControls } from "@/components/ListItemOrderControls";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PosterTile } from "@/components/PosterTile";
 import type { titleInclude } from "@/lib/queries";
+import type { CatalogKindFilter } from "@/lib/catalog-href";
+import type { CatalogSort } from "@/lib/tags";
 import { catalogHref } from "@/lib/tags";
 import { btnLink } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
-import type { Prisma } from "@/generated/prisma/browser";
+import type { Platform, Prisma } from "@/generated/prisma/browser";
 import type { SeriesStatusFilter } from "@/lib/series";
 
 type ListItemPayload = Prisma.ListItemGetPayload<{
@@ -22,6 +24,9 @@ type ListTitlesViewProps = {
   selectedTags?: string[];
   minePlatforms?: boolean;
   seriesStatus?: SeriesStatusFilter;
+  kind?: CatalogKindFilter;
+  platforms?: Platform[];
+  sort?: CatalogSort | null;
 };
 
 const toCoverflowTitle = (item: ListItemPayload): CoverflowTitle => {
@@ -51,6 +56,9 @@ export const ListTitlesView = ({
   selectedTags = [],
   minePlatforms = false,
   seriesStatus,
+  kind,
+  platforms,
+  sort,
 }: ListTitlesViewProps) => {
   const hrefFor = (nextMode: DeckViewMode) =>
     catalogHref(`/listas/${listId}`, {
@@ -58,6 +66,9 @@ export const ListTitlesView = ({
       view: nextMode,
       minePlatforms,
       seriesStatus,
+      kind,
+      platforms,
+      sort,
     });
 
   return (

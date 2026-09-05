@@ -258,6 +258,25 @@ export const resolveMinePlatformsCatalog = <T extends { watchProvidersMx?: unkno
   return { titles: visible, missingCache, needsSetup: false };
 };
 
+export const resolveCatalogAvailability = <T extends { watchProvidersMx?: unknown }>(
+  titles: readonly T[],
+  {
+    platforms = [],
+    minePlatforms = false,
+    userPlatforms = [],
+  }: {
+    platforms?: readonly Platform[];
+    minePlatforms?: boolean;
+    userPlatforms?: readonly Platform[];
+  },
+) => {
+  if (platforms.length > 0) {
+    return resolveMinePlatformsCatalog(titles, true, platforms);
+  }
+
+  return resolveMinePlatformsCatalog(titles, minePlatforms, userPlatforms);
+};
+
 export const formatUserPlatformsList = (platforms: readonly Platform[]) => {
   const labels = platforms.map((platform) => PLATFORM_SERVICE_LABEL[platform]);
   if (labels.length === 0) {

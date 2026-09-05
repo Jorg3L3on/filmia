@@ -2,9 +2,12 @@ import Link from "next/link";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
 import { cn } from "@/lib/cn";
 import { formatMonthHeading, shiftMonthParam } from "@/lib/dates";
+import type { CatalogKindFilter } from "@/lib/catalog-href";
 import { catalogHref } from "@/lib/tags";
 import { focusRing } from "@/lib/ui";
+import type { Platform } from "@/generated/prisma/browser";
 import type { SeriesStatusFilter } from "@/lib/series";
+import type { CatalogSort } from "@/lib/tags";
 
 type DiaryViewHeaderProps = {
   month: string;
@@ -13,6 +16,9 @@ type DiaryViewHeaderProps = {
   tags?: string[];
   minePlatforms?: boolean;
   seriesStatus?: SeriesStatusFilter;
+  kind?: CatalogKindFilter;
+  platforms?: Platform[];
+  sort?: CatalogSort | null;
 };
 
 export const DiaryViewHeader = ({
@@ -22,6 +28,9 @@ export const DiaryViewHeader = ({
   tags = [],
   minePlatforms = false,
   seriesStatus,
+  kind,
+  platforms,
+  sort,
 }: DiaryViewHeaderProps) => {
   const query = {
     tags,
@@ -29,6 +38,9 @@ export const DiaryViewHeader = ({
     seriesStatus,
     defaultView: "calendar" as const,
     mode: "historial",
+    kind,
+    platforms,
+    sort,
   };
   const prevMonth = shiftMonthParam(month, -1);
   const nextMonth = shiftMonthParam(month, 1);

@@ -5,6 +5,7 @@ export {
   catalogHref,
   catalogSearchParams,
   MINE_PLATFORMS_PARAM,
+  type CatalogKindFilter,
   type CatalogQuery,
 } from "@/lib/catalog-href";
 

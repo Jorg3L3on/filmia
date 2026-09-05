@@ -4,9 +4,11 @@ import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { searchTmdbDiscover } from "@/app/actions/metadata";
 import { addTitleFromTmdb } from "@/app/actions/titles";
+import { EmptyState } from "@/components/EmptyState";
 import { PosterImage } from "@/components/PosterImage";
 import { SearchPreviewSheet } from "@/components/SearchPreviewSheet";
-import type { TitleKind } from "@/generated/prisma/browser";
+import { TitleKind } from "@/generated/prisma/browser";
+import { KIND_CHIPS, titleMatchesKind } from "@/lib/catalog-filters";
 import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
@@ -63,7 +65,11 @@ export const TmdbSearchAdd = ({
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [preview, setPreview] = useState<TmdbCatalogResult | null>(null);
   const [hasSearched, setHasSearched] = useState(Boolean(initialQuery.trim()));
+  const [kindFilter, setKindFilter] = useState<"ALL" | TitleKind>("ALL");
   const [isPending, startTransition] = useTransition();
+  const visibleResults = results.filter((result) =>
+    titleMatchesKind(result.kind, kindFilter),
+  );
 
   const previewLocal = useMemo(() => {
     if (!preview) {
@@ -219,6 +225,31 @@ export const TmdbSearchAdd = ({
         </button>
       </form>
 
+      <div
+        role="group"
+        aria-label="Filtro por tipo"
+        className="rail flex gap-2 overflow-x-auto"
+      >
+        {KIND_CHIPS.map((chip) => {
+          const isCurrent = kindFilter === chip.value;
+          return (
+            <button
+              key={chip.value}
+              type="button"
+              aria-pressed={isCurrent}
+              onClick={() => setKindFilter(chip.value)}
+              className={cn(
+                "shrink-0 rounded-full px-4 py-2 text-sm font-medium",
+                focusRing,
+                isCurrent ? "bg-accent text-ink" : "bg-well text-paper hover:bg-chrome",
+              )}
+            >
+              {chip.label}
+            </button>
+          );
+        })}
+      </div>
+
       {error ? (
         <p role="alert" className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger">
           {error}
@@ -231,14 +262,14 @@ export const TmdbSearchAdd = ({
         </p>
       ) : null}
 
-      {results.length > 0 ? (
+      {visibleResults.length > 0 ? (
         <section className="space-y-3">
           <header className="flex items-end justify-between">
             <h2 className="text-lg font-semibold text-paper">Resultados</h2>
-            <p className="text-sm text-mist">{results.length}</p>
+            <p className="text-sm text-mist">{visibleResults.length}</p>
           </header>
           <ul className="space-y-2">
-            {results.map((result, index) => {
+            {visibleResults.map((result, index) => {
               const key = catalogKey(result.tmdbId, result.kind);
               const local = catalog.get(key) ?? catalog.get(String(result.tmdbId));
               return (
@@ -285,11 +316,21 @@ export const TmdbSearchAdd = ({
           </ul>
         </section>
       ) : hasSearched && !error && !isPending ? (
-        <p className="text-sm text-mist">No hay resultados. Prueba otra búsqueda.</p>
+        <EmptyState
+          variant="buscar"
+          title="Nada con esa búsqueda"
+          description="Prueba otro título, o cambia entre Películas y Series."
+          actionHref="/watchlist"
+          actionLabel="Ir a Quiero ver"
+        />
       ) : null}
 
       {!hasSearched ? (
-        <p className="text-sm text-mist">Escribe un título y pulsa Enter.</p>
+        <EmptyState
+          variant="buscar"
+          title="Busca un título"
+          description="Escribe el nombre y pulsa Enter. Luego agrégalo a Quiero ver o a una lista."
+        />
       ) : null}
 
       {preview ? (

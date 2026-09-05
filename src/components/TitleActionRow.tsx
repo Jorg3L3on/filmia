@@ -1,9 +1,15 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { setTitleRating } from "@/app/actions/titles";
-import { addToWatchlistById, clearTitleWatched, markTitleWatched, removeFromWatchlistById } from "@/app/actions/watchlist";
+import {
+  addToWatchlistById,
+  clearTitleWatched,
+  markTitleWatched,
+  removeFromWatchlistById,
+} from "@/app/actions/watchlist";
+import { RatingSheet } from "@/components/RatingSheet";
 import { cn } from "@/lib/cn";
+import { formatStarScore } from "@/lib/labels";
 import { useSpringFeedback } from "@/lib/motion";
 import { focusRing } from "@/lib/ui";
 
@@ -11,24 +17,27 @@ type TitleActionRowProps = {
   titleId: string;
   watched: boolean;
   inWatchlist: boolean;
+  inCustomList?: boolean;
   rating: number | null;
+  review?: string | null;
   listsPanel: ReactNode;
   tagsPanel: ReactNode;
 };
 
-type Panel = "lists" | "tags" | "rating" | null;
-
-const RATING_OPTIONS = Array.from({ length: 10 }, (_, index) => index + 1);
+type Panel = "lists" | "tags" | null;
 
 export const TitleActionRow = ({
   titleId,
   watched,
   inWatchlist,
+  inCustomList = false,
   rating,
+  review = null,
   listsPanel,
   tagsPanel,
 }: TitleActionRowProps) => {
   const [panel, setPanel] = useState<Panel>(null);
+  const [ratingOpen, setRatingOpen] = useState(false);
   const watchedSpring = useSpringFeedback();
   const watchlistSpring = useSpringFeedback();
   const ratingSpring = useSpringFeedback();
@@ -36,7 +45,6 @@ export const TitleActionRow = ({
   const unwatch = clearTitleWatched.bind(null, titleId);
   const addWatchlist = addToWatchlistById.bind(null, titleId);
   const removeWatchlist = removeFromWatchlistById.bind(null, titleId);
-  const rateAction = setTitleRating.bind(null, titleId);
 
   const handleTogglePanel = (next: Panel) => {
     setPanel((current) => (current === next ? null : next));
@@ -83,7 +91,7 @@ export const TitleActionRow = ({
             )}
           >
             <WatchlistIcon filled={inWatchlist} />
-            {inWatchlist ? "Por ver" : "Quiero ver"}
+            Quiero ver
           </button>
         </form>
 
@@ -91,9 +99,9 @@ export const TitleActionRow = ({
           type="button"
           onClick={() => {
             ratingSpring.trigger();
-            handleTogglePanel("rating");
+            setRatingOpen(true);
           }}
-          aria-expanded={panel === "rating"}
+          aria-expanded={ratingOpen}
           className={cn(
             "flex w-full flex-col items-center gap-1 rounded-2xl border px-1 py-2.5 text-[10px] uppercase tracking-[0.12em]",
             focusRing,
@@ -104,7 +112,7 @@ export const TitleActionRow = ({
           )}
         >
           <StarIcon filled={rating != null} />
-          {rating != null ? `${rating}/10` : "Nota"}
+          {rating != null ? formatStarScore(rating) : "Nota"}
         </button>
 
         <button
@@ -112,13 +120,15 @@ export const TitleActionRow = ({
           onClick={() => handleTogglePanel("lists")}
           aria-expanded={panel === "lists"}
           className={cn(
-            "flex w-full flex-col items-center gap-1 rounded-2xl border border-chrome bg-well px-1 py-2.5 text-[10px] uppercase tracking-[0.12em] text-fog hover:text-paper",
+            "flex w-full flex-col items-center gap-1 rounded-2xl border px-1 py-2.5 text-[10px] uppercase tracking-[0.12em]",
             focusRing,
-            panel === "lists" && "border-accent text-accent",
+            inCustomList || panel === "lists"
+              ? "border-accent bg-accent/10 text-accent"
+              : "border-chrome bg-well text-fog hover:text-paper",
           )}
         >
           <PlusListIcon />
-          Lista
+          {inCustomList ? "En lista" : "Lista"}
         </button>
 
         <button
@@ -136,33 +146,13 @@ export const TitleActionRow = ({
         </button>
       </div>
 
-      {panel === "rating" ? (
-        <form action={rateAction} className="rounded-2xl border border-line bg-well p-3">
-          <p className="mb-2 text-[11px] uppercase tracking-[0.18em] text-mist">
-            Tu nota
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {RATING_OPTIONS.map((value) => (
-              <button
-                key={value}
-                type="submit"
-                name="rating"
-                value={value}
-                onClick={ratingSpring.trigger}
-                className={cn(
-                  "h-9 min-w-9 rounded-full border px-2 text-sm",
-                  focusRing,
-                  rating === value
-                    ? "border-star bg-star text-ink"
-                    : "border-chrome text-fog hover:border-star hover:text-star",
-                )}
-              >
-                {value}
-              </button>
-            ))}
-          </div>
-        </form>
-      ) : null}
+      <RatingSheet
+        open={ratingOpen}
+        titleId={titleId}
+        rating={rating}
+        review={review}
+        onClose={() => setRatingOpen(false)}
+      />
 
       {panel === "lists" ? listsPanel : null}
 

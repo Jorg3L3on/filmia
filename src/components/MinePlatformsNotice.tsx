@@ -24,8 +24,9 @@ export const MissingStreamingDataNote = ({
 
 export const MinePlatformsSetupCta = () => (
   <EmptyState
+    variant="generic"
     title="Elige tus plataformas"
-    description="Para filtrar por “Solo en mis plataformas”, indica cuáles tienes contratadas. El filtro usa disponibilidad incluida en México (suscripción), no renta ni compra."
+    description="Para filtrar por plataforma MX, indica cuáles tienes contratadas. El filtro usa disponibilidad incluida en México (suscripción), no renta ni compra."
     actionHref="/perfil"
     actionLabel="Ir a perfil"
   />
