@@ -5,14 +5,11 @@ import { notFound } from "next/navigation";
 import { TitleKind } from "@/generated/prisma/browser";
 import { deleteTitle } from "@/app/actions/titles";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
-import { ImdbBadge } from "@/components/ImdbBadge";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
-import { PersonalRating } from "@/components/PersonalRating";
-import { PosterImage } from "@/components/PosterImage";
 import { PosterRail } from "@/components/PosterRail";
 import { SeriesStatusPanel } from "@/components/SeriesStatusPanel";
-import { SharedPoster } from "@/components/SharedPoster";
 import { TitleActionRow } from "@/components/TitleActionRow";
+import { TitleHero } from "@/components/TitleHero";
 import { TitleListsPanel } from "@/components/TitleListsPanel";
 import { TitlePosterRail } from "@/components/TitlePosterRail";
 import { TitleTagsPanel } from "@/components/TitleTagsPanel";
@@ -29,7 +26,7 @@ import {
   getTitleById,
   getUserStreamingPlatforms,
 } from "@/lib/queries";
-import { btnDanger, btnGhost, posterFrame, wellClass } from "@/lib/ui";
+import { btnDanger, btnGhost, wellClass } from "@/lib/ui";
 import { getTmdbTitleExtras, tmdbBackdropUrl, tmdbProfileUrl } from "@/lib/tmdb";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 
@@ -68,65 +65,28 @@ export default async function TitleDetailPage({
   const inWatchlist = title.listItems.some(
     (item) => item.list.slug === WATCHLIST_SLUG,
   );
-  const backdropSrc =
-    tmdbBackdropUrl(extras?.backdropPath) ??
-    (title.posterPath
+  const backdropSrc = extras?.backdropPath
+    ? tmdbBackdropUrl(extras.backdropPath, "w1280")
+    : title.posterPath
       ? `https://image.tmdb.org/t/p/w780${title.posterPath}`
-      : null);
+      : null;
   const runtimeLabel = formatRuntime(extras?.runtimeMinutes);
-  const metaBits = [
-    title.year ? String(title.year) : null,
-    runtimeLabel,
-    TITLE_KIND_LABEL[title.kind],
-  ].filter(Boolean);
 
   return (
     <article className="space-y-8">
-      <div className="relative -mx-4 min-h-[280px] overflow-hidden sm:-mx-0 sm:min-h-0 sm:rounded-2xl">
-        {backdropSrc ? (
-          <div className="absolute inset-0" aria-hidden="true">
-            <Image
-              src={backdropSrc}
-              alt=""
-              fill
-              sizes="100vw"
-              className="object-cover opacity-50 blur-2xl scale-110 sm:opacity-40 sm:blur-xl"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/75 to-canvas/25" />
-          </div>
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-b from-well to-canvas" />
-        )}
-
-        <div className="relative flex items-end gap-4 px-4 pb-6 pt-20 sm:gap-6 sm:px-8 sm:pb-8 sm:pt-16">
-          <SharedPoster titleId={title.id} className="w-[38vw] max-w-[176px] shrink-0 sm:w-52 sm:max-w-none">
-            <PosterImage
-              name={title.name}
-              posterPath={title.posterPath}
-              className={`${posterFrame} card-physics`}
-              priority
-              sizes="220px"
-            />
-          </SharedPoster>
-          <div className="fade-up-late min-w-0 flex-1 space-y-3 text-left">
-            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-accent">
-              {metaBits.join(" · ")}
-            </p>
-            <h1 className="font-serif text-4xl leading-tight tracking-tight text-paper md:text-5xl">
-              {title.name}
-            </h1>
-            {title.originalName && title.originalName !== title.name ? (
-              <p className="text-sm text-fog">{title.originalName}</p>
-            ) : null}
-            <div className="flex flex-wrap items-center justify-start gap-4">
-              <ImdbBadge rating={title.imdbRating} />
-              <PersonalRating rating={title.rating} />
-              {title.watchedAt ? <WatchedBadge /> : null}
-            </div>
-          </div>
-        </div>
-      </div>
+      <TitleHero
+        titleId={title.id}
+        name={title.name}
+        originalName={title.originalName}
+        posterPath={title.posterPath}
+        backdropSrc={backdropSrc}
+        year={title.year}
+        runtimeLabel={runtimeLabel}
+        kindLabel={TITLE_KIND_LABEL[title.kind]}
+        imdbRating={title.imdbRating}
+        rating={title.rating}
+        watched={Boolean(title.watchedAt)}
+      />
 
       <TitleActionRow
         titleId={title.id}
