@@ -16,7 +16,7 @@ import {
   titleMatchesKind,
 } from "@/lib/catalog-filters";
 import { getTags, getUserStreamingPlatforms, getWatchlist } from "@/lib/queries";
-import { hydrateMissingTitleOverviews } from "@/lib/title-overview";
+import { hydrateMissingTitleOverviews, titleOverviewMap } from "@/lib/title-overview";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
@@ -75,7 +75,17 @@ export default async function WatchlistPage({
         ? kindItems.filter((item) => visibleIds.has(item.title.id))
         : kindItems;
   const items = sortCatalogByTitle(filteredItems, sort);
-  await hydrateMissingTitleOverviews(items.map((item) => item.title));
+  // Same title object refs as the cards below; hydrate writes overview/genres in place.
+  const hydratedTitles = await hydrateMissingTitleOverviews(
+    items.map((item) => item.title),
+  );
+  const overviews = titleOverviewMap(hydratedTitles);
+  for (const item of items) {
+    const overview = overviews.get(item.title.id);
+    if (overview && item.title.overview !== overview) {
+      item.title.overview = overview;
+    }
+  }
 
   const listId = watchlist?.id ?? "";
   const [hero, ...queue] = items;
