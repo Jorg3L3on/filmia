@@ -6,6 +6,32 @@ const getTmdbApiKey = () => process.env.TMDB_API_KEY?.trim() ?? "";
 
 export const isTmdbConfigured = () => Boolean(getTmdbApiKey());
 
+export const tmdbBackdropUrl = (
+  backdropPath: string | null | undefined,
+  size: "w780" | "w1280" = "w780",
+) => {
+  if (!backdropPath) {
+    return null;
+  }
+
+  if (backdropPath.startsWith("http://") || backdropPath.startsWith("https://")) {
+    return backdropPath;
+  }
+
+  return `https://image.tmdb.org/t/p/${size}${backdropPath}`;
+};
+
+export const tmdbProfileUrl = (
+  profilePath: string | null | undefined,
+  size: "w185" | "h632" = "w185",
+) => {
+  if (!profilePath) {
+    return null;
+  }
+
+  return `https://image.tmdb.org/t/p/${size}${profilePath}`;
+};
+
 export const tmdbPosterUrl = (
   posterPath: string | null | undefined,
   size: "w185" | "w342" | "w500" = "w342",
@@ -344,6 +370,32 @@ export const parseTmdbGenres = (value: unknown): TmdbGenre[] => {
   return genres;
 };
 
+export type TmdbCastMember = {
+  id: number;
+  name: string;
+  character: string | null;
+  profilePath: string | null;
+};
+
+export type TmdbTitleExtras = {
+  overview: string | null;
+  runtimeMinutes: number | null;
+  backdropPath: string | null;
+  cast: TmdbCastMember[];
+};
+
+const parseRuntimeMinutes = (data: {
+  runtime?: number | null;
+  episode_run_time?: number[] | null;
+}) => {
+  if (typeof data.runtime === "number" && data.runtime > 0) {
+    return data.runtime;
+  }
+
+  const episode = data.episode_run_time?.find((value) => value > 0);
+  return episode ?? null;
+};
+
 export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
   const segment = kind === TitleKind.SERIES ? "tv" : "movie";
   type MovieDetails = {
@@ -352,6 +404,9 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
     original_title?: string;
     release_date?: string;
     poster_path?: string | null;
+    backdrop_path?: string | null;
+    overview?: string;
+    runtime?: number | null;
     genres?: Array<{ id?: number; name?: string }>;
   };
   type TvDetails = {
@@ -360,6 +415,9 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
     original_name?: string;
     first_air_date?: string;
     poster_path?: string | null;
+    backdrop_path?: string | null;
+    overview?: string;
+    episode_run_time?: number[];
     genres?: Array<{ id?: number; name?: string }>;
   };
 
@@ -373,6 +431,9 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
       originalName: data.original_title ?? null,
       year: parseYear(data.release_date),
       posterPath: data.poster_path ?? null,
+      backdropPath: data.backdrop_path ?? null,
+      overview: data.overview?.trim() || null,
+      runtimeMinutes: parseRuntimeMinutes(data),
       genres,
     };
   }
@@ -383,6 +444,59 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
     originalName: data.original_name ?? null,
     year: parseYear(data.first_air_date),
     posterPath: data.poster_path ?? null,
+    backdropPath: data.backdrop_path ?? null,
+    overview: data.overview?.trim() || null,
+    runtimeMinutes: parseRuntimeMinutes(data),
     genres,
   };
+};
+
+export const getTmdbCredits = async (
+  tmdbId: number,
+  kind: TitleKind,
+): Promise<TmdbCastMember[]> => {
+  const segment = kind === TitleKind.SERIES ? "tv" : "movie";
+  type Credit = {
+    id?: number;
+    name?: string;
+    character?: string;
+    profile_path?: string | null;
+  };
+
+  const data = await tmdbFetch<{ cast?: Credit[] }>(`/${segment}/${tmdbId}/credits`);
+
+  return (data.cast ?? [])
+    .filter((member) => member.id && member.name?.trim())
+    .slice(0, 12)
+    .map((member) => ({
+      id: Number(member.id),
+      name: member.name?.trim() ?? "",
+      character: member.character?.trim() || null,
+      profilePath: member.profile_path ?? null,
+    }));
+};
+
+export const getTmdbTitleExtras = async (
+  tmdbId: number,
+  kind: TitleKind,
+): Promise<TmdbTitleExtras | null> => {
+  if (!isTmdbConfigured()) {
+    return null;
+  }
+
+  try {
+    const [details, cast] = await Promise.all([
+      getTmdbDetails(tmdbId, kind),
+      getTmdbCredits(tmdbId, kind).catch(() => [] as TmdbCastMember[]),
+    ]);
+
+    return {
+      overview: details.overview,
+      runtimeMinutes: details.runtimeMinutes,
+      backdropPath: details.backdropPath,
+      cast,
+    };
+  } catch {
+    return null;
+  }
 };

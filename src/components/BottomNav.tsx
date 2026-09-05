@@ -7,9 +7,10 @@ import { focusRing } from "@/lib/ui";
 
 const navItems = [
   { href: "/", label: "Diario", icon: "home" },
-  { href: "/watchlist", label: "Quiero ver", icon: "queue" },
-  { href: "/buscar", label: "Buscar", icon: "log" },
+  { href: "/watchlist", label: "Por ver", icon: "queue" },
+  { href: "/buscar", label: "Registrar", icon: "log" },
   { href: "/listas", label: "Listas", icon: "lists" },
+  { href: "/perfil", label: "Perfil", icon: "profile" },
 ] as const;
 
 const isCurrentPath = (href: string, pathname: string) =>
@@ -23,7 +24,7 @@ export const BottomNav = () => {
       aria-label="Principal móvil"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-canvas/95 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur sm:hidden"
     >
-      <ul className="mx-auto grid max-w-lg grid-cols-4 items-end px-2">
+      <ul className="mx-auto grid max-w-lg grid-cols-5 items-end px-1">
         {navItems.map((item) => {
           const isCurrent = isCurrentPath(item.href, pathname);
           const isLog = item.icon === "log";
@@ -35,20 +36,20 @@ export const BottomNav = () => {
                 aria-current={isCurrent ? "page" : undefined}
                 aria-label={item.label}
                 className={cn(
-                  "flex min-w-[64px] flex-col items-center gap-1 px-2 py-1 text-[10px] uppercase tracking-[0.14em]",
+                  "flex min-w-[56px] flex-col items-center gap-1 px-1 py-1 text-[10px] uppercase tracking-[0.12em]",
                   focusRing,
                   isLog
                     ? "text-ink"
                     : isCurrent
                       ? "text-accent"
-                      : "text-mist hover:text-white",
+                      : "text-mist hover:text-paper",
                 )}
               >
                 <span
                   className={cn(
                     "flex items-center justify-center",
                     isLog
-                      ? "mb-0.5 h-11 w-11 -translate-y-2 rounded-full bg-accent text-ink shadow-[0_8px_20px_rgba(0,224,84,0.28)]"
+                      ? "mb-0.5 h-11 w-11 -translate-y-2 rounded-full bg-accent text-ink shadow-[0_8px_20px_rgba(124,156,255,0.32)]"
                       : "h-6 w-6",
                   )}
                 >
@@ -102,6 +103,23 @@ const NavIcon = ({ name }: { name: (typeof navItems)[number]["icon"] }) => {
     return (
       <svg {...common} className="h-6 w-6">
         <path strokeLinecap="round" d="M12 6.5v11M6.5 12h11" />
+      </svg>
+    );
+  }
+
+  if (name === "profile") {
+    return (
+      <svg {...common}>
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 12.5a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5Z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M5.5 19.2c.7-2.4 3-3.7 6.5-3.7s5.8 1.3 6.5 3.7"
+        />
       </svg>
     );
   }

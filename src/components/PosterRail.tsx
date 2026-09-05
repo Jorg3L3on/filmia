@@ -12,7 +12,7 @@ export const PosterRail = ({ ariaLabel, children, className }: PosterRailProps) 
       role="list"
       aria-label={ariaLabel}
       className={cn(
-        "rail -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-1 touch-pan-x",
+        "rail -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-4 pb-1 touch-pan-x",
         className,
       )}
     >

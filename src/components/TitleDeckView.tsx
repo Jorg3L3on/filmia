@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
 import { PosterTile } from "@/components/PosterTile";
@@ -71,9 +72,14 @@ export const TitleDeckView = ({
         <CoverflowDeck titles={titles.map(toCoverflowTitle)} />
       ) : mode === "calendar" ? null : (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          {titles.map((title) => (
-            <li key={title.id}>
+          {titles.map((title, index) => (
+            <li
+              key={title.id}
+              className="stagger-in"
+              style={{ "--stagger": index } as CSSProperties}
+            >
               <PosterTile
+                  titleId={title.id}
                   href={`/titulos/${title.id}`}
                   name={title.name}
                   posterPath={title.posterPath}

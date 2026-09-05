@@ -247,6 +247,22 @@ const requireOwnedSeries = async (titleId: string) => {
   return title;
 };
 
+export const setTitleRating = async (titleId: string, formData: FormData) => {
+  const userId = await requireUserId();
+  const rating = parseRating(formData.get("rating"));
+
+  const result = await prisma.title.updateMany({
+    where: { id: titleId, userId },
+    data: { rating },
+  });
+
+  if (result.count === 0) {
+    throw new Error("Título no encontrado.");
+  }
+
+  revalidateCatalog(titleId);
+};
+
 export const setSeriesStatus = async (
   titleId: string,
   status: SeriesStatus | "NONE",

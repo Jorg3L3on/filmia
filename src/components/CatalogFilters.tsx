@@ -21,12 +21,14 @@ type CatalogFiltersProps = {
   pathname: string;
   view?: string;
   sort?: string;
+  defaultView?: string;
   minePlatforms?: boolean;
   hasStreamingPlatforms?: boolean;
   showTagFilters?: boolean;
   seriesStatus?: SeriesStatusFilter;
   month?: string;
   day?: string | null;
+  mode?: string;
 };
 
 export const CatalogFilters = ({
@@ -35,15 +37,26 @@ export const CatalogFilters = ({
   pathname,
   view,
   sort,
+  defaultView,
   minePlatforms = false,
   hasStreamingPlatforms = false,
   showTagFilters = true,
   seriesStatus,
   month,
   day,
+  mode,
 }: CatalogFiltersProps) => {
   const selected = new Set(selectedSlugs);
-  const queryBase = { view, sort, minePlatforms, seriesStatus, month, day };
+  const queryBase = {
+    view,
+    sort,
+    defaultView,
+    minePlatforms,
+    seriesStatus,
+    month,
+    day,
+    mode,
+  };
   const hasActiveFilters = selected.size > 0 || minePlatforms || Boolean(seriesStatus);
 
   return (
@@ -56,11 +69,13 @@ export const CatalogFilters = ({
         tags={selectedSlugs}
         view={view}
         sort={sort}
+        defaultView={defaultView}
         minePlatforms={minePlatforms}
         hasStreamingPlatforms={hasStreamingPlatforms}
         seriesStatus={seriesStatus}
         month={month}
         day={day}
+        mode={mode}
       />
 
       <div className="space-y-3 border-t border-line pt-4">
@@ -123,7 +138,7 @@ export const CatalogFilters = ({
             <div className="flex flex-wrap gap-3">
               {hasActiveFilters ? (
                 <Link
-                  href={catalogHref(pathname, { view, sort, month, day })}
+                  href={catalogHref(pathname, { view, sort, defaultView, month, day, mode })}
                   className={`text-xs text-fog underline-offset-2 hover:text-white hover:underline ${focusRing}`}
                 >
                   Quitar filtros
@@ -188,7 +203,7 @@ export const CatalogFilters = ({
         </div>
       ) : hasActiveFilters ? (
         <Link
-          href={catalogHref(pathname, { view, sort, month, day })}
+          href={catalogHref(pathname, { view, sort, defaultView, month, day, mode })}
           className={`text-xs text-fog underline-offset-2 hover:text-white hover:underline ${focusRing}`}
         >
           Quitar filtros

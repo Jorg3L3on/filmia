@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { TmdbSearchAdd } from "@/components/TmdbSearchAdd";
 import { metadataServicesConfigured, searchTmdbCatalog } from "@/lib/metadata";
 import { getUserStreamingPlatforms, getUserTmdbIndex } from "@/lib/queries";
+import { parseOptionalIsoDate } from "@/lib/dates";
 import { catalogHref } from "@/lib/tags";
 import { tmdbErrorMessage } from "@/lib/tmdb";
 import { btnGhost, btnLink, focusRing, wellClass } from "@/lib/ui";
@@ -17,10 +18,18 @@ export const dynamic = "force-dynamic";
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string | string[] }>;
+  searchParams: Promise<{
+    q?: string | string[];
+    fecha?: string | string[];
+    destino?: string | string[];
+  }>;
 }) {
   const params = await searchParams;
   const initialQuery = typeof params.q === "string" ? params.q : "";
+  const watchedDate = parseOptionalIsoDate(params.fecha);
+  const markWatched =
+    watchedDate != null ||
+    (typeof params.destino === "string" && params.destino === "visto");
   const metadataConfig = metadataServicesConfigured();
   const [existing, userPlatforms] = await Promise.all([
     getUserTmdbIndex(),
@@ -68,7 +77,7 @@ export default async function SearchPage({
               href="/"
               className={`text-accent underline-offset-2 hover:underline ${focusRing}`}
             >
-              Diario: picks en tus plataformas
+              Diario
             </Link>
             {" · "}
             <Link
@@ -93,6 +102,8 @@ export default async function SearchPage({
         initialQuery={initialQuery}
         initialResults={initialResults}
         initialError={initialError}
+        watchedDate={watchedDate}
+        defaultDestination={markWatched ? "watched" : "watchlist"}
       />
     </div>
   );

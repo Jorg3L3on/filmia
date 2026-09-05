@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { removeTitleFromList } from "@/app/actions/lists";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PosterImage } from "@/components/PosterImage";
+import { SharedPoster } from "@/components/SharedPoster";
 import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
 import { WatchedBadge } from "@/components/WatchedBadge";
 import { WatchProviderChips } from "@/components/WatchProvidersMx";
@@ -87,7 +88,7 @@ const getCardMetrics = (offset: number, sideRoom: number): CardMetrics => {
     opacity: distance > 5.2 ? Math.max(0, 1 - (distance - 5.2) * 1.4) : 1,
     zIndex: Math.round(900 - distance * 80),
     shadow: isActive
-      ? "0 28px 50px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 224, 84, 0.22)"
+      ? "0 28px 50px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(124, 156, 255, 0.28)"
       : "0 14px 28px rgba(0, 0, 0, 0.38)",
     isActive,
   };
@@ -165,12 +166,14 @@ const DeckCard = ({
         )}
         draggable={false}
       >
-        <PosterImage
-          name={title.name}
-          posterPath={title.posterPath}
-          priority={metrics.isActive}
-          className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
-        />
+        <SharedPoster titleId={title.id} className="absolute inset-0">
+          <PosterImage
+            name={title.name}
+            posterPath={title.posterPath}
+            priority={metrics.isActive}
+            className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
+          />
+        </SharedPoster>
         {title.watched ? (
           <WatchedBadge compact className="absolute left-2 top-2 z-10" />
         ) : null}

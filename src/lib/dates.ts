@@ -88,6 +88,20 @@ export const formatMonthHeading = (monthParam: string) => {
   });
 };
 
+export const formatMonthName = (monthParam: string) => {
+  const year = Number(monthParam.slice(0, 4));
+  const month = Number(monthParam.slice(5, 7));
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString("es-MX", {
+    month: "long",
+    timeZone: "UTC",
+  });
+};
+
+export const parseOptionalIsoDate = (value: unknown) => {
+  const raw = asSingleString(value).trim();
+  return isValidIsoDate(raw) ? raw : null;
+};
+
 export const isoDateToUtcNoon = (isoDate: string) =>
   new Date(`${isoDate}T12:00:00.000Z`);
 

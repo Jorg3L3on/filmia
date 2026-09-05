@@ -9,11 +9,13 @@ type MinePlatformsToggleProps = {
   tags?: string[];
   view?: string;
   sort?: string;
+  defaultView?: string;
   minePlatforms: boolean;
   hasStreamingPlatforms: boolean;
   seriesStatus?: SeriesStatusFilter;
   month?: string;
   day?: string | null;
+  mode?: string;
 };
 
 export const MinePlatformsToggle = ({
@@ -21,11 +23,13 @@ export const MinePlatformsToggle = ({
   tags,
   view,
   sort,
+  defaultView,
   minePlatforms,
   hasStreamingPlatforms,
   seriesStatus,
   month,
   day,
+  mode,
 }: MinePlatformsToggleProps) => {
   if (!hasStreamingPlatforms) {
     return (
@@ -52,10 +56,12 @@ export const MinePlatformsToggle = ({
     tags,
     view,
     sort,
+    defaultView,
     minePlatforms: !minePlatforms,
     seriesStatus,
     month,
     day,
+    mode,
   };
 
   return (

@@ -1,4 +1,5 @@
 import { TitleKind } from "@/generated/prisma/browser";
+import { parseOptionalDate } from "@/lib/form-data";
 import { TITLE_KINDS } from "@/lib/labels";
 import { ensureDefaultLists, WATCHLIST_SLUG } from "@/lib/lists";
 import { resolveTitleMetadata } from "@/lib/metadata";
@@ -17,6 +18,7 @@ export type AddTitleFromTmdbInput = {
   posterPath?: string | null;
   addToWatchlist?: boolean;
   destination?: AddTitleDestination;
+  watchedAt?: string | null;
 };
 
 export type AddTitleFromTmdbResult =
@@ -71,7 +73,14 @@ const enqueueInWatchlist = async (userId: string, titleId: string) => {
   });
 };
 
-const markExistingWatched = async (userId: string, titleId: string) => {
+const resolveWatchedAt = (value?: string | null) =>
+  parseOptionalDate(value ?? null) ?? new Date();
+
+const markExistingWatched = async (
+  userId: string,
+  titleId: string,
+  watchedAt?: string | null,
+) => {
   await ensureDefaultLists(userId);
 
   const watchlist = await prisma.list.findUnique({
@@ -82,7 +91,7 @@ const markExistingWatched = async (userId: string, titleId: string) => {
   await prisma.$transaction(async (tx) => {
     await tx.title.update({
       where: { id: titleId },
-      data: { watchedAt: new Date() },
+      data: { watchedAt: resolveWatchedAt(watchedAt) },
     });
 
     if (!watchlist) {
@@ -119,7 +128,7 @@ export const upsertTitleFromTmdbForUser = async (
 
   if (existing) {
     if (markWatched) {
-      await markExistingWatched(userId, existing.id);
+      await markExistingWatched(userId, existing.id, input.watchedAt);
     } else if (addToWatchlist) {
       await enqueueInWatchlist(userId, existing.id);
     }
@@ -178,7 +187,7 @@ export const upsertTitleFromTmdbForUser = async (
       imdbId: metadata.imdbId,
       imdbRating: metadata.imdbRating,
       tmdbGenres: metadata.tmdbGenres,
-      watchedAt: markWatched ? new Date() : null,
+      watchedAt: markWatched ? resolveWatchedAt(input.watchedAt) : null,
     },
   });
 

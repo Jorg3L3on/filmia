@@ -197,7 +197,7 @@ export const DiaryAddTitleFab = ({
         aria-haspopup="dialog"
         aria-expanded={open}
         className={cn(
-          "fixed right-4 z-40 flex size-14 items-center justify-center rounded-full bg-accent text-ink shadow-[0_10px_24px_rgba(0,224,84,0.32)]",
+          "fixed right-4 z-40 flex size-14 items-center justify-center rounded-full bg-accent text-ink shadow-[0_10px_24px_rgba(124,156,255,0.32)]",
           "bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-6",
           focusRing,
           "focus-visible:outline-white",

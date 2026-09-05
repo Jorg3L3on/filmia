@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     default: "Filmia",
     template: "%s · Filmia",
   },
-  description: "Diario personal de películas y series. Letterboxd casero.",
+  description: "Diario personal de películas y series.",
   icons: {
     icon: "/logo.png",
     apple: "/logo.png",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#14181c",
+  themeColor: "#0e1114",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

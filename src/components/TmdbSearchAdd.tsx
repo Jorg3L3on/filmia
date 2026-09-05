@@ -58,6 +58,8 @@ type TmdbSearchAddProps = {
   initialQuery?: string;
   initialResults?: TmdbCatalogResult[];
   initialError?: string | null;
+  watchedDate?: string | null;
+  defaultDestination?: "watchlist" | "watched";
 };
 
 export const TmdbSearchAdd = ({
@@ -66,11 +68,15 @@ export const TmdbSearchAdd = ({
   initialQuery = "",
   initialResults = [],
   initialError = null,
+  watchedDate = null,
+  defaultDestination = "watchlist",
 }: TmdbSearchAddProps) => {
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [kindFilter, setKindFilter] = useState<KindFilter>("ALL");
-  const [addToWatchlist, setAddToWatchlist] = useState(true);
+  const [destination, setDestination] = useState<"watchlist" | "watched">(
+    defaultDestination,
+  );
   const [results, setResults] = useState<TmdbCatalogResult[]>(initialResults);
   const [catalog, setCatalog] = useState(() => toCatalogMap(existing));
   const [error, setError] = useState<string | null>(initialError);
@@ -100,7 +106,15 @@ export const TmdbSearchAdd = ({
         await searchTmdbDiscover(trimmed);
       setHasSearched(true);
       setResults(hits);
-      router.replace(`/buscar?q=${encodeURIComponent(trimmed)}`, {
+      const next = new URLSearchParams();
+      next.set("q", trimmed);
+      if (watchedDate) {
+        next.set("fecha", watchedDate);
+      }
+      if (defaultDestination === "watched") {
+        next.set("destino", "visto");
+      }
+      router.replace(`/buscar?${next.toString()}`, {
         scroll: false,
       });
       if (searchError) {
@@ -111,7 +125,7 @@ export const TmdbSearchAdd = ({
         setError("Nada en TMDB con esa búsqueda.");
       }
     });
-  }, [configured.tmdb, query, router]);
+  }, [configured.tmdb, defaultDestination, query, router, watchedDate]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -135,7 +149,8 @@ export const TmdbSearchAdd = ({
         originalName: result.originalName,
         year: result.year,
         posterPath: result.posterPath,
-        addToWatchlist,
+        destination,
+        watchedAt: destination === "watched" ? watchedDate : null,
       });
       setPendingKey(null);
 
@@ -156,10 +171,12 @@ export const TmdbSearchAdd = ({
       });
       setNotice(
         outcome.created
-          ? addToWatchlist
-            ? `${result.name} ya está en Filmia y en Quiero ver.`
-            : `${result.name} ya está en Filmia.`
-          : `${result.name} ya estaba en Filmia.`,
+          ? destination === "watched"
+            ? `${result.name} quedó en el diario.`
+            : `${result.name} ya está en Filmia y en Por ver.`
+          : destination === "watched"
+            ? `${result.name} se marcó como vista.`
+            : `${result.name} ya estaba en Filmia.`,
       );
     });
   };
@@ -233,15 +250,34 @@ export const TmdbSearchAdd = ({
           </button>
         </div>
 
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-fog">
-          <input
-            type="checkbox"
-            checked={addToWatchlist}
-            onChange={(event) => setAddToWatchlist(event.target.checked)}
-            className="size-4 accent-accent"
-          />
-          También a Quiero ver
-        </label>
+        <div
+          role="group"
+          aria-label="Destino al agregar"
+          className="flex flex-wrap items-center gap-3 text-sm text-fog"
+        >
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="radio"
+              name="destino"
+              checked={destination === "watchlist"}
+              onChange={() => setDestination("watchlist")}
+              className="size-4 accent-accent"
+            />
+            A Por ver
+          </label>
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="radio"
+              name="destino"
+              checked={destination === "watched"}
+              onChange={() => setDestination("watched")}
+              className="size-4 accent-accent"
+            />
+            {watchedDate
+              ? `Vista el ${watchedDate}`
+              : "Ya vista"}
+          </label>
+        </div>
       </form>
 
       {error ? (
