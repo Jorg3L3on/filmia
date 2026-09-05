@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { LogoutButton } from "@/components/LogoutButton";
 import { cn } from "@/lib/cn";
+import { isCurrentPath } from "@/lib/nav";
 import { focusRing } from "@/lib/ui";
 
 const navItems = [
@@ -41,10 +42,7 @@ export const SiteHeader = ({ pathname: currentPath, user }: SiteHeaderProps) => 
         </Link>
         <nav aria-label="Principal" className="hidden items-center gap-1 text-sm sm:flex">
           {navItems.map((item) => {
-            const isCurrent =
-              item.href === "/"
-                ? currentPath === "/"
-                : currentPath.startsWith(item.href);
+            const isCurrent = isCurrentPath(item.href, currentPath);
 
             return (
               <Link

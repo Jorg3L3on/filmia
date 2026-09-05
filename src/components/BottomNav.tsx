@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/cn";
+import { isCurrentPath } from "@/lib/nav";
 import { focusRing } from "@/lib/ui";
 
 const navItems = [
@@ -12,14 +14,25 @@ const navItems = [
   { href: "/listas", label: "Listas", icon: "lists" },
 ] as const;
 
-const isCurrentPath = (href: string, pathname: string) =>
-  href === "/" ? pathname === "/" : pathname.startsWith(href);
-
 export const BottomNav = () => {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const root = navRef.current;
+    if (!root) {
+      return;
+    }
+
+    const focused = root.querySelector<HTMLElement>(":focus");
+    if (focused && focused.getAttribute("aria-current") !== "page") {
+      focused.blur();
+    }
+  }, [pathname]);
 
   return (
     <nav
+      ref={navRef}
       aria-label="Principal móvil"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-canvas/95 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur sm:hidden"
     >
@@ -34,8 +47,10 @@ export const BottomNav = () => {
                 href={item.href}
                 aria-current={isCurrent ? "page" : undefined}
                 aria-label={item.label}
+                data-nav={item.icon}
+                data-active={isCurrent ? "true" : "false"}
                 className={cn(
-                  "flex min-w-[56px] flex-col items-center gap-1 px-1 py-1 text-[10px] uppercase tracking-[0.12em]",
+                  "flex min-w-[56px] flex-col items-center gap-1 px-1 py-1 text-[10px] uppercase tracking-[0.12em] outline-none",
                   focusRing,
                   isCurrent ? "text-accent" : "text-mist hover:text-paper",
                 )}
@@ -50,7 +65,7 @@ export const BottomNav = () => {
                             ? "bg-accent text-ink shadow-[0_8px_20px_rgba(124,156,255,0.32)]"
                             : "bg-chrome text-paper shadow-[0_8px_20px_rgba(0,0,0,0.35)]",
                         )
-                      : "h-6 w-6",
+                      : "h-6 w-6 rounded-none bg-transparent shadow-none",
                   )}
                 >
                   <NavIcon name={item.icon} />
