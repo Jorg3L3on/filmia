@@ -104,7 +104,7 @@ export const SearchPreviewSheet = ({
               <PlusIcon />
             </SheetAction>
             <SheetAction
-              label={local?.inWatchlist ? "En lista" : "Quiero ver"}
+              label={local?.inWatchlist ? "Por ver" : "Quiero ver"}
               disabled={pending || Boolean(local?.inWatchlist)}
               onClick={() => onAdd("watchlist")}
             >

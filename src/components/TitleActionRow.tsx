@@ -83,7 +83,7 @@ export const TitleActionRow = ({
             )}
           >
             <WatchlistIcon filled={inWatchlist} />
-            En lista
+            {inWatchlist ? "Por ver" : "Quiero ver"}
           </button>
         </form>
 
