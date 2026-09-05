@@ -1,4 +1,5 @@
 import {
+  assignExclusiveDiaryPicks,
   diaryHref,
   diaryModeHref,
   genreSlug,
@@ -6,9 +7,11 @@ import {
   parseDiaryMode,
   parseStoredTmdbGenres,
   pickDiaryCategories,
+  rankDiaryPicks,
   resolveDiaryCategory,
   titlesForDiaryCategory,
 } from "../src/lib/diary-picks";
+import { pickDiaryTmdbMatch } from "../src/lib/diary-enrich";
 import { parseTmdbGenres } from "../src/lib/tmdb";
 
 const assert = (condition: unknown, message: string) => {
@@ -99,6 +102,77 @@ const run = () => {
   const action = titlesForDiaryCategory(titles, 28);
   assert(action.length === 2, "Fewer than 5 titles stay unpadded");
   assert(action[0]?.id === "a" && action[1]?.id === "e", "Action order is IMDb desc");
+
+  const exclusive = assignExclusiveDiaryPicks(titles);
+  assert(
+    exclusive.categories.map((category) => category.name).join(",") ===
+      "Drama,Comedia,Ciencia ficción,Acción",
+    `Exclusive categories keep rank then skip empties: ${exclusive.categories.map((category) => category.name).join(",")}`,
+  );
+  assert(
+    exclusive.picksByCategoryId.get(18)?.map((item) => item.id).join(",") === "a,b,i,j,k",
+    "Drama still takes the top IMDb titles first",
+  );
+  assert(
+    exclusive.picksByCategoryId.get(35)?.map((item) => item.id).join(",") === "c,d",
+    "Comedia drops titles already used in Drama",
+  );
+  assert(
+    exclusive.picksByCategoryId.get(878)?.map((item) => item.id).join(",") === "f",
+    "Ciencia ficción drops the Drama overlap",
+  );
+  assert(
+    exclusive.picksByCategoryId.get(28)?.map((item) => item.id).join(",") === "e",
+    "Acción drops the Drama overlap",
+  );
+  const exclusiveIds = [...exclusive.picksByCategoryId.values()].flatMap((picks) =>
+    picks.map((item) => item.id),
+  );
+  assert(
+    exclusiveIds.length === new Set(exclusiveIds).size,
+    "No title appears in more than one category",
+  );
+
+  const depleted = assignExclusiveDiaryPicks(titles.filter((item) => item.id !== "e"));
+  assert(
+    depleted.categories.map((category) => category.name).join(",") ===
+      "Drama,Comedia,Ciencia ficción,Suspense",
+    `Empty exclusive slots fall through to the next genre: ${depleted.categories.map((category) => category.name).join(",")}`,
+  );
+  assert(
+    depleted.picksByCategoryId.get(53)?.map((item) => item.id).join(",") === "h",
+    "Suspense fills the slot Acción can no longer cover",
+  );
+
+  const uncategorized = rankDiaryPicks(
+    titles.map((item) => ({ ...item, tmdbGenres: [] })),
+  );
+  assert(uncategorized.length === 5, "Qué ver still ranks 5 picks without genres");
+  assert(
+    uncategorized.map((item) => item.id).join(",") === "a,f,b,c,i",
+    `Uncategorized IMDb order: ${uncategorized.map((item) => item.id).join(",")}`,
+  );
+
+  const searchHit = {
+    tmdbId: 11,
+    name: "Star Wars",
+    originalName: "Star Wars",
+    year: 1977,
+    posterPath: null,
+    backdropPath: null,
+    overview: null,
+  };
+  assert(pickDiaryTmdbMatch([], 1977) === null, "Empty TMDB search has no match");
+  assert(
+    pickDiaryTmdbMatch(
+      [
+        { ...searchHit, tmdbId: 1, year: 1999 },
+        { ...searchHit, tmdbId: 11, year: 1977 },
+      ],
+      1977,
+    )?.tmdbId === 11,
+    "Year-exact TMDB search wins",
+  );
 
   console.log("✓ Diary category ranking, slugs and top-5 IMDb picks");
 };

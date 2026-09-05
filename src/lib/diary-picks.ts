@@ -73,9 +73,8 @@ const averageImdb = (ratings: Array<number | null>) => {
   return scored.reduce((sum, rating) => sum + rating, 0) / scored.length;
 };
 
-export const pickDiaryCategories = (
+export const rankDiaryCategories = (
   titles: readonly DiaryPickTitle[],
-  limit = DIARY_CATEGORY_LIMIT,
 ): DiaryCategory[] => {
   const buckets = new Map<
     number,
@@ -113,8 +112,51 @@ export const pickDiaryCategories = (
       }
 
       return left.name.localeCompare(right.name, "es");
-    })
-    .slice(0, limit);
+    });
+};
+
+export const pickDiaryCategories = (
+  titles: readonly DiaryPickTitle[],
+  limit = DIARY_CATEGORY_LIMIT,
+): DiaryCategory[] => rankDiaryCategories(titles).slice(0, limit);
+
+const titleHasGenre = (title: DiaryPickTitle, genreId: number) =>
+  parseStoredTmdbGenres(title.tmdbGenres).some((genre) => genre.id === genreId);
+
+export const assignExclusiveDiaryPicks = <T extends DiaryPickTitle>(
+  titles: readonly T[],
+  categoryLimit = DIARY_CATEGORY_LIMIT,
+  picksLimit = DIARY_PICKS_LIMIT,
+): { categories: DiaryCategory[]; picksByCategoryId: Map<number, T[]> } => {
+  const usedIds = new Set<string>();
+  const categories: DiaryCategory[] = [];
+  const picksByCategoryId = new Map<number, T[]>();
+
+  for (const category of rankDiaryCategories(titles)) {
+    const chosen = rankDiaryPicks(
+      titles.filter(
+        (title) => !usedIds.has(title.id) && titleHasGenre(title, category.id),
+      ),
+      picksLimit,
+    );
+
+    if (chosen.length === 0) {
+      continue;
+    }
+
+    for (const title of chosen) {
+      usedIds.add(title.id);
+    }
+
+    categories.push(category);
+    picksByCategoryId.set(category.id, chosen);
+
+    if (categories.length >= categoryLimit) {
+      break;
+    }
+  }
+
+  return { categories, picksByCategoryId };
 };
 
 export const resolveDiaryCategory = (
@@ -131,15 +173,11 @@ export const resolveDiaryCategory = (
   return match ?? categories[0] ?? null;
 };
 
-export const titlesForDiaryCategory = <T extends DiaryPickTitle>(
+export const rankDiaryPicks = <T extends DiaryPickTitle>(
   titles: readonly T[],
-  genreId: number,
   limit = DIARY_PICKS_LIMIT,
 ): T[] => {
-  return titles
-    .filter((title) =>
-      parseStoredTmdbGenres(title.tmdbGenres).some((genre) => genre.id === genreId),
-    )
+  return [...titles]
     .toSorted((left, right) => {
       const leftRating = left.imdbRating;
       const rightRating = right.imdbRating;
@@ -163,3 +201,9 @@ export const titlesForDiaryCategory = <T extends DiaryPickTitle>(
     })
     .slice(0, limit);
 };
+
+export const titlesForDiaryCategory = <T extends DiaryPickTitle>(
+  titles: readonly T[],
+  genreId: number,
+  limit = DIARY_PICKS_LIMIT,
+): T[] => rankDiaryPicks(titles.filter((title) => titleHasGenre(title, genreId)), limit);

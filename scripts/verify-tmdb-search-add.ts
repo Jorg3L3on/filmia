@@ -8,6 +8,7 @@ import { TitleKind } from "../src/generated/prisma/browser";
 import { upsertTitleFromTmdbForUser } from "../src/lib/add-title-from-tmdb";
 import { prisma } from "../src/lib/prisma";
 import {
+  getTmdbDetails,
   searchTmdbMulti,
   TmdbRequestError,
   tmdbErrorMessage,
@@ -126,6 +127,52 @@ const verifyErrors = async () => {
       "✓ Multi search maps poster/year/type:",
       results.map((item) => `${item.name} ${item.year} ${item.kind}`),
     );
+  });
+
+  process.env.TMDB_API_KEY = "eyJtest-access-token";
+  await withMockFetch(async (input, init) => {
+    const url = String(input);
+    assert(!url.includes("api_key="), "v4 token should not use api_key query");
+    const headers = new Headers(init?.headers);
+    assert(
+      headers.get("Authorization") === "Bearer eyJtest-access-token",
+      "v4 token should use Bearer auth",
+    );
+    return jsonResponse({ results: [] });
+  }, async () => {
+    await searchTmdbMulti("Dune");
+    console.log("✓ v4 access token uses Authorization Bearer");
+  });
+
+  process.env.TMDB_API_KEY = "test-key";
+  await withMockFetch(async (input) => {
+    const url = new URL(String(input));
+    const language = url.searchParams.get("language");
+    if (language === "es-MX") {
+      return jsonResponse({
+        id: 20595,
+        title: "The Last Days",
+        overview: "",
+        runtime: 87,
+        genres: [],
+      });
+    }
+    if (language === "es-ES") {
+      return jsonResponse({
+        id: 20595,
+        title: "Los últimos días",
+        overview: "Documental sobre el holocausto en Hungría.",
+        runtime: 87,
+      });
+    }
+    throw new Error(`Unexpected language ${language}`);
+  }, async () => {
+    const details = await getTmdbDetails(20595, TitleKind.MOVIE);
+    assert(
+      details.overview === "Documental sobre el holocausto en Hungría.",
+      "Empty es-MX overview should fall back to es-ES",
+    );
+    console.log("✓ Empty es-MX overview falls back to es-ES");
   });
 
   if (previousKey === undefined) {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { removeTitleFromList } from "@/app/actions/lists";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
+import { PlatformLogo } from "@/components/PlatformLogo";
 import { PosterImage } from "@/components/PosterImage";
 import { SharedPoster } from "@/components/SharedPoster";
 import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
@@ -14,11 +15,12 @@ import {
   formatImdbRating,
   formatRating,
   formatSeriesSeason,
-  PLATFORM_LABEL,
+  PLATFORM_SERVICE_LABEL,
   SERIES_STATUS_LABEL,
   TITLE_KIND_LABEL,
 } from "@/lib/labels";
 import { useSpringFeedback } from "@/lib/motion";
+import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { btnGhost, btnLink } from "@/lib/ui";
 import type { Platform, SeriesStatus, TitleKind } from "@/generated/prisma/browser";
 import type { WatchProviderOffer } from "@/lib/watch-providers";
@@ -45,6 +47,7 @@ type CoverflowDeckProps = {
   listId?: string;
   variant?: "page" | "sheet";
   onActiveChange?: (index: number, title: CoverflowTitle) => void;
+  footer?: "full" | "watched";
 };
 
 const CARD_WIDTH = 236;
@@ -116,6 +119,42 @@ type DeckCardProps = {
   onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
 };
 
+const DeckAvailabilityMark = ({
+  title,
+  platform,
+}: {
+  title: CoverflowTitle;
+  platform: Platform | null;
+}) => {
+  if (platform) {
+    return (
+      <div className="mb-1.5 flex min-w-0 items-center gap-1.5">
+        <PlatformLogo
+          platform={platform}
+          size={20}
+          className="ring-1 ring-white/25"
+        />
+        <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-white">
+          {PLATFORM_SERVICE_LABEL[platform]}
+        </span>
+      </div>
+    );
+  }
+
+  const provider = title.flatrateProviders?.[0];
+  if (!provider) {
+    return null;
+  }
+
+  return (
+    <WatchProviderChips
+      providers={[provider]}
+      max={1}
+      className="mb-1.5 justify-start"
+    />
+  );
+};
+
 const DeckCard = ({
   title,
   index,
@@ -129,6 +168,13 @@ const DeckCard = ({
   const metrics = getCardMetrics(offset, sideRoom, compact);
   const imdbLabel = formatImdbRating(title.imdbRating);
   const showCaption = !compact && Math.abs(offset) < 3.2;
+  const availabilityPlatform = primaryAvailabilityPlatform(
+    title.flatrateProviders,
+    title.platform,
+  );
+  const availabilityLabel = availabilityPlatform
+    ? PLATFORM_SERVICE_LABEL[availabilityPlatform]
+    : title.flatrateProviders?.[0]?.name;
 
   const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (metrics.isActive) {
@@ -168,7 +214,9 @@ const DeckCard = ({
       <Link
         href={`/titulos/${title.id}`}
         tabIndex={metrics.isActive ? 0 : -1}
-        aria-label={`${title.name}${title.year ? ` (${title.year})` : ""}`}
+        aria-label={`${title.name}${title.year ? ` (${title.year})` : ""}${
+          availabilityLabel ? ` en ${availabilityLabel}` : ""
+        }`}
         onClick={handleClick}
         onDragStart={handleDragStart}
         className={cn(
@@ -216,6 +264,7 @@ const DeckCard = ({
             showCaption ? "opacity-100" : "opacity-0",
           )}
         >
+          <DeckAvailabilityMark title={title} platform={availabilityPlatform} />
           <p className="truncate text-[10px] uppercase tracking-wider text-white/70">
             {TITLE_KIND_LABEL[title.kind]}
             {title.year ? ` · ${title.year}` : ""}
@@ -239,6 +288,7 @@ export const CoverflowDeck = ({
   listId,
   variant = "page",
   onActiveChange,
+  footer = "full",
 }: CoverflowDeckProps) => {
   const isSheet = variant === "sheet";
   const focusSpring = useSpringFeedback();
@@ -563,6 +613,10 @@ export const CoverflowDeck = ({
 
   const roundedActive = Math.round(displayIndex);
   const activeTitle = titles[roundedActive];
+  const activePlatform =
+    footer === "full" && !isSheet && activeTitle
+      ? primaryAvailabilityPlatform(activeTitle.flatrateProviders, activeTitle.platform)
+      : null;
   const sideRoom = Math.max(8, (stageWidth - cardWidth) / 2 - (isSheet ? 4 : 12));
   const visibleSpan = stageWidth < 500 ? 3 : VISIBLE_SPAN;
   const firstVisible = Math.max(0, Math.floor(displayIndex) - visibleSpan);
@@ -643,25 +697,14 @@ export const CoverflowDeck = ({
       </div>
 
       {activeTitle ? (
-        <div
-          className={cn(
-            "mx-auto max-w-xl text-center",
-            isSheet ? "space-y-1" : "space-y-3",
-            isSheet && focusSpring.className,
-          )}
-        >
-          <div className="space-y-1">
-            {isSheet ? null : (
-              <p className="text-xs uppercase tracking-[0.2em] text-accent">
-                {roundedActive + 1} / {titles.length}
-              </p>
+        isSheet ? (
+          <div
+            className={cn(
+              "mx-auto max-w-xl space-y-1 text-center",
+              focusSpring.className,
             )}
-            <h2
-              className={cn(
-                "font-serif text-white",
-                isSheet ? "truncate px-6 text-xl" : "text-2xl sm:text-3xl",
-              )}
-            >
+          >
+            <h2 className="truncate px-6 font-serif text-xl text-white">
               <Link
                 href={`/titulos/${activeTitle.id}`}
                 className="hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
@@ -669,78 +712,108 @@ export const CoverflowDeck = ({
                 {activeTitle.name}
               </Link>
             </h2>
-            <p className={cn("text-fog", isSheet ? "text-xs" : "text-sm")}>
+            <p className="text-xs text-fog">
               {[
                 activeTitle.year ? String(activeTitle.year) : null,
                 TITLE_KIND_LABEL[activeTitle.kind],
-                !isSheet && activeTitle.platform
-                  ? PLATFORM_LABEL[activeTitle.platform]
-                  : null,
               ]
                 .filter(Boolean)
                 .join(" · ")}
             </p>
-            {isSheet ? null : (
-              <>
-                <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                  {activeTitle.imdbRating != null ? (
-                    <span className="rounded-full border border-chrome bg-well px-2.5 py-1 text-xs text-star">
-                      ★ {formatImdbRating(activeTitle.imdbRating)}
-                    </span>
-                  ) : null}
-                  {formatRating(activeTitle.rating) !== "Sin nota" ? (
-                    <span className="rounded-full border border-chrome bg-well px-2.5 py-1 text-xs text-paper">
-                      {formatRating(activeTitle.rating)}
-                    </span>
-                  ) : null}
-                  <Link
-                    href={`/titulos/${activeTitle.id}`}
-                    className={cn(btnGhost, "text-xs")}
-                  >
-                    Ver ficha
-                  </Link>
-                </div>
-                {activeTitle.kind === "SERIES" && activeTitle.seriesStatus ? (
-                  <p className="text-sm text-fog">
-                    {SERIES_STATUS_LABEL[activeTitle.seriesStatus]}
-                    {formatSeriesSeason(activeTitle.seriesSeason)
-                      ? ` · ${formatSeriesSeason(activeTitle.seriesSeason)}`
-                      : ""}
-                  </p>
-                ) : null}
-              </>
-            )}
           </div>
-          {isSheet ? null : (
-            <>
-              {activeTitle.flatrateProviders && activeTitle.flatrateProviders.length > 0 ? (
-                <WatchProviderChips
-                  providers={activeTitle.flatrateProviders}
-                  max={5}
-                  className="pt-1"
-                />
-              ) : null}
-              {!activeTitle.watched ? (
-                <div className="mx-auto max-w-md text-left">
-                  <MarkWatchedForm
-                    titleId={activeTitle.id}
-                    variant="queue"
-                    rating={activeTitle.rating}
-                    review={activeTitle.review}
-                    collapsed
+        ) : footer === "watched" ? (
+          !activeTitle.watched ? (
+            <div className="mx-auto max-w-md">
+              <MarkWatchedForm
+                titleId={activeTitle.id}
+                variant="queue"
+                rating={activeTitle.rating}
+                review={activeTitle.review}
+                collapsed
+              />
+            </div>
+          ) : null
+        ) : (
+          <div className="mx-auto max-w-xl space-y-3 text-center">
+            <div className="space-y-1">
+              <h2 className="font-serif text-2xl text-white sm:text-3xl">
+                <Link
+                  href={`/titulos/${activeTitle.id}`}
+                  className="hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  {activeTitle.name}
+                </Link>
+              </h2>
+              {activePlatform ? (
+                <div className="flex items-center justify-center gap-1.5">
+                  <PlatformLogo
+                    platform={activePlatform}
+                    size={20}
+                    className="ring-1 ring-white/15"
                   />
+                  <span className="text-sm text-paper">
+                    {PLATFORM_SERVICE_LABEL[activePlatform]}
+                  </span>
                 </div>
               ) : null}
-              {listId ? (
-                <form action={removeTitleFromList.bind(null, listId, activeTitle.id)}>
-                  <button type="submit" className={btnLink}>
-                    Quitar de la lista
-                  </button>
-                </form>
+              <p className="text-sm text-fog">
+                {TITLE_KIND_LABEL[activeTitle.kind]}
+                {activeTitle.year ? ` · ${activeTitle.year}` : ""}
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                {activeTitle.imdbRating != null ? (
+                  <span className="rounded-full border border-chrome bg-well px-2.5 py-1 text-xs text-star">
+                    ★ {formatImdbRating(activeTitle.imdbRating)}
+                  </span>
+                ) : null}
+                {formatRating(activeTitle.rating) !== "Sin nota" ? (
+                  <span className="rounded-full border border-chrome bg-well px-2.5 py-1 text-xs text-paper">
+                    {formatRating(activeTitle.rating)}
+                  </span>
+                ) : null}
+                <Link
+                  href={`/titulos/${activeTitle.id}`}
+                  className={cn(btnGhost, "text-xs")}
+                >
+                  Ver ficha
+                </Link>
+              </div>
+              {activeTitle.kind === "SERIES" && activeTitle.seriesStatus ? (
+                <p className="text-sm text-fog">
+                  {SERIES_STATUS_LABEL[activeTitle.seriesStatus]}
+                  {formatSeriesSeason(activeTitle.seriesSeason)
+                    ? ` · ${formatSeriesSeason(activeTitle.seriesSeason)}`
+                    : ""}
+                </p>
               ) : null}
-            </>
-          )}
-        </div>
+            </div>
+            {activeTitle.flatrateProviders && activeTitle.flatrateProviders.length > 0 ? (
+              <WatchProviderChips
+                providers={activeTitle.flatrateProviders}
+                max={5}
+                className="pt-1"
+              />
+            ) : null}
+            {!activeTitle.watched ? (
+              <div className="mx-auto max-w-md text-left">
+                <MarkWatchedForm
+                  titleId={activeTitle.id}
+                  variant="queue"
+                  rating={activeTitle.rating}
+                  review={activeTitle.review}
+                  collapsed
+                />
+              </div>
+            ) : null}
+            {listId ? (
+              <form action={removeTitleFromList.bind(null, listId, activeTitle.id)}>
+                <button type="submit" className={btnLink}>
+                  Quitar de la lista
+                </button>
+              </form>
+            ) : null}
+          </div>
+        )
       ) : null}
     </div>
   );

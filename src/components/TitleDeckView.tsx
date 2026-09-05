@@ -5,7 +5,8 @@ import { PosterTile } from "@/components/PosterTile";
 import type { titleInclude } from "@/lib/queries";
 import { eyebrowClass } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
-import type { Prisma } from "@/generated/prisma/browser";
+import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
+import type { Platform, Prisma } from "@/generated/prisma/browser";
 
 type TitlePayload = Prisma.TitleGetPayload<{ include: typeof titleInclude }>;
 
@@ -16,10 +17,20 @@ type TitleDeckViewProps = {
   hrefFor?: (mode: DeckViewMode) => string;
   heading?: string;
   showToggle?: boolean;
+  userPlatforms?: readonly Platform[];
+  footer?: "full" | "watched";
 };
 
-const toCoverflowTitle = (title: TitlePayload): CoverflowTitle => {
+const toCoverflowTitle = (
+  title: TitlePayload,
+  userPlatforms: readonly Platform[] = [],
+): CoverflowTitle => {
   const watchProviders = parseStoredWatchProviders(title.watchProvidersMx);
+  const availabilityPlatform = primaryAvailabilityPlatform(
+    watchProviders?.flatrate,
+    title.platform,
+    userPlatforms,
+  );
 
   return {
     id: title.id,
@@ -28,7 +39,7 @@ const toCoverflowTitle = (title: TitlePayload): CoverflowTitle => {
     year: title.year,
     rating: title.rating,
     posterPath: title.posterPath,
-    platform: title.platform,
+    platform: availabilityPlatform ?? title.platform,
     imdbRating: title.imdbRating,
     watched: Boolean(title.watchedAt),
     review: title.review,
@@ -45,6 +56,8 @@ export const TitleDeckView = ({
   hrefFor,
   heading,
   showToggle = true,
+  userPlatforms = [],
+  footer = "full",
 }: TitleDeckViewProps) => {
   if (titles.length === 0) {
     return null;
@@ -53,7 +66,7 @@ export const TitleDeckView = ({
   const showToolbar = Boolean(heading) || (showToggle && hrefFor);
 
   return (
-    <section className="space-y-4" aria-label={heading}>
+    <section className="space-y-4" aria-label={heading ?? "Mazo"}>
       {showToolbar ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           {heading ? <h2 className={eyebrowClass}>{heading}</h2> : null}
@@ -69,7 +82,10 @@ export const TitleDeckView = ({
       ) : null}
 
       {mode === "deck" ? (
-        <CoverflowDeck titles={titles.map(toCoverflowTitle)} />
+        <CoverflowDeck
+          titles={titles.map((title) => toCoverflowTitle(title, userPlatforms))}
+          footer={footer}
+        />
       ) : mode === "calendar" ? null : (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {titles.map((title, index) => (

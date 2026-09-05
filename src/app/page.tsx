@@ -16,12 +16,12 @@ import { TitleDeckView } from "@/components/TitleDeckView";
 import { ensureCurrentUserWatchlist } from "@/app/actions/watchlist";
 import { enrichDiaryWatchlistTitles } from "@/lib/diary-enrich";
 import {
+  assignExclusiveDiaryPicks,
   diaryHref,
   parseCategorySlug,
   parseDiaryMode,
-  pickDiaryCategories,
+  rankDiaryPicks,
   resolveDiaryCategory,
-  titlesForDiaryCategory,
 } from "@/lib/diary-picks";
 import {
   hasExplicitMonthParam,
@@ -44,7 +44,7 @@ import {
   sortCatalogItems,
   titleMatchesKind,
 } from "@/lib/catalog-filters";
-import { applyMinePlatformsFilter, resolveCatalogAvailability } from "@/lib/streaming-platforms";
+import { applyMinePlatformsFilter, formatUserPlatformsList, resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
@@ -117,12 +117,12 @@ const PicksHome = async ({
 
   const enrichedTitles = await enrichDiaryWatchlistTitles(rawTitles);
   const catalog = applyMinePlatformsFilter(enrichedTitles, userPlatforms);
-  const titles = catalog.visible;
-  const categories = pickDiaryCategories(titles);
+  const titles = catalog.visible.filter((title) => title.watchedAt == null);
+  const { categories, picksByCategoryId } = assignExclusiveDiaryPicks(titles);
   const activeCategory = resolveDiaryCategory(categories, categorySlug);
   const picks = activeCategory
-    ? titlesForDiaryCategory(titles, activeCategory.id)
-    : [];
+    ? (picksByCategoryId.get(activeCategory.id) ?? [])
+    : rankDiaryPicks(titles);
 
   return (
     <div className="space-y-6">
@@ -133,8 +133,6 @@ const PicksHome = async ({
           activeSlug={activeCategory.slug}
         />
       ) : null}
-
-      <MissingStreamingDataNote count={catalog.missingCache} />
 
       {rawTitles.length === 0 ? (
         <EmptyState
@@ -147,16 +145,9 @@ const PicksHome = async ({
       ) : titles.length === 0 ? (
         <EmptyState
           title="Nada en tus plataformas"
-          description="Hay títulos en Quiero ver, pero ninguno está incluido (suscripción) en las plataformas que elegiste."
+          description={`Qué ver solo muestra lo incluido (suscripción) en ${formatUserPlatformsList(userPlatforms)}. Renta y compra no cuentan.`}
           actionHref="/perfil"
           actionLabel="Revisar plataformas"
-        />
-      ) : !activeCategory ? (
-        <EmptyState
-          title="Sin categorías todavía"
-          description="Esos títulos no tienen género de TMDB. Agrégalos de nuevo desde el buscador o espera a que se enriquezcan."
-          actionHref="/buscar"
-          actionLabel="Buscar en TMDB"
         />
       ) : picks.length === 0 ? (
         <EmptyState
@@ -167,10 +158,11 @@ const PicksHome = async ({
         />
       ) : (
         <TitleDeckView
-          heading={activeCategory.name}
           titles={picks}
           mode="deck"
           showToggle={false}
+          userPlatforms={userPlatforms}
+          footer="watched"
         />
       )}
     </div>
@@ -355,6 +347,7 @@ const HistorialHome = async ({
                 titles={monthTitles.length > 0 ? monthTitles : titles}
                 mode={view}
                 showToggle={false}
+                userPlatforms={userPlatforms}
               />
             </>
           )}

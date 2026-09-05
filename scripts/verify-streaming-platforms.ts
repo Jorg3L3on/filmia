@@ -7,6 +7,7 @@ import {
   isUserStreamingProvider,
   matchWatchProviderPlatform,
   parseStoredStreamingPlatforms,
+  primaryAvailabilityPlatform,
   resolveMinePlatformsCatalog,
   STREAMING_PLATFORM_TMDB,
   streamingPlatformLogoUrl,
@@ -153,6 +154,23 @@ const run = () => {
     !isUserStreamingProvider(provider(8, "Netflix"), []),
     "Empty prefs should not highlight",
   );
+  assert(
+    primaryAvailabilityPlatform([provider(8, "Netflix"), provider(119, "Amazon Prime Video")], null) ===
+      Platform.NETFLIX,
+    "Deck should pick the first mapped flatrate platform",
+  );
+  assert(
+    primaryAvailabilityPlatform(
+      [provider(8, "Netflix"), provider(337, "Disney Plus")],
+      null,
+      [Platform.DISNEY],
+    ) === Platform.DISNEY,
+    "Deck should prefer a platform the user actually has",
+  );
+  assert(
+    primaryAvailabilityPlatform([], Platform.MAX) === Platform.MAX,
+    "Deck should fall back to the stored catalog platform",
+  );
 
   const data: WatchProvidersMxData = {
     link: null,
@@ -217,6 +235,17 @@ const run = () => {
     "Filter should keep Netflix and hide Prime/Max rent/no-cache",
   );
   assert(filtered.missingCache === 1, "Titles without watchProvidersMx should be excluded and counted");
+
+  const diaryPicks = applyMinePlatformsFilter(
+    [netflixTitle, primeTitle, maxRentOnly, noCacheTitle],
+    mineNetflixDisney,
+    { includeMissingCache: true },
+  );
+  assert(
+    diaryPicks.visible.map((title) => title.id).join(",") === "n,x",
+    "Qué ver should keep Netflix and unknown cache, still hide Prime/Max rent",
+  );
+  assert(diaryPicks.missingCache === 1, "Unknown cache is still counted when included");
 
   const setup = resolveMinePlatformsCatalog([netflixTitle], true, []);
   assert(setup.needsSetup, "Empty prefs with filter on should signal perfil CTA");

@@ -21,17 +21,6 @@ export const tmdbBackdropUrl = (
   return `https://image.tmdb.org/t/p/${size}${backdropPath}`;
 };
 
-export const tmdbProfileUrl = (
-  profilePath: string | null | undefined,
-  size: "w185" | "h632" = "w185",
-) => {
-  if (!profilePath) {
-    return null;
-  }
-
-  return `https://image.tmdb.org/t/p/${size}${profilePath}`;
-};
-
 export const tmdbPosterUrl = (
   posterPath: string | null | undefined,
   size: "w185" | "w342" | "w500" = "w342",
@@ -104,6 +93,11 @@ export const tmdbErrorMessage = (error: unknown) => {
   return "No se pudo completar la petición a TMDB.";
 };
 
+const isTmdbAccessToken = (apiKey: string) => apiKey.startsWith("eyJ");
+
+const TMDB_LANGUAGE = "es-MX";
+const OVERVIEW_FALLBACK_LANGUAGES = ["es-ES", "en-US"] as const;
+
 const tmdbFetch = async <T>(path: string, params: Record<string, string> = {}) => {
   const apiKey = getTmdbApiKey();
   if (!apiKey) {
@@ -114,15 +108,21 @@ const tmdbFetch = async <T>(path: string, params: Record<string, string> = {}) =
   }
 
   const url = new URL(`${TMDB_BASE}${path}`);
-  url.searchParams.set("api_key", apiKey);
-  url.searchParams.set("language", "es-MX");
+  url.searchParams.set("language", TMDB_LANGUAGE);
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
   }
 
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (isTmdbAccessToken(apiKey)) {
+    headers.Authorization = `Bearer ${apiKey}`;
+  } else {
+    url.searchParams.set("api_key", apiKey);
+  }
+
   let response: Response;
   try {
-    response = await fetch(url, { next: { revalidate: 86400 } });
+    response = await fetch(url, { next: { revalidate: 86400 }, headers });
   } catch {
     throw new TmdbRequestError(
       "network",
@@ -378,18 +378,10 @@ export const parseTmdbGenres = (value: unknown): TmdbGenre[] => {
   return genres;
 };
 
-export type TmdbCastMember = {
-  id: number;
-  name: string;
-  character: string | null;
-  profilePath: string | null;
-};
-
 export type TmdbTitleExtras = {
   overview: string | null;
   runtimeMinutes: number | null;
   backdropPath: string | null;
-  cast: TmdbCastMember[];
 };
 
 const parseRuntimeMinutes = (data: {
@@ -402,6 +394,28 @@ const parseRuntimeMinutes = (data: {
 
   const episode = data.episode_run_time?.find((value) => value > 0);
   return episode ?? null;
+};
+
+const overviewWithFallback = async (
+  segment: "movie" | "tv",
+  tmdbId: number,
+  overview: string | null,
+) => {
+  if (overview) {
+    return overview;
+  }
+
+  for (const language of OVERVIEW_FALLBACK_LANGUAGES) {
+    const data = await tmdbFetch<{ overview?: string }>(`/${segment}/${tmdbId}`, {
+      language,
+    });
+    const fallback = data.overview?.trim() || null;
+    if (fallback) {
+      return fallback;
+    }
+  }
+
+  return null;
 };
 
 export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
@@ -431,6 +445,11 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
 
   const data = await tmdbFetch<MovieDetails | TvDetails>(`/${segment}/${tmdbId}`);
   const genres = parseTmdbGenres(data.genres);
+  const overview = await overviewWithFallback(
+    segment,
+    data.id,
+    data.overview?.trim() || null,
+  );
 
   if ("title" in data) {
     return {
@@ -440,7 +459,7 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
       year: parseYear(data.release_date),
       posterPath: data.poster_path ?? null,
       backdropPath: data.backdrop_path ?? null,
-      overview: data.overview?.trim() || null,
+      overview,
       runtimeMinutes: parseRuntimeMinutes(data),
       genres,
     };
@@ -453,35 +472,10 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
     year: parseYear(data.first_air_date),
     posterPath: data.poster_path ?? null,
     backdropPath: data.backdrop_path ?? null,
-    overview: data.overview?.trim() || null,
+    overview,
     runtimeMinutes: parseRuntimeMinutes(data),
     genres,
   };
-};
-
-export const getTmdbCredits = async (
-  tmdbId: number,
-  kind: TitleKind,
-): Promise<TmdbCastMember[]> => {
-  const segment = kind === TitleKind.SERIES ? "tv" : "movie";
-  type Credit = {
-    id?: number;
-    name?: string;
-    character?: string;
-    profile_path?: string | null;
-  };
-
-  const data = await tmdbFetch<{ cast?: Credit[] }>(`/${segment}/${tmdbId}/credits`);
-
-  return (data.cast ?? [])
-    .filter((member) => member.id && member.name?.trim())
-    .slice(0, 12)
-    .map((member) => ({
-      id: Number(member.id),
-      name: member.name?.trim() ?? "",
-      character: member.character?.trim() || null,
-      profilePath: member.profile_path ?? null,
-    }));
 };
 
 export const getTmdbTitleExtras = async (
@@ -493,16 +487,12 @@ export const getTmdbTitleExtras = async (
   }
 
   try {
-    const [details, cast] = await Promise.all([
-      getTmdbDetails(tmdbId, kind),
-      getTmdbCredits(tmdbId, kind).catch(() => [] as TmdbCastMember[]),
-    ]);
+    const details = await getTmdbDetails(tmdbId, kind);
 
     return {
       overview: details.overview,
       runtimeMinutes: details.runtimeMinutes,
       backdropPath: details.backdropPath,
-      cast,
     };
   } catch {
     return null;

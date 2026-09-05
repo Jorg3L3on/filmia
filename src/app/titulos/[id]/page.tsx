@@ -1,12 +1,9 @@
-import type { CSSProperties } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TitleKind } from "@/generated/prisma/browser";
 import { deleteTitle } from "@/app/actions/titles";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
-import { PosterRail } from "@/components/PosterRail";
 import { SeriesStatusPanel } from "@/components/SeriesStatusPanel";
 import { TitleActionRow } from "@/components/TitleActionRow";
 import { TitleHero } from "@/components/TitleHero";
@@ -28,7 +25,7 @@ import {
   getUserStreamingPlatforms,
 } from "@/lib/queries";
 import { btnDanger, btnGhost, wellClass } from "@/lib/ui";
-import { getTmdbTitleExtras, tmdbBackdropUrl, tmdbProfileUrl } from "@/lib/tmdb";
+import { getTmdbTitleExtras, tmdbBackdropUrl } from "@/lib/tmdb";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 
 export const dynamic = "force-dynamic";
@@ -158,49 +155,6 @@ export default async function TitleDetailPage({
             rating={title.rating}
             review={title.review}
           />
-        </section>
-      ) : null}
-
-      {extras && extras.cast.length > 0 ? (
-        <section className="space-y-3">
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.18em] text-mist">
-            Reparto
-          </h2>
-          <PosterRail ariaLabel="Reparto">
-            {extras.cast.map((member, index) => {
-              const portrait = tmdbProfileUrl(member.profilePath);
-              return (
-                <div
-                  key={member.id}
-                  role="listitem"
-                  className="card-physics stagger-in w-[108px] shrink-0 snap-start sm:w-[128px]"
-                  style={{ "--stagger": index } as CSSProperties}
-                >
-                  <div className="overflow-hidden rounded-poster bg-well">
-                    {portrait ? (
-                      <Image
-                        src={portrait}
-                        alt={member.name}
-                        width={128}
-                        height={192}
-                        className="aspect-[2/3] w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex aspect-[2/3] items-center justify-center text-xs text-mist">
-                        {member.name.slice(0, 1)}
-                      </div>
-                    )}
-                  </div>
-                  <p className="mt-1.5 truncate font-serif text-xs text-paper">
-                    {member.name}
-                  </p>
-                  {member.character ? (
-                    <p className="truncate text-[11px] text-mist">{member.character}</p>
-                  ) : null}
-                </div>
-              );
-            })}
-          </PosterRail>
         </section>
       ) : null}
 

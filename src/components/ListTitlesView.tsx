@@ -10,6 +10,7 @@ import type { CatalogSort } from "@/lib/tags";
 import { catalogHref } from "@/lib/tags";
 import { btnLink } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
+import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import type { Platform, Prisma } from "@/generated/prisma/browser";
 import type { SeriesStatusFilter } from "@/lib/series";
 
@@ -39,7 +40,11 @@ const toCoverflowTitle = (item: ListItemPayload): CoverflowTitle => {
     year: item.title.year,
     rating: item.title.rating,
     posterPath: item.title.posterPath,
-    platform: item.title.platform,
+    platform: primaryAvailabilityPlatform(
+      watchProviders?.flatrate,
+      item.title.platform,
+      platforms,
+    ),
     imdbRating: item.title.imdbRating,
     watched: Boolean(item.title.watchedAt),
     review: item.title.review,

@@ -4,20 +4,28 @@ import type { Platform } from "@/generated/prisma/browser";
 
 type MissingStreamingDataNoteProps = {
   count: number;
+  appearAnyway?: boolean;
 };
 
 export const MissingStreamingDataNote = ({
   count,
+  appearAnyway = false,
 }: MissingStreamingDataNoteProps) => {
   if (count <= 0) {
     return null;
   }
 
+  const message = appearAnyway
+    ? count === 1
+      ? "1 título aún no tiene datos de streaming."
+      : `${count} títulos aún no tienen datos de streaming.`
+    : count === 1
+      ? "1 título sin datos de streaming no aparece."
+      : `${count} títulos sin datos de streaming no aparecen.`;
+
   return (
     <p className="text-xs text-mist" role="status">
-      {count === 1
-        ? "1 título sin datos de streaming no aparece."
-        : `${count} títulos sin datos de streaming no aparecen.`}
+      {message}
     </p>
   );
 };

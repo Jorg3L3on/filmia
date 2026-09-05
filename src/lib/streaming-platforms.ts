@@ -186,6 +186,32 @@ export const isUserStreamingProvider = (
   return matched != null && userPlatforms.includes(matched);
 };
 
+export const primaryAvailabilityPlatform = (
+  providers: readonly Pick<WatchProviderOffer, "providerId" | "name">[] | undefined,
+  fallback: Platform | null = null,
+  preferredPlatforms: readonly Platform[] = [],
+): Platform | null => {
+  const list = providers ?? [];
+
+  if (preferredPlatforms.length > 0) {
+    for (const provider of list) {
+      const matched = matchWatchProviderPlatform(provider);
+      if (matched && preferredPlatforms.includes(matched)) {
+        return matched;
+      }
+    }
+  }
+
+  for (const provider of list) {
+    const matched = matchWatchProviderPlatform(provider);
+    if (matched) {
+      return matched;
+    }
+  }
+
+  return fallback;
+};
+
 /**
  * El título está incluido (flatrate) en al menos una plataforma del usuario.
  * Rent/buy no cuentan: el filtro es “disponible en mis suscripciones”.
@@ -212,17 +238,20 @@ export type MinePlatformsFilterResult<T> = {
  * Post-filtro de catálogo (JOR-157).
  *
  * - Pasa si algún provider **flatrate** coincide con las plataformas del usuario.
- * - Sin cache `watchProvidersMx`: se excluye (sin datos de streaming).
+ * - Sin cache `watchProvidersMx`: se excluye (sin datos de streaming), salvo
+ *   `includeMissingCache` (Qué ver: unknown ≠ “no está en tus plataformas”).
  * - Prefs vacías: ningún título pasa (la UI debe mostrar CTA a `/perfil`).
  */
 export const applyMinePlatformsFilter = <T extends { watchProvidersMx?: unknown }>(
   titles: readonly T[],
   userPlatforms: readonly Platform[],
+  options: { includeMissingCache?: boolean } = {},
 ): MinePlatformsFilterResult<T> => {
   if (userPlatforms.length === 0) {
     return { visible: [], missingCache: 0 };
   }
 
+  const includeMissingCache = Boolean(options.includeMissingCache);
   const visible: T[] = [];
   let missingCache = 0;
 
@@ -230,6 +259,9 @@ export const applyMinePlatformsFilter = <T extends { watchProvidersMx?: unknown 
     const data = parseStoredWatchProviders(title.watchProvidersMx);
     if (!data) {
       missingCache += 1;
+      if (includeMissingCache) {
+        visible.push(title);
+      }
       continue;
     }
 
