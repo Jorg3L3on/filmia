@@ -1,13 +1,13 @@
 "use client";
 
-import { useOptimistic, useState, useTransition, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   addToWatchlistById,
   removeFromWatchlistById,
 } from "@/app/actions/watchlist";
 import { cn } from "@/lib/cn";
 import { membershipCopy, titleListMembership } from "@/lib/list-membership";
-import { actionErrorMessage } from "@/lib/use-optimistic-action";
+import { useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { focusRing } from "@/lib/ui";
 
 type AssignableList = {
@@ -80,26 +80,23 @@ const WatchlistButton = ({
   titleId: string;
   inWatchlist: boolean;
 }) => {
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const [optimisticInWatchlist, applyWatchlist] = useOptimistic(inWatchlist);
+  const {
+    value: optimisticInWatchlist,
+    error,
+    isPending,
+    run,
+  } = useStickyOptimistic(inWatchlist);
   const copy = membershipCopy(
     optimisticInWatchlist ? { state: "watchlist" } : { state: "idle" },
   );
 
   const handleToggle = () => {
     const next = !optimisticInWatchlist;
-    setError(null);
-    startTransition(async () => {
-      applyWatchlist(next);
-      try {
-        if (next) {
-          await addToWatchlistById(titleId);
-        } else {
-          await removeFromWatchlistById(titleId);
-        }
-      } catch (caught) {
-        setError(actionErrorMessage(caught));
+    run(next, async () => {
+      if (next) {
+        await addToWatchlistById(titleId);
+      } else {
+        await removeFromWatchlistById(titleId);
       }
     });
   };

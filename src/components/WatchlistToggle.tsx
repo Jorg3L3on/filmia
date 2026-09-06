@@ -1,8 +1,7 @@
 "use client";
 
-import { useOptimistic, useState, useTransition } from "react";
 import { addToWatchlistById, removeFromWatchlistById } from "@/app/actions/watchlist";
-import { actionErrorMessage } from "@/lib/use-optimistic-action";
+import { useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { btnGhost, btnPrimary } from "@/lib/ui";
 
 type WatchlistToggleProps = {
@@ -11,23 +10,15 @@ type WatchlistToggleProps = {
 };
 
 export const WatchlistToggle = ({ titleId, inWatchlist }: WatchlistToggleProps) => {
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const [optimistic, applyOptimistic] = useOptimistic(inWatchlist);
+  const { value: optimistic, error, isPending, run } = useStickyOptimistic(inWatchlist);
 
   const handleToggle = () => {
     const next = !optimistic;
-    setError(null);
-    startTransition(async () => {
-      applyOptimistic(next);
-      try {
-        if (next) {
-          await addToWatchlistById(titleId);
-        } else {
-          await removeFromWatchlistById(titleId);
-        }
-      } catch (caught) {
-        setError(actionErrorMessage(caught));
+    run(next, async () => {
+      if (next) {
+        await addToWatchlistById(titleId);
+      } else {
+        await removeFromWatchlistById(titleId);
       }
     });
   };

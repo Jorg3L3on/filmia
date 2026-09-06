@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useOptimistic, useState, useTransition } from "react";
+import { useState } from "react";
 import { createAndAssignTag, toggleTitleTag } from "@/app/actions/tags";
 import { CreateTagForm } from "@/components/CreateTagForm";
 import { cn } from "@/lib/cn";
 import { tagHref } from "@/lib/tags";
-import { actionErrorMessage } from "@/lib/use-optimistic-action";
+import { sameIdList, useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { btnGhost, eyebrowClass, focusRing, wellClass } from "@/lib/ui";
 
 type AssignableTag = {
@@ -26,12 +26,10 @@ export const TitleTagsPanel = ({
   tags,
   selectedTagIds,
 }: TitleTagsPanelProps) => {
-  const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
-  const [optimisticIds, applyIds] = useOptimistic(
+  const { value: optimisticIds, error, run } = useStickyOptimistic(
     selectedTagIds,
-    (_current: string[], next: string[]) => next,
+    sameIdList,
   );
   const selected = new Set(optimisticIds);
   const assignAction = createAndAssignTag.bind(null, titleId);
@@ -40,14 +38,10 @@ export const TitleTagsPanel = ({
     const next = selected.has(tagId)
       ? optimisticIds.filter((id) => id !== tagId)
       : [...optimisticIds, tagId];
-    setError(null);
     setPendingId(tagId);
-    startTransition(async () => {
-      applyIds(next);
+    run(next, async () => {
       try {
         await toggleTitleTag(tagId, titleId);
-      } catch (caught) {
-        setError(actionErrorMessage(caught));
       } finally {
         setPendingId(null);
       }

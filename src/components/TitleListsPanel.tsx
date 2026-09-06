@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useOptimistic, useState, useTransition } from "react";
+import { useState } from "react";
 import { toggleTitleInList } from "@/app/actions/lists";
 import { cn } from "@/lib/cn";
 import { isFixedListSlug, listHref } from "@/lib/lists";
-import { actionErrorMessage } from "@/lib/use-optimistic-action";
+import { sameIdList, useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { btnGhost, eyebrowClass, focusRing, wellClass } from "@/lib/ui";
 
 type AssignableList = {
@@ -25,12 +25,10 @@ export const TitleListsPanel = ({
   lists,
   memberListIds,
 }: TitleListsPanelProps) => {
-  const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
-  const [optimisticIds, applyIds] = useOptimistic(
+  const { value: optimisticIds, error, run } = useStickyOptimistic(
     memberListIds,
-    (_current: string[], next: string[]) => next,
+    sameIdList,
   );
   const memberIds = new Set(optimisticIds);
   const daily = lists.filter((list) => isFixedListSlug(list.slug));
@@ -40,14 +38,10 @@ export const TitleListsPanel = ({
     const next = memberIds.has(listId)
       ? optimisticIds.filter((id) => id !== listId)
       : [...optimisticIds, listId];
-    setError(null);
     setPendingId(listId);
-    startTransition(async () => {
-      applyIds(next);
+    run(next, async () => {
       try {
         await toggleTitleInList(listId, titleId);
-      } catch (caught) {
-        setError(actionErrorMessage(caught));
       } finally {
         setPendingId(null);
       }

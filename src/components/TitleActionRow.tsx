@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useState, useTransition, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { setTitleRating } from "@/app/actions/titles";
 import {
   addToWatchlistById,
@@ -12,7 +12,7 @@ import { RatingSheet } from "@/components/RatingSheet";
 import { cn } from "@/lib/cn";
 import { formatStarScore } from "@/lib/labels";
 import { useSpringFeedback } from "@/lib/motion";
-import { actionErrorMessage } from "@/lib/use-optimistic-action";
+import { useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { focusRing } from "@/lib/ui";
 
 type TitleActionRowProps = {
@@ -35,6 +35,12 @@ type ActionState = {
   review: string | null;
 };
 
+const sameActionState = (left: ActionState, right: ActionState) =>
+  left.watched === right.watched &&
+  left.inWatchlist === right.inWatchlist &&
+  left.rating === right.rating &&
+  left.review === right.review;
+
 export const TitleActionRow = ({
   titleId,
   watched,
@@ -47,17 +53,17 @@ export const TitleActionRow = ({
 }: TitleActionRowProps) => {
   const [panel, setPanel] = useState<Panel>(null);
   const [ratingOpen, setRatingOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<"watched" | "watchlist" | "rating" | null>(
     null,
   );
-  const [isPending, startTransition] = useTransition();
-  const [optimistic, applyOptimistic] = useOptimistic(
+  const {
+    value: optimistic,
+    error,
+    isPending,
+    run,
+  } = useStickyOptimistic(
     { watched, inWatchlist, rating, review },
-    (current: ActionState, patch: Partial<ActionState>) => ({
-      ...current,
-      ...patch,
-    }),
+    sameActionState,
   );
   const watchedSpring = useSpringFeedback();
   const watchlistSpring = useSpringFeedback();
@@ -65,71 +71,70 @@ export const TitleActionRow = ({
 
   const handleToggleWatched = () => {
     const nextWatched = !optimistic.watched;
-    setError(null);
     setPendingAction("watched");
     watchedSpring.trigger();
-    startTransition(async () => {
-      applyOptimistic({
+    run(
+      {
+        ...optimistic,
         watched: nextWatched,
         inWatchlist: nextWatched ? false : optimistic.inWatchlist,
-      });
-      try {
-        if (nextWatched) {
-          await markTitleWatched(titleId);
-        } else {
-          await clearTitleWatched(titleId);
+      },
+      async () => {
+        try {
+          if (nextWatched) {
+            await markTitleWatched(titleId);
+          } else {
+            await clearTitleWatched(titleId);
+          }
+        } finally {
+          setPendingAction(null);
         }
-      } catch (caught) {
-        setError(actionErrorMessage(caught));
-      } finally {
-        setPendingAction(null);
-      }
-    });
+      },
+    );
   };
 
   const handleToggleWatchlist = () => {
     const nextInWatchlist = !optimistic.inWatchlist;
-    setError(null);
     setPendingAction("watchlist");
     watchlistSpring.trigger();
-    startTransition(async () => {
-      applyOptimistic({ inWatchlist: nextInWatchlist });
-      try {
-        if (nextInWatchlist) {
-          await addToWatchlistById(titleId);
-        } else {
-          await removeFromWatchlistById(titleId);
+    run(
+      { ...optimistic, inWatchlist: nextInWatchlist },
+      async () => {
+        try {
+          if (nextInWatchlist) {
+            await addToWatchlistById(titleId);
+          } else {
+            await removeFromWatchlistById(titleId);
+          }
+        } finally {
+          setPendingAction(null);
         }
-      } catch (caught) {
-        setError(actionErrorMessage(caught));
-      } finally {
-        setPendingAction(null);
-      }
-    });
+      },
+    );
   };
 
   const handleSaveRating = (next: { rating: number | null; review: string }) => {
-    setError(null);
     setPendingAction("rating");
     setRatingOpen(false);
-    startTransition(async () => {
-      applyOptimistic({
+    run(
+      {
+        ...optimistic,
         rating: next.rating,
         review: next.review || null,
-      });
-      try {
-        const formData = new FormData();
-        if (next.rating != null) {
-          formData.set("rating", String(next.rating));
+      },
+      async () => {
+        try {
+          const formData = new FormData();
+          if (next.rating != null) {
+            formData.set("rating", String(next.rating));
+          }
+          formData.set("review", next.review);
+          await setTitleRating(titleId, formData);
+        } finally {
+          setPendingAction(null);
         }
-        formData.set("review", next.review);
-        await setTitleRating(titleId, formData);
-      } catch (caught) {
-        setError(actionErrorMessage(caught));
-      } finally {
-        setPendingAction(null);
-      }
-    });
+      },
+    );
   };
 
   const handleTogglePanel = (next: Panel) => {
