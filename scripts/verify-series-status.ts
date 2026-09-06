@@ -1,4 +1,4 @@
-import { TitleKind } from "../src/db";
+import { SeriesStatus, TitleKind } from "../src/db";
 import { parseSeriesSeason, parseSeriesStatus } from "../src/lib/form-data";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "../src/lib/series";
 import { catalogHref } from "../src/lib/tags";
@@ -22,8 +22,8 @@ const run = () => {
   );
 
   const movie = { kind: TitleKind.MOVIE, seriesStatus: null };
-  const watching = { kind: TitleKind.SERIES, seriesStatus: "WATCHING" };
-  const finished = { kind: TitleKind.SERIES, seriesStatus: "FINISHED" };
+  const watching = { kind: TitleKind.SERIES, seriesStatus: SeriesStatus.WATCHING };
+  const finished = { kind: TitleKind.SERIES, seriesStatus: SeriesStatus.FINISHED };
   const unset = { kind: TitleKind.SERIES, seriesStatus: null };
 
   assert(titleMatchesSeriesStatus(movie, undefined), "No filter matches movies");
