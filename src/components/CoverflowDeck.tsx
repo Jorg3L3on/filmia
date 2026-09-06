@@ -614,36 +614,46 @@ export const CoverflowDeck = ({
     suppressClick.current = false;
   };
 
-  const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
-    if (titles.length <= 1) {
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) {
       return;
     }
 
-    event.preventDefault();
-    const delta =
-      Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    const handleWheel = (event: WheelEvent) => {
+      if (titlesLengthRef.current <= 1) {
+        return;
+      }
 
-    motionModeRef.current = "idle";
-    velocityRef.current = 0;
-    targetIndexRef.current = clampIndex(
-      targetIndexRef.current + delta * WHEEL_SENSITIVITY,
-      titles.length - 1,
-    );
-    ensureTick();
+      event.preventDefault();
+      const delta =
+        Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
 
-    if (wheelSnapTimeout.current != null) {
-      window.clearTimeout(wheelSnapTimeout.current);
-    }
-
-    wheelSnapTimeout.current = window.setTimeout(() => {
+      motionModeRef.current = "idle";
+      velocityRef.current = 0;
       targetIndexRef.current = clampIndex(
-        Math.round(targetIndexRef.current),
-        titles.length - 1,
+        targetIndexRef.current + delta * WHEEL_SENSITIVITY,
+        titlesLengthRef.current - 1,
       );
       ensureTick();
-      wheelSnapTimeout.current = null;
-    }, WHEEL_SNAP_MS);
-  };
+
+      if (wheelSnapTimeout.current != null) {
+        window.clearTimeout(wheelSnapTimeout.current);
+      }
+
+      wheelSnapTimeout.current = window.setTimeout(() => {
+        targetIndexRef.current = clampIndex(
+          Math.round(targetIndexRef.current),
+          titlesLengthRef.current - 1,
+        );
+        ensureTick();
+        wheelSnapTimeout.current = null;
+      }, WHEEL_SNAP_MS);
+    };
+
+    node.addEventListener("wheel", handleWheel, { passive: false });
+    return () => node.removeEventListener("wheel", handleWheel);
+  }, [ensureTick]);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "ArrowRight") {
@@ -749,7 +759,6 @@ export const CoverflowDeck = ({
         data-no-sheet-drag={isSheet ? "" : undefined}
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onClickCapture={handleClickCapture}
         className={cn(
