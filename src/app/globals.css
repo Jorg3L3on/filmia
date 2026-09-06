@@ -138,6 +138,56 @@ body {
   animation: spring-pop 420ms var(--spring);
 }
 
+/* Coverflow mazo: compositor-only motion. Dim is an overlay, not filter. */
+.coverflow-card {
+  contain: layout style;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-shadow: 0 14px 28px rgb(0 0 0 / 0.38);
+  opacity: 0;
+}
+
+.coverflow-card.is-focused {
+  box-shadow:
+    0 28px 50px rgb(0 0 0 / 0.55),
+    0 0 0 1px rgb(124 156 255 / 0.28);
+}
+
+.coverflow-card.is-compact.is-focused {
+  box-shadow:
+    0 18px 36px rgb(0 0 0 / 0.5),
+    0 0 0 1px rgb(124 156 255 / 0.7);
+}
+
+.coverflow-card-face {
+  border-color: rgb(255 255 255 / 0.1);
+}
+
+.coverflow-card.is-focused .coverflow-card-face {
+  border-color: rgb(124 156 255 / 0.4);
+}
+
+.coverflow-card.is-compact.is-focused .coverflow-card-face {
+  border-color: var(--accent);
+}
+
+.coverflow-card-dim {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: #000;
+  opacity: 0;
+}
+
+.coverflow-card-caption {
+  opacity: 0;
+}
+
+.cursor-inherit {
+  cursor: inherit;
+}
+
 .sheet-rise {
   animation: sheet-rise 480ms var(--spring) both;
 }
@@ -320,6 +370,12 @@ body {
     transform: none;
     filter: none;
     animation: none;
+  }
+
+  .coverflow-card,
+  .coverflow-card.is-focused,
+  .coverflow-card.is-compact.is-focused {
+    transition: none;
   }
 
   ::view-transition-group(*),
