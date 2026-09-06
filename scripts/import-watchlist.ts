@@ -1,9 +1,20 @@
 import { config as loadEnv } from "dotenv";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import { createId } from "@paralleldrive/cuid2";
+import { and, desc, eq } from "drizzle-orm";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { PrismaClient } from "../src/generated/prisma/client";
-import { ListKind, Platform, TitleKind } from "../src/generated/prisma/browser";
+
+loadEnv({ path: ".env.local" });
+loadEnv();
+
+import {
+  db,
+  listItems,
+  lists,
+  titles,
+  type Platform,
+  type TitleKind,
+} from "../src/db/index";
 import {
   WATCHLIST_DESCRIPTION,
   WATCHLIST_NAME,
@@ -12,18 +23,9 @@ import {
 
 const DEMO_USER_ID = "cm4demofilmia00000000001";
 
-loadEnv({ path: ".env.local" });
-loadEnv();
-
-const connectionString = process.env.DATABASE_URL;
-
-if (!connectionString) {
+if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL no está definida.");
 }
-
-const prisma = new PrismaClient({
-  adapter: new PrismaNeon({ connectionString }),
-});
 
 type QueueFilm = {
   name: string;
@@ -54,7 +56,14 @@ const isPlatform = (value: unknown): value is Platform =>
   value === "DISNEY" ||
   value === "CLARO" ||
   value === "APPLE" ||
-  value === "MUBI";
+  value === "MUBI" ||
+  value === "PARAMOUNT" ||
+  value === "CRUNCHYROLL" ||
+  value === "VIX" ||
+  value === "PLUTO" ||
+  value === "AMCPLUS" ||
+  value === "CURIOSITY" ||
+  value === "LIONSGATE";
 
 const sleep = (ms: number) => new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
 
@@ -122,29 +131,49 @@ const lookupPoster = async (film: QueueFilm) => {
   return null;
 };
 
-const importQueue = async () => {
-  const filePath = resolve(process.cwd(), "prisma/data/watchlist-queue.json");
-  const films = JSON.parse(readFileSync(filePath, "utf8")) as QueueFilm[];
-
-  const watchlist = await prisma.list.upsert({
-    where: { userId_slug: { userId: DEMO_USER_ID, slug: WATCHLIST_SLUG } },
-    update: {
-      name: WATCHLIST_NAME,
-      description: WATCHLIST_DESCRIPTION,
-      kind: ListKind.WATCHLIST,
-    },
-    create: {
-      userId: DEMO_USER_ID,
-      slug: WATCHLIST_SLUG,
-      name: WATCHLIST_NAME,
-      description: WATCHLIST_DESCRIPTION,
-      kind: ListKind.WATCHLIST,
-    },
+const ensureWatchlist = async () => {
+  const existing = await db.query.lists.findFirst({
+    where: and(eq(lists.userId, DEMO_USER_ID), eq(lists.slug, WATCHLIST_SLUG)),
   });
 
-  const last = await prisma.listItem.findFirst({
-    where: { listId: watchlist.id },
-    orderBy: { position: "desc" },
+  if (existing) {
+    await db
+      .update(lists)
+      .set({
+        name: WATCHLIST_NAME,
+        description: WATCHLIST_DESCRIPTION,
+        kind: "WATCHLIST",
+      })
+      .where(eq(lists.id, existing.id));
+    return existing;
+  }
+
+  const listId = createId();
+  await db.insert(lists).values({
+    id: listId,
+    userId: DEMO_USER_ID,
+    slug: WATCHLIST_SLUG,
+    name: WATCHLIST_NAME,
+    description: WATCHLIST_DESCRIPTION,
+    kind: "WATCHLIST",
+  });
+
+  const created = await db.query.lists.findFirst({ where: eq(lists.id, listId) });
+  if (!created) {
+    throw new Error("No se pudo crear Quiero ver.");
+  }
+  return created;
+};
+
+const importQueue = async () => {
+  const filePath = resolve(process.cwd(), "scripts/data/watchlist-queue.json");
+  const films = JSON.parse(readFileSync(filePath, "utf8")) as QueueFilm[];
+
+  const watchlist = await ensureWatchlist();
+
+  const last = await db.query.listItems.findFirst({
+    where: eq(listItems.listId, watchlist.id),
+    orderBy: [desc(listItems.position)],
   });
 
   let position = (last?.position ?? -1) + 1;
@@ -153,70 +182,69 @@ const importQueue = async () => {
   let posters = 0;
 
   for (const film of films) {
-    const existing = await prisma.title.findFirst({
-      where: { userId: DEMO_USER_ID, name: film.name, year: film.year },
+    const existing = await db.query.titles.findFirst({
+      where: and(eq(titles.userId, DEMO_USER_ID), eq(titles.name, film.name), eq(titles.year, film.year)),
     });
 
-    const posterPath = existing?.posterPath
-      ? existing.posterPath
-      : await lookupPoster(film);
+    const posterPath = existing?.posterPath ? existing.posterPath : await lookupPoster(film);
 
     if (!existing?.posterPath) {
       await sleep(40);
     }
 
-    const data = {
-      userId: DEMO_USER_ID,
-      name: film.name,
-      originalName: film.originalName ?? existing?.originalName ?? null,
-      kind: film.kind === "SERIES" ? TitleKind.SERIES : TitleKind.MOVIE,
-      year: film.year,
-      platform: isPlatform(film.platform) ? film.platform : existing?.platform ?? null,
-      imdbRating: film.imdbRating ?? existing?.imdbRating ?? null,
-      tmdbId: existing?.tmdbId ?? null,
-      posterPath,
-      watchedAt: existing?.watchedAt ?? null,
-    };
+    const kind: TitleKind = film.kind === "SERIES" ? "SERIES" : "MOVIE";
+    const platform = isPlatform(film.platform) ? film.platform : (existing?.platform ?? null);
 
-    const saved = existing
-      ? await prisma.title.update({
-          where: { id: existing.id },
-          data: {
-            originalName: data.originalName,
-            platform: data.platform,
-            imdbRating: data.imdbRating,
-            posterPath: data.posterPath,
-          },
+    let savedId = existing?.id;
+    if (existing) {
+      await db
+        .update(titles)
+        .set({
+          originalName: film.originalName ?? existing.originalName ?? null,
+          platform,
+          imdbRating: film.imdbRating ?? existing.imdbRating ?? null,
+          posterPath,
         })
-      : await prisma.title.create({ data });
-
-    if (!existing) {
+        .where(eq(titles.id, existing.id));
+    } else {
+      savedId = createId();
+      await db.insert(titles).values({
+        id: savedId,
+        userId: DEMO_USER_ID,
+        name: film.name,
+        originalName: film.originalName ?? null,
+        kind,
+        year: film.year,
+        platform,
+        imdbRating: film.imdbRating ?? null,
+        tmdbId: null,
+        posterPath,
+        watchedAt: null,
+      });
       created += 1;
     }
-    if (data.posterPath) {
+
+    const titleId = savedId!;
+    if (posterPath) {
       posters += 1;
     }
 
-    const membership = await prisma.listItem.findUnique({
-      where: {
-        listId_titleId: { listId: watchlist.id, titleId: saved.id },
-      },
+    const membership = await db.query.listItems.findFirst({
+      where: and(eq(listItems.listId, watchlist.id), eq(listItems.titleId, titleId)),
     });
 
     if (!membership) {
-      await prisma.listItem.create({
-        data: {
-          listId: watchlist.id,
-          titleId: saved.id,
-          position,
-        },
+      await db.insert(listItems).values({
+        listId: watchlist.id,
+        titleId,
+        position,
       });
       position += 1;
       queued += 1;
     }
 
     console.log(
-      `${membership ? "·" : "+"} ${film.name} (${film.year})${data.posterPath ? "" : " [sin poster]"}`,
+      `${membership ? "·" : "+"} ${film.name} (${film.year})${posterPath ? "" : " [sin poster]"}`,
     );
   }
 
@@ -225,11 +253,7 @@ const importQueue = async () => {
   );
 };
 
-importQueue()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+importQueue().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

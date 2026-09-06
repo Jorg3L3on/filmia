@@ -1,4 +1,4 @@
-import { Platform } from "../src/generated/prisma/browser";
+import { Platform } from "../src/db";
 import { parseStreamingPlatforms } from "../src/lib/form-data";
 import { PLATFORMS } from "../src/lib/labels";
 import {

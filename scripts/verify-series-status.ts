@@ -1,10 +1,6 @@
-import { SeriesStatus, TitleKind } from "../src/generated/prisma/browser";
+import { SeriesStatus, TitleKind } from "../src/db";
 import { parseSeriesSeason, parseSeriesStatus } from "../src/lib/form-data";
-import {
-  parseSeriesStatusFilter,
-  seriesStatusWhere,
-  titleMatchesSeriesStatus,
-} from "../src/lib/series";
+import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "../src/lib/series";
 import { catalogHref } from "../src/lib/tags";
 
 const assert = (condition: unknown, message: string) => {
@@ -26,8 +22,8 @@ const run = () => {
   );
 
   const movie = { kind: TitleKind.MOVIE, seriesStatus: null };
-  const watching = { kind: TitleKind.SERIES, seriesStatus: "WATCHING" };
-  const finished = { kind: TitleKind.SERIES, seriesStatus: "FINISHED" };
+  const watching = { kind: TitleKind.SERIES, seriesStatus: SeriesStatus.WATCHING };
+  const finished = { kind: TitleKind.SERIES, seriesStatus: SeriesStatus.FINISHED };
   const unset = { kind: TitleKind.SERIES, seriesStatus: null };
 
   assert(titleMatchesSeriesStatus(movie, undefined), "No filter matches movies");
@@ -37,21 +33,6 @@ const run = () => {
   assert(!titleMatchesSeriesStatus(finished, "WATCHING"), "Finished series excluded");
   assert(titleMatchesSeriesStatus(unset, "NONE"), "Unset series matches NONE");
   assert(!titleMatchesSeriesStatus(watching, "NONE"), "Watching series excluded from NONE");
-
-  assert(
-    JSON.stringify(seriesStatusWhere(undefined)) === "{}",
-    "No filter should not constrain Prisma where",
-  );
-  assert(
-    JSON.stringify(seriesStatusWhere("WATCHING")) ===
-      JSON.stringify({ kind: TitleKind.SERIES, seriesStatus: "WATCHING" }),
-    "WATCHING where is series-only",
-  );
-  assert(
-    JSON.stringify(seriesStatusWhere("NONE")) ===
-      JSON.stringify({ kind: TitleKind.SERIES, seriesStatus: null }),
-    "NONE where is series with null status",
-  );
 
   const form = new FormData();
   form.set("seriesStatus", "WATCHING");
@@ -87,7 +68,7 @@ const run = () => {
     "Default catalog href without seriesStatus stays clean",
   );
 
-  console.log("✓ Series status parse, movie ignore, Prisma where and catalog hrefs");
+  console.log("✓ Series status parse, movie ignore, and catalog hrefs");
 };
 
 run();

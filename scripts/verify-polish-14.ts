@@ -1,4 +1,4 @@
-import { Platform, TitleKind } from "../src/generated/prisma/browser";
+import { Platform, TitleKind } from "../src/db";
 import { catalogHref } from "../src/lib/catalog-href";
 import {
   countSheetFilters,

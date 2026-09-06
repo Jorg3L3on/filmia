@@ -11,9 +11,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx prisma/seed.ts",
-    "db:import-watchlist": "tsx prisma/import-watchlist.ts",
-    "db:backfill-metadata": "tsx prisma/backfill-metadata.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:import-watchlist": "tsx scripts/import-watchlist.ts",
+    "db:backfill-metadata": "tsx scripts/backfill-metadata.ts",
     "db:set-password": "tsx scripts/set-password.ts"
   },
   "dependencies": {
