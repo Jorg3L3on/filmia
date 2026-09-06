@@ -62,18 +62,26 @@ export const addToWatchlist = async (titleId: string, queueNote?: string) => {
     orderBy: [desc(listItems.position)],
   });
 
-  await db
-    .insert(listItems)
-    .values({
-      listId: watchlist.id,
-      titleId,
-      position: (last?.position ?? -1) + 1,
-      queueNote: queueNote?.trim() || null,
-    })
-    .onConflictDoUpdate({
-      target: [listItems.listId, listItems.titleId],
-      set: queueNote ? { queueNote: queueNote.trim() || null } : {},
-    });
+  const values = {
+    listId: watchlist.id,
+    titleId,
+    position: (last?.position ?? -1) + 1,
+    queueNote: queueNote?.trim() || null,
+  };
+
+  // Drizzle throws "No values to set" if onConflictDoUpdate gets `set: {}`.
+  // The daily Quiero ver tap has no note, so use do-nothing on conflict.
+  if (queueNote?.trim()) {
+    await db
+      .insert(listItems)
+      .values(values)
+      .onConflictDoUpdate({
+        target: [listItems.listId, listItems.titleId],
+        set: { queueNote: queueNote.trim() },
+      });
+  } else {
+    await db.insert(listItems).values(values).onConflictDoNothing();
+  }
 
   revalidateWatchlist(titleId);
 };
