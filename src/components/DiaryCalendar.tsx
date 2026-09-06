@@ -24,11 +24,11 @@ import {
 import { dayCellOpensSheet, extraDayBadge } from "@/lib/diary-day";
 import { staggerStyle, useLongPress } from "@/lib/motion";
 import type { CatalogKindFilter } from "@/lib/catalog-href";
-import type { SeriesStatusFilter } from "@/lib/series";
 import { catalogHref } from "@/lib/catalog-href";
+import type { SeriesStatusFilter } from "@/lib/series";
 import type { CatalogSort } from "@/lib/tags";
-import { focusRing } from "@/lib/ui";
-import type { Platform } from "@/generated/prisma/browser";
+import { btnLink, focusRing } from "@/lib/ui";
+import type { Platform, SeriesStatus, TitleKind } from "@/db";
 
 export type { DiaryCalendarTitle };
 

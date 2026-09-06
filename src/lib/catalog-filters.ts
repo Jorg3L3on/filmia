@@ -1,4 +1,4 @@
-import { Platform, TitleKind } from "@/generated/prisma/browser";
+import { Platform, TitleKind } from "@/db";
 import type { CatalogKindFilter } from "@/lib/catalog-href";
 import { PLATFORMS } from "@/lib/labels";
 import type { CatalogSort } from "@/lib/tags";

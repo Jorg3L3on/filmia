@@ -5,7 +5,7 @@ import { formatMonthHeading, shiftMonthParam } from "@/lib/dates";
 import type { CatalogKindFilter } from "@/lib/catalog-href";
 import { catalogHref } from "@/lib/tags";
 import { focusRing } from "@/lib/ui";
-import type { Platform } from "@/generated/prisma/browser";
+import type { Platform } from "@/db";
 import type { SeriesStatusFilter } from "@/lib/series";
 import type { CatalogSort } from "@/lib/tags";
 

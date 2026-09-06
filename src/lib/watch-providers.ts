@@ -1,4 +1,4 @@
-import { TitleKind } from "@/generated/prisma/browser";
+import { TitleKind } from "@/db";
 import { getTmdbWatchProviders, tmdbProviderLogoUrl } from "@/lib/tmdb";
 
 export type WatchProviderOffer = {

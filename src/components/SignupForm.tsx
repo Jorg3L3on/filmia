@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { PasswordField } from "@/components/PasswordField";
-import { messageForSignInError } from "@/lib/auth-errors";
 import { btnPrimary, fieldClass, focusRing } from "@/lib/ui";
 
 export const SignupForm = () => {
@@ -27,25 +25,10 @@ export const SignupForm = () => {
 
     const payload = (await response.json()) as { error?: string };
 
-    if (!response.ok) {
-      setError(payload.error ?? "No se pudo crear la cuenta.");
-      setIsLoading(false);
-      return;
-    }
-
-    const email = String(formData.get("email") ?? "").trim();
-    const password = String(formData.get("password") ?? "");
-
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
-
     setIsLoading(false);
 
-    if (result?.error || result?.ok === false) {
-      setError(messageForSignInError(result.error, "register"));
+    if (!response.ok) {
+      setError(payload.error ?? "No se pudo crear la cuenta.");
       return;
     }
 

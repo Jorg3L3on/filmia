@@ -1,16 +1,20 @@
 "use server";
 
-import { compare, hash } from "bcryptjs";
+import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { unstable_update as updateSession } from "@/lib/auth";
+import { db, users } from "@/db";
+import { refreshSessionUser } from "@/lib/auth";
+import {
+  hashPassword,
+  verifyPassword,
+} from "@/lib/auth/password";
 import {
   parseAccountEmail,
   parseOptionalDisplayName,
   parsePasswordChange,
   parseStreamingPlatforms,
 } from "@/lib/form-data";
-import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 
 export type ProfileActionState = { error: string } | null;
@@ -26,10 +30,7 @@ export const updateStreamingPlatforms = async (formData: FormData) => {
   const userId = await requireUserId();
   const streamingPlatforms = parseStreamingPlatforms(formData);
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { streamingPlatforms },
-  });
+  await db.update(users).set({ streamingPlatforms }).where(eq(users.id, userId));
 
   revalidateProfile();
   redirect("/perfil?guardado=plataformas");
@@ -53,23 +54,18 @@ export const updateAccount = async (
     };
   }
 
-  const duplicate = await prisma.user.findFirst({
-    where: { email, NOT: { id: userId } },
-    select: { id: true },
+  const duplicate = await db.query.users.findFirst({
+    where: and(eq(users.email, email), ne(users.id, userId)),
+    columns: { id: true },
   });
 
   if (duplicate) {
     return { error: "Ya existe una cuenta con ese correo." };
   }
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { name, email },
-  });
+  await db.update(users).set({ name, email }).where(eq(users.id, userId));
 
-  await updateSession({
-    user: { name, email },
-  });
+  await refreshSessionUser({ id: userId, email, name });
 
   revalidateProfile();
   redirect("/perfil?guardado=cuenta");
@@ -92,24 +88,24 @@ export const updatePassword = async (
     };
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { passwordHash: true },
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { passwordHash: true },
   });
 
   if (!user?.passwordHash) {
     return { error: "No se pudo actualizar la contraseña." };
   }
 
-  const valid = await compare(currentPassword, user.passwordHash);
+  const valid = await verifyPassword(currentPassword, user.passwordHash);
   if (!valid) {
     return { error: "La contraseña actual no es correcta." };
   }
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { passwordHash: await hash(newPassword, 12) },
-  });
+  await db
+    .update(users)
+    .set({ passwordHash: await hashPassword(newPassword) })
+    .where(eq(users.id, userId));
 
   revalidateProfile();
   redirect("/perfil?guardado=clave");

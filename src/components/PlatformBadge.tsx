@@ -1,4 +1,4 @@
-import type { Platform } from "@/generated/prisma/browser";
+import type { Platform } from "@/db";
 import { PLATFORM_CLASS, PLATFORM_WATCH_LABEL } from "@/lib/labels";
 
 type PlatformBadgeProps = {

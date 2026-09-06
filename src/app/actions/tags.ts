@@ -1,10 +1,12 @@
 "use server";
 
+import { createId } from "@paralleldrive/cuid2";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { db, tags, titleTags, titles } from "@/db";
 import { parseRequiredName } from "@/lib/form-data";
 import { slugify } from "@/lib/labels";
-import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { tagHref } from "@/lib/tags";
 
@@ -27,13 +29,25 @@ const revalidateTags = (titleId?: string, slug?: string) => {
 const upsertOwnedTag = async (userId: string, name: string) => {
   const slug = slugify(name) || `tag-${crypto.randomUUID().slice(0, 8)}`;
 
-  const tag = await prisma.tag.upsert({
-    where: { userId_slug: { userId, slug } },
-    update: {},
-    create: { userId, name, slug },
+  const existing = await db.query.tags.findFirst({
+    where: and(eq(tags.userId, userId), eq(tags.slug, slug)),
   });
 
-  return tag;
+  if (existing) {
+    return existing;
+  }
+
+  const tagId = createId();
+  await db.insert(tags).values({ id: tagId, userId, name, slug });
+
+  return db.query.tags.findFirst({
+    where: eq(tags.id, tagId),
+  }).then((tag) => {
+    if (!tag) {
+      throw new Error("No se pudo crear la etiqueta.");
+    }
+    return tag;
+  });
 };
 
 export const createTag = async (formData: FormData) => {
@@ -49,9 +63,9 @@ export const createAndAssignTag = async (titleId: string, formData: FormData) =>
   const userId = await requireUserId();
   const name = parseRequiredName(formData.get("name"));
 
-  const title = await prisma.title.findFirst({
-    where: { id: titleId, userId },
-    select: { id: true },
+  const title = await db.query.titles.findFirst({
+    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
+    columns: { id: true },
   });
 
   if (!title) {
@@ -60,11 +74,10 @@ export const createAndAssignTag = async (titleId: string, formData: FormData) =>
 
   const tag = await upsertOwnedTag(userId, name);
 
-  await prisma.titleTag.upsert({
-    where: { titleId_tagId: { titleId, tagId: tag.id } },
-    update: {},
-    create: { titleId, tagId: tag.id },
-  });
+  await db
+    .insert(titleTags)
+    .values({ titleId, tagId: tag.id })
+    .onConflictDoNothing();
 
   revalidateTags(titleId, tag.slug);
 };
@@ -73,13 +86,13 @@ export const toggleTitleTag = async (tagId: string, titleId: string) => {
   const userId = await requireUserId();
 
   const [tag, title] = await Promise.all([
-    prisma.tag.findFirst({
-      where: { id: tagId, userId },
-      select: { id: true, slug: true },
+    db.query.tags.findFirst({
+      where: and(eq(tags.id, tagId), eq(tags.userId, userId)),
+      columns: { id: true, slug: true },
     }),
-    prisma.title.findFirst({
-      where: { id: titleId, userId },
-      select: { id: true },
+    db.query.titles.findFirst({
+      where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
+      columns: { id: true },
     }),
   ]);
 
@@ -91,18 +104,16 @@ export const toggleTitleTag = async (tagId: string, titleId: string) => {
     throw new Error("Título no encontrado.");
   }
 
-  const existing = await prisma.titleTag.findUnique({
-    where: { titleId_tagId: { titleId, tagId } },
+  const existing = await db.query.titleTags.findFirst({
+    where: and(eq(titleTags.titleId, titleId), eq(titleTags.tagId, tagId)),
   });
 
   if (existing) {
-    await prisma.titleTag.delete({
-      where: { titleId_tagId: { titleId, tagId } },
-    });
+    await db
+      .delete(titleTags)
+      .where(and(eq(titleTags.titleId, titleId), eq(titleTags.tagId, tagId)));
   } else {
-    await prisma.titleTag.create({
-      data: { titleId, tagId },
-    });
+    await db.insert(titleTags).values({ titleId, tagId });
   }
 
   revalidateTags(titleId, tag.slug);

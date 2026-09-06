@@ -2,16 +2,14 @@ import type { CSSProperties } from "react";
 import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
 import { PosterTile } from "@/components/PosterTile";
-import type { titleInclude } from "@/lib/queries";
+import type { Platform } from "@/db";
+import type { TitleWithRelations } from "@/lib/queries";
+import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { eyebrowClass } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
-import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
-import type { Platform, Prisma } from "@/generated/prisma/browser";
-
-type TitlePayload = Prisma.TitleGetPayload<{ include: typeof titleInclude }>;
 
 type TitleDeckViewProps = {
-  titles: TitlePayload[];
+  titles: TitleWithRelations[];
   mode?: DeckViewMode;
   modes?: DeckViewMode[];
   hrefFor?: (mode: DeckViewMode) => string;
@@ -22,7 +20,7 @@ type TitleDeckViewProps = {
 };
 
 const toCoverflowTitle = (
-  title: TitlePayload,
+  title: TitleWithRelations,
   userPlatforms: readonly Platform[] = [],
 ): CoverflowTitle => {
   const watchProviders = parseStoredWatchProviders(title.watchProvidersMx);

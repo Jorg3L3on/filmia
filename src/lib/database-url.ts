@@ -40,7 +40,7 @@ const assertPostgresUrl = (value: string) => {
 export const sanitizeDatabaseUrl = (raw: string | undefined | null) => {
   if (raw == null) {
     throw new Error(
-      "DATABASE_URL no está definida. Configúrala en Vercel o copia .env.example a .env.",
+      "DATABASE_URL no está definida. Copia .env.example a .env y configura Neon.",
     );
   }
 

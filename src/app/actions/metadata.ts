@@ -1,6 +1,6 @@
 "use server";
 
-import { TitleKind } from "@/generated/prisma/browser";
+import { TitleKind } from "@/db";
 import {
   metadataServicesConfigured,
   resolveTitleMetadata,

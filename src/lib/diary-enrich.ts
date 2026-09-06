@@ -1,6 +1,6 @@
-import { TitleKind } from "@/generated/prisma/browser";
+import { eq } from "drizzle-orm";
+import { db, titles, type TitleKind } from "@/db";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
-import { prisma } from "@/lib/prisma";
 import {
   getTmdbDetails,
   isTmdbConfigured,
@@ -114,14 +114,14 @@ const enrichDiaryGenres = async <T extends DiaryEnrichTitle>(title: T): Promise<
     const details = await getTmdbDetails(tmdbId, title.kind);
     const tmdbGenres = details.genres;
 
-    await prisma.title.update({
-      where: { id: title.id },
-      data: {
+    await db
+      .update(titles)
+      .set({
         tmdbId,
         ...(tmdbGenres.length > 0 ? { tmdbGenres } : {}),
         ...(title.originalName ? {} : { originalName: details.originalName }),
-      },
-    });
+      })
+      .where(eq(titles.id, title.id));
 
     return {
       ...title,
@@ -158,7 +158,7 @@ const enrichDiaryProviders = async <T extends DiaryEnrichTitle>(title: T): Promi
 };
 
 const pickEnrichIndexes = (
-  titles: readonly DiaryEnrichTitle[],
+  titleRows: readonly DiaryEnrichTitle[],
   limit: number,
   matches: (title: DiaryEnrichTitle) => boolean,
 ) => {
@@ -167,8 +167,8 @@ const pickEnrichIndexes = (
   }
 
   const indexes: number[] = [];
-  for (let index = 0; index < titles.length; index += 1) {
-    const title = titles[index];
+  for (let index = 0; index < titleRows.length; index += 1) {
+    const title = titleRows[index];
     if (!title || !matches(title)) {
       continue;
     }
@@ -183,9 +183,9 @@ const pickEnrichIndexes = (
 };
 
 export const enrichDiaryWatchlistTitles = async <T extends DiaryEnrichTitle>(
-  titles: T[],
+  titleRows: T[],
 ): Promise<T[]> => {
-  const nextTitles = [...titles];
+  const nextTitles = [...titleRows];
 
   const withTmdbId = pickEnrichIndexes(
     nextTitles,

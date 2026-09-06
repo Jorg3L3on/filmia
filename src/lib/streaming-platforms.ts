@@ -1,4 +1,4 @@
-import { Platform } from "@/generated/prisma/browser";
+import { Platform } from "@/db";
 import { PLATFORM_SERVICE_LABEL, PLATFORMS } from "@/lib/labels";
 import { tmdbProviderLogoUrl } from "@/lib/tmdb";
 import {

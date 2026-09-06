@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TitleKind } from "@/generated/prisma/browser";
+import { TitleKind } from "@/db";
 import { deleteTitle } from "@/app/actions/titles";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";

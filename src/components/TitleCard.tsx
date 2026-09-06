@@ -8,13 +8,12 @@ import { TagPills } from "@/components/TagPills";
 import { WatchedBadge } from "@/components/WatchedBadge";
 import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
-import type { titleInclude } from "@/lib/queries";
+import type { TitleWithRelations } from "@/lib/queries";
 import { cn } from "@/lib/cn";
 import { focusRing, posterFrame } from "@/lib/ui";
-import type { Prisma } from "@/generated/prisma/browser";
 
 type TitleCardProps = {
-  title: Prisma.TitleGetPayload<{ include: typeof titleInclude }>;
+  title: TitleWithRelations;
 };
 
 export const TitleCard = ({ title }: TitleCardProps) => {

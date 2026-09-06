@@ -14,27 +14,27 @@ const assert = (condition: unknown, message: string) => {
 };
 
 const run = () => {
-  assert(parseSeriesStatusFilter("WATCHING") === SeriesStatus.WATCHING, "WATCHING filter");
-  assert(parseSeriesStatusFilter("finished") === SeriesStatus.FINISHED, "Case-insensitive FINISHED");
-  assert(parseSeriesStatusFilter("DROPPED") === SeriesStatus.DROPPED, "DROPPED filter");
+  assert(parseSeriesStatusFilter("WATCHING") === "WATCHING", "WATCHING filter");
+  assert(parseSeriesStatusFilter("finished") === "FINISHED", "Case-insensitive FINISHED");
+  assert(parseSeriesStatusFilter("DROPPED") === "DROPPED", "DROPPED filter");
   assert(parseSeriesStatusFilter("NONE") === "NONE", "NONE filter");
   assert(parseSeriesStatusFilter("movie") === undefined, "Unknown filter is ignored");
   assert(parseSeriesStatusFilter(undefined) === undefined, "Missing filter");
   assert(
-    parseSeriesStatusFilter(["WATCHING", "DROPPED"]) === SeriesStatus.DROPPED,
+    parseSeriesStatusFilter(["WATCHING", "DROPPED"]) === "DROPPED",
     "Repeated params keep the last value",
   );
 
   const movie = { kind: TitleKind.MOVIE, seriesStatus: null };
-  const watching = { kind: TitleKind.SERIES, seriesStatus: SeriesStatus.WATCHING };
-  const finished = { kind: TitleKind.SERIES, seriesStatus: SeriesStatus.FINISHED };
+  const watching = { kind: TitleKind.SERIES, seriesStatus: "WATCHING" };
+  const finished = { kind: TitleKind.SERIES, seriesStatus: "FINISHED" };
   const unset = { kind: TitleKind.SERIES, seriesStatus: null };
 
   assert(titleMatchesSeriesStatus(movie, undefined), "No filter matches movies");
-  assert(!titleMatchesSeriesStatus(movie, SeriesStatus.WATCHING), "Movies ignore WATCHING");
+  assert(!titleMatchesSeriesStatus(movie, "WATCHING"), "Movies ignore WATCHING");
   assert(!titleMatchesSeriesStatus(movie, "NONE"), "Movies ignore NONE");
-  assert(titleMatchesSeriesStatus(watching, SeriesStatus.WATCHING), "Watching series matches");
-  assert(!titleMatchesSeriesStatus(finished, SeriesStatus.WATCHING), "Finished series excluded");
+  assert(titleMatchesSeriesStatus(watching, "WATCHING"), "Watching series matches");
+  assert(!titleMatchesSeriesStatus(finished, "WATCHING"), "Finished series excluded");
   assert(titleMatchesSeriesStatus(unset, "NONE"), "Unset series matches NONE");
   assert(!titleMatchesSeriesStatus(watching, "NONE"), "Watching series excluded from NONE");
 
@@ -43,8 +43,8 @@ const run = () => {
     "No filter should not constrain Prisma where",
   );
   assert(
-    JSON.stringify(seriesStatusWhere(SeriesStatus.WATCHING)) ===
-      JSON.stringify({ kind: TitleKind.SERIES, seriesStatus: SeriesStatus.WATCHING }),
+    JSON.stringify(seriesStatusWhere("WATCHING")) ===
+      JSON.stringify({ kind: TitleKind.SERIES, seriesStatus: "WATCHING" }),
     "WATCHING where is series-only",
   );
   assert(
@@ -56,7 +56,7 @@ const run = () => {
   const form = new FormData();
   form.set("seriesStatus", "WATCHING");
   form.set("seriesSeason", "2");
-  assert(parseSeriesStatus(form.get("seriesStatus")) === SeriesStatus.WATCHING, "Form status");
+  assert(parseSeriesStatus(form.get("seriesStatus")) === "WATCHING", "Form status");
   assert(parseSeriesSeason(form.get("seriesSeason")) === 2, "Form season");
   assert(parseSeriesStatus("NONE") === null, "Form NONE clears status");
   assert(parseSeriesSeason("") === null, "Empty season is null");
@@ -70,7 +70,7 @@ const run = () => {
   assert(threw, "Season 0 is invalid");
 
   assert(
-    catalogHref("/", { seriesStatus: SeriesStatus.WATCHING, view: "grid" }) ===
+    catalogHref("/", { seriesStatus: "WATCHING", view: "grid" }) ===
       "/?view=grid&seriesStatus=WATCHING",
     "Catalog href should emit seriesStatus",
   );

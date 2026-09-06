@@ -24,7 +24,7 @@ import { PICKS_SAVE_LABEL } from "@/lib/mark-seen";
 import { useSpringFeedback } from "@/lib/motion";
 import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { btnGhost, btnLink } from "@/lib/ui";
-import type { Platform, SeriesStatus, TitleKind } from "@/generated/prisma/browser";
+import type { Platform, SeriesStatus, TitleKind } from "@/db";
 import type { WatchProviderOffer } from "@/lib/watch-providers";
 
 export type CoverflowTitle = {

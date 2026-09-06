@@ -1,0 +1,2 @@
+-- Baseline: el esquema ya existe en Neon (migraciones Prisma históricas).
+-- Drizzle toma el relevo a partir de aquí; no ejecutar DDL retroactivo en prod.

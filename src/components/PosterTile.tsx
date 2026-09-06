@@ -9,7 +9,7 @@ import { cn } from "@/lib/cn";
 import { formatRating } from "@/lib/labels";
 import { PICKS_SAVE_LABEL } from "@/lib/mark-seen";
 import { focusRing, posterFrame } from "@/lib/ui";
-import type { SeriesStatus } from "@/generated/prisma/browser";
+import type { SeriesStatus } from "@/db";
 
 type PosterTileProps = {
   titleId?: string;

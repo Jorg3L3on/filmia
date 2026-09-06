@@ -1,8 +1,19 @@
 "use server";
 
-import { ListKind, TitleKind, type SeriesStatus } from "@/generated/prisma/browser";
+import { createId } from "@paralleldrive/cuid2";
+import { and, eq, inArray, notInArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  db,
+  listItems,
+  lists,
+  tags,
+  titleTags,
+  titles,
+  type SeriesStatus,
+  type TitleKind,
+} from "@/db";
 import {
   parseIdList,
   parseNewTags,
@@ -25,7 +36,6 @@ import {
   enrichMetadataOnSave,
   readMetadataFields,
 } from "@/lib/metadata";
-import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { enrichWatchProvidersOnSave } from "@/lib/watch-providers-cache";
 
@@ -46,58 +56,75 @@ const revalidateCatalog = (titleId?: string) => {
 };
 
 const seriesProgressData = (kind: TitleKind) =>
-  kind === TitleKind.SERIES
-    ? {}
-    : { seriesStatus: null, seriesSeason: null };
+  kind === "SERIES" ? {} : { seriesStatus: null, seriesSeason: null };
 
 const syncTags = async (userId: string, titleId: string, tagIds: string[], newTags: string[]) => {
   const created = await Promise.all(
     newTags.map(async (name) => {
       const slug = slugify(name) || `tag-${crypto.randomUUID().slice(0, 8)}`;
-      return prisma.tag.upsert({
-        where: { userId_slug: { userId, slug } },
-        update: { name },
-        create: { userId, name, slug },
+      const existing = await db.query.tags.findFirst({
+        where: and(eq(tags.userId, userId), eq(tags.slug, slug)),
+      });
+
+      if (existing) {
+        await db.update(tags).set({ name }).where(eq(tags.id, existing.id));
+        return existing;
+      }
+
+      const tagId = createId();
+      await db.insert(tags).values({ id: tagId, userId, name, slug });
+      return db.query.tags.findFirst({ where: eq(tags.id, tagId) }).then((tag) => {
+        if (!tag) {
+          throw new Error("No se pudo crear la etiqueta.");
+        }
+        return tag;
       });
     }),
   );
 
   const nextIds = [...new Set([...tagIds, ...created.map((tag) => tag.id)])];
 
-  await prisma.titleTag.deleteMany({ where: { titleId } });
+  await db.delete(titleTags).where(eq(titleTags.titleId, titleId));
   if (nextIds.length === 0) {
     return;
   }
 
-  await prisma.titleTag.createMany({
-    data: nextIds.map((tagId) => ({ titleId, tagId })),
-  });
+  await db.insert(titleTags).values(nextIds.map((tagId) => ({ titleId, tagId })));
 };
 
 const syncLists = async (userId: string, titleId: string, listIds: string[]) => {
-  await prisma.listItem.deleteMany({
-    where: {
-      titleId,
-      list: { userId, kind: ListKind.COLLECTION },
-      listId: { notIn: listIds },
-    },
+  const collectionLists = await db.query.lists.findMany({
+    where: and(eq(lists.userId, userId), eq(lists.kind, "COLLECTION")),
+    columns: { id: true },
   });
+  const collectionIds = collectionLists.map((list) => list.id);
+
+  if (collectionIds.length > 0) {
+    await db
+      .delete(listItems)
+      .where(
+        and(
+          eq(listItems.titleId, titleId),
+          inArray(listItems.listId, collectionIds),
+          listIds.length > 0 ? notInArray(listItems.listId, listIds) : undefined,
+        ),
+      );
+  }
 
   for (const [index, listId] of listIds.entries()) {
-    const list = await prisma.list.findFirst({
-      where: { id: listId, userId },
-      select: { kind: true },
+    const list = await db.query.lists.findFirst({
+      where: and(eq(lists.id, listId), eq(lists.userId, userId)),
+      columns: { kind: true },
     });
 
-    if (!list || list.kind !== ListKind.COLLECTION) {
+    if (!list || list.kind !== "COLLECTION") {
       continue;
     }
 
-    await prisma.listItem.upsert({
-      where: { listId_titleId: { listId, titleId } },
-      update: {},
-      create: { listId, titleId, position: index },
-    });
+    await db
+      .insert(listItems)
+      .values({ listId, titleId, position: index })
+      .onConflictDoNothing();
   }
 };
 
@@ -137,34 +164,34 @@ export const createTitle = async (formData: FormData) => {
     fields.kind,
   );
 
-  const title = await prisma.title.create({
-    data: {
-      userId,
-      name: fields.name,
-      originalName: fields.originalName,
-      kind: fields.kind,
-      year: fields.year,
-      rating: fields.rating,
-      review: fields.review,
-      platform: fields.platform,
-      watchedAt: fields.watchedAt,
-      tmdbId: metadata.tmdbId,
-      posterPath: metadata.posterPath,
-      imdbId: metadata.imdbId,
-      imdbRating: metadata.imdbRating,
-      overview: metadata.overview ?? null,
-      tmdbGenres: metadata.tmdbGenres,
-      ...seriesProgressData(fields.kind),
-    },
+  const titleId = createId();
+  await db.insert(titles).values({
+    id: titleId,
+    userId,
+    name: fields.name,
+    originalName: fields.originalName,
+    kind: fields.kind,
+    year: fields.year,
+    rating: fields.rating,
+    review: fields.review,
+    platform: fields.platform,
+    watchedAt: fields.watchedAt,
+    tmdbId: metadata.tmdbId,
+    posterPath: metadata.posterPath,
+    imdbId: metadata.imdbId,
+    imdbRating: metadata.imdbRating,
+    overview: metadata.overview ?? null,
+    tmdbGenres: metadata.tmdbGenres,
+    ...seriesProgressData(fields.kind),
   });
 
-  await syncTags(userId, title.id, fields.tagIds, fields.newTags);
-  await syncLists(userId, title.id, fields.listIds);
+  await syncTags(userId, titleId, fields.tagIds, fields.newTags);
+  await syncLists(userId, titleId, fields.listIds);
   if (metadata.tmdbId) {
-    await enrichWatchProvidersOnSave(title.id, metadata.tmdbId, fields.kind);
+    await enrichWatchProvidersOnSave(titleId, metadata.tmdbId, fields.kind);
   }
-  revalidateCatalog(title.id);
-  redirect(`/titulos/${title.id}`);
+  revalidateCatalog(titleId);
+  redirect(`/titulos/${titleId}`);
 };
 
 export const updateTitle = async (titleId: string, formData: FormData) => {
@@ -175,18 +202,18 @@ export const updateTitle = async (titleId: string, formData: FormData) => {
     fields.kind,
   );
 
-  const existing = await prisma.title.findFirst({
-    where: { id: titleId, userId },
-    select: { id: true },
+  const existing = await db.query.titles.findFirst({
+    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
+    columns: { id: true },
   });
 
   if (!existing) {
     throw new Error("Título no encontrado.");
   }
 
-  await prisma.title.update({
-    where: { id: titleId },
-    data: {
+  await db
+    .update(titles)
+    .set({
       name: fields.name,
       originalName: fields.originalName,
       kind: fields.kind,
@@ -202,8 +229,8 @@ export const updateTitle = async (titleId: string, formData: FormData) => {
       overview: metadata.overview ?? undefined,
       tmdbGenres: metadata.tmdbGenres,
       ...seriesProgressData(fields.kind),
-    },
-  });
+    })
+    .where(eq(titles.id, titleId));
 
   await syncTags(userId, titleId, fields.tagIds, fields.newTags);
   await syncLists(userId, titleId, fields.listIds);
@@ -217,32 +244,31 @@ export const updateTitle = async (titleId: string, formData: FormData) => {
 export const deleteTitle = async (titleId: string) => {
   const userId = await requireUserId();
 
-  const existing = await prisma.title.findFirst({
-    where: { id: titleId, userId },
-    select: { id: true },
-  });
+  const deleted = await db
+    .delete(titles)
+    .where(and(eq(titles.id, titleId), eq(titles.userId, userId)))
+    .returning({ id: titles.id });
 
-  if (!existing) {
+  if (deleted.length === 0) {
     throw new Error("Título no encontrado.");
   }
 
-  await prisma.title.delete({ where: { id: titleId } });
   revalidateCatalog(titleId);
   redirect("/");
 };
 
 const requireOwnedSeries = async (titleId: string) => {
   const userId = await requireUserId();
-  const title = await prisma.title.findFirst({
-    where: { id: titleId, userId },
-    select: { id: true, kind: true },
+  const title = await db.query.titles.findFirst({
+    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
+    columns: { id: true, kind: true },
   });
 
   if (!title) {
     throw new Error("Título no encontrado.");
   }
 
-  if (title.kind !== TitleKind.SERIES) {
+  if (title.kind !== "SERIES") {
     throw new Error("El estado de seguimiento solo aplica a series.");
   }
 
@@ -254,15 +280,16 @@ export const setTitleRating = async (titleId: string, formData: FormData) => {
   const rating = parseRating(formData.get("rating"));
   const review = parseOptionalReview(formData.get("review"));
 
-  const result = await prisma.title.updateMany({
-    where: { id: titleId, userId },
-    data: {
+  const updated = await db
+    .update(titles)
+    .set({
       rating,
       ...(formData.has("review") ? { review } : {}),
-    },
-  });
+    })
+    .where(and(eq(titles.id, titleId), eq(titles.userId, userId)))
+    .returning({ id: titles.id });
 
-  if (result.count === 0) {
+  if (updated.length === 0) {
     throw new Error("Título no encontrado.");
   }
 
@@ -286,13 +313,13 @@ export const setSeriesStatus = async (
     throw new Error("El estado de la serie no es válido.");
   }
 
-  await prisma.title.update({
-    where: { id: titleId },
-    data: {
+  await db
+    .update(titles)
+    .set({
       seriesStatus: nextStatus,
       ...(nextStatus == null ? { seriesSeason: null } : {}),
-    },
-  });
+    })
+    .where(eq(titles.id, titleId));
 
   revalidateCatalog(titleId);
 };
@@ -301,10 +328,7 @@ export const setSeriesSeason = async (titleId: string, formData: FormData) => {
   await requireOwnedSeries(titleId);
   const seriesSeason = parseSeriesSeason(formData.get("seriesSeason"));
 
-  await prisma.title.update({
-    where: { id: titleId },
-    data: { seriesSeason },
-  });
+  await db.update(titles).set({ seriesSeason }).where(eq(titles.id, titleId));
 
   revalidateCatalog(titleId);
 };

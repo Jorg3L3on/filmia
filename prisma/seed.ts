@@ -1,29 +1,30 @@
 import { config as loadEnv } from "dotenv";
-import { hash } from "bcryptjs";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import { createId } from "@paralleldrive/cuid2";
+import { and, eq } from "drizzle-orm";
 
 loadEnv({ path: ".env.local" });
 loadEnv();
-import { PrismaClient } from "../src/generated/prisma/client";
+
 import {
-  ListKind,
-  Platform,
-  SeriesStatus,
-  TitleKind,
-} from "../src/generated/prisma/browser";
+  db,
+  listItems,
+  lists,
+  tags,
+  titleTags,
+  titles,
+  users,
+  type Platform,
+  type SeriesStatus,
+  type TitleKind,
+} from "../src/db/index";
+import { hashPassword } from "../src/lib/auth/password";
 import { slugify } from "../src/lib/labels";
 import { DEFAULT_LISTS, WATCHLIST_SLUG } from "../src/lib/lists";
 import { DEFAULT_TAG_NAMES } from "../src/lib/tags";
 
-const connectionString = process.env.DATABASE_URL;
-
-if (!connectionString) {
+if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL no está definida.");
 }
-
-const prisma = new PrismaClient({
-  adapter: new PrismaNeon({ connectionString }),
-});
 
 const DEMO_USER_ID = "cm4demofilmia00000000001";
 const DEMO_EMAIL = "demo@filmia.local";
@@ -106,11 +107,11 @@ const maxMx: SeedWatchProviders = {
 const seedTitles: SeedTitle[] = [
   {
     name: "Gladiator",
-    kind: TitleKind.MOVIE,
+    kind: "MOVIE",
     year: 2000,
     rating: 9,
     review: "Épica de arena y honor. Seed de gusto, no un diario personal.",
-    platform: Platform.PRIME,
+    platform: "PRIME",
     tags: ["Épica / guerra", "Histórico"],
     lists: ["Épicas", "Favoritas"],
     watched: true,
@@ -119,11 +120,11 @@ const seedTitles: SeedTitle[] = [
   },
   {
     name: "Troy",
-    kind: TitleKind.MOVIE,
+    kind: "MOVIE",
     year: 2004,
     rating: 7,
     review: "Homero con bloquebuster: bronce, playa y discurso.",
-    platform: Platform.MAX,
+    platform: "MAX",
     tags: ["Épica / guerra", "Histórico"],
     lists: ["Épicas"],
     watched: true,
@@ -133,11 +134,11 @@ const seedTitles: SeedTitle[] = [
   {
     name: "Athena",
     originalName: "Athena",
-    kind: TitleKind.MOVIE,
+    kind: "MOVIE",
     year: 2022,
     rating: 8,
     review: "Romain Gavras. Tensión urbana en un solo aliento.",
-    platform: Platform.NETFLIX,
+    platform: "NETFLIX",
     tags: ["Thriller", "francés"],
     lists: ["Visto recientemente"],
     watched: true,
@@ -146,11 +147,11 @@ const seedTitles: SeedTitle[] = [
   },
   {
     name: "The Northman",
-    kind: TitleKind.MOVIE,
+    kind: "MOVIE",
     year: 2022,
     rating: 8,
     review: "Venganza nórdica, barro y mito.",
-    platform: Platform.PRIME,
+    platform: "PRIME",
     tags: ["Épica / guerra", "Histórico"],
     lists: ["Épicas", "Favoritas"],
     watched: true,
@@ -159,11 +160,11 @@ const seedTitles: SeedTitle[] = [
   },
   {
     name: "Mad Max: Fury Road",
-    kind: TitleKind.MOVIE,
+    kind: "MOVIE",
     year: 2015,
     rating: 10,
     review: "Vibe desierto/cromo. Persecución absoluta.",
-    platform: Platform.MAX,
+    platform: "MAX",
     tags: ["Visual / espectáculo", "Vibe Mad Max"],
     lists: ["Vibe Mad Max / Tron", "Por rewatch"],
     watched: true,
@@ -172,11 +173,11 @@ const seedTitles: SeedTitle[] = [
   },
   {
     name: "Tron: Legacy",
-    kind: TitleKind.MOVIE,
+    kind: "MOVIE",
     year: 2010,
     rating: 7,
     review: "Neón, grid y soundtrack. Vibe Tron.",
-    platform: Platform.DISNEY,
+    platform: "DISNEY",
     tags: ["Sci-fi", "Visual / espectáculo", "Vibe Tron"],
     lists: ["Vibe Mad Max / Tron", "Por rewatch"],
     watched: true,
@@ -186,11 +187,11 @@ const seedTitles: SeedTitle[] = [
   {
     name: "Dune: Part Two",
     originalName: "Dune: Part Two",
-    kind: TitleKind.MOVIE,
+    kind: "MOVIE",
     year: 2024,
     rating: 9,
     review: "Arena, política y mesías. Dummy seed.",
-    platform: Platform.MAX,
+    platform: "MAX",
     tags: ["Sci-fi", "Épica / guerra", "Visual / espectáculo"],
     lists: ["Épicas", "Visto recientemente", "Favoritas"],
     watched: true,
@@ -199,29 +200,29 @@ const seedTitles: SeedTitle[] = [
   },
   {
     name: "Breaking Bad",
-    kind: TitleKind.SERIES,
+    kind: "SERIES",
     year: 2008,
     rating: 10,
     review: "Canon. Terminada, sin checklist de episodios.",
-    platform: Platform.NETFLIX,
+    platform: "NETFLIX",
     tags: ["Thriller"],
     lists: ["Favoritas"],
     watched: true,
-    seriesStatus: SeriesStatus.FINISHED,
+    seriesStatus: "FINISHED",
     tmdbId: 1396,
     posterPath: "/ztkUQFLlC19CCMYHW9o1zWhT7eW.jpg",
   },
   {
     name: "The Last of Us",
-    kind: TitleKind.SERIES,
+    kind: "SERIES",
     year: 2023,
     rating: 9,
     review: "Viendo. Temporada actual, sin progreso por capítulo.",
-    platform: Platform.MAX,
+    platform: "MAX",
     tags: ["Thriller"],
     lists: ["Visto recientemente"],
     watched: true,
-    seriesStatus: SeriesStatus.WATCHING,
+    seriesStatus: "WATCHING",
     seriesSeason: 2,
     tmdbId: 100088,
     posterPath: "/dmo6TYjN9W6FbdC8pQO3nWKmGvl.jpg",
@@ -232,8 +233,8 @@ const watchlistQueue: WatchlistSeed[] = [
   {
     name: "Blade Runner 2049",
     year: 2017,
-    kind: TitleKind.MOVIE,
-    platform: Platform.NETFLIX,
+    kind: "MOVIE",
+    platform: "NETFLIX",
     queueNote: "Revisar la fotografía otra vez.",
     position: 0,
     tmdbId: 335984,
@@ -250,8 +251,8 @@ const watchlistQueue: WatchlistSeed[] = [
   {
     name: "Interstellar",
     year: 2014,
-    kind: TitleKind.MOVIE,
-    platform: Platform.PRIME,
+    kind: "MOVIE",
+    platform: "PRIME",
     queueNote: "Para un domingo largo.",
     position: 1,
     tmdbId: 157336,
@@ -269,13 +270,13 @@ const watchlistQueue: WatchlistSeed[] = [
   {
     name: "Severance",
     year: 2022,
-    kind: TitleKind.SERIES,
-    platform: Platform.MAX,
+    kind: "SERIES",
+    platform: "MAX",
     queueNote: "Temporada 2 pendiente.",
     position: 2,
     tmdbId: 95396,
     posterPath: "/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg",
-    seriesStatus: SeriesStatus.WATCHING,
+    seriesStatus: "WATCHING",
     seriesSeason: 2,
     imdbRating: 8.7,
     overview:
@@ -289,8 +290,8 @@ const watchlistQueue: WatchlistSeed[] = [
   {
     name: "The Dark Knight",
     year: 2008,
-    kind: TitleKind.MOVIE,
-    platform: Platform.MAX,
+    kind: "MOVIE",
+    platform: "MAX",
     queueNote: "Nolan otra vez.",
     position: 3,
     tmdbId: 155,
@@ -308,8 +309,8 @@ const watchlistQueue: WatchlistSeed[] = [
   {
     name: "Superbad",
     year: 2007,
-    kind: TitleKind.MOVIE,
-    platform: Platform.NETFLIX,
+    kind: "MOVIE",
+    platform: "NETFLIX",
     queueNote: "Comedia rápida.",
     position: 4,
     tmdbId: 8363,
@@ -323,8 +324,8 @@ const watchlistQueue: WatchlistSeed[] = [
   {
     name: "John Wick",
     year: 2014,
-    kind: TitleKind.MOVIE,
-    platform: Platform.NETFLIX,
+    kind: "MOVIE",
+    platform: "NETFLIX",
     queueNote: "Acción limpia.",
     position: 5,
     tmdbId: 245891,
@@ -341,8 +342,8 @@ const watchlistQueue: WatchlistSeed[] = [
   {
     name: "Parasite",
     year: 2019,
-    kind: TitleKind.MOVIE,
-    platform: Platform.MAX,
+    kind: "MOVIE",
+    platform: "MAX",
     queueNote: "Drama y comedia negra.",
     position: 6,
     tmdbId: 496243,
@@ -360,8 +361,8 @@ const watchlistQueue: WatchlistSeed[] = [
   {
     name: "The Grand Budapest Hotel",
     year: 2014,
-    kind: TitleKind.MOVIE,
-    platform: Platform.PRIME,
+    kind: "MOVIE",
+    platform: "PRIME",
     queueNote: "Wes Anderson.",
     position: 7,
     tmdbId: 120467,
@@ -383,74 +384,112 @@ const listDescriptions: Record<string, string> = {
 };
 
 const ensureDemoUser = async (userId: string) => {
-  const passwordHash = await hash(DEMO_PASSWORD, 12);
+  const passwordHash = await hashPassword(DEMO_PASSWORD);
+  const streamingPlatforms = ["NETFLIX", "PRIME", "MAX"] as Platform[];
 
-  return prisma.user.upsert({
-    where: { id: userId },
-    update: {
-      email: DEMO_EMAIL,
-      name: "Demo Filmia",
-      passwordHash,
-      streamingPlatforms: [Platform.NETFLIX, Platform.PRIME, Platform.MAX],
-    },
-    create: {
-      id: userId,
-      email: DEMO_EMAIL,
-      name: "Demo Filmia",
-      passwordHash,
-      streamingPlatforms: [Platform.NETFLIX, Platform.PRIME, Platform.MAX],
-    },
+  const existing = await db.query.users.findFirst({ where: eq(users.id, userId) });
+  if (existing) {
+    await db
+      .update(users)
+      .set({
+        email: DEMO_EMAIL,
+        name: "Demo Filmia",
+        passwordHash,
+        streamingPlatforms,
+      })
+      .where(eq(users.id, userId));
+    return existing;
+  }
+
+  await db.insert(users).values({
+    id: userId,
+    email: DEMO_EMAIL,
+    name: "Demo Filmia",
+    passwordHash,
+    streamingPlatforms,
+  });
+
+  return db.query.users.findFirst({ where: eq(users.id, userId) }).then((user) => {
+    if (!user) {
+      throw new Error("No se pudo crear el usuario demo.");
+    }
+    return user;
   });
 };
 
 const upsertTag = async (userId: string, name: string) => {
   const slug = slugify(name);
-  return prisma.tag.upsert({
-    where: { userId_slug: { userId, slug } },
-    update: { name },
-    create: { userId, name, slug },
+  const existing = await db.query.tags.findFirst({
+    where: and(eq(tags.userId, userId), eq(tags.slug, slug)),
+  });
+
+  if (existing) {
+    await db.update(tags).set({ name }).where(eq(tags.id, existing.id));
+    return existing;
+  }
+
+  const tagId = createId();
+  await db.insert(tags).values({ id: tagId, userId, name, slug });
+  return db.query.tags.findFirst({ where: eq(tags.id, tagId) }).then((tag) => {
+    if (!tag) {
+      throw new Error("No se pudo crear la etiqueta.");
+    }
+    return tag;
   });
 };
 
 const upsertCollection = async (userId: string, name: string) => {
-  const existing = await prisma.list.findFirst({
-    where: { userId, name, kind: ListKind.COLLECTION },
+  const existing = await db.query.lists.findFirst({
+    where: and(eq(lists.userId, userId), eq(lists.name, name), eq(lists.kind, "COLLECTION")),
   });
   if (existing) {
     return existing;
   }
 
-  return prisma.list.create({
-    data: {
-      userId,
-      name,
-      description: listDescriptions[name],
-      kind: ListKind.COLLECTION,
-    },
+  const listId = createId();
+  await db.insert(lists).values({
+    id: listId,
+    userId,
+    name,
+    description: listDescriptions[name],
+    kind: "COLLECTION",
+  });
+
+  return db.query.lists.findFirst({ where: eq(lists.id, listId) }).then((list) => {
+    if (!list) {
+      throw new Error("No se pudo crear la lista.");
+    }
+    return list;
   });
 };
 
-const ensureDefaultLists = async (userId: string) => {
+const ensureDefaultListsForSeed = async (userId: string) => {
   for (const list of DEFAULT_LISTS) {
-    await prisma.list.upsert({
-      where: { userId_slug: { userId, slug: list.slug } },
-      update: {
-        name: list.name,
-        kind: list.kind,
-      },
-      create: {
+    await db
+      .insert(lists)
+      .values({
+        id: createId(),
         userId,
         slug: list.slug,
         name: list.name,
         description: list.description,
         kind: list.kind,
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: [lists.userId, lists.slug],
+        set: { name: list.name, kind: list.kind },
+      });
   }
 
-  return prisma.list.findUniqueOrThrow({
-    where: { userId_slug: { userId, slug: WATCHLIST_SLUG } },
+  const watchlist = await db.query.lists.findFirst({
+    where: and(eq(lists.userId, userId), eq(lists.slug, WATCHLIST_SLUG)),
   });
+
+  if (!watchlist) {
+    throw new Error("No se pudo crear Quiero ver.");
+  }
+
+  return watchlist;
 };
 
 const seed = async () => {
@@ -465,7 +504,7 @@ const seed = async () => {
   ];
   const uniqueLists = [...new Set(seedTitles.flatMap((title) => title.lists))];
 
-  const watchlist = await ensureDefaultLists(userId);
+  const watchlist = await ensureDefaultListsForSeed(userId);
 
   for (const tagName of uniqueTags) {
     tagRecords.set(tagName, await upsertTag(userId, tagName));
@@ -476,8 +515,8 @@ const seed = async () => {
   }
 
   for (const [index, title] of seedTitles.entries()) {
-    const existing = await prisma.title.findFirst({
-      where: { userId, name: title.name, year: title.year },
+    const existing = await db.query.titles.findFirst({
+      where: and(eq(titles.userId, userId), eq(titles.name, title.name), eq(titles.year, title.year)),
     });
 
     const data = {
@@ -494,43 +533,48 @@ const seed = async () => {
       watchedAt: title.watched
         ? new Date(`${title.year}-06-15T12:00:00.000Z`)
         : null,
-      seriesStatus: title.kind === TitleKind.SERIES ? (title.seriesStatus ?? null) : null,
-      seriesSeason: title.kind === TitleKind.SERIES ? (title.seriesSeason ?? null) : null,
+      seriesStatus: title.kind === "SERIES" ? (title.seriesStatus ?? null) : null,
+      seriesSeason: title.kind === "SERIES" ? (title.seriesSeason ?? null) : null,
     };
 
-    const saved = existing
-      ? await prisma.title.update({ where: { id: existing.id }, data })
-      : await prisma.title.create({ data });
+    let savedId = existing?.id;
+    if (existing) {
+      await db.update(titles).set(data).where(eq(titles.id, existing.id));
+    } else {
+      savedId = createId();
+      await db.insert(titles).values({ id: savedId, ...data });
+    }
 
-    await prisma.titleTag.deleteMany({ where: { titleId: saved.id } });
-    await prisma.titleTag.createMany({
-      data: title.tags.map((tagName) => ({
-        titleId: saved.id,
-        tagId: tagRecords.get(tagName)!.id,
-      })),
-    });
+    const titleId = savedId!;
+
+    await db.delete(titleTags).where(eq(titleTags.titleId, titleId));
+    if (title.tags.length > 0) {
+      await db.insert(titleTags).values(
+        title.tags.map((tagName) => ({
+          titleId,
+          tagId: tagRecords.get(tagName)!.id,
+        })),
+      );
+    }
 
     for (const listName of title.lists) {
-      await prisma.listItem.upsert({
-        where: {
-          listId_titleId: {
-            listId: listRecords.get(listName)!.id,
-            titleId: saved.id,
-          },
-        },
-        update: { position: index },
-        create: {
+      await db
+        .insert(listItems)
+        .values({
           listId: listRecords.get(listName)!.id,
-          titleId: saved.id,
+          titleId,
           position: index,
-        },
-      });
+        })
+        .onConflictDoUpdate({
+          target: [listItems.listId, listItems.titleId],
+          set: { position: index },
+        });
     }
   }
 
   for (const item of watchlistQueue) {
-    const existing = await prisma.title.findFirst({
-      where: { userId, name: item.name, year: item.year },
+    const existing = await db.query.titles.findFirst({
+      where: and(eq(titles.userId, userId), eq(titles.name, item.name), eq(titles.year, item.year)),
     });
 
     const queueData = {
@@ -541,46 +585,49 @@ const seed = async () => {
       imdbRating: item.imdbRating ?? null,
       overview: item.overview ?? null,
       tmdbGenres: item.tmdbGenres ?? [],
-      watchProvidersMx: item.watchProvidersMx ?? undefined,
-      seriesStatus:
-        item.kind === TitleKind.SERIES ? (item.seriesStatus ?? null) : null,
-      seriesSeason:
-        item.kind === TitleKind.SERIES ? (item.seriesSeason ?? null) : null,
+      watchProvidersMx: item.watchProvidersMx ?? null,
+      seriesStatus: item.kind === "SERIES" ? (item.seriesStatus ?? null) : null,
+      seriesSeason: item.kind === "SERIES" ? (item.seriesSeason ?? null) : null,
     };
 
-    const saved = existing
-      ? await prisma.title.update({
-          where: { id: existing.id },
-          data: {
-            ...queueData,
-            watchedAt: null,
-            rating: null,
-          },
+    let savedId = existing?.id;
+    if (existing) {
+      await db
+        .update(titles)
+        .set({
+          ...queueData,
+          watchedAt: null,
+          rating: null,
         })
-      : await prisma.title.create({
-          data: {
-            userId,
-            name: item.name,
-            year: item.year,
-            ...queueData,
-          },
-        });
+        .where(eq(titles.id, existing.id));
+    } else {
+      savedId = createId();
+      await db.insert(titles).values({
+        id: savedId,
+        userId,
+        name: item.name,
+        year: item.year,
+        ...queueData,
+      });
+    }
 
-    await prisma.listItem.upsert({
-      where: {
-        listId_titleId: { listId: watchlist.id, titleId: saved.id },
-      },
-      update: {
-        position: item.position,
-        queueNote: item.queueNote,
-      },
-      create: {
+    const titleId = savedId!;
+
+    await db
+      .insert(listItems)
+      .values({
         listId: watchlist.id,
-        titleId: saved.id,
+        titleId,
         position: item.position,
         queueNote: item.queueNote,
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: [listItems.listId, listItems.titleId],
+        set: {
+          position: item.position,
+          queueNote: item.queueNote,
+        },
+      });
   }
 
   console.log(
@@ -590,11 +637,7 @@ const seed = async () => {
   console.log("Plataformas de streaming del demo: Netflix, Prime Video y Max.");
 };
 
-seed()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+seed().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

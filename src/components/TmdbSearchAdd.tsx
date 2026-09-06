@@ -7,7 +7,7 @@ import { addTitleFromTmdb } from "@/app/actions/titles";
 import { EmptyState } from "@/components/EmptyState";
 import { PosterImage } from "@/components/PosterImage";
 import { SearchPreviewSheet } from "@/components/SearchPreviewSheet";
-import { TitleKind } from "@/generated/prisma/browser";
+import type { TitleKind } from "@/db";
 import { KIND_CHIPS, titleMatchesKind } from "@/lib/catalog-filters";
 import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";

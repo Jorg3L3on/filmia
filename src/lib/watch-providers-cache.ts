@@ -1,6 +1,5 @@
-import type { TitleKind } from "@/generated/prisma/browser";
-import { Prisma } from "@/generated/prisma/browser";
-import { prisma } from "@/lib/prisma";
+import { eq } from "drizzle-orm";
+import { db, titles, type TitleKind } from "@/db";
 import { isTmdbConfigured } from "@/lib/tmdb";
 import {
   fetchMxWatchProviders,
@@ -27,13 +26,13 @@ const persistWatchProviders = async (
   titleId: string,
   data: WatchProvidersMxData | null,
 ) => {
-  await prisma.title.update({
-    where: { id: titleId },
-    data: {
-      watchProvidersMx: data === null ? Prisma.JsonNull : data,
+  await db
+    .update(titles)
+    .set({
+      watchProvidersMx: data,
       watchProvidersFetchedAt: new Date(),
-    },
-  });
+    })
+    .where(eq(titles.id, titleId));
 };
 
 export const refreshWatchProvidersMx = async (

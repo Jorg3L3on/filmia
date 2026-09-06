@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { PasswordField } from "@/components/PasswordField";
-import { messageForSignInError } from "@/lib/auth-errors";
 import { btnPrimary, fieldClass, focusRing } from "@/lib/ui";
 
 export const LoginForm = () => {
@@ -21,19 +19,18 @@ export const LoginForm = () => {
     setIsLoading(true);
 
     const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") ?? "").trim();
-    const password = String(formData.get("password") ?? "");
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      body: formData,
     });
+
+    const payload = (await response.json()) as { error?: string };
 
     setIsLoading(false);
 
-    if (result?.error || result?.ok === false) {
-      setError(messageForSignInError(result.error));
+    if (!response.ok) {
+      setError(payload.error ?? "Correo o contraseña incorrectos.");
       return;
     }
 

@@ -1,6 +1,6 @@
-import { TitleKind } from "@/generated/prisma/browser";
+import { eq } from "drizzle-orm";
+import { db, titles, type TitleKind } from "@/db";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
-import { prisma } from "@/lib/prisma";
 import { getTmdbTitleExtras, isTmdbConfigured, type TmdbGenre } from "@/lib/tmdb";
 
 const OVERVIEW_HYDRATE_LIMIT = 32;
@@ -71,15 +71,15 @@ const applyHydratedFields = <T extends OverviewTitle>(
 };
 
 export const hydrateMissingTitleOverviews = async <T extends OverviewTitle>(
-  titles: T[],
+  titleRows: T[],
 ) => {
   if (!isTmdbConfigured()) {
-    return titles;
+    return titleRows;
   }
 
-  const missing = titles.filter(titleNeedsHydration);
+  const missing = titleRows.filter(titleNeedsHydration);
   if (missing.length === 0) {
-    return titles;
+    return titleRows;
   }
 
   const batch = missing.slice(0, OVERVIEW_HYDRATE_LIMIT);
@@ -105,13 +105,13 @@ export const hydrateMissingTitleOverviews = async <T extends OverviewTitle>(
           continue;
         }
 
-        await prisma.title.update({
-          where: { id: title.id },
-          data: {
+        await db
+          .update(titles)
+          .set({
             ...(overview ? { overview } : {}),
             ...(genres.length > 0 ? { tmdbGenres: genres } : {}),
-          },
-        });
+          })
+          .where(eq(titles.id, title.id));
         applyHydratedFields(title, overview, genres);
       } catch {
         // Keep the row without a synopsis if TMDB is unavailable.
@@ -125,5 +125,5 @@ export const hydrateMissingTitleOverviews = async <T extends OverviewTitle>(
     ),
   );
 
-  return titles;
+  return titleRows;
 };

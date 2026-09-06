@@ -1,5 +1,6 @@
 import { updateStreamingPlatforms } from "@/app/actions/profile";
-import type { Platform } from "@/generated/prisma/browser";
+import { PlatformLogo } from "@/components/PlatformLogo";
+import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
 import { PLATFORM_SERVICE_LABEL, PLATFORMS } from "@/lib/labels";
 import { btnPrimary, focusRing, wellClass } from "@/lib/ui";

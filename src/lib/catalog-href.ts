@@ -1,4 +1,4 @@
-import { Platform, TitleKind } from "@/generated/prisma/browser";
+import type { Platform, TitleKind } from "@/db";
 import { PLATFORMS } from "@/lib/labels";
 import type { SeriesStatusFilter } from "@/lib/series";
 

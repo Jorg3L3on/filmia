@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/session";
 import { ensureDefaultLists } from "@/lib/lists";
 import { ensureDefaultTags } from "@/lib/tags";
 import "./globals.css";

@@ -4,19 +4,19 @@ import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
 import { ListItemOrderControls } from "@/components/ListItemOrderControls";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PosterTile } from "@/components/PosterTile";
-import type { titleInclude } from "@/lib/queries";
+import type { Platform, ListItem } from "@/db";
 import type { CatalogKindFilter } from "@/lib/catalog-href";
+import type { TitleWithRelations } from "@/lib/queries";
 import type { CatalogSort } from "@/lib/tags";
 import { catalogHref } from "@/lib/tags";
+import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { btnLink } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
-import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
-import type { Platform, Prisma } from "@/generated/prisma/browser";
 import type { SeriesStatusFilter } from "@/lib/series";
 
-type ListItemPayload = Prisma.ListItemGetPayload<{
-  include: { title: { include: typeof titleInclude } };
-}>;
+type ListItemPayload = ListItem & {
+  title: TitleWithRelations;
+};
 
 type ListTitlesViewProps = {
   listId: string;

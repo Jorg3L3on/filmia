@@ -10,7 +10,7 @@ import type { DiaryCalendarTitle } from "@/components/diary-types";
 import { cn } from "@/lib/cn";
 import { formatDaySheetParts } from "@/lib/dates";
 import { useSheetDragDismiss } from "@/lib/motion";
-import { TitleKind } from "@/generated/prisma/browser";
+import { TitleKind } from "@/db";
 import { focusRing } from "@/lib/ui";
 
 type DayLogSheetProps = {

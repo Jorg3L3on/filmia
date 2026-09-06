@@ -15,7 +15,7 @@ import {
 import type { CatalogKindFilter, CatalogQuery } from "@/lib/catalog-href";
 import { catalogHref } from "@/lib/catalog-href";
 import { PLATFORM_LABEL } from "@/lib/labels";
-import type { Platform } from "@/generated/prisma/browser";
+import type { Platform } from "@/db";
 import {
   SERIES_STATUS_FILTER_OPTIONS,
   type SeriesStatusFilter,

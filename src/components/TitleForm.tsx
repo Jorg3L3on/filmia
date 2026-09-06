@@ -5,7 +5,7 @@ import { createTitle, updateTitle } from "@/app/actions/titles";
 import { RatingStars } from "@/components/RatingStars";
 import { TmdbPicker, type TmdbPick } from "@/components/TmdbPicker";
 import { PosterImage } from "@/components/PosterImage";
-import type { List, Platform, Tag, Title, TitleKind } from "@/generated/prisma/browser";
+import type { List, Platform, Tag, Title, TitleKind } from "@/db";
 import { cn } from "@/lib/cn";
 import {
   PLATFORM_CLASS,

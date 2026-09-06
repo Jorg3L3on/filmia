@@ -7,14 +7,14 @@ import { SharedPoster } from "@/components/SharedPoster";
 import { WatchlistMarkSeenButton } from "@/components/WatchlistMarkSeenButton";
 import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
-import type { titleInclude } from "@/lib/queries";
+import type { TitleWithRelations } from "@/lib/queries";
 import { compactGenreLabel, titleSynopsis } from "@/lib/title-overview";
 import { btnGhost, focusRing } from "@/lib/ui";
-import type { Platform, Prisma } from "@/generated/prisma/browser";
+import type { ListItem, Platform } from "@/db";
 
-type WatchlistItem = Prisma.ListItemGetPayload<{
-  include: { title: { include: typeof titleInclude } };
-}>;
+type WatchlistItem = ListItem & {
+  title: TitleWithRelations;
+};
 
 type WatchlistCardProps = {
   item: WatchlistItem;

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createList, updateList } from "@/app/actions/lists";
 import { EmptyListPreview } from "@/components/PosterStack";
-import type { List } from "@/generated/prisma/browser";
+import type { List } from "@/db";
 import { isFixedListSlug } from "@/lib/lists";
 import { btnPrimary, fieldClass, focusRing } from "@/lib/ui";
 

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { Platform } from "@/generated/prisma/browser";
+import type { Platform } from "@/db";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { cn } from "@/lib/cn";
 import { PLATFORM_SERVICE_LABEL } from "@/lib/labels";

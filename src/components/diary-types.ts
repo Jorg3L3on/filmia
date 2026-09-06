@@ -1,4 +1,4 @@
-import type { Platform, SeriesStatus, TitleKind } from "@/generated/prisma/browser";
+import type { Platform, SeriesStatus, TitleKind } from "@/db";
 
 export type DiaryCalendarTitle = {
   id: string;

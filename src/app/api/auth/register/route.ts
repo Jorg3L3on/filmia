@@ -1,8 +1,11 @@
-import { hash } from "bcryptjs";
+import { createId } from "@paralleldrive/cuid2";
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { db, users } from "@/db";
+import { setSessionCookie } from "@/lib/auth";
+import { hashPassword } from "@/lib/auth/password";
 import { ensureDefaultLists } from "@/lib/lists";
 import { ensureDefaultTags } from "@/lib/tags";
-import { prisma } from "@/lib/prisma";
 
 const normalizeEmail = (value: FormDataEntryValue | null) =>
   String(value ?? "").trim().toLowerCase();
@@ -27,7 +30,11 @@ export const POST = async (request: Request) => {
     );
   }
 
-  const existing = await prisma.user.findUnique({ where: { email } });
+  const existing = await db.query.users.findFirst({
+    where: eq(users.email, email),
+    columns: { id: true },
+  });
+
   if (existing) {
     return NextResponse.json(
       { error: "Ya existe una cuenta con ese correo." },
@@ -35,20 +42,19 @@ export const POST = async (request: Request) => {
     );
   }
 
-  const passwordHash = await hash(password, 12);
+  const passwordHash = await hashPassword(password);
+  const userId = createId();
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      passwordHash,
-      name,
-    },
+  await db.insert(users).values({
+    id: userId,
+    email,
+    passwordHash,
+    name,
   });
 
-  await Promise.all([
-    ensureDefaultLists(user.id),
-    ensureDefaultTags(user.id),
-  ]);
+  await Promise.all([ensureDefaultLists(userId), ensureDefaultTags(userId)]);
 
-  return NextResponse.json({ ok: true });
+  const response = NextResponse.json({ ok: true });
+  await setSessionCookie(response, { id: userId, email, name });
+  return response;
 };
