@@ -53,12 +53,15 @@ export const createList = async (formData: FormData) => {
   }
 
   const listId = createId();
+  const now = new Date();
   await db.insert(lists).values({
     id: listId,
     userId,
     name,
     description,
     kind: "COLLECTION",
+    createdAt: now,
+    updatedAt: now,
   });
 
   revalidateLists(listId);

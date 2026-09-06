@@ -197,6 +197,7 @@ export const upsertTitleFromTmdbForUser = async (
   }
 
   const titleId = createId();
+  const now = new Date();
   await db.insert(titles).values({
     id: titleId,
     userId,
@@ -211,6 +212,8 @@ export const upsertTitleFromTmdbForUser = async (
     overview: null,
     tmdbGenres: [] as TmdbGenre[],
     watchedAt: markWatched ? resolveWatchedAt(input.watchedAt) : null,
+    createdAt: now,
+    updatedAt: now,
   });
 
   if (addToWatchlist) {

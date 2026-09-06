@@ -161,6 +161,7 @@ export const createTitle = async (formData: FormData) => {
   );
 
   const titleId = createId();
+  const now = new Date();
   await db.insert(titles).values({
     id: titleId,
     userId,
@@ -178,6 +179,8 @@ export const createTitle = async (formData: FormData) => {
     imdbRating: metadata.imdbRating,
     overview: metadata.overview ?? null,
     tmdbGenres: metadata.tmdbGenres,
+    createdAt: now,
+    updatedAt: now,
     ...seriesProgressData(fields.kind),
   });
 

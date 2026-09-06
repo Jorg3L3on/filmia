@@ -146,6 +146,7 @@ export const ensureDefaultLists = async (userId: string) => {
       const current = bySlug.get(list.slug);
 
       if (!current) {
+        const now = new Date();
         await db.insert(lists).values({
           id: createId(),
           userId,
@@ -153,6 +154,8 @@ export const ensureDefaultLists = async (userId: string) => {
           name: list.name,
           description: list.description,
           kind: list.kind,
+          createdAt: now,
+          updatedAt: now,
         });
         return;
       }
