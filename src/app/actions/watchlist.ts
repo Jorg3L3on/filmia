@@ -155,24 +155,27 @@ export const markTitleWatched = async (
     columns: { id: true },
   });
 
-  await db.transaction(async (tx) => {
-    await tx
-      .update(titles)
-      .set({
-        watchedAt,
-        ...(rating !== undefined ? { rating } : {}),
-        ...(review !== undefined ? { review } : {}),
-      })
-      .where(eq(titles.id, titleId));
+  const updateTitle = db
+    .update(titles)
+    .set({
+      watchedAt,
+      ...(rating !== undefined ? { rating } : {}),
+      ...(review !== undefined ? { review } : {}),
+    })
+    .where(eq(titles.id, titleId));
 
-    if (!watchlist) {
-      return;
-    }
-
-    await tx
-      .delete(listItems)
-      .where(and(eq(listItems.listId, watchlist.id), eq(listItems.titleId, titleId)));
-  });
+  if (!watchlist) {
+    await updateTitle;
+  } else {
+    await db.batch([
+      updateTitle,
+      db
+        .delete(listItems)
+        .where(
+          and(eq(listItems.listId, watchlist.id), eq(listItems.titleId, titleId)),
+        ),
+    ]);
+  }
 
   revalidateDiary(titleId);
 };

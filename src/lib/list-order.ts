@@ -23,17 +23,7 @@ export const swapAdjacentListItems = async (
   const current = items[index]!;
   const neighbor = items[swapIndex]!;
 
-  await db.transaction(async (tx) => {
-    await tx
-      .update(listItems)
-      .set({ position: neighbor.position })
-      .where(and(eq(listItems.listId, listId), eq(listItems.titleId, current.titleId)));
-    await tx
-      .update(listItems)
-      .set({ position: current.position })
-      .where(and(eq(listItems.listId, listId), eq(listItems.titleId, neighbor.titleId)));
-  });
-
+  await swapListItemPositionsAtomic(listId, current, neighbor);
   return true;
 };
 
@@ -59,16 +49,27 @@ export const swapListItemPositions = async (
     return false;
   }
 
-  await db.transaction(async (tx) => {
-    await tx
+  await swapListItemPositionsAtomic(listId, current, neighbor);
+  return true;
+};
+
+const swapListItemPositionsAtomic = async (
+  listId: string,
+  current: { titleId: string; position: number },
+  neighbor: { titleId: string; position: number },
+) => {
+  await db.batch([
+    db
       .update(listItems)
       .set({ position: neighbor.position })
-      .where(and(eq(listItems.listId, listId), eq(listItems.titleId, current.titleId)));
-    await tx
+      .where(
+        and(eq(listItems.listId, listId), eq(listItems.titleId, current.titleId)),
+      ),
+    db
       .update(listItems)
       .set({ position: current.position })
-      .where(and(eq(listItems.listId, listId), eq(listItems.titleId, neighbor.titleId)));
-  });
-
-  return true;
+      .where(
+        and(eq(listItems.listId, listId), eq(listItems.titleId, neighbor.titleId)),
+      ),
+  ]);
 };

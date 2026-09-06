@@ -3,6 +3,9 @@ import { neon } from "@neondatabase/serverless";
 import { resolveDatabaseUrl } from "@/lib/database-url";
 import * as schema from "@/db/schema";
 
+// neon-http has no interactive `db.transaction()`. Use `db.batch([...])` for
+// atomic multi-query writes (one HTTP round-trip).
+
 const createDb = () => {
   const sql = neon(resolveDatabaseUrl());
   return drizzle({ client: sql, schema });
