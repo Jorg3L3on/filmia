@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState, useTransition } from "react";
-import { setTitleRating } from "@/app/actions/titles";
+import { useEffect, useId, useState } from "react";
 import { RatingStars } from "@/components/RatingStars";
 import { cn } from "@/lib/cn";
 import { btnPrimary, fieldClass, focusRing } from "@/lib/ui";
@@ -13,7 +12,9 @@ type RatingSheetProps = {
   titleId: string;
   rating: number | null;
   review?: string | null;
+  pending?: boolean;
   onClose: () => void;
+  onSave?: (next: { rating: number | null; review: string }) => void;
 };
 
 export const RatingSheet = ({
@@ -21,22 +22,10 @@ export const RatingSheet = ({
   titleId,
   rating,
   review = "",
+  pending = false,
   onClose,
+  onSave,
 }: RatingSheetProps) => {
-  const titleDomId = useId();
-  const [value, setValue] = useState<number | null>(rating);
-  const [note, setNote] = useState(review ?? "");
-  const [isPending, startTransition] = useTransition();
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    setValue(rating);
-    setNote(review ?? "");
-  }, [open, rating, review]);
-
   useEffect(() => {
     if (!open) {
       return;
@@ -59,21 +48,39 @@ export const RatingSheet = ({
     };
   }, [open, onClose]);
 
-  const handleSave = () => {
-    startTransition(async () => {
-      const formData = new FormData();
-      if (value != null) {
-        formData.set("rating", String(value));
-      }
-      formData.set("review", note.trim());
-      await setTitleRating(titleId, formData);
-      onClose();
-    });
-  };
-
   if (!open) {
     return null;
   }
+
+  return (
+    <RatingSheetFields
+      key={`${titleId}:${rating}:${review}`}
+      rating={rating}
+      review={review}
+      pending={pending}
+      onClose={onClose}
+      onSave={onSave}
+    />
+  );
+};
+
+const RatingSheetFields = ({
+  rating,
+  review = "",
+  pending,
+  onClose,
+  onSave,
+}: Omit<RatingSheetProps, "open" | "titleId">) => {
+  const titleDomId = useId();
+  const [value, setValue] = useState<number | null>(rating);
+  const [note, setNote] = useState(review ?? "");
+
+  const handleSave = () => {
+    onSave?.({ rating: value, review: note.trim() });
+    if (!onSave) {
+      onClose();
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
@@ -117,10 +124,10 @@ export const RatingSheet = ({
           <button
             type="button"
             onClick={handleSave}
-            disabled={isPending}
+            disabled={pending}
             className={cn(btnPrimary, "w-full py-3", focusRing)}
           >
-            {isPending ? "Guardando…" : "Guardar"}
+            {pending ? "Guardando…" : "Guardar"}
           </button>
         </div>
       </div>

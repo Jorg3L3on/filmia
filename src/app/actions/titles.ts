@@ -2,7 +2,6 @@
 
 import { createId } from "@paralleldrive/cuid2";
 import { and, eq, inArray, notInArray } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   db,
@@ -36,23 +35,18 @@ import {
   enrichMetadataOnSave,
   readMetadataFields,
 } from "@/lib/metadata";
+import {
+  revalidateCatalogSurfaces,
+  revalidateRatingSurfaces,
+  revalidateSearchAddSurfaces,
+} from "@/lib/revalidate-surfaces";
 import { requireUserId } from "@/lib/session";
 import { enrichWatchProvidersOnSave } from "@/lib/watch-providers-cache";
 
 export type { AddTitleFromTmdbInput, AddTitleFromTmdbResult };
 
 const revalidateCatalog = (titleId?: string) => {
-  revalidatePath("/");
-  revalidatePath("/listas");
-  revalidatePath("/listas", "layout");
-  revalidatePath("/watchlist");
-  revalidatePath("/buscar");
-  revalidatePath("/tags");
-  revalidatePath("/tags", "layout");
-  if (titleId) {
-    revalidatePath(`/titulos/${titleId}`);
-    revalidatePath(`/titulos/${titleId}/editar`);
-  }
+  revalidateCatalogSurfaces(titleId);
 };
 
 const seriesProgressData = (kind: TitleKind) =>
@@ -149,8 +143,10 @@ export const addTitleFromTmdb = async (
   const result = await upsertTitleFromTmdbForUser(userId, input);
 
   if (result.ok) {
-    revalidateCatalog(result.titleId);
-    revalidatePath("/watchlist");
+    revalidateSearchAddSurfaces(result.titleId, {
+      watchlist: result.addedToWatchlist,
+      watched: result.markedWatched,
+    });
   }
 
   return result;
@@ -293,7 +289,7 @@ export const setTitleRating = async (titleId: string, formData: FormData) => {
     throw new Error("Título no encontrado.");
   }
 
-  revalidateCatalog(titleId);
+  revalidateRatingSurfaces(titleId);
 };
 
 export const setSeriesStatus = async (

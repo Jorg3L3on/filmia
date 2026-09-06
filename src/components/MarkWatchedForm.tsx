@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { clearTitleWatched, markTitleWatched } from "@/app/actions/watchlist";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { RatingStars } from "@/components/RatingStars";
 import { todayDateInput, toDateInput } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import { actionErrorMessage } from "@/lib/use-optimistic-action";
 import {
   btnDanger,
   btnPrimary,
@@ -20,6 +21,7 @@ type MarkWatchedFormProps = {
   rating?: number | null;
   review?: string | null;
   collapsed?: boolean;
+  onSaved?: () => void;
 };
 
 const fieldLabel =
@@ -32,18 +34,45 @@ export const MarkWatchedForm = ({
   rating = null,
   review = null,
   collapsed = false,
+  onSaved,
 }: MarkWatchedFormProps) => {
-  const action = markTitleWatched.bind(null, titleId);
-  const clearAction = clearTitleWatched.bind(null, titleId);
   const isCompact = variant === "queue";
   const isEdit = Boolean(watchedAt);
   const defaultDate = toDateInput(watchedAt) || todayDateInput();
   const [noteValue, setNoteValue] = useState<number | null>(rating);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const handleSave = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    setError(null);
+    onSaved?.();
+    startTransition(async () => {
+      try {
+        await markTitleWatched(titleId, formData);
+      } catch (caught) {
+        setError(actionErrorMessage(caught));
+      }
+    });
+  };
+
+  const handleClear = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    startTransition(async () => {
+      try {
+        await clearTitleWatched(titleId);
+      } catch (caught) {
+        setError(actionErrorMessage(caught));
+      }
+    });
+  };
 
   const form = (
     <div className={isCompact ? "w-full space-y-2" : "w-full max-w-xl space-y-3"}>
       <form
-        action={action}
+        onSubmit={handleSave}
         className={
           isCompact
             ? "grid gap-2 sm:grid-cols-[minmax(0,9.5rem)_auto] sm:items-end"
@@ -89,15 +118,26 @@ export const MarkWatchedForm = ({
         <div className={isCompact ? "sm:col-span-2" : undefined}>
           <button
             type="submit"
+            disabled={isPending}
             className={isCompact ? `${btnSecondary} px-3 py-1 text-xs` : btnPrimary}
           >
-            {isEdit ? "Guardar en el diario" : "Vi esto"}
+            {isPending
+              ? "Guardando…"
+              : isEdit
+                ? "Guardar en el diario"
+                : "Vi esto"}
           </button>
         </div>
       </form>
 
+      {error ? (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
+
       {isEdit ? (
-        <form action={clearAction}>
+        <form onSubmit={handleClear}>
           <ConfirmSubmit
             label="Quitar del diario"
             confirmMessage="¿Quitar la fecha de visto? Se conservan tu nota y el comentario."

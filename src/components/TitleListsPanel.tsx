@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useOptimistic, useState, useTransition } from "react";
 import { toggleTitleInList } from "@/app/actions/lists";
 import { cn } from "@/lib/cn";
 import { isFixedListSlug, listHref } from "@/lib/lists";
+import { actionErrorMessage } from "@/lib/use-optimistic-action";
 import { btnGhost, eyebrowClass, focusRing, wellClass } from "@/lib/ui";
 
 type AssignableList = {
@@ -21,9 +25,34 @@ export const TitleListsPanel = ({
   lists,
   memberListIds,
 }: TitleListsPanelProps) => {
-  const memberIds = new Set(memberListIds);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+  const [optimisticIds, applyIds] = useOptimistic(
+    memberListIds,
+    (_current: string[], next: string[]) => next,
+  );
+  const memberIds = new Set(optimisticIds);
   const daily = lists.filter((list) => isFixedListSlug(list.slug));
   const custom = lists.filter((list) => !isFixedListSlug(list.slug));
+
+  const handleToggle = (listId: string) => {
+    const next = memberIds.has(listId)
+      ? optimisticIds.filter((id) => id !== listId)
+      : [...optimisticIds, listId];
+    setError(null);
+    setPendingId(listId);
+    startTransition(async () => {
+      applyIds(next);
+      try {
+        await toggleTitleInList(listId, titleId);
+      } catch (caught) {
+        setError(actionErrorMessage(caught));
+      } finally {
+        setPendingId(null);
+      }
+    });
+  };
 
   return (
     <section className={`${wellClass} space-y-4 p-5`}>
@@ -38,17 +67,19 @@ export const TitleListsPanel = ({
 
       <ListChipGroup
         title="Diarias"
-        titleId={titleId}
         lists={daily}
         memberIds={memberIds}
+        pendingId={pendingId}
+        onToggle={handleToggle}
       />
 
       {custom.length > 0 ? (
         <ListChipGroup
           title="Personalizadas"
-          titleId={titleId}
           lists={custom}
           memberIds={memberIds}
+          pendingId={pendingId}
+          onToggle={handleToggle}
         />
       ) : (
         <p className="text-sm text-mist">
@@ -62,6 +93,12 @@ export const TitleListsPanel = ({
         </p>
       )}
 
+      {error ? (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
+
       {custom.length > 0 ? (
         <Link href="/listas/nueva" className={btnGhost}>
           Nueva lista
@@ -73,14 +110,16 @@ export const TitleListsPanel = ({
 
 const ListChipGroup = ({
   title,
-  titleId,
   lists,
   memberIds,
+  pendingId,
+  onToggle,
 }: {
   title: string;
-  titleId: string;
   lists: AssignableList[];
   memberIds: Set<string>;
+  pendingId: string | null;
+  onToggle: (listId: string) => void;
 }) => {
   return (
     <div className="space-y-2">
@@ -90,31 +129,30 @@ const ListChipGroup = ({
       <ul className="flex flex-wrap gap-2">
         {lists.map((list) => {
           const included = memberIds.has(list.id);
-          const toggleAction = toggleTitleInList.bind(null, list.id, titleId);
           const href = listHref(list);
 
           return (
             <li key={list.id} className="flex items-center gap-1">
-              <form action={toggleAction}>
-                <button
-                  type="submit"
-                  aria-pressed={included}
-                  aria-label={
-                    included
-                      ? `Quitar de ${list.name}`
-                      : `Añadir a ${list.name}`
-                  }
-                  className={cn(
-                    "rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-wide transition",
-                    focusRing,
-                    included
-                      ? "border-accent bg-accent text-ink"
-                      : "border-chrome text-fog hover:border-[#555] hover:text-white",
-                  )}
-                >
-                  {list.name}
-                </button>
-              </form>
+              <button
+                type="button"
+                onClick={() => onToggle(list.id)}
+                disabled={pendingId === list.id}
+                aria-pressed={included}
+                aria-label={
+                  included
+                    ? `Quitar de ${list.name}`
+                    : `Añadir a ${list.name}`
+                }
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-wide transition",
+                  focusRing,
+                  included
+                    ? "border-accent bg-accent text-ink"
+                    : "border-chrome text-fog hover:border-[#555] hover:text-white",
+                )}
+              >
+                {list.name}
+              </button>
               {included ? (
                 <Link
                   href={href}

@@ -16,6 +16,7 @@ type SearchPreviewSheetProps = {
   result: TmdbCatalogResult;
   local: LocalTitle | null;
   pending: boolean;
+  pendingAction?: "catalog" | "watchlist" | "open" | null;
   onClose: () => void;
   onAdd: (destination: "catalog" | "watchlist") => void;
   onOpen: () => void;
@@ -25,6 +26,7 @@ export const SearchPreviewSheet = ({
   result,
   local,
   pending,
+  pendingAction = null,
   onClose,
   onAdd,
   onOpen,
@@ -97,20 +99,37 @@ export const SearchPreviewSheet = ({
 
           <div className="grid grid-cols-3 gap-3">
             <SheetAction
-              label={local ? "En Filmia" : "Agregar"}
+              label={
+                pending && pendingAction === "catalog"
+                  ? "Agregando…"
+                  : local
+                    ? "En Filmia"
+                    : "Agregar"
+              }
               disabled={pending || Boolean(local)}
               onClick={() => onAdd("catalog")}
             >
               <PlusIcon />
             </SheetAction>
             <SheetAction
-              label={local?.inWatchlist ? "En Quiero ver" : "Quiero ver"}
+              label={
+                pending && pendingAction === "watchlist"
+                  ? "Agregando…"
+                  : local?.inWatchlist
+                    ? "En Quiero ver"
+                    : "Quiero ver"
+              }
               disabled={pending || Boolean(local?.inWatchlist)}
               onClick={() => onAdd("watchlist")}
             >
               <EyeIcon />
             </SheetAction>
-            <SheetAction label="Abrir" primary disabled={pending} onClick={onOpen}>
+            <SheetAction
+              label={pending && pendingAction === "open" ? "Abriendo…" : "Abrir"}
+              primary
+              disabled={pending || Boolean(local?.titleId.startsWith("pending:"))}
+              onClick={onOpen}
+            >
               <OpenIcon />
             </SheetAction>
           </div>

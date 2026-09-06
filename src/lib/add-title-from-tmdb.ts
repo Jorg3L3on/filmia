@@ -1,11 +1,13 @@
 import { createId } from "@paralleldrive/cuid2";
 import { and, desc, eq } from "drizzle-orm";
+import { after } from "next/server";
 import { db, listItems, lists, titles, type TitleKind } from "@/db";
 import { parseOptionalDate } from "@/lib/form-data";
 import { TITLE_KINDS } from "@/lib/labels";
 import { ensureDefaultLists, WATCHLIST_SLUG } from "@/lib/lists";
 import { resolveTitleMetadata } from "@/lib/metadata";
-import { tmdbErrorMessage, type TmdbGenre } from "@/lib/tmdb";
+import { revalidateTitlePages } from "@/lib/revalidate-surfaces";
+import type { TmdbGenre } from "@/lib/tmdb";
 import { enrichWatchProvidersOnSave } from "@/lib/watch-providers-cache";
 
 export type AddTitleDestination = "watchlist" | "watched";
@@ -76,6 +78,51 @@ const enqueueInWatchlist = async (userId: string, titleId: string) => {
 const resolveWatchedAt = (value?: string | null) =>
   parseOptionalDate(value ?? null) ?? new Date();
 
+const scheduleAfterResponse = (task: () => Promise<void>) => {
+  try {
+    after(task);
+  } catch {
+    void task();
+  }
+};
+
+const enrichCreatedTitleInBackground = (
+  titleId: string,
+  tmdbId: number,
+  kind: TitleKind,
+  snapshotName: string,
+) => {
+  scheduleAfterResponse(async () => {
+    try {
+      const [resolved] = await Promise.all([
+        resolveTitleMetadata(tmdbId, kind).catch(() => null),
+        enrichWatchProvidersOnSave(titleId, tmdbId, kind),
+      ]);
+
+      if (resolved) {
+        await db
+          .update(titles)
+          .set({
+            name: resolved.name?.trim() || snapshotName,
+            originalName: resolved.originalName,
+            year: resolved.year,
+            posterPath: resolved.posterPath,
+            imdbId: resolved.imdbId,
+            imdbRating: resolved.imdbRating,
+            overview: resolved.overview ?? null,
+            tmdbGenres: resolved.tmdbGenres,
+            tmdbId: resolved.tmdbId ?? tmdbId,
+          })
+          .where(eq(titles.id, titleId));
+      }
+
+      revalidateTitlePages(titleId);
+    } catch {
+      // Snapshot row already exists; enrichment is best-effort.
+    }
+  });
+};
+
 const markExistingWatched = async (
   userId: string,
   titleId: string,
@@ -145,65 +192,32 @@ export const upsertTitleFromTmdbForUser = async (
     };
   }
 
-  let metadata = {
-    tmdbId,
-    name: snapshotName,
-    originalName: input.originalName?.trim() || null,
-    year: input.year ?? null,
-    posterPath: input.posterPath ?? null,
-    imdbId: null as string | null,
-    imdbRating: null as number | null,
-    overview: null as string | null,
-    tmdbGenres: [] as TmdbGenre[],
-  };
-
-  try {
-    const resolved = await resolveTitleMetadata(tmdbId, kind);
-    metadata = {
-      tmdbId: resolved.tmdbId ?? tmdbId,
-      name: resolved.name?.trim() || snapshotName,
-      originalName: resolved.originalName ?? metadata.originalName,
-      year: resolved.year ?? metadata.year,
-      posterPath: resolved.posterPath ?? metadata.posterPath,
-      imdbId: resolved.imdbId,
-      imdbRating: resolved.imdbRating,
-      overview: resolved.overview ?? null,
-      tmdbGenres: resolved.tmdbGenres,
-    };
-  } catch (error) {
-    if (!snapshotName) {
-      return { ok: false, error: tmdbErrorMessage(error) };
-    }
-  }
-
-  if (!metadata.name) {
-    return { ok: false, error: "TMDB no devolvió un nombre para este título." };
+  if (!snapshotName) {
+    return { ok: false, error: "Falta el nombre del título." };
   }
 
   const titleId = createId();
   await db.insert(titles).values({
     id: titleId,
     userId,
-    name: metadata.name,
-    originalName: metadata.originalName,
+    name: snapshotName,
+    originalName: input.originalName?.trim() || null,
     kind,
-    year: metadata.year,
-    tmdbId: metadata.tmdbId,
-    posterPath: metadata.posterPath,
-    imdbId: metadata.imdbId,
-    imdbRating: metadata.imdbRating,
-    overview: metadata.overview,
-    tmdbGenres: metadata.tmdbGenres,
+    year: input.year ?? null,
+    tmdbId,
+    posterPath: input.posterPath ?? null,
+    imdbId: null,
+    imdbRating: null,
+    overview: null,
+    tmdbGenres: [] as TmdbGenre[],
     watchedAt: markWatched ? resolveWatchedAt(input.watchedAt) : null,
   });
-
-  if (metadata.tmdbId) {
-    await enrichWatchProvidersOnSave(titleId, metadata.tmdbId, kind);
-  }
 
   if (addToWatchlist) {
     await enqueueInWatchlist(userId, titleId);
   }
+
+  enrichCreatedTitleInBackground(titleId, tmdbId, kind, snapshotName);
 
   return {
     ok: true,

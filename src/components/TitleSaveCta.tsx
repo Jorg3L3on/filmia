@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useOptimistic, useState, useTransition, type ReactNode } from "react";
 import {
   addToWatchlistById,
   removeFromWatchlistById,
 } from "@/app/actions/watchlist";
 import { cn } from "@/lib/cn";
 import { membershipCopy, titleListMembership } from "@/lib/list-membership";
+import { actionErrorMessage } from "@/lib/use-optimistic-action";
 import { focusRing } from "@/lib/ui";
 
 type AssignableList = {
@@ -60,16 +61,12 @@ export const TitleSaveCta = ({
           <ChevronIcon />
         </button>
       ) : (
-        <WatchlistButton
-          titleId={titleId}
-          inWatchlist={inWatchlist}
-          label={copy.label}
-        />
+        <WatchlistButton titleId={titleId} inWatchlist={inWatchlist} />
       )}
 
-      <p className={cn("text-center text-sm", isInList ? "text-accent" : "text-mist")}>
-        {copy.hint}
-      </p>
+      {isInList ? (
+        <p className="text-center text-sm text-accent">{copy.hint}</p>
+      ) : null}
 
       {open && isInList ? listsPanel : null}
     </div>
@@ -79,33 +76,66 @@ export const TitleSaveCta = ({
 const WatchlistButton = ({
   titleId,
   inWatchlist,
-  label,
 }: {
   titleId: string;
   inWatchlist: boolean;
-  label: string;
 }) => {
-  const action = inWatchlist
-    ? removeFromWatchlistById.bind(null, titleId)
-    : addToWatchlistById.bind(null, titleId);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [optimisticInWatchlist, applyWatchlist] = useOptimistic(inWatchlist);
+  const copy = membershipCopy(
+    optimisticInWatchlist ? { state: "watchlist" } : { state: "idle" },
+  );
+
+  const handleToggle = () => {
+    const next = !optimisticInWatchlist;
+    setError(null);
+    startTransition(async () => {
+      applyWatchlist(next);
+      try {
+        if (next) {
+          await addToWatchlistById(titleId);
+        } else {
+          await removeFromWatchlistById(titleId);
+        }
+      } catch (caught) {
+        setError(actionErrorMessage(caught));
+      }
+    });
+  };
 
   return (
-    <form action={action}>
+    <div className="space-y-2">
       <button
-        type="submit"
-        aria-pressed={inWatchlist}
+        type="button"
+        onClick={handleToggle}
+        disabled={isPending}
+        aria-pressed={optimisticInWatchlist}
         className={cn(
           "flex w-full items-center justify-center gap-3 rounded-2xl px-5 py-3.5 font-semibold",
           focusRing,
-          inWatchlist
+          optimisticInWatchlist
             ? "bg-accent text-ink"
             : "border border-paper/70 bg-transparent font-medium text-paper",
         )}
       >
-        <BookmarkIcon filled={inWatchlist} />
-        {label}
+        <BookmarkIcon filled={optimisticInWatchlist} />
+        {copy.label}
       </button>
-    </form>
+      <p
+        className={cn(
+          "text-center text-sm",
+          optimisticInWatchlist ? "text-accent" : "text-mist",
+        )}
+      >
+        {copy.hint}
+      </p>
+      {error ? (
+        <p role="alert" className="text-center text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 };
 
