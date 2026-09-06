@@ -1,7 +1,10 @@
+import type { CSSProperties } from "react";
 import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
 import { PosterTile } from "@/components/PosterTile";
+import type { Platform } from "@/db";
 import type { TitleWithRelations } from "@/lib/queries";
+import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { eyebrowClass } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
 
@@ -12,10 +15,20 @@ type TitleDeckViewProps = {
   hrefFor?: (mode: DeckViewMode) => string;
   heading?: string;
   showToggle?: boolean;
+  userPlatforms?: readonly Platform[];
+  footer?: "full" | "watched";
 };
 
-const toCoverflowTitle = (title: TitleWithRelations): CoverflowTitle => {
+const toCoverflowTitle = (
+  title: TitleWithRelations,
+  userPlatforms: readonly Platform[] = [],
+): CoverflowTitle => {
   const watchProviders = parseStoredWatchProviders(title.watchProvidersMx);
+  const availabilityPlatform = primaryAvailabilityPlatform(
+    watchProviders?.flatrate,
+    title.platform,
+    userPlatforms,
+  );
 
   return {
     id: title.id,
@@ -24,7 +37,7 @@ const toCoverflowTitle = (title: TitleWithRelations): CoverflowTitle => {
     year: title.year,
     rating: title.rating,
     posterPath: title.posterPath,
-    platform: title.platform,
+    platform: availabilityPlatform ?? title.platform,
     imdbRating: title.imdbRating,
     watched: Boolean(title.watchedAt),
     review: title.review,
@@ -41,6 +54,8 @@ export const TitleDeckView = ({
   hrefFor,
   heading,
   showToggle = true,
+  userPlatforms = [],
+  footer = "full",
 }: TitleDeckViewProps) => {
   if (titles.length === 0) {
     return null;
@@ -49,7 +64,7 @@ export const TitleDeckView = ({
   const showToolbar = Boolean(heading) || (showToggle && hrefFor);
 
   return (
-    <section className="space-y-4" aria-label={heading}>
+    <section className="space-y-4" aria-label={heading ?? "Mazo"}>
       {showToolbar ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           {heading ? <h2 className={eyebrowClass}>{heading}</h2> : null}
@@ -65,20 +80,30 @@ export const TitleDeckView = ({
       ) : null}
 
       {mode === "deck" ? (
-        <CoverflowDeck titles={titles.map(toCoverflowTitle)} />
+        <CoverflowDeck
+          titles={titles.map((title) => toCoverflowTitle(title, userPlatforms))}
+          footer={footer}
+        />
       ) : mode === "calendar" ? null : (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          {titles.map((title) => (
-            <li key={title.id}>
+          {titles.map((title, index) => (
+            <li
+              key={title.id}
+              className="stagger-in"
+              style={{ "--stagger": index } as CSSProperties}
+            >
               <PosterTile
+                  titleId={title.id}
                   href={`/titulos/${title.id}`}
                   name={title.name}
                   posterPath={title.posterPath}
                   year={title.year}
                   rating={title.rating}
+                  review={title.review}
                   watchedAt={title.watchedAt}
                   tags={title.tags.map((item) => item.tag)}
                   seriesStatus={title.kind === "SERIES" ? title.seriesStatus : null}
+                  showMarkSeenEye={footer === "watched"}
                 />
             </li>
           ))}

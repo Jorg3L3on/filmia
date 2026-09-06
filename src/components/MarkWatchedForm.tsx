@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { clearTitleWatched, markTitleWatched } from "@/app/actions/watchlist";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
+import { RatingStars } from "@/components/RatingStars";
 import { todayDateInput, toDateInput } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import {
@@ -20,8 +22,6 @@ type MarkWatchedFormProps = {
   collapsed?: boolean;
 };
 
-const RATING_OPTIONS = Array.from({ length: 10 }, (_, index) => index + 1);
-
 const fieldLabel =
   "text-[11px] font-medium uppercase tracking-[0.18em] text-fog";
 
@@ -38,6 +38,7 @@ export const MarkWatchedForm = ({
   const isCompact = variant === "queue";
   const isEdit = Boolean(watchedAt);
   const defaultDate = toDateInput(watchedAt) || todayDateInput();
+  const [noteValue, setNoteValue] = useState<number | null>(rating);
 
   const form = (
     <div className={isCompact ? "w-full space-y-2" : "w-full max-w-xl space-y-3"}>
@@ -61,26 +62,16 @@ export const MarkWatchedForm = ({
           />
         </label>
 
-        <label className="block space-y-1">
+        <div className="block space-y-1">
           <span className={isCompact ? "sr-only" : fieldLabel}>Tu nota</span>
-          <select
-            name="rating"
-            defaultValue={rating ?? ""}
-            aria-label="Tu nota del 1 al 10"
-            className={
-              isCompact
-                ? `${fieldClass} w-auto rounded-full px-3 py-1 text-xs`
-                : `${fieldClass} w-auto rounded-full`
-            }
-          >
-            <option value="">Sin nota</option>
-            {RATING_OPTIONS.map((value) => (
-              <option key={value} value={value}>
-                {value}/10
-              </option>
-            ))}
-          </select>
-        </label>
+          <RatingStars
+            value={noteValue}
+            onChange={setNoteValue}
+            size={isCompact ? "md" : "lg"}
+            showValue={!isCompact}
+          />
+          <input type="hidden" name="rating" value={noteValue ?? ""} />
+        </div>
 
         <label className={isCompact ? "block space-y-1 sm:col-span-2" : "block space-y-1"}>
           <span className={isCompact ? "sr-only" : fieldLabel}>Nota corta</span>

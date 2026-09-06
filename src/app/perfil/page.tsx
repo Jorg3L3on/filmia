@@ -1,4 +1,5 @@
-import { PageHeader } from "@/components/PageHeader";
+import { LogoutButton } from "@/components/LogoutButton";
+import { SuccessToast } from "@/components/SuccessToast";
 import { ProfileAccountForm } from "@/components/ProfileAccountForm";
 import { ProfilePasswordForm } from "@/components/ProfilePasswordForm";
 import { StreamingPlatformPicker } from "@/components/StreamingPlatformPicker";
@@ -11,16 +12,25 @@ export const metadata = {
   title: "Perfil",
 } as const;
 
-const savedMessage = (value: string | string[] | undefined) => {
+const savedToast = (value: string | string[] | undefined) => {
   const key = Array.isArray(value) ? value[0] : value;
   if (key === "cuenta") {
-    return "Datos de la cuenta guardados.";
+    return {
+      title: "Cambios guardados",
+      description: "Tu información se actualizó correctamente.",
+    };
   }
   if (key === "clave") {
-    return "Contraseña actualizada.";
+    return {
+      title: "Contraseña actualizada",
+      description: "Tu información se actualizó correctamente.",
+    };
   }
   if (key === "plataformas" || key === "1") {
-    return "Plataformas guardadas.";
+    return {
+      title: "Plataformas guardadas",
+      description: "Tu información se actualizó correctamente.",
+    };
   }
   return null;
 };
@@ -29,29 +39,33 @@ export default async function ProfilePage({
   searchParams,
 }: PageProps<"/perfil">) {
   const params = await searchParams;
-  const saved = savedMessage(params.guardado);
+  const toast = savedToast(params.guardado);
   const profile = await getCurrentUserProfile();
 
   if (!profile) {
     notFound();
   }
 
-  return (
-    <div className="space-y-10">
-      <PageHeader
-        eyebrow="Cuenta"
-        title="Perfil"
-        description="Actualiza tu nombre, correo o contraseña, y elige las plataformas que tienes en México. Filmia las destaca en cada ficha y filtra el diario, Quiero ver y las listas."
-      />
+  const initial = (profile.name?.trim() || profile.email).slice(0, 1).toUpperCase();
 
-      {saved ? (
-        <p
-          role="status"
-          className="rounded-md border border-accent/40 bg-accent/10 px-4 py-3 text-sm text-white"
-        >
-          {saved}
-        </p>
-      ) : null}
+  return (
+    <div className="mx-auto max-w-xl space-y-6">
+      <header className="flex items-center justify-between gap-3">
+        <h1 className="font-serif text-4xl tracking-tight text-paper">Perfil</h1>
+        <div className="flex items-center gap-3">
+          <span
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-well text-sm font-semibold text-paper"
+            aria-hidden="true"
+          >
+            {initial}
+          </span>
+          <span className="sm:hidden">
+            <LogoutButton />
+          </span>
+        </div>
+      </header>
+
+      {toast ? <SuccessToast title={toast.title} description={toast.description} /> : null}
 
       <ProfileAccountForm name={profile.name} email={profile.email} />
       <ProfilePasswordForm />

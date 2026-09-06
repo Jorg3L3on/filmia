@@ -36,3 +36,39 @@ export const swapAdjacentListItems = async (
 
   return true;
 };
+
+export const swapListItemPositions = async (
+  listId: string,
+  titleId: string,
+  neighborTitleId: string,
+) => {
+  if (titleId === neighborTitleId) {
+    return false;
+  }
+
+  const [current, neighbor] = await Promise.all([
+    db.query.listItems.findFirst({
+      where: and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)),
+    }),
+    db.query.listItems.findFirst({
+      where: and(eq(listItems.listId, listId), eq(listItems.titleId, neighborTitleId)),
+    }),
+  ]);
+
+  if (!current || !neighbor) {
+    return false;
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(listItems)
+      .set({ position: neighbor.position })
+      .where(and(eq(listItems.listId, listId), eq(listItems.titleId, current.titleId)));
+    await tx
+      .update(listItems)
+      .set({ position: current.position })
+      .where(and(eq(listItems.listId, listId), eq(listItems.titleId, neighbor.titleId)));
+  });
+
+  return true;
+};

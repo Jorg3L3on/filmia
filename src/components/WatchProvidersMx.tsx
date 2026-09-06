@@ -186,14 +186,26 @@ export const WatchProvidersMx = ({
       className="space-y-3 rounded-md border border-line bg-well/60 p-4"
       aria-labelledby="watch-providers-heading"
     >
-      <div className="space-y-1">
-        <h2
-          id="watch-providers-heading"
-          className="text-sm font-semibold uppercase tracking-[0.18em] text-accent"
-        >
-          Dónde ver
-        </h2>
-        <p className="text-xs text-mist">Disponibilidad en México</p>
+      <div className="flex items-end justify-between gap-3">
+        <div className="space-y-1">
+          <h2
+            id="watch-providers-heading"
+            className="text-sm font-semibold uppercase tracking-[0.18em] text-accent"
+          >
+            Disponible en MX
+          </h2>
+          <p className="text-xs text-mist">Streaming en México</p>
+        </div>
+        {data?.link ? (
+          <a
+            href={data.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn("text-xs font-medium text-accent hover:text-accent-hover", focusRing)}
+          >
+            Ver todas
+          </a>
+        ) : null}
       </div>
 
       {userPlatforms.length === 0 ? (

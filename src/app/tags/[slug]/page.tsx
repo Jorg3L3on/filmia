@@ -11,8 +11,13 @@ import { TagSortLinks } from "@/components/TagSortLinks";
 import { TitleDeckView } from "@/components/TitleDeckView";
 import { TitleRankingList } from "@/components/TitleRankingList";
 import type { DeckViewMode } from "@/components/DeckViewToggle";
+import {
+  parseKindFilter,
+  parsePlatformFilters,
+  titleMatchesKind,
+} from "@/lib/catalog-filters";
 import { getTagBySlug, getTitles, getUserStreamingPlatforms } from "@/lib/queries";
-import { resolveMinePlatformsCatalog } from "@/lib/streaming-platforms";
+import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import {
   catalogHref,
   isCatalogSort,
@@ -33,6 +38,8 @@ type TagDetailPageProps = {
     sort?: string;
     minePlatforms?: string | string[];
     seriesStatus?: string | string[];
+    kind?: string | string[];
+    platform?: string | string[];
   }>;
 };
 
@@ -55,6 +62,8 @@ export default async function TagDetailPage({
   const sort: CatalogSort = isCatalogSort(query.sort) ? query.sort : "rating";
   const minePlatforms = parseMinePlatforms(query.minePlatforms);
   const seriesStatus = parseSeriesStatusFilter(query.seriesStatus);
+  const kindFilter = parseKindFilter(query.kind);
+  const platforms = parsePlatformFilters(query.platform);
 
   const [tag, taggedTitles, userPlatforms] = await Promise.all([
     getTagBySlug(slug),
@@ -66,11 +75,14 @@ export default async function TagDetailPage({
     notFound();
   }
 
-  const catalog = resolveMinePlatformsCatalog(
-    taggedTitles,
+  const kindTitles = taggedTitles.filter((title) =>
+    titleMatchesKind(title.kind, kindFilter),
+  );
+  const catalog = resolveCatalogAvailability(kindTitles, {
+    platforms,
     minePlatforms,
     userPlatforms,
-  );
+  });
   const titles = catalog.titles;
   const pathname = tagHref(tag.slug);
   const hrefFor = (mode: DeckViewMode) =>
@@ -79,6 +91,8 @@ export default async function TagDetailPage({
       sort: sort === "rating" ? null : sort,
       minePlatforms,
       seriesStatus,
+      kind: kindFilter,
+      platforms,
     });
   const clearHref = catalogHref(pathname, {
     view,
@@ -107,10 +121,13 @@ export default async function TagDetailPage({
         pathname={pathname}
         view={view}
         sort={sort === "rating" ? undefined : sort}
+        defaultSort="rating"
         minePlatforms={minePlatforms}
         hasStreamingPlatforms={userPlatforms.length > 0}
         showTagFilters={false}
         seriesStatus={seriesStatus}
+        kind={kindFilter}
+        platforms={platforms}
       />
 
       <TagSortLinks
@@ -133,10 +150,11 @@ export default async function TagDetailPage({
         </>
       ) : titles.length === 0 ? (
         <EmptyState
+          variant="listas"
           title="Nada en esta etiqueta"
-          description="Asigna el tag desde la ficha de un título, con las pastillas rápidas."
-          actionHref="/"
-          actionLabel="Ir al diario"
+          description="Asigna el tag desde la ficha de un título, o busca uno nuevo."
+          actionHref="/buscar"
+          actionLabel="Ir a Buscar"
         />
       ) : (
         <>

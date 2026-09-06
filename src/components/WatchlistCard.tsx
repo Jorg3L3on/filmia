@@ -1,16 +1,16 @@
 import Link from "next/link";
-import { ListItemOrderControls } from "@/components/ListItemOrderControls";
-import { MarkWatchedForm } from "@/components/MarkWatchedForm";
-import { PersonalRating } from "@/components/PersonalRating";
-import { PlatformBadge } from "@/components/PlatformBadge";
-import { PosterImage } from "@/components/PosterImage";
 import { ImdbBadge } from "@/components/ImdbBadge";
-import { TagPills } from "@/components/TagPills";
-import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
+import { ListItemOrderControls } from "@/components/ListItemOrderControls";
+import { PosterImage } from "@/components/PosterImage";
+import { PosterPlatformBadge } from "@/components/PosterPlatformBadge";
+import { SharedPoster } from "@/components/SharedPoster";
+import { WatchlistMarkSeenButton } from "@/components/WatchlistMarkSeenButton";
+import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { TitleWithRelations } from "@/lib/queries";
-import { btnGhost, btnLink, eyebrowClass, fieldClass, focusRing, posterFrame } from "@/lib/ui";
-import type { ListItem } from "@/db";
+import { compactGenreLabel, titleSynopsis } from "@/lib/title-overview";
+import { btnGhost, focusRing } from "@/lib/ui";
+import type { ListItem, Platform } from "@/db";
 
 type WatchlistItem = ListItem & {
   title: TitleWithRelations;
@@ -24,7 +24,9 @@ type WatchlistCardProps = {
   canMoveUp: boolean;
   canMoveDown: boolean;
   removeAction: () => void;
-  updateNoteAction: (formData: FormData) => void;
+  preferredPlatforms?: readonly Platform[];
+  swapUpTitleId?: string | null;
+  swapDownTitleId?: string | null;
 };
 
 export const WatchlistCard = ({
@@ -35,79 +37,64 @@ export const WatchlistCard = ({
   canMoveUp,
   canMoveDown,
   removeAction,
-  updateNoteAction,
+  preferredPlatforms = [],
+  swapUpTitleId,
+  swapDownTitleId,
 }: WatchlistCardProps) => {
   const { title } = item;
+  const yearLabel = title.year ? String(title.year) : TITLE_KIND_LABEL[title.kind];
 
   if (variant === "hero") {
     return (
-      <article className="relative overflow-hidden rounded-md border border-line bg-well p-5 md:p-6">
-        <div className="grid grid-cols-[128px_1fr] items-start gap-4 sm:grid-cols-[160px_1fr] md:grid-cols-[180px_1fr] md:gap-6">
-          <div className="relative w-full max-w-[180px]">
-            <div className="absolute -left-1 -top-1 z-10 rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink">
-              Siguiente
-            </div>
-            <PosterImage
-              name={title.name}
-              posterPath={title.posterPath}
-              className={posterFrame}
-              sizes="180px"
-              priority
-            />
-          </div>
-          <div className="flex flex-col justify-between gap-4">
-            <div className="space-y-3">
-              <p className={eyebrowClass}>
-                #{position} en cola · {TITLE_KIND_LABEL[title.kind]}
-                {title.year ? ` · ${title.year}` : ""}
-              </p>
-              {title.kind === "SERIES" ? (
-                <SeriesStatusBadge status={title.seriesStatus} />
-              ) : null}
-              <h2 className="font-serif text-3xl text-white md:text-4xl">
-                <Link href={`/titulos/${title.id}`} className={`hover:text-accent ${focusRing}`}>
-                  {title.name}
-                </Link>
-              </h2>
-              <PlatformBadge platform={title.platform} />
-              <div className="flex flex-wrap items-center gap-4">
-                <ImdbBadge rating={title.imdbRating} />
-                <PersonalRating rating={title.rating} />
+      <article className="card-physics overflow-hidden rounded-card border border-line bg-surface p-4 sm:p-5">
+        <div className="flex gap-4">
+          <WatchlistPoster
+            title={title}
+            size="hero"
+            className="isolate z-0 w-[112px] shrink-0 sm:w-[140px]"
+            posterClassName="rounded-poster"
+            sizes="140px"
+            preferredPlatforms={preferredPlatforms}
+            priority
+          />
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="flex items-start gap-3">
+              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-sm font-bold text-ink">
+                {position}
+              </span>
+              <div className="min-w-0 space-y-1">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-mist">
+                  Próxima en tu lista
+                </p>
+                <h2 className="font-serif text-2xl leading-tight text-paper sm:text-3xl">
+                  <Link href={`/titulos/${title.id}`} className={`hover:text-accent ${focusRing}`}>
+                    {title.name}
+                  </Link>
+                </h2>
+                <p className="text-sm text-fog">
+                  {yearLabel}
+                  {title.year ? ` · ${TITLE_KIND_LABEL[title.kind]}` : ""}
+                </p>
               </div>
-              <TagPills tags={title.tags.map((item) => item.tag)} />
-              <form action={updateNoteAction} className="space-y-2">
-                <label className="block space-y-1">
-                  <span className="text-xs uppercase tracking-wide text-mist">
-                    Nota de cola
-                  </span>
-                  <input
-                    name="queueNote"
-                    defaultValue={item.queueNote ?? ""}
-                    placeholder="¿Por qué lo quieres ver?"
-                    className={fieldClass}
-                  />
-                </label>
-                <button type="submit" className={btnLink}>
-                  Guardar nota
-                </button>
-              </form>
             </div>
-            <div className="space-y-3">
+            {item.queueNote ? (
+              <p className="line-clamp-3 text-sm text-fog">
+                <span className="mr-2 text-mist">Nota personal</span>
+                {item.queueNote}
+              </p>
+            ) : null}
+            <div className="flex flex-wrap items-center gap-2">
               <ListItemOrderControls
                 listId={listId}
                 titleId={item.titleId}
                 canMoveUp={canMoveUp}
                 canMoveDown={canMoveDown}
-              />
-              <MarkWatchedForm
-                titleId={title.id}
-                variant="hero"
-                rating={title.rating}
-                review={title.review}
+                swapUpTitleId={swapUpTitleId}
+                swapDownTitleId={swapDownTitleId}
               />
               <form action={removeAction}>
                 <button type="submit" className={btnGhost}>
-                  Quitar de Quiero ver
+                  Quitar
                 </button>
               </form>
             </div>
@@ -117,70 +104,94 @@ export const WatchlistCard = ({
     );
   }
 
+  const synopsis = titleSynopsis(title.overview);
+  const genreLabel = compactGenreLabel(title.tmdbGenres);
+
   return (
-    <article className="group relative flex gap-4 rounded-md border border-line bg-well p-3 transition hover:border-accent/30">
-      <div className="flex w-8 shrink-0 flex-col items-center gap-2 pt-1">
-        <span className="rounded-full bg-canvas px-2 py-0.5 text-xs font-medium text-accent">
-          {position}
-        </span>
+    <article className="flex items-center gap-3 rounded-2xl px-1 py-2">
+      <span className="w-5 shrink-0 text-center text-sm font-semibold text-mist">
+        {position}
+      </span>
+      <WatchlistPoster
+        title={title}
+        size="queue"
+        className="isolate z-0 w-14 shrink-0"
+        posterClassName="rounded-lg"
+        sizes="56px"
+        preferredPlatforms={preferredPlatforms}
+      />
+      <div className="min-w-0 w-[8.5rem] shrink-0 sm:w-[13rem]">
+        <h3 className="truncate font-medium text-paper">
+          <Link href={`/titulos/${title.id}`} className={`hover:text-accent ${focusRing}`}>
+            {title.name}
+          </Link>
+        </h3>
+        <p className="truncate text-sm text-fog">
+          {genreLabel ? `${yearLabel} · ${genreLabel}` : yearLabel}
+        </p>
+        <ImdbBadge rating={title.imdbRating} compact />
       </div>
-      <Link
-        href={`/titulos/${title.id}`}
-        className={`w-16 shrink-0 overflow-hidden rounded-poster ${focusRing}`}
-        aria-label={title.name}
-      >
-        <PosterImage
-          name={title.name}
-          posterPath={title.posterPath}
-          className="rounded-poster"
-          sizes="64px"
-        />
-      </Link>
-      <div className="min-w-0 flex-1 space-y-2">
-        <div className="space-y-1.5">
-          <p className="text-[10px] uppercase tracking-wider text-mist">
-            {TITLE_KIND_LABEL[title.kind]}
-            {title.year ? ` · ${title.year}` : ""}
-          </p>
-          {title.kind === "SERIES" ? (
-            <SeriesStatusBadge status={title.seriesStatus} compact />
-          ) : null}
-          <h3 className="truncate font-serif text-lg text-white group-hover:text-accent">
-            <Link href={`/titulos/${title.id}`}>{title.name}</Link>
-          </h3>
-          <PlatformBadge platform={title.platform} compact />
-          <div className="flex flex-wrap items-center gap-3">
-            <ImdbBadge rating={title.imdbRating} />
-            <PersonalRating rating={title.rating} size="sm" />
-          </div>
-          <TagPills tags={title.tags.map((item) => item.tag)} compact />
-        </div>
-        {item.queueNote ? (
-          <p className="line-clamp-2 text-xs text-fog">{item.queueNote}</p>
-        ) : null}
-        <div className="flex flex-wrap items-center gap-2">
-          <ListItemOrderControls
-            listId={listId}
-            titleId={item.titleId}
-            canMoveUp={canMoveUp}
-            canMoveDown={canMoveDown}
-          />
-          <MarkWatchedForm
-            titleId={title.id}
-            variant="queue"
-            rating={title.rating}
-            review={title.review}
-          />
-          <form action={removeAction}>
-            <button
-              type="submit"
-              className="rounded-full px-3 py-1 text-xs text-mist hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger"
-            >
-              Quitar
-            </button>
-          </form>
-        </div>
-      </div>
+      {synopsis ? (
+        <p className="hidden min-w-0 flex-1 line-clamp-2 text-sm leading-5 text-fog sm:block">
+          {synopsis}
+        </p>
+      ) : null}
+      <ListItemOrderControls
+        listId={listId}
+        titleId={item.titleId}
+        canMoveUp={canMoveUp}
+        canMoveDown={canMoveDown}
+        swapUpTitleId={swapUpTitleId}
+        swapDownTitleId={swapDownTitleId}
+      />
     </article>
   );
 };
+
+const WatchlistPoster = ({
+  title,
+  size,
+  className,
+  posterClassName,
+  sizes,
+  preferredPlatforms = [],
+  priority = false,
+}: {
+  title: WatchlistItem["title"];
+  size: "hero" | "queue";
+  className: string;
+  posterClassName: string;
+  sizes: string;
+  preferredPlatforms?: readonly Platform[];
+  priority?: boolean;
+}) => (
+  <div className={cn("relative", className)}>
+    <Link
+      href={`/titulos/${title.id}`}
+      aria-label={title.name}
+      className={cn("block", focusRing)}
+    >
+      <SharedPoster titleId={title.id}>
+        <PosterImage
+          name={title.name}
+          posterPath={title.posterPath}
+          className={posterClassName}
+          sizes={sizes}
+          priority={priority}
+        />
+      </SharedPoster>
+    </Link>
+    <WatchlistMarkSeenButton
+      titleId={title.id}
+      titleName={title.name}
+      rating={title.rating}
+      review={title.review}
+      size={size}
+    />
+    <PosterPlatformBadge
+      watchProvidersMx={title.watchProvidersMx}
+      preferredPlatforms={preferredPlatforms}
+      size={size}
+    />
+  </div>
+);

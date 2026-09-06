@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Logo } from "@/components/Logo";
-import { btnPrimary, eyebrowClass, fieldClass, focusRing } from "@/lib/ui";
+import { PasswordField } from "@/components/PasswordField";
+import { btnPrimary, fieldClass, focusRing } from "@/lib/ui";
 
 export const SignupForm = () => {
   const router = useRouter();
@@ -37,37 +37,27 @@ export const SignupForm = () => {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-8 px-4 py-16">
-      <div className="space-y-4 text-center">
-        <Link href="/" className={`inline-flex ${focusRing}`} aria-label="Filmia">
-          <Logo size="lg" />
-        </Link>
-        <div className="space-y-2">
-          <p className={eyebrowClass}>Registro</p>
-          <h1 className="font-serif text-3xl text-paper">Crear cuenta</h1>
-          <p className="text-sm text-mist">
-            Empieza tu diario cinematográfico personal.
-          </p>
-        </div>
-      </div>
-
+    <div className="mx-auto flex min-h-[80vh] w-full max-w-md items-center px-4 py-12">
       <form
         onSubmit={handleSubmit}
-        className="space-y-4 rounded-md border border-line bg-surface p-6 shadow-[0_24px_60px_rgba(0,0,0,0.45)]"
+        className="w-full space-y-6 rounded-3xl border border-line bg-surface/90 p-7 shadow-[0_24px_60px_rgba(0,0,0,0.45)]"
       >
+        <div className="space-y-2 text-center">
+          <h1 className="font-serif text-4xl text-paper">Filmia</h1>
+          <p className="text-sm font-medium text-accent">Registro</p>
+        </div>
+
         {error ? (
           <p
             role="alert"
-            className="rounded-sm border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger"
+            className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger"
           >
             {error}
           </p>
         ) : null}
 
         <label className="block space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-wide text-fog">
-            Nombre (opcional)
-          </span>
+          <span className="text-xs font-medium uppercase tracking-wide text-fog">Nombre</span>
           <input
             type="text"
             name="name"
@@ -78,9 +68,7 @@ export const SignupForm = () => {
         </label>
 
         <label className="block space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-wide text-fog">
-            Correo
-          </span>
+          <span className="text-xs font-medium uppercase tracking-wide text-fog">Correo</span>
           <input
             type="email"
             name="email"
@@ -91,20 +79,13 @@ export const SignupForm = () => {
           />
         </label>
 
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-wide text-fog">
-            Contraseña
-          </span>
-          <input
-            type="password"
-            name="password"
-            autoComplete="new-password"
-            required
-            minLength={8}
-            className={fieldClass}
-            placeholder="Mínimo 8 caracteres"
-          />
-        </label>
+        <PasswordField
+          name="password"
+          label="Contraseña"
+          autoComplete="new-password"
+          minLength={8}
+          placeholder="Mínimo 8 caracteres"
+        />
 
         <button
           type="submit"
@@ -113,14 +94,14 @@ export const SignupForm = () => {
         >
           {isLoading ? "Creando…" : "Crear cuenta"}
         </button>
-      </form>
 
-      <p className="text-center text-sm text-mist">
-        ¿Ya tienes cuenta?{" "}
-        <Link href="/login" className="text-accent underline-offset-2 hover:underline">
-          Entrar
-        </Link>
-      </p>
+        <p className="text-center text-sm text-mist">
+          Ya tengo cuenta{" "}
+          <Link href="/login" className={`text-accent hover:text-accent-hover ${focusRing}`}>
+            → Entrar
+          </Link>
+        </p>
+      </form>
     </div>
   );
 };

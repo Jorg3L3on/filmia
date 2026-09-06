@@ -1,6 +1,7 @@
 import { createId } from "@paralleldrive/cuid2";
 import { and, desc, eq } from "drizzle-orm";
 import { db, listItems, lists, titles, type TitleKind } from "@/db";
+import { parseOptionalDate } from "@/lib/form-data";
 import { TITLE_KINDS } from "@/lib/labels";
 import { ensureDefaultLists, WATCHLIST_SLUG } from "@/lib/lists";
 import { resolveTitleMetadata } from "@/lib/metadata";
@@ -18,6 +19,7 @@ export type AddTitleFromTmdbInput = {
   posterPath?: string | null;
   addToWatchlist?: boolean;
   destination?: AddTitleDestination;
+  watchedAt?: string | null;
 };
 
 export type AddTitleFromTmdbResult =
@@ -71,7 +73,14 @@ const enqueueInWatchlist = async (userId: string, titleId: string) => {
     .onConflictDoNothing();
 };
 
-const markExistingWatched = async (userId: string, titleId: string) => {
+const resolveWatchedAt = (value?: string | null) =>
+  parseOptionalDate(value ?? null) ?? new Date();
+
+const markExistingWatched = async (
+  userId: string,
+  titleId: string,
+  watchedAt?: string | null,
+) => {
   await ensureDefaultLists(userId);
 
   const watchlist = await db.query.lists.findFirst({
@@ -82,7 +91,7 @@ const markExistingWatched = async (userId: string, titleId: string) => {
   await db.transaction(async (tx) => {
     await tx
       .update(titles)
-      .set({ watchedAt: new Date() })
+      .set({ watchedAt: resolveWatchedAt(watchedAt) })
       .where(eq(titles.id, titleId));
 
     if (!watchlist) {
@@ -119,7 +128,7 @@ export const upsertTitleFromTmdbForUser = async (
 
   if (existing) {
     if (markWatched) {
-      await markExistingWatched(userId, existing.id);
+      await markExistingWatched(userId, existing.id, input.watchedAt);
     } else if (addToWatchlist) {
       await enqueueInWatchlist(userId, existing.id);
     }
@@ -141,6 +150,7 @@ export const upsertTitleFromTmdbForUser = async (
     posterPath: input.posterPath ?? null,
     imdbId: null as string | null,
     imdbRating: null as number | null,
+    overview: null as string | null,
     tmdbGenres: [] as TmdbGenre[],
   };
 
@@ -154,6 +164,7 @@ export const upsertTitleFromTmdbForUser = async (
       posterPath: resolved.posterPath ?? metadata.posterPath,
       imdbId: resolved.imdbId,
       imdbRating: resolved.imdbRating,
+      overview: resolved.overview ?? null,
       tmdbGenres: resolved.tmdbGenres,
     };
   } catch (error) {
@@ -178,8 +189,9 @@ export const upsertTitleFromTmdbForUser = async (
     posterPath: metadata.posterPath,
     imdbId: metadata.imdbId,
     imdbRating: metadata.imdbRating,
+    overview: metadata.overview,
     tmdbGenres: metadata.tmdbGenres,
-    watchedAt: markWatched ? new Date() : null,
+    watchedAt: markWatched ? resolveWatchedAt(input.watchedAt) : null,
   });
 
   if (metadata.tmdbId) {

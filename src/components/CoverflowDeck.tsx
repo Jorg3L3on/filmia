@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { removeTitleFromList } from "@/app/actions/lists";
+import { MarkSeenEye } from "@/components/MarkSeenEye";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
+import { PlatformLogo } from "@/components/PlatformLogo";
 import { PosterImage } from "@/components/PosterImage";
+import { SharedPoster } from "@/components/SharedPoster";
 import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
 import { WatchedBadge } from "@/components/WatchedBadge";
 import { WatchProviderChips } from "@/components/WatchProvidersMx";
@@ -13,11 +16,14 @@ import {
   formatImdbRating,
   formatRating,
   formatSeriesSeason,
-  PLATFORM_LABEL,
+  PLATFORM_SERVICE_LABEL,
   SERIES_STATUS_LABEL,
   TITLE_KIND_LABEL,
 } from "@/lib/labels";
-import { btnLink } from "@/lib/ui";
+import { PICKS_SAVE_LABEL } from "@/lib/mark-seen";
+import { useSpringFeedback } from "@/lib/motion";
+import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
+import { btnGhost, btnLink } from "@/lib/ui";
 import type { Platform, SeriesStatus, TitleKind } from "@/db";
 import type { WatchProviderOffer } from "@/lib/watch-providers";
 
@@ -41,10 +47,16 @@ type CoverflowDeckProps = {
   titles: CoverflowTitle[];
   className?: string;
   listId?: string;
+  variant?: "page" | "sheet";
+  onActiveChange?: (index: number, title: CoverflowTitle) => void;
+  /** `watched` = Qué ver picks: eye on unwatched posters, no footer form. */
+  footer?: "full" | "watched";
 };
 
 const CARD_WIDTH = 236;
+const CARD_WIDTH_SHEET = 156;
 const CARD_WIDTH_MIN = 128;
+const CARD_WIDTH_SHEET_MIN = 112;
 const DRAG_THRESHOLD = 6;
 const WHEEL_SENSITIVITY = 0.0036;
 const SNAP_LERP = 0.14;
@@ -69,25 +81,31 @@ type CardMetrics = {
 const clampIndex = (value: number, max: number) =>
   Math.min(Math.max(value, 0), Math.max(max, 0));
 
-const getCardMetrics = (offset: number, sideRoom: number): CardMetrics => {
+const getCardMetrics = (
+  offset: number,
+  sideRoom: number,
+  compact = false,
+): CardMetrics => {
   const distance = Math.abs(offset);
   const side = Math.sign(offset) || 0;
   const isActive = distance < 0.45;
   const fittedRoom = Math.max(10, sideRoom);
-  const spread = fittedRoom * (1 - Math.exp(-distance * 0.72));
-  const rotateCap = fittedRoom < 90 ? 14 : 26;
+  const spread = fittedRoom * (1 - Math.exp(-distance * (compact ? 0.86 : 0.72)));
+  const rotateCap = compact ? 22 : fittedRoom < 90 ? 14 : 26;
 
   return {
-    rotateY: -side * Math.min(distance * 7.5, rotateCap),
+    rotateY: -side * Math.min(distance * (compact ? 11 : 7.5), rotateCap),
     translateX: side * spread,
-    translateZ: -Math.min(distance * 14, 48),
-    translateY: isActive ? -6 : Math.min(distance * 3, 10),
-    scale: 1 - Math.min(distance * 0.015, 0.05),
-    brightness: Math.max(0.72, 1 - distance * 0.08),
+    translateZ: -Math.min(distance * (compact ? 22 : 14), compact ? 64 : 48),
+    translateY: isActive ? -6 : Math.min(distance * (compact ? 6 : 3), compact ? 16 : 10),
+    scale: 1 - Math.min(distance * (compact ? 0.12 : 0.015), compact ? 0.28 : 0.05),
+    brightness: Math.max(compact ? 0.62 : 0.72, 1 - distance * (compact ? 0.14 : 0.08)),
     opacity: distance > 5.2 ? Math.max(0, 1 - (distance - 5.2) * 1.4) : 1,
     zIndex: Math.round(900 - distance * 80),
     shadow: isActive
-      ? "0 28px 50px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 224, 84, 0.22)"
+      ? compact
+        ? "0 18px 36px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(124, 156, 255, 0.7)"
+        : "0 28px 50px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(124, 156, 255, 0.28)"
       : "0 14px 28px rgba(0, 0, 0, 0.38)",
     isActive,
   };
@@ -99,8 +117,46 @@ type DeckCardProps = {
   offset: number;
   sideRoom: number;
   isDragging: boolean;
+  compact?: boolean;
+  showMarkSeenEye?: boolean;
   onSelect: (index: number) => void;
   onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
+};
+
+const DeckAvailabilityMark = ({
+  title,
+  platform,
+}: {
+  title: CoverflowTitle;
+  platform: Platform | null;
+}) => {
+  if (platform) {
+    return (
+      <div className="mb-1.5 flex min-w-0 items-center gap-1.5">
+        <PlatformLogo
+          platform={platform}
+          size={20}
+          className="ring-1 ring-white/25"
+        />
+        <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-white">
+          {PLATFORM_SERVICE_LABEL[platform]}
+        </span>
+      </div>
+    );
+  }
+
+  const provider = title.flatrateProviders?.[0];
+  if (!provider) {
+    return null;
+  }
+
+  return (
+    <WatchProviderChips
+      providers={[provider]}
+      max={1}
+      className="mb-1.5 justify-start"
+    />
+  );
 };
 
 const DeckCard = ({
@@ -109,12 +165,21 @@ const DeckCard = ({
   offset,
   sideRoom,
   isDragging,
+  compact = false,
+  showMarkSeenEye = false,
   onSelect,
   onPointerDown,
 }: DeckCardProps) => {
-  const metrics = getCardMetrics(offset, sideRoom);
+  const metrics = getCardMetrics(offset, sideRoom, compact);
   const imdbLabel = formatImdbRating(title.imdbRating);
-  const showCaption = Math.abs(offset) < 3.2;
+  const showCaption = !compact && Math.abs(offset) < 3.2;
+  const availabilityPlatform = primaryAvailabilityPlatform(
+    title.flatrateProviders,
+    title.platform,
+  );
+  const availabilityLabel = availabilityPlatform
+    ? PLATFORM_SERVICE_LABEL[availabilityPlatform]
+    : title.flatrateProviders?.[0]?.name;
 
   const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (metrics.isActive) {
@@ -154,27 +219,47 @@ const DeckCard = ({
       <Link
         href={`/titulos/${title.id}`}
         tabIndex={metrics.isActive ? 0 : -1}
-        aria-label={`${title.name}${title.year ? ` (${title.year})` : ""}`}
+        aria-label={`${title.name}${title.year ? ` (${title.year})` : ""}${
+          availabilityLabel ? ` en ${availabilityLabel}` : ""
+        }`}
         onClick={handleClick}
         onDragStart={handleDragStart}
         className={cn(
           "relative block h-full overflow-hidden rounded-poster border bg-surface [&_img]:pointer-events-none",
           isDragging ? "cursor-grabbing" : "cursor-grab",
-          metrics.isActive ? "border-accent/40" : "border-white/10",
+          metrics.isActive
+            ? compact
+              ? "border-accent"
+              : "border-accent/40"
+            : "border-white/10",
           "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
         )}
         draggable={false}
       >
-        <PosterImage
-          name={title.name}
-          posterPath={title.posterPath}
-          priority={metrics.isActive}
-          className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
-        />
-        {title.watched ? (
+        {compact ? (
+          <PosterImage
+            name={title.name}
+            posterPath={title.posterPath}
+            priority={metrics.isActive}
+            className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
+          />
+        ) : (
+          <SharedPoster titleId={title.id} className="absolute inset-0">
+            <PosterImage
+              name={title.name}
+              posterPath={title.posterPath}
+              priority={metrics.isActive}
+              className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
+            />
+          </SharedPoster>
+        )}
+        {!compact && title.watched ? (
           <WatchedBadge compact className="absolute left-2 top-2 z-10" />
         ) : null}
-        {title.kind === "SERIES" && title.seriesStatus ? (
+        {!compact &&
+        title.kind === "SERIES" &&
+        title.seriesStatus &&
+        !(showMarkSeenEye && !title.watched) ? (
           <SeriesStatusBadge
             status={title.seriesStatus}
             compact
@@ -187,6 +272,7 @@ const DeckCard = ({
             showCaption ? "opacity-100" : "opacity-0",
           )}
         >
+          <DeckAvailabilityMark title={title} platform={availabilityPlatform} />
           <p className="truncate text-[10px] uppercase tracking-wider text-white/70">
             {TITLE_KIND_LABEL[title.kind]}
             {title.year ? ` · ${title.year}` : ""}
@@ -200,14 +286,34 @@ const DeckCard = ({
           </p>
         </div>
       </Link>
+      {showMarkSeenEye && !title.watched ? (
+        <MarkSeenEye
+          titleId={title.id}
+          titleName={title.name}
+          rating={title.rating}
+          review={title.review}
+          size={compact ? "queue" : "hero"}
+          saveLabel={PICKS_SAVE_LABEL}
+        />
+      ) : null}
     </article>
   );
 };
 
-export const CoverflowDeck = ({ titles, className, listId }: CoverflowDeckProps) => {
+export const CoverflowDeck = ({
+  titles,
+  className,
+  listId,
+  variant = "page",
+  onActiveChange,
+  footer = "full",
+}: CoverflowDeckProps) => {
+  const isSheet = variant === "sheet";
+  const focusSpring = useSpringFeedback();
+  const notifiedIndex = useRef<number | null>(null);
   const [displayIndex, setDisplayIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [cardWidth, setCardWidth] = useState(CARD_WIDTH);
+  const [cardWidth, setCardWidth] = useState(isSheet ? CARD_WIDTH_SHEET : CARD_WIDTH);
   const [stageWidth, setStageWidth] = useState(480);
   const dragStartX = useRef(0);
   const dragStartIndex = useRef(0);
@@ -484,8 +590,10 @@ export const CoverflowDeck = ({ titles, className, listId }: CoverflowDeckProps)
 
     const measure = () => {
       const stage = node.clientWidth;
+      const maxWidth = isSheet ? CARD_WIDTH_SHEET : CARD_WIDTH;
+      const minWidth = isSheet ? CARD_WIDTH_SHEET_MIN : CARD_WIDTH_MIN;
       const nextCard = Math.round(
-        Math.min(CARD_WIDTH, Math.max(CARD_WIDTH_MIN, stage * 0.46)),
+        Math.min(maxWidth, Math.max(minWidth, stage * (isSheet ? 0.36 : 0.46))),
       );
       setStageWidth(stage);
       setCardWidth(nextCard);
@@ -495,7 +603,27 @@ export const CoverflowDeck = ({ titles, className, listId }: CoverflowDeckProps)
     const observer = new ResizeObserver(measure);
     observer.observe(node);
     return () => observer.disconnect();
-  }, [titles.length]);
+  }, [isSheet, titles.length]);
+
+  useEffect(() => {
+    if (titles.length === 0) {
+      notifiedIndex.current = null;
+      return;
+    }
+
+    const index = clampIndex(Math.round(displayIndex), titles.length - 1);
+    const title = titles[index];
+    if (!title || notifiedIndex.current === index) {
+      return;
+    }
+
+    const isFirst = notifiedIndex.current == null;
+    notifiedIndex.current = index;
+    onActiveChange?.(index, title);
+    if (isSheet && !isFirst) {
+      focusSpring.trigger();
+    }
+  }, [displayIndex, focusSpring, isSheet, onActiveChange, titles]);
 
   if (titles.length === 0) {
     return null;
@@ -503,25 +631,36 @@ export const CoverflowDeck = ({ titles, className, listId }: CoverflowDeckProps)
 
   const roundedActive = Math.round(displayIndex);
   const activeTitle = titles[roundedActive];
-  const sideRoom = Math.max(8, (stageWidth - cardWidth) / 2 - 12);
+  const showMarkSeenEye = footer === "watched" && !isSheet;
+  const activePlatform =
+    footer === "full" && !isSheet && activeTitle
+      ? primaryAvailabilityPlatform(activeTitle.flatrateProviders, activeTitle.platform)
+      : null;
+  const sideRoom = Math.max(8, (stageWidth - cardWidth) / 2 - (isSheet ? 4 : 12));
   const visibleSpan = stageWidth < 500 ? 3 : VISIBLE_SPAN;
   const firstVisible = Math.max(0, Math.floor(displayIndex) - visibleSpan);
   const lastVisible = Math.min(titles.length - 1, Math.ceil(displayIndex) + visibleSpan);
   const visibleTitles = titles.slice(firstVisible, lastVisible + 1);
 
   return (
-    <div className={cn("min-w-0 space-y-6", className)}>
+    <div className={cn("min-w-0", isSheet ? "space-y-4" : "space-y-6", className)}>
       <div
         ref={containerRef}
         role="listbox"
         aria-label="Mazo de títulos"
         aria-activedescendant={`coverflow-item-${activeTitle.id}`}
+        data-no-sheet-drag={isSheet ? "" : undefined}
         tabIndex={0}
         onKeyDown={handleKeyDown}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onClickCapture={handleClickCapture}
-        className="relative min-w-0 cursor-grab touch-none select-none overflow-hidden rounded-md border border-line bg-gradient-to-b from-canvas-deep via-canvas to-[#0a0d10] px-1 pb-9 pt-4 outline-none focus-visible:ring-2 focus-visible:ring-accent/60 active:cursor-grabbing sm:px-8 sm:pb-14 sm:pt-14"
+        className={cn(
+          "relative min-w-0 cursor-grab touch-none select-none outline-none active:cursor-grabbing",
+          isSheet
+            ? "overflow-visible bg-transparent px-0 pb-2 pt-1 focus-visible:ring-2 focus-visible:ring-accent/60"
+            : "overflow-hidden rounded-md border border-line bg-gradient-to-b from-canvas-deep via-canvas to-[#0a0d10] px-1 pb-9 pt-4 focus-visible:ring-2 focus-visible:ring-accent/60 sm:px-8 sm:pb-14 sm:pt-14",
+        )}
       >
         <div
           ref={stageRef}
@@ -552,6 +691,8 @@ export const CoverflowDeck = ({ titles, className, listId }: CoverflowDeckProps)
                   offset={index - displayIndex}
                   sideRoom={sideRoom}
                   isDragging={isDragging}
+                  compact={isSheet}
+                  showMarkSeenEye={showMarkSeenEye}
                   onSelect={handleSelectCard}
                   onPointerDown={handlePointerDown}
                 />
@@ -560,18 +701,30 @@ export const CoverflowDeck = ({ titles, className, listId }: CoverflowDeckProps)
           </div>
         </div>
 
-        <p className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[11px] uppercase tracking-[0.18em] text-faint">
-          Arrastra · rueda · desliza
-        </p>
+        {isSheet ? null : (
+          <div className="pointer-events-none absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+            {titles.map((title, index) => (
+              <span
+                key={title.id}
+                className={cn(
+                  "h-1.5 rounded-full transition",
+                  index === roundedActive ? "w-4 bg-accent" : "w-1.5 bg-chrome",
+                )}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {activeTitle ? (
-        <div className="mx-auto max-w-xl space-y-3 text-center">
-          <div className="space-y-1">
-            <p className="text-xs uppercase tracking-[0.2em] text-accent">
-              {roundedActive + 1} / {titles.length}
-            </p>
-            <h2 className="font-serif text-2xl text-white sm:text-3xl">
+        isSheet ? (
+          <div
+            className={cn(
+              "mx-auto max-w-xl space-y-1 text-center",
+              focusSpring.className,
+            )}
+          >
+            <h2 className="truncate px-6 font-serif text-xl text-white">
               <Link
                 href={`/titulos/${activeTitle.id}`}
                 className="hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
@@ -579,52 +732,96 @@ export const CoverflowDeck = ({ titles, className, listId }: CoverflowDeckProps)
                 {activeTitle.name}
               </Link>
             </h2>
-            <p className="text-sm text-fog">
-              {TITLE_KIND_LABEL[activeTitle.kind]}
-              {activeTitle.year ? ` · ${activeTitle.year}` : ""}
-              {activeTitle.platform
-                ? ` · ${PLATFORM_LABEL[activeTitle.platform]}`
-                : ""}
+            <p className="text-xs text-fog">
+              {[
+                activeTitle.year ? String(activeTitle.year) : null,
+                TITLE_KIND_LABEL[activeTitle.kind],
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </p>
-            <p className="text-sm text-star">
-              {activeTitle.watched ? "Visto · " : ""}
-              {formatRating(activeTitle.rating)}
-            </p>
-            {activeTitle.kind === "SERIES" && activeTitle.seriesStatus ? (
+          </div>
+        ) : footer === "watched" ? null : (
+          <div className="mx-auto max-w-xl space-y-3 text-center">
+            <div className="space-y-1">
+              <h2 className="font-serif text-2xl text-white sm:text-3xl">
+                <Link
+                  href={`/titulos/${activeTitle.id}`}
+                  className="hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  {activeTitle.name}
+                </Link>
+              </h2>
+              {activePlatform ? (
+                <div className="flex items-center justify-center gap-1.5">
+                  <PlatformLogo
+                    platform={activePlatform}
+                    size={20}
+                    className="ring-1 ring-white/15"
+                  />
+                  <span className="text-sm text-paper">
+                    {PLATFORM_SERVICE_LABEL[activePlatform]}
+                  </span>
+                </div>
+              ) : null}
               <p className="text-sm text-fog">
-                {SERIES_STATUS_LABEL[activeTitle.seriesStatus]}
-                {formatSeriesSeason(activeTitle.seriesSeason)
-                  ? ` · ${formatSeriesSeason(activeTitle.seriesSeason)}`
-                  : ""}
+                {TITLE_KIND_LABEL[activeTitle.kind]}
+                {activeTitle.year ? ` · ${activeTitle.year}` : ""}
               </p>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                {activeTitle.imdbRating != null ? (
+                  <span className="rounded-full border border-chrome bg-well px-2.5 py-1 text-xs text-star">
+                    ★ {formatImdbRating(activeTitle.imdbRating)}
+                  </span>
+                ) : null}
+                {formatRating(activeTitle.rating) !== "Sin nota" ? (
+                  <span className="rounded-full border border-chrome bg-well px-2.5 py-1 text-xs text-paper">
+                    {formatRating(activeTitle.rating)}
+                  </span>
+                ) : null}
+                <Link
+                  href={`/titulos/${activeTitle.id}`}
+                  className={cn(btnGhost, "text-xs")}
+                >
+                  Ver ficha
+                </Link>
+              </div>
+              {activeTitle.kind === "SERIES" && activeTitle.seriesStatus ? (
+                <p className="text-sm text-fog">
+                  {SERIES_STATUS_LABEL[activeTitle.seriesStatus]}
+                  {formatSeriesSeason(activeTitle.seriesSeason)
+                    ? ` · ${formatSeriesSeason(activeTitle.seriesSeason)}`
+                    : ""}
+                </p>
+              ) : null}
+            </div>
+            {activeTitle.flatrateProviders && activeTitle.flatrateProviders.length > 0 ? (
+              <WatchProviderChips
+                providers={activeTitle.flatrateProviders}
+                max={5}
+                className="pt-1"
+              />
+            ) : null}
+            {!activeTitle.watched ? (
+              <div className="mx-auto max-w-md text-left">
+                <MarkWatchedForm
+                  titleId={activeTitle.id}
+                  variant="queue"
+                  rating={activeTitle.rating}
+                  review={activeTitle.review}
+                  collapsed
+                />
+              </div>
+            ) : null}
+            {listId ? (
+              <form action={removeTitleFromList.bind(null, listId, activeTitle.id)}>
+                <button type="submit" className={btnLink}>
+                  Quitar de la lista
+                </button>
+              </form>
             ) : null}
           </div>
-          {activeTitle.flatrateProviders && activeTitle.flatrateProviders.length > 0 ? (
-            <WatchProviderChips
-              providers={activeTitle.flatrateProviders}
-              max={5}
-              className="pt-1"
-            />
-          ) : null}
-          {!activeTitle.watched ? (
-            <div className="mx-auto max-w-md text-left">
-              <MarkWatchedForm
-                titleId={activeTitle.id}
-                variant="queue"
-                rating={activeTitle.rating}
-                review={activeTitle.review}
-                collapsed
-              />
-            </div>
-          ) : null}
-          {listId ? (
-            <form action={removeTitleFromList.bind(null, listId, activeTitle.id)}>
-              <button type="submit" className={btnLink}>
-                Quitar de la lista
-              </button>
-            </form>
-          ) : null}
-        </div>
+        )
       ) : null}
     </div>
   );

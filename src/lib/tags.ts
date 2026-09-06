@@ -2,7 +2,14 @@ import { createId } from "@paralleldrive/cuid2";
 import { and, eq } from "drizzle-orm";
 import { db, tags } from "@/db";
 import { slugify } from "@/lib/labels";
-import type { SeriesStatusFilter } from "@/lib/series";
+
+export {
+  catalogHref,
+  catalogSearchParams,
+  MINE_PLATFORMS_PARAM,
+  type CatalogKindFilter,
+  type CatalogQuery,
+} from "@/lib/catalog-href";
 
 export const DEFAULT_TAG_NAMES = [
   "Épica / guerra",
@@ -58,8 +65,9 @@ export const titleMatchesAnyTag = (
 
 export const tagHref = (slug: string) => `/tags/${slug}`;
 
-export const MINE_PLATFORMS_PARAM = "minePlatforms";
-
+/**
+ * `?minePlatforms=1` (también `true` / `on`) activa “Solo en mis plataformas”.
+ */
 export const parseMinePlatforms = (value: unknown): boolean => {
   if (Array.isArray(value)) {
     return value.some((item) => parseMinePlatforms(item));
@@ -71,63 +79,6 @@ export const parseMinePlatforms = (value: unknown): boolean => {
 
   const normalized = value.trim().toLowerCase();
   return normalized === "1" || normalized === "true" || normalized === "on";
-};
-
-type CatalogQuery = {
-  tags?: string[];
-  view?: string | null;
-  sort?: string | null;
-  minePlatforms?: boolean;
-  seriesStatus?: SeriesStatusFilter | null;
-  month?: string | null;
-  day?: string | null;
-};
-
-export const catalogSearchParams = ({
-  tags: tagSlugs = [],
-  view,
-  sort,
-  minePlatforms,
-  seriesStatus,
-  month,
-  day,
-}: CatalogQuery) => {
-  const params = new URLSearchParams();
-
-  for (const slug of uniqueSlugs(tagSlugs)) {
-    params.append("tag", slug);
-  }
-
-  if (view && view !== "deck") {
-    params.set("view", view);
-  }
-
-  if (sort) {
-    params.set("sort", sort);
-  }
-
-  if (minePlatforms) {
-    params.set(MINE_PLATFORMS_PARAM, "1");
-  }
-
-  if (seriesStatus) {
-    params.set("seriesStatus", seriesStatus);
-  }
-
-  if (view === "calendar" && month) {
-    params.set("month", month);
-  }
-
-  if (view === "calendar" && day) {
-    params.set("day", day);
-  }
-
-  return params;
-};
-
-export const catalogHref = (pathname: string, query: CatalogQuery = {}) => {
-  const qs = catalogSearchParams(query).toString();
-  return qs ? `${pathname}?${qs}` : pathname;
 };
 
 export const ensureDefaultTags = async (userId: string) => {

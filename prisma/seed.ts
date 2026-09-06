@@ -76,6 +76,7 @@ type WatchlistSeed = {
   seriesStatus?: SeriesStatus;
   seriesSeason?: number;
   imdbRating?: number;
+  overview?: string;
   tmdbGenres?: SeedGenre[];
   watchProvidersMx?: SeedWatchProviders;
 };
@@ -239,6 +240,8 @@ const watchlistQueue: WatchlistSeed[] = [
     tmdbId: 335984,
     posterPath: "/gajva2L0rPYkEWjzgFlBXCAVBE5.jpg",
     imdbRating: 8.0,
+    overview:
+      "El oficial K, un blade runner, descubre un secreto que lo lleva a buscar a Rick Deckard, desaparecido hace treinta años.",
     tmdbGenres: [
       { id: 878, name: "Ciencia ficción" },
       { id: 18, name: "Drama" },
@@ -255,6 +258,8 @@ const watchlistQueue: WatchlistSeed[] = [
     tmdbId: 157336,
     posterPath: "/yQvGrMoipbRoddT0ZR8tPoR7NfX.jpg",
     imdbRating: 8.7,
+    overview:
+      "Un grupo de exploradores viaja a través de un agujero de gusano en el espacio para asegurar la supervivencia de la humanidad.",
     tmdbGenres: [
       { id: 12, name: "Aventura" },
       { id: 18, name: "Drama" },
@@ -274,6 +279,8 @@ const watchlistQueue: WatchlistSeed[] = [
     seriesStatus: "WATCHING",
     seriesSeason: 2,
     imdbRating: 8.7,
+    overview:
+      "Los empleados de Lumon Industries se someten a un procedimiento que separa sus recuerdos del trabajo y de la vida personal.",
     tmdbGenres: [
       { id: 18, name: "Drama" },
       { id: 9648, name: "Misterio" },
@@ -290,6 +297,8 @@ const watchlistQueue: WatchlistSeed[] = [
     tmdbId: 155,
     posterPath: "/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
     imdbRating: 9.0,
+    overview:
+      "Batman enfrenta al Joker, un criminal que sumerge a Gotham en el caos y pone a prueba el límite del héroe.",
     tmdbGenres: [
       { id: 28, name: "Acción" },
       { id: 80, name: "Crimen" },
@@ -307,6 +316,8 @@ const watchlistQueue: WatchlistSeed[] = [
     tmdbId: 8363,
     posterPath: "/ek8e8d58kcOZhSxWOsZHCJ9Ym2w.jpg",
     imdbRating: 7.6,
+    overview:
+      "Dos amigos intentan comprar alcohol para una fiesta y terminar el instituto con una última noche caótica.",
     tmdbGenres: [{ id: 35, name: "Comedia" }],
     watchProvidersMx: netflixMx,
   },
@@ -320,6 +331,8 @@ const watchlistQueue: WatchlistSeed[] = [
     tmdbId: 245891,
     posterPath: "/fZPSd91yGE9fCcCe6OoQr6E3Bev.jpg",
     imdbRating: 7.4,
+    overview:
+      "Un exasesino sale de su retiro para vengar a su perro y se enfrenta a un sindicato criminal implacable.",
     tmdbGenres: [
       { id: 28, name: "Acción" },
       { id: 53, name: "Suspense" },
@@ -336,6 +349,8 @@ const watchlistQueue: WatchlistSeed[] = [
     tmdbId: 496243,
     posterPath: "/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg",
     imdbRating: 8.5,
+    overview:
+      "La vida de dos familias de Seúl se entrelaza cuando el hijo de una de ellas consigue trabajo en casa de los Park.",
     tmdbGenres: [
       { id: 35, name: "Comedia" },
       { id: 53, name: "Suspense" },
@@ -353,6 +368,8 @@ const watchlistQueue: WatchlistSeed[] = [
     tmdbId: 120467,
     posterPath: "/eWdyYQreja6JGCzqKVFnKoBHORP.jpg",
     imdbRating: 8.1,
+    overview:
+      "Un conserje de un hotel europeo se ve envuelto en el robo de un cuadro y una persecución a través del continente.",
     tmdbGenres: [{ id: 35, name: "Comedia" }],
     watchProvidersMx: primeMx,
   },
@@ -566,6 +583,7 @@ const seed = async () => {
       tmdbId: item.tmdbId,
       posterPath: item.posterPath,
       imdbRating: item.imdbRating ?? null,
+      overview: item.overview ?? null,
       tmdbGenres: item.tmdbGenres ?? [],
       watchProvidersMx: item.watchProvidersMx ?? null,
       seriesStatus: item.kind === "SERIES" ? (item.seriesStatus ?? null) : null,

@@ -4,28 +4,37 @@ import type { Platform } from "@/db";
 
 type MissingStreamingDataNoteProps = {
   count: number;
+  appearAnyway?: boolean;
 };
 
 export const MissingStreamingDataNote = ({
   count,
+  appearAnyway = false,
 }: MissingStreamingDataNoteProps) => {
   if (count <= 0) {
     return null;
   }
 
+  const message = appearAnyway
+    ? count === 1
+      ? "1 título aún no tiene datos de streaming."
+      : `${count} títulos aún no tienen datos de streaming.`
+    : count === 1
+      ? "1 título sin datos de streaming no aparece."
+      : `${count} títulos sin datos de streaming no aparecen.`;
+
   return (
     <p className="text-xs text-mist" role="status">
-      {count === 1
-        ? "1 título sin datos de streaming no aparece."
-        : `${count} títulos sin datos de streaming no aparecen.`}
+      {message}
     </p>
   );
 };
 
 export const MinePlatformsSetupCta = () => (
   <EmptyState
+    variant="generic"
     title="Elige tus plataformas"
-    description="Para filtrar por “Solo en mis plataformas”, indica cuáles tienes contratadas. El filtro usa disponibilidad incluida en México (suscripción), no renta ni compra."
+    description="Para filtrar por plataforma MX, indica cuáles tienes contratadas. El filtro usa disponibilidad incluida en México (suscripción), no renta ni compra."
     actionHref="/perfil"
     actionLabel="Ir a perfil"
   />

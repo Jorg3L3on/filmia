@@ -1,4 +1,4 @@
-import { Platform } from "../src/generated/prisma/client";
+import { Platform } from "../src/generated/prisma/browser";
 import { parseStreamingPlatforms } from "../src/lib/form-data";
 import { PLATFORMS } from "../src/lib/labels";
 import {
@@ -7,7 +7,9 @@ import {
   isUserStreamingProvider,
   matchWatchProviderPlatform,
   parseStoredStreamingPlatforms,
+  primaryAvailabilityPlatform,
   resolveMinePlatformsCatalog,
+  resolvePosterAvailabilityBadge,
   STREAMING_PLATFORM_TMDB,
   streamingPlatformLogoUrl,
   titleAvailableOnUserPlatforms,
@@ -153,6 +155,23 @@ const run = () => {
     !isUserStreamingProvider(provider(8, "Netflix"), []),
     "Empty prefs should not highlight",
   );
+  assert(
+    primaryAvailabilityPlatform([provider(8, "Netflix"), provider(119, "Amazon Prime Video")], null) ===
+      Platform.NETFLIX,
+    "Deck should pick the first mapped flatrate platform",
+  );
+  assert(
+    primaryAvailabilityPlatform(
+      [provider(8, "Netflix"), provider(337, "Disney Plus")],
+      null,
+      [Platform.DISNEY],
+    ) === Platform.DISNEY,
+    "Deck should prefer a platform the user actually has",
+  );
+  assert(
+    primaryAvailabilityPlatform([], Platform.MAX) === Platform.MAX,
+    "Deck should fall back to the stored catalog platform",
+  );
 
   const data: WatchProvidersMxData = {
     link: null,
@@ -218,6 +237,17 @@ const run = () => {
   );
   assert(filtered.missingCache === 1, "Titles without watchProvidersMx should be excluded and counted");
 
+  const diaryPicks = applyMinePlatformsFilter(
+    [netflixTitle, primeTitle, maxRentOnly, noCacheTitle],
+    mineNetflixDisney,
+    { includeMissingCache: true },
+  );
+  assert(
+    diaryPicks.visible.map((title) => title.id).join(",") === "n,x",
+    "Qué ver should keep Netflix and unknown cache, still hide Prime/Max rent",
+  );
+  assert(diaryPicks.missingCache === 1, "Unknown cache is still counted when included");
+
   const setup = resolveMinePlatformsCatalog([netflixTitle], true, []);
   assert(setup.needsSetup, "Empty prefs with filter on should signal perfil CTA");
   assert(setup.titles.length === 0, "Empty prefs should not yield misleading matches");
@@ -241,6 +271,38 @@ const run = () => {
       `${platform} should resolve to a TMDB logo URL`,
     );
   }
+
+  const badgeNone = resolvePosterAvailabilityBadge(null, [Platform.NETFLIX]);
+  assert(badgeNone === null, "Poster badge should stay empty without MX flatrate data");
+
+  const badgePreferred = resolvePosterAvailabilityBadge(
+    {
+      link: null,
+      flatrate: [provider(8, "Netflix"), provider(337, "Disney Plus")],
+      rent: [],
+      buy: [],
+    },
+    [Platform.DISNEY],
+  );
+  assert(badgePreferred?.platform === Platform.DISNEY, "Poster badge should prefer the user's platform");
+  assert(badgePreferred?.extraCount === 1, "Poster badge should expose extra MX platforms as +N");
+
+  const badgeFirst = resolvePosterAvailabilityBadge({
+    link: null,
+    flatrate: [provider(8, "Netflix"), provider(119, "Amazon Prime Video")],
+    rent: [],
+    buy: [],
+  });
+  assert(badgeFirst?.platform === Platform.NETFLIX, "Without prefs, poster badge should take first mapped flatrate");
+
+  const badgeUnmapped = resolvePosterAvailabilityBadge({
+    link: null,
+    flatrate: [provider(9999, "Mystery Stream")],
+    rent: [],
+    buy: [],
+  });
+  assert(badgeUnmapped?.platform === null, "Unmapped flatrate should not invent a Platform");
+  assert(badgeUnmapped?.firstProvider?.name === "Mystery Stream", "Unmapped flatrate should still show first provider");
 
   console.log("✓ Streaming platform prefs parse, match, and highlight helpers");
   console.log("All streaming platform checks passed.");

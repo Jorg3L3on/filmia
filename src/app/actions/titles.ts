@@ -180,6 +180,7 @@ export const createTitle = async (formData: FormData) => {
     posterPath: metadata.posterPath,
     imdbId: metadata.imdbId,
     imdbRating: metadata.imdbRating,
+    overview: metadata.overview ?? null,
     tmdbGenres: metadata.tmdbGenres,
     ...seriesProgressData(fields.kind),
   });
@@ -225,6 +226,7 @@ export const updateTitle = async (titleId: string, formData: FormData) => {
       posterPath: metadata.posterPath,
       imdbId: metadata.imdbId,
       imdbRating: metadata.imdbRating,
+      overview: metadata.overview ?? undefined,
       tmdbGenres: metadata.tmdbGenres,
       ...seriesProgressData(fields.kind),
     })
@@ -271,6 +273,27 @@ const requireOwnedSeries = async (titleId: string) => {
   }
 
   return title;
+};
+
+export const setTitleRating = async (titleId: string, formData: FormData) => {
+  const userId = await requireUserId();
+  const rating = parseRating(formData.get("rating"));
+  const review = parseOptionalReview(formData.get("review"));
+
+  const updated = await db
+    .update(titles)
+    .set({
+      rating,
+      ...(formData.has("review") ? { review } : {}),
+    })
+    .where(and(eq(titles.id, titleId), eq(titles.userId, userId)))
+    .returning({ id: titles.id });
+
+  if (updated.length === 0) {
+    throw new Error("Título no encontrado.");
+  }
+
+  revalidateCatalog(titleId);
 };
 
 export const setSeriesStatus = async (

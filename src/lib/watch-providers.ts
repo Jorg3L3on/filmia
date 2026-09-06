@@ -109,6 +109,13 @@ export const parseStoredWatchProviders = (
   return data;
 };
 
+export const titleNeedsWatchProvidersRefresh = (
+  watchProvidersMx: unknown,
+  watchProvidersFetchedAt: Date | null | undefined,
+) =>
+  !parseStoredWatchProviders(watchProvidersMx) &&
+  !isWatchProvidersCacheFresh(watchProvidersFetchedAt);
+
 export const fetchMxWatchProviders = async (
   tmdbId: number,
   kind: TitleKind,

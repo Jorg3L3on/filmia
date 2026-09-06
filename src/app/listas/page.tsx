@@ -1,7 +1,7 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { ListCard } from "@/components/ListCard";
-import { PageHeader } from "@/components/PageHeader";
 import { listHref, partitionUserLists } from "@/lib/lists";
 import { getLists } from "@/lib/queries";
 import { btnPrimary } from "@/lib/ui";
@@ -12,30 +12,36 @@ export const metadata = {
   title: "Listas",
 } as const;
 
+const listCollectionClassName =
+  "rail -mx-4 flex gap-8 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4";
+
+const ListCollection = ({ children }: { children: ReactNode }) => (
+  <ul className={listCollectionClassName}>{children}</ul>
+);
+
 export default async function ListsPage() {
   const lists = await getLists();
   const { fixed, custom } = partitionUserLists(lists);
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        eyebrow="Colecciones"
-        title="Listas"
-        description="Quiero ver, Favoritas y Por rewatch siempre están. Las personalizadas las armas tú."
-        actions={
-          <Link href="/listas/nueva" className={btnPrimary}>
-            Nueva lista
-          </Link>
-        }
-      />
+    <div className="space-y-12">
+      <header className="flex items-center justify-between gap-3">
+        <h1 className="font-serif text-4xl tracking-tight text-paper">Listas</h1>
+        <Link href="/listas/nueva" className={btnPrimary}>
+          Nueva lista
+        </Link>
+      </header>
 
       <section className="space-y-4">
-        <h2 className="text-xs uppercase tracking-[0.2em] text-mist">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-paper">
+          <span className="text-accent" aria-hidden="true">
+            ▦
+          </span>
           Listas diarias
         </h2>
-        <ul className="grid gap-4 md:grid-cols-3">
+        <ListCollection>
           {fixed.map((list) => (
-            <li key={list.id}>
+            <li key={list.id} className="min-w-0">
               <ListCard
                 href={listHref(list)}
                 name={list.name}
@@ -46,24 +52,28 @@ export default async function ListsPage() {
               />
             </li>
           ))}
-        </ul>
+        </ListCollection>
       </section>
 
-      <section className="space-y-4">
-        <h2 className="text-xs uppercase tracking-[0.2em] text-mist">
+      <section className="space-y-4 pt-2">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-paper">
+          <span className="text-accent" aria-hidden="true">
+            ★
+          </span>
           Personalizadas
         </h2>
         {custom.length === 0 ? (
           <EmptyState
+            variant="listas"
             title="Todavía no hay listas propias"
-            description="Crea una colección para un mood, un ciclo o un maratón. Las diarias no se tocan."
+            description="Crea una colección para un mood, un ciclo o un maratón."
             actionHref="/listas/nueva"
             actionLabel="Nueva lista"
           />
         ) : (
-          <ul className="grid gap-4 md:grid-cols-2">
+          <ListCollection>
             {custom.map((list) => (
-              <li key={list.id}>
+              <li key={list.id} className="min-w-0">
                 <ListCard
                   href={listHref(list)}
                   name={list.name}
@@ -74,7 +84,7 @@ export default async function ListsPage() {
                 />
               </li>
             ))}
-          </ul>
+          </ListCollection>
         )}
       </section>
     </div>

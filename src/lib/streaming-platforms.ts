@@ -186,6 +186,73 @@ export const isUserStreamingProvider = (
   return matched != null && userPlatforms.includes(matched);
 };
 
+export const primaryAvailabilityPlatform = (
+  providers: readonly Pick<WatchProviderOffer, "providerId" | "name">[] | undefined,
+  fallback: Platform | null = null,
+  preferredPlatforms: readonly Platform[] = [],
+): Platform | null => {
+  const list = providers ?? [];
+
+  if (preferredPlatforms.length > 0) {
+    for (const provider of list) {
+      const matched = matchWatchProviderPlatform(provider);
+      if (matched && preferredPlatforms.includes(matched)) {
+        return matched;
+      }
+    }
+  }
+
+  for (const provider of list) {
+    const matched = matchWatchProviderPlatform(provider);
+    if (matched) {
+      return matched;
+    }
+  }
+
+  return fallback;
+};
+
+export type PosterAvailabilityBadge = {
+  platform: Platform | null;
+  extraCount: number;
+  firstProvider: WatchProviderOffer | null;
+};
+
+/** Badge for poster corners: preferred MX flatrate, else first available. No data → null. */
+export const resolvePosterAvailabilityBadge = (
+  watchProvidersMx: unknown,
+  preferredPlatforms: readonly Platform[] = [],
+): PosterAvailabilityBadge | null => {
+  const data = parseStoredWatchProviders(watchProvidersMx);
+  const flatrate = data?.flatrate ?? [];
+  if (flatrate.length === 0) {
+    return null;
+  }
+
+  const platform = primaryAvailabilityPlatform(flatrate, null, preferredPlatforms);
+  const matched = new Set<Platform>();
+  for (const provider of flatrate) {
+    const mapped = matchWatchProviderPlatform(provider);
+    if (mapped) {
+      matched.add(mapped);
+    }
+  }
+
+  if (platform) {
+    return {
+      platform,
+      extraCount: Math.max(0, matched.size - 1),
+      firstProvider: null,
+    };
+  }
+
+  return {
+    platform: null,
+    extraCount: Math.max(0, flatrate.length - 1),
+    firstProvider: flatrate[0] ?? null,
+  };
+};
+
 /**
  * El título está incluido (flatrate) en al menos una plataforma del usuario.
  * Rent/buy no cuentan: el filtro es “disponible en mis suscripciones”.
@@ -212,17 +279,20 @@ export type MinePlatformsFilterResult<T> = {
  * Post-filtro de catálogo (JOR-157).
  *
  * - Pasa si algún provider **flatrate** coincide con las plataformas del usuario.
- * - Sin cache `watchProvidersMx`: se excluye (sin datos de streaming).
+ * - Sin cache `watchProvidersMx`: se excluye (sin datos de streaming), salvo
+ *   `includeMissingCache` (Qué ver: unknown ≠ “no está en tus plataformas”).
  * - Prefs vacías: ningún título pasa (la UI debe mostrar CTA a `/perfil`).
  */
 export const applyMinePlatformsFilter = <T extends { watchProvidersMx?: unknown }>(
   titles: readonly T[],
   userPlatforms: readonly Platform[],
+  options: { includeMissingCache?: boolean } = {},
 ): MinePlatformsFilterResult<T> => {
   if (userPlatforms.length === 0) {
     return { visible: [], missingCache: 0 };
   }
 
+  const includeMissingCache = Boolean(options.includeMissingCache);
   const visible: T[] = [];
   let missingCache = 0;
 
@@ -230,6 +300,9 @@ export const applyMinePlatformsFilter = <T extends { watchProvidersMx?: unknown 
     const data = parseStoredWatchProviders(title.watchProvidersMx);
     if (!data) {
       missingCache += 1;
+      if (includeMissingCache) {
+        visible.push(title);
+      }
       continue;
     }
 
@@ -256,6 +329,25 @@ export const resolveMinePlatformsCatalog = <T extends { watchProvidersMx?: unkno
 
   const { visible, missingCache } = applyMinePlatformsFilter(titles, userPlatforms);
   return { titles: visible, missingCache, needsSetup: false };
+};
+
+export const resolveCatalogAvailability = <T extends { watchProvidersMx?: unknown }>(
+  titles: readonly T[],
+  {
+    platforms = [],
+    minePlatforms = false,
+    userPlatforms = [],
+  }: {
+    platforms?: readonly Platform[];
+    minePlatforms?: boolean;
+    userPlatforms?: readonly Platform[];
+  },
+) => {
+  if (platforms.length > 0) {
+    return resolveMinePlatformsCatalog(titles, true, platforms);
+  }
+
+  return resolveMinePlatformsCatalog(titles, minePlatforms, userPlatforms);
 };
 
 export const formatUserPlatformsList = (platforms: readonly Platform[]) => {

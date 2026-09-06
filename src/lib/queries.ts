@@ -8,6 +8,7 @@ import {
   inArray,
   isNotNull,
   isNull,
+  ne,
   or,
   sql,
 } from "drizzle-orm";
@@ -161,19 +162,61 @@ export const getTitleById = async (id: string) => {
   });
 };
 
+export const getRelatedTitles = async (titleId: string, tagIds: string[]) => {
+  if (tagIds.length === 0) {
+    return [];
+  }
+
+  const userId = await requireUserId();
+
+  return db.query.titles.findMany({
+    where: and(
+      eq(titles.userId, userId),
+      ne(titles.id, titleId),
+      exists(
+        db
+          .select({ titleId: titleTags.titleId })
+          .from(titleTags)
+          .where(and(eq(titleTags.titleId, titles.id), inArray(titleTags.tagId, tagIds))),
+      ),
+    ),
+    with: titleWithRelations,
+    orderBy: [desc(titles.watchedAt), asc(titles.name)],
+    limit: 12,
+  });
+};
+
 export const getTags = async () => {
   const userId = await requireUserId();
 
   const rows = await db.query.tags.findMany({
     where: eq(tags.userId, userId),
     orderBy: [asc(tags.name)],
-    with: { titles: { columns: { titleId: true } } },
+    with: {
+      titles: {
+        limit: 3,
+        with: {
+          title: {
+            columns: { id: true, name: true, posterPath: true },
+          },
+        },
+      },
+    },
   });
 
-  return rows.map(({ titles: titleLinks, ...tag }) => ({
-    ...tag,
-    _count: { titles: titleLinks.length },
-  }));
+  return Promise.all(
+    rows.map(async (row) => {
+      const countRows = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(titleTags)
+        .where(eq(titleTags.tagId, row.id));
+
+      return {
+        ...row,
+        _count: { titles: countRows[0]?.count ?? 0 },
+      };
+    }),
+  );
 };
 
 export const getTagBySlug = async (slug: string) => {
@@ -328,7 +371,7 @@ export const getTitleOptions = async () => {
 
   return db.query.titles.findMany({
     where: eq(titles.userId, userId),
-    columns: { id: true, name: true, year: true },
+    columns: { id: true, name: true, year: true, posterPath: true },
     orderBy: [asc(titles.name)],
   });
 };

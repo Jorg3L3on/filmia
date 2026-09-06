@@ -2,31 +2,37 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/cn";
+import { isCurrentPath, mobileNavItems, type MobileNavIcon } from "@/lib/nav";
 import { focusRing } from "@/lib/ui";
-
-const navItems = [
-  { href: "/", label: "Diario", icon: "home" },
-  { href: "/watchlist", label: "Quiero ver", icon: "queue" },
-  { href: "/buscar", label: "Buscar", icon: "log" },
-  { href: "/listas", label: "Listas", icon: "lists" },
-] as const;
-
-const isCurrentPath = (href: string, pathname: string) =>
-  href === "/" ? pathname === "/" : pathname.startsWith(href);
 
 export const BottomNav = () => {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const root = navRef.current;
+    if (!root) {
+      return;
+    }
+
+    const focused = root.querySelector<HTMLElement>(":focus");
+    if (focused && focused.getAttribute("aria-current") !== "page") {
+      focused.blur();
+    }
+  }, [pathname]);
 
   return (
     <nav
+      ref={navRef}
       aria-label="Principal móvil"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-canvas/95 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur sm:hidden"
     >
-      <ul className="mx-auto grid max-w-lg grid-cols-4 items-end px-2">
-        {navItems.map((item) => {
+      <ul className="mx-auto grid max-w-lg grid-cols-5 items-end px-1">
+        {mobileNavItems.map((item) => {
           const isCurrent = isCurrentPath(item.href, pathname);
-          const isLog = item.icon === "log";
+          const isSearch = item.icon === "search";
 
           return (
             <li key={item.href} className="flex justify-center">
@@ -34,27 +40,30 @@ export const BottomNav = () => {
                 href={item.href}
                 aria-current={isCurrent ? "page" : undefined}
                 aria-label={item.label}
+                data-nav={item.icon}
+                data-active={isCurrent ? "true" : "false"}
                 className={cn(
-                  "flex min-w-[64px] flex-col items-center gap-1 px-2 py-1 text-[10px] uppercase tracking-[0.14em]",
+                  "flex min-w-0 flex-col items-center gap-1 px-0.5 py-1 text-[10px] uppercase tracking-[0.08em] outline-none",
                   focusRing,
-                  isLog
-                    ? "text-ink"
-                    : isCurrent
-                      ? "text-accent"
-                      : "text-mist hover:text-white",
+                  isCurrent ? "text-accent" : "text-mist hover:text-paper",
                 )}
               >
                 <span
                   className={cn(
                     "flex items-center justify-center",
-                    isLog
-                      ? "mb-0.5 h-11 w-11 -translate-y-2 rounded-full bg-accent text-ink shadow-[0_8px_20px_rgba(0,224,84,0.28)]"
-                      : "h-6 w-6",
+                    isSearch
+                      ? cn(
+                          "mb-0.5 h-12 w-12 -translate-y-2 rounded-full",
+                          isCurrent
+                            ? "bg-accent text-ink shadow-[0_8px_20px_rgba(124,156,255,0.32)]"
+                            : "bg-chrome text-paper shadow-[0_8px_20px_rgba(0,0,0,0.35)]",
+                        )
+                      : "h-6 w-6 rounded-none bg-transparent shadow-none",
                   )}
                 >
                   <NavIcon name={item.icon} />
                 </span>
-                <span className={isLog ? "text-accent" : undefined}>{item.label}</span>
+                <span className="text-center leading-tight">{item.label}</span>
               </Link>
             </li>
           );
@@ -64,7 +73,7 @@ export const BottomNav = () => {
   );
 };
 
-const NavIcon = ({ name }: { name: (typeof navItems)[number]["icon"] }) => {
+const NavIcon = ({ name }: { name: MobileNavIcon }) => {
   const common = {
     viewBox: "0 0 24 24",
     fill: "none",
@@ -74,14 +83,20 @@ const NavIcon = ({ name }: { name: (typeof navItems)[number]["icon"] }) => {
     "aria-hidden": true,
   } as const;
 
-  if (name === "home") {
+  if (name === "diary") {
     return (
       <svg {...common}>
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
-          d="M4.5 10.5 12 4l7.5 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5.5a1 1 0 0 1-1-1v-9.5Z"
+          d="M6 5.25h5.25A1.75 1.75 0 0 1 13 7v12.25H7.75A1.75 1.75 0 0 1 6 17.5V5.25Z"
         />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M13 7h4.25A1.75 1.75 0 0 1 19 8.75V19.25H13"
+        />
+        <path strokeLinecap="round" d="M8.25 8.75h2.5M8.25 11.5h2.5" />
       </svg>
     );
   }
@@ -98,10 +113,24 @@ const NavIcon = ({ name }: { name: (typeof navItems)[number]["icon"] }) => {
     );
   }
 
-  if (name === "log") {
+  if (name === "search") {
     return (
       <svg {...common} className="h-6 w-6">
-        <path strokeLinecap="round" d="M12 6.5v11M6.5 12h11" />
+        <circle cx="11" cy="11" r="5.5" />
+        <path strokeLinecap="round" d="m15.5 15.5 4 4" />
+      </svg>
+    );
+  }
+
+  if (name === "profile") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="8.25" r="3.15" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M5.6 18.75c.85-3.05 2.95-4.75 6.4-4.75s5.55 1.7 6.4 4.75"
+        />
       </svg>
     );
   }

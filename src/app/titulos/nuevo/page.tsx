@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHeader } from "@/components/PageHeader";
 import { TitleForm } from "@/components/TitleForm";
 import { metadataServicesConfigured } from "@/lib/metadata";
 import { getCollectionLists, getTags } from "@/lib/queries";
-import { btnPrimary, wellClass } from "@/lib/ui";
+import { focusRing } from "@/lib/ui";
 
 export const metadata: Metadata = {
-  title: "Nuevo título",
+  title: "Registrar título",
 };
 
 export const dynamic = "force-dynamic";
@@ -20,31 +19,21 @@ export default async function NewTitlePage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
-      <PageHeader
-        eyebrow="Alta"
-        title="Registrar título"
-        description="Busca el poster, ponle tu nota y súbelo al diario. La cola de pendientes vive en Quiero ver."
-        actions={
-          <Link href="/buscar" className={btnPrimary}>
-            Buscar en TMDB
-          </Link>
-        }
-      />
-      <Link
-        href="/buscar"
-        className={`${wellClass} block p-5 transition hover:border-accent/50`}
-      >
-        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">
-          Camino rápido
-        </p>
-        <p className="mt-1 font-serif text-xl text-white">
-          Buscar y agregar desde TMDB
-        </p>
-        <p className="mt-1 text-sm text-fog">
-          Poster, año y tipo en un toque. También puedes mandarlo a Quiero ver.
-        </p>
-      </Link>
+    <div className="mx-auto max-w-3xl space-y-8">
+      <header className="flex items-center justify-between gap-3">
+        <Link
+          href="/buscar"
+          aria-label="Volver a buscar"
+          className={`inline-flex h-10 w-10 items-center justify-center rounded-full text-fog hover:bg-well hover:text-paper ${focusRing}`}
+        >
+          ←
+        </Link>
+        <h1 className="font-serif text-2xl text-paper">Registrar título</h1>
+        <Link href="/buscar" className="text-sm font-medium text-accent hover:text-accent-hover">
+          Buscar en TMDB
+        </Link>
+      </header>
+
       <TitleForm tags={tags} lists={lists} metadataConfig={metadataConfig} />
     </div>
   );

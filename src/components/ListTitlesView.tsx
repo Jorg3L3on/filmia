@@ -4,12 +4,15 @@ import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
 import { ListItemOrderControls } from "@/components/ListItemOrderControls";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PosterTile } from "@/components/PosterTile";
+import type { Platform, ListItem } from "@/db";
+import type { CatalogKindFilter } from "@/lib/catalog-href";
 import type { TitleWithRelations } from "@/lib/queries";
+import type { CatalogSort } from "@/lib/tags";
 import { catalogHref } from "@/lib/tags";
+import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { btnLink } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
 import type { SeriesStatusFilter } from "@/lib/series";
-import type { ListItem } from "@/db";
 
 type ListItemPayload = ListItem & {
   title: TitleWithRelations;
@@ -22,9 +25,15 @@ type ListTitlesViewProps = {
   selectedTags?: string[];
   minePlatforms?: boolean;
   seriesStatus?: SeriesStatusFilter;
+  kind?: CatalogKindFilter;
+  platforms?: Platform[];
+  sort?: CatalogSort | null;
 };
 
-const toCoverflowTitle = (item: ListItemPayload): CoverflowTitle => {
+const toCoverflowTitle = (
+  item: ListItemPayload,
+  userPlatforms: readonly Platform[] = [],
+): CoverflowTitle => {
   const watchProviders = parseStoredWatchProviders(item.title.watchProvidersMx);
 
   return {
@@ -34,7 +43,11 @@ const toCoverflowTitle = (item: ListItemPayload): CoverflowTitle => {
     year: item.title.year,
     rating: item.title.rating,
     posterPath: item.title.posterPath,
-    platform: item.title.platform,
+    platform: primaryAvailabilityPlatform(
+      watchProviders?.flatrate,
+      item.title.platform,
+      userPlatforms,
+    ),
     imdbRating: item.title.imdbRating,
     watched: Boolean(item.title.watchedAt),
     review: item.title.review,
@@ -51,6 +64,9 @@ export const ListTitlesView = ({
   selectedTags = [],
   minePlatforms = false,
   seriesStatus,
+  kind,
+  platforms,
+  sort,
 }: ListTitlesViewProps) => {
   const hrefFor = (nextMode: DeckViewMode) =>
     catalogHref(`/listas/${listId}`, {
@@ -58,6 +74,9 @@ export const ListTitlesView = ({
       view: nextMode,
       minePlatforms,
       seriesStatus,
+      kind,
+      platforms,
+      sort,
     });
 
   return (
@@ -68,7 +87,7 @@ export const ListTitlesView = ({
 
       {mode === "deck" ? (
         <CoverflowDeck
-          titles={items.map(toCoverflowTitle)}
+          titles={items.map((item) => toCoverflowTitle(item, platforms))}
           listId={listId}
         />
       ) : (
@@ -78,6 +97,7 @@ export const ListTitlesView = ({
             return (
               <li key={item.titleId} className="space-y-2">
                 <PosterTile
+                  titleId={item.title.id}
                   href={`/titulos/${item.title.id}`}
                   name={item.title.name}
                   posterPath={item.title.posterPath}

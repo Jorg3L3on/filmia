@@ -8,7 +8,7 @@ import { db, listItems, lists, titleTags, titles } from "@/db";
 import { parseRequiredName } from "@/lib/form-data";
 import { slugify } from "@/lib/labels";
 import { isFixedListSlug, isReservedListSlug, listHref } from "@/lib/lists";
-import { type ListMoveDirection, swapAdjacentListItems } from "@/lib/list-order";
+import { type ListMoveDirection, swapAdjacentListItems, swapListItemPositions } from "@/lib/list-order";
 import { requireUserId } from "@/lib/session";
 
 const revalidateLists = (listId?: string, titleId?: string) => {
@@ -177,9 +177,14 @@ export const moveListItem = async (
   listId: string,
   titleId: string,
   direction: ListMoveDirection,
+  neighborTitleId?: string | null,
 ) => {
   const userId = await requireUserId();
   await requireOwnedList(listId, userId);
-  await swapAdjacentListItems(listId, titleId, direction);
+  if (neighborTitleId) {
+    await swapListItemPositions(listId, titleId, neighborTitleId);
+  } else {
+    await swapAdjacentListItems(listId, titleId, direction);
+  }
   revalidateLists(listId, titleId);
 };

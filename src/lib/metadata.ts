@@ -15,6 +15,7 @@ export type TitleMetadata = {
   imdbId: string | null;
   imdbRating: number | null;
   tmdbGenres: TmdbGenre[];
+  overview?: string | null;
   name?: string;
   originalName?: string | null;
   year?: number | null;
@@ -42,6 +43,7 @@ export const resolveTitleMetadata = async (
     imdbId,
     imdbRating,
     tmdbGenres: details.genres,
+    overview: details.overview,
     name: details.name,
     originalName: details.originalName,
     year: details.year,

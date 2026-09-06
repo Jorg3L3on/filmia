@@ -31,6 +31,19 @@ export const todayDateInput = (now = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
+/** Local calendar day for “Ayer” in the Marqué visto sheet. */
+export const yesterdayDateInput = (now = new Date()) => {
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  return todayDateInput(yesterday);
+};
+
+export type WatchedDatePreset = "today" | "yesterday" | "custom";
+
+export const dateInputForPreset = (
+  preset: Exclude<WatchedDatePreset, "custom">,
+  now = new Date(),
+) => (preset === "yesterday" ? yesterdayDateInput(now) : todayDateInput(now));
+
 export const toMonthParam = (year: number, month: number) =>
   `${year}-${String(month).padStart(2, "0")}`;
 
@@ -46,6 +59,29 @@ export const parseMonthParam = (value: unknown, now = new Date()) => {
   }
 
   return currentMonthParam(now);
+};
+
+export const hasExplicitMonthParam = (value: unknown) => {
+  const raw = asSingleString(value).trim();
+  if (!MONTH_PARAM_RE.test(raw)) {
+    return false;
+  }
+
+  const year = Number(raw.slice(0, 4));
+  return year >= 1900 && year <= 2100;
+};
+
+export const latestMonthWithEntries = <
+  T extends { watchedAt: Date | string | null | undefined },
+>(
+  titles: T[],
+  fallbackMonth: string,
+) => {
+  const months = [...groupTitlesByWatchedDay(titles).keys()]
+    .map((isoDate) => monthFromIsoDate(isoDate))
+    .sort();
+
+  return months.at(-1) ?? fallbackMonth;
 };
 
 export const isValidIsoDate = (value: string) => {
@@ -86,6 +122,20 @@ export const formatMonthHeading = (monthParam: string) => {
     year: "numeric",
     timeZone: "UTC",
   });
+};
+
+export const formatMonthName = (monthParam: string) => {
+  const year = Number(monthParam.slice(0, 4));
+  const month = Number(monthParam.slice(5, 7));
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString("es-MX", {
+    month: "long",
+    timeZone: "UTC",
+  });
+};
+
+export const parseOptionalIsoDate = (value: unknown) => {
+  const raw = asSingleString(value).trim();
+  return isValidIsoDate(raw) ? raw : null;
 };
 
 export const isoDateToUtcNoon = (isoDate: string) =>
@@ -182,3 +232,30 @@ export const formatWatchedDate = (
     day: "numeric",
     timeZone: "UTC",
   });
+
+const capitalizeEs = (value: string) =>
+  value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : value;
+
+/** `{Weekday} {day}` — e.g. `Martes 1`. */
+export const formatDaySheetHeading = (isoDate: string) => {
+  const date = isoDateToUtcNoon(isoDate);
+  const weekday = date.toLocaleDateString("es-MX", {
+    weekday: "long",
+    timeZone: "UTC",
+  });
+  return `${capitalizeEs(weekday)} ${date.getUTCDate()}`;
+};
+
+export const formatDayCountLabel = (count: number) =>
+  count === 1 ? "1 título" : `${count} títulos`;
+
+/** `{Weekday} {day} · {N} títulos` — e.g. `Martes 1 · 4 títulos`. */
+export const formatDaySheetParts = (isoDate: string, count: number) => {
+  const heading = formatDaySheetHeading(isoDate);
+  const countLabel = formatDayCountLabel(count);
+  return {
+    heading,
+    countLabel,
+    label: `${heading} · ${countLabel}`,
+  };
+};

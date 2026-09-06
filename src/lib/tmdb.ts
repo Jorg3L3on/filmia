@@ -6,6 +6,21 @@ const getTmdbApiKey = () => process.env.TMDB_API_KEY?.trim() ?? "";
 
 export const isTmdbConfigured = () => Boolean(getTmdbApiKey());
 
+export const tmdbBackdropUrl = (
+  backdropPath: string | null | undefined,
+  size: "w780" | "w1280" = "w780",
+) => {
+  if (!backdropPath) {
+    return null;
+  }
+
+  if (backdropPath.startsWith("http://") || backdropPath.startsWith("https://")) {
+    return backdropPath;
+  }
+
+  return `https://image.tmdb.org/t/p/${size}${backdropPath}`;
+};
+
 export const tmdbPosterUrl = (
   posterPath: string | null | undefined,
   size: "w185" | "w342" | "w500" = "w342",
@@ -31,6 +46,7 @@ export type TmdbSearchResult = {
   originalName: string | null;
   year: number | null;
   posterPath: string | null;
+  backdropPath: string | null;
   overview: string | null;
 };
 
@@ -77,6 +93,11 @@ export const tmdbErrorMessage = (error: unknown) => {
   return "No se pudo completar la petición a TMDB.";
 };
 
+const isTmdbAccessToken = (apiKey: string) => apiKey.startsWith("eyJ");
+
+const TMDB_LANGUAGE = "es-MX";
+const OVERVIEW_FALLBACK_LANGUAGES = ["es-ES", "en-US"] as const;
+
 const tmdbFetch = async <T>(path: string, params: Record<string, string> = {}) => {
   const apiKey = getTmdbApiKey();
   if (!apiKey) {
@@ -87,15 +108,21 @@ const tmdbFetch = async <T>(path: string, params: Record<string, string> = {}) =
   }
 
   const url = new URL(`${TMDB_BASE}${path}`);
-  url.searchParams.set("api_key", apiKey);
-  url.searchParams.set("language", "es-MX");
+  url.searchParams.set("language", TMDB_LANGUAGE);
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
   }
 
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (isTmdbAccessToken(apiKey)) {
+    headers.Authorization = `Bearer ${apiKey}`;
+  } else {
+    url.searchParams.set("api_key", apiKey);
+  }
+
   let response: Response;
   try {
-    response = await fetch(url, { next: { revalidate: 86400 } });
+    response = await fetch(url, { next: { revalidate: 86400 }, headers });
   } catch {
     throw new TmdbRequestError(
       "network",
@@ -153,6 +180,7 @@ export const searchTmdb = async (
     original_title?: string;
     release_date?: string;
     poster_path?: string | null;
+    backdrop_path?: string | null;
     overview?: string;
   };
 
@@ -162,6 +190,7 @@ export const searchTmdb = async (
     original_name?: string;
     first_air_date?: string;
     poster_path?: string | null;
+    backdrop_path?: string | null;
     overview?: string;
   };
 
@@ -178,6 +207,7 @@ export const searchTmdb = async (
         originalName: item.original_title ?? null,
         year: parseYear(item.release_date),
         posterPath: item.poster_path ?? null,
+        backdropPath: item.backdrop_path ?? null,
         overview: item.overview ?? null,
       };
     }
@@ -188,6 +218,7 @@ export const searchTmdb = async (
       originalName: item.original_name ?? null,
       year: parseYear(item.first_air_date),
       posterPath: item.poster_path ?? null,
+      backdropPath: item.backdrop_path ?? null,
       overview: item.overview ?? null,
     };
   });
@@ -211,6 +242,7 @@ export const searchTmdbMulti = async (
     release_date?: string;
     first_air_date?: string;
     poster_path?: string | null;
+    backdrop_path?: string | null;
     overview?: string;
   };
 
@@ -237,6 +269,7 @@ export const searchTmdbMulti = async (
         originalName: item.original_title ?? null,
         year: parseYear(item.release_date),
         posterPath: item.poster_path ?? null,
+        backdropPath: item.backdrop_path ?? null,
         overview: item.overview ?? null,
         kind: "MOVIE",
       });
@@ -255,6 +288,7 @@ export const searchTmdbMulti = async (
         originalName: item.original_name ?? null,
         year: parseYear(item.first_air_date),
         posterPath: item.poster_path ?? null,
+        backdropPath: item.backdrop_path ?? null,
         overview: item.overview ?? null,
         kind: "SERIES",
       });
@@ -344,6 +378,47 @@ export const parseTmdbGenres = (value: unknown): TmdbGenre[] => {
   return genres;
 };
 
+export type TmdbTitleExtras = {
+  overview: string | null;
+  runtimeMinutes: number | null;
+  backdropPath: string | null;
+  genres: TmdbGenre[];
+};
+
+const parseRuntimeMinutes = (data: {
+  runtime?: number | null;
+  episode_run_time?: number[] | null;
+}) => {
+  if (typeof data.runtime === "number" && data.runtime > 0) {
+    return data.runtime;
+  }
+
+  const episode = data.episode_run_time?.find((value) => value > 0);
+  return episode ?? null;
+};
+
+const overviewWithFallback = async (
+  segment: "movie" | "tv",
+  tmdbId: number,
+  overview: string | null,
+) => {
+  if (overview) {
+    return overview;
+  }
+
+  for (const language of OVERVIEW_FALLBACK_LANGUAGES) {
+    const data = await tmdbFetch<{ overview?: string }>(`/${segment}/${tmdbId}`, {
+      language,
+    });
+    const fallback = data.overview?.trim() || null;
+    if (fallback) {
+      return fallback;
+    }
+  }
+
+  return null;
+};
+
 export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
   const segment = kind === "SERIES" ? "tv" : "movie";
   type MovieDetails = {
@@ -352,6 +427,9 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
     original_title?: string;
     release_date?: string;
     poster_path?: string | null;
+    backdrop_path?: string | null;
+    overview?: string;
+    runtime?: number | null;
     genres?: Array<{ id?: number; name?: string }>;
   };
   type TvDetails = {
@@ -360,11 +438,19 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
     original_name?: string;
     first_air_date?: string;
     poster_path?: string | null;
+    backdrop_path?: string | null;
+    overview?: string;
+    episode_run_time?: number[];
     genres?: Array<{ id?: number; name?: string }>;
   };
 
   const data = await tmdbFetch<MovieDetails | TvDetails>(`/${segment}/${tmdbId}`);
   const genres = parseTmdbGenres(data.genres);
+  const overview = await overviewWithFallback(
+    segment,
+    data.id,
+    data.overview?.trim() || null,
+  );
 
   if ("title" in data) {
     return {
@@ -373,6 +459,9 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
       originalName: data.original_title ?? null,
       year: parseYear(data.release_date),
       posterPath: data.poster_path ?? null,
+      backdropPath: data.backdrop_path ?? null,
+      overview,
+      runtimeMinutes: parseRuntimeMinutes(data),
       genres,
     };
   }
@@ -383,6 +472,31 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
     originalName: data.original_name ?? null,
     year: parseYear(data.first_air_date),
     posterPath: data.poster_path ?? null,
+    backdropPath: data.backdrop_path ?? null,
+    overview,
+    runtimeMinutes: parseRuntimeMinutes(data),
     genres,
   };
+};
+
+export const getTmdbTitleExtras = async (
+  tmdbId: number,
+  kind: TitleKind,
+): Promise<TmdbTitleExtras | null> => {
+  if (!isTmdbConfigured()) {
+    return null;
+  }
+
+  try {
+    const details = await getTmdbDetails(tmdbId, kind);
+
+    return {
+      overview: details.overview,
+      runtimeMinutes: details.runtimeMinutes,
+      backdropPath: details.backdropPath,
+      genres: details.genres,
+    };
+  } catch {
+    return null;
+  }
 };

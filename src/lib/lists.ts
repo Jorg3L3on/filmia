@@ -90,9 +90,11 @@ export const partitionUserLists = <T extends { slug: string | null; name: string
 export const emptyStateForList = (slug: string | null) => {
   if (slug === WATCHLIST_SLUG) {
     return {
-      title: "Nada en Quiero ver",
-      description:
-        "Agrega títulos desde TMDB, desde su ficha o con el selector. Aquí vive la cola de lo que sigue.",
+      title: "Aún no hay nada en Quiero ver",
+      description: "Añade títulos desde Buscar o desde una ficha.",
+      actionHref: "/buscar",
+      actionLabel: "Ir a Buscar",
+      variant: "watchlist" as const,
     };
   }
 
@@ -100,24 +102,37 @@ export const emptyStateForList = (slug: string | null) => {
     return {
       title: "Aún no hay favoritas",
       description:
-        "Cuando una película o serie se quede contigo, márcala como favorita desde su ficha.",
+        "Cuando una película o serie se quede contigo, márcala desde su ficha.",
+      actionHref: "/buscar",
+      actionLabel: "Ir a Buscar",
+      variant: "listas" as const,
     };
   }
 
   if (slug === POR_REWATCH_SLUG) {
     return {
       title: "Nada para rewatch",
-      description:
-        "Si una historia pide bis, súbela aquí desde la ficha. El mazo espera.",
+      description: "Si una historia pide bis, súbela aquí desde la ficha.",
+      actionHref: "/buscar",
+      actionLabel: "Ir a Buscar",
+      variant: "listas" as const,
     };
   }
 
   return {
     title: "Esta lista está vacía",
-    description:
-      "Agrega títulos desde el selector, desde la ficha, o regístralos primero en el diario.",
+    description: "Añade títulos desde Buscar o desde una ficha.",
+    actionHref: "/buscar",
+    actionLabel: "Ir a Buscar",
+    variant: "listas" as const,
   };
 };
+
+export {
+  membershipCopy,
+  titleListMembership,
+  type TitleListMembership,
+} from "@/lib/list-membership";
 
 export const ensureDefaultLists = async (userId: string) => {
   const existing = await db.query.lists.findMany({

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { LogoutButton } from "@/components/LogoutButton";
 import { cn } from "@/lib/cn";
+import { isCurrentPath } from "@/lib/nav";
 import { focusRing } from "@/lib/ui";
 
 const navItems = [
@@ -41,10 +42,7 @@ export const SiteHeader = ({ pathname: currentPath, user }: SiteHeaderProps) => 
         </Link>
         <nav aria-label="Principal" className="hidden items-center gap-1 text-sm sm:flex">
           {navItems.map((item) => {
-            const isCurrent =
-              item.href === "/"
-                ? currentPath === "/"
-                : currentPath.startsWith(item.href);
+            const isCurrent = isCurrentPath(item.href, currentPath);
 
             return (
               <Link
@@ -71,7 +69,7 @@ export const SiteHeader = ({ pathname: currentPath, user }: SiteHeaderProps) => 
             aria-label={`Perfil de ${displayName}`}
             aria-current={isProfile ? "page" : undefined}
             className={cn(
-              "flex max-w-[11rem] items-center gap-2 rounded-full py-1 pr-3 pl-1 text-xs transition sm:max-w-[14rem]",
+              "hidden items-center gap-2 rounded-full p-0.5 text-xs transition sm:flex sm:max-w-[14rem] sm:py-1 sm:pr-3 sm:pl-1",
               focusRing,
               isProfile
                 ? "bg-accent font-medium text-ink"
@@ -80,16 +78,18 @@ export const SiteHeader = ({ pathname: currentPath, user }: SiteHeaderProps) => 
           >
             <span
               className={cn(
-                "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold sm:h-7 sm:w-7",
                 isProfile ? "bg-ink/15 text-ink" : "bg-chrome text-white",
               )}
               aria-hidden
             >
               {initial}
             </span>
-            <span className="min-w-0 truncate">{displayName}</span>
+            <span className="hidden min-w-0 truncate sm:inline">{displayName}</span>
           </Link>
-          <LogoutButton />
+          <span className="hidden sm:inline-flex">
+            <LogoutButton />
+          </span>
         </div>
       </div>
     </header>

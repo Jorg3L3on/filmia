@@ -36,10 +36,20 @@ export const platformEnum = pgEnum("Platform", [
 ]);
 export const listKindEnum = pgEnum("ListKind", ["COLLECTION", "WATCHLIST"]);
 
+const enumObject = <T extends string>(values: readonly T[]) =>
+  Object.fromEntries(values.map((value) => [value, value])) as { [K in T]: K };
+
 export type TitleKind = (typeof titleKindEnum.enumValues)[number];
+export const TitleKind = enumObject(titleKindEnum.enumValues);
+
 export type SeriesStatus = (typeof seriesStatusEnum.enumValues)[number];
+export const SeriesStatus = enumObject(seriesStatusEnum.enumValues);
+
 export type Platform = (typeof platformEnum.enumValues)[number];
+export const Platform = enumObject(platformEnum.enumValues);
+
 export type ListKind = (typeof listKindEnum.enumValues)[number];
+export const ListKind = enumObject(listKindEnum.enumValues);
 
 export const users = pgTable(
   "User",
@@ -77,6 +87,7 @@ export const titles = pgTable(
     posterPath: text("posterPath"),
     imdbId: text("imdbId"),
     imdbRating: real("imdbRating"),
+    overview: text("overview"),
     tmdbGenres: jsonb("tmdbGenres").notNull().default([]),
     watchProvidersMx: jsonb("watchProvidersMx"),
     watchProvidersFetchedAt: timestamp("watchProvidersFetchedAt", {

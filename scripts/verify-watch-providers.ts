@@ -1,7 +1,11 @@
-import { parseMxWatchProviders } from "../src/lib/watch-providers";
-import { fetchMxWatchProviders } from "../src/lib/watch-providers";
+import {
+  fetchMxWatchProviders,
+  parseMxWatchProviders,
+  titleNeedsWatchProvidersRefresh,
+  WATCH_PROVIDERS_CACHE_TTL_MS,
+} from "../src/lib/watch-providers";
 import { isTmdbConfigured } from "../src/lib/tmdb";
-import { TitleKind } from "../src/generated/prisma/client";
+import { TitleKind } from "../src/generated/prisma/browser";
 
 const mockResponse = {
   id: 550,
@@ -54,6 +58,21 @@ const run = async () => {
     throw new Error("Expected null for missing MX region");
   }
   console.log("✓ Empty MX region returns null");
+
+  if (!titleNeedsWatchProvidersRefresh(null, null)) {
+    throw new Error("Missing cache without fetchedAt should refresh");
+  }
+  if (
+    titleNeedsWatchProvidersRefresh(null, new Date()) ||
+    titleNeedsWatchProvidersRefresh(parsed, null)
+  ) {
+    throw new Error("Fresh empty lookup or stored providers should not refresh");
+  }
+  const staleFetchedAt = new Date(Date.now() - WATCH_PROVIDERS_CACHE_TTL_MS - 1);
+  if (!titleNeedsWatchProvidersRefresh(null, staleFetchedAt)) {
+    throw new Error("Stale empty lookup should refresh");
+  }
+  console.log("✓ Provider refresh skips a fresh null MX lookup");
 
   if (isTmdbConfigured()) {
     const live = await fetchMxWatchProviders(1396, TitleKind.SERIES);
