@@ -1,12 +1,13 @@
 import { config as loadEnv } from "dotenv";
-import { hash } from "bcryptjs";
+import { createId } from "@paralleldrive/cuid2";
+import { and, eq } from "drizzle-orm";
 
 loadEnv({ path: ".env.local" });
 loadEnv();
 
-import { TitleKind } from "../src/generated/prisma/browser";
+import { db, listItems, lists, titles, users, TitleKind } from "../src/db";
 import { upsertTitleFromTmdbForUser } from "../src/lib/add-title-from-tmdb";
-import { prisma } from "../src/lib/prisma";
+import { hashPassword } from "../src/lib/auth/password";
 import {
   getTmdbDetails,
   searchTmdbMulti,
@@ -182,21 +183,33 @@ const verifyErrors = async () => {
   }
 };
 
-const verifyUpsert = async () => {
-  const passwordHash = await hash("filmia-test-155", 10);
-  const user = await prisma.user.upsert({
-    where: { email: TEST_EMAIL },
-    update: {},
-    create: {
-      email: TEST_EMAIL,
-      passwordHash,
-      name: "TMDB search test",
-    },
+const ensureTestUser = async () => {
+  const existing = await db.query.users.findFirst({
+    where: eq(users.email, TEST_EMAIL),
+  });
+  if (existing) {
+    return existing;
+  }
+
+  const userId = createId();
+  await db.insert(users).values({
+    id: userId,
+    email: TEST_EMAIL,
+    passwordHash: await hashPassword("filmia-test-155"),
+    name: "TMDB search test",
   });
 
-  await prisma.title.deleteMany({
-    where: { userId: user.id, tmdbId: TEST_TMDB_ID },
-  });
+  const created = await db.query.users.findFirst({ where: eq(users.id, userId) });
+  if (!created) {
+    throw new Error("No se pudo crear el usuario de prueba.");
+  }
+  return created;
+};
+
+const verifyUpsert = async () => {
+  const user = await ensureTestUser();
+
+  await db.delete(titles).where(and(eq(titles.userId, user.id), eq(titles.tmdbId, TEST_TMDB_ID)));
 
   const first = await upsertTitleFromTmdbForUser(user.id, {
     tmdbId: TEST_TMDB_ID,
@@ -222,21 +235,14 @@ const verifyUpsert = async () => {
   assert(second.ok && !second.created, "Second add should reuse the title");
   assert(first.ok && second.ok && first.titleId === second.titleId, "Same title id");
 
-  const copies = await prisma.title.count({
-    where: { userId: user.id, tmdbId: TEST_TMDB_ID },
+  const copies = await db.query.titles.findMany({
+    where: and(eq(titles.userId, user.id), eq(titles.tmdbId, TEST_TMDB_ID)),
   });
-  assert(copies === 1, `Expected 1 title, found ${copies}`);
+  assert(copies.length === 1, `Expected 1 title, found ${copies.length}`);
 
-  const stored = await prisma.title.findFirst({
-    where: { id: first.ok ? first.titleId : "" },
-    select: {
-      name: true,
-      year: true,
-      posterPath: true,
-      kind: true,
-      tmdbId: true,
-    },
-  });
+  const stored = first.ok
+    ? await db.query.titles.findFirst({ where: eq(titles.id, first.titleId) })
+    : null;
 
   assert(stored?.name === "Dune", "Persisted name");
   assert(stored?.year === 2021, "Persisted year");
@@ -244,18 +250,21 @@ const verifyUpsert = async () => {
   assert(stored?.kind === TitleKind.MOVIE, "Persisted kind");
   assert(stored?.tmdbId === TEST_TMDB_ID, "Persisted tmdbId");
 
-  const watchlistItems = await prisma.listItem.count({
-    where: {
-      titleId: first.ok ? first.titleId : "",
-      list: { userId: user.id, slug: "watchlist" },
-    },
+  const watchlist = await db.query.lists.findFirst({
+    where: and(eq(lists.userId, user.id), eq(lists.slug, "watchlist")),
   });
-  assert(watchlistItems === 1, "Should be in Quiero ver once");
+  const watchlistItems = watchlist
+    ? await db.query.listItems.findMany({
+        where: and(
+          eq(listItems.listId, watchlist.id),
+          eq(listItems.titleId, first.ok ? first.titleId : ""),
+        ),
+      })
+    : [];
+  assert(watchlistItems.length === 1, "Should be in Quiero ver once");
 
-  await prisma.title.deleteMany({
-    where: { userId: user.id, tmdbId: TEST_TMDB_ID },
-  });
-  await prisma.user.delete({ where: { id: user.id } });
+  await db.delete(titles).where(and(eq(titles.userId, user.id), eq(titles.tmdbId, TEST_TMDB_ID)));
+  await db.delete(users).where(eq(users.id, user.id));
 
   console.log("✓ Upsert by userId+tmdbId keeps a single title and can enqueue Quiero ver");
 };
@@ -266,11 +275,7 @@ const run = async () => {
   console.log("\nAll TMDB search/add checks passed.");
 };
 
-run()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect().catch(() => undefined);
-  });
+run().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

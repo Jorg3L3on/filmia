@@ -92,7 +92,7 @@ const run = () => {
     "Register server errors use the generic copy",
   );
 
-  console.log("✓ DATABASE_URL sanitizer and Auth.js error mapping");
+  console.log("✓ DATABASE_URL sanitizer and login error mapping");
 };
 
 run();

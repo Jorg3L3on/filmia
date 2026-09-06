@@ -5,7 +5,7 @@ import {
   WATCH_PROVIDERS_CACHE_TTL_MS,
 } from "../src/lib/watch-providers";
 import { isTmdbConfigured } from "../src/lib/tmdb";
-import { TitleKind } from "../src/generated/prisma/browser";
+import { TitleKind } from "../src/db";
 
 const mockResponse = {
   id: 550,

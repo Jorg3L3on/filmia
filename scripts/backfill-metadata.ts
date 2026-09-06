@@ -1,9 +1,10 @@
 import { config as loadEnv } from "dotenv";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import { asc, eq, isNull, or } from "drizzle-orm";
 
 loadEnv({ path: ".env.local" });
 loadEnv();
-import { PrismaClient } from "../src/generated/prisma/client";
+
+import { db, titles } from "../src/db/index";
 import { fetchImdbRating, isOmdbConfigured } from "../src/lib/omdb";
 import {
   getTmdbExternalIds,
@@ -11,15 +12,9 @@ import {
   searchTmdb,
 } from "../src/lib/tmdb";
 
-const connectionString = process.env.DATABASE_URL;
-
-if (!connectionString) {
+if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL no está definida.");
 }
-
-const prisma = new PrismaClient({
-  adapter: new PrismaNeon({ connectionString }),
-});
 
 const force = process.argv.includes("--force");
 
@@ -50,16 +45,14 @@ const backfill = async () => {
     console.warn("OMDB_API_KEY ausente: se guardará poster sin rating IMDb.");
   }
 
-  const titles = await prisma.title.findMany({
-    where: force
-      ? {}
-      : {
-          OR: [{ tmdbId: null }, { posterPath: null }],
-        },
-    orderBy: { name: "asc" },
-  });
+  const rows = force
+    ? await db.query.titles.findMany({ orderBy: [asc(titles.name)] })
+    : await db.query.titles.findMany({
+        where: or(isNull(titles.tmdbId), isNull(titles.posterPath)),
+        orderBy: [asc(titles.name)],
+      });
 
-  if (titles.length === 0) {
+  if (rows.length === 0) {
     console.log("Nada que enriquecer.");
     return;
   }
@@ -67,7 +60,7 @@ const backfill = async () => {
   let updated = 0;
   let failed = 0;
 
-  for (const title of titles) {
+  for (const title of rows) {
     try {
       const results = await searchTmdb(title.name, title.kind, title.year);
       const match = pickBestMatch(results, title.year);
@@ -81,20 +74,19 @@ const backfill = async () => {
       const imdbId = await getTmdbExternalIds(match.tmdbId, title.kind);
       const imdbRating = imdbId ? await fetchImdbRating(imdbId) : null;
 
-      await prisma.title.update({
-        where: { id: title.id },
-        data: {
+      await db
+        .update(titles)
+        .set({
           tmdbId: match.tmdbId,
           posterPath: match.posterPath,
           imdbId,
           imdbRating,
           originalName: title.originalName ?? match.originalName,
           year: title.year ?? match.year,
-        },
-      });
+        })
+        .where(eq(titles.id, title.id));
 
-      const ratingLabel =
-        imdbRating != null ? ` · IMDb ${imdbRating.toFixed(1)}` : "";
+      const ratingLabel = imdbRating != null ? ` · IMDb ${imdbRating.toFixed(1)}` : "";
       console.log(
         `✓ ${title.name}${title.year ? ` (${title.year})` : ""} → TMDB #${match.tmdbId}${ratingLabel}`,
       );
@@ -108,15 +100,11 @@ const backfill = async () => {
   }
 
   console.log(
-    `\nBackfill listo: ${updated} actualizados, ${failed} fallidos (${titles.length} procesados).`,
+    `\nBackfill listo: ${updated} actualizados, ${failed} fallidos (${rows.length} procesados).`,
   );
 };
 
-backfill()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+backfill().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
