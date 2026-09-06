@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { removeTitleFromList } from "@/app/actions/lists";
 import { MarkSeenEye } from "@/components/MarkSeenEye";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
@@ -58,12 +65,14 @@ const CARD_WIDTH_SHEET = 156;
 const CARD_WIDTH_MIN = 128;
 const CARD_WIDTH_SHEET_MIN = 112;
 const DRAG_THRESHOLD = 6;
-const WHEEL_SENSITIVITY = 0.0036;
-const SNAP_LERP = 0.14;
-const COAST_FRICTION = 0.94;
-const COAST_MIN_VELOCITY = 0.0024;
-const WHEEL_SNAP_MS = 90;
+const WHEEL_SENSITIVITY = 0.0044;
+const SNAP_LERP = 0.24;
+const COAST_FRICTION = 0.9;
+const COAST_MIN_VELOCITY = 0.003;
+const WHEEL_SNAP_MS = 70;
 const VISIBLE_SPAN = 5;
+const PAGE_POSTER_SIZES = "(max-width: 640px) 46vw, 236px";
+const SHEET_POSTER_SIZES = "(max-width: 640px) 36vw, 156px";
 
 type CardMetrics = {
   rotateY: number;
@@ -74,9 +83,19 @@ type CardMetrics = {
   brightness: number;
   opacity: number;
   zIndex: number;
-  shadow: string;
   isActive: boolean;
 };
+
+type PaintedCard = {
+  root: HTMLElement;
+  dim: HTMLElement | null;
+  caption: HTMLElement | null;
+  link: HTMLElement | null;
+};
+
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const clampIndex = (value: number, max: number) =>
   Math.min(Math.max(value, 0), Math.max(max, 0));
@@ -102,25 +121,40 @@ const getCardMetrics = (
     brightness: Math.max(compact ? 0.62 : 0.72, 1 - distance * (compact ? 0.14 : 0.08)),
     opacity: distance > 5.2 ? Math.max(0, 1 - (distance - 5.2) * 1.4) : 1,
     zIndex: Math.round(900 - distance * 80),
-    shadow: isActive
-      ? compact
-        ? "0 18px 36px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(124, 156, 255, 0.7)"
-        : "0 28px 50px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(124, 156, 255, 0.28)"
-      : "0 14px 28px rgba(0, 0, 0, 0.38)",
     isActive,
   };
 };
 
-type DeckCardProps = {
-  title: CoverflowTitle;
-  index: number;
-  offset: number;
-  sideRoom: number;
-  isDragging: boolean;
-  compact?: boolean;
-  showMarkSeenEye?: boolean;
-  onSelect: (index: number) => void;
-  onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
+const paintCard = (
+  node: PaintedCard,
+  offset: number,
+  sideRoom: number,
+  compact: boolean,
+  moving: boolean,
+) => {
+  const metrics = getCardMetrics(offset, sideRoom, compact);
+  const { root, dim, caption, link } = node;
+
+  root.style.transform = `translate3d(${metrics.translateX}px, ${metrics.translateY}px, ${metrics.translateZ}px) rotateY(${metrics.rotateY}deg) scale(${metrics.scale})`;
+  root.style.opacity = String(metrics.opacity);
+  root.style.zIndex = String(metrics.zIndex);
+  root.style.pointerEvents = metrics.opacity < 0.08 ? "none" : "auto";
+  root.style.willChange = moving ? "transform" : "auto";
+  root.classList.toggle("is-focused", metrics.isActive);
+  root.setAttribute("aria-selected", metrics.isActive ? "true" : "false");
+  root.setAttribute("aria-hidden", metrics.opacity < 0.08 ? "true" : "false");
+
+  if (dim) {
+    dim.style.opacity = String(1 - metrics.brightness);
+  }
+
+  if (caption) {
+    caption.style.opacity = !compact && Math.abs(offset) < 3.2 ? "1" : "0";
+  }
+
+  if (link) {
+    link.tabIndex = metrics.isActive ? 0 : -1;
+  }
 };
 
 const DeckAvailabilityMark = ({
@@ -159,20 +193,28 @@ const DeckAvailabilityMark = ({
   );
 };
 
-const DeckCard = ({
+type DeckCardProps = {
+  title: CoverflowTitle;
+  index: number;
+  compact?: boolean;
+  nearFocus?: boolean;
+  showMarkSeenEye?: boolean;
+  onSelect: (index: number) => void;
+  onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
+  registerNode: (index: number, node: HTMLElement | null) => void;
+};
+
+const DeckCard = memo(function DeckCard({
   title,
   index,
-  offset,
-  sideRoom,
-  isDragging,
   compact = false,
+  nearFocus = false,
   showMarkSeenEye = false,
   onSelect,
   onPointerDown,
-}: DeckCardProps) => {
-  const metrics = getCardMetrics(offset, sideRoom, compact);
+  registerNode,
+}: DeckCardProps) {
   const imdbLabel = formatImdbRating(title.imdbRating);
-  const showCaption = !compact && Math.abs(offset) < 3.2;
   const availabilityPlatform = primaryAvailabilityPlatform(
     title.flatrateProviders,
     title.platform,
@@ -180,9 +222,20 @@ const DeckCard = ({
   const availabilityLabel = availabilityPlatform
     ? PLATFORM_SERVICE_LABEL[availabilityPlatform]
     : title.flatrateProviders?.[0]?.name;
+  const posterSizes = compact ? SHEET_POSTER_SIZES : PAGE_POSTER_SIZES;
+  const poster = (
+    <PosterImage
+      name={title.name}
+      posterPath={title.posterPath}
+      priority={nearFocus}
+      sizes={posterSizes}
+      className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
+    />
+  );
 
   const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    if (metrics.isActive) {
+    const selected = event.currentTarget.closest("article")?.classList.contains("is-focused");
+    if (selected) {
       return;
     }
 
@@ -194,65 +247,41 @@ const DeckCard = ({
     event.preventDefault();
   };
 
+  const handleRef = (node: HTMLElement | null) => {
+    registerNode(index, node);
+  };
+
   return (
     <article
+      ref={handleRef}
       id={`coverflow-item-${title.id}`}
       role="option"
-      aria-selected={metrics.isActive}
-      aria-hidden={metrics.opacity < 0.08}
+      aria-selected={nearFocus}
       className={cn(
-        "absolute inset-0 origin-center",
-        metrics.opacity < 0.08 ? "pointer-events-none" : "pointer-events-auto",
+        "coverflow-card absolute inset-0 origin-center",
+        compact && "is-compact",
       )}
-      style={{
-        transform: `translate3d(${metrics.translateX}px, ${metrics.translateY}px, ${metrics.translateZ}px) rotateY(${metrics.rotateY}deg) scale(${metrics.scale})`,
-        filter: `brightness(${metrics.brightness})`,
-        opacity: metrics.opacity,
-        zIndex: metrics.zIndex,
-        transition: "filter 220ms ease, opacity 220ms ease, box-shadow 220ms ease",
-        boxShadow: metrics.shadow,
-        backfaceVisibility: "hidden",
-        willChange: "transform",
-      }}
       onPointerDown={onPointerDown}
     >
       <Link
         href={`/titulos/${title.id}`}
-        tabIndex={metrics.isActive ? 0 : -1}
+        tabIndex={nearFocus ? 0 : -1}
         aria-label={`${title.name}${title.year ? ` (${title.year})` : ""}${
           availabilityLabel ? ` en ${availabilityLabel}` : ""
         }`}
         onClick={handleClick}
         onDragStart={handleDragStart}
-        className={cn(
-          "relative block h-full overflow-hidden rounded-poster border bg-surface [&_img]:pointer-events-none",
-          isDragging ? "cursor-grabbing" : "cursor-grab",
-          metrics.isActive
-            ? compact
-              ? "border-accent"
-              : "border-accent/40"
-            : "border-white/10",
-          "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-        )}
+        className="coverflow-card-face relative block h-full cursor-inherit overflow-hidden rounded-poster border bg-surface [&_img]:pointer-events-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         draggable={false}
       >
         {compact ? (
-          <PosterImage
-            name={title.name}
-            posterPath={title.posterPath}
-            priority={metrics.isActive}
-            className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
-          />
+          poster
         ) : (
           <SharedPoster titleId={title.id} className="absolute inset-0">
-            <PosterImage
-              name={title.name}
-              posterPath={title.posterPath}
-              priority={metrics.isActive}
-              className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
-            />
+            {poster}
           </SharedPoster>
         )}
+        <span data-coverflow-dim className="coverflow-card-dim" aria-hidden />
         {!compact && title.watched ? (
           <WatchedBadge compact className="absolute left-2 top-2 z-10" />
         ) : null}
@@ -266,25 +295,25 @@ const DeckCard = ({
             className="absolute right-2 top-2 z-10"
           />
         ) : null}
-        <div
-          className={cn(
-            "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-10",
-            showCaption ? "opacity-100" : "opacity-0",
-          )}
-        >
-          <DeckAvailabilityMark title={title} platform={availabilityPlatform} />
-          <p className="truncate text-[10px] uppercase tracking-wider text-white/70">
-            {TITLE_KIND_LABEL[title.kind]}
-            {title.year ? ` · ${title.year}` : ""}
-          </p>
-          <p className="truncate font-serif text-sm leading-tight text-white">
-            {title.name}
-          </p>
-          <p className="truncate text-xs text-star">
-            {formatRating(title.rating)}
-            {imdbLabel ? ` · ${imdbLabel}` : ""}
-          </p>
-        </div>
+        {compact ? null : (
+          <div
+            data-coverflow-caption
+            className="coverflow-card-caption absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-10"
+          >
+            <DeckAvailabilityMark title={title} platform={availabilityPlatform} />
+            <p className="truncate text-[10px] uppercase tracking-wider text-white/70">
+              {TITLE_KIND_LABEL[title.kind]}
+              {title.year ? ` · ${title.year}` : ""}
+            </p>
+            <p className="truncate font-serif text-sm leading-tight text-white">
+              {title.name}
+            </p>
+            <p className="truncate text-xs text-star">
+              {formatRating(title.rating)}
+              {imdbLabel ? ` · ${imdbLabel}` : ""}
+            </p>
+          </div>
+        )}
       </Link>
       {showMarkSeenEye && !title.watched ? (
         <MarkSeenEye
@@ -298,7 +327,7 @@ const DeckCard = ({
       ) : null}
     </article>
   );
-};
+});
 
 export const CoverflowDeck = ({
   titles,
@@ -311,8 +340,7 @@ export const CoverflowDeck = ({
   const isSheet = variant === "sheet";
   const focusSpring = useSpringFeedback();
   const notifiedIndex = useRef<number | null>(null);
-  const [displayIndex, setDisplayIndex] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [cardWidth, setCardWidth] = useState(isSheet ? CARD_WIDTH_SHEET : CARD_WIDTH);
   const [stageWidth, setStageWidth] = useState(480);
   const dragStartX = useRef(0);
@@ -327,16 +355,27 @@ export const CoverflowDeck = ({
   const suppressClick = useRef(false);
   const titlesLengthRef = useRef(titles.length);
   const cardWidthRef = useRef(CARD_WIDTH);
+  const sideRoomRef = useRef(8);
+  const compactRef = useRef(isSheet);
+  const activeIndexRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const wheelSnapTimeout = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-
-  displayIndexRef.current = displayIndex;
-  titlesLengthRef.current = titles.length;
-  cardWidthRef.current = cardWidth;
+  const cardNodes = useRef(new Map<number, PaintedCard>());
+  const tickRef = useRef<() => void>(() => {});
 
   const maxIndex = () => Math.max(titlesLengthRef.current - 1, 0);
+
+  const setGrabbingCursor = (grabbing: boolean) => {
+    const node = containerRef.current;
+    if (!node) {
+      return;
+    }
+
+    node.classList.toggle("cursor-grabbing", grabbing);
+    node.classList.toggle("cursor-grab", !grabbing);
+  };
 
   const stopRaf = () => {
     if (rafRef.current == null) {
@@ -347,14 +386,57 @@ export const CoverflowDeck = ({
     rafRef.current = null;
   };
 
-  const tick = useCallback(() => {
+  const paintCards = (moving: boolean) => {
+    const display = displayIndexRef.current;
+    const sideRoom = sideRoomRef.current;
+    const compact = compactRef.current;
+
+    cardNodes.current.forEach((node, index) => {
+      paintCard(node, index - display, sideRoom, compact, moving);
+    });
+  };
+
+  const commitActiveIndex = () => {
+    const next = clampIndex(Math.round(displayIndexRef.current), maxIndex());
+    if (next === activeIndexRef.current) {
+      return;
+    }
+
+    activeIndexRef.current = next;
+    setActiveIndex(next);
+  };
+
+  const registerNode = useCallback((index: number, node: HTMLElement | null) => {
+    if (!node) {
+      cardNodes.current.delete(index);
+      return;
+    }
+
+    const painted: PaintedCard = {
+      root: node,
+      dim: node.querySelector("[data-coverflow-dim]"),
+      caption: node.querySelector("[data-coverflow-caption]"),
+      link: node.querySelector("a"),
+    };
+    cardNodes.current.set(index, painted);
+    paintCard(
+      painted,
+      index - displayIndexRef.current,
+      sideRoomRef.current,
+      compactRef.current,
+      motionModeRef.current !== "idle" || isDraggingRef.current,
+    );
+  }, []);
+
+  const runTick = () => {
     const ceiling = maxIndex();
     const mode = motionModeRef.current;
 
     if (mode === "drag") {
       displayIndexRef.current = targetIndexRef.current;
+      paintCards(true);
+      commitActiveIndex();
       rafRef.current = null;
-      setDisplayIndex(displayIndexRef.current);
       return;
     }
 
@@ -380,27 +462,30 @@ export const CoverflowDeck = ({
 
     if (motionModeRef.current === "idle") {
       const gap = targetIndexRef.current - displayIndexRef.current;
-      if (Math.abs(gap) < 0.001) {
+      const snapStep = prefersReducedMotion() ? 1 : SNAP_LERP;
+      if (Math.abs(gap) < 0.001 || snapStep >= 1) {
         displayIndexRef.current = targetIndexRef.current;
-        setDisplayIndex(displayIndexRef.current);
+        paintCards(false);
+        commitActiveIndex();
         rafRef.current = null;
         return;
       }
 
-      displayIndexRef.current += gap * SNAP_LERP;
+      displayIndexRef.current += gap * snapStep;
     }
 
-    setDisplayIndex(displayIndexRef.current);
-    rafRef.current = requestAnimationFrame(tick);
-  }, []);
+    paintCards(true);
+    commitActiveIndex();
+    rafRef.current = requestAnimationFrame(() => tickRef.current());
+  };
 
   const ensureTick = useCallback(() => {
     if (rafRef.current != null) {
       return;
     }
 
-    rafRef.current = requestAnimationFrame(tick);
-  }, [tick]);
+    rafRef.current = requestAnimationFrame(() => tickRef.current());
+  }, []);
 
   const snapTo = useCallback(
     (index: number) => {
@@ -430,9 +515,9 @@ export const CoverflowDeck = ({
     }
 
     isDraggingRef.current = false;
-    setIsDragging(false);
+    setGrabbingCursor(false);
 
-    const projected = displayIndexRef.current + velocityRef.current * 12;
+    const projected = displayIndexRef.current + velocityRef.current * 10;
     const nearest = clampIndex(Math.round(projected), maxIndex());
 
     if (Math.abs(velocityRef.current) > COAST_MIN_VELOCITY * 3) {
@@ -445,7 +530,7 @@ export const CoverflowDeck = ({
     ensureTick();
   }, [ensureTick]);
 
-  const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
+  const handlePointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
     if (titlesLengthRef.current <= 1 || event.button !== 0) {
       return;
     }
@@ -463,9 +548,10 @@ export const CoverflowDeck = ({
     prevPointerX.current = event.clientX;
     prevPointerTime.current = performance.now();
     velocityRef.current = 0;
-    setIsDragging(true);
+    setGrabbingCursor(true);
     stopRaf();
-  };
+    paintCards(true);
+  }, []);
 
   useEffect(() => {
     const handlePointerMove = (event: PointerEvent) => {
@@ -476,10 +562,10 @@ export const CoverflowDeck = ({
       const now = performance.now();
       const dt = Math.max(8, now - prevPointerTime.current);
       const dx = event.clientX - prevPointerX.current;
-      const cardSpan = cardWidthRef.current * 0.58;
-      const instantVelocity = -dx / cardSpan * (16.67 / dt);
+      const cardSpan = cardWidthRef.current * 0.52;
+      const instantVelocity = (-dx / cardSpan) * (16.67 / dt);
 
-      velocityRef.current = velocityRef.current * 0.72 + instantVelocity * 0.28;
+      velocityRef.current = velocityRef.current * 0.68 + instantVelocity * 0.32;
       prevPointerX.current = event.clientX;
       prevPointerTime.current = now;
 
@@ -491,14 +577,14 @@ export const CoverflowDeck = ({
       const next = clampIndex(dragStartIndex.current - delta / cardSpan, maxIndex());
       targetIndexRef.current = next;
       displayIndexRef.current = next;
-      setDisplayIndex(next);
+      ensureTick();
     };
 
     const handlePointerUp = () => {
       stopDragging();
     };
 
-    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
     window.addEventListener("pointerup", handlePointerUp);
     window.addEventListener("pointercancel", handlePointerUp);
 
@@ -507,7 +593,7 @@ export const CoverflowDeck = ({
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("pointercancel", handlePointerUp);
     };
-  }, [stopDragging]);
+  }, [ensureTick, stopDragging]);
 
   useEffect(() => {
     return () => {
@@ -579,7 +665,9 @@ export const CoverflowDeck = ({
     const ceiling = Math.max(titles.length - 1, 0);
     targetIndexRef.current = clampIndex(targetIndexRef.current, ceiling);
     displayIndexRef.current = clampIndex(displayIndexRef.current, ceiling);
-    setDisplayIndex(displayIndexRef.current);
+    const next = clampIndex(Math.round(displayIndexRef.current), ceiling);
+    activeIndexRef.current = next;
+    setActiveIndex(next);
   }, [titles.length]);
 
   useLayoutEffect(() => {
@@ -605,41 +693,50 @@ export const CoverflowDeck = ({
     return () => observer.disconnect();
   }, [isSheet, titles.length]);
 
+  useLayoutEffect(() => {
+    titlesLengthRef.current = titles.length;
+    cardWidthRef.current = cardWidth;
+    compactRef.current = isSheet;
+    sideRoomRef.current = Math.max(8, (stageWidth - cardWidth) / 2 - (isSheet ? 4 : 12));
+    tickRef.current = runTick;
+  });
+
+  useLayoutEffect(() => {
+    paintCards(motionModeRef.current !== "idle" || isDraggingRef.current);
+  }, [activeIndex, cardWidth, stageWidth, titles.length]);
+
   useEffect(() => {
     if (titles.length === 0) {
       notifiedIndex.current = null;
       return;
     }
 
-    const index = clampIndex(Math.round(displayIndex), titles.length - 1);
-    const title = titles[index];
-    if (!title || notifiedIndex.current === index) {
+    const title = titles[activeIndex];
+    if (!title || notifiedIndex.current === activeIndex) {
       return;
     }
 
     const isFirst = notifiedIndex.current == null;
-    notifiedIndex.current = index;
-    onActiveChange?.(index, title);
+    notifiedIndex.current = activeIndex;
+    onActiveChange?.(activeIndex, title);
     if (isSheet && !isFirst) {
       focusSpring.trigger();
     }
-  }, [displayIndex, focusSpring, isSheet, onActiveChange, titles]);
+  }, [activeIndex, focusSpring, isSheet, onActiveChange, titles]);
 
   if (titles.length === 0) {
     return null;
   }
 
-  const roundedActive = Math.round(displayIndex);
-  const activeTitle = titles[roundedActive];
+  const activeTitle = titles[activeIndex];
   const showMarkSeenEye = footer === "watched" && !isSheet;
   const activePlatform =
     footer === "full" && !isSheet && activeTitle
       ? primaryAvailabilityPlatform(activeTitle.flatrateProviders, activeTitle.platform)
       : null;
-  const sideRoom = Math.max(8, (stageWidth - cardWidth) / 2 - (isSheet ? 4 : 12));
-  const visibleSpan = stageWidth < 500 ? 3 : VISIBLE_SPAN;
-  const firstVisible = Math.max(0, Math.floor(displayIndex) - visibleSpan);
-  const lastVisible = Math.min(titles.length - 1, Math.ceil(displayIndex) + visibleSpan);
+  const visibleSpan = stageWidth < 500 ? 4 : VISIBLE_SPAN;
+  const firstVisible = Math.max(0, activeIndex - visibleSpan);
+  const lastVisible = Math.min(titles.length - 1, activeIndex + visibleSpan);
   const visibleTitles = titles.slice(firstVisible, lastVisible + 1);
 
   return (
@@ -656,7 +753,7 @@ export const CoverflowDeck = ({
         onPointerDown={handlePointerDown}
         onClickCapture={handleClickCapture}
         className={cn(
-          "relative min-w-0 cursor-grab touch-none select-none outline-none active:cursor-grabbing",
+          "relative min-w-0 cursor-grab touch-none select-none overscroll-none outline-none",
           isSheet
             ? "overflow-visible bg-transparent px-0 pb-2 pt-1 focus-visible:ring-2 focus-visible:ring-accent/60"
             : "overflow-hidden rounded-md border border-line bg-gradient-to-b from-canvas-deep via-canvas to-[#0a0d10] px-1 pb-9 pt-4 focus-visible:ring-2 focus-visible:ring-accent/60 sm:px-8 sm:pb-14 sm:pt-14",
@@ -679,6 +776,7 @@ export const CoverflowDeck = ({
               marginLeft: -cardWidth / 2,
               marginTop: -(cardWidth * 1.5) / 2,
               transformStyle: "preserve-3d",
+              contain: "layout style",
             }}
           >
             {visibleTitles.map((title, visibleIndex) => {
@@ -688,13 +786,12 @@ export const CoverflowDeck = ({
                   key={title.id}
                   title={title}
                   index={index}
-                  offset={index - displayIndex}
-                  sideRoom={sideRoom}
-                  isDragging={isDragging}
                   compact={isSheet}
+                  nearFocus={Math.abs(index - activeIndex) <= 1}
                   showMarkSeenEye={showMarkSeenEye}
                   onSelect={handleSelectCard}
                   onPointerDown={handlePointerDown}
+                  registerNode={registerNode}
                 />
               );
             })}
@@ -707,8 +804,8 @@ export const CoverflowDeck = ({
               <span
                 key={title.id}
                 className={cn(
-                  "h-1.5 rounded-full transition",
-                  index === roundedActive ? "w-4 bg-accent" : "w-1.5 bg-chrome",
+                  "h-1.5 rounded-full",
+                  index === activeIndex ? "w-4 bg-accent" : "w-1.5 bg-chrome",
                 )}
               />
             ))}
