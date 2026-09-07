@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState } from "react";
+import { moveListItem } from "@/app/actions/lists";
 import { removeFromWatchlist } from "@/app/actions/watchlist";
 import { WatchlistCard } from "@/components/WatchlistCard";
 import type { ListItem, Platform } from "@/db";
 import type { TitleWithRelations } from "@/lib/queries";
+import {
+  sameOrderedIds,
+  swapAdjacentIds,
+  useStickyOptimistic,
+} from "@/lib/use-optimistic-action";
 
 type WatchlistItem = ListItem & {
   title: TitleWithRelations;
@@ -21,9 +27,23 @@ export const WatchlistList = ({
   listId,
   preferredPlatforms = [],
 }: WatchlistListProps) => {
+  const serverIds = useMemo(() => items.map((item) => item.titleId), [items]);
+  const byId = useMemo(
+    () => new Map(items.map((item) => [item.titleId, item])),
+    [items],
+  );
   const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(() => new Set());
-  const [, startTransition] = useTransition();
-  const visible = items.filter((item) => !hiddenIds.has(item.titleId));
+  const { value: order, error, isPending, run } = useStickyOptimistic(
+    serverIds,
+    sameOrderedIds,
+  );
+
+  const visible = order
+    .filter((titleId) => !hiddenIds.has(titleId))
+    .flatMap((titleId) => {
+      const item = byId.get(titleId);
+      return item ? [item] : [];
+    });
   const [hero, ...queue] = visible;
 
   const hide = (titleId: string) => {
@@ -40,13 +60,28 @@ export const WatchlistList = ({
 
   const handleRemove = (titleId: string) => {
     hide(titleId);
-    startTransition(async () => {
-      try {
-        await removeFromWatchlist(titleId);
-      } catch {
-        restore(titleId);
-      }
-    });
+    run(
+      order.filter((id) => id !== titleId),
+      async () => {
+        try {
+          await removeFromWatchlist(titleId);
+        } catch (caught) {
+          restore(titleId);
+          throw caught;
+        }
+      },
+    );
+  };
+
+  const handleMove = (titleId: string, direction: "up" | "down") => {
+    const visibleIds = visible.map((item) => item.titleId);
+    const nextVisible = swapAdjacentIds(visibleIds, titleId, direction);
+    const hiddenInOrder = order.filter((id) => hiddenIds.has(id));
+    const index = visibleIds.indexOf(titleId);
+    const neighbor = visibleIds[direction === "up" ? index - 1 : index + 1];
+    run([...nextVisible, ...hiddenInOrder], () =>
+      moveListItem(listId, titleId, direction, neighbor),
+    );
   };
 
   if (visible.length === 0) {
@@ -64,11 +99,11 @@ export const WatchlistList = ({
           item={hero}
           variant="hero"
           position={1}
-          listId={listId}
           canMoveUp={false}
           canMoveDown={queue.length > 0}
-          swapDownTitleId={queue[0]?.titleId}
+          pendingOrder={isPending}
           removeAction={() => handleRemove(hero.titleId)}
+          onMove={(direction) => handleMove(hero.titleId, direction)}
           onMarkedSeen={() => hide(hero.titleId)}
           onMarkSeenError={() => restore(hero.titleId)}
           preferredPlatforms={preferredPlatforms}
@@ -77,28 +112,30 @@ export const WatchlistList = ({
 
       {queue.length > 0 ? (
         <ul className="divide-y divide-line">
-          {queue.map((item, index) => {
-            const visibleIndex = index + 1;
-            return (
-              <li key={item.titleId}>
-                <WatchlistCard
-                  item={item}
-                  variant="queue"
-                  position={index + 2}
-                  listId={listId}
-                  canMoveUp
-                  canMoveDown={index < queue.length - 1}
-                  swapUpTitleId={visible[visibleIndex - 1]?.titleId}
-                  swapDownTitleId={visible[visibleIndex + 1]?.titleId}
-                  removeAction={() => handleRemove(item.titleId)}
-                  onMarkedSeen={() => hide(item.titleId)}
-                  onMarkSeenError={() => restore(item.titleId)}
-                  preferredPlatforms={preferredPlatforms}
-                />
-              </li>
-            );
-          })}
+          {queue.map((item, index) => (
+            <li key={item.titleId}>
+              <WatchlistCard
+                item={item}
+                variant="queue"
+                position={index + 2}
+                canMoveUp
+                canMoveDown={index < queue.length - 1}
+                pendingOrder={isPending}
+                removeAction={() => handleRemove(item.titleId)}
+                onMove={(direction) => handleMove(item.titleId, direction)}
+                onMarkedSeen={() => hide(item.titleId)}
+                onMarkSeenError={() => restore(item.titleId)}
+                preferredPlatforms={preferredPlatforms}
+              />
+            </li>
+          ))}
         </ul>
+      ) : null}
+
+      {error ? (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
       ) : null}
     </div>
   );

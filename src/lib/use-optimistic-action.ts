@@ -2,22 +2,16 @@
 
 import { useOptimistic, useState, useTransition } from "react";
 
+export {
+  sameIdList,
+  sameOrderedIds,
+  swapAdjacentIds,
+} from "@/lib/optimistic-ids";
+
 export const actionErrorMessage = (
   error: unknown,
   fallback = "No se pudo guardar.",
 ) => (error instanceof Error ? error.message : fallback);
-
-export const sameIdList = (left: string[], right: string[]) => {
-  if (left === right) {
-    return true;
-  }
-  if (left.length !== right.length) {
-    return false;
-  }
-  const sortedLeft = [...left].sort();
-  const sortedRight = [...right].sort();
-  return sortedLeft.every((id, index) => id === sortedRight[index]);
-};
 
 /**
  * Optimistic value that stays put after the transition ends (until the

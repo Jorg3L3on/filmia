@@ -1,7 +1,7 @@
 import { createId } from "@paralleldrive/cuid2";
 import { and, desc, eq } from "drizzle-orm";
-import { after } from "next/server";
 import { db, listItems, lists, titles, type TitleKind } from "@/db";
+import { scheduleAfterResponse } from "@/lib/after-response";
 import { parseOptionalDate } from "@/lib/form-data";
 import { TITLE_KINDS } from "@/lib/labels";
 import { ensureDefaultLists, WATCHLIST_SLUG } from "@/lib/lists";
@@ -77,14 +77,6 @@ const enqueueInWatchlist = async (userId: string, titleId: string) => {
 
 const resolveWatchedAt = (value?: string | null) =>
   parseOptionalDate(value ?? null) ?? new Date();
-
-const scheduleAfterResponse = (task: () => Promise<void>) => {
-  try {
-    after(task);
-  } catch {
-    void task();
-  }
-};
 
 const enrichCreatedTitleInBackground = (
   titleId: string,

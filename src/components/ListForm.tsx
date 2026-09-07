@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createList, updateList } from "@/app/actions/lists";
 import { EmptyListPreview } from "@/components/PosterStack";
+import { PendingSubmit } from "@/components/PendingSubmit";
 import type { List } from "@/db";
 import { isFixedListSlug } from "@/lib/lists";
 import { btnPrimary, fieldClass, focusRing } from "@/lib/ui";
@@ -63,9 +64,11 @@ export const ListForm = ({ list }: ListFormProps) => {
         <EmptyListPreview />
       </section>
 
-      <button type="submit" className={`${btnPrimary} w-full`}>
-        {list ? "Guardar lista" : "Crear lista"}
-      </button>
+      <PendingSubmit
+        idleLabel={list ? "Guardar lista" : "Crear lista"}
+        pendingLabel={list ? "Guardando…" : "Creando…"}
+        className={`${btnPrimary} w-full`}
+      />
     </form>
   );
 };

@@ -27,12 +27,16 @@ export const TitleTagsPanel = ({
   selectedTagIds,
 }: TitleTagsPanelProps) => {
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const { value: optimisticIds, error, run } = useStickyOptimistic(
+  const [pendingNames, setPendingNames] = useState<string[]>([]);
+  const { value: optimisticIds, error, run, setError } = useStickyOptimistic(
     selectedTagIds,
     sameIdList,
   );
   const selected = new Set(optimisticIds);
-  const assignAction = createAndAssignTag.bind(null, titleId);
+  const knownNames = new Set(tags.map((tag) => tag.name.toLowerCase()));
+  const pendingVisible = pendingNames.filter(
+    (name) => !knownNames.has(name.toLowerCase()),
+  );
 
   const handleToggle = (tagId: string) => {
     const next = selected.has(tagId)
@@ -48,6 +52,24 @@ export const TitleTagsPanel = ({
     });
   };
 
+  const handleCreate = (formData: FormData) => {
+    const name = String(formData.get("name") ?? "").trim();
+    if (!name) {
+      setError("El nombre es obligatorio.");
+      return;
+    }
+
+    setPendingNames((current) => [...current, name]);
+    run(optimisticIds, async () => {
+      try {
+        await createAndAssignTag(titleId, formData);
+      } catch (caught) {
+        setPendingNames((current) => current.filter((item) => item !== name));
+        throw caught;
+      }
+    });
+  };
+
   return (
     <section className={`${wellClass} space-y-4 p-5`}>
       <header className="space-y-1">
@@ -59,7 +81,7 @@ export const TitleTagsPanel = ({
         </p>
       </header>
 
-      {tags.length === 0 ? (
+      {tags.length === 0 && pendingVisible.length === 0 ? (
         <p className="text-sm text-mist">
           Todavía no hay etiquetas. Crea la primera aquí.
         </p>
@@ -102,6 +124,16 @@ export const TitleTagsPanel = ({
               </li>
             );
           })}
+          {pendingVisible.map((name) => (
+            <li key={`pending-${name}`}>
+              <span
+                className="rounded-full border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-accent"
+                aria-busy="true"
+              >
+                {name}
+              </span>
+            </li>
+          ))}
         </ul>
       )}
 
@@ -112,8 +144,9 @@ export const TitleTagsPanel = ({
       ) : null}
 
       <CreateTagForm
-        action={assignAction}
+        onCreate={handleCreate}
         submitLabel="Crear y asignar"
+        pendingLabel="Asignando…"
         placeholder="visual / espectáculo"
       />
 

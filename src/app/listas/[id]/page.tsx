@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ListKind } from "@/db";
-import { addTitleToList, deleteList } from "@/app/actions/lists";
+import { deleteList } from "@/app/actions/lists";
 import { AddTitleToListCta } from "@/components/AddTitleToListCta";
 import { CatalogFilters } from "@/components/CatalogFilters";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
@@ -110,13 +109,13 @@ export default async function ListDetailPage({
               {fixed ? "Editar descripción" : "Editar"}
             </Link>
             {fixed ? null : (
-              <form action={deleteAction}>
-                <ConfirmSubmit
-                  label="Borrar lista"
-                  confirmMessage={`¿Borrar la lista “${list.name}”?`}
-                  className={btnDanger}
-                />
-              </form>
+              <ConfirmSubmit
+                label="Borrar lista"
+                confirmMessage={`¿Borrar la lista “${list.name}”?`}
+                className={btnDanger}
+                href="/listas"
+                action={deleteAction}
+              />
             )}
           </>
         }

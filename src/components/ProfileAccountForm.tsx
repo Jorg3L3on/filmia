@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { updateAccount, type ProfileActionState } from "@/app/actions/profile";
+import { SuccessToast } from "@/components/SuccessToast";
 import { btnPrimary, fieldClass, wellClass } from "@/lib/ui";
 
 type ProfileAccountFormProps = {
@@ -22,13 +23,20 @@ export const ProfileAccountForm = ({ name, email }: ProfileAccountFormProps) => 
         <h2 className="text-lg font-semibold text-paper">Cuenta</h2>
       </header>
 
-      {state?.error ? (
+      {state && "error" in state ? (
         <p
           role="alert"
           className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger"
         >
           {state.error}
         </p>
+      ) : null}
+
+      {state && "ok" in state ? (
+        <SuccessToast
+          title="Cambios guardados"
+          description="Tu información se actualizó correctamente."
+        />
       ) : null}
 
       <label className="block space-y-1.5">

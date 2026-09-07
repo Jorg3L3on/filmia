@@ -1,8 +1,6 @@
 "use server";
 
 import { and, eq, ne } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { db, users } from "@/db";
 import { refreshSessionUser } from "@/lib/auth";
 import {
@@ -15,15 +13,13 @@ import {
   parsePasswordChange,
   parseStreamingPlatforms,
 } from "@/lib/form-data";
+import { revalidateProfileSurfaces } from "@/lib/revalidate-surfaces";
 import { requireUserId } from "@/lib/session";
 
-export type ProfileActionState = { error: string } | null;
+export type ProfileActionState = { error: string } | { ok: true } | null;
 
 const revalidateProfile = () => {
-  revalidatePath("/perfil");
-  revalidatePath("/");
-  revalidatePath("/watchlist");
-  revalidatePath("/titulos", "layout");
+  revalidateProfileSurfaces();
 };
 
 export const updateStreamingPlatforms = async (formData: FormData) => {
@@ -33,7 +29,6 @@ export const updateStreamingPlatforms = async (formData: FormData) => {
   await db.update(users).set({ streamingPlatforms }).where(eq(users.id, userId));
 
   revalidateProfile();
-  redirect("/perfil?guardado=plataformas");
 };
 
 export const updateAccount = async (
@@ -68,7 +63,7 @@ export const updateAccount = async (
   await refreshSessionUser({ id: userId, email, name });
 
   revalidateProfile();
-  redirect("/perfil?guardado=cuenta");
+  return { ok: true };
 };
 
 export const updatePassword = async (
@@ -108,5 +103,5 @@ export const updatePassword = async (
     .where(eq(users.id, userId));
 
   revalidateProfile();
-  redirect("/perfil?guardado=clave");
+  return { ok: true };
 };

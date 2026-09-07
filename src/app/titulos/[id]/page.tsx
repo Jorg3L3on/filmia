@@ -170,13 +170,13 @@ export default async function TitleDetailPage({
         <Link href={`/titulos/${title.id}/editar`} className={btnGhost}>
           Editar ficha
         </Link>
-        <form action={deleteAction}>
-          <ConfirmSubmit
-            label="Borrar"
-            confirmMessage={`¿Borrar “${title.name}”?`}
-            className={btnDanger}
-          />
-        </form>
+        <ConfirmSubmit
+          label="Borrar"
+          confirmMessage={`¿Borrar “${title.name}”?`}
+          className={btnDanger}
+          href="/"
+          action={deleteAction}
+        />
       </div>
     </article>
   );

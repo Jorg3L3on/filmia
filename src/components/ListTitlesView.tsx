@@ -1,16 +1,12 @@
-import { removeTitleFromList } from "@/app/actions/lists";
 import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
-import { ListItemOrderControls } from "@/components/ListItemOrderControls";
-import { MarkWatchedForm } from "@/components/MarkWatchedForm";
-import { PosterTile } from "@/components/PosterTile";
+import { ListTitlesGrid } from "@/components/ListTitlesGrid";
 import type { Platform, ListItem } from "@/db";
 import type { CatalogKindFilter } from "@/lib/catalog-href";
 import type { TitleWithRelations } from "@/lib/queries";
 import type { CatalogSort } from "@/lib/tags";
 import { catalogHref } from "@/lib/tags";
 import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
-import { btnLink } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
 import type { SeriesStatusFilter } from "@/lib/series";
 
@@ -91,50 +87,11 @@ export const ListTitlesView = ({
           listId={listId}
         />
       ) : (
-        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          {items.map((item, index) => {
-            const removeAction = removeTitleFromList.bind(null, listId, item.titleId);
-            return (
-              <li key={item.titleId} className="space-y-2">
-                <PosterTile
-                  titleId={item.title.id}
-                  href={`/titulos/${item.title.id}`}
-                  name={item.title.name}
-                  posterPath={item.title.posterPath}
-                  year={item.title.year}
-                  rating={item.title.rating}
-                  watchedAt={item.title.watchedAt}
-                  tags={item.title.tags.map((entry) => entry.tag)}
-                  seriesStatus={
-                    item.title.kind === "SERIES" ? item.title.seriesStatus : null
-                  }
-                />
-                {selectedTags.length === 0 && !minePlatforms && !seriesStatus ? (
-                  <ListItemOrderControls
-                    listId={listId}
-                    titleId={item.titleId}
-                    canMoveUp={index > 0}
-                    canMoveDown={index < items.length - 1}
-                  />
-                ) : null}
-                {!item.title.watchedAt ? (
-                  <MarkWatchedForm
-                    titleId={item.title.id}
-                    variant="queue"
-                    rating={item.title.rating}
-                    review={item.title.review}
-                    collapsed
-                  />
-                ) : null}
-                <form action={removeAction}>
-                  <button type="submit" className={`${btnLink} w-full`}>
-                    Quitar de la lista
-                  </button>
-                </form>
-              </li>
-            );
-          })}
-        </ul>
+        <ListTitlesGrid
+          listId={listId}
+          items={items}
+          showOrder={selectedTags.length === 0 && !minePlatforms && !seriesStatus}
+        />
       )}
     </div>
   );
