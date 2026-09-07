@@ -17,7 +17,7 @@ import {
   titleMatchesKind,
 } from "@/lib/catalog-filters";
 import { getTagFilters, getUserStreamingPlatforms, getWatchlist } from "@/lib/queries";
-import { scheduleMissingTitleOverviews } from "@/lib/title-overview";
+import { scheduleMissingTitleOverviews } from "@/lib/title-overview-schedule";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
