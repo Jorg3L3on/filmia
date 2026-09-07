@@ -1,5 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import { and, eq } from "drizzle-orm";
+import { cache } from "react";
 import { db, tags } from "@/db";
 import { slugify } from "@/lib/labels";
 
@@ -81,7 +82,7 @@ export const parseMinePlatforms = (value: unknown): boolean => {
   return normalized === "1" || normalized === "true" || normalized === "on";
 };
 
-export const ensureDefaultTags = async (userId: string) => {
+export const ensureDefaultTags = cache(async (userId: string) => {
   await Promise.all(
     DEFAULT_TAG_NAMES.map(async (name) => {
       const slug = slugify(name);
@@ -103,4 +104,4 @@ export const ensureDefaultTags = async (userId: string) => {
         });
     }),
   );
-};
+});

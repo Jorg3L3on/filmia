@@ -8,12 +8,12 @@ import { TagPills } from "@/components/TagPills";
 import { WatchedBadge } from "@/components/WatchedBadge";
 import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
-import type { TitleWithRelations } from "@/lib/queries";
+import type { TitleWithTags } from "@/lib/queries";
 import { cn } from "@/lib/cn";
 import { focusRing, posterFrame } from "@/lib/ui";
 
 type TitleCardProps = {
-  title: TitleWithRelations;
+  title: TitleWithTags;
 };
 
 export const TitleCard = ({ title }: TitleCardProps) => {

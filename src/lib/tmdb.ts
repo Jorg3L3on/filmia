@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { TitleKind } from "@/db";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
@@ -479,7 +480,7 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
   };
 };
 
-export const getTmdbTitleExtras = async (
+export const getTmdbTitleExtras = cache(async (
   tmdbId: number,
   kind: TitleKind,
 ): Promise<TmdbTitleExtras | null> => {
@@ -499,4 +500,4 @@ export const getTmdbTitleExtras = async (
   } catch {
     return null;
   }
-};
+});

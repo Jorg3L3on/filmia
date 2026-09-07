@@ -236,10 +236,13 @@ export type TitleTagWithTag = typeof titleTags.$inferSelect & {
 };
 
 export type ListItemWithTitleRelations = typeof listItems.$inferSelect & {
-  title: TitleWithRelations;
+  title: TitleWithTags;
 };
 
-export type TitleWithRelations = Title & {
+export type TitleWithTags = Title & {
   tags: TitleTagWithTag[];
+};
+
+export type TitleWithRelations = TitleWithTags & {
   listItems: (typeof listItems.$inferSelect & { list: List })[];
 };

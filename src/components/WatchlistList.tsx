@@ -5,7 +5,7 @@ import { moveListItem } from "@/app/actions/lists";
 import { removeFromWatchlist } from "@/app/actions/watchlist";
 import { WatchlistCard } from "@/components/WatchlistCard";
 import type { ListItem, Platform } from "@/db";
-import type { TitleWithRelations } from "@/lib/queries";
+import type { TitleWithTags } from "@/lib/queries";
 import {
   sameOrderedIds,
   swapAdjacentIds,
@@ -13,7 +13,7 @@ import {
 } from "@/lib/use-optimistic-action";
 
 type WatchlistItem = ListItem & {
-  title: TitleWithRelations;
+  title: TitleWithTags;
 };
 
 type WatchlistListProps = {

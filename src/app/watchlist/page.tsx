@@ -1,5 +1,5 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import { ensureCurrentUserWatchlist } from "@/app/actions/watchlist";
 import { CatalogFilters } from "@/components/CatalogFilters";
 import { EmptyState } from "@/components/EmptyState";
 import {
@@ -7,6 +7,7 @@ import {
   MinePlatformsSetupCta,
   MissingStreamingDataNote,
 } from "@/components/MinePlatformsNotice";
+import { WatchlistBodySkeleton } from "@/components/PageSkeletons";
 import { WatchlistList } from "@/components/WatchlistList";
 import {
   parseCatalogOrder,
@@ -15,8 +16,8 @@ import {
   sortCatalogByTitle,
   titleMatchesKind,
 } from "@/lib/catalog-filters";
-import { getTags, getUserStreamingPlatforms, getWatchlist } from "@/lib/queries";
-import { hydrateMissingTitleOverviews, titleOverviewMap } from "@/lib/title-overview";
+import { getTagFilters, getUserStreamingPlatforms, getWatchlist } from "@/lib/queries";
+import { scheduleMissingTitleOverviews } from "@/lib/title-overview-schedule";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
@@ -29,19 +30,51 @@ export const metadata = {
   title: "Quiero ver",
 };
 
-export default async function WatchlistPage({
+type WatchlistSearchParams = {
+  kind?: string | string[];
+  minePlatforms?: string | string[];
+  platform?: string | string[];
+  sort?: string | string[];
+  tag?: string | string[];
+  seriesStatus?: string | string[];
+};
+
+const WatchlistHeader = () => (
+  <header className="flex items-center justify-between gap-3">
+    <h1 className="font-serif text-4xl tracking-tight text-paper">Quiero ver</h1>
+    <Link
+      href="/buscar"
+      aria-label="Buscar para agregar"
+      className={cn(
+        "inline-flex h-10 w-10 items-center justify-center rounded-full border border-chrome text-fog hover:text-paper",
+        focusRing,
+      )}
+    >
+      <SearchIcon />
+    </Link>
+  </header>
+);
+
+export default function WatchlistPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    kind?: string | string[];
-    minePlatforms?: string | string[];
-    platform?: string | string[];
-    sort?: string | string[];
-    tag?: string | string[];
-    seriesStatus?: string | string[];
-  }>;
+  searchParams: Promise<WatchlistSearchParams>;
 }) {
-  await ensureCurrentUserWatchlist();
+  return (
+    <div className="space-y-6">
+      <WatchlistHeader />
+      <Suspense fallback={<WatchlistBodySkeleton />}>
+        <WatchlistBody searchParams={searchParams} />
+      </Suspense>
+    </div>
+  );
+}
+
+const WatchlistBody = async ({
+  searchParams,
+}: {
+  searchParams: Promise<WatchlistSearchParams>;
+}) => {
   const params = await searchParams;
   const kindFilter = parseKindFilter(params.kind);
   const minePlatforms = parseMinePlatforms(params.minePlatforms);
@@ -53,7 +86,7 @@ export default async function WatchlistPage({
   const [watchlist, userPlatforms, tags] = await Promise.all([
     getWatchlist(),
     getUserStreamingPlatforms(),
-    getTags(),
+    getTagFilters(),
   ]);
 
   const rawItems = watchlist?.items ?? [];
@@ -75,37 +108,13 @@ export default async function WatchlistPage({
         ? kindItems.filter((item) => visibleIds.has(item.title.id))
         : kindItems;
   const items = sortCatalogByTitle(filteredItems, sort);
-  // Same title object refs as the cards below; hydrate writes overview/genres in place.
-  const hydratedTitles = await hydrateMissingTitleOverviews(
-    items.map((item) => item.title),
-  );
-  const overviews = titleOverviewMap(hydratedTitles);
-  for (const item of items) {
-    const overview = overviews.get(item.title.id);
-    if (overview && item.title.overview !== overview) {
-      item.title.overview = overview;
-    }
-  }
+  scheduleMissingTitleOverviews(items.map((item) => item.title));
 
   const listId = watchlist?.id ?? "";
   const clearHref = catalogHref("/watchlist");
 
   return (
-    <div className="space-y-6">
-      <header className="flex items-center justify-between gap-3">
-        <h1 className="font-serif text-4xl tracking-tight text-paper">Quiero ver</h1>
-        <Link
-          href="/buscar"
-          aria-label="Buscar para agregar"
-          className={cn(
-            "inline-flex h-10 w-10 items-center justify-center rounded-full border border-chrome text-fog hover:text-paper",
-            focusRing,
-          )}
-        >
-          <SearchIcon />
-        </Link>
-      </header>
-
+    <>
       <CatalogFilters
         tags={tags}
         selectedSlugs={selectedTags}
@@ -159,9 +168,9 @@ export default async function WatchlistPage({
           />
         </div>
       )}
-    </div>
+    </>
   );
-}
+};
 
 const SearchIcon = () => (
   <svg

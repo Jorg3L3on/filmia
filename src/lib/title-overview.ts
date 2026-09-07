@@ -127,3 +127,5 @@ export const hydrateMissingTitleOverviews = async <T extends OverviewTitle>(
 
   return titleRows;
 };
+
+export const titleNeedsOverviewHydration = titleNeedsHydration;

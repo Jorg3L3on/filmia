@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { DiaryGenreToggle } from "@/components/DiaryGenreToggle";
 import { DiaryModeToggle } from "@/components/DiaryModeToggle";
 import { CatalogFilters } from "@/components/CatalogFilters";
@@ -11,10 +12,10 @@ import {
   MinePlatformsSetupCta,
   MissingStreamingDataNote,
 } from "@/components/MinePlatformsNotice";
+import { DiaryBodySkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/PageHeader";
 import { TitleDeckView } from "@/components/TitleDeckView";
-import { ensureCurrentUserWatchlist } from "@/app/actions/watchlist";
-import { enrichDiaryWatchlistTitles } from "@/lib/diary-enrich";
+import { scheduleDiaryWatchlistEnrichment } from "@/lib/diary-enrich";
 import {
   assignExclusiveDiaryPicks,
   diaryHref,
@@ -31,7 +32,7 @@ import {
   titlesInMonth,
 } from "@/lib/dates";
 import {
-  getTags,
+  getTagFilters,
   getTitles,
   getUserStreamingPlatforms,
   getWatchlist,
@@ -52,40 +53,66 @@ export const dynamic = "force-dynamic";
 const isView = (value: string | undefined): value is DeckViewMode =>
   value === "deck" || value === "grid" || value === "calendar";
 
-export default async function HomePage({
+type HomeSearchParams = {
+  mode?: string | string[];
+  view?: string;
+  categoria?: string | string[];
+  tag?: string | string[];
+  minePlatforms?: string | string[];
+  seriesStatus?: string | string[];
+  month?: string | string[];
+  day?: string | string[];
+  kind?: string | string[];
+  platform?: string | string[];
+  sort?: string | string[];
+};
+
+export default function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    mode?: string | string[];
-    view?: string;
-    categoria?: string | string[];
-    tag?: string | string[];
-    minePlatforms?: string | string[];
-    seriesStatus?: string | string[];
-    month?: string | string[];
-    day?: string | string[];
-    kind?: string | string[];
-    platform?: string | string[];
-    sort?: string | string[];
-  }>;
+  searchParams: Promise<HomeSearchParams>;
 }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <DiaryModeToggle mode="picks" />
+          <DiaryBodySkeleton />
+        </div>
+      }
+    >
+      <HomeShell searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+const HomeShell = async ({
+  searchParams,
+}: {
+  searchParams: Promise<HomeSearchParams>;
+}) => {
   const params = await searchParams;
   const mode = parseDiaryMode(params.mode);
 
-  if (mode === "historial") {
-    return <HistorialHome params={params} />;
-  }
-
-  return <PicksHome categoria={params.categoria} />;
-}
+  return (
+    <div className="space-y-6">
+      <DiaryModeToggle mode={mode} />
+      <Suspense fallback={<DiaryBodySkeleton />}>
+        {mode === "historial" ? (
+          <HistorialHome params={params} />
+        ) : (
+          <PicksHome categoria={params.categoria} />
+        )}
+      </Suspense>
+    </div>
+  );
+};
 
 const PicksHome = async ({
   categoria,
 }: {
   categoria?: string | string[];
 }) => {
-  await ensureCurrentUserWatchlist();
-
   const categorySlug = parseCategorySlug(categoria);
 
   const [watchlist, userPlatforms] = await Promise.all([
@@ -94,7 +121,7 @@ const PicksHome = async ({
   ]);
 
   const rawTitles = watchlist?.items.map((item) => item.title) ?? [];
-  const modeToggle = <DiaryModeToggle mode="picks" />;
+  scheduleDiaryWatchlistEnrichment(rawTitles);
 
   if (userPlatforms.length === 0) {
     return (
@@ -104,7 +131,6 @@ const PicksHome = async ({
           title="Qué ver"
           description="Cinco picks de Quiero ver, en mazo, de las categorías que ya tienes y solo en las plataformas que contrataste."
         />
-        {modeToggle}
         <EmptyState
           title="Elige tus plataformas"
           description="El Diario solo muestra títulos incluidos en tus suscripciones de México. Indica cuáles tienes en el perfil."
@@ -115,8 +141,7 @@ const PicksHome = async ({
     );
   }
 
-  const enrichedTitles = await enrichDiaryWatchlistTitles(rawTitles);
-  const catalog = applyMinePlatformsFilter(enrichedTitles, userPlatforms);
+  const catalog = applyMinePlatformsFilter(rawTitles, userPlatforms);
   const titles = catalog.visible.filter((title) => title.watchedAt == null);
   const { categories, picksByCategoryId } = assignExclusiveDiaryPicks(titles);
   const activeCategory = resolveDiaryCategory(categories, categorySlug);
@@ -126,7 +151,6 @@ const PicksHome = async ({
 
   return (
     <div className="space-y-6">
-      {modeToggle}
       {activeCategory ? (
         <DiaryGenreToggle
           categories={categories}
@@ -200,7 +224,7 @@ const HistorialHome = async ({
       tags: selectedTags,
       seriesStatus,
     }),
-    getTags(),
+    getTagFilters(),
     getUserStreamingPlatforms(),
   ]);
 
@@ -252,8 +276,6 @@ const HistorialHome = async ({
 
   return (
     <div className="space-y-6">
-      <DiaryModeToggle mode="historial" />
-
       {view === "calendar" ? null : (
         <DiaryViewHeader
           month={month}

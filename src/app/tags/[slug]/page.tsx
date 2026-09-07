@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { CatalogFilters } from "@/components/CatalogFilters";
 import { EmptyState } from "@/components/EmptyState";
@@ -6,6 +7,7 @@ import {
   MinePlatformsSetupCta,
   MissingStreamingDataNote,
 } from "@/components/MinePlatformsNotice";
+import { DiaryBodySkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/PageHeader";
 import { TagSortLinks } from "@/components/TagSortLinks";
 import { TitleDeckView } from "@/components/TitleDeckView";
@@ -52,10 +54,21 @@ export const generateMetadata = async ({ params }: TagDetailPageProps) => {
 const isView = (value: string | undefined): value is DeckViewMode =>
   value === "deck" || value === "grid";
 
-export default async function TagDetailPage({
+export default function TagDetailPage({
   params,
   searchParams,
 }: TagDetailPageProps) {
+  return (
+    <Suspense fallback={<DiaryBodySkeleton label="Cargando etiqueta" />}>
+      <TagDetail params={params} searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+const TagDetail = async ({
+  params,
+  searchParams,
+}: TagDetailPageProps) => {
   const { slug } = await params;
   const query = await searchParams;
   const view: DeckViewMode = isView(query.view) ? query.view : "deck";

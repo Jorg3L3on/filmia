@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { LogoutButton } from "@/components/LogoutButton";
+import { ProfileBodySkeleton } from "@/components/PageSkeletons";
 import { SuccessToast } from "@/components/SuccessToast";
 import { ProfileAccountForm } from "@/components/ProfileAccountForm";
 import { ProfilePasswordForm } from "@/components/ProfilePasswordForm";
@@ -35,9 +37,25 @@ const savedToast = (value: string | string[] | undefined) => {
   return null;
 };
 
-export default async function ProfilePage({
+export default function ProfilePage({
   searchParams,
-}: PageProps<"/perfil">) {
+}: {
+  searchParams: Promise<{ guardado?: string | string[] }>;
+}) {
+  return (
+    <div className="mx-auto max-w-xl space-y-6">
+      <Suspense fallback={<ProfileBodySkeleton />}>
+        <ProfileBody searchParams={searchParams} />
+      </Suspense>
+    </div>
+  );
+}
+
+const ProfileBody = async ({
+  searchParams,
+}: {
+  searchParams: Promise<{ guardado?: string | string[] }>;
+}) => {
   const params = await searchParams;
   const toast = savedToast(params.guardado);
   const profile = await getCurrentUserProfile();
@@ -49,7 +67,7 @@ export default async function ProfilePage({
   const initial = (profile.name?.trim() || profile.email).slice(0, 1).toUpperCase();
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
+    <>
       <header className="flex items-center justify-between gap-3">
         <h1 className="font-serif text-4xl tracking-tight text-paper">Perfil</h1>
         <div className="flex items-center gap-3">
@@ -70,6 +88,6 @@ export default async function ProfilePage({
       <ProfileAccountForm name={profile.name} email={profile.email} />
       <ProfilePasswordForm />
       <StreamingPlatformPicker selected={profile.streamingPlatforms} />
-    </div>
+    </>
   );
-}
+};

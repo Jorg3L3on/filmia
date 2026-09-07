@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db, titles, type TitleKind } from "@/db";
+import { scheduleAfterResponse } from "@/lib/after-response";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import {
   getTmdbDetails,
@@ -226,4 +227,23 @@ export const enrichDiaryWatchlistTitles = async <T extends DiaryEnrichTitle>(
   });
 
   return nextTitles;
+};
+
+export const scheduleDiaryWatchlistEnrichment = <T extends DiaryEnrichTitle>(
+  titleRows: T[],
+) => {
+  const needsGenres = titleRows.some((title) => !hasGenres(title.tmdbGenres));
+  const needsProviders = titleRows.some(
+    (title) =>
+      Boolean(title.tmdbId) &&
+      titleNeedsWatchProvidersRefresh(title.watchProvidersMx, title.watchProvidersFetchedAt),
+  );
+
+  if (!needsGenres && !needsProviders) {
+    return;
+  }
+
+  scheduleAfterResponse(async () => {
+    await enrichDiaryWatchlistTitles(titleRows);
+  });
 };

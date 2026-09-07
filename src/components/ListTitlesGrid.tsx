@@ -6,7 +6,7 @@ import { ListItemOrderControls } from "@/components/ListItemOrderControls";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PosterTile } from "@/components/PosterTile";
 import type { ListItem } from "@/db";
-import type { TitleWithRelations } from "@/lib/queries";
+import type { TitleWithTags } from "@/lib/queries";
 import { btnLink } from "@/lib/ui";
 import {
   sameOrderedIds,
@@ -15,7 +15,7 @@ import {
 } from "@/lib/use-optimistic-action";
 
 type ListItemPayload = ListItem & {
-  title: TitleWithRelations;
+  title: TitleWithTags;
 };
 
 type ListTitlesGridProps = {

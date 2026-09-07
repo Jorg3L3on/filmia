@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { TitleForm } from "@/components/TitleForm";
 import { metadataServicesConfigured } from "@/lib/metadata";
-import { getCollectionLists, getTags } from "@/lib/queries";
+import { getCollectionLists, getTagFilters } from "@/lib/queries";
 import { focusRing } from "@/lib/ui";
 
 export const metadata: Metadata = {
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewTitlePage() {
   const [tags, lists, metadataConfig] = await Promise.all([
-    getTags(),
+    getTagFilters(),
     getCollectionLists(),
     Promise.resolve(metadataServicesConfigured()),
   ]);

@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { createTag } from "@/app/actions/tags";
 import { CreateTagForm } from "@/components/CreateTagForm";
 import { EmptyState } from "@/components/EmptyState";
+import { TagsBodySkeleton } from "@/components/PageSkeletons";
 import { PosterStack } from "@/components/PosterStack";
 import { getTags } from "@/lib/queries";
 import { tagHref } from "@/lib/tags";
@@ -13,14 +15,23 @@ export const metadata = {
   title: "Etiquetas",
 } as const;
 
-export default async function TagsPage() {
-  const tags = await getTags();
-
+export default function TagsPage() {
   return (
     <div className="space-y-6">
       <h1 className="font-serif text-4xl tracking-tight text-paper">Etiquetas</h1>
       <CreateTagForm action={createTag} />
+      <Suspense fallback={<TagsBodySkeleton />}>
+        <TagsGrid />
+      </Suspense>
+    </div>
+  );
+}
 
+const TagsGrid = async () => {
+  const tags = await getTags();
+
+  return (
+    <>
       {tags.length === 0 ? (
         <EmptyState
           variant="listas"
@@ -53,6 +64,6 @@ export default async function TagsPage() {
           })}
         </ul>
       )}
-    </div>
+    </>
   );
-}
+};
