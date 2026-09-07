@@ -43,6 +43,7 @@ type DiaryCalendarProps = {
   platforms?: Platform[];
   sort?: CatalogSort | null;
   hasActiveFilters?: boolean;
+  hasAnyTitles?: boolean;
   clearHref: string;
 };
 
@@ -124,12 +125,14 @@ export const DiaryCalendar = ({
   platforms,
   sort,
   hasActiveFilters = false,
+  hasAnyTitles,
   clearHref,
 }: DiaryCalendarProps) => {
   const today = todayDateInput();
   const cells = getMonthGrid(month);
   const byDay = groupTitlesByWatchedDay(titles);
   const monthTitles = titlesInMonth(titles, month);
+  const diaryHasTitles = hasAnyTitles ?? titles.length > 0;
   const monthHeading = formatMonthHeading(month);
   const monthName = formatMonthName(month);
   const prevMonth = shiftMonthParam(month, -1);
@@ -236,16 +239,16 @@ export const DiaryCalendar = ({
             title={
               hasActiveFilters
                 ? "Nada con esos filtros"
-                : titles.length === 0
-                  ? "Tu historial está vacío"
-                  : `Nada visto en ${monthName}`
+                : diaryHasTitles
+                  ? `Nada visto en ${monthName}`
+                  : "Tu historial está vacío"
             }
             description={
               hasActiveFilters
                 ? "Prueba otra combinación o quita filtros."
-                : titles.length === 0
-                  ? "Registra lo que viste y llenará el calendario."
-                  : `Registra tu primera de ${monthName}.`
+                : diaryHasTitles
+                  ? `Registra tu primera de ${monthName}.`
+                  : "Registra lo que viste y llenará el calendario."
             }
             actionHref={
               hasActiveFilters

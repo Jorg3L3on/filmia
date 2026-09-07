@@ -32,6 +32,7 @@ import {
   titlesInMonth,
 } from "@/lib/dates";
 import {
+  getLatestWatchedMonth,
   getTagFilters,
   getTitles,
   getUserStreamingPlatforms,
@@ -216,17 +217,45 @@ const HistorialHome = async ({
   const platforms = parsePlatformFilters(params.platform);
   const sort = parseCatalogOrder(params.sort);
   const requestedMonth = parseMonthParam(params.month);
+  const explicitMonth = hasExplicitMonthParam(params.month);
+  const canScopeMonth = !minePlatforms && platforms.length === 0;
+  const titleFilters = {
+    sort: "watched" as const,
+    onlyWatched: true,
+    tags: selectedTags,
+    seriesStatus,
+    kind: kindFilter,
+  };
 
-  const [taggedTitles, tags, userPlatforms] = await Promise.all([
-    getTitles({
-      sort: "watched",
-      onlyWatched: true,
-      tags: selectedTags,
-      seriesStatus,
-    }),
-    getTagFilters(),
-    getUserStreamingPlatforms(),
-  ]);
+  let taggedTitles;
+  let tags;
+  let userPlatforms;
+  let latestWatchedMonth: string | null = null;
+  let month = requestedMonth;
+
+  if (canScopeMonth && explicitMonth) {
+    [taggedTitles, tags, userPlatforms, latestWatchedMonth] = await Promise.all([
+      getTitles({ ...titleFilters, watchedMonth: requestedMonth }),
+      getTagFilters(),
+      getUserStreamingPlatforms(),
+      getLatestWatchedMonth(titleFilters),
+    ]);
+    month = requestedMonth;
+  } else if (canScopeMonth) {
+    [latestWatchedMonth, tags, userPlatforms] = await Promise.all([
+      getLatestWatchedMonth(titleFilters),
+      getTagFilters(),
+      getUserStreamingPlatforms(),
+    ]);
+    month = latestWatchedMonth ?? requestedMonth;
+    taggedTitles = await getTitles({ ...titleFilters, watchedMonth: month });
+  } else {
+    [taggedTitles, tags, userPlatforms] = await Promise.all([
+      getTitles(titleFilters),
+      getTagFilters(),
+      getUserStreamingPlatforms(),
+    ]);
+  }
 
   const kindTitles = taggedTitles.filter((title) =>
     titleMatchesKind(title.kind, kindFilter),
@@ -237,11 +266,16 @@ const HistorialHome = async ({
     userPlatforms,
   });
   const titles = sortCatalogItems(catalog.titles, sort);
-  const month = hasExplicitMonthParam(params.month)
-    ? requestedMonth
-    : latestMonthWithEntries(titles, requestedMonth);
+  if (!canScopeMonth) {
+    month = explicitMonth
+      ? requestedMonth
+      : latestMonthWithEntries(titles, requestedMonth);
+  }
   const selectedDay = parseDayParam(params.day, month);
   const monthTitles = titlesInMonth(titles, month);
+  const hasAnyTitles = canScopeMonth
+    ? Boolean(latestWatchedMonth)
+    : titles.length > 0;
   const hasActiveFilters =
     selectedTags.length > 0 ||
     minePlatforms ||
@@ -321,7 +355,7 @@ const HistorialHome = async ({
                 />
               ) : (
                 <DiaryCalendar
-                  titles={titles}
+                  titles={monthTitles}
                   month={month}
                   selectedDay={selectedDay}
                   tags={selectedTags}
@@ -331,10 +365,11 @@ const HistorialHome = async ({
                   platforms={platforms}
                   sort={sort}
                   hasActiveFilters={hasActiveFilters}
+                  hasAnyTitles={hasAnyTitles}
                   clearHref={clearHref}
                 />
               )}
-              <DiaryMonthList titles={titles} month={month} />
+              <DiaryMonthList titles={monthTitles} month={month} />
             </>
           ) : titles.length === 0 && minePlatforms ? (
             <>

@@ -82,6 +82,11 @@ body {
   -ms-overflow-style: none;
 }
 
+.month-list-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 64px;
+}
+
 .rail::-webkit-scrollbar {
   display: none;
 }
