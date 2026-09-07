@@ -32,14 +32,25 @@ const titleMembership = (title: TitleDetail) => {
   };
 };
 
-export const TitleHeroFallback = ({ title }: { title: TitleDetail }) => (
+export const TitleHeroFallback = ({
+  title,
+  extras,
+}: {
+  title: TitleDetail;
+  extras?: TmdbTitleExtras | null;
+}) => (
   <TitleHero
     titleId={title.id}
     name={title.name}
     originalName={title.originalName}
-    posterPath={title.posterPath}
-    backdropSrc={posterBackdrop(title.posterPath)}
+    posterPath={title.posterPath ?? extras?.posterPath}
+    backdropSrc={
+      extras?.backdropPath
+        ? tmdbBackdropUrl(extras.backdropPath, "w1280")
+        : posterBackdrop(title.posterPath ?? extras?.posterPath)
+    }
     year={title.year}
+    runtimeLabel={formatRuntime(title.runtimeMinutes ?? extras?.runtimeMinutes)}
     kindLabel={TITLE_KIND_LABEL[title.kind]}
     imdbRating={title.imdbRating}
     rating={title.rating}
@@ -55,19 +66,20 @@ export const TitleHeroBlock = async ({
   extrasPromise: Promise<TmdbTitleExtras | null>;
 }) => {
   const extras = await extrasPromise;
+  const posterPath = title.posterPath ?? extras?.posterPath ?? null;
   const backdropSrc = extras?.backdropPath
     ? tmdbBackdropUrl(extras.backdropPath, "w1280")
-    : posterBackdrop(title.posterPath);
+    : posterBackdrop(posterPath);
 
   return (
     <TitleHero
       titleId={title.id}
       name={title.name}
       originalName={title.originalName}
-      posterPath={title.posterPath}
+      posterPath={posterPath}
       backdropSrc={backdropSrc}
       year={title.year}
-      runtimeLabel={formatRuntime(extras?.runtimeMinutes)}
+      runtimeLabel={formatRuntime(title.runtimeMinutes ?? extras?.runtimeMinutes)}
       kindLabel={TITLE_KIND_LABEL[title.kind]}
       imdbRating={title.imdbRating}
       rating={title.rating}

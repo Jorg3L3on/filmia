@@ -161,6 +161,8 @@ const scheduleTitleEnrichment = (
         .set({
           tmdbId: resolved.tmdbId ?? snapshot.tmdbId,
           posterPath: resolved.posterPath ?? snapshot.posterPath,
+          backdropPath: resolved.backdropPath ?? snapshot.backdropPath,
+          runtimeMinutes: resolved.runtimeMinutes ?? snapshot.runtimeMinutes,
           imdbId: resolved.imdbId ?? snapshot.imdbId,
           imdbRating: resolved.imdbRating ?? snapshot.imdbRating,
           overview: resolved.overview ?? undefined,

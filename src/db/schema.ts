@@ -85,6 +85,8 @@ export const titles = pgTable(
     seriesSeason: integer("seriesSeason"),
     tmdbId: integer("tmdbId"),
     posterPath: text("posterPath"),
+    backdropPath: text("backdropPath"),
+    runtimeMinutes: integer("runtimeMinutes"),
     imdbId: text("imdbId"),
     imdbRating: real("imdbRating"),
     overview: text("overview"),

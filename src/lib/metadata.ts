@@ -12,6 +12,8 @@ import {
 export type TitleMetadata = {
   tmdbId: number | null;
   posterPath: string | null;
+  backdropPath?: string | null;
+  runtimeMinutes?: number | null;
   imdbId: string | null;
   imdbRating: number | null;
   tmdbGenres: TmdbGenre[];
@@ -40,6 +42,8 @@ export const resolveTitleMetadata = async (
   return {
     tmdbId: details.tmdbId,
     posterPath: details.posterPath,
+    backdropPath: details.backdropPath,
+    runtimeMinutes: details.runtimeMinutes,
     imdbId,
     imdbRating,
     tmdbGenres: details.genres,
@@ -102,6 +106,8 @@ export const enrichMetadataOnSave = async (
     return {
       ...resolved,
       posterPath: resolved.posterPath ?? metadata.posterPath,
+      backdropPath: resolved.backdropPath ?? metadata.backdropPath,
+      runtimeMinutes: resolved.runtimeMinutes ?? metadata.runtimeMinutes,
       imdbId: resolved.imdbId ?? metadata.imdbId,
       imdbRating: resolved.imdbRating ?? metadata.imdbRating,
       tmdbGenres:
