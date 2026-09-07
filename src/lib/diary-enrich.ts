@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db, titles, type TitleKind } from "@/db";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
-import { titleExtrasPatch } from "@/lib/title-extras";
+import { titleExtrasPatch } from "@/lib/title-extras-core";
 import {
   getTmdbDetails,
   isTmdbConfigured,

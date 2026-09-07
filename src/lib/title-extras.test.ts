@@ -6,7 +6,7 @@ import {
   titleExtrasPatch,
   titleNeedsTmdbExtras,
   type TitleExtrasRow,
-} from "./title-extras";
+} from "./title-extras-core";
 
 const baseTitle = (): TitleExtrasRow => ({
   id: "title-1",
