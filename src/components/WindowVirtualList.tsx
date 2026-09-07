@@ -54,7 +54,7 @@ export const WindowVirtualList = <T,>({
   const bottomPad = Math.max(0, (items.length - end) * estimateHeight);
 
   return (
-    <ul ref={rootRef} className={className}>
+    <ul ref={rootRef} className={className} data-virtualized="true">
       {topPad > 0 ? (
         <li style={{ height: topPad }} aria-hidden="true" className="list-none p-0" />
       ) : null}
