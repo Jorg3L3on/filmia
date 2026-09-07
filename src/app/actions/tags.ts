@@ -2,28 +2,16 @@
 
 import { createId } from "@paralleldrive/cuid2";
 import { and, eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, tags, titleTags, titles } from "@/db";
 import { parseRequiredName } from "@/lib/form-data";
 import { slugify } from "@/lib/labels";
+import { revalidateTagSurfaces } from "@/lib/revalidate-surfaces";
 import { requireUserId } from "@/lib/session";
 import { tagHref } from "@/lib/tags";
 
 const revalidateTags = (titleId?: string, slug?: string) => {
-  revalidatePath("/");
-  revalidatePath("/listas");
-  revalidatePath("/listas", "layout");
-  revalidatePath("/watchlist");
-  revalidatePath("/tags");
-  revalidatePath("/tags", "layout");
-  if (slug) {
-    revalidatePath(tagHref(slug));
-  }
-  if (titleId) {
-    revalidatePath(`/titulos/${titleId}`);
-    revalidatePath(`/titulos/${titleId}/editar`);
-  }
+  revalidateTagSurfaces(titleId, slug);
 };
 
 const upsertOwnedTag = async (userId: string, name: string) => {

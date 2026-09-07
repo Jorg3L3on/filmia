@@ -31,14 +31,18 @@ import {
   type AddTitleFromTmdbResult,
 } from "@/lib/add-title-from-tmdb";
 import { slugify, SERIES_STATUSES } from "@/lib/labels";
+import { scheduleAfterResponse } from "@/lib/after-response";
 import {
   enrichMetadataOnSave,
   readMetadataFields,
+  type TitleMetadata,
 } from "@/lib/metadata";
 import {
   revalidateCatalogSurfaces,
   revalidateRatingSurfaces,
   revalidateSearchAddSurfaces,
+  revalidateSeriesSurfaces,
+  revalidateTitlePages,
 } from "@/lib/revalidate-surfaces";
 import { requireUserId } from "@/lib/session";
 import { enrichWatchProvidersOnSave } from "@/lib/watch-providers-cache";
@@ -136,6 +140,41 @@ const readTitleFields = (formData: FormData) => ({
   listIds: parseIdList(formData, "listIds"),
 });
 
+const scheduleTitleEnrichment = (
+  titleId: string,
+  snapshot: TitleMetadata,
+  kind: TitleKind,
+) => {
+  if (!snapshot.tmdbId) {
+    return;
+  }
+
+  scheduleAfterResponse(async () => {
+    try {
+      const [resolved] = await Promise.all([
+        enrichMetadataOnSave(snapshot, kind),
+        enrichWatchProvidersOnSave(titleId, snapshot.tmdbId!, kind),
+      ]);
+
+      await db
+        .update(titles)
+        .set({
+          tmdbId: resolved.tmdbId ?? snapshot.tmdbId,
+          posterPath: resolved.posterPath ?? snapshot.posterPath,
+          imdbId: resolved.imdbId ?? snapshot.imdbId,
+          imdbRating: resolved.imdbRating ?? snapshot.imdbRating,
+          overview: resolved.overview ?? undefined,
+          tmdbGenres: resolved.tmdbGenres,
+        })
+        .where(eq(titles.id, titleId));
+
+      revalidateTitlePages(titleId);
+    } catch {
+      // Snapshot row already exists; enrichment is best-effort.
+    }
+  });
+};
+
 export const addTitleFromTmdb = async (
   input: AddTitleFromTmdbInput,
 ): Promise<AddTitleFromTmdbResult> => {
@@ -155,10 +194,7 @@ export const addTitleFromTmdb = async (
 export const createTitle = async (formData: FormData) => {
   const userId = await requireUserId();
   const fields = readTitleFields(formData);
-  const metadata = await enrichMetadataOnSave(
-    readMetadataFields(formData),
-    fields.kind,
-  );
+  const snapshot = readMetadataFields(formData);
 
   const titleId = createId();
   const now = new Date();
@@ -173,12 +209,12 @@ export const createTitle = async (formData: FormData) => {
     review: fields.review,
     platform: fields.platform,
     watchedAt: fields.watchedAt,
-    tmdbId: metadata.tmdbId,
-    posterPath: metadata.posterPath,
-    imdbId: metadata.imdbId,
-    imdbRating: metadata.imdbRating,
-    overview: metadata.overview ?? null,
-    tmdbGenres: metadata.tmdbGenres,
+    tmdbId: snapshot.tmdbId,
+    posterPath: snapshot.posterPath,
+    imdbId: snapshot.imdbId,
+    imdbRating: snapshot.imdbRating,
+    overview: null,
+    tmdbGenres: snapshot.tmdbGenres,
     createdAt: now,
     updatedAt: now,
     ...seriesProgressData(fields.kind),
@@ -186,9 +222,7 @@ export const createTitle = async (formData: FormData) => {
 
   await syncTags(userId, titleId, fields.tagIds, fields.newTags);
   await syncLists(userId, titleId, fields.listIds);
-  if (metadata.tmdbId) {
-    await enrichWatchProvidersOnSave(titleId, metadata.tmdbId, fields.kind);
-  }
+  scheduleTitleEnrichment(titleId, snapshot, fields.kind);
   revalidateCatalog(titleId);
   redirect(`/titulos/${titleId}`);
 };
@@ -196,14 +230,19 @@ export const createTitle = async (formData: FormData) => {
 export const updateTitle = async (titleId: string, formData: FormData) => {
   const userId = await requireUserId();
   const fields = readTitleFields(formData);
-  const metadata = await enrichMetadataOnSave(
-    readMetadataFields(formData),
-    fields.kind,
-  );
+  const snapshot = readMetadataFields(formData);
 
   const existing = await db.query.titles.findFirst({
     where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
-    columns: { id: true },
+    columns: {
+      id: true,
+      overview: true,
+      tmdbGenres: true,
+      imdbId: true,
+      imdbRating: true,
+      posterPath: true,
+      tmdbId: true,
+    },
   });
 
   if (!existing) {
@@ -221,21 +260,29 @@ export const updateTitle = async (titleId: string, formData: FormData) => {
       review: fields.review,
       platform: fields.platform,
       watchedAt: fields.watchedAt,
-      tmdbId: metadata.tmdbId,
-      posterPath: metadata.posterPath,
-      imdbId: metadata.imdbId,
-      imdbRating: metadata.imdbRating,
-      overview: metadata.overview ?? undefined,
-      tmdbGenres: metadata.tmdbGenres,
+      tmdbId: snapshot.tmdbId ?? existing.tmdbId,
+      posterPath: snapshot.posterPath ?? existing.posterPath,
+      imdbId: snapshot.imdbId ?? existing.imdbId,
+      imdbRating: snapshot.imdbRating ?? existing.imdbRating,
+      overview: existing.overview ?? undefined,
+      tmdbGenres: existing.tmdbGenres,
       ...seriesProgressData(fields.kind),
     })
     .where(eq(titles.id, titleId));
 
   await syncTags(userId, titleId, fields.tagIds, fields.newTags);
   await syncLists(userId, titleId, fields.listIds);
-  if (metadata.tmdbId) {
-    await enrichWatchProvidersOnSave(titleId, metadata.tmdbId, fields.kind);
-  }
+  scheduleTitleEnrichment(
+    titleId,
+    {
+      ...snapshot,
+      tmdbId: snapshot.tmdbId ?? existing.tmdbId,
+      posterPath: snapshot.posterPath ?? existing.posterPath,
+      imdbId: snapshot.imdbId ?? existing.imdbId,
+      imdbRating: snapshot.imdbRating ?? existing.imdbRating,
+    },
+    fields.kind,
+  );
   revalidateCatalog(titleId);
   redirect(`/titulos/${titleId}`);
 };
@@ -320,7 +367,7 @@ export const setSeriesStatus = async (
     })
     .where(eq(titles.id, titleId));
 
-  revalidateCatalog(titleId);
+  revalidateSeriesSurfaces(titleId);
 };
 
 export const setSeriesSeason = async (titleId: string, formData: FormData) => {
@@ -329,5 +376,5 @@ export const setSeriesSeason = async (titleId: string, formData: FormData) => {
 
   await db.update(titles).set({ seriesSeason }).where(eq(titles.id, titleId));
 
-  revalidateCatalog(titleId);
+  revalidateSeriesSurfaces(titleId);
 };

@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { ImdbBadge } from "@/components/ImdbBadge";
 import { ListItemOrderControls } from "@/components/ListItemOrderControls";
@@ -20,30 +22,28 @@ type WatchlistCardProps = {
   item: WatchlistItem;
   variant: "hero" | "queue";
   position: number;
-  listId: string;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  pendingOrder?: boolean;
   removeAction: () => void | Promise<void>;
+  onMove: (direction: "up" | "down") => void;
   onMarkedSeen?: () => void;
   onMarkSeenError?: () => void;
   preferredPlatforms?: readonly Platform[];
-  swapUpTitleId?: string | null;
-  swapDownTitleId?: string | null;
 };
 
 export const WatchlistCard = ({
   item,
   variant,
   position,
-  listId,
   canMoveUp,
   canMoveDown,
+  pendingOrder = false,
   removeAction,
+  onMove,
   onMarkedSeen,
   onMarkSeenError,
   preferredPlatforms = [],
-  swapUpTitleId,
-  swapDownTitleId,
 }: WatchlistCardProps) => {
   const { title } = item;
   const yearLabel = title.year ? String(title.year) : TITLE_KIND_LABEL[title.kind];
@@ -91,18 +91,14 @@ export const WatchlistCard = ({
             ) : null}
             <div className="flex flex-wrap items-center gap-2">
               <ListItemOrderControls
-                listId={listId}
-                titleId={item.titleId}
                 canMoveUp={canMoveUp}
                 canMoveDown={canMoveDown}
-                swapUpTitleId={swapUpTitleId}
-                swapDownTitleId={swapDownTitleId}
+                pending={pendingOrder}
+                onMove={onMove}
               />
-              <form action={removeAction}>
-                <button type="submit" className={btnGhost}>
-                  Quitar
-                </button>
-              </form>
+              <button type="button" onClick={removeAction} className={btnGhost}>
+                Quitar
+              </button>
             </div>
           </div>
         </div>
@@ -145,12 +141,10 @@ export const WatchlistCard = ({
         </p>
       ) : null}
       <ListItemOrderControls
-        listId={listId}
-        titleId={item.titleId}
         canMoveUp={canMoveUp}
         canMoveDown={canMoveDown}
-        swapUpTitleId={swapUpTitleId}
-        swapDownTitleId={swapDownTitleId}
+        pending={pendingOrder}
+        onMove={onMove}
       />
     </article>
   );

@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { createTitle, updateTitle } from "@/app/actions/titles";
+import { PendingSubmit } from "@/components/PendingSubmit";
 import { RatingStars } from "@/components/RatingStars";
 import { TmdbPicker, type TmdbPick } from "@/components/TmdbPicker";
 import { PosterImage } from "@/components/PosterImage";
@@ -346,9 +347,11 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
         <p className="text-sm text-mist">
           Siempre puedes editar la información más tarde.
         </p>
-        <button type="submit" className={btnPrimary}>
-          {title ? "Guardar cambios" : "Registrar en el diario"}
-        </button>
+        <PendingSubmit
+          idleLabel={title ? "Guardar cambios" : "Registrar en el diario"}
+          pendingLabel={title ? "Guardando…" : "Registrando…"}
+          className={btnPrimary}
+        />
       </div>
     </form>
   );

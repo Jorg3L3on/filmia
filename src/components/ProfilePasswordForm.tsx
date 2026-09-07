@@ -1,30 +1,45 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { updatePassword, type ProfileActionState } from "@/app/actions/profile";
 import { PasswordField } from "@/components/PasswordField";
+import { SuccessToast } from "@/components/SuccessToast";
 import { btnPrimary, wellClass } from "@/lib/ui";
 
 export const ProfilePasswordForm = () => {
+  const formRef = useRef<HTMLFormElement>(null);
   const [state, action, isPending] = useActionState<ProfileActionState, FormData>(
     updatePassword,
     null,
   );
 
+  useEffect(() => {
+    if (state && "ok" in state) {
+      formRef.current?.reset();
+    }
+  }, [state]);
+
   return (
-    <form action={action} className={`${wellClass} space-y-5 p-5`}>
+    <form ref={formRef} action={action} className={`${wellClass} space-y-5 p-5`}>
       <header className="flex items-center gap-2">
         <LockIcon />
         <h2 className="text-lg font-semibold text-paper">Contraseña</h2>
       </header>
 
-      {state?.error ? (
+      {state && "error" in state ? (
         <p
           role="alert"
           className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger"
         >
           {state.error}
         </p>
+      ) : null}
+
+      {state && "ok" in state ? (
+        <SuccessToast
+          title="Contraseña actualizada"
+          description="Tu información se actualizó correctamente."
+        />
       ) : null}
 
       <PasswordField

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useId, useMemo, useState, useTransition } from 
 import { addTitleToList } from "@/app/actions/lists";
 import { PosterImage } from "@/components/PosterImage";
 import { cn } from "@/lib/cn";
+import { actionErrorMessage } from "@/lib/use-optimistic-action";
 import { btnGhost, btnPrimary, fieldClass, focusRing } from "@/lib/ui";
 
 export type AddableListTitle = {
@@ -24,6 +25,8 @@ export const AddTitleToListCta = ({ listId, titles }: AddTitleToListCtaProps) =>
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [addedIds, setAddedIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleOpen = () => {
@@ -65,18 +68,34 @@ export const AddTitleToListCta = ({ listId, titles }: AddTitleToListCtaProps) =>
     }
 
     return titles.filter((title) => {
+      if (addedIds.has(title.id)) {
+        return false;
+      }
       const haystack = `${title.name} ${title.year ?? ""}`.toLowerCase();
       return haystack.includes(needle);
     });
-  }, [query, titles]);
+  }, [addedIds, query, titles]);
 
   const handleAdd = (title: AddableListTitle) => {
+    setError(null);
+    setAddedIds((current) => new Set(current).add(title.id));
+    setPendingId(title.id);
+    handleClose();
     startTransition(async () => {
-      setPendingId(title.id);
-      const formData = new FormData();
-      formData.set("titleId", title.id);
-      await addTitleToList(listId, formData);
-      handleClose();
+      try {
+        const formData = new FormData();
+        formData.set("titleId", title.id);
+        await addTitleToList(listId, formData);
+      } catch (caught) {
+        setAddedIds((current) => {
+          const next = new Set(current);
+          next.delete(title.id);
+          return next;
+        });
+        setPendingId(null);
+        setOpen(true);
+        setError(actionErrorMessage(caught, "No se pudo agregar el título."));
+      }
     });
   };
 
@@ -141,6 +160,11 @@ export const AddTitleToListCta = ({ listId, titles }: AddTitleToListCtaProps) =>
                   autoFocus
                 />
               </label>
+              {error ? (
+                <p role="alert" className="text-sm text-danger">
+                  {error}
+                </p>
+              ) : null}
               <p className="text-xs text-mist">
                 Elige un título que ya esté en Filmia, o{" "}
                 <Link

@@ -1,30 +1,24 @@
 "use client";
 
 import { type MouseEvent, type PointerEvent } from "react";
-import { moveListItem } from "@/app/actions/lists";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
 
+type ListMoveDirection = "up" | "down";
+
 type ListItemOrderControlsProps = {
-  listId: string;
-  titleId: string;
   canMoveUp: boolean;
   canMoveDown: boolean;
-  swapUpTitleId?: string | null;
-  swapDownTitleId?: string | null;
+  pending?: boolean;
+  onMove: (direction: ListMoveDirection) => void;
 };
 
 export const ListItemOrderControls = ({
-  listId,
-  titleId,
   canMoveUp,
   canMoveDown,
-  swapUpTitleId,
-  swapDownTitleId,
+  pending = false,
+  onMove,
 }: ListItemOrderControlsProps) => {
-  const moveUp = moveListItem.bind(null, listId, titleId, "up", swapUpTitleId);
-  const moveDown = moveListItem.bind(null, listId, titleId, "down", swapDownTitleId);
-
   return (
     <div
       className="relative z-20 flex shrink-0 items-center gap-1"
@@ -32,16 +26,16 @@ export const ListItemOrderControls = ({
       aria-label="Orden en la lista"
     >
       <OrderButton
-        action={moveUp}
-        disabled={!canMoveUp}
+        disabled={!canMoveUp || pending}
         label="Subir"
         icon="up"
+        onMove={() => onMove("up")}
       />
       <OrderButton
-        action={moveDown}
-        disabled={!canMoveDown}
+        disabled={!canMoveDown || pending}
         label="Bajar"
         icon="down"
+        onMove={() => onMove("down")}
       />
     </div>
   );
@@ -52,42 +46,47 @@ const stopRowEvent = (event: MouseEvent | PointerEvent) => {
 };
 
 const OrderButton = ({
-  action,
   disabled,
   label,
   icon,
+  onMove,
 }: {
-  action: () => Promise<void>;
   disabled: boolean;
   label: string;
   icon: "up" | "down";
+  onMove: () => void;
 }) => {
+  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    stopRowEvent(event);
+    onMove();
+  };
+
   return (
-    <form action={action} onClick={stopRowEvent} onPointerDown={stopRowEvent}>
-      <button
-        type="submit"
-        disabled={disabled}
-        aria-label={label}
-        className={cn(
-          "relative z-20 inline-flex h-8 w-8 pointer-events-auto items-center justify-center rounded-full border border-chrome text-fog transition",
-          focusRing,
-          disabled
-            ? "cursor-not-allowed opacity-35"
-            : "hover:border-accent hover:text-white",
-        )}
+    <button
+      type="button"
+      disabled={disabled}
+      aria-label={label}
+      onClick={handleClick}
+      onPointerDown={stopRowEvent}
+      className={cn(
+        "relative z-20 inline-flex h-8 w-8 pointer-events-auto items-center justify-center rounded-full border border-chrome text-fog transition",
+        focusRing,
+        disabled
+          ? "cursor-not-allowed opacity-35"
+          : "hover:border-accent hover:text-white",
+      )}
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        className="h-4 w-4 fill-none stroke-current stroke-[1.75]"
       >
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          className="h-4 w-4 fill-none stroke-current stroke-[1.75]"
-        >
-          {icon === "up" ? (
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 14.5 12 8.5l6 6" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 9.5 12 15.5l6-6" />
-          )}
-        </svg>
-      </button>
-    </form>
+        {icon === "up" ? (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 14.5 12 8.5l6 6" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9.5 12 15.5l6-6" />
+        )}
+      </svg>
+    </button>
   );
 };
