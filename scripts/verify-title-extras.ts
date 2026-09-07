@@ -20,7 +20,7 @@ const fetched = {
   overview: "Dos amigos intentan comprar alcohol.",
   runtimeMinutes: 113,
   backdropPath: "/superbad-back.jpg",
-  posterPath: "/ek8e8d58kcOZhSxWOsZHCJ9Ym2w.jpg",
+  posterPath: "/ek8e8txUyUwd2BNqj6lFEerJfbq.jpg",
   genres: [{ id: 35, name: "Comedia" }],
   tmdbId: 8363,
 };

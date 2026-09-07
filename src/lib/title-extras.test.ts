@@ -24,7 +24,7 @@ const fetched = {
   overview: "Dos amigos intentan comprar alcohol.",
   runtimeMinutes: 113,
   backdropPath: "/superbad-back.jpg",
-  posterPath: "/ek8e8d58kcOZhSxWOsZHCJ9Ym2w.jpg",
+  posterPath: "/ek8e8txUyUwd2BNqj6lFEerJfbq.jpg",
   genres: [{ id: 35, name: "Comedia" }],
   tmdbId: 8363,
 };
@@ -46,7 +46,7 @@ describe("titleNeedsTmdbExtras", () => {
     assert.equal(
       titleNeedsTmdbExtras({
         ...baseTitle(),
-        posterPath: "/ek8e8d58kcOZhSxWOsZHCJ9Ym2w.jpg",
+        posterPath: "/ek8e8txUyUwd2BNqj6lFEerJfbq.jpg",
         overview: "Dos amigos intentan comprar alcohol.",
         tmdbGenres: [{ id: 35, name: "Comedia" }],
         runtimeMinutes: null,
@@ -60,7 +60,7 @@ describe("titleExtrasPatch", () => {
   it("fills poster, overview, runtime, backdrop and genres on a gap row", () => {
     assert.deepEqual(titleExtrasPatch(baseTitle(), fetched), {
       overview: "Dos amigos intentan comprar alcohol.",
-      posterPath: "/ek8e8d58kcOZhSxWOsZHCJ9Ym2w.jpg",
+      posterPath: "/ek8e8txUyUwd2BNqj6lFEerJfbq.jpg",
       backdropPath: "/superbad-back.jpg",
       runtimeMinutes: 113,
       tmdbGenres: [{ id: 35, name: "Comedia" }],
@@ -88,7 +88,7 @@ describe("titleExtrasPatch", () => {
     };
 
     assert.deepEqual(titleExtrasPatch(current, fetched), {
-      posterPath: "/ek8e8d58kcOZhSxWOsZHCJ9Ym2w.jpg",
+      posterPath: "/ek8e8txUyUwd2BNqj6lFEerJfbq.jpg",
       backdropPath: "/superbad-back.jpg",
       runtimeMinutes: 113,
     });
@@ -107,7 +107,7 @@ describe("mergeTitleExtras / storedTitleExtras", () => {
       overview: "Guardada",
       runtimeMinutes: 113,
       backdropPath: "/superbad-back.jpg",
-      posterPath: "/ek8e8d58kcOZhSxWOsZHCJ9Ym2w.jpg",
+      posterPath: "/ek8e8txUyUwd2BNqj6lFEerJfbq.jpg",
       genres: [{ id: 35, name: "Comedia" }],
     });
   });
