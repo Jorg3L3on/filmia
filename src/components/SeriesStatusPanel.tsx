@@ -44,6 +44,7 @@ export const SeriesStatusPanel = ({
     { status: seriesStatus, season: seriesSeason },
     sameSeriesState,
   );
+  const [pendingKind, setPendingKind] = useState<"status" | "season" | null>(null);
   const [seasonDraft, setSeasonDraft] = useState(
     seriesSeason != null ? String(seriesSeason) : "",
   );
@@ -52,17 +53,31 @@ export const SeriesStatusPanel = ({
 
   const handleStatus = (status: SeriesStatus) => {
     const nextStatus = value.status === status ? null : status;
+    setPendingKind("status");
     run(
       {
         status: nextStatus,
         season: nextStatus == null ? null : value.season,
       },
-      () => setSeriesStatus(titleId, nextStatus == null ? "NONE" : nextStatus),
+      async () => {
+        try {
+          await setSeriesStatus(titleId, nextStatus == null ? "NONE" : nextStatus);
+        } finally {
+          setPendingKind(null);
+        }
+      },
     );
   };
 
   const handleClear = () => {
-    run({ status: null, season: null }, () => setSeriesStatus(titleId, "NONE"));
+    setPendingKind("status");
+    run({ status: null, season: null }, async () => {
+      try {
+        await setSeriesStatus(titleId, "NONE");
+      } finally {
+        setPendingKind(null);
+      }
+    });
   };
 
   const handleSeason = (event: FormEvent<HTMLFormElement>) => {
@@ -77,7 +92,14 @@ export const SeriesStatusPanel = ({
       return;
     }
 
-    run({ ...value, season }, () => setSeriesSeason(titleId, formData));
+    setPendingKind("season");
+    run({ ...value, season }, async () => {
+      try {
+        await setSeriesSeason(titleId, formData);
+      } finally {
+        setPendingKind(null);
+      }
+    });
   };
 
   return (
@@ -106,7 +128,7 @@ export const SeriesStatusPanel = ({
               key={status}
               type="button"
               onClick={() => handleStatus(status)}
-              disabled={isPending}
+              disabled={pendingKind === "status"}
               aria-pressed={isCurrent}
               aria-label={
                 isCurrent
@@ -142,8 +164,8 @@ export const SeriesStatusPanel = ({
             className={fieldClass}
           />
         </label>
-        <button type="submit" disabled={isPending} className={btnPrimary}>
-          {isPending ? "Guardando…" : "Guardar temporada"}
+        <button type="submit" disabled={pendingKind === "season"} className={btnPrimary}>
+          {pendingKind === "season" ? "Guardando…" : "Guardar temporada"}
         </button>
       </form>
 
@@ -151,7 +173,7 @@ export const SeriesStatusPanel = ({
         <button
           type="button"
           onClick={handleClear}
-          disabled={isPending}
+          disabled={pendingKind === "status"}
           className={btnGhost}
           aria-label="Quitar estado de la serie"
         >
