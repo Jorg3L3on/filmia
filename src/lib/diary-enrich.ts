@@ -1,7 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db, titles, type TitleKind } from "@/db";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
+import { titleExtrasPatch } from "@/lib/title-extras-core";
 import {
   getTmdbDetails,
   isTmdbConfigured,
@@ -13,6 +14,7 @@ import { refreshWatchProvidersMx } from "@/lib/watch-providers-cache";
 
 type DiaryEnrichTitle = {
   id: string;
+  userId?: string;
   name: string;
   originalName: string | null;
   year: number | null;
@@ -20,6 +22,10 @@ type DiaryEnrichTitle = {
   kind: TitleKind;
   imdbId: string | null;
   imdbRating: number | null;
+  posterPath?: string | null;
+  overview?: string | null;
+  runtimeMinutes?: number | null;
+  backdropPath?: string | null;
   tmdbGenres: unknown;
   watchProvidersMx: unknown;
   watchProvidersFetchedAt?: Date | null;
@@ -30,6 +36,9 @@ export const DIARY_GENRE_ENRICH_LIMIT = 40;
 export const DIARY_ENRICH_CONCURRENCY = 8;
 
 const hasGenres = (value: unknown) => parseStoredTmdbGenres(value).length > 0;
+
+const titleNeedsDiaryExtras = (title: DiaryEnrichTitle) =>
+  !hasGenres(title.tmdbGenres) || !title.posterPath || !title.overview;
 
 const runPool = async <T>(
   items: readonly T[],
@@ -102,7 +111,7 @@ const resolveDiaryTmdbId = async <T extends DiaryEnrichTitle>(title: T) => {
 };
 
 const enrichDiaryGenres = async <T extends DiaryEnrichTitle>(title: T): Promise<T> => {
-  if (hasGenres(title.tmdbGenres) || !isTmdbConfigured()) {
+  if (!isTmdbConfigured() || !titleNeedsDiaryExtras(title)) {
     return title;
   }
 
@@ -113,22 +122,50 @@ const enrichDiaryGenres = async <T extends DiaryEnrichTitle>(title: T): Promise<
     }
 
     const details = await getTmdbDetails(tmdbId, title.kind);
-    const tmdbGenres = details.genres;
+    const extrasPatch = titleExtrasPatch(
+      {
+        id: title.id,
+        userId: title.userId ?? "",
+        tmdbId,
+        kind: title.kind,
+        posterPath: title.posterPath ?? null,
+        overview: title.overview ?? null,
+        tmdbGenres: title.tmdbGenres,
+        runtimeMinutes: title.runtimeMinutes,
+        backdropPath: title.backdropPath,
+      },
+      {
+        overview: details.overview,
+        runtimeMinutes: details.runtimeMinutes,
+        backdropPath: details.backdropPath,
+        posterPath: details.posterPath,
+        genres: details.genres,
+        tmdbId,
+      },
+    );
 
     await db
       .update(titles)
       .set({
         tmdbId,
-        ...(tmdbGenres.length > 0 ? { tmdbGenres } : {}),
+        ...extrasPatch,
         ...(title.originalName ? {} : { originalName: details.originalName }),
       })
-      .where(eq(titles.id, title.id));
+      .where(
+        title.userId
+          ? and(eq(titles.id, title.id), eq(titles.userId, title.userId))
+          : eq(titles.id, title.id),
+      );
 
     return {
       ...title,
       tmdbId,
-      tmdbGenres: tmdbGenres.length > 0 ? tmdbGenres : title.tmdbGenres,
+      tmdbGenres: extrasPatch.tmdbGenres ?? title.tmdbGenres,
       originalName: title.originalName ?? details.originalName,
+      posterPath: extrasPatch.posterPath ?? title.posterPath,
+      overview: extrasPatch.overview ?? title.overview,
+      runtimeMinutes: extrasPatch.runtimeMinutes ?? title.runtimeMinutes,
+      backdropPath: extrasPatch.backdropPath ?? title.backdropPath,
     };
   } catch {
     return title;
@@ -191,12 +228,12 @@ export const enrichDiaryWatchlistTitles = async <T extends DiaryEnrichTitle>(
   const withTmdbId = pickEnrichIndexes(
     nextTitles,
     DIARY_GENRE_ENRICH_LIMIT,
-    (title) => Boolean(title.tmdbId) && !hasGenres(title.tmdbGenres),
+    (title) => Boolean(title.tmdbId) && titleNeedsDiaryExtras(title),
   );
   const withoutTmdbId = pickEnrichIndexes(
     nextTitles,
     DIARY_GENRE_ENRICH_LIMIT - withTmdbId.length,
-    (title) => !title.tmdbId && !hasGenres(title.tmdbGenres),
+    (title) => !title.tmdbId && titleNeedsDiaryExtras(title),
   );
   const genreIndexes = [...withTmdbId, ...withoutTmdbId];
 
@@ -232,7 +269,7 @@ export const enrichDiaryWatchlistTitles = async <T extends DiaryEnrichTitle>(
 export const scheduleDiaryWatchlistEnrichment = <T extends DiaryEnrichTitle>(
   titleRows: T[],
 ) => {
-  const needsGenres = titleRows.some((title) => !hasGenres(title.tmdbGenres));
+  const needsGenres = titleRows.some(titleNeedsDiaryExtras);
   const needsProviders = titleRows.some(
     (title) =>
       Boolean(title.tmdbId) &&

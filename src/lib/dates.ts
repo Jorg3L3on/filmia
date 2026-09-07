@@ -114,6 +114,16 @@ export const shiftMonthParam = (monthParam: string, delta: number) => {
 
 export const monthFromIsoDate = (isoDate: string) => isoDate.slice(0, 7);
 
+/** Inclusive UTC start / exclusive UTC end for a `YYYY-MM` diary month. */
+export const monthUtcRange = (monthParam: string) => {
+  const year = Number(monthParam.slice(0, 4));
+  const month = Number(monthParam.slice(5, 7));
+  return {
+    start: new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0)),
+    end: new Date(Date.UTC(year, month, 1, 0, 0, 0, 0)),
+  };
+};
+
 export const formatMonthHeading = (monthParam: string) => {
   const year = Number(monthParam.slice(0, 4));
   const month = Number(monthParam.slice(5, 7));

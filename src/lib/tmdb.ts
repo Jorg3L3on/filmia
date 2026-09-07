@@ -383,6 +383,7 @@ export type TmdbTitleExtras = {
   overview: string | null;
   runtimeMinutes: number | null;
   backdropPath: string | null;
+  posterPath: string | null;
   genres: TmdbGenre[];
 };
 
@@ -495,6 +496,7 @@ export const getTmdbTitleExtras = cache(async (
       overview: details.overview,
       runtimeMinutes: details.runtimeMinutes,
       backdropPath: details.backdropPath,
+      posterPath: details.posterPath,
       genres: details.genres,
     };
   } catch {

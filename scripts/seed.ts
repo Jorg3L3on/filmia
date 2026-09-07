@@ -314,7 +314,7 @@ const watchlistQueue: WatchlistSeed[] = [
     queueNote: "Comedia rápida.",
     position: 4,
     tmdbId: 8363,
-    posterPath: "/ek8e8d58kcOZhSxWOsZHCJ9Ym2w.jpg",
+    posterPath: "/ek8e8txUyUwd2BNqj6lFEerJfbq.jpg",
     imdbRating: 7.6,
     overview:
       "Dos amigos intentan comprar alcohol para una fiesta y terminar el instituto con una última noche caótica.",

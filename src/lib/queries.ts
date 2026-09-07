@@ -4,10 +4,12 @@ import {
   desc,
   eq,
   exists,
+  gte,
   ilike,
   inArray,
   isNotNull,
   isNull,
+  lt,
   ne,
   or,
   sql,
@@ -28,6 +30,7 @@ import {
   type TitleWithRelations,
   type TitleWithTags,
 } from "@/db";
+import { monthUtcRange, toDateInput } from "@/lib/dates";
 import { sortUserLists } from "@/lib/lists";
 import { requireUserId } from "@/lib/session";
 import { type SeriesStatusFilter } from "@/lib/series";
@@ -70,6 +73,7 @@ type TitleFilters = {
   sort?: "recent" | "watched" | "rating" | "name" | "year";
   onlyWatched?: boolean;
   seriesStatus?: SeriesStatusFilter;
+  watchedMonth?: string;
 };
 
 const EMPTY_TITLE_FILTERS: TitleFilters = {};
@@ -127,34 +131,17 @@ const buildTagSlugCondition = (userId: string, tagSlugs: string[]) => {
   );
 };
 
-const titleOrderBy = (sort: TitleFilters["sort"]) => {
-  switch (sort) {
-    case "rating":
-      return [desc(titles.rating), asc(titles.name)];
-    case "name":
-      return [asc(titles.name)];
-    case "year":
-      return [desc(titles.year), asc(titles.name)];
-    case "watched":
-      return [desc(titles.watchedAt), asc(titles.name)];
-    default:
-      return [desc(titles.updatedAt)];
-  }
-};
-
-export const getTitles = cache(async (filters: TitleFilters = EMPTY_TITLE_FILTERS) => {
-  const userId = await requireUserId();
+const buildTitleConditions = (userId: string, filters: TitleFilters) => {
   const {
     q,
     kind,
     platform,
     tags: tagFilter,
-    sort = "recent",
     onlyWatched = false,
     seriesStatus,
+    watchedMonth,
   } = filters;
   const tagSlugs = [...new Set((tagFilter ?? []).map((slug) => slug.trim()).filter(Boolean))];
-
   const conditions = [eq(titles.userId, userId)];
 
   if (q) {
@@ -184,16 +171,69 @@ export const getTitles = cache(async (filters: TitleFilters = EMPTY_TITLE_FILTER
     conditions.push(isNotNull(titles.watchedAt));
   }
 
+  if (watchedMonth) {
+    const { start, end } = monthUtcRange(watchedMonth);
+    conditions.push(gte(titles.watchedAt, start));
+    conditions.push(lt(titles.watchedAt, end));
+  }
+
   const seriesCondition = buildSeriesStatusCondition(seriesStatus);
   if (seriesCondition) {
     conditions.push(seriesCondition);
   }
 
+  return conditions;
+};
+
+const titleOrderBy = (sort: TitleFilters["sort"]) => {
+  switch (sort) {
+    case "rating":
+      return [desc(titles.rating), asc(titles.name)];
+    case "name":
+      return [asc(titles.name)];
+    case "year":
+      return [desc(titles.year), asc(titles.name)];
+    case "watched":
+      return [desc(titles.watchedAt), asc(titles.name)];
+    default:
+      return [desc(titles.updatedAt)];
+  }
+};
+
+export const getTitles = cache(async (filters: TitleFilters = EMPTY_TITLE_FILTERS) => {
+  const userId = await requireUserId();
+  const { sort = "recent" } = filters;
+
   return db.query.titles.findMany({
-    where: and(...conditions),
+    where: and(...buildTitleConditions(userId, filters)),
     with: titleWithTags,
     orderBy: titleOrderBy(sort),
   });
+});
+
+export const getLatestWatchedMonth = cache(async (filters: TitleFilters = EMPTY_TITLE_FILTERS) => {
+  const userId = await requireUserId();
+  const rows = await db
+    .select({ watchedAt: titles.watchedAt })
+    .from(titles)
+    .where(
+      and(
+        ...buildTitleConditions(userId, {
+          ...filters,
+          onlyWatched: true,
+          watchedMonth: undefined,
+        }),
+      ),
+    )
+    .orderBy(desc(titles.watchedAt))
+    .limit(1);
+
+  const watchedAt = rows[0]?.watchedAt;
+  if (!watchedAt) {
+    return null;
+  }
+
+  return toDateInput(watchedAt).slice(0, 7) || null;
 });
 
 export const getTitleById = cache(async (id: string) => {

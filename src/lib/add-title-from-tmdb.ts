@@ -99,6 +99,8 @@ const enrichCreatedTitleInBackground = (
             originalName: resolved.originalName,
             year: resolved.year,
             posterPath: resolved.posterPath,
+            backdropPath: resolved.backdropPath,
+            runtimeMinutes: resolved.runtimeMinutes,
             imdbId: resolved.imdbId,
             imdbRating: resolved.imdbRating,
             overview: resolved.overview ?? null,

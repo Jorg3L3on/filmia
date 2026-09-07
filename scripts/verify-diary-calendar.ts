@@ -8,6 +8,7 @@ import {
   hasExplicitMonthParam,
   isValidIsoDate,
   latestMonthWithEntries,
+  monthUtcRange,
   parseDayParam,
   parseMonthParam,
   shiftMonthParam,
@@ -84,6 +85,9 @@ const run = () => {
   assert(!grouped.has(""), "Null watchedAt is skipped");
   assert(toDateInput(titles[0]?.watchedAt) === "2000-06-15", "Stored noon UTC stays date-only");
   assert(titlesInMonth(titles, "2021-06").length === 2, "Month filter uses YYYY-MM prefix");
+  const june = monthUtcRange("2021-06");
+  assert(june.start.toISOString() === "2021-06-01T00:00:00.000Z", "Month range starts at UTC midnight");
+  assert(june.end.toISOString() === "2021-07-01T00:00:00.000Z", "Month range ends at next UTC month");
   assert(titlesInMonth(titles, "2026-09").length === 0, "Empty month has no titles");
   assert(!hasExplicitMonthParam(undefined), "Missing month is not explicit");
   assert(hasExplicitMonthParam("2021-06"), "Valid month is explicit");

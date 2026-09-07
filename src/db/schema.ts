@@ -85,6 +85,8 @@ export const titles = pgTable(
     seriesSeason: integer("seriesSeason"),
     tmdbId: integer("tmdbId"),
     posterPath: text("posterPath"),
+    backdropPath: text("backdropPath"),
+    runtimeMinutes: integer("runtimeMinutes"),
     imdbId: text("imdbId"),
     imdbRating: real("imdbRating"),
     overview: text("overview"),
@@ -104,6 +106,7 @@ export const titles = pgTable(
   },
   (table) => [
     index("Title_userId_idx").on(table.userId),
+    index("Title_userId_watchedAt_idx").on(table.userId, table.watchedAt),
     index("Title_kind_idx").on(table.kind),
     index("Title_rating_idx").on(table.rating),
     index("Title_name_idx").on(table.name),

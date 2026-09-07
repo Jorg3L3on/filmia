@@ -19,7 +19,8 @@ import {
   getUserStreamingPlatforms,
 } from "@/lib/queries";
 import { btnDanger, btnGhost, wellClass } from "@/lib/ui";
-import { getTmdbTitleExtras } from "@/lib/tmdb";
+import { FichaVisit } from "@/components/FichaVisit";
+import { resolveTitleExtras, storedTitleExtras } from "@/lib/title-extras";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 import TitleLoading from "./loading";
 import {
@@ -58,9 +59,7 @@ const TitleDetail = async ({
     notFound();
   }
 
-  const extrasPromise = title.tmdbId
-    ? getTmdbTitleExtras(title.tmdbId, title.kind)
-    : Promise.resolve(null);
+  const extrasPromise = resolveTitleExtras(title);
   const listsPromise = getAssignableLists();
   const tagsPromise = getTagFilters();
   const platformsPromise = getUserStreamingPlatforms();
@@ -74,7 +73,8 @@ const TitleDetail = async ({
 
   return (
     <article className="space-y-8">
-      <Suspense fallback={<TitleHeroFallback title={title} />}>
+      <FichaVisit titleId={title.id} />
+      <Suspense fallback={<TitleHeroFallback title={title} extras={storedTitleExtras(title)} />}>
         <TitleHeroBlock title={title} extrasPromise={extrasPromise} />
       </Suspense>
 

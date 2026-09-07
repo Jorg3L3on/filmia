@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { browserFichaStorage, readRecentFichaHrefs } from "@/lib/ficha-session";
 
 const PREFETCH_HREFS = [
   "/",
@@ -17,7 +18,8 @@ export const NavPrefetch = () => {
 
   useEffect(() => {
     const prefetchAll = () => {
-      for (const href of PREFETCH_HREFS) {
+      const recentFichas = readRecentFichaHrefs(browserFichaStorage());
+      for (const href of [...PREFETCH_HREFS, ...recentFichas]) {
         router.prefetch(href);
       }
     };
