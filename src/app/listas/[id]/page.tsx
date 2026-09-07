@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { deleteList } from "@/app/actions/lists";
@@ -11,6 +12,7 @@ import {
   MinePlatformsSetupCta,
   MissingStreamingDataNote,
 } from "@/components/MinePlatformsNotice";
+import { ListsBodySkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/PageHeader";
 import type { DeckViewMode } from "@/components/DeckViewToggle";
 import {
@@ -21,7 +23,7 @@ import {
   titleMatchesKind,
 } from "@/lib/catalog-filters";
 import { emptyStateForList, isFixedListSlug, WATCHLIST_SLUG } from "@/lib/lists";
-import { getListById, getTags, getTitleOptions, getUserStreamingPlatforms } from "@/lib/queries";
+import { getListById, getTagFilters, getTitleOptions, getUserStreamingPlatforms } from "@/lib/queries";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
@@ -29,7 +31,7 @@ import { btnDanger, btnPrimary } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
-export default async function ListDetailPage({
+export default function ListDetailPage({
   params,
   searchParams,
 }: {
@@ -44,6 +46,28 @@ export default async function ListDetailPage({
     sort?: string | string[];
   }>;
 }) {
+  return (
+    <Suspense fallback={<ListsBodySkeleton label="Cargando lista" />}>
+      <ListDetail params={params} searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+const ListDetail = async ({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{
+    view?: string;
+    tag?: string | string[];
+    minePlatforms?: string | string[];
+    seriesStatus?: string | string[];
+    kind?: string | string[];
+    platform?: string | string[];
+    sort?: string | string[];
+  }>;
+}) => {
   const { id } = await params;
   const query = await searchParams;
   const view: DeckViewMode = query.view === "grid" ? "grid" : "deck";
@@ -56,7 +80,7 @@ export default async function ListDetailPage({
   const [list, titleOptions, tags, userPlatforms] = await Promise.all([
     getListById(id),
     getTitleOptions(),
-    getTags(),
+    getTagFilters(),
     getUserStreamingPlatforms(),
   ]);
 

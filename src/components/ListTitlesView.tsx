@@ -3,7 +3,7 @@ import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
 import { ListTitlesGrid } from "@/components/ListTitlesGrid";
 import type { Platform, ListItem } from "@/db";
 import type { CatalogKindFilter } from "@/lib/catalog-href";
-import type { TitleWithRelations } from "@/lib/queries";
+import type { TitleWithTags } from "@/lib/queries";
 import type { CatalogSort } from "@/lib/tags";
 import { catalogHref } from "@/lib/tags";
 import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
@@ -11,7 +11,7 @@ import { parseStoredWatchProviders } from "@/lib/watch-providers";
 import type { SeriesStatusFilter } from "@/lib/series";
 
 type ListItemPayload = ListItem & {
-  title: TitleWithRelations;
+  title: TitleWithTags;
 };
 
 type ListTitlesViewProps = {

@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { ListCard } from "@/components/ListCard";
+import { ListsBodySkeleton } from "@/components/PageSkeletons";
 import { listHref, partitionUserLists } from "@/lib/lists";
 import { getLists } from "@/lib/queries";
 import { btnPrimary } from "@/lib/ui";
@@ -19,10 +21,7 @@ const ListCollection = ({ children }: { children: ReactNode }) => (
   <ul className={listCollectionClassName}>{children}</ul>
 );
 
-export default async function ListsPage() {
-  const lists = await getLists();
-  const { fixed, custom } = partitionUserLists(lists);
-
+export default function ListsPage() {
   return (
     <div className="space-y-12">
       <header className="flex items-center justify-between gap-3">
@@ -31,7 +30,19 @@ export default async function ListsPage() {
           Nueva lista
         </Link>
       </header>
+      <Suspense fallback={<ListsBodySkeleton />}>
+        <ListsBody />
+      </Suspense>
+    </div>
+  );
+}
 
+const ListsBody = async () => {
+  const lists = await getLists();
+  const { fixed, custom } = partitionUserLists(lists);
+
+  return (
+    <>
       <section className="space-y-4">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-paper">
           <span className="text-accent" aria-hidden="true">
@@ -87,6 +98,6 @@ export default async function ListsPage() {
           </ListCollection>
         )}
       </section>
-    </div>
+    </>
   );
-}
+};

@@ -1,134 +1,106 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TitleKind } from "@/db";
 import { deleteTitle } from "@/app/actions/titles";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
+import {
+  TitleActionsSkeleton,
+  TitleProvidersSkeleton,
+} from "@/components/PageSkeletons";
 import { SeriesStatusPanel } from "@/components/SeriesStatusPanel";
-import { TitleActionRow } from "@/components/TitleActionRow";
-import { TitleHero } from "@/components/TitleHero";
-import { TitleListsPanel } from "@/components/TitleListsPanel";
-import { TitleSaveCta } from "@/components/TitleSaveCta";
-import { TitlePosterRail } from "@/components/TitlePosterRail";
-import { TitleTagsPanel } from "@/components/TitleTagsPanel";
-import { TitleSynopsis } from "@/components/TitleSynopsis";
 import { WatchedBadge } from "@/components/WatchedBadge";
-import { WatchProvidersMx } from "@/components/WatchProvidersMx";
-import { WATCHLIST_SLUG } from "@/lib/lists";
 import { formatWatchedDate } from "@/lib/dates";
-import { formatRuntime, TITLE_KIND_LABEL } from "@/lib/labels";
 import {
   getAssignableLists,
   getRelatedTitles,
-  getTags,
+  getTagFilters,
   getTitleById,
   getUserStreamingPlatforms,
 } from "@/lib/queries";
 import { btnDanger, btnGhost, wellClass } from "@/lib/ui";
-import { getTmdbTitleExtras, tmdbBackdropUrl } from "@/lib/tmdb";
+import { getTmdbTitleExtras } from "@/lib/tmdb";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
+import TitleLoading from "./loading";
+import {
+  TitleActionsBlock,
+  TitleHeroBlock,
+  TitleHeroFallback,
+  TitleProvidersBlock,
+  TitleRelatedBlock,
+  TitleSynopsisBlock,
+  isSeriesTitle,
+} from "./title-sections";
 
 export const dynamic = "force-dynamic";
 
-export default async function TitleDetailPage({
+export default function TitleDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  return (
+    <Suspense fallback={<TitleLoading />}>
+      <TitleDetail params={params} />
+    </Suspense>
+  );
+}
+
+const TitleDetail = async ({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) => {
   const { id } = await params;
-  const [title, assignableLists, userPlatforms, tags] = await Promise.all([
-    getTitleById(id),
-    getAssignableLists(),
-    getUserStreamingPlatforms(),
-    getTags(),
-  ]);
+  const title = await getTitleById(id);
 
   if (!title) {
     notFound();
   }
 
-  const [watchProvidersResult, extras, related] = await Promise.all([
-    getWatchProvidersForTitle(title),
-    title.tmdbId
-      ? getTmdbTitleExtras(title.tmdbId, title.kind)
-      : Promise.resolve(null),
-    getRelatedTitles(
-      title.id,
-      title.tags.map((item) => item.tagId),
-    ),
-  ]);
-
-  const watchProviders = watchProvidersResult.data;
-  const deleteAction = deleteTitle.bind(null, title.id);
-  const inWatchlist = title.listItems.some(
-    (item) => item.list.slug === WATCHLIST_SLUG,
+  const extrasPromise = title.tmdbId
+    ? getTmdbTitleExtras(title.tmdbId, title.kind)
+    : Promise.resolve(null);
+  const listsPromise = getAssignableLists();
+  const tagsPromise = getTagFilters();
+  const platformsPromise = getUserStreamingPlatforms();
+  const providersPromise = getWatchProvidersForTitle(title);
+  const relatedPromise = getRelatedTitles(
+    title.id,
+    title.tags.map((item) => item.tagId),
   );
-  const memberLists = title.listItems.map((item) => item.list);
-  const inCustomList = memberLists.some((list) => list.slug !== WATCHLIST_SLUG);
-  const backdropSrc = extras?.backdropPath
-    ? tmdbBackdropUrl(extras.backdropPath, "w1280")
-    : title.posterPath
-      ? `https://image.tmdb.org/t/p/w780${title.posterPath}`
-      : null;
-  const runtimeLabel = formatRuntime(extras?.runtimeMinutes);
+
+  const deleteAction = deleteTitle.bind(null, title.id);
 
   return (
     <article className="space-y-8">
-      <TitleHero
-        titleId={title.id}
-        name={title.name}
-        originalName={title.originalName}
-        posterPath={title.posterPath}
-        backdropSrc={backdropSrc}
-        year={title.year}
-        runtimeLabel={runtimeLabel}
-        kindLabel={TITLE_KIND_LABEL[title.kind]}
-        imdbRating={title.imdbRating}
-        rating={title.rating}
-        watched={Boolean(title.watchedAt)}
-      />
+      <Suspense fallback={<TitleHeroFallback title={title} />}>
+        <TitleHeroBlock title={title} extrasPromise={extrasPromise} />
+      </Suspense>
 
-      <TitleSaveCta
-        titleId={title.id}
-        inWatchlist={inWatchlist}
-        memberLists={memberLists}
-        listsPanel={
-          <TitleListsPanel
-            titleId={title.id}
-            lists={assignableLists}
-            memberListIds={title.listItems.map((item) => item.listId)}
-          />
-        }
-      />
+      <Suspense fallback={<TitleActionsSkeleton />}>
+        <TitleActionsBlock
+          title={title}
+          listsPromise={listsPromise}
+          tagsPromise={tagsPromise}
+        />
+      </Suspense>
 
-      <TitleActionRow
-        titleId={title.id}
-        watched={Boolean(title.watchedAt)}
-        inWatchlist={inWatchlist}
-        inCustomList={inCustomList}
-        rating={title.rating}
-        review={title.review}
-        listsPanel={
-          <TitleListsPanel
-            titleId={title.id}
-            lists={assignableLists}
-            memberListIds={title.listItems.map((item) => item.listId)}
-          />
-        }
-        tagsPanel={
-          <TitleTagsPanel
-            titleId={title.id}
-            tags={tags}
-            selectedTagIds={title.tags.map((item) => item.tagId)}
-          />
-        }
-      />
+      <Suspense fallback={<TitleProvidersSkeleton />}>
+        <TitleProvidersBlock
+          providersPromise={providersPromise}
+          platformsPromise={platformsPromise}
+        />
+      </Suspense>
 
-      <WatchProvidersMx data={watchProviders} userPlatforms={userPlatforms} />
+      <Suspense fallback={null}>
+        <TitleSynopsisBlock
+          storedOverview={title.overview}
+          extrasPromise={extrasPromise}
+        />
+      </Suspense>
 
-      {extras?.overview ? <TitleSynopsis text={extras.overview} /> : null}
-
-      {title.kind === TitleKind.SERIES ? (
+      {isSeriesTitle(title) ? (
         <SeriesStatusPanel
           titleId={title.id}
           seriesStatus={title.seriesStatus}
@@ -158,13 +130,9 @@ export default async function TitleDetailPage({
         </section>
       ) : null}
 
-      {related.length > 0 ? (
-        <TitlePosterRail
-          title="Relacionadas"
-          ariaLabel="Títulos relacionados"
-          titles={related}
-        />
-      ) : null}
+      <Suspense fallback={null}>
+        <TitleRelatedBlock relatedPromise={relatedPromise} />
+      </Suspense>
 
       <div className="flex flex-wrap gap-3 pt-2">
         <Link href={`/titulos/${title.id}/editar`} className={btnGhost}>
@@ -180,4 +148,4 @@ export default async function TitleDetailPage({
       </div>
     </article>
   );
-}
+};

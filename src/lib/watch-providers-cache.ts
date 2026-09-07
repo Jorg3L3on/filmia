@@ -1,5 +1,7 @@
 import { eq } from "drizzle-orm";
+import { cache } from "react";
 import { db, titles, type TitleKind } from "@/db";
+import { scheduleAfterResponse } from "@/lib/after-response";
 import { isTmdbConfigured } from "@/lib/tmdb";
 import {
   fetchMxWatchProviders,
@@ -45,7 +47,7 @@ export const refreshWatchProvidersMx = async (
   return data;
 };
 
-export const getWatchProvidersForTitle = async (
+export const getWatchProvidersForTitle = cache(async (
   title: TitleWatchProviderSource,
 ): Promise<WatchProvidersResult> => {
   const cached = parseStoredWatchProviders(title.watchProvidersMx);
@@ -59,13 +61,27 @@ export const getWatchProvidersForTitle = async (
     return { data: cached, fromCache: true, stale: false };
   }
 
+  if (cached) {
+    const titleId = title.id;
+    const tmdbId = title.tmdbId;
+    const kind = title.kind;
+    scheduleAfterResponse(async () => {
+      try {
+        await refreshWatchProvidersMx(titleId, tmdbId, kind);
+      } catch {
+        // Keep the stale cache on the current paint.
+      }
+    });
+    return { data: cached, fromCache: true, stale: true };
+  }
+
   try {
     const data = await refreshWatchProvidersMx(title.id, title.tmdbId, title.kind);
     return { data, fromCache: false, stale: false };
   } catch {
     return { data: cached, fromCache: true, stale: true };
   }
-};
+});
 
 export const enrichWatchProvidersOnSave = async (
   titleId: string,

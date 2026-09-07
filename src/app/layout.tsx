@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import type { ReactNode } from "react";
 import { Fraunces, Geist } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
-import { auth } from "@/lib/session";
+import { scheduleAfterResponse } from "@/lib/after-response";
 import { ensureDefaultLists } from "@/lib/lists";
+import { auth } from "@/lib/session";
 import { ensureDefaultTags } from "@/lib/tags";
 import "./globals.css";
 
@@ -32,14 +34,14 @@ export const viewport: Viewport = {
   themeColor: "#0e1114",
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
   const session = await auth();
 
   if (session?.user?.id) {
-    await Promise.all([
-      ensureDefaultLists(session.user.id),
-      ensureDefaultTags(session.user.id),
-    ]);
+    const userId = session.user.id;
+    scheduleAfterResponse(async () => {
+      await Promise.all([ensureDefaultLists(userId), ensureDefaultTags(userId)]);
+    });
   }
 
   return (

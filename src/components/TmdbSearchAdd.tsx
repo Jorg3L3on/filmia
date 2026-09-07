@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { searchTmdbDiscover } from "@/app/actions/metadata";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { EmptyState } from "@/components/EmptyState";
@@ -13,6 +13,13 @@ import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import type { UserTmdbEntry } from "@/lib/queries";
+import {
+  SEARCH_DEBOUNCE_MS,
+  buildSearchHref,
+  normalizeSearchQuery,
+  readSearchCache,
+  writeSearchCache,
+} from "@/lib/search-session";
 import { btnPrimary, fieldClass, focusRing } from "@/lib/ui";
 
 type CatalogEntry = {
@@ -71,6 +78,7 @@ export const TmdbSearchAdd = ({
   const [kindFilter, setKindFilter] = useState<"ALL" | TitleKind>("ALL");
   const [isSearching, startSearch] = useTransition();
   const [isAdding, startAdd] = useTransition();
+  const requestIdRef = useRef(0);
   const visibleResults = results.filter((result) =>
     titleMatchesKind(result.kind, kindFilter),
   );
@@ -86,36 +94,114 @@ export const TmdbSearchAdd = ({
     );
   }, [catalog, preview]);
 
-  const handleSearch = useCallback(() => {
-    const trimmed = query.trim();
-    if (!configured.tmdb || !trimmed) {
+  const syncSearchUrl = useCallback(
+    (trimmed: string) => {
+      if (typeof window === "undefined") {
+        return;
+      }
+
+      const href = buildSearchHref(trimmed, {
+        watchedDate,
+        watchedDestination: defaultDestination === "watched",
+      });
+      window.history.replaceState(window.history.state, "", href);
+    },
+    [defaultDestination, watchedDate],
+  );
+
+  const runSearch = useCallback(
+    (rawQuery: string) => {
+      const trimmed = normalizeSearchQuery(rawQuery);
+      if (!configured.tmdb || !trimmed) {
+        return;
+      }
+
+      const cached = readSearchCache(trimmed);
+      if (cached) {
+        setHasSearched(true);
+        setResults(cached.results);
+        setError(cached.error);
+        setNotice(null);
+        syncSearchUrl(trimmed);
+        return;
+      }
+
+      const requestId = requestIdRef.current + 1;
+      requestIdRef.current = requestId;
+      startSearch(async () => {
+        setError(null);
+        setNotice(null);
+        const { results: hits, error: searchError } = await searchTmdbDiscover(trimmed);
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        const nextError =
+          searchError ?? (hits.length === 0 ? "Nada en TMDB con esa búsqueda." : null);
+        writeSearchCache(trimmed, { results: hits, error: nextError });
+        setHasSearched(true);
+        setResults(hits);
+        setError(nextError);
+        syncSearchUrl(trimmed);
+      });
+    },
+    [configured.tmdb, syncSearchUrl],
+  );
+
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelDebounce = useCallback(() => {
+    if (debounceTimer.current !== null) {
+      clearTimeout(debounceTimer.current);
+      debounceTimer.current = null;
+    }
+  }, []);
+
+  const scheduleSearch = useCallback(
+    (value: string) => {
+      cancelDebounce();
+      debounceTimer.current = setTimeout(() => {
+        debounceTimer.current = null;
+        runSearch(value);
+      }, SEARCH_DEBOUNCE_MS);
+    },
+    [cancelDebounce, runSearch],
+  );
+
+  useEffect(() => cancelDebounce, [cancelDebounce]);
+
+  const didMountSearch = useRef(false);
+
+  useEffect(() => {
+    if (didMountSearch.current || !initialQuery.trim() || !configured.tmdb) {
       return;
     }
 
-    startSearch(async () => {
+    didMountSearch.current = true;
+    runSearch(initialQuery);
+  }, [configured.tmdb, initialQuery, runSearch]);
+
+  const handleSearch = useCallback(() => {
+    cancelDebounce();
+    runSearch(query);
+  }, [cancelDebounce, query, runSearch]);
+
+  const handleQueryChange = (value: string) => {
+    setQuery(value);
+    const trimmed = normalizeSearchQuery(value);
+    if (!trimmed) {
+      cancelDebounce();
+      requestIdRef.current += 1;
+      setResults([]);
+      setHasSearched(false);
       setError(null);
       setNotice(null);
-      const { results: hits, error: searchError } = await searchTmdbDiscover(trimmed);
-      setHasSearched(true);
-      setResults(hits);
-      const next = new URLSearchParams();
-      next.set("q", trimmed);
-      if (watchedDate) {
-        next.set("fecha", watchedDate);
-      }
-      if (defaultDestination === "watched") {
-        next.set("destino", "visto");
-      }
-      router.replace(`/buscar?${next.toString()}`, { scroll: false });
-      if (searchError) {
-        setError(searchError);
-        return;
-      }
-      if (hits.length === 0) {
-        setError("Nada en TMDB con esa búsqueda.");
-      }
-    });
-  }, [configured.tmdb, defaultDestination, query, router, watchedDate]);
+      syncSearchUrl("");
+      return;
+    }
+
+    scheduleSearch(trimmed);
+  };
 
   const upsertLocal = (result: TmdbCatalogResult, titleId: string, inWatchlist: boolean) => {
     setCatalog((current) => {
@@ -240,7 +326,7 @@ export const TmdbSearchAdd = ({
           <span className="sr-only">Buscar títulos en TMDB</span>
           <input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => handleQueryChange(event.target.value)}
             placeholder="Interestelar, Dune, Severance…"
             className={`${fieldClass} border-accent/40 py-3 text-base shadow-[0_0_0_3px_rgba(124,156,255,0.18)]`}
             autoComplete="off"
@@ -293,7 +379,9 @@ export const TmdbSearchAdd = ({
         <section className="space-y-3">
           <header className="flex items-end justify-between">
             <h2 className="text-lg font-semibold text-paper">Resultados</h2>
-            <p className="text-sm text-mist">{visibleResults.length}</p>
+            <p className="text-sm text-mist">
+              {isSearching ? "Buscando…" : visibleResults.length}
+            </p>
           </header>
           <ul className="space-y-2">
             {visibleResults.map((result, index) => {

@@ -30,7 +30,7 @@ type TitleFormProps = {
     tags: Array<{ tagId: string }>;
     listItems: Array<{ listId: string }>;
   };
-  tags: Tag[];
+  tags: Array<Pick<Tag, "id" | "name" | "slug">>;
   lists: Array<Pick<List, "id" | "name" | "slug">>;
   metadataConfig: { tmdb: boolean; omdb: boolean };
 };

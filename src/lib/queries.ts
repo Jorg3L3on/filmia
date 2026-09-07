@@ -12,6 +12,7 @@ import {
   or,
   sql,
 } from "drizzle-orm";
+import { cache } from "react";
 import {
   db,
   listItems,
@@ -25,6 +26,7 @@ import {
   type SeriesStatus,
   type TitleKind,
   type TitleWithRelations,
+  type TitleWithTags,
 } from "@/db";
 import { sortUserLists } from "@/lib/lists";
 import { requireUserId } from "@/lib/session";
@@ -32,15 +34,33 @@ import { type SeriesStatusFilter } from "@/lib/series";
 import { parseStoredStreamingPlatforms } from "@/lib/streaming-platforms";
 import { WATCHLIST_SLUG } from "@/lib/watchlist";
 
-export type { TitleKind, SeriesStatus, Platform, ListKind, TitleWithRelations };
+export type {
+  TitleKind,
+  SeriesStatus,
+  Platform,
+  ListKind,
+  TitleWithRelations,
+  TitleWithTags,
+};
+
+export const titleWithTags = {
+  tags: { with: { tag: true } },
+} as const;
 
 export const titleWithRelations = {
-  tags: { with: { tag: true } },
+  ...titleWithTags,
   listItems: { with: { list: true } },
 } as const;
 
 /** @deprecated Use TitleWithRelations — kept for gradual migration of type imports */
 export const titleInclude = titleWithRelations;
+
+export type FilterTag = {
+  id: string;
+  name: string;
+  slug: string;
+  _count: { titles: number };
+};
 
 type TitleFilters = {
   q?: string;
@@ -50,6 +70,29 @@ type TitleFilters = {
   sort?: "recent" | "watched" | "rating" | "name" | "year";
   onlyWatched?: boolean;
   seriesStatus?: SeriesStatusFilter;
+};
+
+const EMPTY_TITLE_FILTERS: TitleFilters = {};
+
+const countByIds = async (
+  column: typeof titleTags.tagId | typeof listItems.listId,
+  table: typeof titleTags | typeof listItems,
+  ids: string[],
+) => {
+  if (ids.length === 0) {
+    return new Map<string, number>();
+  }
+
+  const rows = await db
+    .select({
+      id: column,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(table)
+    .where(inArray(column, ids))
+    .groupBy(column);
+
+  return new Map(rows.map((row) => [row.id, row.count]));
 };
 
 const buildSeriesStatusCondition = (filter: SeriesStatusFilter | undefined) => {
@@ -99,7 +142,7 @@ const titleOrderBy = (sort: TitleFilters["sort"]) => {
   }
 };
 
-export const getTitles = async (filters: TitleFilters = {}) => {
+export const getTitles = cache(async (filters: TitleFilters = EMPTY_TITLE_FILTERS) => {
   const userId = await requireUserId();
   const {
     q,
@@ -148,21 +191,21 @@ export const getTitles = async (filters: TitleFilters = {}) => {
 
   return db.query.titles.findMany({
     where: and(...conditions),
-    with: titleWithRelations,
+    with: titleWithTags,
     orderBy: titleOrderBy(sort),
   });
-};
+});
 
-export const getTitleById = async (id: string) => {
+export const getTitleById = cache(async (id: string) => {
   const userId = await requireUserId();
 
   return db.query.titles.findFirst({
     where: and(eq(titles.id, id), eq(titles.userId, userId)),
     with: titleWithRelations,
   });
-};
+});
 
-export const getRelatedTitles = async (titleId: string, tagIds: string[]) => {
+export const getRelatedTitles = cache(async (titleId: string, tagIds: string[]) => {
   if (tagIds.length === 0) {
     return [];
   }
@@ -171,7 +214,7 @@ export const getRelatedTitles = async (titleId: string, tagIds: string[]) => {
 
   // Relational `findMany` aliases `Title` as `"titles"`. A correlated
   // `exists` that still references `titles.id` emits `"Title"."id"` and
-  // Postgres rejects it. Resolve matching ids first, then load relations.
+  // Postgres rejects it. Resolve matching ids first, then load posters.
   const matching = await db
     .selectDistinct({ titleId: titleTags.titleId })
     .from(titleTags)
@@ -193,13 +236,39 @@ export const getRelatedTitles = async (titleId: string, tagIds: string[]) => {
       titles.id,
       matching.map((row) => row.titleId),
     ),
-    with: titleWithRelations,
+    columns: {
+      id: true,
+      name: true,
+      year: true,
+      posterPath: true,
+    },
     orderBy: [desc(titles.watchedAt), asc(titles.name)],
     limit: 12,
   });
-};
+});
 
-export const getTags = async () => {
+export const getTagFilters = cache(async (): Promise<FilterTag[]> => {
+  const userId = await requireUserId();
+
+  const rows = await db.query.tags.findMany({
+    where: eq(tags.userId, userId),
+    columns: { id: true, name: true, slug: true },
+    orderBy: [asc(tags.name)],
+  });
+
+  const counts = await countByIds(
+    titleTags.tagId,
+    titleTags,
+    rows.map((row) => row.id),
+  );
+
+  return rows.map((row) => ({
+    ...row,
+    _count: { titles: counts.get(row.id) ?? 0 },
+  }));
+});
+
+export const getTags = cache(async () => {
   const userId = await requireUserId();
 
   const rows = await db.query.tags.findMany({
@@ -217,41 +286,48 @@ export const getTags = async () => {
     },
   });
 
-  return Promise.all(
-    rows.map(async (row) => {
-      const countRows = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(titleTags)
-        .where(eq(titleTags.tagId, row.id));
-
-      return {
-        ...row,
-        _count: { titles: countRows[0]?.count ?? 0 },
-      };
-    }),
+  const counts = await countByIds(
+    titleTags.tagId,
+    titleTags,
+    rows.map((row) => row.id),
   );
-};
 
-export const getTagBySlug = async (slug: string) => {
+  return rows.map((row) => ({
+    ...row,
+    _count: { titles: counts.get(row.id) ?? 0 },
+  }));
+});
+
+export const getTagBySlug = cache(async (slug: string) => {
   const userId = await requireUserId();
 
   const row = await db.query.tags.findFirst({
     where: and(eq(tags.userId, userId), eq(tags.slug, slug)),
-    with: { titles: { columns: { titleId: true } } },
+    columns: {
+      id: true,
+      userId: true,
+      name: true,
+      slug: true,
+      createdAt: true,
+    },
   });
 
   if (!row) {
     return null;
   }
 
-  const { titles: titleLinks, ...tag } = row;
-  return {
-    ...tag,
-    _count: { titles: titleLinks.length },
-  };
-};
+  const countRows = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(titleTags)
+    .where(eq(titleTags.tagId, row.id));
 
-export const getLists = async () => {
+  return {
+    ...row,
+    _count: { titles: countRows[0]?.count ?? 0 },
+  };
+});
+
+export const getLists = cache(async () => {
   const userId = await requireUserId();
 
   const rows = await db.query.lists.findMany({
@@ -269,24 +345,21 @@ export const getLists = async () => {
     },
   });
 
-  const withCounts = await Promise.all(
-    rows.map(async (list) => {
-      const countRows = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(listItems)
-        .where(eq(listItems.listId, list.id));
-
-      return {
-        ...list,
-        _count: { items: countRows[0]?.count ?? 0 },
-      };
-    }),
+  const counts = await countByIds(
+    listItems.listId,
+    listItems,
+    rows.map((row) => row.id),
   );
 
-  return sortUserLists(withCounts);
-};
+  return sortUserLists(
+    rows.map((list) => ({
+      ...list,
+      _count: { items: counts.get(list.id) ?? 0 },
+    })),
+  );
+});
 
-export const getWatchlist = async () => {
+export const getWatchlist = cache(async () => {
   const userId = await requireUserId();
 
   return db.query.lists.findFirst({
@@ -295,14 +368,14 @@ export const getWatchlist = async () => {
       items: {
         orderBy: [asc(listItems.position)],
         with: {
-          title: { with: titleWithRelations },
+          title: { with: titleWithTags },
         },
       },
     },
   });
-};
+});
 
-export const getWatchlistCount = async () => {
+export const getWatchlistCount = cache(async () => {
   const userId = await requireUserId();
 
   const watchlist = await db.query.lists.findFirst({
@@ -320,9 +393,9 @@ export const getWatchlistCount = async () => {
     .where(eq(listItems.listId, watchlist.id));
 
   return countRows[0]?.count ?? 0;
-};
+});
 
-export const isTitleInWatchlist = async (titleId: string) => {
+export const isTitleInWatchlist = cache(async (titleId: string) => {
   const userId = await requireUserId();
 
   const watchlist = await db.query.lists.findFirst({
@@ -339,9 +412,9 @@ export const isTitleInWatchlist = async (titleId: string) => {
   });
 
   return Boolean(item);
-};
+});
 
-export const getCollectionLists = async () => {
+export const getCollectionLists = cache(async () => {
   const userId = await requireUserId();
 
   const rows = await db.query.lists.findMany({
@@ -350,9 +423,9 @@ export const getCollectionLists = async () => {
   });
 
   return sortUserLists(rows);
-};
+});
 
-export const getAssignableLists = async () => {
+export const getAssignableLists = cache(async () => {
   const userId = await requireUserId();
 
   const rows = await db.query.lists.findMany({
@@ -361,9 +434,9 @@ export const getAssignableLists = async () => {
   });
 
   return sortUserLists(rows);
-};
+});
 
-export const getListById = async (id: string) => {
+export const getListById = cache(async (id: string) => {
   const userId = await requireUserId();
 
   return db.query.lists.findFirst({
@@ -372,14 +445,14 @@ export const getListById = async (id: string) => {
       items: {
         orderBy: [asc(listItems.position)],
         with: {
-          title: { with: titleWithRelations },
+          title: { with: titleWithTags },
         },
       },
     },
   });
-};
+});
 
-export const getTitleOptions = async () => {
+export const getTitleOptions = cache(async () => {
   const userId = await requireUserId();
 
   return db.query.titles.findMany({
@@ -387,9 +460,9 @@ export const getTitleOptions = async () => {
     columns: { id: true, name: true, year: true, posterPath: true },
     orderBy: [asc(titles.name)],
   });
-};
+});
 
-export const getUserStreamingPlatforms = async () => {
+export const getUserStreamingPlatforms = cache(async () => {
   const userId = await requireUserId();
   const user = await db.query.users.findFirst({
     where: eq(users.id, userId),
@@ -397,9 +470,9 @@ export const getUserStreamingPlatforms = async () => {
   });
 
   return parseStoredStreamingPlatforms(user?.streamingPlatforms);
-};
+});
 
-export const getCurrentUserProfile = async () => {
+export const getCurrentUserProfile = cache(async () => {
   const userId = await requireUserId();
   const user = await db.query.users.findFirst({
     where: eq(users.id, userId),
@@ -420,7 +493,7 @@ export const getCurrentUserProfile = async () => {
     ...user,
     streamingPlatforms: parseStoredStreamingPlatforms(user.streamingPlatforms),
   };
-};
+});
 
 export type UserTmdbEntry = {
   titleId: string;
@@ -430,29 +503,33 @@ export type UserTmdbEntry = {
   watched: boolean;
 };
 
-export const getUserTmdbIndex = async (): Promise<UserTmdbEntry[]> => {
+export const getUserTmdbIndex = cache(async (): Promise<UserTmdbEntry[]> => {
   const userId = await requireUserId();
 
-  const rows = await db.query.titles.findMany({
-    where: and(eq(titles.userId, userId), isNotNull(titles.tmdbId)),
-    columns: {
-      id: true,
-      tmdbId: true,
-      kind: true,
-      watchedAt: true,
-    },
-    with: {
-      listItems: {
-        with: {
-          list: {
-            columns: { slug: true },
-          },
+  const [titleRows, watchlist] = await Promise.all([
+    db.query.titles.findMany({
+      where: and(eq(titles.userId, userId), isNotNull(titles.tmdbId)),
+      columns: {
+        id: true,
+        tmdbId: true,
+        kind: true,
+        watchedAt: true,
+      },
+    }),
+    db.query.lists.findFirst({
+      where: and(eq(lists.userId, userId), eq(lists.slug, WATCHLIST_SLUG)),
+      columns: { id: true },
+      with: {
+        items: {
+          columns: { titleId: true },
         },
       },
-    },
-  });
+    }),
+  ]);
 
-  return rows.flatMap((title) => {
+  const watchlistIds = new Set(watchlist?.items.map((item) => item.titleId) ?? []);
+
+  return titleRows.flatMap((title) => {
     if (title.tmdbId == null) {
       return [];
     }
@@ -462,9 +539,9 @@ export const getUserTmdbIndex = async (): Promise<UserTmdbEntry[]> => {
         titleId: title.id,
         tmdbId: title.tmdbId,
         kind: title.kind,
-        inWatchlist: title.listItems.some((item) => item.list.slug === WATCHLIST_SLUG),
+        inWatchlist: watchlistIds.has(title.id),
         watched: title.watchedAt != null,
       },
     ];
   });
-};
+});

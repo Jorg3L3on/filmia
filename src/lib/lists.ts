@@ -1,5 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import { and, eq, inArray } from "drizzle-orm";
+import { cache } from "react";
 import { db, lists, type ListKind } from "@/db";
 
 export const WATCHLIST_SLUG = "watchlist" as const;
@@ -134,7 +135,7 @@ export {
   type TitleListMembership,
 } from "@/lib/list-membership";
 
-export const ensureDefaultLists = async (userId: string) => {
+export const ensureDefaultLists = cache(async (userId: string) => {
   const existing = await db.query.lists.findMany({
     where: and(eq(lists.userId, userId), inArray(lists.slug, [...FIXED_LIST_SLUGS])),
     columns: { id: true, slug: true, name: true, kind: true },
@@ -169,4 +170,4 @@ export const ensureDefaultLists = async (userId: string) => {
   return db.query.lists.findMany({
     where: and(eq(lists.userId, userId), inArray(lists.slug, [...FIXED_LIST_SLUGS])),
   });
-};
+});

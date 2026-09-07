@@ -3,13 +3,13 @@ import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
 import { PosterTile } from "@/components/PosterTile";
 import type { Platform } from "@/db";
-import type { TitleWithRelations } from "@/lib/queries";
+import type { TitleWithTags } from "@/lib/queries";
 import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { eyebrowClass } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
 
 type TitleDeckViewProps = {
-  titles: TitleWithRelations[];
+  titles: TitleWithTags[];
   mode?: DeckViewMode;
   modes?: DeckViewMode[];
   hrefFor?: (mode: DeckViewMode) => string;
@@ -20,7 +20,7 @@ type TitleDeckViewProps = {
 };
 
 const toCoverflowTitle = (
-  title: TitleWithRelations,
+  title: TitleWithTags,
   userPlatforms: readonly Platform[] = [],
 ): CoverflowTitle => {
   const watchProviders = parseStoredWatchProviders(title.watchProvidersMx);

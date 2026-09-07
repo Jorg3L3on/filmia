@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db, titles, type TitleKind } from "@/db";
+import { scheduleAfterResponse } from "@/lib/after-response";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { getTmdbTitleExtras, isTmdbConfigured, type TmdbGenre } from "@/lib/tmdb";
 
@@ -126,4 +127,16 @@ export const hydrateMissingTitleOverviews = async <T extends OverviewTitle>(
   );
 
   return titleRows;
+};
+
+export const scheduleMissingTitleOverviews = <T extends OverviewTitle>(
+  titleRows: T[],
+) => {
+  if (!isTmdbConfigured() || !titleRows.some(titleNeedsHydration)) {
+    return;
+  }
+
+  scheduleAfterResponse(async () => {
+    await hydrateMissingTitleOverviews(titleRows);
+  });
 };

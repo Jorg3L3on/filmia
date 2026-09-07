@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TitleForm } from "@/components/TitleForm";
 import { metadataServicesConfigured } from "@/lib/metadata";
-import { getCollectionLists, getTags, getTitleById } from "@/lib/queries";
+import { getCollectionLists, getTagFilters, getTitleById } from "@/lib/queries";
 import { focusRing } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,7 @@ export default async function EditTitlePage({
   const { id } = await params;
   const [title, tags, lists, metadataConfig] = await Promise.all([
     getTitleById(id),
-    getTags(),
+    getTagFilters(),
     getCollectionLists(),
     Promise.resolve(metadataServicesConfigured()),
   ]);
