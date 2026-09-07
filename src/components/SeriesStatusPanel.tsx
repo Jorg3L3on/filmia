@@ -40,7 +40,7 @@ export const SeriesStatusPanel = ({
   seriesStatus,
   seriesSeason,
 }: SeriesStatusPanelProps) => {
-  const { value, error, isPending, run } = useStickyOptimistic(
+  const { value, error, run } = useStickyOptimistic(
     { status: seriesStatus, season: seriesSeason },
     sameSeriesState,
   );
