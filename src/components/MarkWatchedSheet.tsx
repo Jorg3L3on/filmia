@@ -30,6 +30,8 @@ type MarkWatchedSheetProps = {
   review?: string | null;
   saveLabel?: string;
   onClose: () => void;
+  onSaved?: () => void;
+  onError?: (message: string) => void;
 };
 
 export const MarkWatchedSheet = ({
@@ -40,28 +42,9 @@ export const MarkWatchedSheet = ({
   review = "",
   saveLabel = WATCHLIST_SAVE_LABEL,
   onClose,
+  onSaved,
+  onError,
 }: MarkWatchedSheetProps) => {
-  const titleDomId = useId();
-  const { sheetStyle, dragHandlers } = useSheetDragDismiss(onClose);
-  const [datePreset, setDatePreset] = useState<WatchedDatePreset>("today");
-  const [watchedAt, setWatchedAt] = useState(todayDateInput());
-  const [value, setValue] = useState<number | null>(rating);
-  const [note, setNote] = useState((review ?? "").slice(0, NOTE_MAX));
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    setDatePreset("today");
-    setWatchedAt(todayDateInput());
-    setValue(rating);
-    setNote((review ?? "").slice(0, NOTE_MAX));
-    setError(null);
-  }, [open, rating, review]);
-
   useEffect(() => {
     if (!open) {
       return;
@@ -84,6 +67,45 @@ export const MarkWatchedSheet = ({
     };
   }, [open, onClose]);
 
+  if (!open || typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(
+    <MarkWatchedSheetFields
+      key={`${titleId}:${rating}:${review}`}
+      titleId={titleId}
+      titleName={titleName}
+      rating={rating}
+      review={review}
+      saveLabel={saveLabel}
+      onClose={onClose}
+      onSaved={onSaved}
+      onError={onError}
+    />,
+    document.body,
+  );
+};
+
+const MarkWatchedSheetFields = ({
+  titleId,
+  titleName,
+  rating = null,
+  review = "",
+  saveLabel = WATCHLIST_SAVE_LABEL,
+  onClose,
+  onSaved,
+  onError,
+}: Omit<MarkWatchedSheetProps, "open">) => {
+  const titleDomId = useId();
+  const { sheetStyle, dragHandlers } = useSheetDragDismiss(onClose);
+  const [datePreset, setDatePreset] = useState<WatchedDatePreset>("today");
+  const [watchedAt, setWatchedAt] = useState(todayDateInput());
+  const [value, setValue] = useState<number | null>(rating);
+  const [note, setNote] = useState((review ?? "").slice(0, NOTE_MAX));
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
   const handlePreset = (preset: WatchedDatePreset) => {
     setDatePreset(preset);
     setError(null);
@@ -104,6 +126,8 @@ export const MarkWatchedSheet = ({
       return;
     }
 
+    onClose();
+    onSaved?.();
     startTransition(async () => {
       try {
         const formData = new FormData();
@@ -113,20 +137,16 @@ export const MarkWatchedSheet = ({
         }
         formData.set("review", note.trim());
         await markTitleWatched(titleId, formData);
-        onClose();
       } catch (caught) {
-        setError(
-          caught instanceof Error ? caught.message : "No se pudo guardar.",
-        );
+        const message =
+          caught instanceof Error ? caught.message : "No se pudo guardar.";
+        setError(message);
+        onError?.(message);
       }
     });
   };
 
-  if (!open || typeof document === "undefined") {
-    return null;
-  }
-
-  return createPortal(
+  return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
       <button
         type="button"
@@ -264,8 +284,7 @@ export const MarkWatchedSheet = ({
           </div>
         </div>
       </div>
-    </div>,
-    document.body,
+    </div>
   );
 };
 

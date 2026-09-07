@@ -12,6 +12,8 @@ export type MarkSeenEyeProps = {
   review?: string | null;
   size?: "hero" | "queue";
   saveLabel?: string;
+  onSaved?: () => void;
+  onError?: (message: string) => void;
 };
 
 export const MarkSeenEye = ({
@@ -21,8 +23,11 @@ export const MarkSeenEye = ({
   review = null,
   size = "hero",
   saveLabel,
+  onSaved,
+  onError,
 }: MarkSeenEyeProps) => {
   const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const isHero = size === "hero";
 
   const handleOpen = (event: MouseEvent<HTMLButtonElement>) => {
@@ -33,6 +38,20 @@ export const MarkSeenEye = ({
   const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
     event.stopPropagation();
   };
+
+  const handleSaved = () => {
+    setHidden(true);
+    onSaved?.();
+  };
+
+  const handleError = (message: string) => {
+    setHidden(false);
+    onError?.(message);
+  };
+
+  if (hidden) {
+    return null;
+  }
 
   return (
     <>
@@ -57,6 +76,8 @@ export const MarkSeenEye = ({
         review={review}
         saveLabel={saveLabel}
         onClose={() => setOpen(false)}
+        onSaved={handleSaved}
+        onError={handleError}
       />
     </>
   );

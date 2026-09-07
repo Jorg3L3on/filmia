@@ -63,10 +63,14 @@ export const TmdbSearchAdd = ({
   const [error, setError] = useState<string | null>(initialError);
   const [notice, setNotice] = useState<string | null>(null);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<
+    "catalog" | "watchlist" | "open" | null
+  >(null);
   const [preview, setPreview] = useState<TmdbCatalogResult | null>(null);
   const [hasSearched, setHasSearched] = useState(Boolean(initialQuery.trim()));
   const [kindFilter, setKindFilter] = useState<"ALL" | TitleKind>("ALL");
-  const [isPending, startTransition] = useTransition();
+  const [isSearching, startSearch] = useTransition();
+  const [isAdding, startAdd] = useTransition();
   const visibleResults = results.filter((result) =>
     titleMatchesKind(result.kind, kindFilter),
   );
@@ -88,7 +92,7 @@ export const TmdbSearchAdd = ({
       return;
     }
 
-    startTransition(async () => {
+    startSearch(async () => {
       setError(null);
       setNotice(null);
       const { results: hits, error: searchError } = await searchTmdbDiscover(trimmed);
@@ -123,12 +127,24 @@ export const TmdbSearchAdd = ({
     });
   };
 
+  const removeLocal = (result: TmdbCatalogResult) => {
+    setCatalog((current) => {
+      const next = new Map(current);
+      next.delete(catalogKey(result.tmdbId, result.kind));
+      next.delete(String(result.tmdbId));
+      return next;
+    });
+  };
+
   const handleAdd = (result: TmdbCatalogResult, destination: "catalog" | "watchlist") => {
     const key = catalogKey(result.tmdbId, result.kind);
-    startTransition(async () => {
-      setError(null);
-      setNotice(null);
-      setPendingKey(key);
+    const optimisticId = `pending:${key}`;
+    setError(null);
+    setNotice(null);
+    setPendingKey(key);
+    setPendingAction(destination);
+    upsertLocal(result, optimisticId, destination === "watchlist");
+    startAdd(async () => {
       const outcome = await addTitleFromTmdb({
         tmdbId: result.tmdbId,
         kind: result.kind,
@@ -146,8 +162,10 @@ export const TmdbSearchAdd = ({
         watchedAt: defaultDestination === "watched" ? watchedDate : null,
       });
       setPendingKey(null);
+      setPendingAction(null);
 
       if (!outcome.ok) {
+        removeLocal(result);
         setError(outcome.error);
         return;
       }
@@ -166,12 +184,16 @@ export const TmdbSearchAdd = ({
       catalog.get(catalogKey(result.tmdbId, result.kind)) ??
       catalog.get(String(result.tmdbId));
     if (local) {
+      if (local.titleId.startsWith("pending:")) {
+        return;
+      }
       router.push(`/titulos/${local.titleId}`);
       return;
     }
 
-    startTransition(async () => {
+    startAdd(async () => {
       setPendingKey(catalogKey(result.tmdbId, result.kind));
+      setPendingAction("open");
       const outcome = await addTitleFromTmdb({
         tmdbId: result.tmdbId,
         kind: result.kind,
@@ -183,6 +205,7 @@ export const TmdbSearchAdd = ({
         watchedAt: defaultDestination === "watched" ? watchedDate : null,
       });
       setPendingKey(null);
+      setPendingAction(null);
       if (!outcome.ok) {
         setError(outcome.error);
         return;
@@ -319,7 +342,7 @@ export const TmdbSearchAdd = ({
             })}
           </ul>
         </section>
-      ) : hasSearched && !error && !isPending ? (
+      ) : hasSearched && !error && !isSearching ? (
         <EmptyState
           variant="buscar"
           title="Nada con esa búsqueda"
@@ -341,22 +364,23 @@ export const TmdbSearchAdd = ({
         <SearchPreviewSheet
           result={preview}
           local={previewLocal}
-          pending={isPending && pendingKey === catalogKey(preview.tmdbId, preview.kind)}
+          pending={isAdding && pendingKey === catalogKey(preview.tmdbId, preview.kind)}
+          pendingAction={pendingAction}
           onClose={() => setPreview(null)}
           onAdd={(destination) => handleAdd(preview, destination)}
           onOpen={() => handleOpen(preview)}
         />
       ) : null}
 
-      <p className="sr-only">{isPending ? "Buscando" : ""}</p>
+      <p className="sr-only">{isSearching ? "Buscando" : isAdding ? "Guardando" : ""}</p>
       <p className="text-center">
         <button
           type="button"
           onClick={handleSearch}
-          disabled={isPending || !query.trim()}
+          disabled={isSearching || !query.trim()}
           className={`${btnPrimary} sm:hidden`}
         >
-          {isPending && !pendingKey ? "Buscando…" : "Buscar"}
+          {isSearching ? "Buscando…" : "Buscar"}
         </button>
       </p>
     </div>

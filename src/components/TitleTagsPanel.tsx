@@ -1,8 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { createAndAssignTag, toggleTitleTag } from "@/app/actions/tags";
 import { CreateTagForm } from "@/components/CreateTagForm";
 import { cn } from "@/lib/cn";
 import { tagHref } from "@/lib/tags";
+import { sameIdList, useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { btnGhost, eyebrowClass, focusRing, wellClass } from "@/lib/ui";
 
 type AssignableTag = {
@@ -22,8 +26,27 @@ export const TitleTagsPanel = ({
   tags,
   selectedTagIds,
 }: TitleTagsPanelProps) => {
-  const selected = new Set(selectedTagIds);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const { value: optimisticIds, error, run } = useStickyOptimistic(
+    selectedTagIds,
+    sameIdList,
+  );
+  const selected = new Set(optimisticIds);
   const assignAction = createAndAssignTag.bind(null, titleId);
+
+  const handleToggle = (tagId: string) => {
+    const next = selected.has(tagId)
+      ? optimisticIds.filter((id) => id !== tagId)
+      : [...optimisticIds, tagId];
+    setPendingId(tagId);
+    run(next, async () => {
+      try {
+        await toggleTitleTag(tagId, titleId);
+      } finally {
+        setPendingId(null);
+      }
+    });
+  };
 
   return (
     <section className={`${wellClass} space-y-4 p-5`}>
@@ -44,13 +67,13 @@ export const TitleTagsPanel = ({
         <ul className="flex flex-wrap gap-2">
           {tags.map((tag) => {
             const included = selected.has(tag.id);
-            const toggleAction = toggleTitleTag.bind(null, tag.id, titleId);
 
             return (
               <li key={tag.id} className="flex items-center gap-1">
-                <form action={toggleAction}>
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={() => handleToggle(tag.id)}
+                    disabled={pendingId === tag.id}
                     aria-pressed={included}
                     aria-label={
                       included
@@ -67,7 +90,6 @@ export const TitleTagsPanel = ({
                   >
                     {tag.name}
                   </button>
-                </form>
                 {included ? (
                   <Link
                     href={tagHref(tag.slug)}
@@ -82,6 +104,12 @@ export const TitleTagsPanel = ({
           })}
         </ul>
       )}
+
+      {error ? (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
 
       <CreateTagForm
         action={assignAction}

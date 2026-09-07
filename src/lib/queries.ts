@@ -169,16 +169,29 @@ export const getRelatedTitles = async (titleId: string, tagIds: string[]) => {
 
   const userId = await requireUserId();
 
-  return db.query.titles.findMany({
-    where: and(
-      eq(titles.userId, userId),
-      ne(titles.id, titleId),
-      exists(
-        db
-          .select({ titleId: titleTags.titleId })
-          .from(titleTags)
-          .where(and(eq(titleTags.titleId, titles.id), inArray(titleTags.tagId, tagIds))),
+  // Relational `findMany` aliases `Title` as `"titles"`. A correlated
+  // `exists` that still references `titles.id` emits `"Title"."id"` and
+  // Postgres rejects it. Resolve matching ids first, then load relations.
+  const matching = await db
+    .selectDistinct({ titleId: titleTags.titleId })
+    .from(titleTags)
+    .innerJoin(titles, eq(titles.id, titleTags.titleId))
+    .where(
+      and(
+        eq(titles.userId, userId),
+        ne(titles.id, titleId),
+        inArray(titleTags.tagId, tagIds),
       ),
+    );
+
+  if (matching.length === 0) {
+    return [];
+  }
+
+  return db.query.titles.findMany({
+    where: inArray(
+      titles.id,
+      matching.map((row) => row.titleId),
     ),
     with: titleWithRelations,
     orderBy: [desc(titles.watchedAt), asc(titles.name)],

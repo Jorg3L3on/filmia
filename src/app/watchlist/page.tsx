@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ensureCurrentUserWatchlist, removeFromWatchlist } from "@/app/actions/watchlist";
+import { ensureCurrentUserWatchlist } from "@/app/actions/watchlist";
 import { CatalogFilters } from "@/components/CatalogFilters";
 import { EmptyState } from "@/components/EmptyState";
 import {
@@ -7,7 +7,7 @@ import {
   MinePlatformsSetupCta,
   MissingStreamingDataNote,
 } from "@/components/MinePlatformsNotice";
-import { WatchlistCard } from "@/components/WatchlistCard";
+import { WatchlistList } from "@/components/WatchlistList";
 import {
   parseCatalogOrder,
   parseKindFilter,
@@ -88,7 +88,6 @@ export default async function WatchlistPage({
   }
 
   const listId = watchlist?.id ?? "";
-  const [hero, ...queue] = items;
   const clearHref = catalogHref("/watchlist");
 
   return (
@@ -153,43 +152,11 @@ export default async function WatchlistPage({
       ) : (
         <div className="space-y-5">
           <MissingStreamingDataNote count={catalog.missingCache} />
-          {hero ? (
-            <WatchlistCard
-              item={hero}
-              variant="hero"
-              position={1}
-              listId={listId}
-              canMoveUp={false}
-              canMoveDown={queue.length > 0}
-              swapDownTitleId={queue[0]?.titleId}
-              removeAction={removeFromWatchlist.bind(null, hero.titleId)}
-              preferredPlatforms={userPlatforms}
-            />
-          ) : null}
-
-          {queue.length > 0 ? (
-            <ul className="divide-y divide-line">
-              {queue.map((item, index) => {
-                const visibleIndex = index + 1;
-                return (
-                  <li key={item.titleId}>
-                    <WatchlistCard
-                      item={item}
-                      variant="queue"
-                      position={index + 2}
-                      listId={listId}
-                      canMoveUp
-                      canMoveDown={index < queue.length - 1}
-                      swapUpTitleId={items[visibleIndex - 1]?.titleId}
-                      swapDownTitleId={items[visibleIndex + 1]?.titleId}
-                      removeAction={removeFromWatchlist.bind(null, item.titleId)}
-                      preferredPlatforms={userPlatforms}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
+          <WatchlistList
+            items={items}
+            listId={listId}
+            preferredPlatforms={userPlatforms}
+          />
         </div>
       )}
     </div>

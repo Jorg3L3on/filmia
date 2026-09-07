@@ -1,20 +1,25 @@
 "use server";
 
 import { createId } from "@paralleldrive/cuid2";
-import { and, desc, eq, inArray, notInArray } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { db, listItems, lists, titleTags, titles } from "@/db";
+import { db, listItems, lists, titles } from "@/db";
 import { parseRequiredName } from "@/lib/form-data";
 import { slugify } from "@/lib/labels";
-import { isFixedListSlug, isReservedListSlug, listHref } from "@/lib/lists";
+import { isFixedListSlug, isReservedListSlug, listHref, WATCHLIST_SLUG } from "@/lib/lists";
 import { type ListMoveDirection, swapAdjacentListItems, swapListItemPositions } from "@/lib/list-order";
 import { requireUserId } from "@/lib/session";
 
-const revalidateLists = (listId?: string, titleId?: string) => {
-  revalidatePath("/");
+const revalidateLists = (
+  listId?: string,
+  titleId?: string,
+  slug?: string | null,
+) => {
   revalidatePath("/listas");
-  revalidatePath("/watchlist");
+  if (slug === WATCHLIST_SLUG) {
+    revalidatePath("/watchlist");
+  }
   if (listId) {
     revalidatePath(`/listas/${listId}`);
     revalidatePath(`/listas/${listId}/editar`);
@@ -48,12 +53,15 @@ export const createList = async (formData: FormData) => {
   }
 
   const listId = createId();
+  const now = new Date();
   await db.insert(lists).values({
     id: listId,
     userId,
     name,
     description,
     kind: "COLLECTION",
+    createdAt: now,
+    updatedAt: now,
   });
 
   revalidateLists(listId);
@@ -98,7 +106,7 @@ export const addTitleToList = async (listId: string, formData: FormData) => {
     throw new Error("Elige un título para agregar.");
   }
 
-  await requireOwnedList(listId, userId);
+  const list = await requireOwnedList(listId, userId);
 
   const title = await db.query.titles.findFirst({
     where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
@@ -123,22 +131,22 @@ export const addTitleToList = async (listId: string, formData: FormData) => {
     })
     .onConflictDoNothing();
 
-  revalidateLists(listId, titleId);
+  revalidateLists(listId, titleId, list.slug);
 };
 
 export const removeTitleFromList = async (listId: string, titleId: string) => {
   const userId = await requireUserId();
-  await requireOwnedList(listId, userId);
+  const list = await requireOwnedList(listId, userId);
 
   await db
     .delete(listItems)
     .where(and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)));
-  revalidateLists(listId, titleId);
+  revalidateLists(listId, titleId, list.slug);
 };
 
 export const toggleTitleInList = async (listId: string, titleId: string) => {
   const userId = await requireUserId();
-  await requireOwnedList(listId, userId);
+  const list = await requireOwnedList(listId, userId);
 
   const title = await db.query.titles.findFirst({
     where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
@@ -170,7 +178,7 @@ export const toggleTitleInList = async (listId: string, titleId: string) => {
     });
   }
 
-  revalidateLists(listId, titleId);
+  revalidateLists(listId, titleId, list.slug);
 };
 
 export const moveListItem = async (
@@ -180,11 +188,11 @@ export const moveListItem = async (
   neighborTitleId?: string | null,
 ) => {
   const userId = await requireUserId();
-  await requireOwnedList(listId, userId);
+  const list = await requireOwnedList(listId, userId);
   if (neighborTitleId) {
     await swapListItemPositions(listId, titleId, neighborTitleId);
   } else {
     await swapAdjacentListItems(listId, titleId, direction);
   }
-  revalidateLists(listId, titleId);
+  revalidateLists(listId, titleId, list.slug);
 };

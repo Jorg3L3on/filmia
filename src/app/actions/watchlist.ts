@@ -1,24 +1,23 @@
 "use server";
 
 import { and, desc, eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { todayDateInput } from "@/lib/dates";
 import { parseOptionalDate, parseOptionalReview, parseRating } from "@/lib/form-data";
 import { ensureDefaultLists, WATCHLIST_SLUG } from "@/lib/lists";
 import { swapAdjacentListItems } from "@/lib/list-order";
+import {
+  revalidateDiarySurfaces,
+  revalidateWatchlistSurfaces,
+} from "@/lib/revalidate-surfaces";
 import { db, listItems, lists, titles } from "@/db";
 import { requireUserId } from "@/lib/session";
 
-const revalidateWatchlist = () => {
-  revalidatePath("/watchlist");
-  revalidatePath("/");
-  revalidatePath("/listas", "layout");
+const revalidateWatchlist = (titleId?: string) => {
+  revalidateWatchlistSurfaces(titleId);
 };
 
 const revalidateDiary = (titleId: string) => {
-  revalidateWatchlist();
-  revalidatePath(`/titulos/${titleId}`);
-  revalidatePath(`/titulos/${titleId}/editar`);
+  revalidateDiarySurfaces(titleId);
 };
 
 export const ensureWatchlist = async (userId: string) => {
@@ -63,21 +62,28 @@ export const addToWatchlist = async (titleId: string, queueNote?: string) => {
     orderBy: [desc(listItems.position)],
   });
 
-  await db
-    .insert(listItems)
-    .values({
-      listId: watchlist.id,
-      titleId,
-      position: (last?.position ?? -1) + 1,
-      queueNote: queueNote?.trim() || null,
-    })
-    .onConflictDoUpdate({
-      target: [listItems.listId, listItems.titleId],
-      set: queueNote ? { queueNote: queueNote.trim() || null } : {},
-    });
+  const values = {
+    listId: watchlist.id,
+    titleId,
+    position: (last?.position ?? -1) + 1,
+    queueNote: queueNote?.trim() || null,
+  };
 
-  revalidateWatchlist();
-  revalidatePath(`/titulos/${titleId}`);
+  // Drizzle throws "No values to set" if onConflictDoUpdate gets `set: {}`.
+  // The daily Quiero ver tap has no note, so use do-nothing on conflict.
+  if (queueNote?.trim()) {
+    await db
+      .insert(listItems)
+      .values(values)
+      .onConflictDoUpdate({
+        target: [listItems.listId, listItems.titleId],
+        set: { queueNote: queueNote.trim() },
+      });
+  } else {
+    await db.insert(listItems).values(values).onConflictDoNothing();
+  }
+
+  revalidateWatchlist(titleId);
 };
 
 export const addToWatchlistById = async (titleId: string) => {
@@ -111,8 +117,7 @@ export const removeFromWatchlist = async (titleId: string) => {
     .delete(listItems)
     .where(and(eq(listItems.listId, watchlist.id), eq(listItems.titleId, titleId)));
 
-  revalidateWatchlist();
-  revalidatePath(`/titulos/${titleId}`);
+  revalidateWatchlist(titleId);
 };
 
 export const removeFromWatchlistById = async (titleId: string) => {

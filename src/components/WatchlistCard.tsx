@@ -23,7 +23,9 @@ type WatchlistCardProps = {
   listId: string;
   canMoveUp: boolean;
   canMoveDown: boolean;
-  removeAction: () => void;
+  removeAction: () => void | Promise<void>;
+  onMarkedSeen?: () => void;
+  onMarkSeenError?: () => void;
   preferredPlatforms?: readonly Platform[];
   swapUpTitleId?: string | null;
   swapDownTitleId?: string | null;
@@ -37,6 +39,8 @@ export const WatchlistCard = ({
   canMoveUp,
   canMoveDown,
   removeAction,
+  onMarkedSeen,
+  onMarkSeenError,
   preferredPlatforms = [],
   swapUpTitleId,
   swapDownTitleId,
@@ -56,6 +60,8 @@ export const WatchlistCard = ({
             sizes="140px"
             preferredPlatforms={preferredPlatforms}
             priority
+            onMarkedSeen={onMarkedSeen}
+            onMarkSeenError={onMarkSeenError}
           />
           <div className="min-w-0 flex-1 space-y-3">
             <div className="flex items-start gap-3">
@@ -119,6 +125,8 @@ export const WatchlistCard = ({
         posterClassName="rounded-lg"
         sizes="56px"
         preferredPlatforms={preferredPlatforms}
+        onMarkedSeen={onMarkedSeen}
+        onMarkSeenError={onMarkSeenError}
       />
       <div className="min-w-0 w-[8.5rem] shrink-0 sm:w-[13rem]">
         <h3 className="truncate font-medium text-paper">
@@ -156,6 +164,8 @@ const WatchlistPoster = ({
   sizes,
   preferredPlatforms = [],
   priority = false,
+  onMarkedSeen,
+  onMarkSeenError,
 }: {
   title: WatchlistItem["title"];
   size: "hero" | "queue";
@@ -164,6 +174,8 @@ const WatchlistPoster = ({
   sizes: string;
   preferredPlatforms?: readonly Platform[];
   priority?: boolean;
+  onMarkedSeen?: () => void;
+  onMarkSeenError?: () => void;
 }) => (
   <div className={cn("relative", className)}>
     <Link
@@ -187,6 +199,8 @@ const WatchlistPoster = ({
       rating={title.rating}
       review={title.review}
       size={size}
+      onSaved={onMarkedSeen}
+      onError={onMarkSeenError}
     />
     <PosterPlatformBadge
       watchProvidersMx={title.watchProvidersMx}

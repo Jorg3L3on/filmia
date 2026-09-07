@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { setTitleRating } from "@/app/actions/titles";
 import {
   addToWatchlistById,
   clearTitleWatched,
@@ -11,6 +12,7 @@ import { RatingSheet } from "@/components/RatingSheet";
 import { cn } from "@/lib/cn";
 import { formatStarScore } from "@/lib/labels";
 import { useSpringFeedback } from "@/lib/motion";
+import { useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { focusRing } from "@/lib/ui";
 
 type TitleActionRowProps = {
@@ -26,6 +28,19 @@ type TitleActionRowProps = {
 
 type Panel = "lists" | "tags" | null;
 
+type ActionState = {
+  watched: boolean;
+  inWatchlist: boolean;
+  rating: number | null;
+  review: string | null;
+};
+
+const sameActionState = (left: ActionState, right: ActionState) =>
+  left.watched === right.watched &&
+  left.inWatchlist === right.inWatchlist &&
+  left.rating === right.rating &&
+  left.review === right.review;
+
 export const TitleActionRow = ({
   titleId,
   watched,
@@ -38,13 +53,89 @@ export const TitleActionRow = ({
 }: TitleActionRowProps) => {
   const [panel, setPanel] = useState<Panel>(null);
   const [ratingOpen, setRatingOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"watched" | "watchlist" | "rating" | null>(
+    null,
+  );
+  const {
+    value: optimistic,
+    error,
+    isPending,
+    run,
+  } = useStickyOptimistic(
+    { watched, inWatchlist, rating, review },
+    sameActionState,
+  );
   const watchedSpring = useSpringFeedback();
   const watchlistSpring = useSpringFeedback();
   const ratingSpring = useSpringFeedback();
-  const markWatched = markTitleWatched.bind(null, titleId);
-  const unwatch = clearTitleWatched.bind(null, titleId);
-  const addWatchlist = addToWatchlistById.bind(null, titleId);
-  const removeWatchlist = removeFromWatchlistById.bind(null, titleId);
+
+  const handleToggleWatched = () => {
+    const nextWatched = !optimistic.watched;
+    setPendingAction("watched");
+    watchedSpring.trigger();
+    run(
+      {
+        ...optimistic,
+        watched: nextWatched,
+        inWatchlist: nextWatched ? false : optimistic.inWatchlist,
+      },
+      async () => {
+        try {
+          if (nextWatched) {
+            await markTitleWatched(titleId);
+          } else {
+            await clearTitleWatched(titleId);
+          }
+        } finally {
+          setPendingAction(null);
+        }
+      },
+    );
+  };
+
+  const handleToggleWatchlist = () => {
+    const nextInWatchlist = !optimistic.inWatchlist;
+    setPendingAction("watchlist");
+    watchlistSpring.trigger();
+    run(
+      { ...optimistic, inWatchlist: nextInWatchlist },
+      async () => {
+        try {
+          if (nextInWatchlist) {
+            await addToWatchlistById(titleId);
+          } else {
+            await removeFromWatchlistById(titleId);
+          }
+        } finally {
+          setPendingAction(null);
+        }
+      },
+    );
+  };
+
+  const handleSaveRating = (next: { rating: number | null; review: string }) => {
+    setPendingAction("rating");
+    setRatingOpen(false);
+    run(
+      {
+        ...optimistic,
+        rating: next.rating,
+        review: next.review || null,
+      },
+      async () => {
+        try {
+          const formData = new FormData();
+          if (next.rating != null) {
+            formData.set("rating", String(next.rating));
+          }
+          formData.set("review", next.review);
+          await setTitleRating(titleId, formData);
+        } finally {
+          setPendingAction(null);
+        }
+      },
+    );
+  };
 
   const handleTogglePanel = (next: Panel) => {
     setPanel((current) => (current === next ? null : next));
@@ -57,43 +148,47 @@ export const TitleActionRow = ({
         aria-label="Acciones del título"
         className="grid grid-cols-5 gap-2"
       >
-        <form action={watched ? unwatch : markWatched}>
-          <button
-            type="submit"
-            onClick={watchedSpring.trigger}
-            aria-pressed={watched}
-            className={cn(
-              "spring-fill flex w-full flex-col items-center gap-1 rounded-2xl border px-1 py-2.5 text-[10px] uppercase tracking-[0.12em]",
-              focusRing,
-              watchedSpring.className,
-              watched
-                ? "border-success/40 bg-success-well text-success"
-                : "border-chrome bg-well text-fog hover:text-paper",
-            )}
-          >
-            <WatchedIcon filled={watched} />
-            Visto
-          </button>
-        </form>
+        <button
+          type="button"
+          onClick={handleToggleWatched}
+          disabled={pendingAction === "watched"}
+          aria-pressed={optimistic.watched}
+          aria-label={optimistic.watched ? "Quitar de visto" : "Marcar como visto"}
+          className={cn(
+            "spring-fill flex w-full flex-col items-center gap-1 rounded-2xl border px-1 py-2.5 text-[10px] uppercase tracking-[0.12em]",
+            focusRing,
+            watchedSpring.className,
+            optimistic.watched
+              ? "border-success/40 bg-success-well text-success"
+              : "border-chrome bg-well text-fog hover:text-paper",
+            pendingAction === "watched" && "opacity-80",
+          )}
+        >
+          <WatchedIcon filled={optimistic.watched} />
+          Visto
+        </button>
 
-        <form action={inWatchlist ? removeWatchlist : addWatchlist}>
-          <button
-            type="submit"
-            onClick={watchlistSpring.trigger}
-            aria-pressed={inWatchlist}
-            className={cn(
-              "spring-fill flex w-full flex-col items-center gap-1 rounded-2xl border px-1 py-2.5 text-[10px] uppercase tracking-[0.12em]",
-              focusRing,
-              watchlistSpring.className,
-              inWatchlist
-                ? "border-accent/40 bg-accent/10 text-accent"
-                : "border-chrome bg-well text-fog hover:text-paper",
-            )}
-          >
-            <WatchlistIcon filled={inWatchlist} />
-            Quiero ver
-          </button>
-        </form>
+        <button
+          type="button"
+          onClick={handleToggleWatchlist}
+          disabled={pendingAction === "watchlist"}
+          aria-pressed={optimistic.inWatchlist}
+          aria-label={
+            optimistic.inWatchlist ? "Quitar de Quiero ver" : "Añadir a Quiero ver"
+          }
+          className={cn(
+            "spring-fill flex w-full flex-col items-center gap-1 rounded-2xl border px-1 py-2.5 text-[10px] uppercase tracking-[0.12em]",
+            focusRing,
+            watchlistSpring.className,
+            optimistic.inWatchlist
+              ? "border-accent/40 bg-accent/10 text-accent"
+              : "border-chrome bg-well text-fog hover:text-paper",
+            pendingAction === "watchlist" && "opacity-80",
+          )}
+        >
+          <WatchlistIcon filled={optimistic.inWatchlist} />
+          Quiero ver
+        </button>
 
         <button
           type="button"
@@ -106,13 +201,13 @@ export const TitleActionRow = ({
             "flex w-full flex-col items-center gap-1 rounded-2xl border px-1 py-2.5 text-[10px] uppercase tracking-[0.12em]",
             focusRing,
             ratingSpring.className,
-            rating != null
+            optimistic.rating != null
               ? "border-star/40 bg-well text-star"
               : "border-chrome bg-well text-fog hover:text-paper",
           )}
         >
-          <StarIcon filled={rating != null} />
-          {rating != null ? formatStarScore(rating) : "Nota"}
+          <StarIcon filled={optimistic.rating != null} />
+          {optimistic.rating != null ? formatStarScore(optimistic.rating) : "Nota"}
         </button>
 
         <button
@@ -146,12 +241,20 @@ export const TitleActionRow = ({
         </button>
       </div>
 
+      {error ? (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
+
       <RatingSheet
         open={ratingOpen}
         titleId={titleId}
-        rating={rating}
-        review={review}
+        rating={optimistic.rating}
+        review={optimistic.review}
+        pending={isPending && pendingAction === "rating"}
         onClose={() => setRatingOpen(false)}
+        onSave={handleSaveRating}
       />
 
       {panel === "lists" ? listsPanel : null}

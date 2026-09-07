@@ -6,8 +6,10 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
+  useTransition,
 } from "react";
 import { removeTitleFromList } from "@/app/actions/lists";
 import { MarkSeenEye } from "@/components/MarkSeenEye";
@@ -202,6 +204,8 @@ type DeckCardProps = {
   onSelect: (index: number) => void;
   onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
   registerNode: (index: number, node: HTMLElement | null) => void;
+  onMarkedSeen?: (titleId: string) => void;
+  onMarkSeenError?: (titleId: string) => void;
 };
 
 const DeckCard = memo(function DeckCard({
@@ -213,6 +217,8 @@ const DeckCard = memo(function DeckCard({
   onSelect,
   onPointerDown,
   registerNode,
+  onMarkedSeen,
+  onMarkSeenError,
 }: DeckCardProps) {
   const imdbLabel = formatImdbRating(title.imdbRating);
   const availabilityPlatform = primaryAvailabilityPlatform(
@@ -323,6 +329,8 @@ const DeckCard = memo(function DeckCard({
           review={title.review}
           size={compact ? "queue" : "hero"}
           saveLabel={PICKS_SAVE_LABEL}
+          onSaved={() => onMarkedSeen?.(title.id)}
+          onError={() => onMarkSeenError?.(title.id)}
         />
       ) : null}
     </article>
@@ -330,13 +338,25 @@ const DeckCard = memo(function DeckCard({
 });
 
 export const CoverflowDeck = ({
-  titles,
+  titles: incomingTitles,
   className,
   listId,
   variant = "page",
   onActiveChange,
   footer = "full",
 }: CoverflowDeckProps) => {
+  const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [watchedIds, setWatchedIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [, startTransition] = useTransition();
+  const titles = useMemo(
+    () =>
+      incomingTitles
+        .filter((title) => !hiddenIds.has(title.id))
+        .map((title) =>
+          watchedIds.has(title.id) ? { ...title, watched: true } : title,
+        ),
+    [hiddenIds, incomingTitles, watchedIds],
+  );
   const isSheet = variant === "sheet";
   const focusSpring = useSpringFeedback();
   const notifiedIndex = useRef<number | null>(null);
@@ -801,6 +821,16 @@ export const CoverflowDeck = ({
                   onSelect={handleSelectCard}
                   onPointerDown={handlePointerDown}
                   registerNode={registerNode}
+                  onMarkedSeen={(titleId) =>
+                    setWatchedIds((current) => new Set(current).add(titleId))
+                  }
+                  onMarkSeenError={(titleId) =>
+                    setWatchedIds((current) => {
+                      const next = new Set(current);
+                      next.delete(titleId);
+                      return next;
+                    })
+                  }
                 />
               );
             })}
@@ -916,15 +946,34 @@ export const CoverflowDeck = ({
                   rating={activeTitle.rating}
                   review={activeTitle.review}
                   collapsed
+                  onSaved={() =>
+                    setWatchedIds((current) => new Set(current).add(activeTitle.id))
+                  }
                 />
               </div>
             ) : null}
             {listId ? (
-              <form action={removeTitleFromList.bind(null, listId, activeTitle.id)}>
-                <button type="submit" className={btnLink}>
-                  Quitar de la lista
-                </button>
-              </form>
+              <button
+                type="button"
+                className={btnLink}
+                onClick={() => {
+                  const titleId = activeTitle.id;
+                  setHiddenIds((current) => new Set(current).add(titleId));
+                  startTransition(async () => {
+                    try {
+                      await removeTitleFromList(listId, titleId);
+                    } catch {
+                      setHiddenIds((current) => {
+                        const next = new Set(current);
+                        next.delete(titleId);
+                        return next;
+                      });
+                    }
+                  });
+                }}
+              >
+                Quitar de la lista
+              </button>
             ) : null}
           </div>
         )
