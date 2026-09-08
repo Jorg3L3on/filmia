@@ -24,6 +24,7 @@ import { FichaVisit } from "@/components/FichaVisit";
 import { resolveTitleExtras, storedTitleExtras } from "@/lib/title-extras";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 import TitleLoading from "./loading";
+import { AUTH_PAGE_DYNAMIC } from "@/lib/rendering";
 import {
   TitleActionsBlock,
   TitleHeroBlock,
@@ -34,7 +35,7 @@ import {
   isSeriesTitle,
 } from "./title-sections";
 
-export const dynamic = "force-dynamic";
+export const dynamic = AUTH_PAGE_DYNAMIC;
 
 type TitlePageProps = {
   params: Promise<{ id: string }>;

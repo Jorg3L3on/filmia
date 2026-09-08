@@ -4,12 +4,13 @@ import { PageHeader } from "@/components/PageHeader";
 import { TitleForm } from "@/components/TitleForm";
 import { metadataServicesConfigured } from "@/lib/metadata";
 import { getCollectionLists, getTagFilters } from "@/lib/queries";
+import { AUTH_PAGE_DYNAMIC } from "@/lib/rendering";
 
 export const metadata: Metadata = {
   title: "Registrar título",
 };
 
-export const dynamic = "force-dynamic";
+export const dynamic = AUTH_PAGE_DYNAMIC;
 
 export default async function NewTitlePage() {
   const [tags, lists, metadataConfig] = await Promise.all([

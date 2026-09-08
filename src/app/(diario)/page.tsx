@@ -47,8 +47,9 @@ import {
 } from "@/lib/catalog-filters";
 import { applyMinePlatformsFilter, formatUserPlatformsList, resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs } from "@/lib/tags";
+import { AUTH_PAGE_DYNAMIC } from "@/lib/rendering";
 
-export const dynamic = "force-dynamic";
+export const dynamic = AUTH_PAGE_DYNAMIC;
 
 const isView = (value: string | undefined): value is DeckViewMode =>
   value === "deck" || value === "grid" || value === "calendar";

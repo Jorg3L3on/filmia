@@ -171,10 +171,10 @@ Busca en TMDB por nombre + año + tipo, guarda poster e IMDb rating vía OMDb.
 
 El runtime es Next.js en **Node**. El host previsto es Vercel; **no hay auto-deploy ahora**. No publiques este trabajo a Vercel.
 
-Cuando se vuelva a publicar:
+Playbook cuando se vuelva a publicar (sin product feature flags):
 
 1. Secretos en Vercel → Settings → Environment Variables: `DATABASE_URL` (pooled), `AUTH_SECRET`, `TMDB_API_KEY`, `OMDB_API_KEY`. `AUTH_URL` se puede fijar; en Vercel a menudo se infiere.
-2. Migraciones contra Neon desde local o un pipeline, no en el build de Vercel:
+2. Migraciones contra Neon **fuera** del `next build` de Vercel (local o un pipeline). El build no debe correr `db:migrate`.
 
 ```bash
 export DATABASE_URL_UNPOOLED="postgresql://..."  # URL directa (sin -pooler)

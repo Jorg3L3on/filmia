@@ -1,48 +1,27 @@
-"use client";
-
-import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { AppChrome } from "@/components/AppChrome";
 import { BottomNav } from "@/components/BottomNav";
 import { NavPrefetch } from "@/components/NavPrefetch";
-import { SiteHeaderClient, type HeaderUser } from "@/components/SiteHeaderClient";
-import { ToastHost } from "@/components/ToastHost";
+import { SiteHeader, type HeaderUser } from "@/components/SiteHeader";
 
-const isAuthChromePath = (pathname: string) =>
-  pathname === "/login" ||
-  pathname === "/registro" ||
-  pathname.startsWith("/login/") ||
-  pathname.startsWith("/registro/");
+export type { HeaderUser };
 
 type AppShellProps = {
   children: ReactNode;
   user: HeaderUser;
 };
 
-export const AppShell = ({ children, user }: AppShellProps) => {
-  const pathname = usePathname();
-  const isAuthPage = isAuthChromePath(pathname);
-
-  if (isAuthPage) {
-    return (
-      <>
-        {children}
-        <ToastHost />
-      </>
-    );
-  }
-
-  return (
-    <>
-      <SiteHeaderClient user={user} />
-      <NavPrefetch />
-      <main className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 pb-24 pt-6 sm:pb-10 sm:pt-8">
-        {children}
-      </main>
+export const AppShell = ({ children, user }: AppShellProps) => (
+  <AppChrome
+    header={<SiteHeader user={user} />}
+    prefetch={<NavPrefetch />}
+    footer={
       <footer className="hidden border-t border-line px-4 py-5 text-center text-xs text-mist sm:block">
         Filmia · diario personal · sin scrapers
       </footer>
-      <BottomNav />
-      <ToastHost />
-    </>
-  );
-};
+    }
+    bottomNav={<BottomNav />}
+  >
+    {children}
+  </AppChrome>
+);

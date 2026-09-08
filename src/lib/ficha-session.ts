@@ -1,5 +1,6 @@
 export const FICHA_CACHE_LIMIT = 8;
 export const FICHA_STORAGE_KEY = "filmia.recent-fichas";
+export const FICHA_OPENED_EVENT = "filmia:ficha-opened";
 
 export type FichaStorage = Pick<Storage, "getItem" | "setItem">;
 
@@ -48,6 +49,14 @@ export const rememberOpenedFicha = (
   );
   storage.setItem(FICHA_STORAGE_KEY, JSON.stringify(next));
   return next;
+};
+
+export const emitFichaOpened = (href: string) => {
+  if (typeof window === "undefined" || !href) {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent(FICHA_OPENED_EVENT, { detail: href }));
 };
 
 export const browserFichaStorage = (): FichaStorage | null => {

@@ -29,8 +29,9 @@ import {
   type CatalogSort,
 } from "@/lib/tags";
 import { parseSeriesStatusFilter } from "@/lib/series";
+import { AUTH_PAGE_DYNAMIC } from "@/lib/rendering";
 
-export const dynamic = "force-dynamic";
+export const dynamic = AUTH_PAGE_DYNAMIC;
 
 type TagDetailPageProps = {
   params: Promise<{ slug: string }>;

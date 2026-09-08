@@ -7,8 +7,9 @@ import { PageHeader } from "@/components/PageHeader";
 import { ListsBodySkeleton } from "@/components/PageSkeletons";
 import { listHref, partitionUserLists } from "@/lib/lists";
 import { getLists } from "@/lib/queries";
+import { AUTH_PAGE_DYNAMIC } from "@/lib/rendering";
 
-export const dynamic = "force-dynamic";
+export const dynamic = AUTH_PAGE_DYNAMIC;
 
 export const metadata = {
   title: "Listas",
