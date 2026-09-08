@@ -10,9 +10,8 @@ import { PosterStack } from "@/components/PosterStack";
 import { getTags } from "@/lib/queries";
 import { tagHref } from "@/lib/tags";
 import { focusRing } from "@/lib/ui";
-import { AUTH_PAGE_DYNAMIC } from "@/lib/rendering";
 
-export const dynamic = AUTH_PAGE_DYNAMIC;
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Etiquetas",

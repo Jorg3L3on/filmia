@@ -91,7 +91,7 @@ const run = () => {
   for (const file of authPages) {
     const source = read(file);
     assert(
-      source.includes("AUTH_PAGE_DYNAMIC"),
+      source.includes('export const dynamic = "force-dynamic"'),
       `${file} should keep request-time rendering`,
     );
     assert(
@@ -100,11 +100,11 @@ const run = () => {
     );
   }
   assert(
-    !read("src/app/login/page.tsx").includes("AUTH_PAGE_DYNAMIC"),
+    !read("src/app/login/page.tsx").includes('export const dynamic = "force-dynamic"'),
     "Login stays eligible for static rendering",
   );
   assert(
-    !read("src/app/registro/page.tsx").includes("AUTH_PAGE_DYNAMIC"),
+    !read("src/app/registro/page.tsx").includes('export const dynamic = "force-dynamic"'),
     "Registro stays eligible for static rendering",
   );
   assert(

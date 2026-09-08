@@ -1,5 +1,6 @@
 /**
- * Auth-gated pages stay request-time.
+ * Auth-gated pages stay request-time via `export const dynamic = "force-dynamic"`
+ * (Next requires a string literal, not a shared constant).
  *
  * Why `force-dynamic` stays: Neon serverless talks HTTP `fetch`. Enabling
  * `fetchCache = "default-cache"` (or Cache Components) could cache those

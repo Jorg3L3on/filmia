@@ -1,9 +1,8 @@
 import { notFound } from "next/navigation";
 import { ListForm } from "@/components/ListForm";
 import { getListById } from "@/lib/queries";
-import { AUTH_PAGE_DYNAMIC } from "@/lib/rendering";
 
-export const dynamic = AUTH_PAGE_DYNAMIC;
+export const dynamic = "force-dynamic";
 
 export default async function EditListPage({
   params,

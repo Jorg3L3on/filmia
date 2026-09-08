@@ -6,13 +6,12 @@ import { TmdbSearchAdd } from "@/components/TmdbSearchAdd";
 import { metadataServicesConfigured } from "@/lib/metadata";
 import { getUserTmdbIndex } from "@/lib/queries";
 import { parseOptionalIsoDate } from "@/lib/dates";
-import { AUTH_PAGE_DYNAMIC } from "@/lib/rendering";
 
 export const metadata: Metadata = {
   title: "Buscar",
 };
 
-export const dynamic = AUTH_PAGE_DYNAMIC;
+export const dynamic = "force-dynamic";
 
 type SearchParams = {
   q?: string | string[];

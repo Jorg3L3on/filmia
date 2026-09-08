@@ -21,9 +21,8 @@ import { scheduleMissingTitleOverviews } from "@/lib/title-overview-schedule";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
-import { AUTH_PAGE_DYNAMIC } from "@/lib/rendering";
 
-export const dynamic = AUTH_PAGE_DYNAMIC;
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Quiero ver",

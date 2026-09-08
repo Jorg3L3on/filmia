@@ -3,9 +3,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { TitleForm } from "@/components/TitleForm";
 import { metadataServicesConfigured } from "@/lib/metadata";
 import { getCollectionLists, getTagFilters, getTitleById } from "@/lib/queries";
-import { AUTH_PAGE_DYNAMIC } from "@/lib/rendering";
 
-export const dynamic = AUTH_PAGE_DYNAMIC;
+export const dynamic = "force-dynamic";
 
 export default async function EditTitlePage({
   params,

@@ -7,9 +7,8 @@ import { ProfilePasswordForm } from "@/components/ProfilePasswordForm";
 import { StreamingPlatformPicker } from "@/components/StreamingPlatformPicker";
 import { getCurrentUserProfile } from "@/lib/queries";
 import { notFound } from "next/navigation";
-import { AUTH_PAGE_DYNAMIC } from "@/lib/rendering";
 
-export const dynamic = AUTH_PAGE_DYNAMIC;
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Perfil",
