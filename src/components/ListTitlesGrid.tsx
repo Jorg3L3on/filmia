@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { moveListItem, removeTitleFromList } from "@/app/actions/lists";
 import { ListItemOrderControls } from "@/components/ListItemOrderControls";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
@@ -81,7 +81,11 @@ export const ListTitlesGrid = ({
     <div className="space-y-3">
       <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {visible.map((item, index) => (
-          <li key={item.titleId} className="space-y-2">
+          <li
+            key={item.titleId}
+            className="stagger-in space-y-2"
+            style={{ "--stagger": index } as CSSProperties}
+          >
             <PosterTile
               titleId={item.title.id}
               href={`/titulos/${item.title.id}`}

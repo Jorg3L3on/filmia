@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { createTag } from "@/app/actions/tags";
 import { CreateTagForm } from "@/components/CreateTagForm";
@@ -43,16 +44,20 @@ const TagsGrid = async () => {
         />
       ) : (
         <ul className="grid grid-cols-2 gap-5 sm:gap-6">
-          {tags.map((tag) => {
+          {tags.map((tag, index) => {
             const count = tag._count.titles;
             const countLabel = count === 1 ? "1 título" : `${count} títulos`;
             const posters = tag.titles.map((item) => item.title);
 
             return (
-              <li key={tag.id}>
+              <li
+                key={tag.id}
+                className="stagger-in"
+                style={{ "--stagger": index } as CSSProperties}
+              >
                 <Link
                   href={tagHref(tag.slug)}
-                  className={`block overflow-hidden rounded-2xl border border-line bg-surface p-4 transition hover:border-accent/40 ${focusRing}`}
+                  className={`card-physics press-scale block overflow-hidden rounded-2xl border border-line bg-surface p-4 ${focusRing}`}
                 >
                   <div className="overflow-hidden rounded-2xl">
                     <PosterStack posters={posters} size="sm" emptyLabel="Sin posters" />

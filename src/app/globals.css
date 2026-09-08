@@ -32,6 +32,15 @@
   --stagger-step: 50ms;
   --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-press: 160ms;
+  --duration-tab: 200ms;
+  --duration-hover: 220ms;
+  --duration-enter: 280ms;
+  --duration-toast: 280ms;
+  --duration-morph: 380ms;
+  --duration-stagger: 420ms;
+  --duration-pop: 420ms;
+  --duration-sheet: 420ms;
 }
 
 @theme inline {
@@ -107,22 +116,29 @@ body {
   display: none;
 }
 
-/* --- Motion foundation ---------------------------------------------------
+/* --- Motion language (Fase 2) -------------------------------------------
+ * Durations
+ *   press  160ms  · tab  200ms  · hover  220ms
+ *   enter/toast  280ms  · morph  380ms
+ *   stagger/pop  420ms  · sheet  420ms
+ * Curves
+ *   --ease-out  sheets, toasts, tabs, stagger, morph (no overshoot)
+ *   --spring    press, spring-pop, spring-fill (chips / log / rating only)
+ * Sheets open with `.sheet-rise` (translateY + ease-out). Never `.spring-pop`.
  * Shared-element poster → ficha: React <ViewTransition name={`poster-${id}`}>
- * with share="morph" on calendar/grid/deck tiles and the ficha hero. Next 16
- * App Router treats navigations as transitions, so no extra config is needed.
- * Diary Deck/Grid/Calendar morph uses a named stage (`diary-stage`) plus a
- * short slide on month changes (`diary-month`). Springs are CSS-only.
- * Reduced motion disables movement everywhere below.
+ * with share="morph" on calendar/grid/deck/list/tag/search tiles + ficha hero.
+ * Next 16 App Router treats navigations as transitions — no extra config.
+ * Diary Deck/Grid/Calendar morph uses `diary-stage` plus `diary-month` slides.
+ * `prefers-reduced-motion: reduce` zeroes movement (including view transitions).
  * ---------------------------------------------------------------------- */
 
 .card-physics {
   transform: translateZ(0) scale(1);
   box-shadow: 0 10px 24px rgb(0 0 0 / 0.4);
   transition:
-    transform 220ms var(--ease-out),
-    box-shadow 220ms var(--ease-out),
-    filter 220ms var(--ease-out);
+    transform var(--duration-hover) var(--ease-out),
+    box-shadow var(--duration-hover) var(--ease-out),
+    filter var(--duration-hover) var(--ease-out);
   will-change: transform;
 }
 
@@ -133,7 +149,7 @@ body {
 }
 
 .press-scale {
-  transition: transform 160ms var(--spring);
+  transition: transform var(--duration-press) var(--spring);
 }
 
 .press-scale:active {
@@ -142,21 +158,37 @@ body {
 
 .stagger-in {
   --stagger: 0;
-  animation: stagger-enter 420ms var(--ease-out) both;
+  animation: stagger-enter var(--duration-stagger) var(--ease-out) both;
   animation-delay: calc(var(--stagger) * var(--stagger-step));
 }
 
 .fade-up {
-  animation: fade-up 280ms var(--ease-out) both;
+  animation: fade-up var(--duration-enter) var(--ease-out) both;
 }
 
 .fade-up-late {
-  animation: fade-up 280ms var(--ease-out) both;
+  animation: fade-up var(--duration-enter) var(--ease-out) both;
   animation-delay: 120ms;
 }
 
 .spring-pop {
-  animation: spring-pop 420ms var(--spring);
+  animation: spring-pop var(--duration-pop) var(--spring);
+}
+
+.tab-transition {
+  transition:
+    color var(--duration-tab) var(--ease-out),
+    background-color var(--duration-tab) var(--ease-out),
+    box-shadow var(--duration-tab) var(--ease-out),
+    border-color var(--duration-tab) var(--ease-out);
+}
+
+.toast-in {
+  animation: toast-in var(--duration-toast) var(--ease-out) both;
+}
+
+.toast-out {
+  animation: toast-out var(--duration-toast) var(--ease-out) both;
 }
 
 /* Coverflow mazo: compositor-only motion. Dim is an overlay, not filter. */
@@ -210,7 +242,7 @@ body {
 }
 
 .sheet-rise {
-  animation: sheet-rise 480ms var(--spring) both;
+  animation: sheet-rise var(--duration-sheet) var(--ease-out) both;
 }
 
 .spring-fill {
@@ -241,7 +273,7 @@ body {
 }
 
 ::view-transition-group(.morph) {
-  animation-duration: 380ms;
+  animation-duration: var(--duration-morph);
   animation-timing-function: var(--ease-out);
 }
 
@@ -317,6 +349,28 @@ body {
   }
 }
 
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
 @keyframes shimmer {
   0% {
     background-position: 120% 0;
@@ -387,10 +441,16 @@ body {
   .fade-up,
   .fade-up-late,
   .spring-pop,
-  .sheet-rise {
+  .sheet-rise,
+  .toast-in,
+  .toast-out {
     transform: none;
     filter: none;
     animation: none;
+  }
+
+  .tab-transition {
+    transition: none;
   }
 
   .coverflow-card,

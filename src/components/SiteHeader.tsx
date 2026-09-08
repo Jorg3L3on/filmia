@@ -44,7 +44,7 @@ export const SiteHeader = ({ pathname: currentPath, user }: SiteHeaderProps) => 
                 href={item.href}
                 aria-current={isCurrent ? "page" : undefined}
                 className={cn(
-                  "rounded-full px-3 py-1.5 transition",
+                  "rounded-full px-3 py-1.5 tab-transition",
                   focusRing,
                   isCurrent
                     ? "bg-accent font-medium text-ink"
@@ -61,7 +61,7 @@ export const SiteHeader = ({ pathname: currentPath, user }: SiteHeaderProps) => 
             href="/tags"
             aria-current={isTags ? "page" : undefined}
             className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-[0.08em] sm:hidden",
+              "rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-[0.08em] tab-transition sm:hidden",
               focusRing,
               isTags
                 ? "bg-accent text-ink"

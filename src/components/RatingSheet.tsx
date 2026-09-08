@@ -69,6 +69,7 @@ const RatingSheetFields = ({
       labelledBy={titleDomId}
       overlayLabel="Cerrar tu nota"
       layer="top"
+      dragDismiss
     >
       <div className="flex flex-col items-center px-5 pt-3">
         <SheetHandle />

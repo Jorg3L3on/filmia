@@ -29,7 +29,7 @@ export const DiaryModeToggle = ({ mode }: DiaryModeToggleProps) => {
             aria-selected={isCurrent}
             aria-current={isCurrent ? "page" : undefined}
             className={cn(
-              "flex-1 rounded-full px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-[0.14em] transition spring-fill",
+              "flex-1 rounded-full px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-[0.14em] tab-transition",
               focusRing,
               isCurrent ? "bg-accent text-ink shadow-[0_6px_16px_rgba(124,156,255,0.28)]" : "text-fog hover:text-paper",
             )}

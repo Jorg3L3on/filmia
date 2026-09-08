@@ -106,6 +106,7 @@ export const AddTitleToListCta = ({ listId, titles }: AddTitleToListCtaProps) =>
         onClose={handleClose}
         labelledBy={titleId}
         overlayLabel="Cerrar agregar título"
+        dragDismiss
         panelClassName="max-h-[min(40rem,88vh)] bg-surface"
       >
         <div className="flex flex-col items-center px-5 pt-3">

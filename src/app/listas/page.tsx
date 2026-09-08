@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { ListCard } from "@/components/ListCard";
@@ -49,8 +49,12 @@ const ListsBody = async () => {
           Listas diarias
         </h2>
         <ListCollection>
-          {fixed.map((list) => (
-            <li key={list.id} className="min-w-0">
+          {fixed.map((list, index) => (
+            <li
+              key={list.id}
+              className="min-w-0 stagger-in"
+              style={{ "--stagger": index } as CSSProperties}
+            >
               <ListCard
                 href={listHref(list)}
                 name={list.name}
@@ -81,8 +85,12 @@ const ListsBody = async () => {
           />
         ) : (
           <ListCollection>
-            {custom.map((list) => (
-              <li key={list.id} className="min-w-0">
+            {custom.map((list, index) => (
+              <li
+                key={list.id}
+                className="min-w-0 stagger-in"
+                style={{ "--stagger": index } as CSSProperties}
+              >
                 <ListCard
                   href={listHref(list)}
                   name={list.name}

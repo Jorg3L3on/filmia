@@ -31,7 +31,7 @@ export const DiaryGenreToggle = ({
             href={diaryHref(category.slug)}
             aria-current={isCurrent ? "page" : undefined}
             className={cn(
-              "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-wide transition",
+              "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-wide tab-transition",
               focusRing,
               isCurrent ? "bg-accent text-ink" : "text-fog hover:text-paper",
             )}

@@ -2,12 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { setTitleRating } from "@/app/actions/titles";
-import {
-  addToWatchlistById,
-  clearTitleWatched,
-  markTitleWatched,
-  removeFromWatchlistById,
-} from "@/app/actions/watchlist";
+import { clearTitleWatched, markTitleWatched } from "@/app/actions/watchlist";
 import { RatingSheet } from "@/components/RatingSheet";
 import { cn } from "@/lib/cn";
 import { formatStarScore } from "@/lib/labels";
@@ -54,7 +49,7 @@ export const TitleActionRow = ({
 }: TitleActionRowProps) => {
   const [panel, setPanel] = useState<Panel>(null);
   const [ratingOpen, setRatingOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"watched" | "watchlist" | "rating" | null>(
+  const [pendingAction, setPendingAction] = useState<"watched" | "rating" | null>(
     null,
   );
   const {
@@ -67,7 +62,6 @@ export const TitleActionRow = ({
     sameActionState,
   );
   const watchedSpring = useSpringFeedback();
-  const watchlistSpring = useSpringFeedback();
   const ratingSpring = useSpringFeedback();
 
   const handleToggleWatched = () => {
@@ -89,29 +83,6 @@ export const TitleActionRow = ({
             await markTitleWatched(titleId);
           } else {
             await clearTitleWatched(titleId);
-          }
-        } finally {
-          setPendingAction(null);
-        }
-      },
-    );
-  };
-
-  const handleToggleWatchlist = () => {
-    const nextInWatchlist = !optimistic.inWatchlist;
-    setPendingAction("watchlist");
-    watchlistSpring.trigger();
-    showToast({
-      title: nextInWatchlist ? "En Quiero ver" : "Fuera de Quiero ver",
-    });
-    run(
-      { ...optimistic, inWatchlist: nextInWatchlist },
-      async () => {
-        try {
-          if (nextInWatchlist) {
-            await addToWatchlistById(titleId);
-          } else {
-            await removeFromWatchlistById(titleId);
           }
         } finally {
           setPendingAction(null);
@@ -154,7 +125,7 @@ export const TitleActionRow = ({
       <div
         role="group"
         aria-label="Acciones del título"
-        className="grid grid-cols-5 gap-2"
+        className="grid grid-cols-4 gap-2"
       >
         <button
           type="button"
@@ -174,28 +145,6 @@ export const TitleActionRow = ({
         >
           <WatchedIcon filled={optimistic.watched} />
           Visto
-        </button>
-
-        <button
-          type="button"
-          onClick={handleToggleWatchlist}
-          disabled={pendingAction === "watchlist"}
-          aria-pressed={optimistic.inWatchlist}
-          aria-label={
-            optimistic.inWatchlist ? "Quitar de Quiero ver" : "Añadir a Quiero ver"
-          }
-          className={cn(
-            "spring-fill flex w-full flex-col items-center gap-1 rounded-2xl border px-1 py-2.5 text-[10px] uppercase tracking-[0.12em]",
-            focusRing,
-            watchlistSpring.className,
-            optimistic.inWatchlist
-              ? "border-accent/40 bg-accent/10 text-accent"
-              : "border-chrome bg-well text-fog hover:text-paper",
-            pendingAction === "watchlist" && "opacity-80",
-          )}
-        >
-          <WatchlistIcon filled={optimistic.inWatchlist} />
-          Quiero ver
         </button>
 
         <button
@@ -288,23 +237,6 @@ const WatchedIcon = ({ filled }: { filled: boolean }) => (
       strokeLinecap="round"
       strokeLinejoin="round"
       d="m8.5 12.2 2.3 2.3 4.7-5"
-    />
-  </svg>
-);
-
-const WatchlistIcon = ({ filled }: { filled: boolean }) => (
-  <svg
-    viewBox="0 0 24 24"
-    className="h-5 w-5"
-    aria-hidden="true"
-    fill={filled ? "currentColor" : "none"}
-    stroke="currentColor"
-    strokeWidth={1.75}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M7 4.5h10.5a1 1 0 0 1 1 1V20L12.25 16.5 6 20V5.5a1 1 0 0 1 1-1Z"
     />
   </svg>
 );

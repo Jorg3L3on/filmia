@@ -13,6 +13,7 @@ const offlineScripts = [
   "verify-tags.ts",
   "verify-profile.ts",
   "verify-mark-seen.ts",
+  "verify-motion.ts",
   "verify-title-overview.ts",
 ];
 

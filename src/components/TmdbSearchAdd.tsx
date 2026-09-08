@@ -6,6 +6,7 @@ import { searchTmdbDiscover } from "@/app/actions/metadata";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/Button";
+import { SharedPoster } from "@/components/SharedPoster";
 import { PosterImage } from "@/components/PosterImage";
 import { SearchPreviewSheet, type SearchAddDestination } from "@/components/SearchPreviewSheet";
 import type { TitleKind } from "@/db";
@@ -416,12 +417,23 @@ export const TmdbSearchAdd = ({
                     )}
                   >
                     <span className="w-12 shrink-0 overflow-hidden rounded-lg">
-                      <PosterImage
-                        name={result.name}
-                        posterPath={result.posterPath}
-                        sizes="48px"
-                        className="rounded-lg"
-                      />
+                      {local?.titleId ? (
+                        <SharedPoster titleId={local.titleId}>
+                          <PosterImage
+                            name={result.name}
+                            posterPath={result.posterPath}
+                            sizes="48px"
+                            className="rounded-lg"
+                          />
+                        </SharedPoster>
+                      ) : (
+                        <PosterImage
+                          name={result.name}
+                          posterPath={result.posterPath}
+                          sizes="48px"
+                          className="rounded-lg"
+                        />
+                      )}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium text-paper">{result.name}</span>
