@@ -64,7 +64,7 @@ type Draft = {
 
 const barChipClass = (selected: boolean) =>
   cn(
-    "inline-flex shrink-0 items-center rounded-full px-4 py-2 text-sm font-medium transition",
+    "inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-xs font-medium transition",
     focusRing,
     selected
       ? "bg-accent text-ink"
@@ -181,13 +181,13 @@ export const CatalogFilters = ({
   };
 
   return (
-    <section className="space-y-2" aria-label="Filtros del catálogo">
-      <div className="flex items-center gap-2">
+    <section className="space-y-1.5" aria-label="Filtros del catálogo">
+      <div className="flex items-center gap-1.5">
         {showKind ? (
           <div
             role="group"
             aria-label="Filtro por tipo"
-            className="rail flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pb-1"
+            className="rail flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-0.5"
           >
             {KIND_CHIPS.map((chip) => {
               const isCurrent = kind === chip.value;

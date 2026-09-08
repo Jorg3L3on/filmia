@@ -17,7 +17,6 @@ import {
 } from "@/lib/labels";
 import { toDateInput } from "@/lib/dates";
 import {
-  btnPrimary,
   eyebrowClass,
   fieldClass,
   focusRing,
@@ -350,7 +349,6 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
         <PendingSubmit
           idleLabel={title ? "Guardar cambios" : "Registrar en el diario"}
           pendingLabel={title ? "Guardando…" : "Registrando…"}
-          className={btnPrimary}
         />
       </div>
     </form>

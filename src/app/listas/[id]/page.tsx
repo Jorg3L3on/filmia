@@ -128,7 +128,8 @@ const ListDetail = async ({
         description={list.description ?? undefined}
         actions={
           <>
-            <Button href={`/listas/${list.id}/editar`}>
+            <AddTitleToListCta listId={list.id} titles={availableTitles} compact />
+            <Button href={`/listas/${list.id}/editar`} variant="ghost" size="sm">
               {fixed ? "Editar descripción" : "Editar"}
             </Button>
             {fixed ? null : (
@@ -156,16 +157,17 @@ const ListDetail = async ({
         seriesStatus={seriesStatus}
       />
 
-      <AddTitleToListCta listId={list.id} titles={availableTitles} />
-
       {list.items.length === 0 ? (
-        <EmptyState
-          variant={empty.variant}
-          title={empty.title}
-          description={empty.description}
-          actionHref={empty.actionHref}
-          actionLabel={empty.actionLabel}
-        />
+        <>
+          <AddTitleToListCta listId={list.id} titles={availableTitles} />
+          <EmptyState
+            variant={empty.variant}
+            title={empty.title}
+            description={empty.description}
+            actionHref={empty.actionHref}
+            actionLabel={empty.actionLabel}
+          />
+        </>
       ) : catalog.needsSetup ? (
         <MinePlatformsSetupCta />
       ) : filteredEmpty && minePlatforms ? (

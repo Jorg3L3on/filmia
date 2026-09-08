@@ -2,7 +2,7 @@
 
 import { type FormEvent } from "react";
 import { PendingSubmit } from "@/components/PendingSubmit";
-import { btnPrimary, fieldClass } from "@/lib/ui";
+import { fieldClass } from "@/lib/ui";
 
 type CreateTagFormProps = {
   action?: (formData: FormData) => void | Promise<void>;
@@ -49,7 +49,6 @@ export const CreateTagForm = ({
       <PendingSubmit
         idleLabel={submitLabel}
         pendingLabel={pendingLabel}
-        className={btnPrimary}
       />
     </form>
   );

@@ -4,6 +4,10 @@ import { useMemo, useState, type CSSProperties } from "react";
 import { moveListItem } from "@/app/actions/lists";
 import { removeFromWatchlist } from "@/app/actions/watchlist";
 import { WatchlistCard } from "@/components/WatchlistCard";
+import {
+  WINDOW_VIRTUALIZE_AFTER,
+  WindowVirtualList,
+} from "@/components/WindowVirtualList";
 import type { ListItem, Platform } from "@/db";
 import type { TitleWithTags } from "@/lib/queries";
 import {
@@ -45,6 +49,7 @@ export const WatchlistList = ({
       return item ? [item] : [];
     });
   const [hero, ...queue] = visible;
+  const virtualize = queue.length >= WINDOW_VIRTUALIZE_AFTER;
 
   const hide = (titleId: string) => {
     setHiddenIds((current) => new Set(current).add(titleId));
@@ -111,29 +116,55 @@ export const WatchlistList = ({
       ) : null}
 
       {queue.length > 0 ? (
-        <ul className="divide-y divide-line">
-          {queue.map((item, index) => (
-            <li
-              key={item.titleId}
-              className="stagger-in"
-              style={{ "--stagger": index } as CSSProperties}
-            >
-              <WatchlistCard
-                item={item}
-                variant="queue"
-                position={index + 2}
-                canMoveUp
-                canMoveDown={index < queue.length - 1}
-                pendingOrder={isPending}
-                removeAction={() => handleRemove(item.titleId)}
-                onMove={(direction) => handleMove(item.titleId, direction)}
-                onMarkedSeen={() => hide(item.titleId)}
-                onMarkSeenError={() => restore(item.titleId)}
-                preferredPlatforms={preferredPlatforms}
-              />
-            </li>
-          ))}
-        </ul>
+        virtualize ? (
+          <WindowVirtualList
+            items={queue}
+            estimateHeight={72}
+            className="divide-y divide-line"
+            itemKey={(item) => item.titleId}
+            renderItem={(item, index) => (
+              <li key={item.titleId}>
+                <WatchlistCard
+                  item={item}
+                  variant="queue"
+                  position={index + 2}
+                  canMoveUp
+                  canMoveDown={index < queue.length - 1}
+                  pendingOrder={isPending}
+                  removeAction={() => handleRemove(item.titleId)}
+                  onMove={(direction) => handleMove(item.titleId, direction)}
+                  onMarkedSeen={() => hide(item.titleId)}
+                  onMarkSeenError={() => restore(item.titleId)}
+                  preferredPlatforms={preferredPlatforms}
+                />
+              </li>
+            )}
+          />
+        ) : (
+          <ul className="divide-y divide-line">
+            {queue.map((item, index) => (
+              <li
+                key={item.titleId}
+                className="stagger-in"
+                style={{ "--stagger": index } as CSSProperties}
+              >
+                <WatchlistCard
+                  item={item}
+                  variant="queue"
+                  position={index + 2}
+                  canMoveUp
+                  canMoveDown={index < queue.length - 1}
+                  pendingOrder={isPending}
+                  removeAction={() => handleRemove(item.titleId)}
+                  onMove={(direction) => handleMove(item.titleId, direction)}
+                  onMarkedSeen={() => hide(item.titleId)}
+                  onMarkSeenError={() => restore(item.titleId)}
+                  preferredPlatforms={preferredPlatforms}
+                />
+              </li>
+            ))}
+          </ul>
+        )
       ) : null}
 
       {error ? (

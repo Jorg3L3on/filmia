@@ -2,9 +2,8 @@ import { Suspense } from "react";
 import { DiaryGenreToggle } from "@/components/DiaryGenreToggle";
 import { DiaryModeToggle } from "@/components/DiaryModeToggle";
 import { CatalogFilters } from "@/components/CatalogFilters";
-import { type DeckViewMode } from "@/components/DeckViewToggle";
+import { HISTORIAL_DEFAULT_VIEW, type DeckViewMode } from "@/lib/diary-view";
 import { DiaryCalendar } from "@/components/DiaryCalendar";
-import { DiaryMonthList } from "@/components/DiaryMonthList";
 import { DiaryViewHeader } from "@/components/DiaryViewHeader";
 import { EmptyState } from "@/components/EmptyState";
 import {
@@ -209,7 +208,7 @@ const HistorialHome = async ({
     sort?: string | string[];
   };
 }) => {
-  const view = isView(params.view) ? params.view : "calendar";
+  const view = isView(params.view) ? params.view : HISTORIAL_DEFAULT_VIEW;
   const selectedTags = parseTagSlugs(params.tag);
   const minePlatforms = parseMinePlatforms(params.minePlatforms);
   const seriesStatus = parseSeriesStatusFilter(params.seriesStatus);
@@ -292,7 +291,7 @@ const HistorialHome = async ({
     catalogHref("/", {
       tags: selectedTags,
       view: mode,
-      defaultView: "calendar",
+      defaultView: HISTORIAL_DEFAULT_VIEW,
       mode: "historial",
       minePlatforms,
       seriesStatus,
@@ -302,27 +301,28 @@ const HistorialHome = async ({
     });
   const clearHref = catalogHref("/", {
     view,
-    defaultView: "calendar",
+    defaultView: HISTORIAL_DEFAULT_VIEW,
     mode: "historial",
     month,
     day: view === "calendar" ? selectedDay : undefined,
   });
+  const monthCountLabel =
+    monthTitles.length === 1 ? "1 entrada" : `${monthTitles.length} entradas`;
 
   return (
-    <div className="space-y-6">
-      {view === "calendar" ? null : (
-        <DiaryViewHeader
-          month={month}
-          view={view}
-          hrefFor={hrefFor}
-          tags={selectedTags}
-          minePlatforms={minePlatforms}
-          seriesStatus={seriesStatus}
-          kind={kindFilter}
-          platforms={platforms}
-          sort={sort}
-        />
-      )}
+    <div className="space-y-5">
+      <DiaryViewHeader
+        month={month}
+        view={view}
+        hrefFor={hrefFor}
+        countLabel={monthCountLabel}
+        tags={selectedTags}
+        minePlatforms={minePlatforms}
+        seriesStatus={seriesStatus}
+        kind={kindFilter}
+        platforms={platforms}
+        sort={sort}
+      />
 
       {catalog.needsSetup ? <MinePlatformsSetupCta /> : null}
 
@@ -331,7 +331,7 @@ const HistorialHome = async ({
         selectedSlugs={selectedTags}
         pathname="/"
         view={view}
-        defaultView="calendar"
+        defaultView={HISTORIAL_DEFAULT_VIEW}
         mode="historial"
         minePlatforms={minePlatforms}
         hasStreamingPlatforms={userPlatforms.length > 0}
@@ -343,7 +343,7 @@ const HistorialHome = async ({
         sort={sort ?? undefined}
       />
 
-      <div className="space-y-6">
+      <div className="diary-stage space-y-6">
           {catalog.needsSetup ? null : view === "calendar" ? (
             <>
               <MissingStreamingDataNote count={catalog.missingCache} />
@@ -369,7 +369,6 @@ const HistorialHome = async ({
                   clearHref={clearHref}
                 />
               )}
-              <DiaryMonthList titles={monthTitles} month={month} />
             </>
           ) : titles.length === 0 && minePlatforms ? (
             <>
@@ -391,7 +390,7 @@ const HistorialHome = async ({
               description={
                 hasActiveFilters
                   ? "Prueba otra combinación o quita filtros. El estado de serie ignora películas."
-                  : "Registra lo que viste y llenará el calendario."
+                  : "Registra lo que viste y aparecerá en el mazo."
               }
               actionHref={hasActiveFilters ? clearHref : "/buscar?destino=visto"}
               actionLabel={hasActiveFilters ? "Quitar filtros" : "Buscar título"}
@@ -400,7 +399,6 @@ const HistorialHome = async ({
             <>
               <MissingStreamingDataNote count={catalog.missingCache} />
               <TitleDeckView
-                heading={view === "deck" ? "Mazo" : "Cuadrícula"}
                 titles={monthTitles.length > 0 ? monthTitles : titles}
                 mode={view}
                 showToggle={false}

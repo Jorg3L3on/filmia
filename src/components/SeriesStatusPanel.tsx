@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { setSeriesSeason, setSeriesStatus } from "@/app/actions/titles";
+import { Button } from "@/components/Button";
 import type { SeriesStatus } from "@/db";
 import { cn } from "@/lib/cn";
 import {
@@ -11,8 +12,6 @@ import {
 } from "@/lib/labels";
 import { useStickyOptimistic } from "@/lib/use-optimistic-action";
 import {
-  btnGhost,
-  btnPrimary,
   eyebrowClass,
   fieldClass,
   focusRing,
@@ -164,21 +163,25 @@ export const SeriesStatusPanel = ({
             className={fieldClass}
           />
         </label>
-        <button type="submit" disabled={pendingKind === "season"} className={btnPrimary}>
-          {pendingKind === "season" ? "Guardando…" : "Guardar temporada"}
-        </button>
+        <Button
+          type="submit"
+          pending={pendingKind === "season"}
+          pendingLabel="Guardando…"
+        >
+          Guardar temporada
+        </Button>
       </form>
 
       {value.status ? (
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={handleClear}
           disabled={pendingKind === "status"}
-          className={btnGhost}
           aria-label="Quitar estado de la serie"
         >
           Quitar estado
-        </button>
+        </Button>
       ) : null}
 
       {error || seasonError ? (

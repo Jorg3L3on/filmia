@@ -29,11 +29,13 @@ export const PageHeader = ({
         ) : null}
         <div className="min-w-0 space-y-2">
           {eyebrow ? <p className={eyebrowClass}>{eyebrow}</p> : null}
-          <h1 className="font-serif text-4xl tracking-tight text-paper md:text-[2.75rem]">
+          <h1 className="truncate font-serif text-4xl tracking-tight text-paper md:text-[2.75rem]">
             {title}
           </h1>
           {description ? (
-            <p className="text-sm leading-relaxed text-fog">{description}</p>
+            <p className="line-clamp-2 text-sm leading-relaxed text-fog">
+              {description}
+            </p>
           ) : null}
         </div>
       </div>

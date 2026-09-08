@@ -62,7 +62,7 @@ export const ProfilePasswordForm = () => {
 
       <div className="flex justify-end">
         <Button type="submit" pending={isPending} pendingLabel="Actualizando…">
-          Guardar cambios
+          Actualizar contraseña
         </Button>
       </div>
     </form>

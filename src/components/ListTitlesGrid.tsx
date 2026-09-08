@@ -2,12 +2,12 @@
 
 import { useMemo, useState, type CSSProperties } from "react";
 import { moveListItem, removeTitleFromList } from "@/app/actions/lists";
+import { Button } from "@/components/Button";
 import { ListItemOrderControls } from "@/components/ListItemOrderControls";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PosterTile } from "@/components/PosterTile";
 import type { ListItem } from "@/db";
 import type { TitleWithTags } from "@/lib/queries";
-import { btnLink } from "@/lib/ui";
 import {
   sameOrderedIds,
   swapAdjacentIds,
@@ -116,13 +116,15 @@ export const ListTitlesGrid = ({
                 collapsed
               />
             ) : null}
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => handleRemove(item.titleId)}
-              className={`${btnLink} w-full`}
+              className="w-full"
             >
               Quitar de la lista
-            </button>
+            </Button>
           </li>
         ))}
       </ul>

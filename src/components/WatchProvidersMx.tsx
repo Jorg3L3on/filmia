@@ -1,9 +1,9 @@
 import Image from "next/image";
-import Link from "next/link";
+import { Button } from "@/components/Button";
 import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
 import { isUserStreamingProvider } from "@/lib/streaming-platforms";
-import { btnLink, focusRing } from "@/lib/ui";
+import { focusRing } from "@/lib/ui";
 import type { WatchProviderOffer, WatchProvidersMxData } from "@/lib/watch-providers";
 
 type WatchProviderChipsProps = {
@@ -171,15 +171,27 @@ const ProviderLogo = ({ provider }: { provider: WatchProviderOffer }) => {
 type WatchProvidersMxProps = {
   data: WatchProvidersMxData | null;
   userPlatforms?: Platform[];
+  tmdbConfigured?: boolean;
+  stale?: boolean;
 };
 
 export const WatchProvidersMx = ({
   data,
   userPlatforms = [],
+  tmdbConfigured = true,
+  stale = false,
 }: WatchProvidersMxProps) => {
-  const hasData =
-    data &&
-    (data.flatrate.length > 0 || data.rent.length > 0 || data.buy.length > 0);
+  const hasFlatrate = Boolean(data && data.flatrate.length > 0);
+  const hasRentOrBuy = Boolean(
+    data && (data.rent.length > 0 || data.buy.length > 0),
+  );
+  const hasData = hasFlatrate || hasRentOrBuy;
+  const noneOfMine =
+    userPlatforms.length > 0 &&
+    hasFlatrate &&
+    !data!.flatrate.some((provider) =>
+      isUserStreamingProvider(provider, userPlatforms),
+    );
 
   return (
     <section
@@ -210,17 +222,52 @@ export const WatchProvidersMx = ({
 
       {userPlatforms.length === 0 ? (
         <p className="text-sm text-fog">
-          <Link href="/perfil" className={btnLink}>
+          <Button href="/perfil" variant="ghost" size="sm" className="align-baseline px-0">
             Elige tus plataformas
-          </Link>{" "}
+          </Button>{" "}
           para marcar cuáles son tuyas.
         </p>
       ) : null}
 
-      {!hasData ? (
-        <p className="text-sm text-fog">No hay datos de streaming en MX.</p>
-      ) : (
+      {!tmdbConfigured && !hasData ? (
+        <p className="text-sm text-fog">
+          No se puede consultar disponibilidad ahora. Tu ficha y tu diario siguen
+          disponibles.
+        </p>
+      ) : !hasData ? (
+        <div className="space-y-2">
+          <p className="text-sm text-fog">
+            Nadie la ofrece en streaming en México por ahora.
+          </p>
+          {data?.link ? (
+            <a
+              href={data.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn("text-sm font-medium text-accent hover:underline", focusRing)}
+            >
+              Buscar en JustWatch
+            </a>
+          ) : (
+            <p className="text-xs text-mist">
+              {stale
+                ? "Los datos de plataformas se actualizarán cuando estén disponibles."
+                : "Si aparece en un servicio, se mostrará aquí."}
+            </p>
+          )}
+        </div>
+      ) : data ? (
         <div className="space-y-4">
+          {!hasFlatrate && hasRentOrBuy ? (
+            <p className="text-sm text-fog">
+              No está incluida con suscripción. Sí se puede rentar o comprar.
+            </p>
+          ) : null}
+          {noneOfMine ? (
+            <p className="text-sm text-fog">
+              Está en streaming, pero no en las plataformas que tienes.
+            </p>
+          ) : null}
           <ProviderSection
             label="Incluido"
             providers={data.flatrate}
@@ -240,7 +287,7 @@ export const WatchProvidersMx = ({
             userPlatforms={userPlatforms}
           />
         </div>
-      )}
+      ) : null}
 
       <p className="text-[10px] text-faint">
         Datos de{" "}
