@@ -6,7 +6,11 @@ import { BottomNav } from "@/components/BottomNav";
 import { NavPrefetch } from "@/components/NavPrefetch";
 import { SiteHeaderClient, type HeaderUser } from "@/components/SiteHeaderClient";
 
-const AUTH_PATHS = ["/login", "/registro"];
+const isAuthChromePath = (pathname: string) =>
+  pathname === "/login" ||
+  pathname === "/registro" ||
+  pathname.startsWith("/login/") ||
+  pathname.startsWith("/registro/");
 
 type AppShellProps = {
   children: ReactNode;
@@ -15,7 +19,7 @@ type AppShellProps = {
 
 export const AppShell = ({ children, user }: AppShellProps) => {
   const pathname = usePathname();
-  const isAuthPage = AUTH_PATHS.some((path) => pathname === path);
+  const isAuthPage = isAuthChromePath(pathname);
 
   if (isAuthPage) {
     return <>{children}</>;
