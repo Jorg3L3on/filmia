@@ -1,4 +1,4 @@
-import { desktopNavItems, isCurrentPath, mobileNavItems } from "../src/lib/nav";
+import { desktopNavItems, isAuthChromePath, isCurrentPath, mobileNavItems } from "../src/lib/nav";
 
 const assert = (condition: unknown, message: string) => {
   if (!condition) {
@@ -60,6 +60,13 @@ assert(
   desktopNavItems.some((item) => item.href === "/tags" && item.label === "Etiquetas"),
   "Desktop nav must include Etiquetas",
 );
+
+assert(isAuthChromePath("/login"), "login hides app chrome");
+assert(isAuthChromePath("/registro"), "registro hides app chrome");
+assert(isAuthChromePath("/login/missing"), "auth-path 404s hide app chrome");
+assert(isAuthChromePath("/registro/missing"), "signup-path 404s hide app chrome");
+assert(!isAuthChromePath("/"), "diario keeps app chrome");
+assert(!isAuthChromePath("/watchlist"), "watchlist keeps app chrome");
 
 console.log("✓ Nested paths highlight Diario / Etiquetas / Listas");
 console.log("✓ Mobile nav is 5 items with Buscar centered and Perfil at the end");

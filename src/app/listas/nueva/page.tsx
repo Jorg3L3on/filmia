@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { ListForm } from "@/components/ListForm";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Nueva lista",
 };

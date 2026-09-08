@@ -1,11 +1,18 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { moveListItem, removeTitleFromList } from "@/app/actions/lists";
 import { Button } from "@/components/Button";
 import { ListItemOrderControls } from "@/components/ListItemOrderControls";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PosterTile } from "@/components/PosterTile";
+import {
+  LIST_GRID_ROW_ESTIMATE,
+  WINDOW_VIRTUALIZE_AFTER,
+  WindowVirtualGrid,
+  useCatalogGridColumns,
+} from "@/components/WindowVirtualList";
+import { CATALOG_POSTER_GRID_CLASS } from "@/lib/catalog-grid";
 import type { ListItem } from "@/db";
 import type { TitleWithTags } from "@/lib/queries";
 import {
@@ -39,6 +46,7 @@ export const ListTitlesGrid = ({
     serverIds,
     sameOrderedIds,
   );
+  const columns = useCatalogGridColumns();
 
   const visible = order
     .filter((titleId) => !hiddenIds.has(titleId))
@@ -46,6 +54,7 @@ export const ListTitlesGrid = ({
       const item = byId.get(titleId);
       return item ? [item] : [];
     });
+  const virtualize = visible.length >= WINDOW_VIRTUALIZE_AFTER;
 
   const handleRemove = (titleId: string) => {
     setHiddenIds((current) => new Set(current).add(titleId));
@@ -77,57 +86,70 @@ export const ListTitlesGrid = ({
     );
   };
 
+  const renderCell = (item: ListItemPayload, index: number): ReactNode => (
+    <li
+      key={item.titleId}
+      className="stagger-in space-y-2"
+      style={{ "--stagger": index } as CSSProperties}
+    >
+      <PosterTile
+        titleId={item.title.id}
+        href={`/titulos/${item.title.id}`}
+        name={item.title.name}
+        posterPath={item.title.posterPath}
+        year={item.title.year}
+        rating={item.title.rating}
+        watchedAt={item.title.watchedAt}
+        tags={item.title.tags.map((entry) => entry.tag)}
+        seriesStatus={
+          item.title.kind === "SERIES" ? item.title.seriesStatus : null
+        }
+      />
+      {showOrder ? (
+        <ListItemOrderControls
+          canMoveUp={index > 0}
+          canMoveDown={index < visible.length - 1}
+          pending={isPending}
+          onMove={(direction) => handleMove(item.titleId, direction)}
+        />
+      ) : null}
+      {!item.title.watchedAt ? (
+        <MarkWatchedForm
+          titleId={item.title.id}
+          variant="queue"
+          rating={item.title.rating}
+          review={item.title.review}
+          collapsed
+        />
+      ) : null}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => handleRemove(item.titleId)}
+        className="w-full"
+      >
+        Quitar de la lista
+      </Button>
+    </li>
+  );
+
   return (
     <div className="space-y-3">
-      <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        {visible.map((item, index) => (
-          <li
-            key={item.titleId}
-            className="stagger-in space-y-2"
-            style={{ "--stagger": index } as CSSProperties}
-          >
-            <PosterTile
-              titleId={item.title.id}
-              href={`/titulos/${item.title.id}`}
-              name={item.title.name}
-              posterPath={item.title.posterPath}
-              year={item.title.year}
-              rating={item.title.rating}
-              watchedAt={item.title.watchedAt}
-              tags={item.title.tags.map((entry) => entry.tag)}
-              seriesStatus={
-                item.title.kind === "SERIES" ? item.title.seriesStatus : null
-              }
-            />
-            {showOrder ? (
-              <ListItemOrderControls
-                canMoveUp={index > 0}
-                canMoveDown={index < visible.length - 1}
-                pending={isPending}
-                onMove={(direction) => handleMove(item.titleId, direction)}
-              />
-            ) : null}
-            {!item.title.watchedAt ? (
-              <MarkWatchedForm
-                titleId={item.title.id}
-                variant="queue"
-                rating={item.title.rating}
-                review={item.title.review}
-                collapsed
-              />
-            ) : null}
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => handleRemove(item.titleId)}
-              className="w-full"
-            >
-              Quitar de la lista
-            </Button>
-          </li>
-        ))}
-      </ul>
+      {virtualize ? (
+        <WindowVirtualGrid
+          items={visible}
+          columns={columns}
+          estimateRowHeight={LIST_GRID_ROW_ESTIMATE}
+          className={CATALOG_POSTER_GRID_CLASS}
+          itemKey={(item) => item.titleId}
+          renderItem={renderCell}
+        />
+      ) : (
+        <ul className={CATALOG_POSTER_GRID_CLASS}>
+          {visible.map((item, index) => renderCell(item, index))}
+        </ul>
+      )}
       {error ? (
         <p role="alert" className="text-sm text-danger">
           {error}

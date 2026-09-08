@@ -6,13 +6,11 @@ import { searchTmdbDiscover } from "@/app/actions/metadata";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/Button";
-import { SharedPoster } from "@/components/SharedPoster";
-import { PosterImage } from "@/components/PosterImage";
 import { SearchPreviewSheet, type SearchAddDestination } from "@/components/SearchPreviewSheet";
+import { TmdbSearchResults } from "@/components/TmdbSearchResults";
 import type { TitleKind } from "@/db";
 import { KIND_CHIPS, titleMatchesKind } from "@/lib/catalog-filters";
 import { cn } from "@/lib/cn";
-import { TITLE_KIND_LABEL } from "@/lib/labels";
 import { TMDB_UNAVAILABLE_COPY, type TmdbCatalogResult } from "@/lib/tmdb";
 import { showToast } from "@/lib/toast";
 import type { UserTmdbEntry } from "@/lib/queries";
@@ -23,29 +21,12 @@ import {
   readSearchCache,
   writeSearchCache,
 } from "@/lib/search-session";
+import {
+  lookupTmdbCatalogEntry,
+  tmdbCatalogKey,
+  toTmdbCatalogMap,
+} from "@/lib/tmdb-search-catalog";
 import { fieldClass, focusRing } from "@/lib/ui";
-
-type CatalogEntry = {
-  titleId: string;
-  inWatchlist: boolean;
-  watched: boolean;
-};
-
-const catalogKey = (tmdbId: number, kind: TitleKind) => `${kind}:${tmdbId}`;
-
-const toCatalogMap = (entries: UserTmdbEntry[]) => {
-  const next = new Map<string, CatalogEntry>();
-  for (const entry of entries) {
-    const mapped = {
-      titleId: entry.titleId,
-      inWatchlist: entry.inWatchlist,
-      watched: entry.watched,
-    };
-    next.set(catalogKey(entry.tmdbId, entry.kind), mapped);
-    next.set(String(entry.tmdbId), mapped);
-  }
-  return next;
-};
 
 type TmdbSearchAddProps = {
   configured: { tmdb: boolean; omdb: boolean };
@@ -69,7 +50,7 @@ export const TmdbSearchAdd = ({
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<TmdbCatalogResult[]>(initialResults);
-  const [catalog, setCatalog] = useState(() => toCatalogMap(existing));
+  const [catalog, setCatalog] = useState(() => toTmdbCatalogMap(existing));
   const [error, setError] = useState<string | null>(initialError);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<
@@ -89,11 +70,7 @@ export const TmdbSearchAdd = ({
     if (!preview) {
       return null;
     }
-    return (
-      catalog.get(catalogKey(preview.tmdbId, preview.kind)) ??
-      catalog.get(String(preview.tmdbId)) ??
-      null
-    );
+    return lookupTmdbCatalogEntry(catalog, preview.tmdbId, preview.kind);
   }, [catalog, preview]);
 
   const syncSearchUrl = useCallback(
@@ -210,7 +187,7 @@ export const TmdbSearchAdd = ({
     setCatalog((current) => {
       const nextMap = new Map(current);
       const entry = { titleId, inWatchlist: next.inWatchlist, watched: next.watched };
-      nextMap.set(catalogKey(result.tmdbId, result.kind), entry);
+      nextMap.set(tmdbCatalogKey(result.tmdbId, result.kind), entry);
       nextMap.set(String(result.tmdbId), entry);
       return nextMap;
     });
@@ -219,17 +196,16 @@ export const TmdbSearchAdd = ({
   const removeLocal = (result: TmdbCatalogResult) => {
     setCatalog((current) => {
       const next = new Map(current);
-      next.delete(catalogKey(result.tmdbId, result.kind));
+      next.delete(tmdbCatalogKey(result.tmdbId, result.kind));
       next.delete(String(result.tmdbId));
       return next;
     });
   };
 
   const handleAdd = (result: TmdbCatalogResult, destination: SearchAddDestination) => {
-    const key = catalogKey(result.tmdbId, result.kind);
+    const key = tmdbCatalogKey(result.tmdbId, result.kind);
     const optimisticId = `pending:${key}`;
-    const previous =
-      catalog.get(key) ?? catalog.get(String(result.tmdbId)) ?? null;
+    const previous = lookupTmdbCatalogEntry(catalog, result.tmdbId, result.kind);
     setError(null);
     setPendingKey(key);
     setPendingAction(destination);
@@ -276,9 +252,7 @@ export const TmdbSearchAdd = ({
   };
 
   const handleOpen = (result: TmdbCatalogResult) => {
-    const local =
-      catalog.get(catalogKey(result.tmdbId, result.kind)) ??
-      catalog.get(String(result.tmdbId));
+    const local = lookupTmdbCatalogEntry(catalog, result.tmdbId, result.kind);
     if (local) {
       if (local.titleId.startsWith("pending:")) {
         return;
@@ -288,7 +262,7 @@ export const TmdbSearchAdd = ({
     }
 
     startAdd(async () => {
-      setPendingKey(catalogKey(result.tmdbId, result.kind));
+      setPendingKey(tmdbCatalogKey(result.tmdbId, result.kind));
       setPendingAction("open");
       const outcome = await addTitleFromTmdb({
         tmdbId: result.tmdbId,
@@ -394,81 +368,14 @@ export const TmdbSearchAdd = ({
         </p>
       ) : null}
 
-      {visibleResults.length > 0 ? (
-        <section className="space-y-3">
-          <header className="flex items-end justify-between">
-            <h2 className="text-lg font-semibold text-paper">Resultados</h2>
-            <p className="text-sm text-mist">
-              {isSearching ? "Buscando…" : visibleResults.length}
-            </p>
-          </header>
-          <ul className="space-y-2">
-            {visibleResults.map((result, index) => {
-              const key = catalogKey(result.tmdbId, result.kind);
-              const local = catalog.get(key) ?? catalog.get(String(result.tmdbId));
-              return (
-                <li
-                  key={key}
-                  className="stagger-in"
-                  style={{ "--stagger": index } as React.CSSProperties}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setPreview(result)}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-2xl border border-line bg-surface px-3 py-2.5 text-left hover:border-accent/40",
-                      focusRing,
-                    )}
-                  >
-                    <span className="w-12 shrink-0 overflow-hidden rounded-lg">
-                      {local?.titleId ? (
-                        <SharedPoster titleId={local.titleId}>
-                          <PosterImage
-                            name={result.name}
-                            posterPath={result.posterPath}
-                            sizes="48px"
-                            className="rounded-lg"
-                          />
-                        </SharedPoster>
-                      ) : (
-                        <PosterImage
-                          name={result.name}
-                          posterPath={result.posterPath}
-                          sizes="48px"
-                          className="rounded-lg"
-                        />
-                      )}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium text-paper">{result.name}</span>
-                      <span className="block text-sm text-fog">
-                        {result.year ? `${result.year} · ` : ""}
-                        {TITLE_KIND_LABEL[result.kind]}
-                      </span>
-                      {local ? (
-                        <span className="mt-1 inline-flex rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
-                          Ya en Filmia
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="text-mist" aria-hidden="true">
-                      ›
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ) : hasSearched && !error && !isSearching ? (
-        <EmptyState
-          variant="buscar"
-          title="Nada con esa búsqueda"
-          description="Prueba otro título, o cambia entre Películas y Series."
-          actionHref="/watchlist"
-          actionLabel="Ir a Quiero ver"
-        />
-      ) : null}
+      <TmdbSearchResults
+        results={visibleResults}
+        catalog={catalog}
+        isSearching={isSearching}
+        hasSearched={hasSearched}
+        error={error}
+        onPreview={setPreview}
+      />
 
       {!hasSearched ? (
         <EmptyState
@@ -482,7 +389,7 @@ export const TmdbSearchAdd = ({
         <SearchPreviewSheet
           result={preview}
           local={previewLocal}
-          pending={isAdding && pendingKey === catalogKey(preview.tmdbId, preview.kind)}
+          pending={isAdding && pendingKey === tmdbCatalogKey(preview.tmdbId, preview.kind)}
           pendingAction={pendingAction}
           onClose={() => setPreview(null)}
           onAdd={(destination) => handleAdd(preview, destination)}

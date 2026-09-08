@@ -1,5 +1,15 @@
 const pathOnly = (pathname: string) => pathname.split("?")[0] ?? pathname;
 
+export const isAuthChromePath = (pathname: string) => {
+  const path = pathOnly(pathname);
+  return (
+    path === "/login" ||
+    path === "/registro" ||
+    path.startsWith("/login/") ||
+    path.startsWith("/registro/")
+  );
+};
+
 export const isCurrentPath = (href: string, pathname: string) => {
   const path = pathOnly(pathname);
   if (href === "/") {

@@ -1,5 +1,7 @@
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { TitleKind } from "@/db";
+import { METADATA_REVALIDATE_SECONDS } from "@/lib/rendering";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
@@ -132,41 +134,71 @@ const tmdbFetch = async <T>(path: string, params: Record<string, string> = {}) =
     url.searchParams.set(key, value);
   }
 
-  const headers: Record<string, string> = { Accept: "application/json" };
-  if (isTmdbAccessToken(apiKey)) {
-    headers.Authorization = `Bearer ${apiKey}`;
-  } else {
-    url.searchParams.set("api_key", apiKey);
-  }
-
-  let response: Response;
   try {
-    response = await fetch(url, { next: { revalidate: 86400 }, headers });
-  } catch {
+    return (await loadCachedTmdbJson(path, url.search)) as T;
+  } catch (error) {
+    if (error instanceof TmdbRequestError) {
+      throw error;
+    }
     throw new TmdbRequestError(
       "network",
       "No se pudo conectar con TMDB. Revisa tu red.",
     );
   }
-
-  if (response.status === 429) {
-    throw new TmdbRequestError(
-      "rate_limit",
-      "TMDB está limitando las peticiones. Espera un momento e inténtalo de nuevo.",
-      429,
-    );
-  }
-
-  if (!response.ok) {
-    throw new TmdbRequestError(
-      "http",
-      `TMDB respondió ${response.status}.`,
-      response.status,
-    );
-  }
-
-  return response.json() as Promise<T>;
 };
+
+const loadCachedTmdbJson = unstable_cache(
+  async (path: string, search: string): Promise<unknown> => {
+    const apiKey = getTmdbApiKey();
+    if (!apiKey) {
+      throw new TmdbRequestError(
+        "missing_key",
+        "Falta TMDB_API_KEY. Agrégala en el entorno para buscar títulos.",
+      );
+    }
+
+    const url = new URL(`${TMDB_BASE}${path}${search}`);
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (isTmdbAccessToken(apiKey)) {
+      headers.Authorization = `Bearer ${apiKey}`;
+    } else {
+      url.searchParams.set("api_key", apiKey);
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        next: { revalidate: METADATA_REVALIDATE_SECONDS },
+        headers,
+      });
+    } catch {
+      throw new TmdbRequestError(
+        "network",
+        "No se pudo conectar con TMDB. Revisa tu red.",
+      );
+    }
+
+    if (response.status === 429) {
+      throw new TmdbRequestError(
+        "rate_limit",
+        "TMDB está limitando las peticiones. Espera un momento e inténtalo de nuevo.",
+        429,
+      );
+    }
+
+    if (!response.ok) {
+      throw new TmdbRequestError(
+        "http",
+        `TMDB respondió ${response.status}.`,
+        response.status,
+      );
+    }
+
+    return response.json() as Promise<unknown>;
+  },
+  ["tmdb-json"],
+  { revalidate: METADATA_REVALIDATE_SECONDS },
+);
 
 const parseYear = (value: string | null | undefined) => {
   if (!value) {
