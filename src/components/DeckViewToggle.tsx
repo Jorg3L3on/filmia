@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
+import { DIARY_VIEW_MODES, type DeckViewMode } from "@/lib/diary-view";
 import { focusRing } from "@/lib/ui";
 
-export type DeckViewMode = "deck" | "grid" | "calendar";
-
-export const DIARY_VIEW_MODES: DeckViewMode[] = ["calendar", "deck", "grid"];
+export type { DeckViewMode };
+export { DIARY_VIEW_MODES };
 
 type DeckViewToggleProps = {
   mode: DeckViewMode;

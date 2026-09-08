@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { DayLogSheet } from "@/components/DayLogSheet";
-import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
 import { EmptyState } from "@/components/EmptyState";
 import { SharedPoster } from "@/components/SharedPoster";
 import { PosterImage } from "@/components/PosterImage";
@@ -11,20 +10,17 @@ import type { DiaryCalendarTitle } from "@/components/diary-types";
 import { cn } from "@/lib/cn";
 import {
   WEEKDAY_LABELS_SHORT,
-  formatMonthHeading,
   formatMonthName,
   formatWatchedDate,
   getMonthGrid,
   groupTitlesByWatchedDay,
   isoDateToUtcNoon,
-  shiftMonthParam,
   titlesInMonth,
   todayDateInput,
 } from "@/lib/dates";
 import { dayCellOpensSheet, extraDayBadge } from "@/lib/diary-day";
 import { staggerStyle, useLongPress } from "@/lib/motion";
 import type { CatalogKindFilter } from "@/lib/catalog-href";
-import { catalogHref } from "@/lib/catalog-href";
 import type { SeriesStatusFilter } from "@/lib/series";
 import type { CatalogSort } from "@/lib/tags";
 import { focusRing } from "@/lib/ui";
@@ -46,39 +42,6 @@ type DiaryCalendarProps = {
   hasAnyTitles?: boolean;
   clearHref: string;
 };
-
-const calendarHref = ({
-  month,
-  day,
-  tags,
-  minePlatforms,
-  seriesStatus,
-  kind,
-  platforms,
-  sort,
-}: {
-  month: string;
-  day?: string | null;
-  tags?: string[];
-  minePlatforms?: boolean;
-  seriesStatus?: SeriesStatusFilter;
-  kind?: CatalogKindFilter;
-  platforms?: Platform[];
-  sort?: CatalogSort | null;
-}) =>
-  catalogHref("/", {
-    view: "calendar",
-    defaultView: "calendar",
-    mode: "historial",
-    month,
-    day,
-    tags,
-    minePlatforms,
-    seriesStatus,
-    kind,
-    platforms,
-    sort,
-  });
 
 const DayCellPosters = ({ titles }: { titles: DiaryCalendarTitle[] }) => {
   const shown = titles.slice(0, 2);
@@ -118,12 +81,6 @@ export const DiaryCalendar = ({
   titles,
   month,
   selectedDay,
-  tags = [],
-  minePlatforms = false,
-  seriesStatus,
-  kind,
-  platforms,
-  sort,
   hasActiveFilters = false,
   hasAnyTitles,
   clearHref,
@@ -133,27 +90,7 @@ export const DiaryCalendar = ({
   const byDay = groupTitlesByWatchedDay(titles);
   const monthTitles = titlesInMonth(titles, month);
   const diaryHasTitles = hasAnyTitles ?? titles.length > 0;
-  const monthHeading = formatMonthHeading(month);
   const monthName = formatMonthName(month);
-  const prevMonth = shiftMonthParam(month, -1);
-  const nextMonth = shiftMonthParam(month, 1);
-  const query = { tags, minePlatforms, seriesStatus, kind, platforms, sort };
-  const hrefFor = (mode: DeckViewMode) =>
-    catalogHref("/", {
-      tags,
-      view: mode,
-      defaultView: "calendar",
-      mode: "historial",
-      minePlatforms,
-      seriesStatus,
-      month,
-      day: mode === "calendar" ? selectedDay : undefined,
-      kind,
-      platforms,
-      sort,
-    });
-  const monthCountLabel =
-    monthTitles.length === 1 ? "1 entrada" : `${monthTitles.length} entradas`;
   const [sheetDay, setSheetDay] = useState<string | null>(null);
   const sheetTitles = sheetDay ? (byDay.get(sheetDay) ?? []) : [];
 
@@ -161,50 +98,9 @@ export const DiaryCalendar = ({
     <div className="space-y-5 px-0">
       <section
         className="overflow-hidden rounded-2xl bg-transparent"
-        aria-label={`Calendario de ${monthHeading}`}
+        aria-label={`Calendario de ${monthName}`}
       >
-        <header className="flex items-center justify-between gap-2 px-0 py-1">
-          <Link
-            href={calendarHref({ ...query, month: prevMonth })}
-            aria-label={`Mes anterior, ${formatMonthHeading(prevMonth)}`}
-            className={cn(
-              "inline-flex h-10 w-10 items-center justify-center rounded-full text-fog hover:bg-well hover:text-paper",
-              focusRing,
-            )}
-          >
-            <ChevronIcon direction="prev" />
-          </Link>
-          <div className="min-w-0 text-center">
-            <h2 className="font-serif text-2xl tracking-tight text-paper first-letter:uppercase sm:text-[1.85rem]">
-              {monthHeading}
-            </h2>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-mist">
-              {monthCountLabel} este mes
-            </p>
-          </div>
-          <div className="flex items-center gap-1">
-            {hrefFor ? (
-              <DeckViewToggle
-                mode="calendar"
-                hrefFor={hrefFor}
-                modes={["deck", "grid"]}
-                variant="icons"
-              />
-            ) : null}
-            <Link
-              href={calendarHref({ ...query, month: nextMonth })}
-              aria-label={`Mes siguiente, ${formatMonthHeading(nextMonth)}`}
-              className={cn(
-                "inline-flex h-10 w-10 items-center justify-center rounded-full text-fog hover:bg-well hover:text-paper",
-                focusRing,
-              )}
-            >
-              <ChevronIcon direction="next" />
-            </Link>
-          </div>
-        </header>
-
-        <div className="mt-4 grid grid-cols-7 gap-1.5 px-0">
+        <div className="grid grid-cols-7 gap-1.5 px-0">
           {WEEKDAY_LABELS_SHORT.map((label) => (
             <p
               key={label}
@@ -247,7 +143,7 @@ export const DiaryCalendar = ({
                 ? "Prueba otra combinación o quita filtros."
                 : diaryHasTitles
                   ? `Registra tu primera de ${monthName}.`
-                  : "Registra lo que viste y llenará el calendario."
+                  : "Registra lo que viste y aparecerá en el mazo."
             }
             actionHref={
               hasActiveFilters
@@ -367,22 +263,5 @@ const CalendarDayCell = ({
     </Link>
   );
 };
-
-const ChevronIcon = ({ direction }: { direction: "prev" | "next" }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.75}
-    className="h-5 w-5"
-    aria-hidden="true"
-  >
-    {direction === "prev" ? (
-      <path strokeLinecap="round" strokeLinejoin="round" d="M14.5 6 8.5 12l6 6" />
-    ) : (
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 6 15.5 12l-6 6" />
-    )}
-  </svg>
-);
 
 export { latestMonthWithEntries as currentAdjacentWithEntries } from "@/lib/dates";

@@ -21,9 +21,14 @@ export type AddableListTitle = {
 type AddTitleToListCtaProps = {
   listId: string;
   titles: AddableListTitle[];
+  compact?: boolean;
 };
 
-export const AddTitleToListCta = ({ listId, titles }: AddTitleToListCtaProps) => {
+export const AddTitleToListCta = ({
+  listId,
+  titles,
+  compact = false,
+}: AddTitleToListCtaProps) => {
   const titleId = useId();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -88,17 +93,17 @@ export const AddTitleToListCta = ({ listId, titles }: AddTitleToListCtaProps) =>
     : "/buscar";
 
   return (
-    <div className="flex justify-center">
+    <div className={compact ? undefined : "flex justify-center"}>
       <Button
         type="button"
-        size="lg"
+        size={compact ? "md" : "lg"}
         onClick={handleOpen}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label="Agregar título a la lista"
-        className="min-w-[min(100%,20rem)]"
+        className={compact ? undefined : "min-w-[min(100%,20rem)]"}
       >
-        + Agregar título
+        {compact ? "Agregar" : "+ Agregar título"}
       </Button>
 
       <Sheet

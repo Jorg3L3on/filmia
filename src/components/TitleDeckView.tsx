@@ -85,7 +85,7 @@ export const TitleDeckView = ({
           footer={footer}
         />
       ) : mode === "calendar" ? null : (
-        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {titles.map((title, index) => (
             <li
               key={title.id}

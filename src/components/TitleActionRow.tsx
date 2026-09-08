@@ -2,7 +2,8 @@
 
 import { useState, type ReactNode } from "react";
 import { setTitleRating } from "@/app/actions/titles";
-import { clearTitleWatched, markTitleWatched } from "@/app/actions/watchlist";
+import { clearTitleWatched } from "@/app/actions/watchlist";
+import { MarkWatchedSheet } from "@/components/MarkWatchedSheet";
 import { RatingSheet } from "@/components/RatingSheet";
 import { cn } from "@/lib/cn";
 import { formatStarScore } from "@/lib/labels";
@@ -13,6 +14,7 @@ import { focusRing } from "@/lib/ui";
 
 type TitleActionRowProps = {
   titleId: string;
+  titleName: string;
   watched: boolean;
   inWatchlist: boolean;
   inCustomList?: boolean;
@@ -39,6 +41,7 @@ const sameActionState = (left: ActionState, right: ActionState) =>
 
 export const TitleActionRow = ({
   titleId,
+  titleName,
   watched,
   inWatchlist,
   inCustomList = false,
@@ -49,6 +52,8 @@ export const TitleActionRow = ({
 }: TitleActionRowProps) => {
   const [panel, setPanel] = useState<Panel>(null);
   const [ratingOpen, setRatingOpen] = useState(false);
+  const [seenOpen, setSeenOpen] = useState(false);
+  const [seenOptimistic, setSeenOptimistic] = useState(false);
   const [pendingAction, setPendingAction] = useState<"watched" | "rating" | null>(
     null,
   );
@@ -64,31 +69,40 @@ export const TitleActionRow = ({
   const watchedSpring = useSpringFeedback();
   const ratingSpring = useSpringFeedback();
 
+  const displayedWatched = optimistic.watched || seenOptimistic;
+
   const handleToggleWatched = () => {
-    const nextWatched = !optimistic.watched;
+    if (!displayedWatched) {
+      setSeenOpen(true);
+      return;
+    }
+
+    setSeenOptimistic(false);
     setPendingAction("watched");
     watchedSpring.trigger();
-    showToast({
-      title: nextWatched ? "Marcada como vista" : "Quitada del diario",
-    });
+    showToast({ title: "Quitada del diario" });
     run(
       {
         ...optimistic,
-        watched: nextWatched,
-        inWatchlist: nextWatched ? false : optimistic.inWatchlist,
+        watched: false,
       },
       async () => {
         try {
-          if (nextWatched) {
-            await markTitleWatched(titleId);
-          } else {
-            await clearTitleWatched(titleId);
-          }
+          await clearTitleWatched(titleId);
         } finally {
           setPendingAction(null);
         }
       },
     );
+  };
+
+  const handleSeenSaved = () => {
+    setSeenOptimistic(true);
+    watchedSpring.trigger();
+  };
+
+  const handleSeenError = () => {
+    setSeenOptimistic(false);
   };
 
   const handleSaveRating = (next: { rating: number | null; review: string }) => {
@@ -131,19 +145,19 @@ export const TitleActionRow = ({
           type="button"
           onClick={handleToggleWatched}
           disabled={pendingAction === "watched"}
-          aria-pressed={optimistic.watched}
-          aria-label={optimistic.watched ? "Quitar de visto" : "Marcar como visto"}
+          aria-pressed={displayedWatched}
+          aria-label={displayedWatched ? "Quitar de visto" : "Marcar como visto"}
           className={cn(
             "spring-fill flex w-full flex-col items-center gap-1 rounded-2xl border px-1 py-2.5 text-[10px] uppercase tracking-[0.12em]",
             focusRing,
             watchedSpring.className,
-            optimistic.watched
+            displayedWatched
               ? "border-success/40 bg-success-well text-success"
               : "border-chrome bg-well text-fog hover:text-paper",
             pendingAction === "watched" && "opacity-80",
           )}
         >
-          <WatchedIcon filled={optimistic.watched} />
+          <WatchedIcon filled={displayedWatched} />
           Visto
         </button>
 
@@ -203,6 +217,17 @@ export const TitleActionRow = ({
           {error}
         </p>
       ) : null}
+
+      <MarkWatchedSheet
+        open={seenOpen}
+        titleId={titleId}
+        titleName={titleName}
+        rating={optimistic.rating}
+        review={optimistic.review}
+        onClose={() => setSeenOpen(false)}
+        onSaved={handleSeenSaved}
+        onError={handleSeenError}
+      />
 
       <RatingSheet
         open={ratingOpen}

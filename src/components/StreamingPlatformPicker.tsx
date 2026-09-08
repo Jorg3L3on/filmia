@@ -1,11 +1,10 @@
 "use client";
 
 import { updateStreamingPlatforms } from "@/app/actions/profile";
-import { Button } from "@/components/Button";
+import { PlatformLogo } from "@/components/PlatformLogo";
 import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
 import { PLATFORM_SERVICE_LABEL, PLATFORMS } from "@/lib/labels";
-import { showToast } from "@/lib/toast";
 import { sameIdList, useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { focusRing, wellClass } from "@/lib/ui";
 
@@ -32,27 +31,15 @@ export const StreamingPlatformPicker = ({
     });
   };
 
-  const handleSave = () => {
-    const formData = new FormData();
-    value.forEach((item) => formData.append("platforms", item));
-    run(value, async () => {
-      await updateStreamingPlatforms(formData);
-      showToast({
-        title: "Plataformas guardadas",
-        description: "Tu información se actualizó correctamente.",
-      });
-    });
-  };
-
   return (
-    <div className={`${wellClass} space-y-5 p-5`}>
+    <div className={`${wellClass} space-y-4 p-5`}>
       <header className="space-y-1">
         <div className="flex items-center gap-2">
           <TvIcon />
           <h2 className="text-lg font-semibold text-paper">Plataformas MX</h2>
         </div>
         <p className="text-sm text-fog">
-          Selecciona tus servicios de streaming disponibles en México.
+          Toca para activar. Se guarda al instante.
         </p>
       </header>
 
@@ -67,7 +54,7 @@ export const StreamingPlatformPicker = ({
 
       <fieldset>
         <legend className="sr-only">Plataformas de streaming en México</legend>
-        <ul className="flex flex-wrap gap-2">
+        <ul className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
           {PLATFORMS.map((platform) => {
             const isSelected = value.includes(platform);
             return (
@@ -83,34 +70,23 @@ export const StreamingPlatformPicker = ({
                       : `Añadir ${PLATFORM_SERVICE_LABEL[platform]}`
                   }
                   className={cn(
-                    "inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm transition",
+                    "flex w-full cursor-pointer items-center gap-2 rounded-xl border px-2.5 py-2 text-left text-sm transition",
                     focusRing,
                     isSelected
-                      ? "border-accent bg-accent text-ink"
-                      : "border-chrome bg-well text-paper",
+                      ? "border-accent bg-accent/15 text-paper"
+                      : "border-chrome bg-well text-fog hover:text-paper",
                   )}
                 >
-                  <span className="text-xs font-bold" aria-hidden>
-                    {isSelected ? "✓" : "+"}
+                  <PlatformLogo platform={platform} size={20} />
+                  <span className="min-w-0 truncate">
+                    {PLATFORM_SERVICE_LABEL[platform]}
                   </span>
-                  {PLATFORM_SERVICE_LABEL[platform]}
                 </button>
               </li>
             );
           })}
         </ul>
       </fieldset>
-
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          onClick={handleSave}
-          pending={isPending}
-          pendingLabel="Guardando…"
-        >
-          Guardar cambios
-        </Button>
-      </div>
     </div>
   );
 };

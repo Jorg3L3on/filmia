@@ -22,6 +22,10 @@ const filtersSheet = read("src/components/CatalogMoreFilters.tsx");
 const toast = read("src/components/SuccessToast.tsx");
 
 assert(
+  actionRow.includes("MarkWatchedSheet"),
+  "Ficha mark-seen uses the deck eye sheet",
+);
+assert(
   !actionRow.includes("Quiero ver"),
   "TitleActionRow must not duplicate Quiero ver (primary lives on TitleSaveCta)",
 );

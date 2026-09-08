@@ -40,4 +40,14 @@ describe("tmdb user copy", () => {
     assert.equal(TMDB_UNAVAILABLE_COPY.includes("TMDB_API_KEY"), false);
     assert.equal(TMDB_UNAVAILABLE_COPY.includes(".env"), false);
   });
+
+  it("maps unauthorized TMDB responses to the same friendly copy", () => {
+    const unauthorized = new TmdbRequestError("http", "TMDB respondió 401.", 401);
+    assert.equal(tmdbErrorMessage(unauthorized), TMDB_UNAVAILABLE_COPY);
+    assert.equal(tmdbErrorMessage(unauthorized).includes("401"), false);
+    assert.equal(
+      tmdbErrorMessage(new Error("Falta TMDB_API_KEY en .env")),
+      TMDB_UNAVAILABLE_COPY,
+    );
+  });
 });

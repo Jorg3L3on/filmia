@@ -42,7 +42,7 @@ export const CatalogMoreFilters = ({
           activeCount > 0 ? `Filtros, ${activeCount} activos` : "Filtros"
         }
         className={cn(
-          "inline-flex shrink-0 items-center gap-2 rounded-full bg-well px-3.5 py-2 text-sm font-medium text-paper",
+          "inline-flex shrink-0 items-center gap-1.5 rounded-full bg-well px-3 py-1.5 text-xs font-medium text-paper",
           focusRing,
           activeCount > 0 && "ring-1 ring-accent/50",
         )}

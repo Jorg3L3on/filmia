@@ -81,9 +81,24 @@ export class TmdbRequestError extends Error {
 export const TMDB_UNAVAILABLE_COPY =
   "No se puede buscar títulos ahora. Tu diario y tus listas siguen disponibles.";
 
+const INFRA_LEAK = /TMDB_API_KEY|\.env\b|api[_-]?key/i;
+
+const hideInfraDump = (message: string) =>
+  INFRA_LEAK.test(message) ? TMDB_UNAVAILABLE_COPY : message;
+
 export const tmdbErrorMessage = (error: unknown) => {
   if (error instanceof TmdbRequestError) {
-    return error.code === "missing_key" ? TMDB_UNAVAILABLE_COPY : error.message;
+    if (
+      error.code === "missing_key" ||
+      error.status === 401 ||
+      error.status === 403
+    ) {
+      return TMDB_UNAVAILABLE_COPY;
+    }
+    if (error.code === "http") {
+      return "No se pudo completar la búsqueda. Inténtalo de nuevo.";
+    }
+    return hideInfraDump(error.message);
   }
 
   if (error instanceof TypeError) {
@@ -91,7 +106,7 @@ export const tmdbErrorMessage = (error: unknown) => {
   }
 
   if (error instanceof Error && error.message.trim()) {
-    return error.message;
+    return hideInfraDump(error.message);
   }
 
   return "No se pudo completar la petición a TMDB.";

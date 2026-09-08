@@ -38,9 +38,7 @@ const TagsGrid = async () => {
         <EmptyState
           variant="listas"
           title="Todavía no hay etiquetas"
-          description="Crea la primera o espera a que Filmia siembre las sugeridas al entrar."
-          actionHref="/buscar"
-          actionLabel="Ir a Buscar"
+          description="Escribe un nombre arriba y pulsa Crear. Luego asígnala desde una ficha."
         />
       ) : (
         <ul className="grid grid-cols-2 gap-5 sm:gap-6">

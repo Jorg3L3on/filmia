@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { CatalogFilters } from "@/components/CatalogFilters";
 import { EmptyState } from "@/components/EmptyState";
 import {
@@ -22,8 +21,6 @@ import { scheduleMissingTitleOverviews } from "@/lib/title-overview-schedule";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
-import { cn } from "@/lib/cn";
-import { focusRing } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -40,23 +37,7 @@ type WatchlistSearchParams = {
   seriesStatus?: string | string[];
 };
 
-const WatchlistHeader = () => (
-  <PageHeader
-    title="Quiero ver"
-    actions={
-      <Link
-        href="/buscar"
-        aria-label="Buscar para agregar"
-        className={cn(
-          "inline-flex h-10 w-10 items-center justify-center rounded-full border border-chrome text-fog hover:text-paper",
-          focusRing,
-        )}
-      >
-        <SearchIcon />
-      </Link>
-    }
-  />
-);
+const WatchlistHeader = () => <PageHeader title="Quiero ver" />;
 
 export default function WatchlistPage({
   searchParams,
@@ -175,16 +156,3 @@ const WatchlistBody = async ({
   );
 };
 
-const SearchIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    className="h-5 w-5"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.75}
-    aria-hidden="true"
-  >
-    <circle cx="11" cy="11" r="5.5" />
-    <path strokeLinecap="round" d="m15.5 15.5 4 4" />
-  </svg>
-);

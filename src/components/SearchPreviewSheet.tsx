@@ -1,6 +1,8 @@
 "use client";
 
 import Image from "next/image";
+import { Button } from "@/components/Button";
+import { PosterImage } from "@/components/PosterImage";
 import { Sheet, SheetHandle } from "@/components/Sheet";
 import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
@@ -34,14 +36,11 @@ export const SearchPreviewSheet = ({
   onAdd,
   onOpen,
 }: SearchPreviewSheetProps) => {
-  const hero =
+  const backdrop =
     tmdbBackdropUrl(result.backdropPath) ?? tmdbPosterUrl(result.posterPath, "w500");
-  const meta = [
-    result.year ? String(result.year) : null,
-    TITLE_KIND_LABEL[result.kind],
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const poster = tmdbPosterUrl(result.posterPath, "w185");
+  const yearLabel = result.year ? String(result.year) : null;
+  const kindLabel = TITLE_KIND_LABEL[result.kind];
 
   return (
     <Sheet
@@ -57,39 +56,59 @@ export const SearchPreviewSheet = ({
       <div className="flex flex-col items-center px-5 pt-3">
         <SheetHandle />
       </div>
-      <div className="relative aspect-[16/10] bg-well">
-        {hero ? (
+      <div className="relative aspect-[16/9] overflow-hidden bg-well">
+        {backdrop ? (
           <Image
-            src={hero}
+            src={backdrop}
             alt=""
             fill
             sizes="512px"
             className="object-cover"
-            unoptimized={hero.includes("image.tmdb.org")}
+            unoptimized={backdrop.includes("image.tmdb.org")}
           />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/40 to-transparent" />
-        <button
+        <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/55 to-canvas/20" />
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={onClose}
-          className={cn(
-            "absolute top-3 right-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-canvas/70 text-paper",
-            focusRing,
-          )}
+          className="absolute top-3 right-3 z-10 h-9 w-9 border-0 bg-canvas/70 px-0 text-paper hover:bg-canvas/90"
           aria-label="Cerrar"
         >
           ×
-        </button>
-        <div className="absolute inset-x-0 bottom-0 space-y-2 px-5 pb-4">
-          <h2 className="font-serif text-3xl text-paper">{result.name}</h2>
-          <p className="flex flex-wrap items-center gap-2 text-sm text-fog">
-            {meta}
-            {local ? (
-              <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">
-                Ya en Filmia
+        </Button>
+        <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 px-5 pb-4">
+          {poster ? (
+            <span className="w-[4.5rem] shrink-0 overflow-hidden rounded-xl shadow-[0_12px_24px_rgba(0,0,0,0.45)] ring-1 ring-white/10 sm:w-20">
+              <PosterImage
+                name={result.name}
+                posterPath={result.posterPath}
+                sizes="80px"
+                className="rounded-xl"
+              />
+            </span>
+          ) : null}
+          <div className="min-w-0 flex-1 space-y-1.5 pb-0.5">
+            <h2 className="font-serif text-2xl leading-tight text-paper sm:text-3xl">
+              {result.name}
+            </h2>
+            <p className="flex flex-wrap items-center gap-1.5 text-sm text-fog">
+              {yearLabel ? (
+                <span className="rounded-full bg-canvas/70 px-2 py-0.5 text-[11px] font-medium text-paper">
+                  {yearLabel}
+                </span>
+              ) : null}
+              <span className="rounded-full bg-canvas/70 px-2 py-0.5 text-[11px] font-medium text-paper">
+                {kindLabel}
               </span>
-            ) : null}
-          </p>
+              {local ? (
+                <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">
+                  Ya en Filmia
+                </span>
+              ) : null}
+            </p>
+          </div>
         </div>
       </div>
 

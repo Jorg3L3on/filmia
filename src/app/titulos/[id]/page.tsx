@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { deleteTitle } from "@/app/actions/titles";
 import { Button } from "@/components/Button";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
@@ -35,11 +36,19 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default function TitleDetailPage({
-  params,
-}: {
+type TitlePageProps = {
   params: Promise<{ id: string }>;
-}) {
+};
+
+export const generateMetadata = async ({
+  params,
+}: TitlePageProps): Promise<Metadata> => {
+  const { id } = await params;
+  const title = await getTitleById(id);
+  return { title: title?.name ?? "Título" };
+};
+
+export default function TitleDetailPage({ params }: TitlePageProps) {
   return (
     <Suspense fallback={<TitleLoading />}>
       <TitleDetail params={params} />

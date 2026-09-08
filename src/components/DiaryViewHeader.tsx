@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
+import {
+  DeckViewToggle,
+  type DeckViewMode,
+} from "@/components/DeckViewToggle";
+import { DIARY_VIEW_MODES, HISTORIAL_DEFAULT_VIEW } from "@/lib/diary-view";
 import { cn } from "@/lib/cn";
 import { formatMonthHeading, shiftMonthParam } from "@/lib/dates";
 import type { CatalogKindFilter } from "@/lib/catalog-href";
@@ -13,6 +17,7 @@ type DiaryViewHeaderProps = {
   month: string;
   view: DeckViewMode;
   hrefFor: (mode: DeckViewMode) => string;
+  countLabel?: string;
   tags?: string[];
   minePlatforms?: boolean;
   seriesStatus?: SeriesStatusFilter;
@@ -25,6 +30,7 @@ export const DiaryViewHeader = ({
   month,
   view,
   hrefFor,
+  countLabel,
   tags = [],
   minePlatforms = false,
   seriesStatus,
@@ -36,7 +42,7 @@ export const DiaryViewHeader = ({
     tags,
     minePlatforms,
     seriesStatus,
-    defaultView: "calendar" as const,
+    defaultView: HISTORIAL_DEFAULT_VIEW,
     mode: "historial",
     kind,
     platforms,
@@ -61,12 +67,17 @@ export const DiaryViewHeader = ({
         <h1 className="font-serif text-2xl tracking-tight text-paper first-letter:uppercase sm:text-[1.85rem]">
           {formatMonthHeading(month)}
         </h1>
+        {countLabel ? (
+          <p className="text-[11px] uppercase tracking-[0.18em] text-mist">
+            {countLabel} este mes
+          </p>
+        ) : null}
       </div>
       <div className="flex items-center gap-1">
         <DeckViewToggle
           mode={view}
           hrefFor={hrefFor}
-          modes={["calendar", "deck", "grid"]}
+          modes={DIARY_VIEW_MODES}
           variant="icons"
         />
         <Link

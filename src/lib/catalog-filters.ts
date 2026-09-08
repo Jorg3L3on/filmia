@@ -11,7 +11,7 @@ export const KIND_CHIPS = [
 
 export const CATALOG_ORDER_OPTIONS = [
   { id: "recent" as const, label: "Recientes", icon: "clock" },
-  { id: "rating" as const, label: "Rating", icon: "star" },
+  { id: "rating" as const, label: "Nota", icon: "star" },
   { id: "name" as const, label: "Título", icon: "az" },
 ] as const satisfies ReadonlyArray<{
   id: CatalogSort;

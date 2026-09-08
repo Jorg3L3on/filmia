@@ -30,7 +30,7 @@ export const ListCard = ({ href, name, itemCount, posters }: ListCardProps) => {
           <p className="text-xs text-fog">{countLabel}</p>
         </div>
       </div>
-      <h2 className="mt-3 hidden text-base font-semibold text-paper sm:line-clamp-2 sm:block">
+      <h2 className="mt-3 hidden truncate text-base font-semibold text-paper sm:block">
         {name}
       </h2>
       <p className="mt-0.5 hidden text-sm text-fog sm:block">{countLabel}</p>

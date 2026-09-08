@@ -10,7 +10,7 @@ import { TitleKind } from "@/db";
 import { WATCHLIST_SLUG } from "@/lib/lists";
 import { formatRuntime, TITLE_KIND_LABEL } from "@/lib/labels";
 import type { FilterTag } from "@/lib/queries";
-import { tmdbBackdropUrl, type TmdbTitleExtras } from "@/lib/tmdb";
+import { isTmdbConfigured, tmdbBackdropUrl, type TmdbTitleExtras } from "@/lib/tmdb";
 import type { WatchProvidersResult } from "@/lib/watch-providers-cache";
 import type { getAssignableLists, getRelatedTitles, getTitleById, getUserStreamingPlatforms } from "@/lib/queries";
 
@@ -117,6 +117,7 @@ export const TitleActionsBlock = async ({
       />
       <TitleActionRow
         titleId={title.id}
+        titleName={title.name}
         watched={Boolean(title.watchedAt)}
         inWatchlist={inWatchlist}
         inCustomList={inCustomList}
@@ -151,6 +152,8 @@ export const TitleProvidersBlock = async ({
     <WatchProvidersMx
       data={watchProvidersResult.data}
       userPlatforms={userPlatforms}
+      tmdbConfigured={isTmdbConfigured()}
+      stale={watchProvidersResult.stale}
     />
   );
 };

@@ -120,6 +120,11 @@ const run = () => {
     catalogHref("/", { view: "calendar" }) === "/?view=calendar",
     "Calendar without month still sets view",
   );
+  assert(
+    catalogHref("/", { mode: "historial", month: "2026-09" }) ===
+      "/?month=2026-09&mode=historial",
+    "Historial deck default omits view",
+  );
 
   assert(formatDaySheetHeading("2025-06-01") === "Domingo 1", "Sheet heading is weekday + day");
   assert(formatDayCountLabel(1) === "1 título", "Singular title count");
