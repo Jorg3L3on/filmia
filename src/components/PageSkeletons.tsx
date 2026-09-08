@@ -111,6 +111,28 @@ export const TagsBodySkeleton = ({ label = "Cargando etiquetas" }: SkeletonProps
   </div>
 );
 
+export const AuthScreenSkeleton = ({
+  label = "Cargando",
+}: SkeletonProps) => (
+  <div
+    className="min-h-[80vh] bg-[radial-gradient(ellipse_at_top,_rgba(124,156,255,0.22)_0%,_transparent_58%)]"
+    aria-busy="true"
+    aria-label={label}
+  >
+    <div className="mx-auto flex min-h-[80vh] w-full max-w-md items-center px-4 py-12">
+      <div className="w-full space-y-6 rounded-3xl border border-line bg-surface p-7">
+        <div className="flex flex-col items-center gap-3">
+          <ShimmerBlock className="h-12 w-12 rounded-poster" />
+          <ShimmerBlock className="h-3 w-40 rounded-full" />
+        </div>
+        <ShimmerBlock className="h-12 rounded-xl" />
+        <ShimmerBlock className="h-12 rounded-xl" />
+        <ShimmerBlock className="h-12 rounded-full" />
+      </div>
+    </div>
+  </div>
+);
+
 export const TitleActionsSkeleton = () => (
   <div className="grid grid-cols-5 gap-2" aria-hidden="true">
     {Array.from({ length: 5 }, (_, index) => (

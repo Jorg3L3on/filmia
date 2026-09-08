@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ImdbBadge } from "@/components/ImdbBadge";
+import { Button } from "@/components/Button";
 import { ListItemOrderControls } from "@/components/ListItemOrderControls";
 import { PosterImage } from "@/components/PosterImage";
 import { PosterPlatformBadge } from "@/components/PosterPlatformBadge";
@@ -11,7 +12,7 @@ import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { TitleWithTags } from "@/lib/queries";
 import { compactGenreLabel, titleSynopsis } from "@/lib/title-overview";
-import { btnGhost, focusRing } from "@/lib/ui";
+import { focusRing } from "@/lib/ui";
 import type { ListItem, Platform } from "@/db";
 
 type WatchlistItem = ListItem & {
@@ -96,9 +97,9 @@ export const WatchlistCard = ({
                 pending={pendingOrder}
                 onMove={onMove}
               />
-              <button type="button" onClick={removeAction} className={btnGhost}>
+              <Button type="button" variant="ghost" onClick={removeAction}>
                 Quitar
-              </button>
+              </Button>
             </div>
           </div>
         </div>

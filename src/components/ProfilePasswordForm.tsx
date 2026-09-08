@@ -2,9 +2,10 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { updatePassword, type ProfileActionState } from "@/app/actions/profile";
+import { Button } from "@/components/Button";
 import { PasswordField } from "@/components/PasswordField";
-import { SuccessToast } from "@/components/SuccessToast";
-import { btnPrimary, wellClass } from "@/lib/ui";
+import { showToast } from "@/lib/toast";
+import { wellClass } from "@/lib/ui";
 
 export const ProfilePasswordForm = () => {
   const formRef = useRef<HTMLFormElement>(null);
@@ -16,6 +17,10 @@ export const ProfilePasswordForm = () => {
   useEffect(() => {
     if (state && "ok" in state) {
       formRef.current?.reset();
+      showToast({
+        title: "Contraseña actualizada",
+        description: "Tu información se actualizó correctamente.",
+      });
     }
   }, [state]);
 
@@ -33,13 +38,6 @@ export const ProfilePasswordForm = () => {
         >
           {state.error}
         </p>
-      ) : null}
-
-      {state && "ok" in state ? (
-        <SuccessToast
-          title="Contraseña actualizada"
-          description="Tu información se actualizó correctamente."
-        />
       ) : null}
 
       <PasswordField
@@ -63,9 +61,9 @@ export const ProfilePasswordForm = () => {
       />
 
       <div className="flex justify-end">
-        <button type="submit" disabled={isPending} className={`${btnPrimary} disabled:opacity-60`}>
-          {isPending ? "Actualizando…" : "Guardar cambios"}
-        </button>
+        <Button type="submit" pending={isPending} pendingLabel="Actualizando…">
+          Guardar cambios
+        </Button>
       </div>
     </form>
   );

@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { LogoutButton } from "@/components/LogoutButton";
 import { PageHeader } from "@/components/PageHeader";
 import { ProfileBodySkeleton } from "@/components/PageSkeletons";
-import { SuccessToast } from "@/components/SuccessToast";
 import { ProfileAccountForm } from "@/components/ProfileAccountForm";
 import { ProfilePasswordForm } from "@/components/ProfilePasswordForm";
 import { StreamingPlatformPicker } from "@/components/StreamingPlatformPicker";
@@ -15,50 +14,17 @@ export const metadata = {
   title: "Perfil",
 } as const;
 
-const savedToast = (value: string | string[] | undefined) => {
-  const key = Array.isArray(value) ? value[0] : value;
-  if (key === "cuenta") {
-    return {
-      title: "Cambios guardados",
-      description: "Tu información se actualizó correctamente.",
-    };
-  }
-  if (key === "clave") {
-    return {
-      title: "Contraseña actualizada",
-      description: "Tu información se actualizó correctamente.",
-    };
-  }
-  if (key === "plataformas" || key === "1") {
-    return {
-      title: "Plataformas guardadas",
-      description: "Tu información se actualizó correctamente.",
-    };
-  }
-  return null;
-};
-
-export default function ProfilePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ guardado?: string | string[] }>;
-}) {
+export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <Suspense fallback={<ProfileBodySkeleton />}>
-        <ProfileBody searchParams={searchParams} />
+        <ProfileBody />
       </Suspense>
     </div>
   );
 }
 
-const ProfileBody = async ({
-  searchParams,
-}: {
-  searchParams: Promise<{ guardado?: string | string[] }>;
-}) => {
-  const params = await searchParams;
-  const toast = savedToast(params.guardado);
+const ProfileBody = async () => {
   const profile = await getCurrentUserProfile();
 
   if (!profile) {
@@ -85,8 +51,6 @@ const ProfileBody = async ({
           </div>
         }
       />
-
-      {toast ? <SuccessToast title={toast.title} description={toast.description} /> : null}
 
       <ProfileAccountForm name={profile.name} email={profile.email} />
       <ProfilePasswordForm />

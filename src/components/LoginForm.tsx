@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { AuthScreen } from "@/components/AuthScreen";
+import { Button } from "@/components/Button";
 import { PasswordField } from "@/components/PasswordField";
-import { btnPrimary, fieldClass, focusRing } from "@/lib/ui";
+import { fieldClass, focusRing } from "@/lib/ui";
 
 export const LoginForm = () => {
   const router = useRouter();
@@ -39,18 +41,24 @@ export const LoginForm = () => {
   };
 
   return (
-    <div className="mx-auto flex min-h-[80vh] w-full max-w-md items-center px-4 py-12">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full space-y-6 rounded-3xl border border-line bg-surface/90 p-7 shadow-[0_24px_60px_rgba(0,0,0,0.45)]"
-      >
-        <div className="space-y-2 text-center">
-          <h1 className="font-serif text-4xl text-paper">Filmia</h1>
-          <p className="text-[11px] font-medium tracking-[0.22em] text-mist">
-            CINE. HISTORIAS. EMOCIONES.
+    <AuthScreen
+      title="Entrar a Filmia"
+      footer={
+        <>
+          <div className="flex items-center gap-3 text-xs text-mist">
+            <span className="h-px flex-1 bg-line" />
+            o
+            <span className="h-px flex-1 bg-line" />
+          </div>
+          <p className="text-center text-sm">
+            <Link href="/registro" className={`text-accent hover:text-accent-hover ${focusRing}`}>
+              Crear cuenta
+            </Link>
           </p>
-        </div>
-
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
         {error ? (
           <p
             role="alert"
@@ -80,26 +88,15 @@ export const LoginForm = () => {
           autoComplete="current-password"
         />
 
-        <button
+        <Button
           type="submit"
-          disabled={isLoading}
-          className={`${btnPrimary} w-full disabled:opacity-60`}
+          pending={isLoading}
+          pendingLabel="Entrando…"
+          className="w-full"
         >
-          {isLoading ? "Entrando…" : "Entrar"}
-        </button>
-
-        <div className="flex items-center gap-3 text-xs text-mist">
-          <span className="h-px flex-1 bg-line" />
-          o
-          <span className="h-px flex-1 bg-line" />
-        </div>
-
-        <p className="text-center text-sm">
-          <Link href="/registro" className={`text-accent hover:text-accent-hover ${focusRing}`}>
-            Crear cuenta
-          </Link>
-        </p>
+          Entrar
+        </Button>
       </form>
-    </div>
+    </AuthScreen>
   );
 };

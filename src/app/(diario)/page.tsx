@@ -394,7 +394,7 @@ const HistorialHome = async ({
                   : "Registra lo que viste y llenará el calendario."
               }
               actionHref={hasActiveFilters ? clearHref : "/buscar?destino=visto"}
-              actionLabel={hasActiveFilters ? "Quitar filtros" : "Registrar título"}
+              actionLabel={hasActiveFilters ? "Quitar filtros" : "Buscar título"}
             />
           ) : (
             <>

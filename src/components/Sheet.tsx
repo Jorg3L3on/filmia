@@ -14,10 +14,9 @@ import {
 } from "@/lib/ui";
 
 /**
- * Shared bottom/center sheet chrome. Fase 0 migrated RatingSheet,
- * CatalogMoreFilters, and DayLogSheet. Deferred to Fase 1: MarkWatchedSheet
- * (portal + optimistic mark-seen), SearchPreviewSheet (hero layout),
- * AddTitleToListCta (catalog picker).
+ * Shared bottom/center sheet chrome. Fase 1: MarkWatchedSheet (portal +
+ * optimistic mark-seen), SearchPreviewSheet, and AddTitleToListCta use it.
+ * Search preview keeps its hero layout inside the panel.
  */
 
 type SheetProps = {

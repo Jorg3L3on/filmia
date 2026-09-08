@@ -7,6 +7,7 @@ import {
 } from "@/app/actions/watchlist";
 import { cn } from "@/lib/cn";
 import { membershipCopy, titleListMembership } from "@/lib/list-membership";
+import { showToast } from "@/lib/toast";
 import { useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { focusRing } from "@/lib/ui";
 
@@ -92,6 +93,9 @@ const WatchlistButton = ({
 
   const handleToggle = () => {
     const next = !optimisticInWatchlist;
+    showToast({
+      title: next ? "En Quiero ver" : "Fuera de Quiero ver",
+    });
     run(next, async () => {
       if (next) {
         await addToWatchlistById(titleId);

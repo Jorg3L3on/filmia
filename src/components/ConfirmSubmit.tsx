@@ -2,11 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition, type MouseEvent } from "react";
+import { Button } from "@/components/Button";
 import { actionErrorMessage } from "@/lib/use-optimistic-action";
+import type { ButtonSize, ButtonVariant } from "@/lib/ui";
 
 type ConfirmSubmitProps = {
   label: string;
   confirmMessage: string;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   className?: string;
   href?: string;
   action?: () => Promise<unknown>;
@@ -15,6 +19,8 @@ type ConfirmSubmitProps = {
 export const ConfirmSubmit = ({
   label,
   confirmMessage,
+  variant = "danger",
+  size = "md",
   className,
   href,
   action,
@@ -48,15 +54,17 @@ export const ConfirmSubmit = ({
   };
 
   return (
-    <button
+    <Button
       type={action ? "button" : "submit"}
+      variant={variant}
+      size={size}
       onClick={handleClick}
-      disabled={isPending}
+      pending={isPending && !href}
+      pendingLabel={`${label}…`}
       className={className}
       aria-label={label}
-      aria-busy={isPending}
     >
-      {isPending && !href ? `${label}…` : label}
-    </button>
+      {label}
+    </Button>
   );
 };

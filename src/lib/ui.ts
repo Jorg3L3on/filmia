@@ -83,6 +83,8 @@ export const sheetLayerClass: Record<SheetLayer, string> = {
   top: "z-sheet-top",
 };
 
+export const toastLayerClass = "z-toast";
+
 export const sheetAlignClass: Record<SheetAlign, string> = {
   bottom: "fixed inset-0 flex items-end justify-center",
   center: "fixed inset-0 flex items-end justify-center sm:items-center",

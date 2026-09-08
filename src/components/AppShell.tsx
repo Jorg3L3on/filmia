@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { NavPrefetch } from "@/components/NavPrefetch";
 import { SiteHeaderClient, type HeaderUser } from "@/components/SiteHeaderClient";
+import { ToastHost } from "@/components/ToastHost";
 
 const isAuthChromePath = (pathname: string) =>
   pathname === "/login" ||
@@ -22,7 +23,12 @@ export const AppShell = ({ children, user }: AppShellProps) => {
   const isAuthPage = isAuthChromePath(pathname);
 
   if (isAuthPage) {
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        <ToastHost />
+      </>
+    );
   }
 
   return (
@@ -36,6 +42,7 @@ export const AppShell = ({ children, user }: AppShellProps) => {
         Filmia · diario personal · sin scrapers
       </footer>
       <BottomNav />
+      <ToastHost />
     </>
   );
 };

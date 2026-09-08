@@ -1,4 +1,4 @@
-import { isCurrentPath, mobileNavItems } from "../src/lib/nav";
+import { desktopNavItems, isCurrentPath, mobileNavItems } from "../src/lib/nav";
 
 const assert = (condition: unknown, message: string) => {
   if (!condition) {
@@ -11,7 +11,9 @@ const cases: Array<{ href: string; pathname: string; expected: boolean }> = [
   { href: "/", pathname: "/listas", expected: false },
   { href: "/", pathname: "/listas/abc", expected: false },
   { href: "/", pathname: "/watchlist", expected: false },
-  { href: "/", pathname: "/titulos/abc", expected: false },
+  { href: "/", pathname: "/titulos/abc", expected: true },
+  { href: "/", pathname: "/titulos/abc/editar", expected: true },
+  { href: "/", pathname: "/titulos/nuevo", expected: true },
   { href: "/listas", pathname: "/listas", expected: true },
   { href: "/listas", pathname: "/listas/abc", expected: true },
   { href: "/listas", pathname: "/listas/abc/editar", expected: true },
@@ -21,6 +23,9 @@ const cases: Array<{ href: string; pathname: string; expected: boolean }> = [
   { href: "/watchlist", pathname: "/", expected: false },
   { href: "/buscar", pathname: "/buscar", expected: true },
   { href: "/buscar", pathname: "/titulos/abc", expected: false },
+  { href: "/tags", pathname: "/tags", expected: true },
+  { href: "/tags", pathname: "/tags/epica-guerra", expected: true },
+  { href: "/tags", pathname: "/", expected: false },
   { href: "/perfil", pathname: "/perfil", expected: true },
   { href: "/perfil", pathname: "/perfil?guardado=cuenta", expected: true },
   { href: "/perfil", pathname: "/", expected: false },
@@ -39,6 +44,10 @@ for (const pathname of onListas) {
   assert(isCurrentPath("/listas", pathname), `Listas must be active on ${pathname}`);
 }
 
+assert(isCurrentPath("/", "/titulos/abc"), "Diario highlights nested ficha routes");
+assert(isCurrentPath("/tags", "/tags/visual"), "Etiquetas highlights nested tag routes");
+assert(isCurrentPath("/listas", "/listas/abc"), "Listas highlights nested list routes");
+
 assert(mobileNavItems.length === 5, "Mobile nav should have 5 items so Buscar is centered");
 assert(
   mobileNavItems.map((item) => item.label).join("|") ===
@@ -47,6 +56,10 @@ assert(
 );
 assert(mobileNavItems[2]?.href === "/buscar", "Buscar must be the middle (3rd) mobile nav item");
 assert(mobileNavItems[4]?.href === "/perfil", "Perfil must be the last mobile nav item");
+assert(
+  desktopNavItems.some((item) => item.href === "/tags" && item.label === "Etiquetas"),
+  "Desktop nav must include Etiquetas",
+);
 
-console.log("✓ BottomNav path matcher: Diario exact /, Listas prefix only");
+console.log("✓ Nested paths highlight Diario / Etiquetas / Listas");
 console.log("✓ Mobile nav is 5 items with Buscar centered and Perfil at the end");

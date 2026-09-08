@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { LoginForm } from "@/components/LoginForm";
+import { AuthScreenSkeleton } from "@/components/PageSkeletons";
 
 export const metadata = {
   title: "Entrar",
@@ -7,10 +8,8 @@ export const metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-[80vh] bg-[radial-gradient(ellipse_at_top,_rgba(124,156,255,0.22)_0%,_transparent_58%)]">
-      <Suspense>
-        <LoginForm />
-      </Suspense>
-    </div>
+    <Suspense fallback={<AuthScreenSkeleton label="Cargando entrada" />}>
+      <LoginForm />
+    </Suspense>
   );
 }

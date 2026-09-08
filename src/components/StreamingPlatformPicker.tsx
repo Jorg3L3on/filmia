@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { updateStreamingPlatforms } from "@/app/actions/profile";
-import { SuccessToast } from "@/components/SuccessToast";
+import { Button } from "@/components/Button";
 import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
 import { PLATFORM_SERVICE_LABEL, PLATFORMS } from "@/lib/labels";
+import { showToast } from "@/lib/toast";
 import { sameIdList, useStickyOptimistic } from "@/lib/use-optimistic-action";
-import { btnPrimary, focusRing, wellClass } from "@/lib/ui";
+import { focusRing, wellClass } from "@/lib/ui";
 
 type StreamingPlatformPickerProps = {
   selected: Platform[];
@@ -20,7 +20,6 @@ export const StreamingPlatformPicker = ({
     selected,
     sameIdList,
   );
-  const [saveTick, setSaveTick] = useState(0);
 
   const handleToggle = (platform: Platform) => {
     const next = value.includes(platform)
@@ -30,7 +29,6 @@ export const StreamingPlatformPicker = ({
     next.forEach((item) => formData.append("platforms", item));
     run(next, async () => {
       await updateStreamingPlatforms(formData);
-      setSaveTick((tick) => tick + 1);
     });
   };
 
@@ -39,7 +37,10 @@ export const StreamingPlatformPicker = ({
     value.forEach((item) => formData.append("platforms", item));
     run(value, async () => {
       await updateStreamingPlatforms(formData);
-      setSaveTick((tick) => tick + 1);
+      showToast({
+        title: "Plataformas guardadas",
+        description: "Tu información se actualizó correctamente.",
+      });
     });
   };
 
@@ -54,14 +55,6 @@ export const StreamingPlatformPicker = ({
           Selecciona tus servicios de streaming disponibles en México.
         </p>
       </header>
-
-      {saveTick > 0 && !error ? (
-        <SuccessToast
-          key={saveTick}
-          title="Plataformas guardadas"
-          description="Tu información se actualizó correctamente."
-        />
-      ) : null}
 
       {error ? (
         <p
@@ -109,14 +102,14 @@ export const StreamingPlatformPicker = ({
       </fieldset>
 
       <div className="flex justify-end">
-        <button
+        <Button
           type="button"
           onClick={handleSave}
-          disabled={isPending}
-          className={`${btnPrimary} disabled:opacity-60`}
+          pending={isPending}
+          pendingLabel="Guardando…"
         >
-          {isPending ? "Guardando…" : "Guardar cambios"}
-        </button>
+          Guardar cambios
+        </Button>
       </div>
     </div>
   );

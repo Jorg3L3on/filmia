@@ -4,9 +4,10 @@ import { useCallback, useState, useTransition } from "react";
 import { enrichFromTmdb, searchTmdb } from "@/app/actions/metadata";
 import type { TitleKind } from "@/db";
 import { cn } from "@/lib/cn";
-import { tmdbPosterUrl } from "@/lib/tmdb";
-import { btnGhost, btnPrimary, fieldClass, focusRing } from "@/lib/ui";
+import { tmdbPosterUrl, TMDB_UNAVAILABLE_COPY } from "@/lib/tmdb";
+import { Button } from "@/components/Button";
 import { PosterImage } from "@/components/PosterImage";
+import { fieldClass, focusRing } from "@/lib/ui";
 
 export type TmdbPick = {
   tmdbId: number;
@@ -129,8 +130,7 @@ export const TmdbPicker = ({
   if (!configured.tmdb) {
     return (
       <p className="rounded-md border border-dashed border-chrome p-4 text-sm text-fog">
-        Agrega <code className="text-accent">TMDB_API_KEY</code> en{" "}
-        <code className="text-accent">.env</code> para buscar posters.
+        {TMDB_UNAVAILABLE_COPY}
       </p>
     );
   }
@@ -172,18 +172,19 @@ export const TmdbPicker = ({
               className={fieldClass}
             />
           </label>
-          <button
+          <Button
             type="button"
             onClick={handleSearch}
-            disabled={isPending || !query.trim()}
-            className={`${btnPrimary} disabled:opacity-50`}
+            pending={isPending}
+            pendingLabel="Buscando…"
+            disabled={!query.trim()}
           >
-            {isPending ? "Buscando…" : "Buscar"}
-          </button>
+            Buscar
+          </Button>
           {selected ? (
-            <button type="button" onClick={handleClear} className={btnGhost}>
+            <Button type="button" variant="ghost" onClick={handleClear}>
               Quitar ficha
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>

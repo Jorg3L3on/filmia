@@ -7,10 +7,7 @@ import {
   searchTmdbCatalog,
   searchTmdbTitles,
 } from "@/lib/metadata";
-import { tmdbErrorMessage } from "@/lib/tmdb";
-
-const missingKeyError =
-  "Falta TMDB_API_KEY. Agrégala en el entorno para buscar títulos.";
+import { TMDB_UNAVAILABLE_COPY, tmdbErrorMessage } from "@/lib/tmdb";
 
 export const getMetadataConfig = async () => metadataServicesConfigured();
 
@@ -20,7 +17,7 @@ export const searchTmdb = async (
   year?: number | null,
 ) => {
   if (!metadataServicesConfigured().tmdb) {
-    return { results: [], error: missingKeyError };
+    return { results: [], error: TMDB_UNAVAILABLE_COPY };
   }
 
   try {
@@ -33,7 +30,7 @@ export const searchTmdb = async (
 
 export const searchTmdbDiscover = async (query: string) => {
   if (!metadataServicesConfigured().tmdb) {
-    return { results: [], error: missingKeyError };
+    return { results: [], error: TMDB_UNAVAILABLE_COPY };
   }
 
   try {
@@ -46,7 +43,7 @@ export const searchTmdbDiscover = async (query: string) => {
 
 export const enrichFromTmdb = async (tmdbId: number, kind: TitleKind) => {
   if (!metadataServicesConfigured().tmdb) {
-    throw new Error(missingKeyError);
+    throw new Error(TMDB_UNAVAILABLE_COPY);
   }
 
   return resolveTitleMetadata(tmdbId, kind);

@@ -11,6 +11,7 @@ import { hashPassword } from "../src/lib/auth/password";
 import {
   getTmdbDetails,
   searchTmdbMulti,
+  TMDB_UNAVAILABLE_COPY,
   TmdbRequestError,
   tmdbErrorMessage,
 } from "../src/lib/tmdb";
@@ -57,8 +58,17 @@ const verifyErrors = async () => {
     if (error.code !== "missing_key") {
       throw new Error(`Expected missing_key, got ${error.code}`);
     }
-    if (!tmdbErrorMessage(error).includes("TMDB_API_KEY")) {
-      throw new Error("Missing key message should mention TMDB_API_KEY");
+    if (tmdbErrorMessage(error) !== TMDB_UNAVAILABLE_COPY) {
+      throw new Error("Missing key should use friendly user copy");
+    }
+    if (
+      tmdbErrorMessage(error).includes("TMDB_API_KEY") ||
+      tmdbErrorMessage(error).includes(".env")
+    ) {
+      throw new Error("User-facing missing key must not dump infra");
+    }
+    if (!error.message.includes("TMDB_API_KEY")) {
+      throw new Error("Operator error should still mention TMDB_API_KEY");
     }
     console.log("✓ Missing TMDB_API_KEY:", tmdbErrorMessage(error));
   }

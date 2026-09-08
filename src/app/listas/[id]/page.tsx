@@ -27,7 +27,6 @@ import { getListById, getTagFilters, getTitleOptions, getUserStreamingPlatforms 
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
-import { btnDanger } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -136,7 +135,6 @@ const ListDetail = async ({
               <ConfirmSubmit
                 label="Borrar lista"
                 confirmMessage={`¿Borrar la lista “${list.name}”?`}
-                className={btnDanger}
                 href="/listas"
                 action={deleteAction}
               />
