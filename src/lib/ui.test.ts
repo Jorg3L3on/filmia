@@ -32,6 +32,7 @@ describe("sheet tokens", () => {
     assert.match(panel, /rounded-t-sheet/);
     assert.match(panel, /sm:rounded-sheet/);
     assert.match(panel, /safe-area-inset-bottom/);
+    assert.match(panel, /sheet-rise/);
     assert.equal(sheetLayerClass.preview, "z-sheet-preview");
     assert.equal(sheetLayerClass.default, "z-sheet");
     assert.equal(sheetLayerClass.top, "z-sheet-top");

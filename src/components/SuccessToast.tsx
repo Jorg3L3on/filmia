@@ -18,7 +18,7 @@ export const SuccessToast = ({
   variant = "success",
   onDismiss,
 }: SuccessToastProps) => {
-  const [open, setOpen] = useState(true);
+  const [phase, setPhase] = useState<"in" | "out">("in");
   const onDismissRef = useRef(onDismiss);
 
   useEffect(() => {
@@ -27,19 +27,28 @@ export const SuccessToast = ({
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setOpen(false);
-      onDismissRef.current?.();
+      setPhase("out");
     }, 5000);
     return () => window.clearTimeout(timer);
   }, []);
 
-  if (!open) {
-    return null;
-  }
+  useEffect(() => {
+    if (phase !== "out") {
+      return;
+    }
+
+    const reduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timer = window.setTimeout(
+      () => onDismissRef.current?.(),
+      reduced ? 20 : 300,
+    );
+    return () => window.clearTimeout(timer);
+  }, [phase]);
 
   const handleDismiss = () => {
-    setOpen(false);
-    onDismissRef.current?.();
+    setPhase("out");
   };
 
   const isError = variant === "error";
@@ -49,6 +58,7 @@ export const SuccessToast = ({
       role="status"
       className={cn(
         "flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm text-paper shadow-[0_12px_32px_rgba(0,0,0,0.35)]",
+        phase === "out" ? "toast-out" : "toast-in",
         isError
           ? "border-danger-line bg-danger-well"
           : "border-success/30 bg-success-well",

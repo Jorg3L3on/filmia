@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Sheet } from "@/components/Sheet";
+import { Sheet, SheetHandle } from "@/components/Sheet";
 import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import { tmdbBackdropUrl, tmdbPosterUrl, type TmdbCatalogResult } from "@/lib/tmdb";
@@ -51,8 +51,12 @@ export const SearchPreviewSheet = ({
       overlayLabel="Cerrar vista previa"
       layer="preview"
       portal
+      dragDismiss
       panelClassName="bg-surface"
     >
+      <div className="flex flex-col items-center px-5 pt-3">
+        <SheetHandle />
+      </div>
       <div className="relative aspect-[16/10] bg-well">
         {hero ? (
           <Image
@@ -89,7 +93,7 @@ export const SearchPreviewSheet = ({
         </div>
       </div>
 
-      <div className="space-y-5 px-5 py-5">
+      <div className="space-y-5 px-5 py-5" data-no-sheet-drag>
         {result.overview ? (
           <p className="line-clamp-4 text-sm leading-6 text-fog">{result.overview}</p>
         ) : (

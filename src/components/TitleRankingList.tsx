@@ -1,5 +1,7 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { PersonalRating } from "@/components/PersonalRating";
+import { SharedPoster } from "@/components/SharedPoster";
 import { PosterImage } from "@/components/PosterImage";
 import { TagPills } from "@/components/TagPills";
 import { formatWatchedDate } from "@/lib/dates";
@@ -40,7 +42,7 @@ export const TitleRankingList = ({ titles }: TitleRankingListProps) => {
             : null;
 
           return (
-            <li key={title.id}>
+            <li key={title.id} className="stagger-in" style={{ "--stagger": index } as CSSProperties}>
               <div className="flex gap-3 p-3">
                 <p
                   className="w-8 shrink-0 pt-6 text-center text-sm font-semibold text-accent"
@@ -53,12 +55,14 @@ export const TitleRankingList = ({ titles }: TitleRankingListProps) => {
                   className={cn("shrink-0", focusRing)}
                   aria-label={title.name}
                 >
-                  <PosterImage
-                    name={title.name}
-                    posterPath={title.posterPath}
-                    sizes="48px"
-                    className={cn(posterFrame, "w-12")}
-                  />
+                  <SharedPoster titleId={title.id}>
+                    <PosterImage
+                      name={title.name}
+                      posterPath={title.posterPath}
+                      sizes="48px"
+                      className={cn(posterFrame, "w-12")}
+                    />
+                  </SharedPoster>
                 </Link>
                 <div className="min-w-0 flex-1 space-y-1.5">
                   <Link

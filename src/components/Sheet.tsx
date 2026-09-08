@@ -14,9 +14,9 @@ import {
 } from "@/lib/ui";
 
 /**
- * Shared bottom/center sheet chrome. Fase 1: MarkWatchedSheet (portal +
- * optimistic mark-seen), SearchPreviewSheet, and AddTitleToListCta use it.
- * Search preview keeps its hero layout inside the panel.
+ * Shared bottom/center sheet chrome. Open uses `.sheet-rise` (ease-out),
+ * never `.spring-pop`. Drag-dismiss is on by default; mark scroll/inputs
+ * with `[data-no-sheet-drag]`. Safe-area padding lives on the panel class.
  */
 
 type SheetProps = {
@@ -43,7 +43,7 @@ export const Sheet = ({
   overlayLabel = "Cerrar",
   layer = "default",
   align = "center",
-  dragDismiss = false,
+  dragDismiss = true,
   portal = false,
   panelClassName,
   panelStyle,

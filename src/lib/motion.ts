@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * Motion helpers (Filmia UI v2). CSS lives in `globals.css`.
+ * Motion helpers (Filmia UI v2). CSS lives in `globals.css` (Fase 2 language).
+ * Sheets: `.sheet-rise` + `useSheetDragDismiss`. Never open a sheet with `.spring-pop`.
  * Shared-element: React `<ViewTransition name={poster-${id}} share="morph">`
- * on calendar/grid/deck tiles and the ficha hero. Next 16 App Router treats
- * navigations as transitions — no next.config flag.
+ * on calendar/grid/deck/list/tag/search tiles and the ficha hero.
  */
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";

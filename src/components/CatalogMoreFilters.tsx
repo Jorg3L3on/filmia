@@ -62,6 +62,7 @@ export const CatalogMoreFilters = ({
         labelledBy={titleId}
         overlayLabel="Cerrar filtros"
         layer="top"
+        dragDismiss
         panelClassName="max-h-[min(42rem,90vh)]"
       >
         <div className="flex flex-col items-center px-5 pt-3">

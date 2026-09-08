@@ -43,7 +43,7 @@ export const BottomNav = () => {
                 data-nav={item.icon}
                 data-active={isCurrent ? "true" : "false"}
                 className={cn(
-                  "flex min-w-0 flex-col items-center gap-1 px-0.5 py-1 text-[10px] uppercase tracking-[0.08em] outline-none",
+                  "tab-transition flex min-w-0 flex-col items-center gap-1 px-0.5 py-1 text-[10px] uppercase tracking-[0.08em] outline-none",
                   focusRing,
                   isCurrent ? "text-accent" : "text-mist hover:text-paper",
                 )}

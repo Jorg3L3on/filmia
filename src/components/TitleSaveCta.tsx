@@ -17,6 +17,10 @@ type AssignableList = {
   slug: string | null;
 };
 
+/**
+ * Primary ficha save control. Quiero ver lives here only — the chip row
+ * does not duplicate it. Optimistic toggle uses `useStickyOptimistic`.
+ */
 type TitleSaveCtaProps = {
   titleId: string;
   inWatchlist: boolean;

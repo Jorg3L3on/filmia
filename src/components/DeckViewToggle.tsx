@@ -48,7 +48,7 @@ export const DeckViewToggle = ({
             aria-label={MODE_LABEL[item]}
             title={MODE_LABEL[item]}
             className={cn(
-              "inline-flex items-center justify-center rounded-full transition",
+              "inline-flex items-center justify-center rounded-full tab-transition",
               focusRing,
               isIcons ? "size-9" : "px-3 py-1.5 text-xs font-medium uppercase tracking-wide",
               isCurrent

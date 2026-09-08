@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { moveListItem } from "@/app/actions/lists";
 import { removeFromWatchlist } from "@/app/actions/watchlist";
 import { WatchlistCard } from "@/components/WatchlistCard";
@@ -113,7 +113,11 @@ export const WatchlistList = ({
       {queue.length > 0 ? (
         <ul className="divide-y divide-line">
           {queue.map((item, index) => (
-            <li key={item.titleId}>
+            <li
+              key={item.titleId}
+              className="stagger-in"
+              style={{ "--stagger": index } as CSSProperties}
+            >
               <WatchlistCard
                 item={item}
                 variant="queue"

@@ -10,6 +10,7 @@ import {
 import type { DiaryCalendarTitle } from "@/components/diary-types";
 import { cn } from "@/lib/cn";
 import { titlesInMonth } from "@/lib/dates";
+import { staggerStyle } from "@/lib/motion";
 import { focusRing } from "@/lib/ui";
 
 type DiaryMonthListProps = {
@@ -19,8 +20,19 @@ type DiaryMonthListProps = {
 
 const MONTH_ROW_HEIGHT = 64;
 
-const MonthTitleRow = ({ title }: { title: DiaryCalendarTitle }) => (
-  <li className="month-list-row">
+const MonthTitleRow = ({
+  title,
+  index = 0,
+  animate = false,
+}: {
+  title: DiaryCalendarTitle;
+  index?: number;
+  animate?: boolean;
+}) => (
+  <li
+    className={cn("month-list-row", animate && "stagger-in")}
+    style={animate ? staggerStyle(index) : undefined}
+  >
     <Link
       href={`/titulos/${title.id}`}
       className={cn(
@@ -83,8 +95,8 @@ export const DiaryMonthList = ({ titles, month }: DiaryMonthListProps) => {
         />
       ) : (
         <ul className="space-y-1 border-t border-line px-2 py-2">
-          {monthTitles.map((title) => (
-            <MonthTitleRow key={title.id} title={title} />
+          {monthTitles.map((title, index) => (
+            <MonthTitleRow key={title.id} title={title} index={index} animate />
           ))}
         </ul>
       )}
