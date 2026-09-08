@@ -153,6 +153,11 @@ Busca en TMDB por nombre + año + tipo, guarda poster e IMDb rating vía OMDb.
 | --- | --- |
 | `npm run dev` | Servidor de desarrollo |
 | `npm run build` | Build de producción Next.js (Node) |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | Tests `node:test` vía tsx (`src/lib/*.test.ts`) |
+| `npm run verify` | Verifiers offline (sin DB) |
+| `npm run ci` | lint + typecheck + test + verify |
 | `npm run db:generate` | Genera SQL de Drizzle desde `src/db/schema.ts` |
 | `npm run db:migrate` | Aplica el journal de Drizzle (`drizzle-kit migrate`) |
 | `npm run db:push` | Empuja el schema a la DB sin archivo de migración (dev) |

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { LogoutButton } from "@/components/LogoutButton";
+import { PageHeader } from "@/components/PageHeader";
 import { ProfileBodySkeleton } from "@/components/PageSkeletons";
 import { SuccessToast } from "@/components/SuccessToast";
 import { ProfileAccountForm } from "@/components/ProfileAccountForm";
@@ -68,20 +69,22 @@ const ProfileBody = async ({
 
   return (
     <>
-      <header className="flex items-center justify-between gap-3">
-        <h1 className="font-serif text-4xl tracking-tight text-paper">Perfil</h1>
-        <div className="flex items-center gap-3">
-          <span
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-well text-sm font-semibold text-paper"
-            aria-hidden="true"
-          >
-            {initial}
-          </span>
-          <span className="sm:hidden">
-            <LogoutButton />
-          </span>
-        </div>
-      </header>
+      <PageHeader
+        title="Perfil"
+        actions={
+          <div className="flex items-center gap-3">
+            <span
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-well text-sm font-semibold text-paper"
+              aria-hidden="true"
+            >
+              {initial}
+            </span>
+            <span className="sm:hidden">
+              <LogoutButton />
+            </span>
+          </div>
+        }
+      />
 
       {toast ? <SuccessToast title={toast.title} description={toast.description} /> : null}
 

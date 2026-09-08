@@ -106,7 +106,7 @@ export const SeriesStatusPanel = ({
     <section className={`${wellClass} space-y-4 p-5`} aria-label="Estado de la serie">
       <header className="space-y-1">
         <p className={eyebrowClass}>Serie</p>
-        <h2 className="font-serif text-xl text-white">
+        <h2 className="font-serif text-xl text-paper">
           {value.status ? SERIES_STATUS_LABEL[value.status] : "¿En qué vas?"}
         </h2>
         <p className="text-sm text-fog">
@@ -140,7 +140,7 @@ export const SeriesStatusPanel = ({
                 focusRing,
                 isCurrent
                   ? "border-accent bg-accent text-ink"
-                  : "border-chrome text-fog hover:border-[#555] hover:text-white",
+                  : "border-chrome text-fog hover:border-line-hover hover:text-paper",
               )}
             >
               {SERIES_STATUS_LABEL[status]}

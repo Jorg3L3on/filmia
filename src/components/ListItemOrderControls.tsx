@@ -73,7 +73,7 @@ const OrderButton = ({
         focusRing,
         disabled
           ? "cursor-not-allowed opacity-35"
-          : "hover:border-accent hover:text-white",
+          : "hover:border-accent hover:text-paper",
       )}
     >
       <svg

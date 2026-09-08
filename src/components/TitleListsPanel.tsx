@@ -52,7 +52,7 @@ export const TitleListsPanel = ({
     <section className={`${wellClass} space-y-4 p-5`}>
       <header className="space-y-1">
         <p className={eyebrowClass}>Listas</p>
-        <h2 className="font-serif text-xl text-white">¿Dónde la guardas?</h2>
+        <h2 className="font-serif text-xl text-paper">¿Dónde la guardas?</h2>
         <p className="text-sm text-fog">
           Quiero ver, Favoritas y Por rewatch van con un toque. Las
           personalizadas también.
@@ -142,7 +142,7 @@ const ListChipGroup = ({
                   focusRing,
                   included
                     ? "border-accent bg-accent text-ink"
-                    : "border-chrome text-fog hover:border-[#555] hover:text-white",
+                    : "border-chrome text-fog hover:border-line-hover hover:text-paper",
                 )}
               >
                 {list.name}
@@ -150,7 +150,7 @@ const ListChipGroup = ({
               {included ? (
                 <Link
                   href={href}
-                  className={`rounded-full px-1 text-[10px] text-mist hover:text-white ${focusRing}`}
+                  className={`rounded-full px-1 text-[10px] text-mist hover:text-paper ${focusRing}`}
                   aria-label={`Abrir ${list.name}`}
                 >
                   ver

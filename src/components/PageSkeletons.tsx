@@ -9,6 +9,41 @@ export const ShimmerBlock = ({ className }: { className: string }) => (
   <div className={cn("shimmer", className)} />
 );
 
+export const PageHeaderSkeleton = ({
+  withAction = false,
+}: {
+  withAction?: boolean;
+}) => (
+  <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="space-y-2">
+      <ShimmerBlock className="h-3 w-20 rounded-full" />
+      <ShimmerBlock className="h-10 w-48 rounded-xl" />
+    </div>
+    {withAction ? <ShimmerBlock className="h-10 w-28 rounded-full" /> : null}
+  </div>
+);
+
+export const PageChromeSkeleton = ({
+  label = "Cargando",
+}: SkeletonProps) => (
+  <div className="space-y-6" aria-busy="true" aria-label={label}>
+    <PageHeaderSkeleton />
+    <ShimmerBlock className="h-40 rounded-card" />
+    <ShimmerBlock className="h-28 rounded-card" />
+  </div>
+);
+
+export const FormPageSkeleton = ({
+  label = "Cargando formulario",
+}: SkeletonProps) => (
+  <div className="mx-auto max-w-xl space-y-6" aria-busy="true" aria-label={label}>
+    <PageHeaderSkeleton />
+    <ShimmerBlock className="h-12 rounded-xl" />
+    <ShimmerBlock className="h-40 rounded-2xl" />
+    <ShimmerBlock className="h-12 rounded-full" />
+  </div>
+);
+
 export const PosterRailSkeleton = ({ count = 5 }: { count?: number }) => (
   <div className="rail -mx-4 flex gap-4 overflow-hidden px-4">
     {Array.from({ length: count }, (_, index) => (

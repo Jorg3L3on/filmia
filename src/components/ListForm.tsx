@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { createList, updateList } from "@/app/actions/lists";
 import { EmptyListPreview } from "@/components/PosterStack";
+import { PageHeader } from "@/components/PageHeader";
 import { PendingSubmit } from "@/components/PendingSubmit";
 import type { List } from "@/db";
 import { isFixedListSlug } from "@/lib/lists";
-import { btnPrimary, fieldClass, focusRing } from "@/lib/ui";
+import { fieldClass } from "@/lib/ui";
 
 type ListFormProps = {
   list?: List;
@@ -16,18 +16,12 @@ export const ListForm = ({ list }: ListFormProps) => {
 
   return (
     <form action={action} className="space-y-8">
-      <div className="flex items-center gap-3">
-        <Link
-          href={list ? `/listas/${list.id}` : "/listas"}
-          aria-label="Volver"
-          className={`inline-flex h-10 w-10 items-center justify-center rounded-full text-fog hover:bg-well hover:text-paper ${focusRing}`}
-        >
-          ←
-        </Link>
-        <h1 className="font-serif text-3xl text-paper">
-          {list ? "Editar lista" : "Nueva lista"}
-        </h1>
-      </div>
+      <PageHeader
+        eyebrow="Listas"
+        title={list ? "Editar lista" : "Nueva lista"}
+        backHref={list ? `/listas/${list.id}` : "/listas"}
+        backLabel="Volver"
+      />
 
       <label className="block space-y-2">
         <span className="text-sm text-fog">Nombre</span>
@@ -67,7 +61,7 @@ export const ListForm = ({ list }: ListFormProps) => {
       <PendingSubmit
         idleLabel={list ? "Guardar lista" : "Crear lista"}
         pendingLabel={list ? "Guardando…" : "Creando…"}
-        className={`${btnPrimary} w-full`}
+        className="w-full"
       />
     </form>
   );

@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import {
   CoverflowDeck,
   type CoverflowTitle,
 } from "@/components/CoverflowDeck";
 import type { DiaryCalendarTitle } from "@/components/diary-types";
+import { Sheet, SheetHandle } from "@/components/Sheet";
 import { cn } from "@/lib/cn";
 import { formatDaySheetParts } from "@/lib/dates";
-import { useSheetDragDismiss } from "@/lib/motion";
 import { TitleKind } from "@/db";
 import { focusRing } from "@/lib/ui";
 
@@ -38,113 +38,80 @@ const toCoverflowTitle = (title: DiaryCalendarTitle): CoverflowTitle => ({
 export const DayLogSheet = ({ open, isoDate, titles, onClose }: DayLogSheetProps) => {
   const titleDomId = useId();
   const [activeTitle, setActiveTitle] = useState<CoverflowTitle | null>(null);
-  const { sheetStyle, dragHandlers } = useSheetDragDismiss(onClose);
+  const [trackedDate, setTrackedDate] = useState(isoDate);
   const deckTitles = useMemo(() => titles.map(toCoverflowTitle), [titles]);
   const parts = isoDate ? formatDaySheetParts(isoDate, titles.length) : null;
   const focused = activeTitle ?? deckTitles[0] ?? null;
+  const ready = open && Boolean(isoDate) && Boolean(parts) && titles.length > 0;
 
-  useEffect(() => {
-    if (!open) {
-      setActiveTitle(null);
-    }
-  }, [open, isoDate]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previous;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open, onClose]);
-
-  if (!open || !isoDate || !parts || titles.length === 0) {
-    return null;
+  if (isoDate !== trackedDate) {
+    setTrackedDate(isoDate);
+    setActiveTitle(null);
   }
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center">
-      <button
-        type="button"
-        aria-label="Cerrar"
-        className="absolute inset-0 bg-canvas-deep/70"
-        onClick={onClose}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleDomId}
-        className="relative z-10 w-full max-w-lg overflow-hidden rounded-t-[28px] bg-well pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-16px_48px_rgba(0,0,0,0.55)] sheet-rise sm:mb-8 sm:rounded-[28px]"
-        style={sheetStyle}
-        {...dragHandlers}
-      >
-        <div className="flex flex-col items-center px-5 pt-3">
-          <span aria-hidden="true" className="mb-3 h-1 w-10 rounded-full bg-chrome" />
-          <div className="flex w-full items-start justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-2">
-              <SparkIcon />
-              <h2 id={titleDomId} className="min-w-0 font-serif text-xl text-paper sm:text-2xl">
-                <span>{parts.heading}</span>
-                <span className="text-accent"> · {parts.countLabel}</span>
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className={cn(
-                "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-chrome text-fog hover:text-paper",
-                focusRing,
-              )}
-              aria-label="Cerrar"
-            >
-              <CloseIcon />
-            </button>
+    <Sheet
+      open={ready}
+      onClose={onClose}
+      labelledBy={titleDomId}
+      overlayLabel="Cerrar"
+      align="bottom"
+      dragDismiss
+      panelClassName="sm:mb-8"
+    >
+      <div className="flex flex-col items-center px-5 pt-3">
+        <SheetHandle />
+        <div className="flex w-full items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <SparkIcon />
+            <h2 id={titleDomId} className="min-w-0 font-serif text-xl text-paper sm:text-2xl">
+              <span>{parts?.heading}</span>
+              <span className="text-accent"> · {parts?.countLabel}</span>
+            </h2>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className={cn(
+              "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-chrome text-fog hover:text-paper",
+              focusRing,
+            )}
+            aria-label="Cerrar"
+          >
+            <CloseIcon />
+          </button>
         </div>
-
-        <div className="px-2 pt-5 sm:px-4">
-          <CoverflowDeck
-            key={isoDate}
-            titles={deckTitles}
-            variant="sheet"
-            onActiveChange={(_index, title) => setActiveTitle(title)}
-          />
-        </div>
-
-        {focused ? (
-          <div className="px-5 pt-4">
-            <Link
-              href={`/titulos/${focused.id}`}
-              onClick={onClose}
-              aria-label={`Ver ${focused.name} en diario`}
-              className={cn(
-                "flex w-full items-center justify-between gap-3 rounded-2xl border border-accent px-4 py-3.5 text-sm font-medium text-paper",
-                focusRing,
-              )}
-            >
-              <span className="flex items-center gap-2.5">
-                <DiaryIcon />
-                Ver ficha
-              </span>
-              <ChevronIcon />
-            </Link>
-          </div>
-        ) : null}
       </div>
-    </div>
+
+      <div className="px-2 pt-5 sm:px-4">
+        <CoverflowDeck
+          key={isoDate ?? "day"}
+          titles={deckTitles}
+          variant="sheet"
+          onActiveChange={(_index, title) => setActiveTitle(title)}
+        />
+      </div>
+
+      {focused ? (
+        <div className="px-5 pt-4">
+          <Link
+            href={`/titulos/${focused.id}`}
+            onClick={onClose}
+            aria-label={`Ver ${focused.name} en diario`}
+            className={cn(
+              "flex w-full items-center justify-between gap-3 rounded-2xl border border-accent px-4 py-3.5 text-sm font-medium text-paper",
+              focusRing,
+            )}
+          >
+            <span className="flex items-center gap-2.5">
+              <DiaryIcon />
+              Ver ficha
+            </span>
+            <ChevronIcon />
+          </Link>
+        </div>
+      ) : null}
+    </Sheet>
   );
 };
 

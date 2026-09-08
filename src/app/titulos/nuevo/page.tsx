@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Button } from "@/components/Button";
+import { PageHeader } from "@/components/PageHeader";
 import { TitleForm } from "@/components/TitleForm";
 import { metadataServicesConfigured } from "@/lib/metadata";
 import { getCollectionLists, getTagFilters } from "@/lib/queries";
-import { focusRing } from "@/lib/ui";
 
 export const metadata: Metadata = {
   title: "Registrar título",
@@ -20,19 +20,17 @@ export default async function NewTitlePage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
-      <header className="flex items-center justify-between gap-3">
-        <Link
-          href="/buscar"
-          aria-label="Volver a buscar"
-          className={`inline-flex h-10 w-10 items-center justify-center rounded-full text-fog hover:bg-well hover:text-paper ${focusRing}`}
-        >
-          ←
-        </Link>
-        <h1 className="font-serif text-2xl text-paper">Registrar título</h1>
-        <Link href="/buscar" className="text-sm font-medium text-accent hover:text-accent-hover">
-          Buscar en TMDB
-        </Link>
-      </header>
+      <PageHeader
+        eyebrow="Catálogo"
+        title="Registrar título"
+        backHref="/buscar"
+        backLabel="Volver a buscar"
+        actions={
+          <Button href="/buscar" variant="ghost">
+            Buscar en TMDB
+          </Button>
+        }
+      />
 
       <TitleForm tags={tags} lists={lists} metadataConfig={metadataConfig} />
     </div>

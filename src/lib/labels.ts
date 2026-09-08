@@ -13,7 +13,7 @@ export const SERIES_STATUS_LABEL: Record<SeriesStatus, string> = {
 
 export const SERIES_STATUS_CLASS: Record<SeriesStatus, string> = {
   WATCHING: "bg-accent text-ink",
-  FINISHED: "bg-chrome text-white",
+  FINISHED: "bg-chrome text-paper",
   DROPPED: "border border-danger-line bg-danger-well text-danger",
 };
 

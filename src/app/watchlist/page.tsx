@@ -7,6 +7,7 @@ import {
   MinePlatformsSetupCta,
   MissingStreamingDataNote,
 } from "@/components/MinePlatformsNotice";
+import { PageHeader } from "@/components/PageHeader";
 import { WatchlistBodySkeleton } from "@/components/PageSkeletons";
 import { WatchlistList } from "@/components/WatchlistList";
 import {
@@ -40,19 +41,21 @@ type WatchlistSearchParams = {
 };
 
 const WatchlistHeader = () => (
-  <header className="flex items-center justify-between gap-3">
-    <h1 className="font-serif text-4xl tracking-tight text-paper">Quiero ver</h1>
-    <Link
-      href="/buscar"
-      aria-label="Buscar para agregar"
-      className={cn(
-        "inline-flex h-10 w-10 items-center justify-center rounded-full border border-chrome text-fog hover:text-paper",
-        focusRing,
-      )}
-    >
-      <SearchIcon />
-    </Link>
-  </header>
+  <PageHeader
+    title="Quiero ver"
+    actions={
+      <Link
+        href="/buscar"
+        aria-label="Buscar para agregar"
+        className={cn(
+          "inline-flex h-10 w-10 items-center justify-center rounded-full border border-chrome text-fog hover:text-paper",
+          focusRing,
+        )}
+      >
+        <SearchIcon />
+      </Link>
+    }
+  />
 );
 
 export default function WatchlistPage({

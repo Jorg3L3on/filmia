@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/PageHeader";
 import { SearchBodySkeleton } from "@/components/PageSkeletons";
 import { TmdbSearchAdd } from "@/components/TmdbSearchAdd";
 import { metadataServicesConfigured } from "@/lib/metadata";
@@ -25,7 +26,7 @@ export default function SearchPage({
 }) {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <h1 className="font-serif text-4xl tracking-tight text-paper">Buscar</h1>
+      <PageHeader title="Buscar" />
       <Suspense fallback={<SearchBodySkeleton />}>
         <SearchBody searchParams={searchParams} />
       </Suspense>

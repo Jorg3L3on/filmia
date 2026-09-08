@@ -860,7 +860,7 @@ export const CoverflowDeck = ({
               focusSpring.className,
             )}
           >
-            <h2 className="truncate px-6 font-serif text-xl text-white">
+            <h2 className="truncate px-6 font-serif text-xl text-paper">
               <Link
                 href={`/titulos/${activeTitle.id}`}
                 className="hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
@@ -880,7 +880,7 @@ export const CoverflowDeck = ({
         ) : footer === "watched" ? null : (
           <div className="mx-auto max-w-xl space-y-3 text-center">
             <div className="space-y-1">
-              <h2 className="font-serif text-2xl text-white sm:text-3xl">
+              <h2 className="font-serif text-2xl text-paper sm:text-3xl">
                 <Link
                   href={`/titulos/${activeTitle.id}`}
                   className="hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"

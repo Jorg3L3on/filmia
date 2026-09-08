@@ -46,7 +46,7 @@ export const TitleCard = ({ title }: TitleCardProps) => {
             {TITLE_KIND_LABEL[title.kind]}
             {title.year ? ` · ${title.year}` : ""}
           </p>
-          <h2 className="font-serif text-base leading-tight text-white group-hover:text-accent">
+          <h2 className="font-serif text-base leading-tight text-paper group-hover:text-accent">
             {title.name}
           </h2>
           <div className="flex flex-col gap-1">

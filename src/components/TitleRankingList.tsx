@@ -65,7 +65,7 @@ export const TitleRankingList = ({ titles }: TitleRankingListProps) => {
                     href={`/titulos/${title.id}`}
                     className={`block ${focusRing}`}
                   >
-                    <h3 className="truncate font-serif text-base text-white hover:text-accent">
+                    <h3 className="truncate font-serif text-base text-paper hover:text-accent">
                       {title.name}
                       {title.year ? (
                         <span className="font-sans text-xs text-mist">

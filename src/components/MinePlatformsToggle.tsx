@@ -70,7 +70,7 @@ export const MinePlatformsToggle = ({
         Mis plataformas
       </p>
       <p className="text-sm text-fog">
-        Solo títulos <span className="text-white">incluidos</span> en tus
+        Solo títulos <span className="text-paper">incluidos</span> en tus
         suscripciones (México). No cuenta renta ni compra.
       </p>
       <Link
@@ -86,7 +86,7 @@ export const MinePlatformsToggle = ({
           focusRing,
           minePlatforms
             ? "border-accent bg-accent text-ink"
-            : "border-chrome text-fog hover:border-[#555] hover:text-white",
+            : "border-chrome text-fog hover:border-line-hover hover:text-paper",
         )}
       >
         Solo en mis plataformas

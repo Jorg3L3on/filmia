@@ -27,7 +27,7 @@ export const Logo = ({ size = "md", showWordmark = true, className }: LogoProps)
         priority
       />
       {showWordmark ? (
-        <span className={cn("font-serif tracking-wide text-white", wordmark)}>
+        <span className={cn("font-serif tracking-wide text-paper", wordmark)}>
           Filmia
         </span>
       ) : null}
