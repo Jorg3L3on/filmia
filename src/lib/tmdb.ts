@@ -78,9 +78,12 @@ export class TmdbRequestError extends Error {
   }
 }
 
+export const TMDB_UNAVAILABLE_COPY =
+  "No se puede buscar títulos ahora. Tu diario y tus listas siguen disponibles.";
+
 export const tmdbErrorMessage = (error: unknown) => {
   if (error instanceof TmdbRequestError) {
-    return error.message;
+    return error.code === "missing_key" ? TMDB_UNAVAILABLE_COPY : error.message;
   }
 
   if (error instanceof TypeError) {

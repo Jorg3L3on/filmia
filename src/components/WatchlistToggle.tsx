@@ -1,8 +1,9 @@
 "use client";
 
 import { addToWatchlistById, removeFromWatchlistById } from "@/app/actions/watchlist";
+import { Button } from "@/components/Button";
+import { showToast } from "@/lib/toast";
 import { useStickyOptimistic } from "@/lib/use-optimistic-action";
-import { btnGhost, btnPrimary } from "@/lib/ui";
 
 type WatchlistToggleProps = {
   titleId: string;
@@ -14,6 +15,9 @@ export const WatchlistToggle = ({ titleId, inWatchlist }: WatchlistToggleProps) 
 
   const handleToggle = () => {
     const next = !optimistic;
+    showToast({
+      title: next ? "En Quiero ver" : "Fuera de Quiero ver",
+    });
     run(next, async () => {
       if (next) {
         await addToWatchlistById(titleId);
@@ -30,22 +34,18 @@ export const WatchlistToggle = ({ titleId, inWatchlist }: WatchlistToggleProps) 
           <span className="inline-flex items-center rounded-full bg-accent/15 px-3 py-1 text-xs font-medium text-accent">
             En Quiero ver
           </span>
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={handleToggle}
-            disabled={isPending}
-            className={btnGhost}
+            pending={isPending}
+            pendingLabel="Quitando…"
           >
-            {isPending ? "Quitando…" : "Quitar de Quiero ver"}
-          </button>
+            Quitar de Quiero ver
+          </Button>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={handleToggle}
-          disabled={isPending}
-          className={btnPrimary}
-        >
+        <Button type="button" onClick={handleToggle} pending={isPending} pendingLabel="Guardando…">
           <svg aria-hidden="true" viewBox="0 0 24 24" className="mr-2 h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75}>
             <path
               strokeLinecap="round"
@@ -53,8 +53,8 @@ export const WatchlistToggle = ({ titleId, inWatchlist }: WatchlistToggleProps) 
               d="M7 4.5h10.5a1 1 0 0 1 1 1V20L12.25 16.5 6 20V5.5a1 1 0 0 1 1-1Z"
             />
           </svg>
-          {isPending ? "Guardando…" : "Quiero ver"}
-        </button>
+          Quiero ver
+        </Button>
       )}
       {error ? (
         <p role="alert" className="text-sm text-danger">

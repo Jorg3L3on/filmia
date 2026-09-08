@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { updateAccount, type ProfileActionState } from "@/app/actions/profile";
-import { SuccessToast } from "@/components/SuccessToast";
-import { btnPrimary, fieldClass, wellClass } from "@/lib/ui";
+import { Button } from "@/components/Button";
+import { showToast } from "@/lib/toast";
+import { fieldClass, wellClass } from "@/lib/ui";
 
 type ProfileAccountFormProps = {
   name: string | null;
@@ -15,6 +16,15 @@ export const ProfileAccountForm = ({ name, email }: ProfileAccountFormProps) => 
     updateAccount,
     null,
   );
+
+  useEffect(() => {
+    if (state && "ok" in state) {
+      showToast({
+        title: "Cambios guardados",
+        description: "Tu información se actualizó correctamente.",
+      });
+    }
+  }, [state]);
 
   return (
     <form action={action} className={`${wellClass} space-y-5 p-5`}>
@@ -30,13 +40,6 @@ export const ProfileAccountForm = ({ name, email }: ProfileAccountFormProps) => 
         >
           {state.error}
         </p>
-      ) : null}
-
-      {state && "ok" in state ? (
-        <SuccessToast
-          title="Cambios guardados"
-          description="Tu información se actualizó correctamente."
-        />
       ) : null}
 
       <label className="block space-y-1.5">
@@ -70,9 +73,9 @@ export const ProfileAccountForm = ({ name, email }: ProfileAccountFormProps) => 
       </label>
 
       <div className="flex justify-end">
-        <button type="submit" disabled={isPending} className={`${btnPrimary} disabled:opacity-60`}>
-          {isPending ? "Guardando…" : "Guardar cambios"}
-        </button>
+        <Button type="submit" pending={isPending} pendingLabel="Guardando…">
+          Guardar cambios
+        </Button>
       </div>
     </form>
   );

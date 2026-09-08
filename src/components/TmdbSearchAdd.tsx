@@ -5,13 +5,15 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { searchTmdbDiscover } from "@/app/actions/metadata";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { EmptyState } from "@/components/EmptyState";
+import { Button } from "@/components/Button";
 import { PosterImage } from "@/components/PosterImage";
-import { SearchPreviewSheet } from "@/components/SearchPreviewSheet";
+import { SearchPreviewSheet, type SearchAddDestination } from "@/components/SearchPreviewSheet";
 import type { TitleKind } from "@/db";
 import { KIND_CHIPS, titleMatchesKind } from "@/lib/catalog-filters";
 import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
-import type { TmdbCatalogResult } from "@/lib/tmdb";
+import { TMDB_UNAVAILABLE_COPY, type TmdbCatalogResult } from "@/lib/tmdb";
+import { showToast } from "@/lib/toast";
 import type { UserTmdbEntry } from "@/lib/queries";
 import {
   SEARCH_DEBOUNCE_MS,
@@ -20,7 +22,7 @@ import {
   readSearchCache,
   writeSearchCache,
 } from "@/lib/search-session";
-import { btnPrimary, fieldClass, focusRing } from "@/lib/ui";
+import { fieldClass, focusRing } from "@/lib/ui";
 
 type CatalogEntry = {
   titleId: string;
@@ -68,10 +70,9 @@ export const TmdbSearchAdd = ({
   const [results, setResults] = useState<TmdbCatalogResult[]>(initialResults);
   const [catalog, setCatalog] = useState(() => toCatalogMap(existing));
   const [error, setError] = useState<string | null>(initialError);
-  const [notice, setNotice] = useState<string | null>(null);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<
-    "catalog" | "watchlist" | "open" | null
+    SearchAddDestination | "open" | null
   >(null);
   const [preview, setPreview] = useState<TmdbCatalogResult | null>(null);
   const [hasSearched, setHasSearched] = useState(Boolean(initialQuery.trim()));
@@ -121,7 +122,6 @@ export const TmdbSearchAdd = ({
         setHasSearched(true);
         setResults(cached.results);
         setError(cached.error);
-        setNotice(null);
         syncSearchUrl(trimmed);
         return;
       }
@@ -130,7 +130,6 @@ export const TmdbSearchAdd = ({
       requestIdRef.current = requestId;
       startSearch(async () => {
         setError(null);
-        setNotice(null);
         const { results: hits, error: searchError } = await searchTmdbDiscover(trimmed);
         if (requestId !== requestIdRef.current) {
           return;
@@ -195,7 +194,6 @@ export const TmdbSearchAdd = ({
       setResults([]);
       setHasSearched(false);
       setError(null);
-      setNotice(null);
       syncSearchUrl("");
       return;
     }
@@ -203,13 +201,17 @@ export const TmdbSearchAdd = ({
     scheduleSearch(trimmed);
   };
 
-  const upsertLocal = (result: TmdbCatalogResult, titleId: string, inWatchlist: boolean) => {
+  const upsertLocal = (
+    result: TmdbCatalogResult,
+    titleId: string,
+    next: { inWatchlist: boolean; watched: boolean },
+  ) => {
     setCatalog((current) => {
-      const next = new Map(current);
-      const entry = { titleId, inWatchlist, watched: defaultDestination === "watched" };
-      next.set(catalogKey(result.tmdbId, result.kind), entry);
-      next.set(String(result.tmdbId), entry);
-      return next;
+      const nextMap = new Map(current);
+      const entry = { titleId, inWatchlist: next.inWatchlist, watched: next.watched };
+      nextMap.set(catalogKey(result.tmdbId, result.kind), entry);
+      nextMap.set(String(result.tmdbId), entry);
+      return nextMap;
     });
   };
 
@@ -222,14 +224,18 @@ export const TmdbSearchAdd = ({
     });
   };
 
-  const handleAdd = (result: TmdbCatalogResult, destination: "catalog" | "watchlist") => {
+  const handleAdd = (result: TmdbCatalogResult, destination: SearchAddDestination) => {
     const key = catalogKey(result.tmdbId, result.kind);
     const optimisticId = `pending:${key}`;
+    const previous =
+      catalog.get(key) ?? catalog.get(String(result.tmdbId)) ?? null;
     setError(null);
-    setNotice(null);
     setPendingKey(key);
     setPendingAction(destination);
-    upsertLocal(result, optimisticId, destination === "watchlist");
+    upsertLocal(result, previous?.titleId ?? optimisticId, {
+      inWatchlist: destination === "watchlist" || Boolean(previous?.inWatchlist),
+      watched: destination === "watched" || Boolean(previous?.watched),
+    });
     startAdd(async () => {
       const outcome = await addTitleFromTmdb({
         tmdbId: result.tmdbId,
@@ -238,29 +244,32 @@ export const TmdbSearchAdd = ({
         originalName: result.originalName,
         year: result.year,
         posterPath: result.posterPath,
-        destination:
-          defaultDestination === "watched"
-            ? "watched"
-            : destination === "watchlist"
-              ? "watchlist"
-              : undefined,
+        destination,
         addToWatchlist: destination === "watchlist",
-        watchedAt: defaultDestination === "watched" ? watchedDate : null,
+        watchedAt: destination === "watched" ? watchedDate : null,
       });
       setPendingKey(null);
       setPendingAction(null);
 
       if (!outcome.ok) {
-        removeLocal(result);
+        if (previous) {
+          upsertLocal(result, previous.titleId, previous);
+        } else {
+          removeLocal(result);
+        }
         setError(outcome.error);
+        showToast({ title: "No se pudo guardar", description: outcome.error, variant: "error" });
         return;
       }
 
-      upsertLocal(result, outcome.titleId, outcome.addedToWatchlist);
-      setNotice(
+      upsertLocal(result, outcome.titleId, {
+        inWatchlist: outcome.addedToWatchlist || destination === "watchlist",
+        watched: outcome.markedWatched || destination === "watched",
+      });
+      showToast(
         destination === "watchlist"
-          ? `${result.name} quedó en Quiero ver.`
-          : `${result.name} ya está en Filmia.`,
+          ? { title: "En Quiero ver", description: result.name }
+          : { title: "Marcada como vista", description: result.name },
       );
     });
   };
@@ -302,13 +311,24 @@ export const TmdbSearchAdd = ({
 
   if (!configured.tmdb) {
     return (
-      <EmptyState
-        variant="buscar"
-        title="Busca un título"
-        description="Falta la clave de TMDB en el entorno. Sin ella no se puede buscar."
-        actionHref="/watchlist"
-        actionLabel="Ir a Quiero ver"
-      />
+      <div className="space-y-6">
+        <label className="block">
+          <span className="sr-only">Buscar títulos</span>
+          <input
+            disabled
+            placeholder="Interestelar, Dune, Severance…"
+            className={`${fieldClass} cursor-not-allowed py-3 text-base opacity-60`}
+            aria-disabled="true"
+          />
+        </label>
+        <EmptyState
+          variant="buscar"
+          title="Búsqueda no disponible"
+          description={TMDB_UNAVAILABLE_COPY}
+          actionHref="/watchlist"
+          actionLabel="Ir a Quiero ver"
+        />
+      </div>
     );
   }
 
@@ -366,12 +386,6 @@ export const TmdbSearchAdd = ({
       {error ? (
         <p role="alert" className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger">
           {error}
-        </p>
-      ) : null}
-
-      {notice ? (
-        <p role="status" className="text-sm text-accent">
-          {notice}
         </p>
       ) : null}
 
@@ -461,15 +475,22 @@ export const TmdbSearchAdd = ({
       ) : null}
 
       <p className="sr-only">{isSearching ? "Buscando" : isAdding ? "Guardando" : ""}</p>
-      <p className="text-center">
-        <button
+      <p className="text-center sm:hidden">
+        <Button
           type="button"
           onClick={handleSearch}
-          disabled={isSearching || !query.trim()}
-          className={`${btnPrimary} sm:hidden`}
+          pending={isSearching}
+          pendingLabel="Buscando…"
+          disabled={!query.trim()}
         >
-          {isSearching ? "Buscando…" : "Buscar"}
-        </button>
+          Buscar
+        </Button>
+      </p>
+      <p className="text-center text-xs text-mist">
+        ¿No aparece en TMDB?{" "}
+        <Button href="/titulos/nuevo" variant="ghost" size="sm" className="align-baseline">
+          Registrar a mano
+        </Button>
       </p>
     </div>
   );

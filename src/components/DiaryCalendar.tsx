@@ -254,7 +254,7 @@ export const DiaryCalendar = ({
                 ? clearHref
                 : `/buscar?fecha=${month}-01&destino=visto`
             }
-            actionLabel={hasActiveFilters ? "Quitar filtros" : "Registrar título"}
+            actionLabel={hasActiveFilters ? "Quitar filtros" : "Buscar título"}
           />
         ) : null}
       </section>

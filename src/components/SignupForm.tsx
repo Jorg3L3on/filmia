@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AuthScreen } from "@/components/AuthScreen";
+import { Button } from "@/components/Button";
 import { PasswordField } from "@/components/PasswordField";
-import { btnPrimary, fieldClass, focusRing } from "@/lib/ui";
+import { fieldClass, focusRing } from "@/lib/ui";
 
 export const SignupForm = () => {
   const router = useRouter();
@@ -37,16 +39,18 @@ export const SignupForm = () => {
   };
 
   return (
-    <div className="mx-auto flex min-h-[80vh] w-full max-w-md items-center px-4 py-12">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full space-y-6 rounded-3xl border border-line bg-surface/90 p-7 shadow-[0_24px_60px_rgba(0,0,0,0.45)]"
-      >
-        <div className="space-y-2 text-center">
-          <h1 className="font-serif text-4xl text-paper">Filmia</h1>
-          <p className="text-sm font-medium text-accent">Registro</p>
-        </div>
-
+    <AuthScreen
+      title="Crear cuenta en Filmia"
+      footer={
+        <p className="text-center text-sm text-mist">
+          Ya tengo cuenta{" "}
+          <Link href="/login" className={`text-accent hover:text-accent-hover ${focusRing}`}>
+            → Entrar
+          </Link>
+        </p>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
         {error ? (
           <p
             role="alert"
@@ -87,21 +91,15 @@ export const SignupForm = () => {
           placeholder="Mínimo 8 caracteres"
         />
 
-        <button
+        <Button
           type="submit"
-          disabled={isLoading}
-          className={`${btnPrimary} w-full disabled:opacity-60`}
+          pending={isLoading}
+          pendingLabel="Creando…"
+          className="w-full"
         >
-          {isLoading ? "Creando…" : "Crear cuenta"}
-        </button>
-
-        <p className="text-center text-sm text-mist">
-          Ya tengo cuenta{" "}
-          <Link href="/login" className={`text-accent hover:text-accent-hover ${focusRing}`}>
-            → Entrar
-          </Link>
-        </p>
+          Crear cuenta
+        </Button>
       </form>
-    </div>
+    </AuthScreen>
   );
 };

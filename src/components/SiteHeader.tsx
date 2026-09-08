@@ -4,16 +4,8 @@ import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { LogoutButton } from "@/components/LogoutButton";
 import { cn } from "@/lib/cn";
-import { isCurrentPath } from "@/lib/nav";
+import { desktopNavItems, isCurrentPath } from "@/lib/nav";
 import { focusRing } from "@/lib/ui";
-
-const navItems = [
-  { href: "/", label: "Diario" },
-  { href: "/watchlist", label: "Quiero ver" },
-  { href: "/listas", label: "Listas" },
-  { href: "/tags", label: "Etiquetas" },
-  { href: "/buscar", label: "Buscar" },
-] as const;
 
 export type HeaderUser = {
   name?: string | null;
@@ -28,20 +20,22 @@ type SiteHeaderProps = {
 export const SiteHeader = ({ pathname: currentPath, user }: SiteHeaderProps) => {
   const displayName = user?.name?.trim() || user?.email || "Perfil";
   const initial = displayName.slice(0, 1).toUpperCase();
-  const isProfile = currentPath.startsWith("/perfil");
+  const isProfile = isCurrentPath("/perfil", currentPath);
+  const isTags = isCurrentPath("/tags", currentPath);
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-canvas/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2 sm:gap-4 sm:py-3">
         <Link
           href="/"
           className={focusRing}
           aria-label="Filmia, ir al inicio"
         >
-          <Logo size="md" />
+          <Logo size="sm" className="sm:hidden" />
+          <Logo size="md" className="hidden sm:inline-flex" />
         </Link>
         <nav aria-label="Principal" className="hidden items-center gap-1 text-sm sm:flex">
-          {navItems.map((item) => {
+          {desktopNavItems.map((item) => {
             const isCurrent = isCurrentPath(item.href, currentPath);
 
             return (
@@ -62,14 +56,27 @@ export const SiteHeader = ({ pathname: currentPath, user }: SiteHeaderProps) => 
             );
           })}
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+          <Link
+            href="/tags"
+            aria-current={isTags ? "page" : undefined}
+            className={cn(
+              "rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-[0.08em] sm:hidden",
+              focusRing,
+              isTags
+                ? "bg-accent text-ink"
+                : "text-fog hover:bg-chrome hover:text-paper",
+            )}
+          >
+            Etiquetas
+          </Link>
           <Link
             href="/perfil"
             title="Perfil"
             aria-label={`Perfil de ${displayName}`}
             aria-current={isProfile ? "page" : undefined}
             className={cn(
-              "hidden items-center gap-2 rounded-full p-0.5 text-xs transition sm:flex sm:max-w-[14rem] sm:py-1 sm:pr-3 sm:pl-1",
+              "inline-flex items-center gap-2 rounded-full p-0.5 text-xs transition sm:max-w-[14rem] sm:py-1 sm:pr-3 sm:pl-1",
               focusRing,
               isProfile
                 ? "bg-accent font-medium text-ink"

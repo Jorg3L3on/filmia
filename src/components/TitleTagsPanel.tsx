@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { createAndAssignTag, toggleTitleTag } from "@/app/actions/tags";
 import { CreateTagForm } from "@/components/CreateTagForm";
+import { Button } from "@/components/Button";
 import { cn } from "@/lib/cn";
 import { tagHref } from "@/lib/tags";
 import { sameIdList, useStickyOptimistic } from "@/lib/use-optimistic-action";
-import { btnGhost, eyebrowClass, focusRing, wellClass } from "@/lib/ui";
+import { eyebrowClass, focusRing, wellClass } from "@/lib/ui";
 
 type AssignableTag = {
   id: string;
@@ -150,9 +151,9 @@ export const TitleTagsPanel = ({
         placeholder="visual / espectáculo"
       />
 
-      <Link href="/tags" className={btnGhost}>
+      <Button href="/tags" variant="ghost">
         Ver todas las etiquetas
-      </Link>
+      </Button>
     </section>
   );
 };

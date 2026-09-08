@@ -21,13 +21,14 @@ export default async function NewTitlePage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <PageHeader
-        eyebrow="Catálogo"
+        eyebrow="Alta manual"
         title="Registrar título"
+        description="Buscar es la forma habitual de añadir. Esto es el alta a mano si TMDB no alcanza."
         backHref="/buscar"
         backLabel="Volver a buscar"
         actions={
-          <Button href="/buscar" variant="ghost">
-            Buscar en TMDB
+          <Button href="/buscar">
+            Ir a Buscar
           </Button>
         }
       />

@@ -7,6 +7,7 @@ import {
   buttonClass,
   sheetLayerClass,
   sheetPanelClass,
+  toastLayerClass,
 } from "./ui";
 
 describe("buttonClass", () => {
@@ -34,5 +35,6 @@ describe("sheet tokens", () => {
     assert.equal(sheetLayerClass.preview, "z-sheet-preview");
     assert.equal(sheetLayerClass.default, "z-sheet");
     assert.equal(sheetLayerClass.top, "z-sheet-top");
+    assert.equal(toastLayerClass, "z-toast");
   });
 });

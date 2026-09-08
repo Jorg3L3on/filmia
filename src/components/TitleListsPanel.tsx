@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { toggleTitleInList } from "@/app/actions/lists";
+import { Button } from "@/components/Button";
 import { cn } from "@/lib/cn";
 import { isFixedListSlug, listHref } from "@/lib/lists";
 import { sameIdList, useStickyOptimistic } from "@/lib/use-optimistic-action";
-import { btnGhost, eyebrowClass, focusRing, wellClass } from "@/lib/ui";
+import { showToast } from "@/lib/toast";
+import { eyebrowClass, focusRing, wellClass } from "@/lib/ui";
 
 type AssignableList = {
   id: string;
@@ -39,6 +41,12 @@ export const TitleListsPanel = ({
       ? optimisticIds.filter((id) => id !== listId)
       : [...optimisticIds, listId];
     setPendingId(listId);
+    const adding = !memberIds.has(listId);
+    const list = lists.find((item) => item.id === listId);
+    showToast({
+      title: adding ? "En la lista" : "Fuera de la lista",
+      description: list?.name,
+    });
     run(next, async () => {
       try {
         await toggleTitleInList(listId, titleId);
@@ -94,9 +102,9 @@ export const TitleListsPanel = ({
       ) : null}
 
       {custom.length > 0 ? (
-        <Link href="/listas/nueva" className={btnGhost}>
+        <Button href="/listas/nueva" variant="ghost">
           Nueva lista
-        </Link>
+        </Button>
       ) : null}
     </section>
   );

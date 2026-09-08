@@ -26,7 +26,10 @@ export default function SearchPage({
 }) {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <PageHeader title="Buscar" />
+      <PageHeader
+        title="Buscar"
+        description="Añade a Quiero ver, márcala vista o ábrela en la ficha para listas."
+      />
       <Suspense fallback={<SearchBodySkeleton />}>
         <SearchBody searchParams={searchParams} />
       </Suspense>

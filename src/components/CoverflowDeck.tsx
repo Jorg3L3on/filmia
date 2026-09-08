@@ -14,6 +14,7 @@ import {
 import { removeTitleFromList } from "@/app/actions/lists";
 import { MarkSeenEye } from "@/components/MarkSeenEye";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
+import { Button } from "@/components/Button";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { PosterImage } from "@/components/PosterImage";
 import { SharedPoster } from "@/components/SharedPoster";
@@ -32,7 +33,7 @@ import {
 import { PICKS_SAVE_LABEL } from "@/lib/mark-seen";
 import { useSpringFeedback } from "@/lib/motion";
 import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
-import { btnGhost, btnLink } from "@/lib/ui";
+import { showToast } from "@/lib/toast";
 import type { Platform, SeriesStatus, TitleKind } from "@/db";
 import type { WatchProviderOffer } from "@/lib/watch-providers";
 
@@ -915,12 +916,13 @@ export const CoverflowDeck = ({
                     {formatRating(activeTitle.rating)}
                   </span>
                 ) : null}
-                <Link
+                <Button
                   href={`/titulos/${activeTitle.id}`}
-                  className={cn(btnGhost, "text-xs")}
+                  variant="ghost"
+                  size="sm"
                 >
                   Ver ficha
-                </Link>
+                </Button>
               </div>
               {activeTitle.kind === "SERIES" && activeTitle.seriesStatus ? (
                 <p className="text-sm text-fog">
@@ -953,12 +955,15 @@ export const CoverflowDeck = ({
               </div>
             ) : null}
             {listId ? (
-              <button
+              <Button
                 type="button"
-                className={btnLink}
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   const titleId = activeTitle.id;
+                  const titleName = activeTitle.name;
                   setHiddenIds((current) => new Set(current).add(titleId));
+                  showToast({ title: "Fuera de la lista", description: titleName });
                   startTransition(async () => {
                     try {
                       await removeTitleFromList(listId, titleId);
@@ -968,12 +973,16 @@ export const CoverflowDeck = ({
                         next.delete(titleId);
                         return next;
                       });
+                      showToast({
+                        title: "No se pudo quitar",
+                        variant: "error",
+                      });
                     }
                   });
                 }}
               >
                 Quitar de la lista
-              </button>
+              </Button>
             ) : null}
           </div>
         )

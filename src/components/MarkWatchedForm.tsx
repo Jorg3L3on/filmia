@@ -2,17 +2,14 @@
 
 import { useState, useTransition, type FormEvent } from "react";
 import { clearTitleWatched, markTitleWatched } from "@/app/actions/watchlist";
+import { Button } from "@/components/Button";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { RatingStars } from "@/components/RatingStars";
 import { todayDateInput, toDateInput } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import { showToast } from "@/lib/toast";
 import { actionErrorMessage } from "@/lib/use-optimistic-action";
-import {
-  btnDanger,
-  btnPrimary,
-  btnSecondary,
-  fieldClass,
-} from "@/lib/ui";
+import { fieldClass } from "@/lib/ui";
 
 type MarkWatchedFormProps = {
   titleId: string;
@@ -48,11 +45,14 @@ export const MarkWatchedForm = ({
     const formData = new FormData(event.currentTarget);
     setError(null);
     onSaved?.();
+    showToast({ title: isEdit ? "Diario actualizado" : "Marcada como vista" });
     startTransition(async () => {
       try {
         await markTitleWatched(titleId, formData);
       } catch (caught) {
-        setError(actionErrorMessage(caught));
+        const message = actionErrorMessage(caught);
+        setError(message);
+        showToast({ title: "No se pudo guardar", description: message, variant: "error" });
       }
     });
   };
@@ -116,17 +116,15 @@ export const MarkWatchedForm = ({
         </label>
 
         <div className={isCompact ? "sm:col-span-2" : undefined}>
-          <button
+          <Button
             type="submit"
-            disabled={isPending}
-            className={isCompact ? `${btnSecondary} px-3 py-1 text-xs` : btnPrimary}
+            pending={isPending}
+            pendingLabel="Guardando…"
+            variant={isCompact ? "secondary" : "primary"}
+            size={isCompact ? "sm" : "md"}
           >
-            {isPending
-              ? "Guardando…"
-              : isEdit
-                ? "Guardar en el diario"
-                : "Vi esto"}
-          </button>
+            {isEdit ? "Guardar en el diario" : "Vi esto"}
+          </Button>
         </div>
       </form>
 
@@ -141,7 +139,7 @@ export const MarkWatchedForm = ({
           <ConfirmSubmit
             label="Quitar del diario"
             confirmMessage="¿Quitar la fecha de visto? Se conservan tu nota y el comentario."
-            className={isCompact ? `${btnDanger} px-3 py-1 text-xs` : btnDanger}
+            size={isCompact ? "sm" : "md"}
           />
         </form>
       ) : null}

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { deleteTitle } from "@/app/actions/titles";
+import { Button } from "@/components/Button";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import {
@@ -18,7 +18,7 @@ import {
   getTitleById,
   getUserStreamingPlatforms,
 } from "@/lib/queries";
-import { btnDanger, btnGhost, wellClass } from "@/lib/ui";
+import { wellClass } from "@/lib/ui";
 import { FichaVisit } from "@/components/FichaVisit";
 import { resolveTitleExtras, storedTitleExtras } from "@/lib/title-extras";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
@@ -135,13 +135,12 @@ const TitleDetail = async ({
       </Suspense>
 
       <div className="flex flex-wrap gap-3 pt-2">
-        <Link href={`/titulos/${title.id}/editar`} className={btnGhost}>
+        <Button href={`/titulos/${title.id}/editar`} variant="ghost">
           Editar ficha
-        </Link>
+        </Button>
         <ConfirmSubmit
           label="Borrar"
           confirmMessage={`¿Borrar “${title.name}”?`}
-          className={btnDanger}
           href="/"
           action={deleteAction}
         />

@@ -12,6 +12,7 @@ import { RatingSheet } from "@/components/RatingSheet";
 import { cn } from "@/lib/cn";
 import { formatStarScore } from "@/lib/labels";
 import { useSpringFeedback } from "@/lib/motion";
+import { showToast } from "@/lib/toast";
 import { useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { focusRing } from "@/lib/ui";
 
@@ -73,6 +74,9 @@ export const TitleActionRow = ({
     const nextWatched = !optimistic.watched;
     setPendingAction("watched");
     watchedSpring.trigger();
+    showToast({
+      title: nextWatched ? "Marcada como vista" : "Quitada del diario",
+    });
     run(
       {
         ...optimistic,
@@ -97,6 +101,9 @@ export const TitleActionRow = ({
     const nextInWatchlist = !optimistic.inWatchlist;
     setPendingAction("watchlist");
     watchlistSpring.trigger();
+    showToast({
+      title: nextInWatchlist ? "En Quiero ver" : "Fuera de Quiero ver",
+    });
     run(
       { ...optimistic, inWatchlist: nextInWatchlist },
       async () => {
@@ -116,6 +123,7 @@ export const TitleActionRow = ({
   const handleSaveRating = (next: { rating: number | null; review: string }) => {
     setPendingAction("rating");
     setRatingOpen(false);
+    showToast({ title: "Nota guardada" });
     run(
       {
         ...optimistic,
