@@ -1,5 +1,4 @@
 import { createId } from "@paralleldrive/cuid2";
-import { and, eq } from "drizzle-orm";
 import { cache } from "react";
 import { db, tags } from "@/db";
 import { slugify } from "@/lib/labels";

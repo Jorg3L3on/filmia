@@ -1,26 +1,69 @@
+import { cn } from "@/lib/cn";
+
 export const focusRing =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 export const fieldClass =
   "w-full rounded-xl border border-chrome bg-well px-3 py-2 text-sm text-paper placeholder:text-faint focus:border-accent focus:outline-none";
 
-export const btnPrimary =
-  `inline-flex items-center justify-center rounded-full bg-accent px-4 py-2 text-sm font-semibold text-ink hover:bg-accent-hover ${focusRing} focus-visible:outline-white`;
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonSize = "sm" | "md" | "lg";
+export type SheetLayer = "preview" | "default" | "top";
+export type SheetAlign = "bottom" | "center";
 
-export const btnSecondary =
-  `inline-flex items-center justify-center rounded-full bg-chrome px-4 py-2 text-sm text-paper hover:bg-[#3a4452] ${focusRing}`;
+export const btnBase = `inline-flex items-center justify-center rounded-full transition disabled:opacity-60 ${focusRing}`;
 
-export const btnGhost =
-  `inline-flex items-center justify-center rounded-full border border-chrome px-4 py-2 text-sm text-fog hover:border-[#555] hover:text-paper ${focusRing}`;
+export const buttonVariantClass: Record<ButtonVariant, string> = {
+  primary:
+    "bg-accent font-semibold text-ink hover:bg-accent-hover focus-visible:outline-white",
+  secondary: "bg-chrome text-paper hover:bg-chrome-hover",
+  ghost: "border border-chrome text-fog hover:border-line-hover hover:text-paper",
+  danger:
+    "border border-danger-line text-danger hover:bg-danger-well focus-visible:outline-danger",
+};
 
-export const btnDanger =
-  `inline-flex items-center justify-center rounded-full border border-danger-line px-4 py-2 text-sm text-danger hover:bg-danger-well ${focusRing} focus-visible:outline-danger`;
+export const buttonSizeClass: Record<ButtonSize, string> = {
+  sm: "px-3 py-1.5 text-xs",
+  md: "px-4 py-2 text-sm",
+  lg: "px-8 py-3 text-base",
+};
+
+type ButtonClassOptions = {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  pending?: boolean;
+  className?: string;
+};
+
+export const buttonClass = ({
+  variant = "primary",
+  size = "md",
+  pending = false,
+  className,
+}: ButtonClassOptions = {}) =>
+  cn(
+    btnBase,
+    buttonVariantClass[variant],
+    buttonSizeClass[size],
+    pending && "cursor-wait opacity-60",
+    className,
+  );
+
+export const btnPrimary = buttonClass({ variant: "primary" });
+export const btnSecondary = buttonClass({ variant: "secondary" });
+export const btnGhost = buttonClass({ variant: "ghost" });
+export const btnDanger = buttonClass({ variant: "danger" });
 
 export const btnSuccess =
-  `inline-flex items-center justify-center rounded-full bg-success px-4 py-2 text-sm font-semibold text-ink hover:bg-success-hover ${focusRing}`;
+  `inline-flex items-center justify-center rounded-full bg-success px-4 py-2 text-sm font-semibold text-ink hover:bg-success-hover disabled:opacity-60 ${focusRing}`;
 
 export const btnLink =
   `text-xs text-fog underline-offset-2 hover:text-paper hover:underline ${focusRing}`;
+
+export const iconButtonClass = cn(
+  "inline-flex h-10 w-10 items-center justify-center rounded-full text-fog hover:bg-well hover:text-paper",
+  focusRing,
+);
 
 export const wellClass = "rounded-2xl border border-line bg-surface";
 
@@ -33,3 +76,22 @@ export const posterFrame =
   "overflow-hidden rounded-poster bg-well shadow-[0_10px_24px_rgba(0,0,0,0.45)]";
 
 export const posterRowClass = "flex gap-4";
+
+export const sheetLayerClass: Record<SheetLayer, string> = {
+  preview: "z-sheet-preview",
+  default: "z-sheet",
+  top: "z-sheet-top",
+};
+
+export const sheetAlignClass: Record<SheetAlign, string> = {
+  bottom: "fixed inset-0 flex items-end justify-center",
+  center: "fixed inset-0 flex items-end justify-center sm:items-center",
+};
+
+export const sheetOverlayClass = "absolute inset-0 bg-canvas-deep/70";
+
+export const sheetPanelClass = (className?: string) =>
+  cn(
+    "relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-t-sheet border border-line bg-well pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[var(--sheet-shadow)] sheet-rise sm:rounded-sheet",
+    className,
+  );

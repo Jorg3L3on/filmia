@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createTag } from "@/app/actions/tags";
 import { CreateTagForm } from "@/components/CreateTagForm";
 import { EmptyState } from "@/components/EmptyState";
+import { PageHeader } from "@/components/PageHeader";
 import { TagsBodySkeleton } from "@/components/PageSkeletons";
 import { PosterStack } from "@/components/PosterStack";
 import { getTags } from "@/lib/queries";
@@ -18,7 +19,7 @@ export const metadata = {
 export default function TagsPage() {
   return (
     <div className="space-y-6">
-      <h1 className="font-serif text-4xl tracking-tight text-paper">Etiquetas</h1>
+      <PageHeader title="Etiquetas" />
       <CreateTagForm action={createTag} />
       <Suspense fallback={<TagsBodySkeleton />}>
         <TagsGrid />

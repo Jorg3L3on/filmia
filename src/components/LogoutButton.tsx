@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { logoutUser } from "@/app/actions/auth";
-import { btnGhost, focusRing } from "@/lib/ui";
+import { Button } from "@/components/Button";
 
 export const LogoutButton = () => {
   const [isPending, startTransition] = useTransition();
@@ -14,14 +14,16 @@ export const LogoutButton = () => {
   };
 
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="sm"
       onClick={handleLogout}
-      disabled={isPending}
+      pending={isPending}
+      pendingLabel="Saliendo…"
       aria-label="Cerrar sesión"
-      className={`rounded-full border border-chrome px-3 py-1.5 text-xs text-fog transition hover:border-[#555] hover:text-white disabled:opacity-60 ${focusRing}`}
     >
-      {isPending ? "Saliendo…" : "Salir"}
-    </button>
+      Salir
+    </Button>
   );
 };

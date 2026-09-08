@@ -33,7 +33,7 @@ export const DiaryGenreToggle = ({
             className={cn(
               "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-wide transition",
               focusRing,
-              isCurrent ? "bg-accent text-ink" : "text-fog hover:text-white",
+              isCurrent ? "bg-accent text-ink" : "text-fog hover:text-paper",
             )}
           >
             {category.name}

@@ -1,9 +1,9 @@
-import { ListsBodySkeleton } from "@/components/PageSkeletons";
+import { ListsBodySkeleton, PageHeaderSkeleton } from "@/components/PageSkeletons";
 
 export default function Loading() {
   return (
     <div className="space-y-12">
-      <div className="h-10 w-36 rounded-xl shimmer" />
+      <PageHeaderSkeleton withAction />
       <ListsBodySkeleton />
     </div>
   );

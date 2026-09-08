@@ -74,7 +74,7 @@ export const TitleTagsPanel = ({
     <section className={`${wellClass} space-y-4 p-5`}>
       <header className="space-y-1">
         <p className={eyebrowClass}>Etiquetas</p>
-        <h2 className="font-serif text-xl text-white">¿Cómo la clasificas?</h2>
+        <h2 className="font-serif text-xl text-paper">¿Cómo la clasificas?</h2>
         <p className="text-sm text-fog">
           Toca una pastilla para asignar o quitar. Sirven para filtrar el
           diario y rankear dentro de un mood.
@@ -107,7 +107,7 @@ export const TitleTagsPanel = ({
                       focusRing,
                       included
                         ? "border-accent bg-accent text-ink"
-                        : "border-chrome text-fog hover:border-[#555] hover:text-white",
+                        : "border-chrome text-fog hover:border-line-hover hover:text-paper",
                     )}
                   >
                     {tag.name}
@@ -115,7 +115,7 @@ export const TitleTagsPanel = ({
                 {included ? (
                   <Link
                     href={tagHref(tag.slug)}
-                    className={`rounded-full px-1 text-[10px] text-mist hover:text-white ${focusRing}`}
+                    className={`rounded-full px-1 text-[10px] text-mist hover:text-paper ${focusRing}`}
                     aria-label={`Ver ranking de ${tag.name}`}
                   >
                     ver

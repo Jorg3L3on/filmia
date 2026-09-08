@@ -43,7 +43,7 @@ const chipClass = (active: boolean) =>
     focusRing,
     active
       ? "border-accent bg-accent text-ink"
-      : "border-chrome text-fog hover:border-[#555] hover:text-white",
+      : "border-chrome text-fog hover:border-line-hover hover:text-paper",
   );
 
 export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps) => {
@@ -111,7 +111,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
           <section className={cn(wellClass, "space-y-4 border-accent/30 p-5")}>
             <header className="space-y-1">
               <p className={eyebrowClass}>TMDB</p>
-              <h2 className="font-serif text-xl text-white">
+              <h2 className="font-serif text-xl text-paper">
                 ¿No encuentras la película o serie?
               </h2>
               <p className="text-sm text-fog">
@@ -136,7 +136,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
                       className={cn(
                         "rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-wide",
                         focusRing,
-                        isCurrent ? "bg-accent text-ink" : "text-fog hover:text-white",
+                        isCurrent ? "bg-accent text-ink" : "text-fog hover:text-paper",
                       )}
                     >
                       {TITLE_KIND_LABEL[item]}
@@ -162,7 +162,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
           <section className={cn(wellClass, "space-y-4 p-5")}>
             <header className="space-y-1">
               <p className={eyebrowClass}>Ficha</p>
-              <h2 className="font-serif text-xl text-white">Identidad</h2>
+              <h2 className="font-serif text-xl text-paper">Identidad</h2>
             </header>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block space-y-1.5 sm:col-span-2">
@@ -204,7 +204,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
           <section className={cn(wellClass, "space-y-5 p-5")}>
             <header className="space-y-1">
               <p className={eyebrowClass}>Tu vista</p>
-              <h2 className="font-serif text-xl text-white">Cómo lo viste</h2>
+              <h2 className="font-serif text-xl text-paper">Cómo lo viste</h2>
             </header>
 
             <div className="space-y-2">
@@ -241,7 +241,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
                         focusRing,
                         isCurrent
                           ? PLATFORM_CLASS[item]
-                          : "border border-chrome text-fog hover:text-white",
+                          : "border border-chrome text-fog hover:text-paper",
                       )}
                     >
                       {PLATFORM_LABEL[item]}
@@ -278,7 +278,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
           <section className={cn(wellClass, "space-y-5 p-5")}>
             <header className="space-y-1">
               <p className={eyebrowClass}>Colección</p>
-              <h2 className="font-serif text-xl text-white">Etiquetas y listas</h2>
+              <h2 className="font-serif text-xl text-paper">Etiquetas y listas</h2>
             </header>
 
             <fieldset className="space-y-3">
@@ -287,7 +287,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
                 {tags.map((tag) => (
                   <label
                     key={tag.id}
-                    className="cursor-pointer rounded-full border border-chrome px-3 py-1.5 text-xs text-fog transition hover:text-white has-checked:border-accent has-checked:bg-accent has-checked:text-ink"
+                    className="cursor-pointer rounded-full border border-chrome px-3 py-1.5 text-xs text-fog transition hover:text-paper has-checked:border-accent has-checked:bg-accent has-checked:text-ink"
                   >
                     <input
                       type="checkbox"
@@ -323,7 +323,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
                   {lists.map((list) => (
                     <label
                       key={list.id}
-                      className="cursor-pointer rounded-full border border-chrome px-3 py-1.5 text-xs text-fog transition hover:text-white has-checked:border-accent has-checked:bg-accent has-checked:text-ink"
+                      className="cursor-pointer rounded-full border border-chrome px-3 py-1.5 text-xs text-fog transition hover:text-paper has-checked:border-accent has-checked:bg-accent has-checked:text-ink"
                     >
                       <input
                         type="checkbox"

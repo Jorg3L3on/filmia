@@ -54,7 +54,7 @@ export const SiteHeader = ({ pathname: currentPath, user }: SiteHeaderProps) => 
                   focusRing,
                   isCurrent
                     ? "bg-accent font-medium text-ink"
-                    : "text-fog hover:bg-chrome hover:text-white",
+                    : "text-fog hover:bg-chrome hover:text-paper",
                 )}
               >
                 {item.label}
@@ -73,13 +73,13 @@ export const SiteHeader = ({ pathname: currentPath, user }: SiteHeaderProps) => 
               focusRing,
               isProfile
                 ? "bg-accent font-medium text-ink"
-                : "text-mist hover:bg-chrome hover:text-white",
+                : "text-mist hover:bg-chrome hover:text-paper",
             )}
           >
             <span
               className={cn(
                 "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold sm:h-7 sm:w-7",
-                isProfile ? "bg-ink/15 text-ink" : "bg-chrome text-white",
+                isProfile ? "bg-ink/15 text-ink" : "bg-chrome text-paper",
               )}
               aria-hidden
             >

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CatalogMoreFilters } from "@/components/CatalogMoreFilters";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { cn } from "@/lib/cn";
@@ -77,7 +77,7 @@ const sheetChipClass = (selected: boolean) =>
     focusRing,
     selected
       ? "border-accent bg-accent/10 text-accent"
-      : "border-chrome bg-well text-fog hover:border-[#555] hover:text-paper",
+      : "border-chrome bg-well text-fog hover:border-line-hover hover:text-paper",
   );
 
 export const CatalogFilters = ({
@@ -114,11 +114,14 @@ export const CatalogFilters = ({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Draft>(applied);
 
-  useEffect(() => {
-    if (!open) {
-      setDraft(applied);
-    }
-  }, [open, kind, minePlatforms, seriesStatus, sort, defaultSort, selectedSlugs, platforms]);
+  const handleOpen = () => {
+    setDraft(applied);
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
 
   const queryBase = {
     view,
@@ -207,8 +210,8 @@ export const CatalogFilters = ({
         <CatalogMoreFilters
           open={open}
           activeCount={sheetActiveCount}
-          onOpen={() => setOpen(true)}
-          onClose={() => setOpen(false)}
+          onOpen={handleOpen}
+          onClose={handleClose}
           onClear={handleClear}
           onApply={handleApply}
         >

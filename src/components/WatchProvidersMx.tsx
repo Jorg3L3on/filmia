@@ -105,8 +105,8 @@ const ProviderSection = ({
           const chipClass = cn(
             "inline-flex items-center gap-2 rounded-sm border px-2.5 py-1.5 text-sm transition",
             isMine
-              ? "border-accent bg-accent/10 text-white"
-              : "border-chrome bg-surface text-paper hover:border-accent/40 hover:text-white",
+              ? "border-accent bg-accent/10 text-paper"
+              : "border-chrome bg-surface text-paper hover:border-accent/40 hover:text-paper",
           );
           const ariaLabel = isMine
             ? `${provider.name} en ${label.toLowerCase()} (tu plataforma)`
@@ -150,7 +150,7 @@ const YoursBadge = () => (
 const ProviderLogo = ({ provider }: { provider: WatchProviderOffer }) => {
   if (!provider.logoUrl) {
     return (
-      <span className="flex h-7 w-7 items-center justify-center rounded-sm bg-chrome text-[10px] font-bold uppercase text-white">
+      <span className="flex h-7 w-7 items-center justify-center rounded-sm bg-chrome text-[10px] font-bold uppercase text-paper">
         {provider.name.slice(0, 2)}
       </span>
     );

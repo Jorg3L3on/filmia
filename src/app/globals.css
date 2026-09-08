@@ -8,7 +8,9 @@
   --well: #161a1f;
   --surface: #1c2228;
   --chrome: #2a323a;
+  --chrome-hover: #3a4452;
   --line: #252b32;
+  --line-hover: #555555;
   --accent: #7c9cff;
   --accent-hover: #9bb3ff;
   --accent-soft: rgb(124 156 255 / 0.4);
@@ -26,6 +28,7 @@
   --danger: #ff6b7a;
   --danger-well: #2a1618;
   --danger-line: #5a2a32;
+  --sheet-shadow: 0 -16px 48px rgb(0 0 0 / 0.55);
   --stagger-step: 50ms;
   --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -39,7 +42,9 @@
   --color-well: var(--well);
   --color-surface: var(--surface);
   --color-chrome: var(--chrome);
+  --color-chrome-hover: var(--chrome-hover);
   --color-line: var(--line);
+  --color-line-hover: var(--line-hover);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-ink: var(--ink);
@@ -60,7 +65,17 @@
   --font-serif: "Fraunces", "Fraunces Fallback", ui-serif, Georgia, serif;
   --radius-poster: 8px;
   --radius-card: 14px;
+  --radius-sheet: 1.75rem;
+  --z-sheet-preview: 60;
+  --z-sheet: 80;
+  --z-sheet-top: 100;
 }
+
+/*
+ * Text on canvas / well / surface: text-paper (primary), text-fog/mist/faint
+ * (secondary). text-white is reserved for overlays on posters, photos, and
+ * solid brand chips. text-ink sits on accent / success fills.
+ */
 
 html {
   overflow-x: clip;

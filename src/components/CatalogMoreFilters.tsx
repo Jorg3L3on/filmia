@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useId, type ReactNode } from "react";
+import { useCallback, useId, type ReactNode } from "react";
+import { Button } from "@/components/Button";
+import { Sheet, SheetHandle } from "@/components/Sheet";
 import { cn } from "@/lib/cn";
-import { btnGhost, btnPrimary, focusRing } from "@/lib/ui";
+import { focusRing } from "@/lib/ui";
 
 type CatalogMoreFiltersProps = {
   open: boolean;
@@ -29,28 +31,6 @@ export const CatalogMoreFilters = ({
     onClose();
   }, [onClose]);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        handleClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previous;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [handleClose, open]);
-
   return (
     <>
       <button
@@ -76,55 +56,36 @@ export const CatalogMoreFilters = ({
         ) : null}
       </button>
 
-      {open ? (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
-          <button
-            type="button"
-            aria-label="Cerrar filtros"
-            className="absolute inset-0 bg-black/70"
-            onClick={handleClose}
-          />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            className="relative z-10 flex max-h-[min(42rem,90vh)] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-line bg-well shadow-[0_-12px_40px_rgba(0,0,0,0.45)] sm:rounded-3xl"
+      <Sheet
+        open={open}
+        onClose={handleClose}
+        labelledBy={titleId}
+        overlayLabel="Cerrar filtros"
+        layer="top"
+        panelClassName="max-h-[min(42rem,90vh)]"
+      >
+        <div className="flex flex-col items-center px-5 pt-3">
+          <SheetHandle />
+          <h2
+            id={titleId}
+            className="w-full text-left font-serif text-3xl text-paper"
           >
-            <div className="flex flex-col items-center px-5 pt-3">
-              <span
-                aria-hidden="true"
-                className="mb-3 h-1 w-10 rounded-full bg-chrome"
-              />
-              <h2
-                id={titleId}
-                className="w-full text-left font-serif text-3xl text-paper"
-              >
-                Filtros
-              </h2>
-            </div>
-            <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5">
-              {children}
-            </div>
-            <div className="flex gap-3 border-t border-line px-5 py-4">
-              <button
-                type="button"
-                onClick={onClear}
-                className={cn(btnGhost, "flex-1")}
-              >
-                Limpiar
-              </button>
-              <button
-                type="button"
-                onClick={onApply}
-                className={cn(btnPrimary, "flex-1 gap-2")}
-              >
-                <CheckIcon />
-                Aplicar
-              </button>
-            </div>
-          </div>
+            Filtros
+          </h2>
         </div>
-      ) : null}
+        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5" data-no-sheet-drag>
+          {children}
+        </div>
+        <div className="flex gap-3 border-t border-line px-5 py-4">
+          <Button type="button" variant="ghost" onClick={onClear} className="flex-1">
+            Limpiar
+          </Button>
+          <Button type="button" onClick={onApply} className="flex-1 gap-2">
+            <CheckIcon />
+            Aplicar
+          </Button>
+        </div>
+      </Sheet>
     </>
   );
 };

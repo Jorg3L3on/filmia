@@ -1,9 +1,9 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { deleteList } from "@/app/actions/lists";
 import { AddTitleToListCta } from "@/components/AddTitleToListCta";
 import { CatalogFilters } from "@/components/CatalogFilters";
+import { Button } from "@/components/Button";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { EmptyState } from "@/components/EmptyState";
 import { ListTitlesView } from "@/components/ListTitlesView";
@@ -27,7 +27,7 @@ import { getListById, getTagFilters, getTitleOptions, getUserStreamingPlatforms 
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
-import { btnDanger, btnPrimary } from "@/lib/ui";
+import { btnDanger } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -129,9 +129,9 @@ const ListDetail = async ({
         description={list.description ?? undefined}
         actions={
           <>
-            <Link href={`/listas/${list.id}/editar`} className={btnPrimary}>
+            <Button href={`/listas/${list.id}/editar`}>
               {fixed ? "Editar descripción" : "Editar"}
-            </Link>
+            </Button>
             {fixed ? null : (
               <ConfirmSubmit
                 label="Borrar lista"

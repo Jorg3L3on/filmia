@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { btnPrimary } from "@/lib/ui";
+import { Button } from "@/components/Button";
 
 export default function NotFound() {
   return (
@@ -16,16 +15,19 @@ export default function NotFound() {
         <span className="absolute bottom-5 left-24 h-1.5 w-1.5 rounded-full bg-paper/70" />
         <span className="absolute right-16 bottom-7 h-2 w-2 rounded-full bg-star/80" />
       </div>
-      <h1 className="font-serif text-3xl text-paper">Página no encontrada</h1>
+      <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-accent">
+        Fuera de cartelera
+      </p>
+      <h1 className="mt-3 font-serif text-3xl text-paper">Página no encontrada</h1>
       <p className="mt-2 text-accent" aria-hidden="true">
         ✦
       </p>
       <p className="mt-3 text-sm leading-relaxed text-fog">
         Parece que esta escena se perdió en el corte final. Volvamos al guion principal.
       </p>
-      <Link href="/" className={`${btnPrimary} mt-8`}>
+      <Button href="/" className="mt-8">
         ← Volver al Diario
-      </Link>
+      </Button>
     </div>
   );
 }

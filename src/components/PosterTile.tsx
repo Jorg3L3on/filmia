@@ -98,7 +98,7 @@ export const PosterTile = ({
         ) : null}
       </div>
       <Link href={href} tabIndex={-1} className="group block" aria-hidden="true">
-        <h2 className="mt-2 truncate font-serif text-sm leading-tight text-white group-hover:text-accent">
+        <h2 className="mt-2 truncate font-serif text-sm leading-tight text-paper group-hover:text-accent">
           {name}
         </h2>
         {caption || meta ? (

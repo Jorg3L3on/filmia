@@ -27,8 +27,8 @@ import type { CatalogKindFilter } from "@/lib/catalog-href";
 import { catalogHref } from "@/lib/catalog-href";
 import type { SeriesStatusFilter } from "@/lib/series";
 import type { CatalogSort } from "@/lib/tags";
-import { btnLink, focusRing } from "@/lib/ui";
-import type { Platform, SeriesStatus, TitleKind } from "@/db";
+import { focusRing } from "@/lib/ui";
+import type { Platform } from "@/db";
 
 export type { DiaryCalendarTitle };
 
@@ -225,7 +225,6 @@ export const DiaryCalendar = ({
                 titles={dayTitles}
                 today={today}
                 selected={selectedDay === cell.isoDate || sheetDay === cell.isoDate}
-                query={query}
                 index={index}
                 onOpenSheet={() => setSheetDay(cell.isoDate)}
               />
@@ -275,7 +274,6 @@ const CalendarDayCell = ({
   titles,
   today,
   selected,
-  query,
   index,
   onOpenSheet,
 }: {
@@ -283,11 +281,6 @@ const CalendarDayCell = ({
   titles: DiaryCalendarTitle[];
   today: string;
   selected: boolean;
-  query: {
-    tags?: string[];
-    minePlatforms?: boolean;
-    seriesStatus?: SeriesStatusFilter;
-  };
   index: number;
   onOpenSheet: () => void;
 }) => {

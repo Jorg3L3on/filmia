@@ -46,7 +46,7 @@ export const TagSortLinks = ({
               focusRing,
               isCurrent
                 ? "border-accent bg-accent text-ink"
-                : "border-chrome text-fog hover:border-[#555] hover:text-white",
+                : "border-chrome text-fog hover:border-line-hover hover:text-paper",
             )}
           >
             {option.label}

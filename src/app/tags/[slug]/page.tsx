@@ -8,6 +8,7 @@ import {
   MissingStreamingDataNote,
 } from "@/components/MinePlatformsNotice";
 import { DiaryBodySkeleton } from "@/components/PageSkeletons";
+import { Button } from "@/components/Button";
 import { PageHeader } from "@/components/PageHeader";
 import { TagSortLinks } from "@/components/TagSortLinks";
 import { TitleDeckView } from "@/components/TitleDeckView";
@@ -28,8 +29,6 @@ import {
   type CatalogSort,
 } from "@/lib/tags";
 import { parseSeriesStatusFilter } from "@/lib/series";
-import { btnGhost } from "@/lib/ui";
-import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -122,9 +121,9 @@ const TagDetail = async ({
         title={tag.name}
         description={`${countLabel} con esta etiqueta. Ordena por nota o por fecha vista. Filtra por estado de serie o por tus plataformas.`}
         actions={
-          <Link href="/tags" className={btnGhost}>
+          <Button href="/tags" variant="ghost">
             Todas las etiquetas
-          </Link>
+          </Button>
         }
       />
 

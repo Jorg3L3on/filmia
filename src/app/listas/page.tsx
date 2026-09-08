@@ -1,12 +1,12 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { ListCard } from "@/components/ListCard";
+import { PageHeader } from "@/components/PageHeader";
 import { ListsBodySkeleton } from "@/components/PageSkeletons";
 import { listHref, partitionUserLists } from "@/lib/lists";
 import { getLists } from "@/lib/queries";
-import { btnPrimary } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -24,12 +24,10 @@ const ListCollection = ({ children }: { children: ReactNode }) => (
 export default function ListsPage() {
   return (
     <div className="space-y-12">
-      <header className="flex items-center justify-between gap-3">
-        <h1 className="font-serif text-4xl tracking-tight text-paper">Listas</h1>
-        <Link href="/listas/nueva" className={btnPrimary}>
-          Nueva lista
-        </Link>
-      </header>
+      <PageHeader
+        title="Listas"
+        actions={<Button href="/listas/nueva">Nueva lista</Button>}
+      />
       <Suspense fallback={<ListsBodySkeleton />}>
         <ListsBody />
       </Suspense>
