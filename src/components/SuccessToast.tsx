@@ -43,7 +43,7 @@ export const SuccessToast = ({
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const timer = window.setTimeout(
       () => onDismissRef.current?.(),
-      reduced ? 20 : 300,
+      reduced ? 20 : 280,
     );
     return () => window.clearTimeout(timer);
   }, [phase]);
