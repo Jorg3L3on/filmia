@@ -78,12 +78,26 @@ const run = () => {
 
   const appShell = read("src/components/AppShell.tsx");
   const siteHeader = read("src/components/SiteHeader.tsx");
+  const siteHeaderNav = read("src/components/SiteHeaderNav.tsx");
   const appChrome = read("src/components/AppChrome.tsx");
+  const bottomNav = read("src/components/BottomNav.tsx");
+  const authGate = read("src/components/AuthChromeGate.tsx");
+  const activeNav = read("src/components/ActiveNavLink.tsx");
+  const bottomShell = read("src/components/BottomNavShell.tsx");
   assert(!appShell.startsWith('"use client"'), "AppShell stays a server shell");
   assert(!siteHeader.startsWith('"use client"'), "SiteHeader chrome stays server");
-  assert(appShell.includes("AppChrome"), "AppShell slots chrome into a small client island");
-  assert(siteHeader.includes("SiteHeaderNav"), "Active nav is the client island");
-  assert(appChrome.includes("isAuthChromePath"), "Auth paths still hide chrome");
+  assert(!appChrome.startsWith('"use client"'), "AppChrome frame stays server");
+  assert(!siteHeaderNav.startsWith('"use client"'), "SiteHeaderNav stays server");
+  assert(!bottomNav.startsWith('"use client"'), "BottomNav stays server");
+  assert(appShell.includes("AppChrome"), "AppShell slots chrome through AppChrome");
+  assert(siteHeader.includes("SiteHeaderNav"), "SiteHeader composes SiteHeaderNav");
+  assert(appChrome.includes("AuthChromeGate"), "AppChrome delegates auth hide to a client leaf");
+  assert(appChrome.includes("safe-area-inset-bottom"), "AppChrome keeps main safe-area class");
+  assert(authGate.startsWith('"use client"') && authGate.includes("isAuthChromePath"), "AuthChromeGate is the auth-path client leaf");
+  assert(activeNav.startsWith('"use client"') && activeNav.includes("usePathname"), "ActiveNavLink is the active-state client leaf");
+  assert(bottomShell.startsWith('"use client"') && bottomShell.includes("usePathname"), "BottomNavShell is the mobile-nav client leaf");
+  assert(siteHeaderNav.includes("ActiveNavLink") && siteHeaderNav.includes("LogoutButton"), "Header interactive bits stay small client leaves");
+  assert(bottomNav.includes("ActiveNavLink") && bottomNav.includes("BottomNavShell") && bottomNav.includes("NavIcon"), "Bottom nav composes shell + active links + server icons");
   assert(
     !read("src/app/layout.tsx").startsWith('"use client"'),
     "Root layout remains a server component",
@@ -173,7 +187,7 @@ const run = () => {
   );
 
   console.log(
-    `✓ Fase 4 perf/datos: CoverflowDeck ${coverflow} · CatalogFilters ${filters} · TmdbSearchAdd ${search}`,
+    `✓ Fase 4 perf/datos: CoverflowDeck ${coverflow} · CatalogFilters ${filters} · TmdbSearchAdd ${search} · chrome leaves`,
   );
 };
 
