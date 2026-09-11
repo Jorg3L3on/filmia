@@ -33,6 +33,7 @@ const segment = read("src/components/ListsEtiquetasSegment.tsx");
 const listasLoading = read("src/app/listas/loading.tsx");
 const tagsLoading = read("src/app/tags/loading.tsx");
 const listCard = read("src/components/ListCard.tsx");
+const posterStack = read("src/components/PosterStack.tsx");
 const tagsPage = read("src/app/tags/page.tsx");
 const diaryMonth = read("src/components/DiaryMonthList.tsx");
 
@@ -146,6 +147,10 @@ assert(
 );
 
 assert(listCard.includes("card-physics"), "ListCard uses card-physics");
+assert(
+  posterStack.includes("SharedPoster"),
+  "PosterStack wraps posters in SharedPoster for list morph",
+);
 assert(
   tagsPage.includes("stagger-in") && tagsPage.includes("card-physics"),
   "Tags grid uses stagger + card-physics",

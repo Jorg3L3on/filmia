@@ -20,10 +20,14 @@ export const PageHeader = ({
   backLabel = "Volver",
 }: PageHeaderProps) => {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div className="flex min-w-0 max-w-2xl items-start gap-3">
+    <div className="flex flex-wrap items-end justify-between gap-3 sm:gap-4">
+      <div className="flex min-w-0 max-w-2xl flex-1 items-start gap-3">
         {backHref ? (
-          <Link href={backHref} aria-label={backLabel} className={cn(iconButtonClass, "mt-1 shrink-0")}>
+          <Link
+            href={backHref}
+            aria-label={backLabel}
+            className={cn(iconButtonClass, "press-scale mt-1 shrink-0")}
+          >
             ←
           </Link>
         ) : null}
@@ -39,7 +43,11 @@ export const PageHeader = ({
           ) : null}
         </div>
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-3">{actions}</div> : null}
+      {actions ? (
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end sm:gap-3">
+          {actions}
+        </div>
+      ) : null}
     </div>
   );
 };

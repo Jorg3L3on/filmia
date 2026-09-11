@@ -1,4 +1,5 @@
 import { PosterImage } from "@/components/PosterImage";
+import { SharedPoster } from "@/components/SharedPoster";
 import { cn } from "@/lib/cn";
 
 export type PosterStackItem = {
@@ -61,13 +62,15 @@ export const PosterStack = ({
                 }
           }
         >
-          <PosterImage
-            name={title.name}
-            posterPath={title.posterPath}
-            sizes={isSmall ? "96px" : "140px"}
-            className="h-full rounded-none"
-            ratio="fill"
-          />
+          <SharedPoster titleId={title.id} className="h-full">
+            <PosterImage
+              name={title.name}
+              posterPath={title.posterPath}
+              sizes={isSmall ? "96px" : "140px"}
+              className="h-full rounded-none transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110"
+              ratio="fill"
+            />
+          </SharedPoster>
         </div>
       ))}
       </div>

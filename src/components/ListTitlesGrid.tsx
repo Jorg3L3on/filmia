@@ -151,7 +151,10 @@ export const ListTitlesGrid = ({
         </ul>
       )}
       {error ? (
-        <p role="alert" className="text-sm text-danger">
+        <p
+          role="alert"
+          className="rounded-2xl border border-danger-line bg-danger-well px-4 py-3 text-sm text-danger"
+        >
           {error}
         </p>
       ) : null}
