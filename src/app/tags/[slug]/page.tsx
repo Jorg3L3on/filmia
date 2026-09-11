@@ -7,7 +7,7 @@ import {
   MinePlatformsSetupCta,
   MissingStreamingDataNote,
 } from "@/components/MinePlatformsNotice";
-import { DiaryBodySkeleton } from "@/components/PageSkeletons";
+import { TagDetailBodySkeleton } from "@/components/PageSkeletons";
 import { Button } from "@/components/Button";
 import { PageHeader } from "@/components/PageHeader";
 import { TagSortLinks } from "@/components/TagSortLinks";
@@ -58,7 +58,7 @@ export default function TagDetailPage({
   searchParams,
 }: TagDetailPageProps) {
   return (
-    <Suspense fallback={<DiaryBodySkeleton label="Cargando etiqueta" />}>
+    <Suspense fallback={<TagDetailBodySkeleton />}>
       <TagDetail params={params} searchParams={searchParams} />
     </Suspense>
   );
@@ -162,7 +162,7 @@ const TagDetail = async ({
         </>
       ) : titles.length === 0 ? (
         <EmptyState
-          variant="listas"
+          variant="tags"
           title="Nada en esta etiqueta"
           description="Asigna el tag desde la ficha de un título, o busca uno nuevo."
           actionHref="/buscar"
