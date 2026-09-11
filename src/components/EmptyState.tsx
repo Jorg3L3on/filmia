@@ -23,7 +23,7 @@ export const EmptyState = ({
   actionLabel,
   variant = "generic",
 }: EmptyStateProps) => {
-  const well = variant === "watchlist";
+  const well = variant === "watchlist" || variant === "buscar";
 
   return (
     <div

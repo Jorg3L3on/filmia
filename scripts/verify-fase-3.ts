@@ -82,8 +82,9 @@ const run = () => {
 
   const buscar = read("src/components/TmdbSearchAdd.tsx");
   assert(
-    buscar.includes("TMDB_UNAVAILABLE_COPY") && buscar.includes("configured.tmdb"),
-    "Buscar degrades when TMDB is missing",
+    buscar.includes("configured.tmdb") &&
+      read("src/components/TmdbSearchUnavailable.tsx").includes("TMDB_UNAVAILABLE_COPY"),
+    "Buscar degrades when TMDB is missing (server island)",
   );
   const preview = read("src/components/SearchPreviewSheet.tsx");
   assert(
@@ -240,9 +241,54 @@ const run = () => {
     "Quiero ver keeps dense catalog filter chips + filtered count",
   );
 
+  const buscarError = read("src/app/buscar/error.tsx");
+  assert(
+    buscarError.includes("danger-well") &&
+      buscarError.includes('variant="secondary"') &&
+      buscarError.includes("Reintentar"),
+    "Buscar error uses danger-well + secondary Reintentar",
+  );
+  assert(
+    read("src/app/buscar/page.tsx").includes("TmdbSearchUnavailable") &&
+      read("src/app/buscar/page.tsx").includes("configured.tmdb"),
+    "Buscar skips client island when TMDB is off",
+  );
+  const searchSkeletons = read("src/components/PageSkeletons.tsx");
+  assert(
+    searchSkeletons.includes("SearchResultsSkeleton") &&
+      searchSkeletons.includes("cn(skeletonWellClass") &&
+      read("src/app/buscar/loading.tsx").includes("SearchBodySkeleton"),
+    "Buscar skeleton uses results well + route loading",
+  );
+  const searchResults = read("src/components/TmdbSearchResults.tsx");
+  assert(
+    searchResults.includes("card-physics") &&
+      searchResults.includes("press-scale") &&
+      searchResults.includes("staggerStyle") &&
+      searchResults.includes("danger-well") &&
+      searchResults.includes("Reintentar") &&
+      searchResults.includes("SearchResultsSkeleton"),
+    "Buscar results use hover/press, danger-well retry, and in-flight skeleton",
+  );
+  assert(
+    preview.includes("SheetHandle") &&
+      preview.includes("sm:hidden") &&
+      preview.includes("CloseIcon") &&
+      preview.includes("press-scale") &&
+      preview.includes("var(--duration-hover)"),
+    "Search preview sheet matches MarkWatched chrome + press/hover tokens",
+  );
+  assert(
+    read("src/components/EmptyState.tsx").includes('variant === "buscar"') &&
+      buscar.includes("tab-transition"),
+    "Buscar empty uses well; kind chips use tab-transition",
+  );
+
+
   console.log("✓ Fase 3 page polish: historial IA, buscar copy, ficha sheet, Button forms");
   console.log("✓ Fase 3 Diario lote: skeletons por modo, day-sheet affordance, error well");
   console.log("✓ Fase 3 Quiero ver lote: virtual list, skeleton well, error well, empty polish");
+  console.log("✓ Fase 3 Buscar lote: preview sheet, skeleton well, error well, client island split");
 };
 
 run();

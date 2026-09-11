@@ -54,7 +54,7 @@ export const SearchPreviewSheet = ({
       panelClassName="bg-surface"
     >
       <div className="flex flex-col items-center px-5 pt-3">
-        <SheetHandle />
+        <SheetHandle className="sm:hidden" />
       </div>
       <div className="relative aspect-[16/9] overflow-hidden bg-well">
         {backdrop ? (
@@ -76,7 +76,7 @@ export const SearchPreviewSheet = ({
           className="absolute top-3 right-3 z-10 h-9 w-9 border-0 bg-canvas/70 px-0 text-paper hover:bg-canvas/90"
           aria-label="Cerrar"
         >
-          ×
+          <CloseIcon />
         </Button>
         <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 px-5 pb-4">
           {poster ? (
@@ -178,7 +178,7 @@ const SheetAction = ({
     onClick={onClick}
     disabled={disabled}
     className={cn(
-      "flex flex-col items-center gap-2 rounded-2xl px-2 py-3 text-xs font-medium uppercase tracking-[0.12em] transition",
+      "press-scale flex flex-col items-center gap-2 rounded-2xl px-2 py-3 text-xs font-medium uppercase tracking-[0.12em] transition-[background-color,color,opacity] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
       focusRing,
       primary
         ? "bg-accent text-ink disabled:opacity-50"
@@ -195,6 +195,19 @@ const SheetAction = ({
     </span>
     {label}
   </button>
+);
+
+const CloseIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    className="h-4 w-4"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.75}
+    aria-hidden="true"
+  >
+    <path strokeLinecap="round" d="M7 7l10 10M17 7 7 17" />
+  </svg>
 );
 
 const WatchlistIcon = () => (

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/PageHeader";
 import { SearchBodySkeleton } from "@/components/PageSkeletons";
 import { TmdbSearchAdd } from "@/components/TmdbSearchAdd";
+import { TmdbSearchUnavailable } from "@/components/TmdbSearchUnavailable";
 import { metadataServicesConfigured } from "@/lib/metadata";
 import { getUserTmdbIndex } from "@/lib/queries";
 import { parseOptionalIsoDate } from "@/lib/dates";
@@ -42,6 +43,11 @@ const SearchBody = async ({
 }: {
   searchParams: Promise<SearchParams>;
 }) => {
+  const configured = metadataServicesConfigured();
+  if (!configured.tmdb) {
+    return <TmdbSearchUnavailable />;
+  }
+
   const params = await searchParams;
   const initialQuery = typeof params.q === "string" ? params.q : "";
   const watchedDate = parseOptionalIsoDate(params.fecha);
@@ -52,7 +58,7 @@ const SearchBody = async ({
 
   return (
     <TmdbSearchAdd
-      configured={metadataServicesConfigured()}
+      configured={configured}
       existing={existing}
       initialQuery={initialQuery}
       watchedDate={watchedDate}

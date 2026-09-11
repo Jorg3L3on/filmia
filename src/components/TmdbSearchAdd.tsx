@@ -6,11 +6,12 @@ import { searchTmdbDiscover } from "@/app/actions/metadata";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { EmptyState } from "@/components/EmptyState";
 import { SearchPreviewSheet, type SearchAddDestination } from "@/components/SearchPreviewSheet";
+import { TmdbSearchUnavailable } from "@/components/TmdbSearchUnavailable";
 import { TmdbSearchResults } from "@/components/TmdbSearchResults";
 import type { TitleKind } from "@/db";
 import { KIND_CHIPS, titleMatchesKind } from "@/lib/catalog-filters";
 import { cn } from "@/lib/cn";
-import { TMDB_UNAVAILABLE_COPY, type TmdbCatalogResult } from "@/lib/tmdb";
+import type { TmdbCatalogResult } from "@/lib/tmdb";
 import { showToast } from "@/lib/toast";
 import type { UserTmdbEntry } from "@/lib/queries";
 import {
@@ -112,8 +113,7 @@ export const TmdbSearchAdd = ({
           return;
         }
 
-        const nextError =
-          searchError ?? (hits.length === 0 ? "Nada en TMDB con esa búsqueda." : null);
+        const nextError = searchError ?? null;
         writeSearchCache(trimmed, { results: hits, error: nextError });
         setHasSearched(true);
         setResults(hits);
@@ -284,26 +284,7 @@ export const TmdbSearchAdd = ({
   };
 
   if (!configured.tmdb) {
-    return (
-      <div className="space-y-6">
-        <label className="block">
-          <span className="sr-only">Buscar títulos</span>
-          <input
-            disabled
-            placeholder="Interestelar, Dune, Severance…"
-            className={`${fieldClass} cursor-not-allowed py-3 text-base opacity-60`}
-            aria-disabled="true"
-          />
-        </label>
-        <EmptyState
-          variant="buscar"
-          title="Búsqueda no disponible"
-          description={TMDB_UNAVAILABLE_COPY}
-          actionHref="/watchlist"
-          actionLabel="Ir a Quiero ver"
-        />
-      </div>
-    );
+    return <TmdbSearchUnavailable />;
   }
 
   return (
@@ -350,7 +331,7 @@ export const TmdbSearchAdd = ({
               aria-pressed={isCurrent}
               onClick={() => setKindFilter(chip.value)}
               className={cn(
-                "shrink-0 rounded-full px-4 py-2 text-sm font-medium",
+                "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium tab-transition",
                 focusRing,
                 isCurrent ? "bg-accent text-ink" : "bg-well text-paper hover:bg-chrome",
               )}
@@ -374,6 +355,7 @@ export const TmdbSearchAdd = ({
         hasSearched={hasSearched}
         error={error}
         onPreview={setPreview}
+        onRetry={handleSearch}
       />
 
       {!hasSearched ? (

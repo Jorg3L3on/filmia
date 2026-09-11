@@ -197,13 +197,37 @@ export const ListsBodySkeleton = ({ label = "Cargando listas" }: SkeletonProps) 
   </div>
 );
 
+export const SearchKindChipsSkeleton = () => (
+  <div className="flex gap-2" aria-hidden="true">
+    <ShimmerBlock className="h-8 w-14 rounded-full" />
+    <ShimmerBlock className="h-8 w-20 rounded-full" />
+    <ShimmerBlock className="h-8 w-16 rounded-full" />
+  </div>
+);
+
+export const SearchResultsSkeleton = ({ count = 6 }: { count?: number }) => (
+  <div className={cn(skeletonWellClass, "space-y-2")} aria-hidden="true">
+    {Array.from({ length: count }, (_, index) => (
+      <div
+        key={index}
+        className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-3 py-2.5"
+      >
+        <ShimmerBlock className="h-12 w-12 shrink-0 rounded-lg" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <ShimmerBlock className="h-4 w-40 rounded-full sm:w-52" />
+          <ShimmerBlock className="h-3 w-24 rounded-full" />
+        </div>
+        <ShimmerBlock className="h-4 w-3 rounded" />
+      </div>
+    ))}
+  </div>
+);
+
 export const SearchBodySkeleton = ({ label = "Cargando búsqueda" }: SkeletonProps) => (
-  <div className="space-y-4" aria-busy="true" aria-label={label}>
+  <div className="space-y-5" aria-busy="true" aria-label={label}>
     <ShimmerBlock className="h-12 rounded-xl" />
-    <div className="flex gap-2">
-      <ShimmerBlock className="h-10 w-24 rounded-full" />
-      <ShimmerBlock className="h-10 w-28 rounded-full" />
-    </div>
+    <SearchKindChipsSkeleton />
+    <SearchResultsSkeleton />
   </div>
 );
 

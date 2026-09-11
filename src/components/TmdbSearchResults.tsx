@@ -1,11 +1,13 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { Button } from "@/components/Button";
 import { SharedPoster } from "@/components/SharedPoster";
 import { PosterImage } from "@/components/PosterImage";
 import { EmptyState } from "@/components/EmptyState";
+import { SearchResultsSkeleton } from "@/components/PageSkeletons";
 import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
+import { staggerStyle } from "@/lib/motion";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import { focusRing } from "@/lib/ui";
 import type { TmdbCatalogEntry } from "@/lib/tmdb-search-catalog";
@@ -18,6 +20,7 @@ type TmdbSearchResultsProps = {
   hasSearched: boolean;
   error: string | null;
   onPreview: (result: TmdbCatalogResult) => void;
+  onRetry?: () => void;
 };
 
 export const TmdbSearchResults = ({
@@ -27,6 +30,7 @@ export const TmdbSearchResults = ({
   hasSearched,
   error,
   onPreview,
+  onRetry,
 }: TmdbSearchResultsProps) => {
   if (results.length > 0) {
     return (
@@ -42,20 +46,16 @@ export const TmdbSearchResults = ({
             const key = tmdbCatalogKey(result.tmdbId, result.kind);
             const local = catalog.get(key) ?? catalog.get(String(result.tmdbId));
             return (
-              <li
-                key={key}
-                className="stagger-in"
-                style={{ "--stagger": index } as CSSProperties}
-              >
+              <li key={key} className="stagger-in" style={staggerStyle(index)}>
                 <button
                   type="button"
                   onClick={() => onPreview(result)}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-2xl border border-line bg-surface px-3 py-2.5 text-left hover:border-accent/40",
+                    "group card-physics press-scale flex w-full items-center gap-3 rounded-2xl border border-line bg-surface px-3 py-2.5 text-left hover:border-accent/40",
                     focusRing,
                   )}
                 >
-                  <span className="w-12 shrink-0 overflow-hidden rounded-lg">
+                  <span className="w-12 shrink-0 overflow-hidden rounded-lg transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110">
                     {local?.titleId ? (
                       <SharedPoster titleId={local.titleId}>
                         <PosterImage
@@ -98,19 +98,33 @@ export const TmdbSearchResults = ({
     );
   }
 
-  if (hasSearched && error && !isSearching) {
+  if (isSearching) {
+    return <SearchResultsSkeleton />;
+  }
+
+  if (hasSearched && error) {
     return (
-      <EmptyState
-        variant="buscar"
-        title="No se pudo buscar"
-        description={error}
-        actionHref="/watchlist"
-        actionLabel="Ir a Quiero ver"
-      />
+      <div className="space-y-3 rounded-2xl border border-danger-line bg-danger-well px-4 py-8 text-center sm:px-6">
+        <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-danger">
+          Corte
+        </p>
+        <h2 className="font-serif text-2xl text-paper">No se pudo buscar</h2>
+        <p className="mx-auto max-w-md text-sm leading-relaxed text-fog">{error}</p>
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          {onRetry ? (
+            <Button type="button" variant="secondary" onClick={onRetry}>
+              Reintentar
+            </Button>
+          ) : null}
+          <Button href="/watchlist" variant="ghost">
+            Ir a Quiero ver
+          </Button>
+        </div>
+      </div>
     );
   }
 
-  if (hasSearched && !error && !isSearching) {
+  if (hasSearched && !error) {
     return (
       <EmptyState
         variant="buscar"
