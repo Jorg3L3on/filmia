@@ -90,6 +90,8 @@
 
 html {
   overflow-x: clip;
+  overscroll-behavior: none;
+  background-color: var(--canvas);
 }
 
 body {
@@ -97,6 +99,18 @@ body {
   color: var(--paper);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   overflow-x: clip;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 100dvh;
+}
+
+/* iPhone PWA standalone: canvas edge-to-edge, no rubber-band flash (JOR-218). */
+@media all and (display-mode: standalone) {
+  html,
+  body {
+    overscroll-behavior: none;
+    background-color: var(--canvas);
+  }
 }
 
 .font-serif {

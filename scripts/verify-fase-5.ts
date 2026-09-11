@@ -193,7 +193,80 @@ const run = () => {
     "Keep SW custom/tiny — no next-pwa/serwist/workbox deps (JOR-219)",
   );
 
-  // Out of scope — iPhone final pass (JOR-218)
+  // JOR-218 — iPhone final pass (home → ficha → alta / standalone)
+  assert(
+    ui.includes('top-[calc(3rem+env(safe-area-inset-top))]') &&
+      ui.includes("sm:top-[calc(3.5rem+env(safe-area-inset-top))]") &&
+      ui.includes("safeAreaInsetXPadClass") &&
+      ui.includes("safe-area-inset-left") &&
+      ui.includes("safe-area-inset-right"),
+    "ui.ts sticky under header must match h-12/h-14 + export landscape X insets (JOR-218)",
+  );
+  assert(
+    !ui.includes('top-[calc(4rem+env(safe-area-inset-top))]'),
+    "ui.ts must not keep the 4rem sticky gap under SiteHeader (JOR-218)",
+  );
+  assert(
+    ui.includes("92dvh") && ui.includes("100dvh-env(safe-area-inset-top)"),
+    "sheetPanelClass must cap height with dvh + top safe-area (JOR-218)",
+  );
+  assert(
+    ui.includes("text-base") && ui.includes("fieldClass"),
+    "fieldClass must use text-base on mobile to avoid iOS zoom (JOR-218)",
+  );
+
+  assert(
+    buscarForm.includes("3rem") &&
+      buscarForm.includes("3.5rem") &&
+      !buscarForm.includes("4rem+env(safe-area-inset-top)"),
+    "Buscar sticky must sit flush under SiteHeader h-12/h-14 (JOR-218)",
+  );
+
+  assert(
+    appChrome.includes("safe-area-inset-left") &&
+      appChrome.includes("safe-area-inset-right"),
+    "AppChrome main must pad landscape safe-area X (JOR-218)",
+  );
+
+  assert(
+    siteHeader.includes("safeAreaInsetXPadClass") ||
+      siteHeader.includes("safe-area-inset-left"),
+    "SiteHeader must pad landscape safe-area X (JOR-218)",
+  );
+  assert(
+    bottomNav.includes("safeAreaInsetXPadClass") ||
+      bottomNav.includes("safe-area-inset-left"),
+    "BottomNavShell must pad landscape safe-area X (JOR-218)",
+  );
+
+  const globals = read("src/app/globals.css");
+  assert(
+    globals.includes("overscroll-behavior: none") &&
+      globals.includes("display-mode: standalone") &&
+      globals.includes("-webkit-tap-highlight-color: transparent") &&
+      globals.includes("100dvh"),
+    "globals.css must harden standalone overscroll + tap + 100dvh (JOR-218)",
+  );
+
+  assert(
+    layout.includes('interactiveWidget: "overlays-content"') &&
+      layout.includes("100dvh"),
+    "layout viewport must set interactiveWidget overlays-content + body 100dvh (JOR-218)",
+  );
+
+  assert(
+    authScreen.includes("flex-1") &&
+      !authScreen.includes("min-h-[100dvh] w-full"),
+    "AuthScreen must not double-stack 100dvh (standalone scroll quirk; JOR-218)",
+  );
+
+  const moreFilters = read("src/components/CatalogMoreFilters.tsx");
+  const addToList = read("src/components/AddTitleToListCta.tsx");
+  assert(
+    moreFilters.includes("90dvh") && addToList.includes("88dvh"),
+    "Sheet max-heights must use dvh not vh on iPhone (JOR-218)",
+  );
+
   console.log(
     "✓ Fase 5 lote 1 (JOR-217): manifest.ts · icon-192/512/maskable · apple-touch-icon · theme-color + appleWebApp",
   );
@@ -202,6 +275,9 @@ const run = () => {
   );
   console.log(
     "✓ Fase 5 lote 3 (JOR-219): public/sw.js assets-only · ServiceWorkerRegister (prod) · no diary offline sync",
+  );
+  console.log(
+    "✓ Fase 5 lote 4 (JOR-218): sticky h-12 flush · standalone overscroll · sheet dvh · landscape X · Auth 100dvh · iOS field zoom",
   );
 };
 

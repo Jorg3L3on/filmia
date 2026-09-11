@@ -7,8 +7,10 @@ import {
   btnSecondary,
   btnSuccess,
   buttonClass,
+  fieldClass,
   safeAreaInsetBottomClass,
   safeAreaInsetTopClass,
+  safeAreaInsetXPadClass,
   safeAreaMainPadClass,
   safeAreaStickyUnderHeaderClass,
   safeAreaTabBarPadClass,
@@ -72,5 +74,26 @@ describe("safe-area tokens (JOR-220)", () => {
     assert.match(safeAreaToastBottomClass, /safe-area-inset-bottom/);
     assert.match(safeAreaToastBottomClass, /5\.75rem/);
     assert.match(safeAreaStickyUnderHeaderClass, /safe-area-inset-top/);
+  });
+});
+
+describe("iPhone pass tokens (JOR-218)", () => {
+  it("sticky under header matches SiteHeader h-12 / sm:h-14", () => {
+    assert.match(safeAreaStickyUnderHeaderClass, /3rem/);
+    assert.match(safeAreaStickyUnderHeaderClass, /3\.5rem/);
+    assert.doesNotMatch(safeAreaStickyUnderHeaderClass, /4rem/);
+  });
+
+  it("exports landscape X insets and sheet max-height uses dvh", () => {
+    assert.match(safeAreaInsetXPadClass, /safe-area-inset-left/);
+    assert.match(safeAreaInsetXPadClass, /safe-area-inset-right/);
+    const panel = sheetPanelClass();
+    assert.match(panel, /92dvh/);
+    assert.match(panel, /100dvh/);
+    assert.match(panel, /safe-area-inset-top/);
+  });
+
+  it("fieldClass uses text-base on mobile to avoid iOS input zoom", () => {
+    assert.match(fieldClass, /text-base/);
   });
 });
