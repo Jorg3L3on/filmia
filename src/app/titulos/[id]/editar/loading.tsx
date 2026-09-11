@@ -1,5 +1,5 @@
-import { FormPageSkeleton } from "@/components/PageSkeletons";
+import { EditTitleBodySkeleton } from "@/components/PageSkeletons";
 
 export default function Loading() {
-  return <FormPageSkeleton label="Cargando título" />;
+  return <EditTitleBodySkeleton />;
 }

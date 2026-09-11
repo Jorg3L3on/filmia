@@ -38,7 +38,7 @@ const fieldLabel = "text-[11px] font-medium uppercase tracking-[0.18em] text-fog
 
 const chipClass = (active: boolean) =>
   cn(
-    "rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-wide transition",
+    "rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-wide press-scale transition-[transform,background-color,border-color,filter,color] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
     focusRing,
     active
       ? "border-accent bg-accent text-ink"
@@ -133,7 +133,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
                       aria-pressed={isCurrent}
                       onClick={() => setKind(item)}
                       className={cn(
-                        "rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-wide",
+                        "rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-wide press-scale transition-[transform,background-color,border-color,filter,color] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
                         focusRing,
                         isCurrent ? "bg-accent text-ink" : "text-fog hover:text-paper",
                       )}
@@ -218,7 +218,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
 
             <div className="space-y-2">
               <p className={fieldLabel}>Plataforma</p>
-              <div role="group" aria-label="Plataforma" className="flex flex-wrap gap-2">
+              <div role="group" aria-label="Plataforma" className="group flex flex-wrap gap-2">
                 <button
                   type="button"
                   aria-pressed={platform === ""}
@@ -236,7 +236,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
                       aria-pressed={isCurrent}
                       onClick={() => setPlatform(item)}
                       className={cn(
-                        "rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide",
+                        "rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide press-scale transition-[transform,background-color,border-color,filter,color] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
                         focusRing,
                         isCurrent
                           ? PLATFORM_CLASS[item]
@@ -286,7 +286,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
                 {tags.map((tag) => (
                   <label
                     key={tag.id}
-                    className="cursor-pointer rounded-full border border-chrome px-3 py-1.5 text-xs text-fog transition hover:text-paper has-checked:border-accent has-checked:bg-accent has-checked:text-ink"
+                    className="cursor-pointer rounded-full border border-chrome px-3 py-1.5 text-xs text-fog press-scale transition-[transform,background-color,border-color,filter,color] duration-[var(--duration-hover)] ease-[var(--ease-out)] hover:text-paper has-checked:border-accent has-checked:bg-accent has-checked:text-ink"
                   >
                     <input
                       type="checkbox"
@@ -322,7 +322,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
                   {lists.map((list) => (
                     <label
                       key={list.id}
-                      className="cursor-pointer rounded-full border border-chrome px-3 py-1.5 text-xs text-fog transition hover:text-paper has-checked:border-accent has-checked:bg-accent has-checked:text-ink"
+                      className="cursor-pointer rounded-full border border-chrome px-3 py-1.5 text-xs text-fog press-scale transition-[transform,background-color,border-color,filter,color] duration-[var(--duration-hover)] ease-[var(--ease-out)] hover:text-paper has-checked:border-accent has-checked:bg-accent has-checked:text-ink"
                     >
                       <input
                         type="checkbox"
@@ -349,6 +349,7 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
         <PendingSubmit
           idleLabel={title ? "Guardar cambios" : "Registrar en el diario"}
           pendingLabel={title ? "Guardando…" : "Registrando…"}
+          className="press-scale transition-[transform,background-color,filter] duration-[var(--duration-hover)] ease-[var(--ease-out)]"
         />
       </div>
     </form>

@@ -518,6 +518,59 @@ const run = () => {
     "Perfil form errors use danger-well; chrome keeps safe-area",
   );
   console.log("✓ Fase 3 Perfil lote: skeleton wells, error well, press/hover on logout/forms/chips");
+
+  const editTitleError = read("src/app/titulos/[id]/editar/error.tsx");
+  assert(
+    editTitleError.includes("danger-well") &&
+      editTitleError.includes('variant="secondary"') &&
+      editTitleError.includes("Reintentar"),
+    "Editar título error uses danger-well + secondary Reintentar",
+  );
+  const editListError = read("src/app/listas/[id]/editar/error.tsx");
+  assert(
+    editListError.includes("danger-well") &&
+      editListError.includes('variant="secondary"') &&
+      editListError.includes("Reintentar"),
+    "Editar lista error uses danger-well + secondary Reintentar",
+  );
+  const editSkeletons = read("src/components/PageSkeletons.tsx");
+  assert(
+    editSkeletons.includes("EditTitleBodySkeleton") &&
+      editSkeletons.includes("EditListBodySkeleton") &&
+      editSkeletons.includes("cn(skeletonWellClass") &&
+      read("src/app/titulos/[id]/editar/loading.tsx").includes("EditTitleBodySkeleton") &&
+      read("src/app/listas/[id]/editar/loading.tsx").includes("EditListBodySkeleton"),
+    "Editar loadings use EditTitle/EditList skeleton wells",
+  );
+  assert(
+    editSkeletons.includes("FormPageSkeleton") &&
+      editSkeletons.includes('skeletonWellClass, "space-y-3"'),
+    "FormPageSkeleton uses skeleton wells (shared create/edit chrome)",
+  );
+  const titleForm = read("src/components/TitleForm.tsx");
+  assert(
+    titleForm.includes("press-scale") &&
+      titleForm.includes("var(--duration-hover)") &&
+      titleForm.includes("group flex flex-wrap gap-2") &&
+      titleForm.includes("PendingSubmit"),
+    "TitleForm submit + chips use press-scale / duration-hover",
+  );
+  const listForm = read("src/components/ListForm.tsx");
+  assert(
+    listForm.includes("press-scale") &&
+      listForm.includes("var(--duration-hover)") &&
+      listForm.includes("wellClass") &&
+      listForm.includes("PageHeader"),
+    "ListForm submit uses press/hover; fields in well; PageHeader kept",
+  );
+  assert(
+    read("src/app/titulos/[id]/editar/page.tsx").includes("PageHeader") &&
+      read("src/app/titulos/[id]/editar/page.tsx").includes("Editar título") &&
+      read("src/components/PageHeader.tsx").includes("press-scale") &&
+      read("src/components/AppChrome.tsx").includes("safe-area-inset-bottom"),
+    "Editar título keeps PageHeader + press back; chrome safe-area",
+  );
+  console.log("✓ Fase 3 Editar lote: skeleton wells, error wells, press/hover on forms/chips");
 };
 
 run();
