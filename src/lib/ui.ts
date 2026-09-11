@@ -6,26 +6,29 @@ export const focusRing =
 export const fieldClass =
   "w-full rounded-xl border border-chrome bg-well px-3 py-2 text-sm text-paper placeholder:text-faint focus:border-accent focus:outline-none";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "success";
 export type ButtonSize = "sm" | "md" | "lg";
 export type SheetLayer = "preview" | "default" | "top";
 export type SheetAlign = "bottom" | "center";
 
-export const btnBase = `inline-flex items-center justify-center rounded-full transition disabled:opacity-60 ${focusRing}`;
+export const btnBase = `inline-flex items-center justify-center rounded-[var(--radius-button)] font-semibold transition disabled:opacity-60 ${focusRing}`;
 
 export const buttonVariantClass: Record<ButtonVariant, string> = {
   primary:
-    "bg-accent font-semibold text-ink hover:bg-accent-hover focus-visible:outline-white",
-  secondary: "bg-chrome text-paper hover:bg-chrome-hover",
-  ghost: "border border-chrome text-fog hover:border-line-hover hover:text-paper",
+    "bg-accent text-ink hover:bg-accent-hover focus-visible:outline-white",
+  secondary:
+    "border border-accent bg-transparent text-accent hover:bg-accent/10",
+  ghost: "bg-transparent font-medium text-fog hover:text-paper",
   danger:
-    "border border-danger-line text-danger hover:bg-danger-well focus-visible:outline-danger",
+    "bg-danger text-ink hover:brightness-110 focus-visible:outline-danger",
+  success:
+    "bg-success text-ink hover:bg-success-hover",
 };
 
 export const buttonSizeClass: Record<ButtonSize, string> = {
-  sm: "px-3 py-1.5 text-xs",
-  md: "px-4 py-2 text-sm",
-  lg: "px-8 py-3 text-base",
+  sm: "h-8 min-h-8 px-3 text-xs",
+  md: "h-10 min-h-10 px-4 text-sm",
+  lg: "h-12 min-h-12 px-6 text-base",
 };
 
 type ButtonClassOptions = {
@@ -53,15 +56,13 @@ export const btnPrimary = buttonClass({ variant: "primary" });
 export const btnSecondary = buttonClass({ variant: "secondary" });
 export const btnGhost = buttonClass({ variant: "ghost" });
 export const btnDanger = buttonClass({ variant: "danger" });
-
-export const btnSuccess =
-  `inline-flex items-center justify-center rounded-full bg-success px-4 py-2 text-sm font-semibold text-ink hover:bg-success-hover disabled:opacity-60 ${focusRing}`;
+export const btnSuccess = buttonClass({ variant: "success" });
 
 export const btnLink =
   `text-xs text-fog underline-offset-2 hover:text-paper hover:underline ${focusRing}`;
 
 export const iconButtonClass = cn(
-  "inline-flex h-10 w-10 items-center justify-center rounded-full text-fog hover:bg-well hover:text-paper",
+  "inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-button)] text-fog hover:bg-well hover:text-paper",
   focusRing,
 );
 
@@ -79,7 +80,7 @@ export const posterRowClass = "flex gap-4";
 
 export const sheetLayerClass: Record<SheetLayer, string> = {
   preview: "z-sheet-preview",
-  default: "z-sheet",
+  default: "z-50",
   top: "z-sheet-top",
 };
 
@@ -90,7 +91,7 @@ export const sheetAlignClass: Record<SheetAlign, string> = {
   center: "fixed inset-0 flex items-end justify-center sm:items-center",
 };
 
-export const sheetOverlayClass = "absolute inset-0 bg-canvas-deep/70";
+export const sheetOverlayClass = "absolute inset-0 bg-canvas-deep/60";
 
 export const sheetPanelClass = (className?: string) =>
   cn(

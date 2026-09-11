@@ -23,8 +23,8 @@ const ErrorPage = ({ error, retry, reset }: ErrorPageProps) => {
   };
 
   return (
-    <div className="mx-auto max-w-lg space-y-4 rounded-2xl border border-line bg-surface px-6 py-16 text-center">
-      <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-accent">
+    <div className="mx-auto max-w-lg space-y-4 rounded-2xl border border-danger-line bg-danger-well px-6 py-16 text-center">
+      <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-danger">
         Corte
       </p>
       <h1 className="font-serif text-3xl text-paper">Algo salió mal</h1>
