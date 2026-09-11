@@ -213,8 +213,12 @@ const run = () => {
     "Virtualized listas/watchlist keep F3 wells and skip scroll thrash stagger",
   );
 
+  // PWA worker lives in ServiceWorkerRegister + public/sw.js (Fase 5 / JOR-219).
+  // Keep the rest of the tree free of ad-hoc SW registration.
   const sources = [...walkTsx("src/app"), ...walkTsx("src/components"), ...walkTsx("src/lib")];
+  const swRegister = "src/components/ServiceWorkerRegister.tsx";
   for (const file of sources) {
+    if (file === swRegister) continue;
     const source = read(file);
     assert(!source.includes("serviceWorker"), `${file} must not add a PWA worker`);
     assert(!source.includes("manifest.webmanifest"), `${file} must not add a PWA manifest`);
