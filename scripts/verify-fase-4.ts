@@ -8,7 +8,10 @@ import {
   PUBLIC_STATIC_ELIGIBLE_PAGES,
   TMDB_CACHE_TAG,
 } from "../src/lib/rendering";
-import { collectWarmNavHrefs } from "../src/lib/nav-prefetch";
+import {
+  collectWarmNavHrefs,
+  resolveNavPrefetchPolicy,
+} from "../src/lib/nav-prefetch";
 import { HISTORIAL_DEFAULT_VIEW } from "../src/lib/diary-view";
 
 const assert = (condition: unknown, message: string) => {
@@ -178,9 +181,36 @@ const run = () => {
     "Nav prefetch skips the current route and keeps recent fichas",
   );
   assert(
+    resolveNavPrefetchPolicy({ saveData: true }).enabled === false &&
+      resolveNavPrefetchPolicy({ effectiveType: "2g" }).maxNavHrefs === 1 &&
+      resolveNavPrefetchPolicy({ effectiveType: "3g" }).maxRecentFichas === 1 &&
+      resolveNavPrefetchPolicy({ effectiveType: "4g" }).staggerMs === 0,
+    "Nav prefetch budgets slow / Save-Data networks",
+  );
+  assert(
+    collectWarmNavHrefs(
+      "/watchlist",
+      ["/titulos/a"],
+      resolveNavPrefetchPolicy({ effectiveType: "2g" }),
+    ).length === 1 &&
+      !collectWarmNavHrefs(
+        "/watchlist",
+        ["/titulos/a"],
+        resolveNavPrefetchPolicy({ effectiveType: "2g" }),
+      ).includes("/titulos/a"),
+    "2g warm nav keeps one neighbor and drops recent fichas",
+  );
+  assert(
     read("src/components/NavPrefetch.tsx").includes("scheduleIdleWork") &&
-      read("src/components/NavPrefetch.tsx").includes("warmedHrefs"),
-    "Nav prefetch idles and does not re-warm the same href",
+      read("src/components/NavPrefetch.tsx").includes("warmedHrefs") &&
+      read("src/components/NavPrefetch.tsx").includes("resolveNavPrefetchPolicy") &&
+      read("src/components/NavPrefetch.tsx").includes("scheduleStaggeredWork"),
+    "Nav prefetch idles, budgets by connection, and does not re-warm the same href",
+  );
+  assert(
+    read("src/components/ListTitlesGrid.tsx").includes("renderCell(item, index, false)") &&
+      read("src/components/WatchlistList.tsx").includes("WATCHLIST_VIRTUALIZE_AFTER"),
+    "Virtualized listas/watchlist keep F3 wells and skip scroll thrash stagger",
   );
 
   const sources = [...walkTsx("src/app"), ...walkTsx("src/components"), ...walkTsx("src/lib")];

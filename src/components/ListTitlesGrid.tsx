@@ -86,11 +86,15 @@ export const ListTitlesGrid = ({
     );
   };
 
-  const renderCell = (item: ListItemPayload, index: number): ReactNode => (
+  const renderCell = (
+    item: ListItemPayload,
+    index: number,
+    animate = true,
+  ): ReactNode => (
     <li
       key={item.titleId}
-      className="stagger-in space-y-2"
-      style={{ "--stagger": index } as CSSProperties}
+      className={animate ? "stagger-in space-y-2" : "space-y-2"}
+      style={animate ? ({ "--stagger": index } as CSSProperties) : undefined}
     >
       <PosterTile
         titleId={item.title.id}
@@ -143,11 +147,11 @@ export const ListTitlesGrid = ({
           estimateRowHeight={LIST_GRID_ROW_ESTIMATE}
           className={CATALOG_POSTER_GRID_CLASS}
           itemKey={(item) => item.titleId}
-          renderItem={renderCell}
+          renderItem={(item, index) => renderCell(item, index, false)}
         />
       ) : (
         <ul className={CATALOG_POSTER_GRID_CLASS}>
-          {visible.map((item, index) => renderCell(item, index))}
+          {visible.map((item, index) => renderCell(item, index, true))}
         </ul>
       )}
       {error ? (

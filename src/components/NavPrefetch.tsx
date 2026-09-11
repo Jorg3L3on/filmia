@@ -7,7 +7,13 @@ import {
   browserFichaStorage,
   readRecentFichaHrefs,
 } from "@/lib/ficha-session";
-import { collectWarmNavHrefs, scheduleIdleWork } from "@/lib/nav-prefetch";
+import {
+  collectWarmNavHrefs,
+  readBrowserConnection,
+  resolveNavPrefetchPolicy,
+  scheduleIdleWork,
+  scheduleStaggeredWork,
+} from "@/lib/nav-prefetch";
 
 const warmedHrefs = new Set<string>();
 
@@ -16,6 +22,13 @@ export const NavPrefetch = () => {
   const pathname = usePathname();
 
   useEffect(() => {
+    const policy = resolveNavPrefetchPolicy(readBrowserConnection());
+    if (!policy.enabled) {
+      return;
+    }
+
+    let cancelStagger: (() => void) | undefined;
+
     const prefetchHref = (href: string) => {
       if (!href || warmedHrefs.has(href)) {
         return;
@@ -26,14 +39,23 @@ export const NavPrefetch = () => {
 
     const prefetchWarmNav = () => {
       const recentFichas = readRecentFichaHrefs(browserFichaStorage());
-      for (const href of collectWarmNavHrefs(pathname, recentFichas)) {
-        prefetchHref(href);
-      }
+      const hrefs = collectWarmNavHrefs(pathname, recentFichas, policy);
+      cancelStagger?.();
+      cancelStagger = scheduleStaggeredWork(
+        hrefs.map((href) => () => prefetchHref(href)),
+        policy.staggerMs,
+      );
     };
 
-    const cancelIdle = scheduleIdleWork(prefetchWarmNav);
+    const cancelIdle = scheduleIdleWork(prefetchWarmNav, {
+      idleMs: policy.idleMs,
+      idleTimeoutMs: policy.idleTimeoutMs,
+    });
 
     const handleFichaOpened = (event: Event) => {
+      if (policy.maxRecentFichas <= 0) {
+        return;
+      }
       const href = (event as CustomEvent<string>).detail;
       if (typeof href === "string" && href !== pathname) {
         prefetchHref(href);
@@ -43,6 +65,7 @@ export const NavPrefetch = () => {
     window.addEventListener(FICHA_OPENED_EVENT, handleFichaOpened);
     return () => {
       cancelIdle();
+      cancelStagger?.();
       window.removeEventListener(FICHA_OPENED_EVENT, handleFichaOpened);
     };
   }, [pathname, router]);
