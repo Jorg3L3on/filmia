@@ -42,7 +42,7 @@ export const TagSortLinks = ({
             })}
             aria-current={isCurrent ? "page" : undefined}
             className={cn(
-              "rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-wide transition",
+              "press-scale rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-wide tab-transition",
               focusRing,
               isCurrent
                 ? "border-accent bg-accent text-ink"

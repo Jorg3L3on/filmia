@@ -34,7 +34,7 @@ export const TagPills = ({
                 href={tagHref(tag.slug)}
                 className={cn(
                   pillClass,
-                  "transition hover:bg-accent hover:text-ink",
+                  "tab-transition hover:bg-accent hover:text-ink",
                   focusRing,
                 )}
               >

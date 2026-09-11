@@ -5,6 +5,7 @@ export type EmptyVariant =
   | "watchlist"
   | "historial"
   | "listas"
+  | "tags"
   | "buscar"
   | "generic";
 
@@ -24,7 +25,10 @@ export const EmptyState = ({
   variant = "generic",
 }: EmptyStateProps) => {
   const well =
-    variant === "watchlist" || variant === "buscar" || variant === "listas";
+    variant === "watchlist" ||
+    variant === "buscar" ||
+    variant === "listas" ||
+    variant === "tags";
 
   return (
     <div
@@ -75,6 +79,21 @@ const EmptyIllustration = ({ variant }: { variant: EmptyVariant }) => {
           <rect x="62" y="24" width="56" height="86" rx="8" fill="#161a1f" stroke="var(--accent)" strokeWidth="1.6" />
           <rect x="96" y="40" width="52" height="74" rx="8" fill="#161a1f" stroke="var(--accent)" strokeWidth="1.4" opacity="0.7" />
           <path d="M84 48v28l10-6 10 6V48" fill="none" stroke="var(--accent)" strokeWidth="1.6" />
+        </svg>
+      </div>
+    );
+  }
+
+  if (variant === "tags") {
+    return (
+      <div className="mx-auto flex h-36 w-44 items-center justify-center" aria-hidden="true">
+        <svg viewBox="0 0 176 144" className="h-full w-full">
+          <rect x="28" y="48" width="72" height="28" rx="14" fill="#161a1f" stroke="var(--accent)" strokeWidth="1.5" />
+          <circle cx="46" cy="62" r="4" fill="var(--accent)" opacity="0.7" />
+          <rect x="76" y="36" width="64" height="28" rx="14" fill="#161a1f" stroke="var(--accent)" strokeWidth="1.5" opacity="0.85" />
+          <circle cx="94" cy="50" r="4" fill="var(--accent)" opacity="0.55" />
+          <rect x="52" y="78" width="80" height="28" rx="14" fill="#161a1f" stroke="var(--accent)" strokeWidth="1.5" opacity="0.7" />
+          <circle cx="70" cy="92" r="4" fill="var(--accent)" opacity="0.45" />
         </svg>
       </div>
     );

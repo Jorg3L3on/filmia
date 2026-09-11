@@ -257,15 +257,64 @@ export const ProfileBodySkeleton = ({ label = "Cargando perfil" }: SkeletonProps
   </div>
 );
 
+export const TagsCreateFormSkeleton = () => (
+  <div
+    className={cn(skeletonWellClass, "flex items-center gap-2")}
+    aria-hidden="true"
+  >
+    <ShimmerBlock className="h-12 min-w-0 flex-1 rounded-xl" />
+    <ShimmerBlock className="h-12 w-24 shrink-0 rounded-full" />
+  </div>
+);
+
 export const TagsBodySkeleton = ({ label = "Cargando etiquetas" }: SkeletonProps) => (
   <div
-    className="grid grid-cols-2 gap-5 sm:gap-6"
+    className={cn(skeletonWellClass, "grid grid-cols-2 gap-5 sm:gap-6")}
     aria-busy="true"
     aria-label={label}
   >
     {Array.from({ length: 6 }, (_, index) => (
-      <ShimmerBlock key={index} className="h-40 rounded-2xl" />
+      <div key={index} className="space-y-3">
+        <ShimmerBlock className="h-[120px] w-full rounded-2xl" />
+        <ShimmerBlock className="mx-auto h-5 w-24 rounded-full" />
+        <ShimmerBlock className="mx-auto h-3 w-16 rounded-full" />
+      </div>
     ))}
+  </div>
+);
+
+export const TagDetailBodySkeleton = ({
+  label = "Cargando etiqueta",
+}: SkeletonProps) => (
+  <div className="space-y-6" aria-busy="true" aria-label={label}>
+    <div className={cn(skeletonWellClass, "space-y-3")}>
+      <div className="flex flex-wrap gap-2">
+        {Array.from({ length: 4 }, (_, index) => (
+          <ShimmerBlock key={index} className="h-9 w-24 rounded-full" />
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {Array.from({ length: 2 }, (_, index) => (
+          <ShimmerBlock key={`sort-${index}`} className="h-8 w-28 rounded-full" />
+        ))}
+      </div>
+    </div>
+    <div className={cn(skeletonWellClass, "space-y-3")}>
+      <ShimmerBlock className="h-3 w-20 rounded-full" />
+      <div className="space-y-0 divide-y divide-line overflow-hidden rounded-md border border-line">
+        {Array.from({ length: 5 }, (_, index) => (
+          <div key={index} className="flex gap-3 p-3">
+            <ShimmerBlock className="mt-6 h-4 w-6 shrink-0 rounded-full" />
+            <ShimmerBlock className="aspect-[2/3] w-12 shrink-0 rounded-poster" />
+            <div className="min-w-0 flex-1 space-y-2 py-1">
+              <ShimmerBlock className="h-4 w-40 max-w-full rounded-full" />
+              <ShimmerBlock className="h-3 w-28 rounded-full" />
+              <ShimmerBlock className="h-3 w-20 rounded-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   </div>
 );
 

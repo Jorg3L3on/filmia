@@ -2,6 +2,7 @@
 
 import { type FormEvent } from "react";
 import { PendingSubmit } from "@/components/PendingSubmit";
+import { cn } from "@/lib/cn";
 import { fieldClass } from "@/lib/ui";
 
 type CreateTagFormProps = {
@@ -10,6 +11,8 @@ type CreateTagFormProps = {
   submitLabel?: string;
   pendingLabel?: string;
   placeholder?: string;
+  /** Index CTA chrome: well around the create field. */
+  prominent?: boolean;
 };
 
 export const CreateTagForm = ({
@@ -18,6 +21,7 @@ export const CreateTagForm = ({
   submitLabel = "Crear",
   pendingLabel = "Creando…",
   placeholder = "Nueva etiqueta",
+  prominent = false,
 }: CreateTagFormProps) => {
   const handleSubmit = onCreate
     ? (event: FormEvent<HTMLFormElement>) => {
@@ -33,7 +37,11 @@ export const CreateTagForm = ({
     <form
       action={onCreate ? undefined : action}
       onSubmit={handleSubmit}
-      className="flex items-center gap-2"
+      className={cn(
+        "flex items-center gap-2",
+        prominent &&
+          "rounded-2xl border border-line bg-surface/40 p-3 sm:p-4",
+      )}
     >
       <label className="min-w-0 flex-1">
         <span className="sr-only">Nueva etiqueta</span>

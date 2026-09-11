@@ -27,6 +27,12 @@ type TitleRankingListProps = {
   titles: RankingTitle[];
 };
 
+const rankingStagger = (index: number): CSSProperties =>
+  ({
+    "--stagger": index,
+    "--stagger-step": "40ms",
+  }) as CSSProperties;
+
 export const TitleRankingList = ({ titles }: TitleRankingListProps) => {
   if (titles.length === 0) {
     return null;
@@ -35,24 +41,36 @@ export const TitleRankingList = ({ titles }: TitleRankingListProps) => {
   return (
     <section className="space-y-3" aria-label="Ranking dentro de la etiqueta">
       <h2 className={eyebrowClass}>Ranking</h2>
-      <ol className="divide-y divide-line overflow-hidden rounded-md border border-line bg-surface">
+      <ol className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
         {titles.map((title, index) => {
           const watchedLabel = title.watchedAt
             ? formatWatchedDate(title.watchedAt, "short")
             : null;
 
           return (
-            <li key={title.id} className="stagger-in" style={{ "--stagger": index } as CSSProperties}>
-              <div className="flex gap-3 p-3">
+            <li
+              key={title.id}
+              className="stagger-in"
+              style={rankingStagger(index)}
+            >
+              <div
+                className={cn(
+                  "group flex gap-3 p-3 transition-colors duration-[var(--duration-hover)]",
+                  "hover:bg-well/70",
+                )}
+              >
                 <p
-                  className="w-8 shrink-0 pt-6 text-center text-sm font-semibold text-accent"
+                  className="w-8 shrink-0 pt-6 text-center font-serif text-lg font-semibold tabular-nums text-accent"
                   aria-label={`Puesto ${index + 1}`}
                 >
                   {index + 1}
                 </p>
                 <Link
                   href={`/titulos/${title.id}`}
-                  className={cn("shrink-0", focusRing)}
+                  className={cn(
+                    "press-scale shrink-0 transition-[transform,filter] duration-[var(--duration-hover)]",
+                    focusRing,
+                  )}
                   aria-label={title.name}
                 >
                   <SharedPoster titleId={title.id}>
@@ -60,16 +78,19 @@ export const TitleRankingList = ({ titles }: TitleRankingListProps) => {
                       name={title.name}
                       posterPath={title.posterPath}
                       sizes="48px"
-                      className={cn(posterFrame, "w-12")}
+                      className={cn(
+                        posterFrame,
+                        "w-12 transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110",
+                      )}
                     />
                   </SharedPoster>
                 </Link>
                 <div className="min-w-0 flex-1 space-y-1.5">
                   <Link
                     href={`/titulos/${title.id}`}
-                    className={`block ${focusRing}`}
+                    className={cn("press-scale block", focusRing)}
                   >
-                    <h3 className="truncate font-serif text-base text-paper hover:text-accent">
+                    <h3 className="truncate font-serif text-base text-paper transition-colors duration-[var(--duration-hover)] group-hover:text-accent hover:text-accent">
                       {title.name}
                       {title.year ? (
                         <span className="font-sans text-xs text-mist">

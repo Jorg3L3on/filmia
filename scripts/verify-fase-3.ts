@@ -133,8 +133,20 @@ const run = () => {
 
   const tags = read("src/app/tags/page.tsx");
   assert(
-    tags.includes("Escribe un nombre arriba") && !tags.includes("Ir a Buscar"),
-    "Tags empty state points at the create form",
+    tags.includes("Escribe un nombre arriba") &&
+      !tags.includes("Ir a Buscar") &&
+      tags.includes('variant="tags"') &&
+      tags.includes("prominent") &&
+      tags.includes("ListsEtiquetasSegment"),
+    "Tags empty points at create form; tags well + segment kept",
+  );
+  assert(
+    tags.includes("--stagger-step") &&
+      tags.includes('"40ms"') &&
+      tags.includes("card-physics") &&
+      tags.includes("press-scale") &&
+      tags.includes("group"),
+    "Tags grid tightens stagger (40ms) with card-physics / press-scale",
   );
 
   const account = read("src/components/ProfileAccountForm.tsx");
@@ -413,6 +425,53 @@ const run = () => {
   console.log("✓ Fase 3 Buscar lote: preview sheet, skeleton well, error well, client island split");
   console.log("✓ Fase 3 Ficha lote: LCP poster, action/panels type, delete far, skeleton/error wells");
   console.log("✓ Fase 3 Listas lote: SharedPoster stacks, CTA sheet, skeleton/error wells, PageHeader");
+
+  const tagsError = read("src/app/tags/error.tsx");
+  assert(
+    tagsError.includes("danger-well") &&
+      tagsError.includes('variant="secondary"') &&
+      tagsError.includes("Reintentar"),
+    "Tags error uses danger-well + secondary Reintentar",
+  );
+  assert(
+    read("src/app/tags/[slug]/error.tsx").includes("danger-well") &&
+      read("src/app/tags/[slug]/error.tsx").includes('variant="secondary"') &&
+      read("src/app/tags/[slug]/error.tsx").includes("Reintentar"),
+    "Tag detail error uses danger-well + secondary Reintentar",
+  );
+  const tagsSkeletons = read("src/components/PageSkeletons.tsx");
+  assert(
+    tagsSkeletons.includes("TagsBodySkeleton") &&
+      tagsSkeletons.includes("TagsCreateFormSkeleton") &&
+      tagsSkeletons.includes("TagDetailBodySkeleton") &&
+      tagsSkeletons.includes("cn(skeletonWellClass") &&
+      read("src/app/tags/loading.tsx").includes("TagsBodySkeleton") &&
+      read("src/app/tags/loading.tsx").includes("ListsEtiquetasSegment") &&
+      read("src/app/tags/[slug]/loading.tsx").includes("TagDetailBodySkeleton"),
+    "Tags loading keeps segment + skeleton wells (index + detail)",
+  );
+  const ranking = read("src/components/TitleRankingList.tsx");
+  assert(
+    ranking.includes("press-scale") &&
+      ranking.includes("var(--duration-hover)") &&
+      ranking.includes("--stagger-step") &&
+      ranking.includes('"40ms"') &&
+      ranking.includes("SharedPoster"),
+    "Ranking rows use press/hover tokens + tightened stagger",
+  );
+  assert(
+    read("src/components/TagSortLinks.tsx").includes("tab-transition") &&
+      read("src/components/TagSortLinks.tsx").includes("press-scale"),
+    "Tag sort chips use tab-transition + press-scale",
+  );
+  assert(
+    read("src/components/EmptyState.tsx").includes('variant === "tags"') &&
+      read("src/app/tags/[slug]/page.tsx").includes('variant="tags"') &&
+      read("src/app/tags/[slug]/page.tsx").includes("Ir a Buscar") &&
+      read("src/components/AppChrome.tsx").includes("safe-area-inset-bottom"),
+    "Tag detail empty uses tags well + Buscar CTA; chrome keeps safe-area",
+  );
+  console.log("✓ Fase 3 Tags lote: stagger 40ms, ranking polish, skeleton/error wells, empty CTA");
 };
 
 run();
