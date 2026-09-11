@@ -52,7 +52,7 @@ const run = () => {
 
   const layout = read("src/app/layout.tsx");
   assert(
-    layout.includes('themeColor') &&
+    layout.includes("themeColor") &&
       layout.includes("#0e1114") &&
       layout.includes("appleWebApp") &&
       layout.includes("capable: true") &&
@@ -61,7 +61,78 @@ const run = () => {
     "layout.tsx must keep themeColor #0e1114, appleWebApp capable, apple-touch-icon, applicationName",
   );
 
-  // Out of scope for lote 1 — do not ship SW / safe-area / iPhone pass yet
+  // JOR-220 — viewport-fit=cover + safe-area top/bottom (chrome / tabs / sheets)
+  assert(
+    layout.includes('viewportFit: "cover"') || layout.includes("viewportFit: 'cover'"),
+    "layout.tsx viewport must set viewportFit cover (JOR-220)",
+  );
+  assert(
+    layout.includes("black-translucent") ||
+      layout.includes('statusBarStyle: "black-translucent"'),
+    "appleWebApp black-translucent pairs with viewport-fit=cover",
+  );
+
+  const appChrome = read("src/components/AppChrome.tsx");
+  assert(
+    appChrome.includes("safe-area-inset-bottom"),
+    "AppChrome main must pad bottom safe-area (extends F1; JOR-220)",
+  );
+
+  const siteHeader = read("src/components/SiteHeader.tsx");
+  assert(
+    siteHeader.includes("safe-area-inset-top"),
+    "SiteHeader must pad top safe-area for notch (JOR-220)",
+  );
+
+  const bottomNav = read("src/components/BottomNavShell.tsx");
+  assert(
+    bottomNav.includes("safe-area-inset-bottom"),
+    "BottomNavShell (tabs) must pad bottom safe-area for home indicator (JOR-220)",
+  );
+
+  const ui = read("src/lib/ui.ts");
+  assert(
+    ui.includes("safe-area-inset-bottom") && ui.includes("sheetPanelClass"),
+    "Sheet panel tokens must keep bottom safe-area (JOR-220)",
+  );
+  assert(
+    ui.includes("safeAreaInsetTopClass") &&
+      ui.includes("safeAreaInsetBottomClass") &&
+      ui.includes("safeAreaTabBarPadClass") &&
+      ui.includes("safeAreaMainPadClass") &&
+      ui.includes("safeAreaToastBottomClass") &&
+      ui.includes("safeAreaStickyUnderHeaderClass"),
+    "ui.ts must export safe-area chrome tokens (JOR-220)",
+  );
+
+  const toastHost = read("src/components/ToastHost.tsx");
+  assert(
+    toastHost.includes("safe-area-inset-bottom") &&
+      toastHost.includes("calc(5.75rem+env(safe-area-inset-bottom))"),
+    "ToastHost must clear BottomNav + home indicator via calc inset (JOR-220)",
+  );
+
+  const authScreen = read("src/components/AuthScreen.tsx");
+  assert(
+    authScreen.includes("safe-area-inset-top") &&
+      authScreen.includes("safe-area-inset-bottom"),
+    "AuthScreen must pad top and bottom safe-area (JOR-220)",
+  );
+
+  const buscarForm = read("src/components/tmdb-search/TmdbSearchForm.tsx");
+  assert(
+    buscarForm.includes("safe-area-inset-top") &&
+      buscarForm.includes("sticky"),
+    "Buscar sticky form must offset under header + notch (JOR-220)",
+  );
+
+  const sheet = read("src/components/Sheet.tsx");
+  assert(
+    sheet.includes("Safe-area") || sheet.toLowerCase().includes("safe-area"),
+    "Sheet documents safe-area on panel class (JOR-220)",
+  );
+
+  // Out of scope — service worker (JOR-219) and iPhone final pass (JOR-218)
   assert(!exists("public/sw.js"), "Service worker is JOR-219 (out of scope)");
   assert(!exists("src/app/sw.ts"), "Service worker is JOR-219 (out of scope)");
   assert(
@@ -72,6 +143,9 @@ const run = () => {
 
   console.log(
     "✓ Fase 5 lote 1 (JOR-217): manifest.ts · icon-192/512/maskable · apple-touch-icon · theme-color + appleWebApp",
+  );
+  console.log(
+    "✓ Fase 5 lote 2 (JOR-220): viewportFit=cover · SiteHeader top · BottomNav/AppChrome/sheets/toast bottom · Auth + Buscar sticky",
   );
 };
 

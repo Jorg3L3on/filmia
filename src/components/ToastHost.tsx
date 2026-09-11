@@ -25,7 +25,7 @@ export const ToastHost = () => {
   return (
     <div
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-[max(5.75rem,env(safe-area-inset-bottom))] flex flex-col items-center gap-2 px-4 sm:bottom-8",
+        "pointer-events-none fixed inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] flex flex-col items-center gap-2 px-4 sm:bottom-8",
         toastLayerClass,
       )}
     >

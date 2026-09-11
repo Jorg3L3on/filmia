@@ -16,7 +16,7 @@ export const AuthScreen = ({
   children,
   footer,
 }: AuthScreenProps) => (
-  <div className="min-h-[100dvh] bg-[radial-gradient(ellipse_at_top,_rgba(124,156,255,0.22)_0%,_transparent_58%)] pt-[env(safe-area-inset-top)]">
+  <div className="min-h-[100dvh] bg-[radial-gradient(ellipse_at_top,_rgba(124,156,255,0.22)_0%,_transparent_58%)] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-md items-center px-4 py-12">
       <div className="w-full space-y-6 rounded-3xl border border-line bg-surface p-7 shadow-[var(--sheet-shadow)]">
         <div className="space-y-3 text-center">

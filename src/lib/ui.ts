@@ -86,6 +86,22 @@ export const sheetLayerClass: Record<SheetLayer, string> = {
 
 export const toastLayerClass = "z-toast";
 
+/** iPhone notch / home indicator — requires layout viewportFit: "cover" (JOR-220). */
+export const safeAreaInsetTopClass = "pt-[env(safe-area-inset-top)]";
+export const safeAreaInsetBottomClass = "pb-[env(safe-area-inset-bottom)]";
+/** Mobile tab bar clearance above home indicator. */
+export const safeAreaTabBarPadClass =
+  "pb-[max(0.4rem,env(safe-area-inset-bottom))]";
+/** Main column clears fixed BottomNav + home indicator (keep string on AppChrome for F3 verifies). */
+export const safeAreaMainPadClass =
+  "pb-[max(6rem,calc(5.5rem+env(safe-area-inset-bottom)))]";
+/** Toasts sit above BottomNav; add inset so home indicator does not clip. */
+export const safeAreaToastBottomClass =
+  "bottom-[calc(5.75rem+env(safe-area-inset-bottom))] sm:bottom-8";
+/** Sticky under SiteHeader (h-12/h-14 + notch). */
+export const safeAreaStickyUnderHeaderClass =
+  "top-[calc(4rem+env(safe-area-inset-top))]";
+
 export const sheetAlignClass: Record<SheetAlign, string> = {
   bottom: "fixed inset-0 flex items-end justify-center",
   center: "fixed inset-0 flex items-end justify-center sm:items-center",
