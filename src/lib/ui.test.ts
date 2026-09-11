@@ -7,6 +7,12 @@ import {
   btnSecondary,
   btnSuccess,
   buttonClass,
+  safeAreaInsetBottomClass,
+  safeAreaInsetTopClass,
+  safeAreaMainPadClass,
+  safeAreaStickyUnderHeaderClass,
+  safeAreaTabBarPadClass,
+  safeAreaToastBottomClass,
   sheetLayerClass,
   sheetOverlayClass,
   sheetPanelClass,
@@ -54,5 +60,17 @@ describe("sheet tokens", () => {
     assert.equal(sheetLayerClass.default, "z-50");
     assert.equal(sheetLayerClass.top, "z-sheet-top");
     assert.equal(toastLayerClass, "z-toast");
+  });
+});
+
+describe("safe-area tokens (JOR-220)", () => {
+  it("exposes top/bottom insets for chrome, tabs, main, toast, sticky", () => {
+    assert.match(safeAreaInsetTopClass, /safe-area-inset-top/);
+    assert.match(safeAreaInsetBottomClass, /safe-area-inset-bottom/);
+    assert.match(safeAreaTabBarPadClass, /safe-area-inset-bottom/);
+    assert.match(safeAreaMainPadClass, /safe-area-inset-bottom/);
+    assert.match(safeAreaToastBottomClass, /safe-area-inset-bottom/);
+    assert.match(safeAreaToastBottomClass, /5\.75rem/);
+    assert.match(safeAreaStickyUnderHeaderClass, /safe-area-inset-top/);
   });
 });
