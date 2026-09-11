@@ -9,7 +9,7 @@ import {
   getToastsSnapshot,
   subscribeToasts,
 } from "@/lib/toast";
-import { toastLayerClass } from "@/lib/ui";
+import { safeAreaInsetXPadClass, toastLayerClass } from "@/lib/ui";
 
 export const ToastHost = () => {
   const toasts = useSyncExternalStore(
@@ -25,7 +25,8 @@ export const ToastHost = () => {
   return (
     <div
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] flex flex-col items-center gap-2 px-4 sm:bottom-8",
+        "pointer-events-none fixed inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] flex flex-col items-center gap-2 sm:bottom-8",
+        safeAreaInsetXPadClass,
         toastLayerClass,
       )}
     >

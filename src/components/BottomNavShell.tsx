@@ -2,6 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, type ReactNode } from "react";
+import { cn } from "@/lib/cn";
+import { safeAreaInsetXPadClass } from "@/lib/ui";
 
 type BottomNavShellProps = {
   children: ReactNode;
@@ -28,7 +30,10 @@ export const BottomNavShell = ({ children }: BottomNavShellProps) => {
     <nav
       ref={navRef}
       aria-label="Principal móvil"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-canvas/95 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur sm:hidden"
+      className={cn(
+        "fixed inset-x-0 bottom-0 z-50 border-t border-line bg-canvas/95 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur sm:hidden",
+        safeAreaInsetXPadClass,
+      )}
     >
       {children}
     </nav>

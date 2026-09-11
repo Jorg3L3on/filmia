@@ -49,6 +49,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: THEME_COLOR,
   viewportFit: "cover",
+  /** Keep fixed BottomNav stable when the iOS keyboard opens (JOR-218). */
+  interactiveWidget: "overlays-content",
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
@@ -66,7 +68,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       lang="es"
       className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-canvas text-paper">
+      <body className="flex min-h-full min-h-[100dvh] flex-col bg-canvas text-paper">
         <AppShell user={session?.user ?? null}>{children}</AppShell>
       </body>
     </html>

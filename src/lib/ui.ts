@@ -4,7 +4,7 @@ export const focusRing =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 export const fieldClass =
-  "w-full rounded-xl border border-chrome bg-well px-3 py-2 text-sm text-paper placeholder:text-faint focus:border-accent focus:outline-none";
+  "w-full rounded-xl border border-chrome bg-well px-3 py-2 text-base text-paper placeholder:text-faint focus:border-accent focus:outline-none sm:text-sm";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "success";
 export type ButtonSize = "sm" | "md" | "lg";
@@ -98,9 +98,12 @@ export const safeAreaMainPadClass =
 /** Toasts sit above BottomNav; add inset so home indicator does not clip. */
 export const safeAreaToastBottomClass =
   "bottom-[calc(5.75rem+env(safe-area-inset-bottom))] sm:bottom-8";
-/** Sticky under SiteHeader (h-12/h-14 + notch). */
+/** Sticky under SiteHeader (h-12 / sm:h-14 + notch) — JOR-218. */
 export const safeAreaStickyUnderHeaderClass =
-  "top-[calc(4rem+env(safe-area-inset-top))]";
+  "top-[calc(3rem+env(safe-area-inset-top))] sm:top-[calc(3.5rem+env(safe-area-inset-top))]";
+/** Landscape notch / Dynamic Island sides (JOR-218). */
+export const safeAreaInsetXPadClass =
+  "pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]";
 
 export const sheetAlignClass: Record<SheetAlign, string> = {
   bottom: "fixed inset-0 flex items-end justify-center",
@@ -111,6 +114,6 @@ export const sheetOverlayClass = "absolute inset-0 bg-canvas-deep/60";
 
 export const sheetPanelClass = (className?: string) =>
   cn(
-    "relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-t-sheet border border-line bg-well pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[var(--sheet-shadow)] sheet-rise sm:rounded-sheet",
+    "relative z-10 flex w-full max-w-lg max-h-[min(92dvh,calc(100dvh-env(safe-area-inset-top)-0.75rem))] flex-col overflow-hidden rounded-t-sheet border border-line bg-well pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[var(--sheet-shadow)] sheet-rise sm:rounded-sheet",
     className,
   );

@@ -115,7 +115,7 @@ export const AddTitleToListCta = ({
         labelledBy={titleId}
         overlayLabel="Cerrar agregar título"
         dragDismiss
-        panelClassName="max-h-[min(40rem,88vh)] bg-surface"
+        panelClassName="max-h-[min(40rem,88dvh)] bg-surface"
       >
         <div className="flex flex-col items-center px-5 pt-3">
           <SheetHandle className="sm:hidden" />

@@ -33,7 +33,7 @@ export const TmdbSearchForm = ({
       event.preventDefault();
       onSearch();
     }}
-    className="sticky top-[calc(4rem+env(safe-area-inset-top))] z-30 bg-canvas/95 py-2 backdrop-blur"
+    className="sticky top-[calc(3rem+env(safe-area-inset-top))] z-30 bg-canvas/95 py-2 backdrop-blur sm:top-[calc(3.5rem+env(safe-area-inset-top))]"
   >
     <label className="relative block">
       <span className="sr-only">Buscar títulos en TMDB</span>
