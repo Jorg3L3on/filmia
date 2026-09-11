@@ -472,6 +472,52 @@ const run = () => {
     "Tag detail empty uses tags well + Buscar CTA; chrome keeps safe-area",
   );
   console.log("✓ Fase 3 Tags lote: stagger 40ms, ranking polish, skeleton/error wells, empty CTA");
+
+  const perfilError = read("src/app/perfil/error.tsx");
+  assert(
+    perfilError.includes("danger-well") &&
+      perfilError.includes('variant="secondary"') &&
+      perfilError.includes("Reintentar"),
+    "Perfil error uses danger-well + secondary Reintentar",
+  );
+  const perfilSkeletons = read("src/components/PageSkeletons.tsx");
+  assert(
+    perfilSkeletons.includes("ProfileBodySkeleton") &&
+      perfilSkeletons.includes("cn(skeletonWellClass") &&
+      read("src/app/perfil/loading.tsx").includes("ProfileBodySkeleton") &&
+      read("src/app/perfil/loading.tsx").includes("PageHeaderSkeleton"),
+    "Perfil loading uses PageHeaderSkeleton + ProfileBodySkeleton wells",
+  );
+  assert(
+    read("src/app/perfil/page.tsx").includes("PageHeaderSkeleton") &&
+      read("src/app/perfil/page.tsx").includes("ProfileBodySkeleton") &&
+      read("src/app/perfil/page.tsx").includes("border-line"),
+    "Perfil Suspense fallback mirrors loading; avatar uses line well",
+  );
+  assert(
+    read("src/components/LogoutButton.tsx").includes("press-scale") &&
+      read("src/components/LogoutButton.tsx").includes("var(--duration-hover)") &&
+      account.includes("press-scale") &&
+      account.includes("var(--duration-hover)") &&
+      password.includes("press-scale") &&
+      password.includes("var(--duration-hover)"),
+    "Perfil Logout + form submits use press-scale / duration-hover",
+  );
+  assert(
+    platforms.includes("press-scale") &&
+      platforms.includes("var(--duration-hover)") &&
+      platforms.includes("group") &&
+      platforms.includes("danger-well") &&
+      !platforms.includes("Guardar cambios"),
+    "Platform chips use press/hover + group; danger-well errors; auto-save",
+  );
+  assert(
+    account.includes("danger-well") &&
+      password.includes("danger-well") &&
+      read("src/components/AppChrome.tsx").includes("safe-area-inset-bottom"),
+    "Perfil form errors use danger-well; chrome keeps safe-area",
+  );
+  console.log("✓ Fase 3 Perfil lote: skeleton wells, error well, press/hover on logout/forms/chips");
 };
 
 run();
