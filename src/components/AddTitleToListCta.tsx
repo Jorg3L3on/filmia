@@ -101,7 +101,10 @@ export const AddTitleToListCta = ({
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label="Agregar título a la lista"
-        className={compact ? undefined : "min-w-[min(100%,20rem)]"}
+        className={cn(
+          "press-scale transition-[filter,opacity] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
+          compact ? undefined : "min-w-[min(100%,20rem)]",
+        )}
       >
         {compact ? "Agregar" : "+ Agregar título"}
       </Button>
@@ -115,10 +118,10 @@ export const AddTitleToListCta = ({
         panelClassName="max-h-[min(40rem,88vh)] bg-surface"
       >
         <div className="flex flex-col items-center px-5 pt-3">
-          <SheetHandle />
+          <SheetHandle className="sm:hidden" />
         </div>
         <div className="flex items-start justify-between gap-3 border-b border-line px-5 pb-4">
-          <div>
+          <div className="min-w-0">
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">
               Lista
             </p>
@@ -126,8 +129,15 @@ export const AddTitleToListCta = ({
               Agregar título
             </h2>
           </div>
-          <Button type="button" variant="ghost" size="sm" onClick={handleClose}>
-            Cerrar
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleClose}
+            className="press-scale h-9 w-9 shrink-0 px-0"
+            aria-label="Cerrar"
+          >
+            <CloseIcon />
           </Button>
         </div>
 
@@ -144,7 +154,10 @@ export const AddTitleToListCta = ({
             />
           </label>
           {error ? (
-            <p role="alert" className="text-sm text-danger">
+            <p
+              role="alert"
+              className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger"
+            >
               {error}
             </p>
           ) : null}
@@ -175,7 +188,9 @@ export const AddTitleToListCta = ({
                       disabled={isPending}
                       aria-label={`Agregar ${title.name} a la lista`}
                       className={cn(
-                        "flex w-full items-center gap-3 rounded-2xl border border-line bg-well px-3 py-2.5 text-left hover:border-accent/40 disabled:opacity-60",
+                        "card-physics press-scale flex w-full items-center gap-3 rounded-2xl border border-line bg-well px-3 py-2.5 text-left disabled:opacity-60",
+                        "transition-[border-color,background-color,opacity] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
+                        "hover:border-accent/40",
                         focusRing,
                       )}
                     >
@@ -184,7 +199,7 @@ export const AddTitleToListCta = ({
                           name={title.name}
                           posterPath={title.posterPath}
                           sizes="48px"
-                          className="rounded-lg"
+                          className="rounded-lg transition-[filter] duration-[var(--duration-hover)]"
                         />
                       </span>
                       <span className="min-w-0 flex-1">
@@ -233,3 +248,16 @@ export const AddTitleToListCta = ({
     </div>
   );
 };
+
+const CloseIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    className="h-4 w-4"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.75}
+    aria-hidden="true"
+  >
+    <path strokeLinecap="round" d="M7 7l10 10M17 7 7 17" />
+  </svg>
+);

@@ -23,7 +23,7 @@ export const ListCard = ({ href, name, itemCount, posters }: ListCardProps) => {
         focusRing,
       )}
     >
-      <div className="relative card-physics press-scale sm:max-w-[124px]">
+      <div className="group relative card-physics press-scale sm:max-w-[124px]">
         <PosterStack posters={posters} />
         <div className="absolute inset-x-0 bottom-0 z-40 rounded-b-2xl bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-2.5 pb-2.5 pt-12 sm:hidden">
           <h2 className="truncate text-sm font-semibold text-paper">{name}</h2>

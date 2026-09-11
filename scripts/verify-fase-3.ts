@@ -346,11 +346,73 @@ const run = () => {
     "Main chrome keeps safe-area padding for ficha",
   );
 
+
+  const listasError = read("src/app/listas/error.tsx");
+  assert(
+    listasError.includes("danger-well") &&
+      listasError.includes('variant="secondary"') &&
+      listasError.includes("Reintentar"),
+    "Listas error uses danger-well + secondary Reintentar",
+  );
+  assert(
+    read("src/app/listas/[id]/error.tsx").includes("danger-well") &&
+      read("src/app/listas/[id]/error.tsx").includes('variant="secondary"') &&
+      read("src/app/listas/[id]/error.tsx").includes("Reintentar"),
+    "Lista detail error uses danger-well + secondary Reintentar",
+  );
+  const listsSkeletons = read("src/components/PageSkeletons.tsx");
+  assert(
+    listsSkeletons.includes("ListsBodySkeleton") &&
+      listsSkeletons.includes("cn(skeletonWellClass") &&
+      read("src/app/listas/loading.tsx").includes("ListsBodySkeleton") &&
+      read("src/app/listas/loading.tsx").includes("ListsEtiquetasSegment"),
+    "Listas loading keeps segment + ListsBodySkeleton well",
+  );
+  const posterStack = read("src/components/PosterStack.tsx");
+  assert(
+    posterStack.includes("SharedPoster") &&
+      read("src/components/ListCard.tsx").includes("card-physics") &&
+      read("src/components/ListCard.tsx").includes("press-scale") &&
+      read("src/components/ListCard.tsx").includes("group"),
+    "List cards/stacks use SharedPoster morph + card-physics / press-scale",
+  );
+  const addCta = read("src/components/AddTitleToListCta.tsx");
+  assert(
+    addCta.includes("SheetHandle") &&
+      addCta.includes("sm:hidden") &&
+      addCta.includes("CloseIcon") &&
+      addCta.includes("card-physics") &&
+      addCta.includes("press-scale") &&
+      addCta.includes("var(--duration-hover)") &&
+      addCta.includes("danger-well"),
+    "Agregar CTA sheet matches MarkWatched chrome + hover/press + danger-well",
+  );
+  const pageHeader = read("src/components/PageHeader.tsx");
+  assert(
+    pageHeader.includes("sm:w-auto") &&
+      pageHeader.includes("press-scale") &&
+      pageHeader.includes("sm:gap-4"),
+    "PageHeader actions wrap full-width on mobile with press back",
+  );
+  assert(
+    read("src/components/EmptyState.tsx").includes('variant === "listas"') &&
+      read("src/app/listas/page.tsx").includes('variant="listas"') &&
+      read("src/app/listas/page.tsx").includes("ListsEtiquetasSegment"),
+    "Listas empty uses well; Listas|Etiquetas segment kept",
+  );
+  assert(
+    read("src/components/ListTitlesGrid.tsx").includes("danger-well") &&
+      read("src/components/AppChrome.tsx").includes("safe-area-inset-bottom"),
+    "Lista grid errors use danger-well; chrome keeps safe-area",
+  );
+
+
   console.log("✓ Fase 3 page polish: historial IA, buscar copy, ficha sheet, Button forms");
   console.log("✓ Fase 3 Diario lote: skeletons por modo, day-sheet affordance, error well");
   console.log("✓ Fase 3 Quiero ver lote: virtual list, skeleton well, error well, empty polish");
   console.log("✓ Fase 3 Buscar lote: preview sheet, skeleton well, error well, client island split");
   console.log("✓ Fase 3 Ficha lote: LCP poster, action/panels type, delete far, skeleton/error wells");
+  console.log("✓ Fase 3 Listas lote: SharedPoster stacks, CTA sheet, skeleton/error wells, PageHeader");
 };
 
 run();

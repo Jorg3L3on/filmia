@@ -189,10 +189,29 @@ export const WatchlistBodySkeleton = ({
 
 export const ListsBodySkeleton = ({ label = "Cargando listas" }: SkeletonProps) => (
   <div className="space-y-8" aria-busy="true" aria-label={label}>
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-      {Array.from({ length: 6 }, (_, index) => (
-        <ShimmerBlock key={index} className="aspect-[3/4] rounded-2xl" />
-      ))}
+    <div className={cn(skeletonWellClass, "space-y-4")}>
+      <ShimmerBlock className="h-5 w-36 rounded-full" />
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, index) => (
+          <div key={index} className="min-w-0 space-y-2">
+            <ShimmerBlock className="aspect-[3/4] w-full max-w-[124px] rounded-2xl" />
+            <ShimmerBlock className="hidden h-4 w-24 rounded-full sm:block" />
+            <ShimmerBlock className="hidden h-3 w-16 rounded-full sm:block" />
+          </div>
+        ))}
+      </div>
+    </div>
+    <div className={cn(skeletonWellClass, "space-y-4")}>
+      <ShimmerBlock className="h-5 w-40 rounded-full" />
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, index) => (
+          <div key={index} className="min-w-0 space-y-2">
+            <ShimmerBlock className="aspect-[3/4] w-full max-w-[124px] rounded-2xl" />
+            <ShimmerBlock className="hidden h-4 w-28 rounded-full sm:block" />
+            <ShimmerBlock className="hidden h-3 w-16 rounded-full sm:block" />
+          </div>
+        ))}
+      </div>
     </div>
   </div>
 );
