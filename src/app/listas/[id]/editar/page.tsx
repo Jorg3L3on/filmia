@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { ListForm } from "@/components/ListForm";
-import { getListById } from "@/lib/queries";
+import { getListMetaById } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +10,7 @@ export default async function EditListPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const list = await getListById(id);
+  const list = await getListMetaById(id);
 
   if (!list) {
     notFound();
