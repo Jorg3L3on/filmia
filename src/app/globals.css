@@ -248,10 +248,10 @@ body {
 
 .spring-fill {
   transition:
-    background-color 200ms var(--spring),
-    color 200ms var(--spring),
-    box-shadow 200ms var(--spring),
-    transform 200ms var(--spring);
+    background-color var(--duration-press) var(--spring),
+    color var(--duration-press) var(--spring),
+    box-shadow var(--duration-press) var(--spring),
+    transform var(--duration-press) var(--spring);
 }
 
 .diary-stage {

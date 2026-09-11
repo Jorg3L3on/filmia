@@ -36,7 +36,7 @@ const MonthTitleRow = ({
     <Link
       href={`/titulos/${title.id}`}
       className={cn(
-        "flex items-center justify-between gap-3 rounded-xl px-2 py-2 hover:bg-well",
+        "press-scale flex items-center justify-between gap-3 rounded-xl px-2 py-2 tab-transition hover:bg-well",
         focusRing,
       )}
     >

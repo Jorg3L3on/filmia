@@ -173,7 +173,9 @@ export const useSheetDragDismiss = (onClose: () => void, threshold = 96) => {
       dragging || offsetY > 0
         ? ({
             transform: `translateY(${offsetY}px)`,
-            transition: dragging ? "none" : "transform 420ms var(--spring)",
+            transition: dragging
+              ? "none"
+              : "transform var(--duration-sheet) var(--ease-out)",
           } as CSSProperties)
         : undefined,
     dragHandlers: {

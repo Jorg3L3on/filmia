@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ImdbBadge } from "@/components/ImdbBadge";
 import { PersonalRating } from "@/components/PersonalRating";
 import { PosterImage } from "@/components/PosterImage";
+import { SharedPoster } from "@/components/SharedPoster";
 import { TagPills } from "@/components/TagPills";
 import { WatchedBadge } from "@/components/WatchedBadge";
 import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
@@ -24,12 +25,14 @@ export const TitleCard = ({ title }: TitleCardProps) => {
         className={cn("block", focusRing)}
         aria-label={`${title.name}${title.year ? ` (${title.year})` : ""}`}
       >
-        <div className="relative">
-          <PosterImage
-            name={title.name}
-            posterPath={title.posterPath}
-            className={cn(posterFrame, "transition duration-200 group-hover:brightness-110")}
-          />
+        <div className="relative card-physics press-scale">
+          <SharedPoster titleId={title.id}>
+            <PosterImage
+              name={title.name}
+              posterPath={title.posterPath}
+              className={cn(posterFrame, "transition duration-200 group-hover:brightness-110")}
+            />
+          </SharedPoster>
           {title.watchedAt ? (
             <WatchedBadge compact className="absolute left-2 top-2" />
           ) : null}
