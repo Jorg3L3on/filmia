@@ -28,7 +28,7 @@ export const Logo = ({ size = "md", showWordmark = true, className }: LogoProps)
       />
       {showWordmark ? (
         <span className={cn("font-serif tracking-wide text-paper", wordmark)}>
-          Filmia
+          Film<span className="text-accent">ia</span>
         </span>
       ) : null}
     </span>

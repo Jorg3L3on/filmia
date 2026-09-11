@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { searchTmdbDiscover } from "@/app/actions/metadata";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { EmptyState } from "@/components/EmptyState";
-import { Button } from "@/components/Button";
 import { SearchPreviewSheet, type SearchAddDestination } from "@/components/SearchPreviewSheet";
 import { TmdbSearchResults } from "@/components/TmdbSearchResults";
 import type { TitleKind } from "@/db";
@@ -362,7 +361,7 @@ export const TmdbSearchAdd = ({
         })}
       </div>
 
-      {error ? (
+      {error && visibleResults.length > 0 ? (
         <p role="alert" className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger">
           {error}
         </p>
@@ -399,10 +398,7 @@ export const TmdbSearchAdd = ({
 
       <p className="sr-only">{isSearching ? "Buscando" : isAdding ? "Guardando" : ""}</p>
       <p className="text-center text-xs text-mist">
-        ¿No aparece en TMDB?{" "}
-        <Button href="/titulos/nuevo" variant="ghost" size="sm" className="align-baseline">
-          Registrar a mano
-        </Button>
+        Si no aparece, prueba con el título original o un año.
       </p>
     </div>
   );

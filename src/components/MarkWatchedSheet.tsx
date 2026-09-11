@@ -27,6 +27,8 @@ type MarkWatchedSheetProps = {
   open: boolean;
   titleId: string;
   titleName: string;
+  /** Prefill date (YYYY-MM-DD) when editing an existing diario entry. */
+  initialWatchedAt?: string | null;
   rating?: number | null;
   review?: string | null;
   saveLabel?: string;
@@ -39,6 +41,7 @@ export const MarkWatchedSheet = ({
   open,
   titleId,
   titleName,
+  initialWatchedAt = null,
   rating = null,
   review = "",
   saveLabel = WATCHLIST_SAVE_LABEL,
@@ -52,9 +55,10 @@ export const MarkWatchedSheet = ({
 
   return (
     <MarkWatchedSheetFields
-      key={`${titleId}:${rating}:${review}`}
+      key={`${titleId}:${initialWatchedAt}:${rating}:${review}`}
       titleId={titleId}
       titleName={titleName}
+      initialWatchedAt={initialWatchedAt}
       rating={rating}
       review={review}
       saveLabel={saveLabel}
@@ -68,6 +72,7 @@ export const MarkWatchedSheet = ({
 const MarkWatchedSheetFields = ({
   titleId,
   titleName,
+  initialWatchedAt = null,
   rating = null,
   review = "",
   saveLabel = WATCHLIST_SAVE_LABEL,
@@ -76,8 +81,13 @@ const MarkWatchedSheetFields = ({
   onError,
 }: Omit<MarkWatchedSheetProps, "open">) => {
   const titleDomId = useId();
-  const [datePreset, setDatePreset] = useState<WatchedDatePreset>("today");
-  const [watchedAt, setWatchedAt] = useState(todayDateInput());
+  const hasInitialDate = Boolean(initialWatchedAt);
+  const [datePreset, setDatePreset] = useState<WatchedDatePreset>(
+    hasInitialDate ? "custom" : "today",
+  );
+  const [watchedAt, setWatchedAt] = useState(
+    initialWatchedAt || todayDateInput(),
+  );
   const [value, setValue] = useState<number | null>(rating);
   const [note, setNote] = useState((review ?? "").slice(0, NOTE_MAX));
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +116,7 @@ const MarkWatchedSheetFields = ({
     onClose();
     onSaved?.();
     showToast({
-      title: "Marcada como vista",
+      title: hasInitialDate ? "Diario actualizado" : "Marcada como vista",
       description: titleName,
     });
     startTransition(async () => {

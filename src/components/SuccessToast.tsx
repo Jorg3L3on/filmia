@@ -26,11 +26,12 @@ export const SuccessToast = ({
   }, [onDismiss]);
 
   useEffect(() => {
+    const duration = variant === "error" ? 4500 : 3200;
     const timer = window.setTimeout(() => {
       setPhase("out");
-    }, 5000);
+    }, duration);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [variant]);
 
   useEffect(() => {
     if (phase !== "out") {

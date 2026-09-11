@@ -98,6 +98,18 @@ export const TmdbSearchResults = ({
     );
   }
 
+  if (hasSearched && error && !isSearching) {
+    return (
+      <EmptyState
+        variant="buscar"
+        title="No se pudo buscar"
+        description={error}
+        actionHref="/watchlist"
+        actionLabel="Ir a Quiero ver"
+      />
+    );
+  }
+
   if (hasSearched && !error && !isSearching) {
     return (
       <EmptyState

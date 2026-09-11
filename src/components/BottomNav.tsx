@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/cn";
-import { isCurrentPath, mobileNavItems, type MobileNavIcon } from "@/lib/nav";
+import { isMobileNavCurrent, mobileNavItems, type MobileNavIcon } from "@/lib/nav";
 import { focusRing } from "@/lib/ui";
 
 export const BottomNav = () => {
@@ -31,7 +31,7 @@ export const BottomNav = () => {
     >
       <ul className="mx-auto grid max-w-lg grid-cols-5 items-end px-1">
         {mobileNavItems.map((item) => {
-          const isCurrent = isCurrentPath(item.href, pathname);
+          const isCurrent = isMobileNavCurrent(item.href, pathname);
           const isSearch = item.icon === "search";
 
           return (

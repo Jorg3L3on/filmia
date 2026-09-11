@@ -7,6 +7,7 @@ import { CreateTagForm } from "@/components/CreateTagForm";
 import { Button } from "@/components/Button";
 import { cn } from "@/lib/cn";
 import { tagHref } from "@/lib/tags";
+import { showToast } from "@/lib/toast";
 import { sameIdList, useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { eyebrowClass, focusRing, wellClass } from "@/lib/ui";
 
@@ -40,10 +41,12 @@ export const TitleTagsPanel = ({
   );
 
   const handleToggle = (tagId: string) => {
-    const next = selected.has(tagId)
+    const removing = selected.has(tagId);
+    const next = removing
       ? optimisticIds.filter((id) => id !== tagId)
       : [...optimisticIds, tagId];
     setPendingId(tagId);
+    showToast({ title: removing ? "Etiqueta quitada" : "Etiqueta añadida" });
     run(next, async () => {
       try {
         await toggleTitleTag(tagId, titleId);
@@ -61,6 +64,7 @@ export const TitleTagsPanel = ({
     }
 
     setPendingNames((current) => [...current, name]);
+    showToast({ title: "Etiqueta creada", description: name });
     run(optimisticIds, async () => {
       try {
         await createAndAssignTag(titleId, formData);
