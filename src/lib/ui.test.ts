@@ -18,7 +18,8 @@ describe("buttonClass", () => {
     assert.match(btnPrimary, /bg-accent/);
     assert.match(btnPrimary, /text-ink/);
     assert.match(btnSecondary, /border-accent/);
-    assert.match(btnGhost, /text-fog/);
+    assert.match(btnGhost, /text-paper/);
+    assert.match(btnGhost, /hover:bg-chrome/);
     assert.doesNotMatch(btnGhost, /border-chrome/);
     assert.match(btnDanger, /bg-danger/);
     assert.match(btnSuccess, /bg-success/);

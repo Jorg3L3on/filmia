@@ -18,7 +18,7 @@ export const buttonVariantClass: Record<ButtonVariant, string> = {
     "bg-accent text-ink hover:bg-accent-hover focus-visible:outline-white",
   secondary:
     "border border-accent bg-transparent text-accent hover:bg-accent/10",
-  ghost: "bg-transparent font-medium text-fog hover:text-paper",
+  ghost: "bg-transparent font-medium text-paper hover:bg-chrome",
   danger:
     "bg-danger text-ink hover:brightness-110 focus-visible:outline-danger",
   success:

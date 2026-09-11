@@ -33,7 +33,7 @@ const ErrorPage = ({ error, retry, reset }: ErrorPageProps) => {
         problema es nuestro, no tuyo.
       </p>
       <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-        <Button type="button" onClick={handleRetry}>
+        <Button type="button" variant="secondary" onClick={handleRetry}>
           Reintentar
         </Button>
         <Button href="/" variant="ghost">
