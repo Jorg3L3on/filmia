@@ -22,6 +22,7 @@ export const LogoutButton = () => {
       pending={isPending}
       pendingLabel="Saliendo…"
       aria-label="Cerrar sesión"
+      className="press-scale transition-[transform,background-color,color] duration-[var(--duration-hover)] ease-[var(--ease-out)]"
     >
       Salir
     </Button>

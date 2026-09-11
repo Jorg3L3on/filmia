@@ -61,7 +61,12 @@ export const ProfilePasswordForm = () => {
       />
 
       <div className="flex justify-end">
-        <Button type="submit" pending={isPending} pendingLabel="Actualizando…">
+        <Button
+          type="submit"
+          pending={isPending}
+          pendingLabel="Actualizando…"
+          className="press-scale transition-[transform,background-color,filter] duration-[var(--duration-hover)] ease-[var(--ease-out)]"
+        >
           Actualizar contraseña
         </Button>
       </div>

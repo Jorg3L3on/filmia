@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { LogoutButton } from "@/components/LogoutButton";
 import { PageHeader } from "@/components/PageHeader";
-import { ProfileBodySkeleton } from "@/components/PageSkeletons";
+import { PageHeaderSkeleton, ProfileBodySkeleton } from "@/components/PageSkeletons";
 import { ProfileAccountForm } from "@/components/ProfileAccountForm";
 import { ProfilePasswordForm } from "@/components/ProfilePasswordForm";
 import { StreamingPlatformPicker } from "@/components/StreamingPlatformPicker";
@@ -17,7 +17,14 @@ export const metadata = {
 export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-xl space-y-6">
-      <Suspense fallback={<ProfileBodySkeleton />}>
+      <Suspense
+        fallback={
+          <>
+            <PageHeaderSkeleton withAction />
+            <ProfileBodySkeleton />
+          </>
+        }
+      >
         <ProfileBody />
       </Suspense>
     </div>
@@ -40,7 +47,7 @@ const ProfileBody = async () => {
         actions={
           <div className="flex items-center gap-3">
             <span
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-well text-sm font-semibold text-paper"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-well text-sm font-semibold text-paper"
               aria-hidden="true"
             >
               {initial}
@@ -52,9 +59,11 @@ const ProfileBody = async () => {
         }
       />
 
-      <ProfileAccountForm name={profile.name} email={profile.email} />
-      <ProfilePasswordForm />
-      <StreamingPlatformPicker selected={profile.streamingPlatforms} />
+      <div className="space-y-5">
+        <ProfileAccountForm name={profile.name} email={profile.email} />
+        <ProfilePasswordForm />
+        <StreamingPlatformPicker selected={profile.streamingPlatforms} />
+      </div>
     </>
   );
 };

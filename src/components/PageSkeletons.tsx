@@ -251,9 +251,33 @@ export const SearchBodySkeleton = ({ label = "Cargando búsqueda" }: SkeletonPro
 );
 
 export const ProfileBodySkeleton = ({ label = "Cargando perfil" }: SkeletonProps) => (
-  <div className="space-y-4" aria-busy="true" aria-label={label}>
-    <ShimmerBlock className="h-40 rounded-2xl" />
-    <ShimmerBlock className="h-40 rounded-2xl" />
+  <div className="space-y-5" aria-busy="true" aria-label={label}>
+    <div className={cn(skeletonWellClass, "space-y-4")}>
+      <ShimmerBlock className="h-5 w-28 rounded-full" />
+      <ShimmerBlock className="h-12 w-full rounded-xl" />
+      <ShimmerBlock className="h-12 w-full rounded-xl" />
+      <div className="flex justify-end">
+        <ShimmerBlock className="h-10 w-36 rounded-full" />
+      </div>
+    </div>
+    <div className={cn(skeletonWellClass, "space-y-4")}>
+      <ShimmerBlock className="h-5 w-32 rounded-full" />
+      <ShimmerBlock className="h-12 w-full rounded-xl" />
+      <ShimmerBlock className="h-12 w-full rounded-xl" />
+      <ShimmerBlock className="h-12 w-full rounded-xl" />
+      <div className="flex justify-end">
+        <ShimmerBlock className="h-10 w-44 rounded-full" />
+      </div>
+    </div>
+    <div className={cn(skeletonWellClass, "space-y-4")}>
+      <ShimmerBlock className="h-5 w-36 rounded-full" />
+      <ShimmerBlock className="h-3 w-48 rounded-full" />
+      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+        {Array.from({ length: 6 }, (_, index) => (
+          <ShimmerBlock key={index} className="h-10 w-full rounded-xl" />
+        ))}
+      </div>
+    </div>
   </div>
 );
 

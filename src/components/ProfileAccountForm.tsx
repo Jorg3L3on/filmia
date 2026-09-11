@@ -73,7 +73,12 @@ export const ProfileAccountForm = ({ name, email }: ProfileAccountFormProps) => 
       </label>
 
       <div className="flex justify-end">
-        <Button type="submit" pending={isPending} pendingLabel="Guardando…">
+        <Button
+          type="submit"
+          pending={isPending}
+          pendingLabel="Guardando…"
+          className="press-scale transition-[transform,background-color,filter] duration-[var(--duration-hover)] ease-[var(--ease-out)]"
+        >
           Guardar cuenta
         </Button>
       </div>

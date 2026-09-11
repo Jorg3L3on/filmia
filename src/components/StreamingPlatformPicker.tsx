@@ -58,7 +58,7 @@ export const StreamingPlatformPicker = ({
           {PLATFORMS.map((platform) => {
             const isSelected = value.includes(platform);
             return (
-              <li key={platform}>
+              <li key={platform} className="group">
                 <button
                   type="button"
                   onClick={() => handleToggle(platform)}
@@ -70,11 +70,12 @@ export const StreamingPlatformPicker = ({
                       : `Añadir ${PLATFORM_SERVICE_LABEL[platform]}`
                   }
                   className={cn(
-                    "flex w-full cursor-pointer items-center gap-2 rounded-xl border px-2.5 py-2 text-left text-sm transition",
+                    "press-scale flex w-full cursor-pointer items-center gap-2 rounded-xl border px-2.5 py-2 text-left text-sm",
+                    "transition-[color,background-color,border-color,transform] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
                     focusRing,
                     isSelected
                       ? "border-accent bg-accent/15 text-paper"
-                      : "border-chrome bg-well text-fog hover:text-paper",
+                      : "border-chrome bg-well text-fog hover:border-line hover:text-paper group-hover:text-paper",
                   )}
                 >
                   <PlatformLogo platform={platform} size={20} />
