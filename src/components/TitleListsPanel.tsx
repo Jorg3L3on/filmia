@@ -146,7 +146,7 @@ const ListChipGroup = ({
                     : `Añadir a ${list.name}`
                 }
                 className={cn(
-                  "rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-wide transition",
+                  "press-scale tab-transition rounded-full border px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em]",
                   focusRing,
                   included
                     ? "border-accent bg-accent text-ink"

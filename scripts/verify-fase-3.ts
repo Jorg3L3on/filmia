@@ -285,10 +285,72 @@ const run = () => {
   );
 
 
+  const fichaError = read("src/app/titulos/[id]/error.tsx");
+  assert(
+    fichaError.includes("danger-well") &&
+      fichaError.includes('variant="secondary"') &&
+      fichaError.includes("Reintentar"),
+    "Ficha error uses danger-well + secondary Reintentar",
+  );
+  const fichaSkeletons = read("src/components/PageSkeletons.tsx");
+  assert(
+    fichaSkeletons.includes("FichaBodySkeleton") &&
+      fichaSkeletons.includes("cn(skeletonWellClass") &&
+      read("src/app/titulos/[id]/loading.tsx").includes("FichaBodySkeleton"),
+    "Ficha loading uses FichaBodySkeleton well",
+  );
+  const titleHero = read("src/components/TitleHero.tsx");
+  assert(
+    titleHero.includes('fetchPriority="high"') &&
+      titleHero.includes('fetchPriority="low"') &&
+      titleHero.includes("(max-width: 640px) 40vw, 224px") &&
+      read("src/components/PosterImage.tsx").includes("fetchPriority"),
+    "Ficha LCP poster uses priority/fetchPriority/sizes; backdrop is low",
+  );
+  const fichaActionRow = read("src/components/TitleActionRow.tsx");
+  assert(
+    fichaActionRow.includes("press-scale") &&
+      fichaActionRow.includes("var(--duration-hover)") &&
+      fichaActionRow.includes("actionChipClass") &&
+      fichaActionRow.includes("tracking-[0.14em]"),
+    "Ficha action row uses press/hover tokens + tipografía polish",
+  );
+  assert(
+    read("src/components/TitleSaveCta.tsx").includes("press-scale") &&
+      read("src/components/TitleSaveCta.tsx").includes("var(--duration-hover)"),
+    "Ficha primary save CTA uses press-scale + duration-hover",
+  );
+  assert(
+    read("src/components/TitleListsPanel.tsx").includes("tab-transition") &&
+      read("src/components/TitleTagsPanel.tsx").includes("tab-transition") &&
+      read("src/components/TitleListsPanel.tsx").includes("press-scale"),
+    "Ficha lists/tags panels polish chip tipografía + press",
+  );
+  const fichaPage = read("src/app/titulos/[id]/page.tsx");
+  assert(
+    fichaPage.includes("mt-16") &&
+      fichaPage.includes("safe-area-inset-bottom") &&
+      fichaPage.includes("Borrar") &&
+      fichaPage.includes("ml-auto"),
+    "Ficha delete CTA is far from primary with safe-area footer",
+  );
+  assert(
+    read("src/components/TitleSynopsis.tsx").includes("N/A") &&
+      read("src/app/titulos/[id]/title-sections.tsx").includes(
+        "TitleSynopsis text={extras?.overview ?? null}",
+      ),
+    "Ficha empty synopsis shows N/A",
+  );
+  assert(
+    read("src/components/AppChrome.tsx").includes("safe-area-inset-bottom"),
+    "Main chrome keeps safe-area padding for ficha",
+  );
+
   console.log("✓ Fase 3 page polish: historial IA, buscar copy, ficha sheet, Button forms");
   console.log("✓ Fase 3 Diario lote: skeletons por modo, day-sheet affordance, error well");
   console.log("✓ Fase 3 Quiero ver lote: virtual list, skeleton well, error well, empty polish");
   console.log("✓ Fase 3 Buscar lote: preview sheet, skeleton well, error well, client island split");
+  console.log("✓ Fase 3 Ficha lote: LCP poster, action/panels type, delete far, skeleton/error wells");
 };
 
 run();

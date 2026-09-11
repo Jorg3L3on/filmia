@@ -12,6 +12,16 @@ import { showToast } from "@/lib/toast";
 import { useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { focusRing } from "@/lib/ui";
 
+
+const actionChipClass = (active?: boolean) =>
+  cn(
+    "press-scale flex w-full flex-col items-center gap-1.5 rounded-2xl border px-1 py-2.5 text-[11px] font-medium uppercase tracking-[0.14em] transition-[color,background-color,border-color,opacity] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
+    focusRing,
+    active
+      ? undefined
+      : "border-chrome bg-well text-fog hover:border-line-hover hover:text-paper",
+  );
+
 type TitleActionRowProps = {
   titleId: string;
   titleName: string;
@@ -148,12 +158,10 @@ export const TitleActionRow = ({
           aria-pressed={displayedWatched}
           aria-label={displayedWatched ? "Quitar de visto" : "Marcar como visto"}
           className={cn(
-            "spring-fill flex w-full flex-col items-center gap-1 rounded-2xl border px-1 py-2.5 text-[10px] uppercase tracking-[0.12em]",
-            focusRing,
+            actionChipClass(displayedWatched),
+            "spring-fill",
             watchedSpring.className,
-            displayedWatched
-              ? "border-success/40 bg-success-well text-success"
-              : "border-chrome bg-well text-fog hover:text-paper",
+            displayedWatched && "border-success/40 bg-success-well text-success",
             pendingAction === "watched" && "opacity-80",
           )}
         >
@@ -169,12 +177,9 @@ export const TitleActionRow = ({
           }}
           aria-expanded={ratingOpen}
           className={cn(
-            "flex w-full flex-col items-center gap-1 rounded-2xl border px-1 py-2.5 text-[10px] uppercase tracking-[0.12em]",
-            focusRing,
+            actionChipClass(optimistic.rating != null),
             ratingSpring.className,
-            optimistic.rating != null
-              ? "border-star/40 bg-well text-star"
-              : "border-chrome bg-well text-fog hover:text-paper",
+            optimistic.rating != null && "border-star/40 bg-well text-star",
           )}
         >
           <StarIcon filled={optimistic.rating != null} />
@@ -186,11 +191,9 @@ export const TitleActionRow = ({
           onClick={() => handleTogglePanel("lists")}
           aria-expanded={panel === "lists"}
           className={cn(
-            "flex w-full flex-col items-center gap-1 rounded-2xl border px-1 py-2.5 text-[10px] uppercase tracking-[0.12em]",
-            focusRing,
-            inCustomList || panel === "lists"
-              ? "border-accent bg-accent/10 text-accent"
-              : "border-chrome bg-well text-fog hover:text-paper",
+            actionChipClass(inCustomList || panel === "lists"),
+            (inCustomList || panel === "lists") &&
+              "border-accent bg-accent/10 text-accent",
           )}
         >
           <PlusListIcon />
@@ -202,9 +205,8 @@ export const TitleActionRow = ({
           onClick={() => handleTogglePanel("tags")}
           aria-expanded={panel === "tags"}
           className={cn(
-            "flex w-full flex-col items-center gap-1 rounded-2xl border border-chrome bg-well px-1 py-2.5 text-[10px] uppercase tracking-[0.12em] text-fog hover:text-paper",
-            focusRing,
-            panel === "tags" && "border-accent text-accent",
+            actionChipClass(panel === "tags"),
+            panel === "tags" && "border-accent bg-accent/10 text-accent",
           )}
         >
           <TagIcon />

@@ -46,7 +46,7 @@ export const TitleHero = ({
               fill
               sizes="100vw"
               className="object-cover object-[center_20%] scale-[1.06]"
-              priority
+              fetchPriority="low"
             />
             <div className="absolute inset-0 bg-canvas/15 backdrop-blur-[1.5px]" />
             <div className="absolute inset-0 bg-gradient-to-t from-canvas from-[12%] via-canvas/70 via-[48%] to-black/25" />
@@ -71,7 +71,8 @@ export const TitleHero = ({
             posterPath={posterPath}
             className={`${posterFrame} card-physics shadow-[0_28px_64px_rgba(0,0,0,0.72)] ring-1 ring-white/10`}
             priority
-            sizes="224px"
+            fetchPriority="high"
+            sizes="(max-width: 640px) 40vw, 224px"
           />
         </SharedPoster>
 

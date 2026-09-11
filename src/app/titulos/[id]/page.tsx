@@ -161,7 +161,7 @@ const TitleDetail = async ({
         <TitleRelatedBlock relatedPromise={relatedPromise} />
       </Suspense>
 
-      <div className="flex flex-wrap gap-3 pt-2">
+      <footer className="mt-16 flex flex-wrap items-center justify-between gap-4 border-t border-line/70 pt-8 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <Button href={`/titulos/${title.id}/editar`} variant="ghost">
           Editar ficha
         </Button>
@@ -170,8 +170,10 @@ const TitleDetail = async ({
           confirmMessage={`¿Borrar “${title.name}”?`}
           href="/"
           action={deleteAction}
+          variant="danger"
+          className="ml-auto"
         />
-      </div>
+      </footer>
     </article>
   );
 };
