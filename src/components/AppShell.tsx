@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { AppChrome } from "@/components/AppChrome";
 import { BottomNav } from "@/components/BottomNav";
 import { NavPrefetch } from "@/components/NavPrefetch";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { SiteHeader, type HeaderUser } from "@/components/SiteHeader";
 
 export type { HeaderUser };
@@ -14,7 +15,12 @@ type AppShellProps = {
 export const AppShell = ({ children, user }: AppShellProps) => (
   <AppChrome
     header={<SiteHeader user={user} />}
-    prefetch={<NavPrefetch />}
+    prefetch={
+      <>
+        <NavPrefetch />
+        <ServiceWorkerRegister />
+      </>
+    }
     footer={
       <footer className="hidden border-t border-line px-4 py-5 text-center text-xs text-mist sm:block">
         Filmia · diario personal · sin scrapers

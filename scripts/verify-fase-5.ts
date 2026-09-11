@@ -132,20 +132,76 @@ const run = () => {
     "Sheet documents safe-area on panel class (JOR-220)",
   );
 
-  // Out of scope — service worker (JOR-219) and iPhone final pass (JOR-218)
-  assert(!exists("public/sw.js"), "Service worker is JOR-219 (out of scope)");
-  assert(!exists("src/app/sw.ts"), "Service worker is JOR-219 (out of scope)");
+  // JOR-219 — minimal assets-only service worker (no diary/offline sync)
+  assert(exists("public/sw.js"), "public/sw.js required (JOR-219)");
+  assert(!exists("src/app/sw.ts"), "Prefer public/sw.js over App Router sw.ts (JOR-219)");
+  const sw = read("public/sw.js");
+  assert(
+    sw.includes("filmia-assets-v1") &&
+      sw.includes("/_next/static/") &&
+      sw.includes('mode === "navigate"') &&
+      sw.includes('headers.has("rsc")') &&
+      sw.includes("/api/") &&
+      sw.includes("cache.put") &&
+      !sw.toLowerCase().includes("indexeddb") &&
+      !sw.toLowerCase().includes("backgroundsync"),
+    "sw.js must cache assets only, skip navigate/RSC/API, and never sync diary data (JOR-219)",
+  );
+  assert(
+    !/\b(syncDiary|diaryCache|BackgroundSync)\b/i.test(sw),
+    "sw.js must not implement diary/offline sync (JOR-219)",
+  );
+  assert(
+    sw.includes("icon-192.png") &&
+      sw.includes("icon-512.png") &&
+      sw.includes("apple-touch-icon.png"),
+    "sw.js should precache PWA icons (JOR-219)",
+  );
+
+  assert(
+    exists("src/components/ServiceWorkerRegister.tsx"),
+    "ServiceWorkerRegister client component required (JOR-219)",
+  );
+  const swRegister = read("src/components/ServiceWorkerRegister.tsx");
+  assert(
+    swRegister.startsWith('"use client"') &&
+      swRegister.includes('register("/sw.js"') &&
+      swRegister.includes('NODE_ENV !== "production"') &&
+      swRegister.includes("serviceWorker"),
+    "ServiceWorkerRegister must be client-only, production-gated, register /sw.js (JOR-219)",
+  );
+
+  const appShell = read("src/components/AppShell.tsx");
+  assert(
+    appShell.includes("ServiceWorkerRegister") && !appShell.startsWith('"use client"'),
+    "AppShell (server) must mount ServiceWorkerRegister (JOR-219)",
+  );
+
   assert(
     !manifest.toLowerCase().includes("serviceworker") &&
       !manifest.toLowerCase().includes("service_worker"),
-    "Manifest must not register a service worker (JOR-219)",
+    "Manifest must not embed a service worker — register via client (JOR-219)",
   );
 
+  const pkg = read("package.json");
+  assert(
+    !pkg.includes("next-pwa") &&
+      !pkg.includes("@ducanh2912/next-pwa") &&
+      !pkg.includes("@serwist/") &&
+      !pkg.includes("serwist") &&
+      !pkg.includes("workbox-webpack-plugin"),
+    "Keep SW custom/tiny — no next-pwa/serwist/workbox deps (JOR-219)",
+  );
+
+  // Out of scope — iPhone final pass (JOR-218)
   console.log(
     "✓ Fase 5 lote 1 (JOR-217): manifest.ts · icon-192/512/maskable · apple-touch-icon · theme-color + appleWebApp",
   );
   console.log(
     "✓ Fase 5 lote 2 (JOR-220): viewportFit=cover · SiteHeader top · BottomNav/AppChrome/sheets/toast bottom · Auth + Buscar sticky",
+  );
+  console.log(
+    "✓ Fase 5 lote 3 (JOR-219): public/sw.js assets-only · ServiceWorkerRegister (prod) · no diary offline sync",
   );
 };
 
