@@ -1,4 +1,5 @@
 import { Button } from "@/components/Button";
+import { cn } from "@/lib/cn";
 
 export type EmptyVariant =
   | "watchlist"
@@ -22,8 +23,16 @@ export const EmptyState = ({
   actionLabel,
   variant = "generic",
 }: EmptyStateProps) => {
+  const well = variant === "watchlist";
+
   return (
-    <div className="px-4 py-10 text-center">
+    <div
+      className={cn(
+        "px-4 py-10 text-center",
+        well &&
+          "rounded-2xl border border-line bg-surface/40 px-6 py-12 sm:px-8",
+      )}
+    >
       <EmptyIllustration variant={variant} />
       <p className="mt-6 font-serif text-2xl text-paper sm:text-3xl">{title}</p>
       <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fog">

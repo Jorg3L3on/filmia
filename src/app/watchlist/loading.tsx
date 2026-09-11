@@ -2,8 +2,8 @@ import { PageHeaderSkeleton, WatchlistBodySkeleton } from "@/components/PageSkel
 
 export default function Loading() {
   return (
-    <div className="space-y-6">
-      <PageHeaderSkeleton withAction />
+    <div className="space-y-5">
+      <PageHeaderSkeleton />
       <WatchlistBodySkeleton />
     </div>
   );

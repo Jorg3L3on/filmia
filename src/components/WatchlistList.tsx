@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 import { moveListItem } from "@/app/actions/lists";
 import { removeFromWatchlist } from "@/app/actions/watchlist";
 import { WatchlistCard } from "@/components/WatchlistCard";
@@ -9,12 +9,18 @@ import {
   WindowVirtualList,
 } from "@/components/WindowVirtualList";
 import type { ListItem, Platform } from "@/db";
+import { staggerStyle } from "@/lib/motion";
 import type { TitleWithTags } from "@/lib/queries";
 import {
   sameOrderedIds,
   swapAdjacentIds,
   useStickyOptimistic,
 } from "@/lib/use-optimistic-action";
+
+/** Queue row (~poster 56 + py-2); slightly above measured height for safer pads. */
+const WATCHLIST_QUEUE_ESTIMATE = 76;
+/** Virtualize a bit earlier than the shared grid threshold — queue rows are dense. */
+const WATCHLIST_VIRTUALIZE_AFTER = Math.min(WINDOW_VIRTUALIZE_AFTER, 16);
 
 type WatchlistItem = ListItem & {
   title: TitleWithTags;
@@ -49,7 +55,7 @@ export const WatchlistList = ({
       return item ? [item] : [];
     });
   const [hero, ...queue] = visible;
-  const virtualize = queue.length >= WINDOW_VIRTUALIZE_AFTER;
+  const virtualize = queue.length >= WATCHLIST_VIRTUALIZE_AFTER;
 
   const hide = (titleId: string) => {
     setHiddenIds((current) => new Set(current).add(titleId));
@@ -91,7 +97,10 @@ export const WatchlistList = ({
 
   if (visible.length === 0) {
     return (
-      <p className="text-sm text-fog" role="status">
+      <p
+        className="rounded-2xl border border-line bg-surface/40 px-4 py-8 text-center text-sm text-fog"
+        role="status"
+      >
         Nada en Quiero ver por ahora.
       </p>
     );
@@ -119,7 +128,8 @@ export const WatchlistList = ({
         virtualize ? (
           <WindowVirtualList
             items={queue}
-            estimateHeight={72}
+            estimateHeight={WATCHLIST_QUEUE_ESTIMATE}
+            overscan={10}
             className="divide-y divide-line"
             itemKey={(item) => item.titleId}
             renderItem={(item, index) => (
@@ -146,7 +156,7 @@ export const WatchlistList = ({
               <li
                 key={item.titleId}
                 className="stagger-in"
-                style={{ "--stagger": index } as CSSProperties}
+                style={staggerStyle(index)}
               >
                 <WatchlistCard
                   item={item}
@@ -168,9 +178,16 @@ export const WatchlistList = ({
       ) : null}
 
       {error ? (
-        <p role="alert" className="text-sm text-danger">
-          {error}
-        </p>
+        <div
+          role="alert"
+          className="space-y-2 rounded-2xl border border-danger-line bg-danger-well px-4 py-3"
+        >
+          <p className="text-sm text-danger">{error}</p>
+          <p className="text-xs text-fog">
+            El orden o la baja no se guardó. Reintenta con los controles de la
+            fila.
+          </p>
+        </div>
       ) : null}
     </div>
   );

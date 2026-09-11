@@ -24,7 +24,10 @@ export const MissingStreamingDataNote = ({
       : `${count} títulos sin datos de streaming no aparecen.`;
 
   return (
-    <p className="text-xs text-mist" role="status">
+    <p
+      className="rounded-xl border border-line/70 bg-surface/30 px-3 py-2 text-xs text-mist"
+      role="status"
+    >
       {message}
     </p>
   );
@@ -32,7 +35,7 @@ export const MissingStreamingDataNote = ({
 
 export const MinePlatformsSetupCta = () => (
   <EmptyState
-    variant="generic"
+    variant="watchlist"
     title="Elige tus plataformas"
     description="Para filtrar por plataforma MX, indica cuáles tienes contratadas. El filtro usa disponibilidad incluida en México (suscripción), no renta ni compra."
     actionHref="/perfil"
@@ -55,6 +58,7 @@ export const MinePlatformsEmpty = ({
 
   return (
     <EmptyState
+      variant="watchlist"
       title="Nada en tus plataformas"
       description={
         hasTagFilters
