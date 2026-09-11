@@ -33,16 +33,6 @@ export const PageChromeSkeleton = ({
   </div>
 );
 
-export const FormPageSkeleton = ({
-  label = "Cargando formulario",
-}: SkeletonProps) => (
-  <div className="mx-auto max-w-xl space-y-6" aria-busy="true" aria-label={label}>
-    <PageHeaderSkeleton />
-    <ShimmerBlock className="h-12 rounded-xl" />
-    <ShimmerBlock className="h-40 rounded-2xl" />
-    <ShimmerBlock className="h-12 rounded-full" />
-  </div>
-);
 
 export const PosterRailSkeleton = ({ count = 5 }: { count?: number }) => (
   <div className="rail -mx-4 flex gap-4 overflow-hidden px-4">
@@ -59,6 +49,19 @@ export type DiarySkeletonMode = "picks" | "deck" | "grid" | "calendar";
 
 const skeletonWellClass =
   "rounded-2xl border border-line bg-surface/40 p-3 sm:p-4";
+
+export const FormPageSkeleton = ({
+  label = "Cargando formulario",
+}: SkeletonProps) => (
+  <div className="mx-auto max-w-xl space-y-6" aria-busy="true" aria-label={label}>
+    <PageHeaderSkeleton />
+    <div className={cn(skeletonWellClass, "space-y-3")}>
+      <ShimmerBlock className="h-12 rounded-xl" />
+      <ShimmerBlock className="h-40 rounded-2xl" />
+    </div>
+    <ShimmerBlock className="h-12 w-full rounded-full" />
+  </div>
+);
 
 export const DiaryGridSkeleton = ({ count = 6 }: { count?: number }) => (
   <div className={skeletonWellClass}>
@@ -278,6 +281,48 @@ export const ProfileBodySkeleton = ({ label = "Cargando perfil" }: SkeletonProps
         ))}
       </div>
     </div>
+  </div>
+);
+
+
+export const EditTitleBodySkeleton = ({
+  label = "Cargando título",
+}: SkeletonProps) => (
+  <div className="mx-auto max-w-3xl space-y-8" aria-busy="true" aria-label={label}>
+    <PageHeaderSkeleton />
+    <div className="grid items-start gap-8 lg:grid-cols-[200px_minmax(0,1fr)]">
+      <ShimmerBlock className="mx-auto aspect-[2/3] w-40 rounded-poster lg:mx-0 lg:w-full" />
+      <div className="space-y-6">
+        <div className={cn(skeletonWellClass, "space-y-3")}>
+          <ShimmerBlock className="h-4 w-24 rounded-full" />
+          <ShimmerBlock className="h-10 w-full rounded-xl" />
+          <ShimmerBlock className="h-28 rounded-2xl" />
+        </div>
+        <div className={cn(skeletonWellClass, "space-y-3")}>
+          <ShimmerBlock className="h-4 w-32 rounded-full" />
+          <ShimmerBlock className="h-12 w-full rounded-xl" />
+          <ShimmerBlock className="h-24 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+export const EditListBodySkeleton = ({
+  label = "Cargando lista",
+}: SkeletonProps) => (
+  <div
+    className="mx-auto max-w-xl space-y-6 py-2"
+    aria-busy="true"
+    aria-label={label}
+  >
+    <PageHeaderSkeleton />
+    <div className={cn(skeletonWellClass, "space-y-4")}>
+      <ShimmerBlock className="h-10 w-full rounded-xl" />
+      <ShimmerBlock className="h-28 w-full rounded-xl" />
+      <ShimmerBlock className="h-24 w-full rounded-2xl" />
+    </div>
+    <ShimmerBlock className="h-12 w-full rounded-full" />
   </div>
 );
 

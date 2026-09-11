@@ -1,5 +1,5 @@
-import { FormPageSkeleton } from "@/components/PageSkeletons";
+import { EditListBodySkeleton } from "@/components/PageSkeletons";
 
 export default function Loading() {
-  return <FormPageSkeleton label="Cargando lista" />;
+  return <EditListBodySkeleton />;
 }
