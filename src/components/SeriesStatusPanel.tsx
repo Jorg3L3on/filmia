@@ -10,6 +10,7 @@ import {
   SERIES_STATUSES,
   formatSeriesSeason,
 } from "@/lib/labels";
+import { showToast } from "@/lib/toast";
 import { useStickyOptimistic } from "@/lib/use-optimistic-action";
 import {
   eyebrowClass,
@@ -53,6 +54,9 @@ export const SeriesStatusPanel = ({
   const handleStatus = (status: SeriesStatus) => {
     const nextStatus = value.status === status ? null : status;
     setPendingKind("status");
+    showToast({
+      title: nextStatus ? "Estado de serie actualizado" : "Estado de serie quitado",
+    });
     run(
       {
         status: nextStatus,
@@ -70,6 +74,7 @@ export const SeriesStatusPanel = ({
 
   const handleClear = () => {
     setPendingKind("status");
+    showToast({ title: "Estado de serie quitado" });
     run({ status: null, season: null }, async () => {
       try {
         await setSeriesStatus(titleId, "NONE");

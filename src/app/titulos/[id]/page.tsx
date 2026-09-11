@@ -4,14 +4,12 @@ import type { Metadata } from "next";
 import { deleteTitle } from "@/app/actions/titles";
 import { Button } from "@/components/Button";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
-import { MarkWatchedForm } from "@/components/MarkWatchedForm";
+import { FichaWatchedSection } from "@/components/FichaWatchedSection";
 import {
   TitleActionsSkeleton,
   TitleProvidersSkeleton,
 } from "@/components/PageSkeletons";
 import { SeriesStatusPanel } from "@/components/SeriesStatusPanel";
-import { WatchedBadge } from "@/components/WatchedBadge";
-import { formatWatchedDate } from "@/lib/dates";
 import {
   getAssignableLists,
   getRelatedTitles,
@@ -19,7 +17,6 @@ import {
   getTitleById,
   getUserStreamingPlatforms,
 } from "@/lib/queries";
-import { wellClass } from "@/lib/ui";
 import { FichaVisit } from "@/components/FichaVisit";
 import { resolveTitleExtras, storedTitleExtras } from "@/lib/title-extras";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
@@ -40,12 +37,45 @@ type TitlePageProps = {
   params: Promise<{ id: string }>;
 };
 
+const buildFichaDescription = (
+  title: NonNullable<Awaited<ReturnType<typeof getTitleById>>>,
+) => {
+  const kindLabel = title.kind === "SERIES" ? "Serie" : "Película";
+  const lead = [title.year ? String(title.year) : null, kindLabel]
+    .filter(Boolean)
+    .join(" · ");
+  const overview = title.overview?.trim();
+  if (overview) {
+    const short = overview.length > 140 ? `${overview.slice(0, 137)}…` : overview;
+    return lead ? `${lead}. ${short}` : short;
+  }
+  return lead
+    ? `${lead} en Filmia.`
+    : "Ficha en Filmia, tu diario de películas y series.";
+};
+
 export const generateMetadata = async ({
   params,
 }: TitlePageProps): Promise<Metadata> => {
   const { id } = await params;
   const title = await getTitleById(id);
-  return { title: title?.name ?? "Título" };
+  if (!title) {
+    return {
+      title: "Título",
+      description: "Ficha en Filmia, tu diario de películas y series.",
+    };
+  }
+
+  const description = buildFichaDescription(title);
+  return {
+    title: title.name,
+    description,
+    openGraph: {
+      title: title.name,
+      description,
+      type: "website",
+    },
+  };
 };
 
 export default function TitleDetailPage({ params }: TitlePageProps) {
@@ -118,25 +148,13 @@ const TitleDetail = async ({
       ) : null}
 
       {title.watchedAt ? (
-        <section className={`${wellClass} space-y-4 p-5`}>
-          <header className="space-y-1">
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-success">
-              Mi registro
-            </p>
-            <h2 className="font-serif text-xl text-paper">{title.name}</h2>
-            <p className="flex flex-wrap items-center gap-2 text-sm text-fog">
-              <WatchedBadge />
-              Vista el {formatWatchedDate(title.watchedAt)}
-            </p>
-          </header>
-          <MarkWatchedForm
-            titleId={title.id}
-            variant="detail"
-            watchedAt={title.watchedAt}
-            rating={title.rating}
-            review={title.review}
-          />
-        </section>
+        <FichaWatchedSection
+          titleId={title.id}
+          titleName={title.name}
+          watchedAt={title.watchedAt}
+          rating={title.rating}
+          review={title.review}
+        />
       ) : null}
 
       <Suspense fallback={null}>

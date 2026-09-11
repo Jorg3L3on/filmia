@@ -19,7 +19,6 @@ export const SiteHeaderNav = ({ user }: SiteHeaderNavProps) => {
   const displayName = user?.name?.trim() || user?.email || "Perfil";
   const initial = displayName.slice(0, 1).toUpperCase();
   const isProfile = isCurrentPath("/perfil", pathname);
-  const isTags = isCurrentPath("/tags", pathname);
 
   return (
     <>
@@ -46,27 +45,16 @@ export const SiteHeaderNav = ({ user }: SiteHeaderNavProps) => {
         })}
       </nav>
       <div className="flex min-w-0 items-center gap-1 sm:gap-2">
-        <Link
-          href="/tags"
-          aria-current={isTags ? "page" : undefined}
-          className={cn(
-            "rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-[0.08em] tab-transition sm:hidden",
-            focusRing,
-            isTags
-              ? "bg-accent text-ink"
-              : "text-fog hover:bg-chrome hover:text-paper",
-          )}
-        >
-          Etiquetas
-        </Link>
+        {/* Mobile: avatar only on Perfil. Desktop: always show. */}
         <Link
           href="/perfil"
           title="Perfil"
           aria-label={`Perfil de ${displayName}`}
           aria-current={isProfile ? "page" : undefined}
           className={cn(
-            "inline-flex items-center gap-2 rounded-full p-0.5 text-xs transition sm:max-w-[14rem] sm:py-1 sm:pr-3 sm:pl-1",
+            "items-center gap-2 rounded-full p-0.5 text-xs transition sm:inline-flex sm:max-w-[14rem] sm:py-1 sm:pr-3 sm:pl-1",
             focusRing,
+            isProfile ? "inline-flex" : "hidden sm:inline-flex",
             isProfile
               ? "bg-accent font-medium text-ink"
               : "text-mist hover:bg-chrome hover:text-paper",

@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { ListCard } from "@/components/ListCard";
+import { ListsEtiquetasSegment } from "@/components/ListsEtiquetasSegment";
 import { PageHeader } from "@/components/PageHeader";
 import { ListsBodySkeleton } from "@/components/PageSkeletons";
 import { listHref, partitionUserLists } from "@/lib/lists";
@@ -23,11 +24,14 @@ const ListCollection = ({ children }: { children: ReactNode }) => (
 
 export default function ListsPage() {
   return (
-    <div className="space-y-12">
-      <PageHeader
-        title="Listas"
-        actions={<Button href="/listas/nueva">Nueva lista</Button>}
-      />
+    <div className="space-y-8">
+      <div className="space-y-4">
+        <PageHeader
+          title="Listas"
+          actions={<Button href="/listas/nueva">Nueva lista</Button>}
+        />
+        <ListsEtiquetasSegment />
+      </div>
       <Suspense fallback={<ListsBodySkeleton />}>
         <ListsBody />
       </Suspense>
@@ -40,7 +44,7 @@ const ListsBody = async () => {
   const { fixed, custom } = partitionUserLists(lists);
 
   return (
-    <>
+    <div className="space-y-12">
       <section className="space-y-4">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-paper">
           <span className="text-accent" aria-hidden="true">
@@ -104,6 +108,6 @@ const ListsBody = async () => {
           </ListCollection>
         )}
       </section>
-    </>
+    </div>
   );
 };
