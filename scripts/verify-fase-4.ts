@@ -262,8 +262,49 @@ const run = () => {
     "Ficha syncTags loads existing tags once with inArray(slugs)",
   );
 
+  // JOR-213 — Vercel playbook (docs + blocked preview; migrate outside build)
+  const playbook = read("docs/vercel-playbook.md");
+  assert(
+    playbook.includes("DATABASE_URL") &&
+      playbook.includes("DATABASE_URL_UNPOOLED") &&
+      playbook.includes("AUTH_SECRET") &&
+      playbook.includes("TMDB_API_KEY") &&
+      playbook.includes("OMDB_API_KEY") &&
+      playbook.includes("ignoreCommand") &&
+      playbook.includes("npm run db:migrate") &&
+      playbook.includes("postgresql://USER:PASSWORD@"),
+    "Vercel playbook documents env names + migrate + preview with placeholders only",
+  );
+  assert(
+    !/sk_live|ghp_|xoxb-/i.test(playbook),
+    "Vercel playbook must not embed real-looking secrets",
+  );
+  const vercelJson = read("vercel.json");
+  assert(
+    vercelJson.includes('"enabled": false') &&
+      vercelJson.includes('"ignoreCommand": "exit 0"') &&
+      vercelJson.includes('"sandbox": false'),
+    "vercel.json keeps Git deploys + preview blocked (sandbox paused)",
+  );
+  const pkg = JSON.parse(read("package.json"));
+  assert(
+    pkg.scripts.build === "next build" &&
+      !String(pkg.scripts.prebuild ?? "").toLowerCase().includes("migrate") &&
+      !String(pkg.scripts["vercel-build"] ?? "").toLowerCase().includes("migrate") &&
+      typeof pkg.scripts["db:migrate"] === "string",
+    "next build stays migrate-free; db:migrate remains a separate script",
+  );
+  assert(
+    read("next.config.ts").includes("docs/vercel-playbook.md"),
+    "next.config points at the Vercel playbook",
+  );
+  assert(
+    read("README.md").includes("docs/vercel-playbook.md"),
+    "README links the Vercel playbook",
+  );
+
   console.log(
-    `✓ Fase 4 perf/datos: CoverflowDeck ${coverflow} · CatalogFilters ${filters} · TmdbSearchAdd ${search} · chrome leaves · force-dynamic audit (${AUTH_DYNAMIC_PAGES.length} auth / ${PUBLIC_STATIC_ELIGIBLE_PAGES.length} public) · tagged TMDB/OMDb · N+1 ficha/listas`,
+    `✓ Fase 4 perf/datos: CoverflowDeck ${coverflow} · CatalogFilters ${filters} · TmdbSearchAdd ${search} · chrome leaves · force-dynamic audit (${AUTH_DYNAMIC_PAGES.length} auth / ${PUBLIC_STATIC_ELIGIBLE_PAGES.length} public) · tagged TMDB/OMDb · N+1 ficha/listas · Vercel playbook`,
   );
 };
 

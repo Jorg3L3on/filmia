@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Hosting playbook (env names, migrate outside build, preview off): docs/vercel-playbook.md (JOR-213).
+  // Do not run drizzle migrate from this config or from `next build`.
   devIndicators: false,
   serverExternalPackages: ["@neondatabase/serverless"],
   // Auth-gated pages keep `export const dynamic = "force-dynamic"` (a string
