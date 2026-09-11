@@ -159,7 +159,8 @@ Busca en TMDB por nombre + año + tipo, guarda poster e IMDb rating vía OMDb.
 | `npm run verify` | Verifiers offline (sin DB) |
 | `npm run ci` | lint + typecheck + test + verify |
 | `npm run db:generate` | Genera SQL de Drizzle desde `src/db/schema.ts` |
-| `npm run db:migrate` | Aplica el journal de Drizzle (`drizzle-kit migrate`) |
+| `npm run db:migrate` | Aplica el journal de Drizzle (`drizzle-kit migrate`) — **fuera** de `next build` |
+| `npm run db:migrate:deploy` | Alias explícito de `db:migrate` (mismo comando; no corre en Vercel build) |
 | `npm run db:push` | Empuja el schema a la DB sin archivo de migración (dev) |
 | `npm run db:seed` | Carga títulos dummy + usuario demo |
 | `npm run db:import-watchlist` | Importa `scripts/data/watchlist-queue.json` a Quiero ver |
@@ -169,19 +170,15 @@ Busca en TMDB por nombre + año + tipo, guarda poster e IMDb rating vía OMDb.
 
 ## Despliegue (Vercel, apagado)
 
-El runtime es Next.js en **Node**. El host previsto es Vercel; **no hay auto-deploy ahora**. No publiques este trabajo a Vercel.
+El runtime es Next.js en **Node**. El host previsto es Vercel; **Git auto-deploy y preview están apagados** (`vercel.json`). No publiques este trabajo a producción desde PRs de sandbox.
 
-Playbook cuando se vuelva a publicar (sin product feature flags):
+Playbook canónico (env **names** only, migrate fuera de `next build`, cómo encender preview más tarde sin shippear prod): [`docs/vercel-playbook.md`](docs/vercel-playbook.md) — [JOR-213](https://linear.app/jorg3l3on/issue/JOR-213) bajo [JOR-209](https://linear.app/jorg3l3on/issue/JOR-209).
 
-1. Secretos en Vercel → Settings → Environment Variables: `DATABASE_URL` (pooled), `AUTH_SECRET`, `TMDB_API_KEY`, `OMDB_API_KEY`. `AUTH_URL` se puede fijar; en Vercel a menudo se infiere.
-2. Migraciones contra Neon **fuera** del `next build` de Vercel (local o un pipeline). El build no debe correr `db:migrate`.
+Resumen rápido:
 
-```bash
-export DATABASE_URL_UNPOOLED="postgresql://..."  # URL directa (sin -pooler)
-npm run db:migrate
-```
-
-Al pegar `DATABASE_URL`, usa **solo** la URL (`postgresql://…`) sin comillas ni saltos de línea. El sanitizado en `src/lib/database-url.ts` recorta comillas/BOM; si la URL es inválida, el login muestra error de infra (no “contraseña incorrecta”).
+1. Variables en Vercel (nombres): `DATABASE_URL` (pooled), `AUTH_SECRET`, `TMDB_API_KEY`, `OMDB_API_KEY`; `AUTH_URL` opcional. Nunca secretos reales en el repo — ver `.env.example`.
+2. Migraciones: `npm run db:migrate` con `DATABASE_URL_UNPOOLED` **fuera** del build de Vercel / CI Next.
+3. Preview: opcional y documentado en el playbook; hoy blocked (`ignoreCommand` + Git off). Preferencia al publicar: prod-only.
 
 Posters TMDB: `next.config.ts` → `images.remotePatterns`.
 
@@ -191,6 +188,6 @@ Posters TMDB: `next.config.ts` → `images.remotePatterns`.
 - Neon prod ya tiene el journal de Drizzle. No re-ejecutes SQL viejo de Prisma.
 - Si la VM no tiene `DATABASE_URL`, apunta Drizzle a Neon y corre `npm run db:migrate`.
 - No hay secretos en el repo. Solo `.env.example`.
-- Host previsto: Vercel. Git deploys siguen apagados hasta que se decida publicar.
+- Host previsto: Vercel. Git deploys + preview apagados (`vercel.json`); playbook: `docs/vercel-playbook.md` (JOR-213).
 
 Ticket scaffold: [JOR-149](https://linear.app/jorg3l3on/issue/JOR-149/scaffold-next-prismaneon-crud-titulos).
