@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { DeckCard } from "@/components/coverflow/DeckCard";
 import { DeckFooter } from "@/components/coverflow/DeckFooter";
+import { CoverflowIndicators } from "@/components/coverflow/CoverflowIndicators";
 import { useCoverflowEngine } from "@/components/coverflow/useCoverflowEngine";
+import { useCoverflowLocalTitles } from "@/components/coverflow/useCoverflowLocalTitles";
 import type { CoverflowDeckProps, CoverflowTitle } from "@/components/coverflow/types";
 import { cn } from "@/lib/cn";
 import { COVERFLOW_VISIBLE_SPAN } from "@/lib/coverflow-metrics";
@@ -19,17 +21,13 @@ export const CoverflowDeck = ({
   onActiveChange,
   footer = "full",
 }: CoverflowDeckProps) => {
-  const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(() => new Set());
-  const [watchedIds, setWatchedIds] = useState<ReadonlySet<string>>(() => new Set());
-  const titles = useMemo(
-    () =>
-      incomingTitles
-        .filter((title) => !hiddenIds.has(title.id))
-        .map((title) =>
-          watchedIds.has(title.id) ? { ...title, watched: true } : title,
-        ),
-    [hiddenIds, incomingTitles, watchedIds],
-  );
+  const {
+    titles,
+    handleHide,
+    handleRestore,
+    handleMarkedSeen,
+    handleMarkSeenError,
+  } = useCoverflowLocalTitles(incomingTitles);
   const isSheet = variant === "sheet";
   const focusSpring = useSpringFeedback();
   const notifiedIndex = useRef<number | null>(null);
@@ -79,30 +77,6 @@ export const CoverflowDeck = ({
   const firstVisible = Math.max(0, activeIndex - visibleSpan);
   const lastVisible = Math.min(titles.length - 1, activeIndex + visibleSpan);
   const visibleTitles = titles.slice(firstVisible, lastVisible + 1);
-
-  const handleHide = (titleId: string) => {
-    setHiddenIds((current) => new Set(current).add(titleId));
-  };
-
-  const handleRestore = (titleId: string) => {
-    setHiddenIds((current) => {
-      const next = new Set(current);
-      next.delete(titleId);
-      return next;
-    });
-  };
-
-  const handleMarkedSeen = (titleId: string) => {
-    setWatchedIds((current) => new Set(current).add(titleId));
-  };
-
-  const handleMarkSeenError = (titleId: string) => {
-    setWatchedIds((current) => {
-      const next = new Set(current);
-      next.delete(titleId);
-      return next;
-    });
-  };
 
   return (
     <div className={cn("min-w-0", isSheet ? "space-y-4" : "space-y-6", className)}>
@@ -165,17 +139,7 @@ export const CoverflowDeck = ({
         </div>
 
         {isSheet ? null : (
-          <div className="pointer-events-none absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
-            {titles.map((title, index) => (
-              <span
-                key={title.id}
-                className={cn(
-                  "h-1.5 rounded-full",
-                  index === activeIndex ? "w-4 bg-accent" : "w-1.5 bg-chrome",
-                )}
-              />
-            ))}
-          </div>
+          <CoverflowIndicators titles={titles} activeIndex={activeIndex} />
         )}
       </div>
 

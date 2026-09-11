@@ -59,6 +59,22 @@ const run = () => {
     read("src/components/TmdbSearchResults.tsx").includes("TmdbSearchResults"),
     "Search results are a focused module",
   );
+  assert(
+    read("src/components/coverflow/CoverflowIndicators.tsx").includes("CoverflowIndicators") &&
+      read("src/components/coverflow/useCoverflowLocalTitles.ts").includes("useCoverflowLocalTitles"),
+    "Coverflow indicators + local-title state are colocated modules",
+  );
+  assert(
+    read("src/components/catalog-filters/CatalogKindChips.tsx").includes("CatalogKindChips") &&
+      read("src/components/catalog-filters/useCatalogFiltersState.ts").includes("useCatalogFiltersState"),
+    "Catalog kind chips + filter state hook are colocated modules",
+  );
+  assert(
+    read("src/components/tmdb-search/useTmdbSearchAdd.ts").includes("useTmdbSearchAdd") &&
+      read("src/components/tmdb-search/TmdbSearchForm.tsx").includes("TmdbSearchForm") &&
+      read("src/components/tmdb-search/TmdbKindFilterChips.tsx").includes("TmdbKindFilterChips"),
+    "Tmdb search form/chips/state are colocated modules",
+  );
 
   const appShell = read("src/components/AppShell.tsx");
   const siteHeader = read("src/components/SiteHeader.tsx");
