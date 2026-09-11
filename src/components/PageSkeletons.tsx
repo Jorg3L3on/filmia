@@ -140,14 +140,50 @@ export const DiaryBodySkeleton = ({
   );
 };
 
+export const WatchlistFiltersSkeleton = () => (
+  <div className="flex items-center gap-1" aria-hidden="true">
+    <ShimmerBlock className="h-7 w-14 rounded-full" />
+    <ShimmerBlock className="h-7 w-16 rounded-full" />
+    <ShimmerBlock className="h-7 w-14 rounded-full" />
+    <ShimmerBlock className="ml-auto h-9 w-9 shrink-0 rounded-full" />
+  </div>
+);
+
 export const WatchlistBodySkeleton = ({
   label = "Cargando Quiero ver",
 }: SkeletonProps) => (
-  <div className="space-y-4" aria-busy="true" aria-label={label}>
-    <ShimmerBlock className="h-10 w-full rounded-full" />
-    <ShimmerBlock className="h-40 rounded-card" />
-    <ShimmerBlock className="h-28 rounded-card" />
-    <ShimmerBlock className="h-28 rounded-card" />
+  <div className="space-y-5" aria-busy="true" aria-label={label}>
+    <WatchlistFiltersSkeleton />
+    <div className={cn(skeletonWellClass, "space-y-3")}>
+      <div className="flex gap-4 rounded-card border border-line bg-surface p-4 sm:p-5">
+        <ShimmerBlock className="aspect-[2/3] w-[112px] shrink-0 rounded-poster sm:w-[140px]" />
+        <div className="min-w-0 flex-1 space-y-3">
+          <ShimmerBlock className="h-3 w-28 rounded-full" />
+          <ShimmerBlock className="h-8 w-48 rounded-xl sm:w-64" />
+          <ShimmerBlock className="h-4 w-24 rounded-full" />
+          <div className="flex gap-2 pt-1">
+            <ShimmerBlock className="h-8 w-8 rounded-full" />
+            <ShimmerBlock className="h-8 w-8 rounded-full" />
+            <ShimmerBlock className="h-8 w-16 rounded-full" />
+          </div>
+        </div>
+      </div>
+      <ul className="divide-y divide-line">
+        {Array.from({ length: 5 }, (_, index) => (
+          <li key={index} className="flex items-center gap-3 px-1 py-2">
+            <ShimmerBlock className="h-4 w-5 shrink-0 rounded" />
+            <ShimmerBlock className="h-14 w-14 shrink-0 rounded-lg" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <ShimmerBlock className="h-4 w-40 rounded-full sm:w-52" />
+              <ShimmerBlock className="h-3 w-24 rounded-full" />
+            </div>
+            <ShimmerBlock className="hidden h-8 w-8 rounded-full sm:block" />
+            <ShimmerBlock className="h-8 w-8 rounded-full" />
+            <ShimmerBlock className="h-8 w-8 rounded-full" />
+          </li>
+        ))}
+      </ul>
+    </div>
   </div>
 );
 

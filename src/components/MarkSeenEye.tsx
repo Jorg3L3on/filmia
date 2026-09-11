@@ -61,7 +61,7 @@ export const MarkSeenEye = ({
         onClick={handleOpen}
         onPointerDown={handlePointerDown}
         className={cn(
-          "absolute z-10 inline-flex items-center justify-center rounded-full border border-white/25 bg-black/55 text-white shadow-[0_4px_12px_rgba(0,0,0,0.35)] backdrop-blur-md hover:bg-black/70",
+          "press-scale absolute z-10 inline-flex items-center justify-center rounded-full border border-white/25 bg-black/55 text-white shadow-[0_4px_12px_rgba(0,0,0,0.35)] backdrop-blur-md transition-[background-color,transform] duration-[var(--duration-press)] hover:bg-black/70",
           focusRing,
           isHero ? "top-1.5 right-1.5 h-8 w-8" : "top-0.5 right-0.5 h-6 w-6",
         )}

@@ -45,7 +45,7 @@ export default function WatchlistPage({
   searchParams: Promise<WatchlistSearchParams>;
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <WatchlistHeader />
       <Suspense fallback={<WatchlistBodySkeleton />}>
         <WatchlistBody searchParams={searchParams} />
@@ -96,20 +96,34 @@ const WatchlistBody = async ({
 
   const listId = watchlist?.id ?? "";
   const clearHref = catalogHref("/watchlist");
+  const hasExtraFilters =
+    kindFilter !== "ALL" ||
+    selectedTags.length > 0 ||
+    Boolean(seriesStatus) ||
+    platforms.length > 0 ||
+    minePlatforms ||
+    Boolean(sort);
 
   return (
     <>
-      <CatalogFilters
-        tags={tags}
-        selectedSlugs={selectedTags}
-        pathname="/watchlist"
-        kind={kindFilter}
-        platforms={platforms}
-        sort={sort ?? undefined}
-        minePlatforms={minePlatforms}
-        hasStreamingPlatforms={userPlatforms.length > 0}
-        seriesStatus={seriesStatus}
-      />
+      <div className="space-y-2">
+        <CatalogFilters
+          tags={tags}
+          selectedSlugs={selectedTags}
+          pathname="/watchlist"
+          kind={kindFilter}
+          platforms={platforms}
+          sort={sort ?? undefined}
+          minePlatforms={minePlatforms}
+          hasStreamingPlatforms={userPlatforms.length > 0}
+          seriesStatus={seriesStatus}
+        />
+        {rawItems.length > 0 && items.length > 0 && hasExtraFilters ? (
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-mist">
+            {items.length === 1 ? "1 título" : `${items.length} títulos`}
+          </p>
+        ) : null}
+      </div>
 
       {rawItems.length === 0 ? (
         <EmptyState
@@ -122,7 +136,7 @@ const WatchlistBody = async ({
       ) : catalog.needsSetup ? (
         <MinePlatformsSetupCta />
       ) : items.length === 0 && (minePlatforms || platforms.length > 0) ? (
-        <>
+        <div className="space-y-3">
           <MissingStreamingDataNote count={catalog.missingCache} />
           <MinePlatformsEmpty
             userPlatforms={platforms.length > 0 ? platforms : userPlatforms}
@@ -133,7 +147,7 @@ const WatchlistBody = async ({
               Boolean(seriesStatus)
             }
           />
-        </>
+        </div>
       ) : items.length === 0 ? (
         <EmptyState
           variant="watchlist"
@@ -143,7 +157,7 @@ const WatchlistBody = async ({
           actionLabel="Ver todos"
         />
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-4">
           <MissingStreamingDataNote count={catalog.missingCache} />
           <WatchlistList
             items={items}
@@ -155,4 +169,3 @@ const WatchlistBody = async ({
     </>
   );
 };
-

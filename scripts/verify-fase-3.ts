@@ -193,8 +193,56 @@ const run = () => {
     "Historial grid uses shared staggerStyle + card-physics tiles",
   );
 
+  const watchlistError = read("src/app/watchlist/error.tsx");
+  assert(
+    watchlistError.includes("danger-well") &&
+      watchlistError.includes('variant="secondary"') &&
+      watchlistError.includes("Reintentar"),
+    "Quiero ver error uses danger-well + secondary Reintentar",
+  );
+  const watchlistSkeletons = read("src/components/PageSkeletons.tsx");
+  assert(
+    watchlistSkeletons.includes("WatchlistFiltersSkeleton") &&
+      watchlistSkeletons.includes("cn(skeletonWellClass"),
+    "Quiero ver skeleton uses dense filter chips + skeleton well",
+  );
+  assert(
+    read("src/app/watchlist/loading.tsx").includes("WatchlistBodySkeleton") &&
+      !read("src/app/watchlist/loading.tsx").includes("withAction"),
+    "Quiero ver loading matches header without duplicate action",
+  );
+  const watchlistList = read("src/components/WatchlistList.tsx");
+  assert(
+    watchlistList.includes("WindowVirtualList") &&
+      watchlistList.includes("WATCHLIST_VIRTUALIZE_AFTER") &&
+      watchlistList.includes("WATCHLIST_QUEUE_ESTIMATE"),
+    "Quiero ver queue virtualizes earlier with tuned row estimate",
+  );
+  assert(
+    watchlistList.includes("danger-well") && watchlistList.includes("staggerStyle"),
+    "Quiero ver list errors use danger-well; short queues stagger",
+  );
+  const watchlistCard = read("src/components/WatchlistCard.tsx");
+  assert(
+    watchlistCard.includes("card-physics") &&
+      watchlistCard.includes("press-scale") &&
+      watchlistCard.includes("var(--duration-hover)"),
+    "Quiero ver cards use card-physics / press-scale / duration-hover",
+  );
+  assert(
+    read("src/components/EmptyState.tsx").includes('variant === "watchlist"') &&
+      read("src/components/MinePlatformsNotice.tsx").includes('variant="watchlist"'),
+    "Quiero ver empty + minePlatforms states use watchlist well empty",
+  );
+  assert(
+    read("src/app/watchlist/page.tsx").includes("hasExtraFilters") &&
+      read("src/components/catalog-filters/filter-ui.tsx").includes("tab-transition"),
+    "Quiero ver keeps dense catalog filter chips + filtered count",
+  );
+
   console.log("✓ Fase 3 page polish: historial IA, buscar copy, ficha sheet, Button forms");
   console.log("✓ Fase 3 Diario lote: skeletons por modo, day-sheet affordance, error well");
+  console.log("✓ Fase 3 Quiero ver lote: virtual list, skeleton well, error well, empty polish");
 };
 
 run();

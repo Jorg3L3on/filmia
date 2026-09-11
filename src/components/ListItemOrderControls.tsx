@@ -69,7 +69,7 @@ const OrderButton = ({
       onClick={handleClick}
       onPointerDown={stopRowEvent}
       className={cn(
-        "relative z-20 inline-flex h-8 w-8 pointer-events-auto items-center justify-center rounded-full border border-chrome text-fog transition",
+        "press-scale relative z-20 inline-flex h-8 w-8 pointer-events-auto items-center justify-center rounded-full border border-chrome text-fog transition-[border-color,color,transform] duration-[var(--duration-press)]",
         focusRing,
         disabled
           ? "cursor-not-allowed opacity-35"

@@ -57,7 +57,7 @@ export const WatchlistCard = ({
             title={title}
             size="hero"
             className="isolate z-0 w-[112px] shrink-0 sm:w-[140px]"
-            posterClassName="rounded-poster"
+            posterClassName="rounded-poster transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110"
             sizes="140px"
             preferredPlatforms={preferredPlatforms}
             priority
@@ -111,7 +111,13 @@ export const WatchlistCard = ({
   const genreLabel = compactGenreLabel(title.tmdbGenres);
 
   return (
-    <article className="flex items-center gap-3 rounded-2xl px-1 py-2">
+    <article
+      className={cn(
+        "flex items-center gap-3 rounded-2xl px-1 py-2",
+        "transition-[background-color,filter] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
+        "hover:bg-surface/55",
+      )}
+    >
       <span className="w-5 shrink-0 text-center text-sm font-semibold text-mist">
         {position}
       </span>
@@ -119,7 +125,7 @@ export const WatchlistCard = ({
         title={title}
         size="queue"
         className="isolate z-0 w-14 shrink-0"
-        posterClassName="rounded-lg"
+        posterClassName="rounded-lg transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110"
         sizes="56px"
         preferredPlatforms={preferredPlatforms}
         onMarkedSeen={onMarkedSeen}
@@ -172,11 +178,11 @@ const WatchlistPoster = ({
   onMarkedSeen?: () => void;
   onMarkSeenError?: () => void;
 }) => (
-  <div className={cn("relative", className)}>
+  <div className={cn("group relative", className)}>
     <Link
       href={`/titulos/${title.id}`}
       aria-label={title.name}
-      className={cn("block", focusRing)}
+      className={cn("press-scale block", focusRing)}
     >
       <SharedPoster titleId={title.id}>
         <PosterImage
