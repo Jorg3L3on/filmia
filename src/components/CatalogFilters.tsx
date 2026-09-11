@@ -137,13 +137,13 @@ export const CatalogFilters = ({
   };
 
   return (
-    <section className="space-y-1.5" aria-label="Filtros del catálogo">
-      <div className="flex items-center gap-1.5">
+    <section className="space-y-1" aria-label="Filtros del catálogo">
+      <div className="flex items-center gap-1">
         {showKind ? (
           <div
             role="group"
             aria-label="Filtro por tipo"
-            className="rail flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-0.5"
+            className="rail flex min-w-0 flex-1 items-center gap-1 overflow-x-auto"
           >
             {KIND_CHIPS.map((chip) => {
               const isCurrent = kind === chip.value;

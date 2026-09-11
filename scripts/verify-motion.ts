@@ -132,6 +132,10 @@ assert(
   titleCard.includes("SharedPoster") && titleCard.includes("card-physics"),
   "TitleCard tile→ficha uses SharedPoster + card-physics",
 );
+assert(
+  titleCard.includes("var(--duration-hover)") && !titleCard.includes("duration-200"),
+  "TitleCard poster hover uses --duration-hover (not duration-200)",
+);
 
 assert(bottomNav.includes("tab-transition"), "Bottom nav uses tab-transition");
 assert(segment.includes("tab-transition"), "Listas|Etiquetas uses tab-transition");

@@ -33,8 +33,8 @@ const countLines = (file: string) => read(file).split("\n").length;
 const run = () => {
   assert(AUTH_PAGE_DYNAMIC === "force-dynamic", "Auth pages stay request-time");
   assert(
-    HISTORIAL_DEFAULT_VIEW === "deck",
-    "Historial default view stays mazo",
+    HISTORIAL_DEFAULT_VIEW === "calendar",
+    "Historial default view stays calendar (Artist F1)",
   );
 
   const coverflow = countLines("src/components/CoverflowDeck.tsx");
@@ -83,11 +83,15 @@ const run = () => {
     "src/app/listas/nueva/page.tsx",
     "src/app/tags/page.tsx",
     "src/app/tags/[slug]/page.tsx",
-    "src/app/titulos/nuevo/page.tsx",
     "src/app/titulos/[id]/page.tsx",
     "src/app/titulos/[id]/editar/page.tsx",
     "src/app/perfil/page.tsx",
   ];
+  assert(
+    read("src/app/titulos/nuevo/page.tsx").includes('redirect("/buscar")'),
+    "titulos/nuevo redirects to Buscar (Artist F1)",
+  );
+
   for (const file of authPages) {
     const source = read(file);
     assert(

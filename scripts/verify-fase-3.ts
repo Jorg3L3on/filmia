@@ -16,22 +16,25 @@ const read = (file: string) => readFileSync(path.join(root, file), "utf8");
 const run = () => {
   const toggle = read("src/lib/diary-view.ts");
   assert(
-    toggle.includes('HISTORIAL_DEFAULT_VIEW: DeckViewMode = "deck"'),
-    "Historial default view is deck, not calendar",
-  );
-  assert(
-    catalogHref("/", { mode: "historial", month: "2026-09" }) ===
-      "/?month=2026-09&mode=historial",
-    "Deck default omits view= from historial hrefs",
+    toggle.includes('HISTORIAL_DEFAULT_VIEW: DeckViewMode = "calendar"'),
+    "Historial default view is calendar (Artist F1 lock)",
   );
   assert(
     catalogHref("/", {
-      view: "calendar",
-      defaultView: "deck",
       mode: "historial",
       month: "2026-09",
-    }) === "/?view=calendar&month=2026-09&mode=historial",
-    "Calendar is explicit once deck is the default",
+      defaultView: "calendar",
+    }) === "/?month=2026-09&mode=historial",
+    "Calendar default omits view= from historial hrefs",
+  );
+  assert(
+    catalogHref("/", {
+      view: "deck",
+      defaultView: "calendar",
+      mode: "historial",
+      month: "2026-09",
+    }) === "/?view=deck&month=2026-09&mode=historial",
+    "Deck is explicit once calendar is the default",
   );
 
   const diario = read("src/app/(diario)/page.tsx");
@@ -159,7 +162,39 @@ const run = () => {
     "Create tag uses Button, not btnPrimary",
   );
 
+  const skeletons = read("src/components/PageSkeletons.tsx");
+  assert(
+    skeletons.includes("DiaryCalendarSkeleton") &&
+      skeletons.includes("DiaryGridSkeleton") &&
+      skeletons.includes("DiarySkeletonMode"),
+    "Diario has mode-aware calendar/grid/deck skeleton wells",
+  );
+  assert(
+    read("src/app/(diario)/loading.tsx").includes("DiaryRouteSkeleton"),
+    "Diario loading uses route skeleton by mode/view",
+  );
+  const diarioError = read("src/app/(diario)/error.tsx");
+  assert(
+    diarioError.includes("danger-well") &&
+      diarioError.includes('variant="secondary"') &&
+      diarioError.includes("Reintentar"),
+    "Diario error uses danger-well + secondary Reintentar",
+  );
+  assert(
+    read("src/components/DiaryCalendar.tsx").includes("abrir hoja del día"),
+    "Calendar multi-day cells advertise day-sheet affordance",
+  );
+  assert(
+    read("src/components/catalog-filters/filter-ui.tsx").includes("tab-transition"),
+    "Catalog filter chips use tab-transition (dense bar)",
+  );
+  assert(
+    read("src/components/TitleDeckView.tsx").includes("staggerStyle"),
+    "Historial grid uses shared staggerStyle + card-physics tiles",
+  );
+
   console.log("✓ Fase 3 page polish: historial IA, buscar copy, ficha sheet, Button forms");
+  console.log("✓ Fase 3 Diario lote: skeletons por modo, day-sheet affordance, error well");
 };
 
 run();

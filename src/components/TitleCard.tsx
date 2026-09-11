@@ -30,7 +30,7 @@ export const TitleCard = ({ title }: TitleCardProps) => {
             <PosterImage
               name={title.name}
               posterPath={title.posterPath}
-              className={cn(posterFrame, "transition duration-200 group-hover:brightness-110")}
+              className={cn(posterFrame, "transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110")}
             />
           </SharedPoster>
           {title.watchedAt ? (

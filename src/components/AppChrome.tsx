@@ -35,7 +35,7 @@ export const AppChrome = ({
     <>
       {header}
       {prefetch}
-      <main className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 pb-24 pt-6 sm:pb-10 sm:pt-8">
+      <main className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 pb-[max(6rem,calc(5.5rem+env(safe-area-inset-bottom)))] pt-6 sm:pb-10 sm:pt-8">
         {children}
       </main>
       {footer}
