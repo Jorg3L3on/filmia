@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 
 export const catalogBarChipClass = (selected: boolean) =>
   cn(
-    "inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-xs font-medium transition",
+    "inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-medium tab-transition",
     focusRing,
     selected
       ? "bg-accent text-ink"

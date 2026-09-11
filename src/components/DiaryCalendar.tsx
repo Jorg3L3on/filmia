@@ -69,7 +69,7 @@ const DayCellPosters = ({ titles }: { titles: DiaryCalendarTitle[] }) => {
       ))}
       <div className="absolute inset-0 bg-gradient-to-t from-canvas-deep/80 via-transparent to-canvas-deep/20" />
       {badge ? (
-        <span className="absolute right-1 bottom-1 z-10 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-ink">
+        <span className="absolute right-0.5 bottom-1.5 z-10 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-ink shadow-[0_2px_6px_rgba(0,0,0,0.45)]">
           {badge}
         </span>
       ) : null}
@@ -199,6 +199,7 @@ const CalendarDayCell = ({
     dateLabel,
     hasEntries ? countLabel : "sin visionados",
     isToday ? "hoy" : null,
+    opensSheet ? "abrir hoja del día" : null,
   ]
     .filter(Boolean)
     .join(", ");
@@ -227,6 +228,14 @@ const CalendarDayCell = ({
       >
         {cell.day}
       </span>
+      {opensSheet ? (
+        <span
+          className="absolute inset-x-0 bottom-0 z-10 flex justify-center pb-0.5"
+          aria-hidden="true"
+        >
+          <span className="h-1 w-5 rounded-full bg-paper/70 shadow-[0_0_0_1px_rgba(0,0,0,0.25)]" />
+        </span>
+      ) : null}
     </>
   );
 

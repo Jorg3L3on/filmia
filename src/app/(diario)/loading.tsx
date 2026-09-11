@@ -1,11 +1,13 @@
-import { DiaryModeToggle } from "@/components/DiaryModeToggle";
-import { DiaryBodySkeleton } from "@/components/PageSkeletons";
+import { Suspense } from "react";
+import {
+  DiaryRouteSkeleton,
+  DiaryRouteSkeletonFallback,
+} from "@/components/DiaryRouteSkeleton";
 
 export default function Loading() {
   return (
-    <div className="space-y-6">
-      <DiaryModeToggle mode="picks" />
-      <DiaryBodySkeleton />
-    </div>
+    <Suspense fallback={<DiaryRouteSkeletonFallback />}>
+      <DiaryRouteSkeleton />
+    </Suspense>
   );
 }

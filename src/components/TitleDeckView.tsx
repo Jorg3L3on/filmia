@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
 import { PosterTile } from "@/components/PosterTile";
@@ -7,6 +6,7 @@ import type { TitleWithTags } from "@/lib/queries";
 import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { eyebrowClass } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
+import { staggerStyle } from "@/lib/motion";
 
 type TitleDeckViewProps = {
   titles: TitleWithTags[];
@@ -85,12 +85,12 @@ export const TitleDeckView = ({
           footer={footer}
         />
       ) : mode === "calendar" ? null : (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">
           {titles.map((title, index) => (
             <li
               key={title.id}
               className="stagger-in"
-              style={{ "--stagger": index } as CSSProperties}
+              style={staggerStyle(index)}
             >
               <PosterTile
                   titleId={title.id}

@@ -11,6 +11,7 @@ import {
   MinePlatformsSetupCta,
   MissingStreamingDataNote,
 } from "@/components/MinePlatformsNotice";
+import { DiaryRouteSkeletonFallback } from "@/components/DiaryRouteSkeleton";
 import { DiaryBodySkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/PageHeader";
 import { TitleDeckView } from "@/components/TitleDeckView";
@@ -73,14 +74,7 @@ export default function HomePage({
   searchParams: Promise<HomeSearchParams>;
 }) {
   return (
-    <Suspense
-      fallback={
-        <div className="space-y-6">
-          <DiaryModeToggle mode="picks" />
-          <DiaryBodySkeleton />
-        </div>
-      }
-    >
+    <Suspense fallback={<DiaryRouteSkeletonFallback />}>
       <HomeShell searchParams={searchParams} />
     </Suspense>
   );
@@ -93,11 +87,27 @@ const HomeShell = async ({
 }) => {
   const params = await searchParams;
   const mode = parseDiaryMode(params.mode);
+  const historialView = isView(params.view) ? params.view : HISTORIAL_DEFAULT_VIEW;
+  const bodySkeletonMode =
+    mode === "historial"
+      ? historialView === "calendar"
+        ? "calendar"
+        : historialView === "grid"
+          ? "grid"
+          : "deck"
+      : "picks";
 
   return (
     <div className="space-y-6">
       <DiaryModeToggle mode={mode} />
-      <Suspense fallback={<DiaryBodySkeleton />}>
+      <Suspense
+        fallback={
+          <DiaryBodySkeleton
+            mode={bodySkeletonMode}
+            label={mode === "historial" ? "Cargando historial" : "Cargando diario"}
+          />
+        }
+      >
         {mode === "historial" ? (
           <HistorialHome params={params} />
         ) : (
@@ -310,7 +320,7 @@ const HistorialHome = async ({
     monthTitles.length === 1 ? "1 entrada" : `${monthTitles.length} entradas`;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <DiaryViewHeader
         month={month}
         view={view}
@@ -343,7 +353,7 @@ const HistorialHome = async ({
         sort={sort ?? undefined}
       />
 
-      <div className="diary-stage space-y-6">
+      <div className="diary-stage space-y-5">
           {catalog.needsSetup ? null : view === "calendar" ? (
             <>
               <MissingStreamingDataNote count={catalog.missingCache} />
