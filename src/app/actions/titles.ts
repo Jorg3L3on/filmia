@@ -57,30 +57,41 @@ const seriesProgressData = (kind: TitleKind) =>
   kind === "SERIES" ? {} : { seriesStatus: null, seriesSeason: null };
 
 const syncTags = async (userId: string, titleId: string, tagIds: string[], newTags: string[]) => {
-  const created = await Promise.all(
-    newTags.map(async (name) => {
-      const slug = slugify(name) || `tag-${crypto.randomUUID().slice(0, 8)}`;
-      const existing = await db.query.tags.findFirst({
-        where: and(eq(tags.userId, userId), eq(tags.slug, slug)),
-      });
+  const createdIds: string[] = [];
 
+  if (newTags.length > 0) {
+    const prepared = newTags.map((name) => ({
+      name,
+      slug: slugify(name) || `tag-${crypto.randomUUID().slice(0, 8)}`,
+    }));
+    const slugs = prepared.map((item) => item.slug);
+    const existingRows = await db.query.tags.findMany({
+      where: and(eq(tags.userId, userId), inArray(tags.slug, slugs)),
+    });
+    const bySlug = new Map(existingRows.map((row) => [row.slug, row]));
+
+    for (const item of prepared) {
+      const existing = bySlug.get(item.slug);
       if (existing) {
-        await db.update(tags).set({ name }).where(eq(tags.id, existing.id));
-        return existing;
+        if (existing.name !== item.name) {
+          await db.update(tags).set({ name: item.name }).where(eq(tags.id, existing.id));
+        }
+        createdIds.push(existing.id);
+        continue;
       }
 
       const tagId = createId();
-      await db.insert(tags).values({ id: tagId, userId, name, slug });
-      return db.query.tags.findFirst({ where: eq(tags.id, tagId) }).then((tag) => {
-        if (!tag) {
-          throw new Error("No se pudo crear la etiqueta.");
-        }
-        return tag;
+      await db.insert(tags).values({
+        id: tagId,
+        userId,
+        name: item.name,
+        slug: item.slug,
       });
-    }),
-  );
+      createdIds.push(tagId);
+    }
+  }
 
-  const nextIds = [...new Set([...tagIds, ...created.map((tag) => tag.id)])];
+  const nextIds = [...new Set([...tagIds, ...createdIds])];
 
   await db.delete(titleTags).where(eq(titleTags.titleId, titleId));
   if (nextIds.length === 0) {
@@ -96,6 +107,7 @@ const syncLists = async (userId: string, titleId: string, listIds: string[]) => 
     columns: { id: true },
   });
   const collectionIds = collectionLists.map((list) => list.id);
+  const collectionSet = new Set(collectionIds);
 
   if (collectionIds.length > 0) {
     await db
@@ -109,21 +121,22 @@ const syncLists = async (userId: string, titleId: string, listIds: string[]) => 
       );
   }
 
-  for (const [index, listId] of listIds.entries()) {
-    const list = await db.query.lists.findFirst({
-      where: and(eq(lists.id, listId), eq(lists.userId, userId)),
-      columns: { kind: true },
-    });
-
-    if (!list || list.kind !== "COLLECTION") {
-      continue;
-    }
-
-    await db
-      .insert(listItems)
-      .values({ listId, titleId, position: index })
-      .onConflictDoNothing();
+  // Reuse the collection id set — no per-list findFirst (N+1 on ficha save).
+  const ownedSelected = listIds.filter((listId) => collectionSet.has(listId));
+  if (ownedSelected.length === 0) {
+    return;
   }
+
+  await db
+    .insert(listItems)
+    .values(
+      ownedSelected.map((listId, index) => ({
+        listId,
+        titleId,
+        position: index,
+      })),
+    )
+    .onConflictDoNothing();
 };
 
 const readTitleFields = (formData: FormData) => ({

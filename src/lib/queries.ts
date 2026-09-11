@@ -11,6 +11,7 @@ import {
   isNull,
   lt,
   ne,
+  not,
   or,
   sql,
 } from "drizzle-orm";
@@ -252,39 +253,32 @@ export const getRelatedTitles = cache(async (titleId: string, tagIds: string[]) 
 
   const userId = await requireUserId();
 
-  // Relational `findMany` aliases `Title` as `"titles"`. A correlated
-  // `exists` that still references `titles.id` emits `"Title"."id"` and
-  // Postgres rejects it. Resolve matching ids first, then load posters.
-  const matching = await db
-    .selectDistinct({ titleId: titleTags.titleId })
-    .from(titleTags)
-    .innerJoin(titles, eq(titles.id, titleTags.titleId))
+  // One round-trip: filter by shared tags via exists + inArray, order with
+  // Title_userId_watchedAt_idx (no per-tag follow-up queries).
+  return db
+    .select({
+      id: titles.id,
+      name: titles.name,
+      year: titles.year,
+      posterPath: titles.posterPath,
+    })
+    .from(titles)
     .where(
       and(
         eq(titles.userId, userId),
         ne(titles.id, titleId),
-        inArray(titleTags.tagId, tagIds),
+        exists(
+          db
+            .select({ titleId: titleTags.titleId })
+            .from(titleTags)
+            .where(
+              and(eq(titleTags.titleId, titles.id), inArray(titleTags.tagId, tagIds)),
+            ),
+        ),
       ),
-    );
-
-  if (matching.length === 0) {
-    return [];
-  }
-
-  return db.query.titles.findMany({
-    where: inArray(
-      titles.id,
-      matching.map((row) => row.titleId),
-    ),
-    columns: {
-      id: true,
-      name: true,
-      year: true,
-      posterPath: true,
-    },
-    orderBy: [desc(titles.watchedAt), asc(titles.name)],
-    limit: 12,
-  });
+    )
+    .orderBy(desc(titles.watchedAt), asc(titles.name))
+    .limit(12);
 });
 
 export const getTagFilters = cache(async (): Promise<FilterTag[]> => {
@@ -492,11 +486,43 @@ export const getListById = cache(async (id: string) => {
   });
 });
 
+/** List row only — avoids hydrating every ListItem/Title/Tag on editar. */
+export const getListMetaById = cache(async (id: string) => {
+  const userId = await requireUserId();
+
+  return db.query.lists.findFirst({
+    where: and(eq(lists.id, id), eq(lists.userId, userId)),
+  });
+});
+
 export const getTitleOptions = cache(async () => {
   const userId = await requireUserId();
 
   return db.query.titles.findMany({
     where: eq(titles.userId, userId),
+    columns: { id: true, name: true, year: true, posterPath: true },
+    orderBy: [asc(titles.name)],
+  });
+});
+
+/** Titles not already on the list — SQL exclusion instead of load-all + filter. */
+export const getTitleOptionsOutsideList = cache(async (listId: string) => {
+  const userId = await requireUserId();
+
+  return db.query.titles.findMany({
+    where: and(
+      eq(titles.userId, userId),
+      not(
+        exists(
+          db
+            .select({ titleId: listItems.titleId })
+            .from(listItems)
+            .where(
+              and(eq(listItems.listId, listId), eq(listItems.titleId, titles.id)),
+            ),
+        ),
+      ),
+    ),
     columns: { id: true, name: true, year: true, posterPath: true },
     orderBy: [asc(titles.name)],
   });

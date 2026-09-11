@@ -23,7 +23,7 @@ import {
   titleMatchesKind,
 } from "@/lib/catalog-filters";
 import { emptyStateForList, isFixedListSlug, WATCHLIST_SLUG } from "@/lib/lists";
-import { getListById, getTagFilters, getTitleOptions, getUserStreamingPlatforms } from "@/lib/queries";
+import { getListById, getTagFilters, getTitleOptionsOutsideList, getUserStreamingPlatforms } from "@/lib/queries";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
@@ -76,9 +76,9 @@ const ListDetail = async ({
   const kindFilter = parseKindFilter(query.kind);
   const platforms = parsePlatformFilters(query.platform);
   const sort = parseCatalogOrder(query.sort);
-  const [list, titleOptions, tags, userPlatforms] = await Promise.all([
+  const [list, availableTitles, tags, userPlatforms] = await Promise.all([
     getListById(id),
-    getTitleOptions(),
+    getTitleOptionsOutsideList(id),
     getTagFilters(),
     getUserStreamingPlatforms(),
   ]);
@@ -90,9 +90,6 @@ const ListDetail = async ({
   if (list.kind === "WATCHLIST" || list.slug === WATCHLIST_SLUG) {
     redirect("/watchlist");
   }
-
-  const memberIds = new Set(list.items.map((item) => item.titleId));
-  const availableTitles = titleOptions.filter((title) => !memberIds.has(title.id));
   const taggedItems = list.items.filter(
     (item) =>
       titleMatchesKind(item.title.kind, kindFilter) &&

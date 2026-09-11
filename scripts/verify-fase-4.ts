@@ -228,8 +228,42 @@ const run = () => {
     "Optimistic mutations stay in place",
   );
 
+  const queries = read("src/lib/queries.ts");
+  const titleActions = read("src/app/actions/titles.ts");
+  assert(
+    queries.includes("countByIds") &&
+      !queries.includes("rows.map(async") &&
+      !queries.includes("withCounts = await Promise.all"),
+    "List/tag counts stay batched via countByIds (no per-row count N+1)",
+  );
+  assert(
+    queries.includes("getRelatedTitles") &&
+      queries.includes("inArray(titleTags.tagId, tagIds)") &&
+      queries.includes("desc(titles.watchedAt)") &&
+      !queries.includes("selectDistinct({ titleId: titleTags.titleId })"),
+    "Ficha related titles are one select with inArray + watchedAt order",
+  );
+  assert(
+    queries.includes("getListMetaById") &&
+      queries.includes("getTitleOptionsOutsideList") &&
+      read("src/app/listas/[id]/editar/page.tsx").includes("getListMetaById") &&
+      read("src/app/listas/[id]/page.tsx").includes("getTitleOptionsOutsideList"),
+    "Listas editar skips item graph; detail excludes members in SQL",
+  );
+  assert(
+    titleActions.includes("collectionSet") &&
+      titleActions.includes("ownedSelected") &&
+      !titleActions.includes("for (const [index, listId] of listIds.entries())"),
+    "Ficha syncLists batches ownership via collectionSet (no per-list findFirst)",
+  );
+  assert(
+    titleActions.includes("inArray(tags.slug, slugs)") &&
+      !titleActions.includes("newTags.map(async"),
+    "Ficha syncTags loads existing tags once with inArray(slugs)",
+  );
+
   console.log(
-    `✓ Fase 4 perf/datos: CoverflowDeck ${coverflow} · CatalogFilters ${filters} · TmdbSearchAdd ${search} · chrome leaves · force-dynamic audit (${AUTH_DYNAMIC_PAGES.length} auth / ${PUBLIC_STATIC_ELIGIBLE_PAGES.length} public) · tagged TMDB/OMDb`,
+    `✓ Fase 4 perf/datos: CoverflowDeck ${coverflow} · CatalogFilters ${filters} · TmdbSearchAdd ${search} · chrome leaves · force-dynamic audit (${AUTH_DYNAMIC_PAGES.length} auth / ${PUBLIC_STATIC_ELIGIBLE_PAGES.length} public) · tagged TMDB/OMDb · N+1 ficha/listas`,
   );
 };
 
