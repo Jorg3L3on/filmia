@@ -150,17 +150,16 @@ const MarkWatchedSheetFields = ({
               {titleName}
             </p>
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={onClose}
-            className={cn(
-              "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-chrome text-fog hover:text-paper",
-              focusRing,
-            )}
+            className="h-9 w-9 shrink-0 px-0"
             aria-label="Cerrar"
           >
             <CloseIcon />
-          </button>
+          </Button>
         </div>
       </div>
 

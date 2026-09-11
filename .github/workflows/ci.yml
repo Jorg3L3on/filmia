@@ -21,3 +21,9 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run verify
+      - name: build (optional)
+        continue-on-error: true
+        run: npm run build
+        env:
+          AUTH_SECRET: ci-placeholder-secret-not-for-production
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?sslmode=disable

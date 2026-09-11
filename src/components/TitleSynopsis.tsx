@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/Button";
 import { cn } from "@/lib/cn";
-import { focusRing } from "@/lib/ui";
 
 type TitleSynopsisProps = {
   text: string;
@@ -26,14 +26,16 @@ export const TitleSynopsis = ({ text }: TitleSynopsisProps) => {
         {text}
       </p>
       {long ? (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => setExpanded((current) => !current)}
           aria-expanded={expanded}
-          className={cn("text-xs font-medium text-accent hover:text-accent-hover", focusRing)}
+          className="h-auto min-h-0 px-0 text-accent hover:text-accent-hover"
         >
           {expanded ? "Menos" : "Más"}
-        </button>
+        </Button>
       ) : null}
     </section>
   );

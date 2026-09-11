@@ -40,7 +40,7 @@
   --duration-morph: 380ms;
   --duration-stagger: 420ms;
   --duration-pop: 420ms;
-  --duration-sheet: 420ms;
+  --duration-sheet: 480ms;
 }
 
 @theme inline {
@@ -74,9 +74,10 @@
   --font-serif: "Fraunces", "Fraunces Fallback", ui-serif, Georgia, serif;
   --radius-poster: 8px;
   --radius-card: 14px;
-  --radius-sheet: 1.75rem;
-  --z-sheet-preview: 60;
-  --z-sheet: 80;
+  --radius-sheet: 24px;
+  --radius-button: 12px;
+  --z-sheet-preview: 40;
+  --z-sheet: 50;
   --z-sheet-top: 100;
   --z-toast: 110;
 }
@@ -120,7 +121,7 @@ body {
  * Durations
  *   press  160ms  · tab  200ms  · hover  220ms
  *   enter/toast  280ms  · morph  380ms
- *   stagger/pop  420ms  · sheet  420ms
+ *   stagger/pop  420ms  · sheet  480ms
  * Curves
  *   --ease-out  sheets, toasts, tabs, stagger, morph (no overshoot)
  *   --spring    press, spring-pop, spring-fill (chips / log / rating only)
