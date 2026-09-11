@@ -67,17 +67,19 @@ export const WindowVirtualList = <T,>({
     };
   }, [estimateHeight, items.length, overscan]);
 
-  const topPad = start * estimateHeight;
-  const bottomPad = Math.max(0, (items.length - end) * estimateHeight);
+  const safeStart = Math.min(start, Math.max(0, items.length));
+  const safeEnd = Math.min(Math.max(end, safeStart), items.length);
+  const topPad = safeStart * estimateHeight;
+  const bottomPad = Math.max(0, (items.length - safeEnd) * estimateHeight);
 
   return (
     <ul ref={rootRef} className={className} data-virtualized="true">
       {topPad > 0 ? (
         <li style={{ height: topPad }} aria-hidden="true" className="list-none p-0" />
       ) : null}
-      {items.slice(start, end).map((item, index) => (
-        <Fragment key={itemKey(item, start + index)}>
-          {renderItem(item, start + index)}
+      {items.slice(safeStart, safeEnd).map((item, index) => (
+        <Fragment key={itemKey(item, safeStart + index)}>
+          {renderItem(item, safeStart + index)}
         </Fragment>
       ))}
       {bottomPad > 0 ? (
@@ -137,10 +139,12 @@ export const WindowVirtualGrid = <T,>({
     };
   }, [estimateRowHeight, items.length, overscan, rowCount]);
 
-  const start = startRow * safeColumns;
-  const end = Math.min(items.length, endRow * safeColumns);
-  const topPad = startRow * estimateRowHeight;
-  const bottomPad = Math.max(0, (rowCount - endRow) * estimateRowHeight);
+  const safeStartRow = Math.min(startRow, Math.max(0, rowCount));
+  const safeEndRow = Math.min(Math.max(endRow, safeStartRow), rowCount);
+  const start = safeStartRow * safeColumns;
+  const end = Math.min(items.length, safeEndRow * safeColumns);
+  const topPad = safeStartRow * estimateRowHeight;
+  const bottomPad = Math.max(0, (rowCount - safeEndRow) * estimateRowHeight);
 
   return (
     <div ref={rootRef} data-virtualized="true">
