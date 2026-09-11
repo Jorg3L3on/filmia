@@ -1,6 +1,13 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
-import { AUTH_PAGE_DYNAMIC } from "../src/lib/rendering";
+import {
+  AUTH_DYNAMIC_PAGES,
+  AUTH_PAGE_DYNAMIC,
+  METADATA_REVALIDATE_SECONDS,
+  OMDB_CACHE_TAG,
+  PUBLIC_STATIC_ELIGIBLE_PAGES,
+  TMDB_CACHE_TAG,
+} from "../src/lib/rendering";
 import { collectWarmNavHrefs } from "../src/lib/nav-prefetch";
 import { HISTORIAL_DEFAULT_VIEW } from "../src/lib/diary-view";
 
@@ -103,26 +110,13 @@ const run = () => {
     "Root layout remains a server component",
   );
 
-  const authPages = [
-    "src/app/(diario)/page.tsx",
-    "src/app/watchlist/page.tsx",
-    "src/app/buscar/page.tsx",
-    "src/app/listas/page.tsx",
-    "src/app/listas/[id]/page.tsx",
-    "src/app/listas/[id]/editar/page.tsx",
-    "src/app/listas/nueva/page.tsx",
-    "src/app/tags/page.tsx",
-    "src/app/tags/[slug]/page.tsx",
-    "src/app/titulos/[id]/page.tsx",
-    "src/app/titulos/[id]/editar/page.tsx",
-    "src/app/perfil/page.tsx",
-  ];
   assert(
-    read("src/app/titulos/nuevo/page.tsx").includes('redirect("/buscar")'),
-    "titulos/nuevo redirects to Buscar (Artist F1)",
+    read("src/app/titulos/nuevo/page.tsx").includes('redirect("/buscar")') &&
+      !read("src/app/titulos/nuevo/page.tsx").includes('export const dynamic = "force-dynamic"'),
+    "titulos/nuevo redirects to Buscar without force-dynamic",
   );
 
-  for (const file of authPages) {
+  for (const file of AUTH_DYNAMIC_PAGES) {
     const source = read(file);
     assert(
       source.includes('export const dynamic = "force-dynamic"'),
@@ -132,19 +126,37 @@ const run = () => {
       !source.includes("cacheComponents"),
       `${file} must not flip Cache Components on`,
     );
+    assert(
+      !source.includes("unstable_noStore") && !source.includes("noStore("),
+      `${file} must not add unstable_noStore (force-dynamic is enough)`,
+    );
   }
+  for (const file of PUBLIC_STATIC_ELIGIBLE_PAGES) {
+    assert(
+      !read(file).includes('export const dynamic = "force-dynamic"'),
+      `${file} stays eligible for static rendering`,
+    );
+  }
+  const tmdb = read("src/lib/tmdb.ts");
+  const omdb = read("src/lib/omdb.ts");
+  const rendering = read("src/lib/rendering.ts");
   assert(
-    !read("src/app/login/page.tsx").includes('export const dynamic = "force-dynamic"'),
-    "Login stays eligible for static rendering",
-  );
-  assert(
-    !read("src/app/registro/page.tsx").includes('export const dynamic = "force-dynamic"'),
-    "Registro stays eligible for static rendering",
-  );
-  assert(
-    read("src/lib/tmdb.ts").includes("unstable_cache") &&
-      read("src/lib/omdb.ts").includes("unstable_cache"),
+    tmdb.includes("unstable_cache") && omdb.includes("unstable_cache"),
     "TMDB/OMDb metadata uses unstable_cache across force-dynamic pages",
+  );
+  assert(
+    tmdb.includes("tags: [TMDB_CACHE_TAG]") &&
+      omdb.includes("tags: [OMDB_CACHE_TAG]") &&
+      TMDB_CACHE_TAG === "tmdb-metadata" &&
+      OMDB_CACHE_TAG === "omdb-metadata" &&
+      METADATA_REVALIDATE_SECONDS === 86400,
+    "Public TMDB/OMDb caches carry safe tags + 86400s revalidate",
+  );
+  assert(
+    rendering.includes("Route surface → decision") &&
+      AUTH_DYNAMIC_PAGES.length === 12 &&
+      PUBLIC_STATIC_ELIGIBLE_PAGES.length === 2,
+    "Rendering audit table documents route → dynamic/cached decisions",
   );
   assert(
     read("next.config.ts").includes("staleTimes") &&
@@ -187,7 +199,7 @@ const run = () => {
   );
 
   console.log(
-    `✓ Fase 4 perf/datos: CoverflowDeck ${coverflow} · CatalogFilters ${filters} · TmdbSearchAdd ${search} · chrome leaves`,
+    `✓ Fase 4 perf/datos: CoverflowDeck ${coverflow} · CatalogFilters ${filters} · TmdbSearchAdd ${search} · chrome leaves · force-dynamic audit (${AUTH_DYNAMIC_PAGES.length} auth / ${PUBLIC_STATIC_ELIGIBLE_PAGES.length} public) · tagged TMDB/OMDb`,
   );
 };
 

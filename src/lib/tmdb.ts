@@ -1,7 +1,10 @@
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { TitleKind } from "@/db";
-import { METADATA_REVALIDATE_SECONDS } from "@/lib/rendering";
+import {
+  METADATA_REVALIDATE_SECONDS,
+  TMDB_CACHE_TAG,
+} from "@/lib/rendering";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
@@ -168,7 +171,10 @@ const loadCachedTmdbJson = unstable_cache(
     let response: Response;
     try {
       response = await fetch(url, {
-        next: { revalidate: METADATA_REVALIDATE_SECONDS },
+        next: {
+          revalidate: METADATA_REVALIDATE_SECONDS,
+          tags: [TMDB_CACHE_TAG],
+        },
         headers,
       });
     } catch {
@@ -197,7 +203,10 @@ const loadCachedTmdbJson = unstable_cache(
     return response.json() as Promise<unknown>;
   },
   ["tmdb-json"],
-  { revalidate: METADATA_REVALIDATE_SECONDS },
+  {
+    revalidate: METADATA_REVALIDATE_SECONDS,
+    tags: [TMDB_CACHE_TAG],
+  },
 );
 
 const parseYear = (value: string | null | undefined) => {

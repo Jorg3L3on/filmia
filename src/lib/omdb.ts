@@ -1,5 +1,8 @@
 import { unstable_cache } from "next/cache";
-import { METADATA_REVALIDATE_SECONDS } from "@/lib/rendering";
+import {
+  METADATA_REVALIDATE_SECONDS,
+  OMDB_CACHE_TAG,
+} from "@/lib/rendering";
 
 const OMDB_BASE = "https://www.omdbapi.com/";
 
@@ -34,7 +37,10 @@ const loadCachedOmdbRating = unstable_cache(
     url.searchParams.set("i", imdbId);
 
     const response = await fetch(url, {
-      next: { revalidate: METADATA_REVALIDATE_SECONDS },
+      next: {
+        revalidate: METADATA_REVALIDATE_SECONDS,
+        tags: [OMDB_CACHE_TAG],
+      },
     });
     if (!response.ok) {
       return null;
@@ -49,5 +55,8 @@ const loadCachedOmdbRating = unstable_cache(
     return Number.isFinite(rating) ? rating : null;
   },
   ["omdb-imdb-rating"],
-  { revalidate: METADATA_REVALIDATE_SECONDS },
+  {
+    revalidate: METADATA_REVALIDATE_SECONDS,
+    tags: [OMDB_CACHE_TAG],
+  },
 );
