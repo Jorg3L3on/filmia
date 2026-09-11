@@ -171,7 +171,7 @@ export const TitleSynopsisBlock = async ({
   }
 
   const extras = await extrasPromise;
-  return extras?.overview ? <TitleSynopsis text={extras.overview} /> : null;
+  return <TitleSynopsis text={extras?.overview ?? null} />;
 };
 
 export const TitleRelatedBlock = async ({

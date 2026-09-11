@@ -52,7 +52,7 @@ export const TitleSaveCta = ({
           aria-expanded={open}
           aria-haspopup="true"
           className={cn(
-            "flex w-full items-center justify-between gap-3 rounded-2xl bg-accent px-5 py-3.5 text-left text-ink",
+            "press-scale flex w-full items-center justify-between gap-3 rounded-2xl bg-accent px-5 py-3.5 text-left text-ink transition-[transform,filter] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
             focusRing,
           )}
         >
@@ -117,7 +117,7 @@ const WatchlistButton = ({
         disabled={isPending}
         aria-pressed={optimisticInWatchlist}
         className={cn(
-          "flex w-full items-center justify-center gap-3 rounded-2xl px-5 py-3.5 font-semibold",
+          "press-scale flex w-full items-center justify-center gap-3 rounded-2xl px-5 py-3.5 font-semibold transition-[transform,background-color,color,border-color] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
           focusRing,
           optimisticInWatchlist
             ? "bg-accent text-ink"

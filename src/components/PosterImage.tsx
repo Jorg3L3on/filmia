@@ -8,6 +8,7 @@ type PosterImageProps = {
   posterPath?: string | null;
   className?: string;
   priority?: boolean;
+  fetchPriority?: "high" | "low" | "auto";
   sizes?: string;
   ratio?: "poster" | "fill";
 };
@@ -17,6 +18,7 @@ export const PosterImage = ({
   posterPath,
   className,
   priority = false,
+  fetchPriority,
   sizes = "(max-width: 768px) 50vw, 220px",
   ratio = "poster",
 }: PosterImageProps) => {
@@ -50,6 +52,7 @@ export const PosterImage = ({
         sizes={sizes}
         className="object-cover"
         priority={priority}
+        fetchPriority={fetchPriority ?? (priority ? "high" : undefined)}
         unoptimized={isExternal && !isTmdb}
       />
     </div>

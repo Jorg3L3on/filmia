@@ -273,13 +273,38 @@ export const AuthScreenSkeleton = ({
 );
 
 export const TitleActionsSkeleton = () => (
-  <div className="grid grid-cols-5 gap-2" aria-hidden="true">
-    {Array.from({ length: 5 }, (_, index) => (
-      <ShimmerBlock key={index} className="h-16 rounded-2xl" />
-    ))}
+  <div className="space-y-3" aria-hidden="true">
+    <ShimmerBlock className="h-14 w-full rounded-2xl" />
+    <div className="grid grid-cols-4 gap-2">
+      {Array.from({ length: 4 }, (_, index) => (
+        <ShimmerBlock key={index} className="h-16 rounded-2xl" />
+      ))}
+    </div>
   </div>
 );
 
 export const TitleProvidersSkeleton = () => (
-  <ShimmerBlock className="h-28 rounded-md" />
+  <ShimmerBlock className="h-28 w-full rounded-md" aria-hidden="true" />
+);
+
+export const FichaBodySkeleton = ({
+  label = "Cargando ficha",
+}: SkeletonProps) => (
+  <div className="space-y-8" aria-busy="true" aria-label={label}>
+    <div className="relative -mx-4 -mt-6 sm:-mt-8">
+      <ShimmerBlock className="h-[min(62vw,360px)] min-h-[260px] sm:h-[400px] sm:rounded-b-3xl" />
+      <div className="relative z-10 -mt-28 flex items-end gap-4 px-4 sm:-mt-32 sm:gap-6 sm:px-8">
+        <ShimmerBlock className="aspect-[2/3] w-[40vw] max-w-[188px] rounded-poster sm:w-56 sm:max-w-none" />
+        <div className="min-w-0 flex-1 space-y-3 pb-1">
+          <ShimmerBlock className="h-3 w-24 rounded-full" />
+          <ShimmerBlock className="h-10 w-64 max-w-full rounded-xl" />
+          <ShimmerBlock className="h-4 w-40 rounded-full" />
+        </div>
+      </div>
+    </div>
+    <div className={cn(skeletonWellClass, "space-y-3")}>
+      <TitleActionsSkeleton />
+      <TitleProvidersSkeleton />
+    </div>
+  </div>
 );
