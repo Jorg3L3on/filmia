@@ -18,20 +18,36 @@ const fraunces = Fraunces({
   subsets: ["latin"],
 });
 
+/** Filmia canvas (~#0e1114) — keep in sync with globals.css --canvas and manifest. */
+const THEME_COLOR = "#0e1114";
+
 export const metadata: Metadata = {
+  applicationName: "Filmia",
   title: {
     default: "Filmia",
     template: "%s · Filmia",
   },
   description: "Diario personal de películas y series.",
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/logo.png", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Filmia",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: {
+    telephone: false,
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0e1114",
+  themeColor: THEME_COLOR,
   viewportFit: "cover",
 };
 
@@ -55,4 +71,4 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       </body>
     </html>
   );
-};
+}
