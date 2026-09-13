@@ -762,9 +762,25 @@ body {
   color: var(--fog);
 }
 
-/* Meta stays serif/quiet — accent middots soften. */
+/* Qué ver sala: drop SiteHeader hard seam above chips (Historial keeps border). */
+body:has(.diario-que-ver-shell) header.sticky {
+  border-bottom-color: transparent;
+}
+
+/* Title + meta arm's-length readable over sala grade (override fog / dim). */
+.diario-que-ver-shell .deck-footer-watched h2,
+.diario-que-ver-shell .deck-footer-watched h2 a {
+  color: var(--paper);
+  opacity: 1;
+}
+
+.diario-que-ver-shell .deck-footer-watched .deck-footer-meta {
+  color: rgb(240 242 244 / 0.84);
+}
+
+/* Middots: readable (≥0.7), not dead 0.55. */
 .diario-que-ver-shell .deck-footer-watched .text-accent {
-  color: rgb(var(--que-ver-glow, 124 156 255) / 0.55);
+  color: rgb(var(--que-ver-glow, 124 156 255) / 0.78);
 }
 
 /* Tab bar quieter while Qué ver sala is up — Buscar FAB especially ghost. */
