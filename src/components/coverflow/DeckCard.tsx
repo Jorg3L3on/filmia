@@ -169,7 +169,42 @@ export const DeckCard = memo(function DeckCard({
         <span data-coverflow-dim className="coverflow-card-dim" aria-hidden />
         <span className="coverflow-card-specular" aria-hidden />
         {!compact && title.watched ? (
-          <WatchedBadge compact className="absolute left-2 top-2 z-10" />
+          <WatchedBadge
+            compact
+            className={cn(
+              "absolute z-10",
+              cinematic && imdbLabel
+                ? "bottom-2.5 left-2.5"
+                : "left-2 top-2",
+            )}
+          />
+        ) : null}
+        {cinematic && imdbLabel && title.imdbRating != null ? (
+          <span
+            data-deck-imdb-badge
+            aria-label={imdbLabel}
+            className="pointer-events-none absolute left-2.5 top-2.5 z-10 inline-flex items-center gap-1 rounded-full bg-black/85 px-2 py-0.5 text-[11px] font-semibold leading-none text-white shadow-[0_2px_8px_rgba(0,0,0,0.45)] ring-1 ring-white/15 backdrop-blur-[2px]"
+          >
+            <span className="text-[10px] text-star" aria-hidden>
+              ★
+            </span>
+            <span>
+              IMDb {title.imdbRating.toFixed(1)}
+            </span>
+          </span>
+        ) : null}
+        {cinematic && availabilityPlatform ? (
+          <span
+            data-deck-platform-badge
+            aria-hidden
+            className="pointer-events-none absolute right-2.5 top-2.5 z-10"
+          >
+            <PlatformLogo
+              platform={availabilityPlatform}
+              size={22}
+              className="rounded-[5px] shadow-[0_2px_8px_rgba(0,0,0,0.4)] ring-1 ring-white/25"
+            />
+          </span>
         ) : null}
         {!cinematic &&
         !compact &&
