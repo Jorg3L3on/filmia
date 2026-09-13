@@ -307,32 +307,36 @@ body {
   display: none;
 }
 
-.coverflow-cinematic {
+.coverflow-cinematic,
+.coverflow-cinematic-stage {
   /* No outline/frame around the deck — floating soft stage only. */
   background: transparent;
+  border: 0;
+  outline: none;
+  box-shadow: none;
 }
 
 .coverflow-cinematic-stage {
-  /* Prefer leftover flex space; caps keep title+meta+slide in-viewport (JOR-221). */
+  /* Taller mazo; chrome above is compressed so slide stays above tab bar. */
   flex: 1 1 auto;
-  height: min(38dvh, calc(100dvh - 26rem));
-  min-height: 180px;
-  max-height: 360px;
+  height: min(50dvh, calc(100dvh - 22rem));
+  min-height: 260px;
+  max-height: 520px;
 }
 
 @media (min-width: 768px) {
   .coverflow-cinematic-stage {
-    height: min(44dvh, calc(100dvh - 22rem));
-    min-height: 240px;
-    max-height: 420px;
+    height: min(56dvh, calc(100dvh - 18rem));
+    min-height: 340px;
+    max-height: 580px;
   }
 }
 
 @media (min-width: 1024px) {
   .coverflow-cinematic-stage {
-    height: min(48dvh, calc(100dvh - 20rem));
-    min-height: 280px;
-    max-height: 480px;
+    height: min(62dvh, calc(100dvh - 16rem));
+    min-height: 400px;
+    max-height: 640px;
   }
 }
 

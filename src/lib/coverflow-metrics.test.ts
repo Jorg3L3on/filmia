@@ -54,7 +54,9 @@ describe("coverflow metrics", () => {
     // Even at index=0 (only positive offsets), neighbors still fan — not a flat stack.
     const edgeNeighbor = getCoverflowCardMetrics(1, 160, false, true);
     assert.ok(edgeNeighbor.translateX > 40);
-    assert.ok(Math.abs(edgeNeighbor.rotateY) > 8);
+    assert.ok(Math.abs(edgeNeighbor.rotateY) > 28);
+    assert.ok(edgeNeighbor.translateZ < -70);
+    assert.ok(center.scale - right.scale > 0.12);
     assert.ok(edgeNeighbor.blur > 0);
   });
 
@@ -71,10 +73,13 @@ describe("coverflow metrics", () => {
     assert.ok(wideButShort >= COVERFLOW_CARD_WIDTH_MIN);
   });
 
-  it("leaves lateral room for L+R soft fan on wide cinematic stages", () => {
-    const cinematic = measureCoverflowCardWidth(1000, false, 480, true);
-    const historial = measureCoverflowCardWidth(1000, false, 480, false);
-    assert.ok(cinematic <= 1000 * 0.34 + 1);
-    assert.ok(historial >= cinematic);
+  it("grows cinematic hero while leaving room for the L+R fan", () => {
+    const phone = measureCoverflowCardWidth(358, false, 400, true);
+    assert.ok(phone >= 220, `phone hero too small: ${phone}`);
+    assert.ok(phone <= 358 * 0.72);
+
+    const cinematic = measureCoverflowCardWidth(1000, false, 560, true);
+    assert.ok(cinematic >= 300, `desktop hero too small: ${cinematic}`);
+    assert.ok(cinematic < 1000 * 0.45);
   });
 });

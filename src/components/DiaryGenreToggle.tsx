@@ -21,7 +21,7 @@ export const DiaryGenreToggle = ({
     <div
       role="group"
       aria-label="Categorías de Quiero ver"
-      className="rail flex max-w-full flex-nowrap overflow-x-auto rounded-full border border-chrome bg-well p-1"
+      className="rail flex max-w-full flex-nowrap justify-center gap-0.5 overflow-x-auto px-0.5"
     >
       {categories.map((category) => {
         const isCurrent = category.slug === activeSlug;
@@ -31,9 +31,9 @@ export const DiaryGenreToggle = ({
             href={diaryHref(category.slug)}
             aria-current={isCurrent ? "page" : undefined}
             className={cn(
-              "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-wide tab-transition",
+              "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] tab-transition",
               focusRing,
-              isCurrent ? "bg-accent text-ink" : "text-fog hover:text-paper",
+              isCurrent ? "bg-accent/85 text-ink" : "text-mist hover:text-fog",
             )}
           >
             {category.name}

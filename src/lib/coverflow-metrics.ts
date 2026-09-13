@@ -3,6 +3,8 @@ export const COVERFLOW_CARD_WIDTH_SHEET = 156;
 export const COVERFLOW_CARD_WIDTH_MIN = 148;
 export const COVERFLOW_CARD_WIDTH_SHEET_MIN = 112;
 export const COVERFLOW_CARD_WIDTH_MAX_WIDE = 400;
+export const COVERFLOW_CARD_WIDTH_CINEMATIC_MIN = 200;
+export const COVERFLOW_CARD_WIDTH_CINEMATIC_MAX = 440;
 export const COVERFLOW_DRAG_THRESHOLD = 6;
 export const COVERFLOW_WHEEL_SENSITIVITY = 0.0044;
 export const COVERFLOW_SNAP_LERP = 0.24;
@@ -11,7 +13,7 @@ export const COVERFLOW_COAST_MIN_VELOCITY = 0.003;
 export const COVERFLOW_WHEEL_SNAP_MS = 70;
 export const COVERFLOW_VISIBLE_SPAN = 5;
 export const COVERFLOW_PAGE_POSTER_SIZES =
-  "(max-width: 640px) 52vw, (max-width: 1024px) 36vw, 340px";
+  "(max-width: 640px) 68vw, (max-width: 1024px) 42vw, 400px";
 export const COVERFLOW_SHEET_POSTER_SIZES = "(max-width: 640px) 36vw, 156px";
 
 export type CoverflowCardMetrics = {
@@ -58,14 +60,14 @@ export const getCoverflowCardMetrics = (
     // scale down, translateZ back, blur + dim (JOR-221 soft-coverflow).
     const spread =
       fittedRoom * (1 - Math.exp(-distance * 1.12)) * (fittedRoom < 70 ? 1.15 : 1.28);
-    const rotateCap = fittedRoom < 80 ? 30 : 46;
+    const rotateCap = fittedRoom < 80 ? 40 : 56;
 
     return {
-      rotateY: -side * Math.min(distance * 15.5, rotateCap),
+      rotateY: -side * Math.min(distance * 36, rotateCap),
       translateX: side * spread,
-      translateZ: -Math.min(distance * 52, 168),
+      translateZ: -Math.min(distance * 96, 260),
       translateY: isActive ? -2 : Math.min(distance * 2.4, 9),
-      scale: 1 - Math.min(distance * 0.09, 0.24),
+      scale: 1 - Math.min(distance * 0.155, 0.34),
       brightness: Math.max(0.38, 1 - distance * 0.24),
       opacity: distance > 5.2 ? Math.max(0, 1 - (distance - 5.2) * 1.4) : 1,
       blur: isActive ? 0 : Math.min(distance * 3.8, 9),
@@ -147,21 +149,29 @@ export const measureCoverflowCardWidth = (
     );
   }
 
-  const maxWidth =
-    stageWidth >= 900 ? COVERFLOW_CARD_WIDTH_MAX_WIDE : COVERFLOW_CARD_WIDTH;
-  // Soft-coverflow leaves more lateral room for a true L+R fan; historial keeps prior fill.
+  const maxWidth = cinematic
+    ? stageWidth >= 900
+      ? COVERFLOW_CARD_WIDTH_CINEMATIC_MAX
+      : 360
+    : stageWidth >= 900
+      ? COVERFLOW_CARD_WIDTH_MAX_WIDE
+      : COVERFLOW_CARD_WIDTH;
+  // Qué ver: dominant hero (phone ~68vw). Historial keeps prior fill.
   const widthRatio = cinematic
     ? stageWidth >= 700
-      ? 0.34
-      : 0.46
+      ? 0.38
+      : 0.68
     : stageWidth >= 700
       ? 0.4
       : 0.5;
   const widthBased = stageWidth * widthRatio;
   const heightBased =
     stageHeight > 0 ? stageHeight / 1.52 : Number.POSITIVE_INFINITY;
+  const minWidth = cinematic
+    ? Math.min(COVERFLOW_CARD_WIDTH_CINEMATIC_MIN, heightBased)
+    : COVERFLOW_CARD_WIDTH_MIN;
 
   return Math.round(
-    Math.min(maxWidth, Math.max(COVERFLOW_CARD_WIDTH_MIN, Math.min(widthBased, heightBased))),
+    Math.min(maxWidth, Math.max(minWidth, Math.min(widthBased, heightBased))),
   );
 };

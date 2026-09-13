@@ -68,7 +68,7 @@ export const TitleDeckView = ({
 
   return (
     <section
-      className={cinematic ? "flex min-h-0 flex-1 flex-col gap-3 sm:gap-4" : "space-y-4"}
+      className={cinematic ? "flex min-h-0 flex-1 flex-col gap-2 sm:gap-3" : "space-y-4"}
       aria-label={heading ?? "Mazo"}
     >
       {showToolbar ? (

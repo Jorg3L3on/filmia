@@ -171,7 +171,8 @@ export const DeckCard = memo(function DeckCard({
         {!compact && title.watched ? (
           <WatchedBadge compact className="absolute left-2 top-2 z-10" />
         ) : null}
-        {!compact &&
+        {!cinematic &&
+        !compact &&
         title.kind === "SERIES" &&
         title.seriesStatus &&
         !(showMarkSeenEye && !title.watched) ? (

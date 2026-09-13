@@ -88,7 +88,7 @@ export const CoverflowDeck = ({
         isSheet
           ? "space-y-4"
           : cinematic
-            ? "flex min-h-0 flex-1 flex-col gap-3 sm:gap-4"
+            ? "flex min-h-0 flex-1 flex-col gap-2 sm:gap-3"
             : "space-y-6",
         className,
       )}
@@ -108,7 +108,7 @@ export const CoverflowDeck = ({
           isSheet
             ? "overflow-visible bg-transparent px-0 pb-2 pt-1 focus-visible:ring-2 focus-visible:ring-accent/60"
             : cinematic
-              ? "coverflow-cinematic flex min-h-0 flex-1 flex-col overflow-visible bg-transparent px-0 pb-1 pt-1 focus-visible:ring-2 focus-visible:ring-accent/50"
+              ? "coverflow-cinematic flex min-h-0 flex-1 flex-col overflow-visible border-0 bg-transparent px-0 py-0 outline-none ring-0"
               : "overflow-hidden rounded-md border border-line bg-gradient-to-b from-canvas-deep via-canvas to-[#0a0d10] px-1 pb-9 pt-4 focus-visible:ring-2 focus-visible:ring-accent/60 sm:px-8 sm:pb-14 sm:pt-14",
         )}
       >
@@ -120,7 +120,7 @@ export const CoverflowDeck = ({
           )}
           style={{
             height: stageHeightPx,
-            perspective: cinematic ? "1600px" : "1200px",
+            perspective: cinematic ? "1400px" : "1200px",
             perspectiveOrigin: "50% 45%",
           }}
         >
