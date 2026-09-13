@@ -80,7 +80,7 @@ export const CoverflowDeck = ({
     setLightLeakKey((value) => value + 1);
   }, [cinematic]);
 
-  // Propagate grade to the sala shell so haze/floor/chrome share one tint.
+  // Propagate grade to sala shell + <html> so full-bleed wash can sit behind SiteHeader.
   useEffect(() => {
     if (!cinematic) {
       return;
@@ -91,11 +91,16 @@ export const CoverflowDeck = ({
     if (!shell) {
       return;
     }
+    const root = document.documentElement;
     shell.style.setProperty("--que-ver-glow", ambient.cssRgb);
     shell.dataset.queVerGrade = "live";
+    root.style.setProperty("--que-ver-glow", ambient.cssRgb);
+    root.dataset.queVerGrade = "live";
     return () => {
       shell.style.removeProperty("--que-ver-glow");
       delete shell.dataset.queVerGrade;
+      root.style.removeProperty("--que-ver-glow");
+      delete root.dataset.queVerGrade;
     };
   }, [ambient.cssRgb, cinematic]);
 

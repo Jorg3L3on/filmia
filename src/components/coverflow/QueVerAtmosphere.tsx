@@ -18,7 +18,7 @@ type QueVerAtmosphereProps = {
 
 /**
  * Room atmosphere behind the soft-coverflow mazo (JOR-226 / JOR-228).
- * Norte C «Película viva»: grade + grain/flicker + sprockets + ghost + leak.
+ * Norte C «Película viva»: grade + grain/flicker + ghost + leak (no sprockets).
  * Does not alter card fan / radii / blur — layer sits under the stage.
  */
 export const QueVerAtmosphere = ({
@@ -60,8 +60,6 @@ export const QueVerAtmosphere = ({
           />
         </div>
       ) : null}
-      <div className="que-ver-atmosphere-sprockets" data-side="left" />
-      <div className="que-ver-atmosphere-sprockets" data-side="right" />
       <div
         className={
           reducedMotion
