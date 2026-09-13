@@ -30,8 +30,8 @@ export const isCurrentPath = (href: string, pathname: string) => {
     return path === "/" || path.startsWith("/titulos/");
   }
   if (href === "/listas") {
-    // Desktop keeps Etiquetas separate; mobile nav treats tags under Listas.
-    return path === "/listas" || path.startsWith("/listas/");
+    // Etiquetas lives under the Listas↔Etiquetas segment, not the top nav.
+    return isListasHubPath(pathname);
   }
   return path === href || path.startsWith(`${href}/`);
 };
@@ -48,7 +48,6 @@ export const desktopNavItems = [
   { href: "/", label: "Diario" },
   { href: "/watchlist", label: "Quiero ver" },
   { href: "/listas", label: "Listas" },
-  { href: "/tags", label: "Etiquetas" },
   { href: "/buscar", label: "Buscar" },
 ] as const;
 

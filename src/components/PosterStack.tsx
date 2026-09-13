@@ -62,7 +62,7 @@ export const PosterStack = ({
                 }
           }
         >
-          <SharedPoster titleId={title.id} className="h-full">
+          <SharedPoster titleId={title.id} share={false} className="h-full">
             <PosterImage
               name={title.name}
               posterPath={title.posterPath}

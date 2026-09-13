@@ -1,3 +1,5 @@
+"use client";
+
 import { ActiveNavLink } from "@/components/ActiveNavLink";
 import { LogoutButton } from "@/components/LogoutButton";
 import { cn } from "@/lib/cn";

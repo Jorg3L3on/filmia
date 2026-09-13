@@ -1,3 +1,5 @@
+"use client";
+
 import { ActiveNavLink } from "@/components/ActiveNavLink";
 import { BottomNavShell } from "@/components/BottomNavShell";
 import { NavIcon } from "@/components/NavIcon";

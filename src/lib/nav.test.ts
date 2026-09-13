@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  desktopNavItems,
   isCurrentPath,
   isListasHubPath,
   isMobileNavCurrent,
@@ -14,15 +15,18 @@ describe("isCurrentPath nested routes", () => {
     assert.equal(isCurrentPath("/", "/watchlist"), false);
   });
 
-  it("keeps Listas active on /listas/[id]", () => {
+  it("keeps Listas active on /listas/* and /tags/* (segment hub)", () => {
     assert.equal(isCurrentPath("/listas", "/listas"), true);
     assert.equal(isCurrentPath("/listas", "/listas/xyz"), true);
-    assert.equal(isCurrentPath("/listas", "/tags"), false);
+    assert.equal(isCurrentPath("/listas", "/tags"), true);
+    assert.equal(isCurrentPath("/listas", "/tags/sci-fi"), true);
   });
 
-  it("keeps Etiquetas active on /tags/* for desktop", () => {
-    assert.equal(isCurrentPath("/tags", "/tags"), true);
-    assert.equal(isCurrentPath("/tags", "/tags/sci-fi"), true);
+  it("desktop nav has no separate Etiquetas item", () => {
+    assert.equal(
+      desktopNavItems.some((item) => item.href === "/tags"),
+      false,
+    );
   });
 });
 

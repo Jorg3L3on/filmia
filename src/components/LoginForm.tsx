@@ -58,7 +58,7 @@ export const LoginForm = () => {
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form method="post" action="/api/auth/login" onSubmit={handleSubmit} className="space-y-6">
         {error ? (
           <p
             role="alert"

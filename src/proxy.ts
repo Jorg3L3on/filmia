@@ -3,6 +3,16 @@ import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 import { verifySessionToken } from "@/lib/auth/session-token";
 
 const LOGIN_PATH = "/login";
+
+const requestOrigin = (request: Request) => {
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  if (host) {
+    const proto = request.headers.get("x-forwarded-proto") ?? "http";
+    return `${proto}://${host}`;
+  }
+  return new URL(request.url).origin.replace("://0.0.0.0", "://127.0.0.1");
+};
+
 const SIGNUP_PATH = "/registro";
 
 const PUBLIC_PATHS = [LOGIN_PATH, SIGNUP_PATH, "/api/auth"];
@@ -16,6 +26,9 @@ const isStaticAsset = (pathname: string) =>
   pathname.startsWith("/_next/") ||
   pathname === "/favicon.ico" ||
   pathname === "/logo.png" ||
+  pathname === "/manifest.webmanifest" ||
+  pathname === "/manifest.webmanifest/" ||
+  pathname.startsWith("/icon-") ||
   pathname.startsWith("/posters/");
 
 export const proxy = async (request: Request) => {
@@ -36,13 +49,13 @@ export const proxy = async (request: Request) => {
 
   if (isPublicPath(pathname)) {
     if (loggedIn && (pathname === LOGIN_PATH || pathname === SIGNUP_PATH)) {
-      return NextResponse.redirect(new URL("/", request.url));
+      return NextResponse.redirect(new URL("/", requestOrigin(request)));
     }
     return NextResponse.next();
   }
 
   if (!loggedIn) {
-    const loginUrl = new URL(LOGIN_PATH, request.url);
+    const loginUrl = new URL(LOGIN_PATH, requestOrigin(request));
     const callbackPath = `${pathname}${new URL(request.url).search}`;
     if (callbackPath && callbackPath !== "/") {
       loginUrl.searchParams.set("callbackUrl", callbackPath);
