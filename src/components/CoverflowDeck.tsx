@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DeckCard } from "@/components/coverflow/DeckCard";
 import { DeckFooter } from "@/components/coverflow/DeckFooter";
 import { CoverflowIndicators } from "@/components/coverflow/CoverflowIndicators";
@@ -12,7 +12,6 @@ import type { CoverflowDeckProps, CoverflowTitle } from "@/components/coverflow/
 import { cn } from "@/lib/cn";
 import { COVERFLOW_VISIBLE_SPAN } from "@/lib/coverflow-metrics";
 import { useSpringFeedback } from "@/lib/motion";
-
 export type { CoverflowTitle };
 
 export const CoverflowDeck = ({
@@ -36,6 +35,8 @@ export const CoverflowDeck = ({
   const cinematic = footer === "watched" && !isSheet;
   const focusSpring = useSpringFeedback();
   const notifiedIndex = useRef<number | null>(null);
+  const deckRootRef = useRef<HTMLDivElement>(null);
+  const [lightLeakKey, setLightLeakKey] = useState(0);
   const engine = useCoverflowEngine(titles.length, isSheet, cinematic, {
     initialIndex,
     onEdgeNavigate: cinematic ? onEdgeNavigate : undefined,
@@ -57,6 +58,46 @@ export const CoverflowDeck = ({
   const ambient = usePosterAmbientColor(
     cinematic ? activeTitle?.posterPath : null,
   );
+
+  const nextTitle =
+    cinematic && activeIndex < titles.length - 1
+      ? titles[activeIndex + 1]
+      : null;
+  const ghostPosterPath = cinematic ? (nextTitle?.posterPath ?? null) : null;
+  // Soft always-on ghost; stronger near the trailing edge (continuum hint).
+  const nearTrailingEdge =
+    cinematic && titles.length > 1 && activeIndex >= titles.length - 2;
+  const ghostOpacity = !ghostPosterPath
+    ? 0
+    : nearTrailingEdge
+      ? 0.48
+      : 0.28;
+
+  const handleSlideCommit = useCallback(() => {
+    if (!cinematic) {
+      return;
+    }
+    setLightLeakKey((value) => value + 1);
+  }, [cinematic]);
+
+  // Propagate grade to the sala shell so haze/floor/chrome share one tint.
+  useEffect(() => {
+    if (!cinematic) {
+      return;
+    }
+    const shell = deckRootRef.current?.closest(
+      ".diario-que-ver-shell",
+    ) as HTMLElement | null;
+    if (!shell) {
+      return;
+    }
+    shell.style.setProperty("--que-ver-glow", ambient.cssRgb);
+    shell.dataset.queVerGrade = "live";
+    return () => {
+      shell.style.removeProperty("--que-ver-glow");
+      delete shell.dataset.queVerGrade;
+    };
+  }, [ambient.cssRgb, cinematic]);
 
   useEffect(() => {
     if (titles.length === 0) {
@@ -94,6 +135,7 @@ export const CoverflowDeck = ({
 
   return (
     <div
+      ref={deckRootRef}
       className={cn(
         "min-w-0",
         isSheet
@@ -136,7 +178,14 @@ export const CoverflowDeck = ({
             perspectiveOrigin: "50% 45%",
           }}
         >
-          {cinematic ? <QueVerAtmosphere glowRgb={ambient.cssRgb} /> : null}
+          {cinematic ? (
+            <QueVerAtmosphere
+              glowRgb={ambient.cssRgb}
+              ghostPosterPath={ghostPosterPath}
+              ghostOpacity={ghostOpacity}
+              lightLeakKey={lightLeakKey}
+            />
+          ) : null}
           {cinematic ? (
             <div className="coverflow-soft-glow" aria-hidden />
           ) : null}
@@ -189,6 +238,7 @@ export const CoverflowDeck = ({
             onHide={handleHide}
             onRestore={handleRestore}
             onMarkedSeen={handleMarkedSeen}
+            onSlideCommit={cinematic ? handleSlideCommit : undefined}
           />
         </div>
       ) : null}

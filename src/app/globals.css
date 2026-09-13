@@ -397,21 +397,65 @@ body {
 
 
 /*
- * Qué ver room atmosphere (JOR-226 / JOR-228).
- * Spotlight tint comes from --que-ver-glow (poster-sampled RGB).
+ * Qué ver room atmosphere — Norte C «Película viva» (JOR-228).
+ * Grade from --que-ver-glow (poster-sampled) tints the whole sala.
  * Soft-coverflow fan/radii/blur stay in coverflow-metrics — do not retune here.
+ * Continuum (edge category swipe) is untouched.
  */
 .diario-que-ver-shell {
   position: relative;
   isolation: isolate;
 }
 
+/* Full-room grade wash (shell + deck share --que-ver-glow). */
+.diario-que-ver-shell[data-que-ver-grade="live"]::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: -8% -6% -12%;
+  z-index: 0;
+  background:
+    radial-gradient(
+      ellipse 85% 70% at 50% 42%,
+      rgb(var(--que-ver-glow, 124 156 255) / 0.28),
+      rgb(var(--que-ver-glow, 124 156 255) / 0.1) 45%,
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 110% 60% at 50% 100%,
+      rgb(var(--que-ver-glow, 124 156 255) / 0.18),
+      transparent 60%
+    );
+  mix-blend-mode: screen;
+  transition: opacity var(--duration-morph) var(--ease-out);
+}
+
+.diario-que-ver-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
 .que-ver-atmosphere {
   pointer-events: none;
   position: absolute;
-  inset: -12% -8% -18%;
+  inset: -14% -10% -22%;
   z-index: 0;
   overflow: hidden;
+}
+
+.que-ver-atmosphere-grade {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 78% 64% at 50% 40%,
+      rgb(var(--que-ver-glow, 124 156 255) / 0.34),
+      rgb(var(--que-ver-glow, 124 156 255) / 0.12) 48%,
+      transparent 74%
+    );
+  mix-blend-mode: soft-light;
+  opacity: 1;
+  animation: que-ver-grade-breath 7.2s ease-in-out infinite;
 }
 
 .que-ver-atmosphere-vignette {
@@ -419,66 +463,191 @@ body {
   inset: 0;
   background:
     radial-gradient(
-      ellipse 78% 68% at 50% 42%,
+      ellipse 72% 62% at 50% 40%,
       transparent 0%,
-      transparent 38%,
-      rgb(0 0 0 / 0.35) 72%,
-      rgb(0 0 0 / 0.72) 100%
+      transparent 28%,
+      rgb(0 0 0 / 0.42) 62%,
+      rgb(0 0 0 / 0.82) 100%
     ),
     radial-gradient(
-      ellipse 120% 90% at 50% 100%,
-      rgb(0 0 0 / 0.45),
+      ellipse 130% 95% at 50% 100%,
+      rgb(0 0 0 / 0.58),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 90% 70% at 50% 0%,
+      rgb(0 0 0 / 0.35),
       transparent 55%
     );
 }
 
 .que-ver-atmosphere-haze {
   position: absolute;
-  inset: 8% 12% 18%;
+  inset: 4% 6% 12%;
   background: radial-gradient(
-    ellipse at 50% 40%,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.14),
-    rgb(var(--que-ver-glow, 124 156 255) / 0.04) 45%,
-    transparent 70%
+    ellipse 70% 58% at 50% 38%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.48),
+    rgb(var(--que-ver-glow, 124 156 255) / 0.2) 42%,
+    transparent 72%
   );
-  filter: blur(28px);
-  opacity: 0.9;
+  filter: blur(32px);
+  opacity: 1;
   mix-blend-mode: screen;
+  animation: que-ver-haze-breath 6.4s ease-in-out infinite;
 }
 
 .que-ver-atmosphere-spotlight {
   position: absolute;
   left: 50%;
-  top: 8%;
-  width: min(54%, 420px);
-  height: min(78%, 520px);
+  top: 0%;
+  width: min(68%, 520px);
+  height: min(88%, 620px);
   transform: translateX(-50%);
   background: linear-gradient(
     180deg,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.22) 0%,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.1) 32%,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.03) 58%,
-    transparent 78%
+    rgb(255 255 255 / 0.28) 0%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.62) 8%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.32) 34%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.12) 58%,
+    transparent 82%
   );
-  filter: blur(22px);
-  opacity: 0.95;
+  filter: blur(18px);
+  opacity: 1;
   mix-blend-mode: screen;
-  clip-path: polygon(32% 0%, 68% 0%, 92% 100%, 8% 100%);
+  clip-path: polygon(36% 0%, 64% 0%, 94% 100%, 6% 100%);
+  animation: que-ver-spot-breath 5.8s ease-in-out infinite;
+}
+
+/* Floor puddle / bounce under hero — legible “sala” charco. */
+.que-ver-atmosphere-floor {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  width: min(78%, 560px);
+  height: min(28%, 180px);
+  transform: translateX(-50%);
+  background:
+    radial-gradient(
+      ellipse 70% 55% at 50% 45%,
+      rgb(var(--que-ver-glow, 124 156 255) / 0.62),
+      rgb(var(--que-ver-glow, 124 156 255) / 0.22) 38%,
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 45% 40% at 32% 55%,
+      rgb(255 170 90 / 0.26),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 40% 38% at 68% 52%,
+      rgb(120 190 255 / 0.22),
+      transparent 70%
+    );
+  filter: blur(16px);
+  opacity: 1;
+  mix-blend-mode: screen;
+}
+
+/* Ghost: larger/softer double-exposure of the next poster in the fog. */
+.que-ver-atmosphere-ghost {
+  position: absolute;
+  left: 58%;
+  top: 30%;
+  width: min(58%, 380px);
+  aspect-ratio: 2 / 3;
+  transform: translate(-42%, -40%) rotate(2.5deg) scale(1.22);
+  filter: blur(22px) saturate(1.2) brightness(1.05);
+  mix-blend-mode: screen;
+  transition: opacity var(--duration-morph) var(--ease-out);
+  z-index: 0;
+  overflow: hidden;
+  border-radius: 0.85rem;
+  opacity: 0.92;
+}
+
+/* Sprocket perforations — legible film edge L/R (Artist: raise presence). */
+.que-ver-atmosphere-sprockets {
+  position: absolute;
+  top: 5%;
+  bottom: 8%;
+  width: 16px;
+  opacity: 0.42;
+  background:
+    radial-gradient(ellipse 55% 18% at 50% 10%, rgb(255 255 255 / 0.7), transparent 70%),
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 9px,
+      rgb(255 245 230 / 0.72) 9px 15px,
+      transparent 15px 26px
+    );
+  filter: blur(0.25px);
+  mix-blend-mode: soft-light;
+  mask-image: linear-gradient(180deg, transparent, #000 10%, #000 90%, transparent);
+}
+
+.que-ver-atmosphere-sprockets[data-side="left"] {
+  left: 2%;
+}
+
+.que-ver-atmosphere-sprockets[data-side="right"] {
+  right: 2%;
 }
 
 .que-ver-atmosphere-grain {
   position: absolute;
   inset: 0;
-  opacity: 0.045;
+  opacity: 0.28;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
-  background-size: 160px 160px;
+  background-size: 140px 140px;
   mix-blend-mode: overlay;
   animation: que-ver-grain-shift 1.8s steps(2) infinite;
 }
 
 .que-ver-atmosphere-grain.is-static {
   animation: none;
-  opacity: 0.035;
+  opacity: 0.18;
+}
+
+/* Idle projector flicker — subtle, not 60fps noise. */
+.que-ver-atmosphere-flicker {
+  position: absolute;
+  inset: 0;
+  background: rgb(255 250 240 / 0.045);
+  mix-blend-mode: soft-light;
+  animation: que-ver-flicker 4.2s steps(3) infinite;
+  opacity: 1;
+}
+
+.que-ver-atmosphere-flicker.is-static {
+  animation: none;
+  opacity: 0;
+}
+
+/* Warm light-leak streak on «Vi esto» commit (~400ms). */
+.que-ver-atmosphere-leak {
+  position: absolute;
+  left: -20%;
+  top: 18%;
+  width: 70%;
+  height: 70%;
+  background: linear-gradient(
+    108deg,
+    transparent 20%,
+    rgb(255 186 120 / 0.55) 42%,
+    rgb(255 120 80 / 0.4) 52%,
+    rgb(255 220 170 / 0.35) 58%,
+    transparent 78%
+  );
+  filter: blur(18px);
+  mix-blend-mode: screen;
+  animation: que-ver-light-leak 420ms var(--ease-out) both;
+  pointer-events: none;
+}
+
+.que-ver-atmosphere-leak.is-static {
+  animation: none;
+  opacity: 0.28;
+  transform: none;
 }
 
 @keyframes que-ver-grain-shift {
@@ -499,6 +668,67 @@ body {
   }
 }
 
+@keyframes que-ver-flicker {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  33% {
+    opacity: 0.7;
+  }
+  66% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes que-ver-grade-breath {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes que-ver-haze-breath {
+  0%,
+  100% {
+    opacity: 0.88;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes que-ver-spot-breath {
+  0%,
+  100% {
+    opacity: 0.9;
+    filter: blur(18px);
+  }
+  50% {
+    opacity: 1;
+    filter: blur(16px);
+  }
+}
+
+@keyframes que-ver-light-leak {
+  0% {
+    opacity: 0;
+    transform: translateX(-18%) rotate(-10deg);
+  }
+  28% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(42%) rotate(-6deg);
+  }
+}
+
 /* Soft glow behind focused poster — tint follows sampled --que-ver-glow. */
 .coverflow-soft-glow {
   pointer-events: none;
@@ -506,37 +736,97 @@ body {
   left: 50%;
   top: 46%;
   z-index: 0;
-  width: min(62%, 520px);
-  height: min(70%, 420px);
+  width: min(78%, 640px);
+  height: min(82%, 520px);
   transform: translate(-50%, -50%);
   background: radial-gradient(
     ellipse at center,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.2),
-    rgb(var(--que-ver-glow, 124 156 255) / 0.06) 42%,
-    transparent 72%
+    rgb(var(--que-ver-glow, 124 156 255) / 0.58),
+    rgb(var(--que-ver-glow, 124 156 255) / 0.22) 38%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.06) 62%,
+    transparent 78%
   );
-  filter: blur(18px);
-  opacity: 0.95;
+  filter: blur(22px);
+  opacity: 1;
   transition: background var(--duration-morph) var(--ease-out);
 }
 
-/* Quieter category chips — mist inactive, subtle active (no UI candy). */
+/* Quieter category chips — mist inactive, subtle active (chrome muerto). */
 .que-ver-chip-mist {
-  color: rgb(139 147 156 / 0.72);
-  background: rgb(255 255 255 / 0.03);
-  border: 1px solid rgb(255 255 255 / 0.06);
+  color: rgb(139 147 156 / 0.5);
+  background: rgb(255 255 255 / 0.02);
+  border: 1px solid rgb(255 255 255 / 0.04);
 }
 
 .que-ver-chip-mist:hover {
   color: var(--fog);
-  border-color: rgb(255 255 255 / 0.1);
+  border-color: rgb(255 255 255 / 0.08);
 }
 
 .que-ver-chip-active {
-  color: var(--paper);
-  background: rgb(var(--que-ver-glow, 124 156 255) / 0.18);
-  border: 1px solid rgb(var(--que-ver-glow, 124 156 255) / 0.28);
-  box-shadow: 0 0 18px rgb(var(--que-ver-glow, 124 156 255) / 0.12);
+  color: rgb(236 238 242 / 0.82);
+  background: rgb(var(--que-ver-glow, 124 156 255) / 0.1);
+  border: 1px solid rgb(var(--que-ver-glow, 124 156 255) / 0.16);
+  box-shadow: 0 0 12px rgb(var(--que-ver-glow, 124 156 255) / 0.06);
+}
+
+/* Chrome muerto — mode toggle almost ghost so the sala light leads. */
+.diario-que-ver-shell .diario-mode-toggle {
+  border-color: rgb(255 255 255 / 0.035);
+  background: rgb(0 0 0 / 0.14);
+  opacity: 0.34;
+  transition:
+    opacity var(--duration-hover) var(--ease-out),
+    border-color var(--duration-hover) var(--ease-out),
+    background-color var(--duration-hover) var(--ease-out);
+}
+
+.diario-que-ver-shell .diario-mode-toggle:hover,
+.diario-que-ver-shell .diario-mode-toggle:focus-within {
+  opacity: 0.62;
+}
+
+.diario-que-ver-shell .diario-mode-toggle a[aria-selected="true"] {
+  background: rgb(255 255 255 / 0.055);
+  color: rgb(236 238 242 / 0.72);
+  box-shadow: none;
+}
+
+.diario-que-ver-shell .diario-mode-toggle a:not([aria-selected="true"]) {
+  color: rgb(139 147 156 / 0.32);
+}
+
+/* Meta stays serif/quiet — accent middots soften. */
+.diario-que-ver-shell .deck-footer-watched .text-accent {
+  color: rgb(var(--que-ver-glow, 124 156 255) / 0.55);
+}
+
+/* Tab bar quieter while Qué ver sala is up — Buscar FAB especially ghost. */
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] {
+  border-color: rgb(255 255 255 / 0.03);
+  background: rgb(8 10 12 / 0.62);
+}
+
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a {
+  opacity: 0.52;
+}
+
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[aria-current="page"] {
+  opacity: 0.78;
+}
+
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="search"] > span:first-child {
+  background: rgb(255 255 255 / 0.08) !important;
+  color: rgb(236 238 242 / 0.7) !important;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.22) !important;
+  opacity: 0.72;
+}
+
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="search"][aria-current="page"] > span:first-child {
+  background: rgb(var(--que-ver-glow, 124 156 255) / 0.28) !important;
+  color: rgb(236 238 242 / 0.88) !important;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.28) !important;
+  opacity: 0.88;
 }
 
 /* Light idle breath on cinematic hero face (transform lives on root via JS). */
@@ -818,13 +1108,30 @@ body {
   }
 
   .coverflow-soft-glow {
-    opacity: 0.55;
-    filter: blur(10px);
+    opacity: 0.9;
+    filter: blur(16px);
   }
 
   .que-ver-atmosphere-grain {
     animation: none !important;
-    opacity: 0.03;
+    opacity: 0.08;
+  }
+
+  .que-ver-atmosphere-flicker,
+  .que-ver-atmosphere-grade,
+  .que-ver-atmosphere-haze,
+  .que-ver-atmosphere-spotlight,
+  .que-ver-atmosphere-leak {
+    animation: none !important;
+  }
+
+  .que-ver-atmosphere-flicker {
+    opacity: 0 !important;
+  }
+
+  .que-ver-atmosphere-grade {
+    opacity: 0.9;
+    transform: none;
   }
 
   .coverflow-card.is-cinematic.is-focused .coverflow-card-face {

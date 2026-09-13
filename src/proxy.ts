@@ -15,7 +15,7 @@ const requestOrigin = (request: Request) => {
 
 const SIGNUP_PATH = "/registro";
 
-const PUBLIC_PATHS = [LOGIN_PATH, SIGNUP_PATH, "/api/auth"];
+const PUBLIC_PATHS = [LOGIN_PATH, SIGNUP_PATH, "/api/auth", "/api/poster-ambient"];
 
 const isPublicPath = (pathname: string) =>
   PUBLIC_PATHS.some(

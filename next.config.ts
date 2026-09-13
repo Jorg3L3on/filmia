@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   // Hosting playbook (env names, migrate outside build, preview off): docs/vercel-playbook.md (JOR-213).
   // Do not run drizzle migrate from this config or from `next build`.
   devIndicators: false,
-  serverExternalPackages: ["@neondatabase/serverless"],
+  serverExternalPackages: ["@neondatabase/serverless", "sharp"],
   // Auth-gated pages keep `export const dynamic = "force-dynamic"` (a string
   // literal — Next cannot parse a shared constant) so Neon HTTP fetches are
   // not shared across users. Do not enable cacheComponents: it drops

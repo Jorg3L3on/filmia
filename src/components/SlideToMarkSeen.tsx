@@ -17,6 +17,8 @@ type SlideToMarkSeenProps = {
   className?: string;
   onSaved?: () => void;
   onError?: (message: string) => void;
+  /** Fires once when the slide commits (opens sheet) — light-leak hook. */
+  onCommit?: () => void;
 };
 
 const prefersReducedMotion = () =>
@@ -32,6 +34,7 @@ export const SlideToMarkSeen = ({
   className,
   onSaved,
   onError,
+  onCommit,
 }: SlideToMarkSeenProps) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -67,6 +70,7 @@ export const SlideToMarkSeen = ({
     }
     committed.current = true;
     setOffset(maxTravel);
+    onCommit?.();
     setOpen(true);
   };
 
