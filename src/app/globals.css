@@ -285,24 +285,26 @@ body {
 }
 
 .coverflow-cinematic-stage {
-  height: min(56dvh, calc(100dvh - 17rem));
-  min-height: 268px;
-  max-height: 560px;
+  /* Prefer leftover flex space; height caps keep title+meta+slide in-viewport (JOR-221). */
+  flex: 1 1 auto;
+  height: min(38dvh, calc(100dvh - 26rem));
+  min-height: 180px;
+  max-height: 360px;
 }
 
 @media (min-width: 768px) {
   .coverflow-cinematic-stage {
-    height: min(62dvh, calc(100dvh - 15.5rem));
-    min-height: 360px;
-    max-height: 640px;
+    height: min(44dvh, calc(100dvh - 22rem));
+    min-height: 240px;
+    max-height: 420px;
   }
 }
 
 @media (min-width: 1024px) {
   .coverflow-cinematic-stage {
-    height: min(66dvh, calc(100dvh - 14.5rem));
-    min-height: 420px;
-    max-height: 720px;
+    height: min(48dvh, calc(100dvh - 20rem));
+    min-height: 280px;
+    max-height: 480px;
   }
 }
 

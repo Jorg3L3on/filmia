@@ -89,9 +89,9 @@ export const DeckFooter = ({
     }
 
     return (
-      <div className={cn("mx-auto w-full max-w-xl space-y-5 text-center", focusClassName)}>
-        <div className="space-y-1.5 px-2">
-          <h2 className="font-serif text-[1.65rem] leading-tight text-paper sm:text-3xl md:text-4xl">
+      <div className={cn("mx-auto w-full max-w-xl space-y-3 text-center sm:space-y-4", focusClassName)}>
+        <div className="space-y-1 px-2 sm:space-y-1.5">
+          <h2 className="font-serif text-[1.45rem] leading-tight text-paper sm:text-3xl md:text-4xl">
             <Link
               href={`/titulos/${activeTitle.id}`}
               className="hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"

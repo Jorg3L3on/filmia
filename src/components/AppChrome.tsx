@@ -3,7 +3,7 @@ import { AuthChromeGate } from "@/components/AuthChromeGate";
 
 /** Keep safe-area class here so Fase 3 / Fase 5 verifies still find it on AppChrome (JOR-220). */
 export const appMainClassName =
-  "mx-auto w-full min-w-0 max-w-6xl flex-1 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(6rem,calc(5.5rem+env(safe-area-inset-bottom)))] pt-6 sm:pb-10 sm:pt-8";
+  "mx-auto flex w-full min-h-0 min-w-0 max-w-6xl flex-1 flex-col pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(6rem,calc(5.5rem+env(safe-area-inset-bottom)))] pt-6 sm:pb-10 sm:pt-8";
 
 type AppChromeProps = {
   header: ReactNode;
