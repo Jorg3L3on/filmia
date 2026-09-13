@@ -206,7 +206,7 @@ body {
   animation: toast-out var(--duration-toast) var(--ease-out) both;
 }
 
-/* Coverflow mazo: compositor-only motion. Dim is an overlay, not filter. */
+/* Coverflow mazo: compositor-only transforms; dim/blur on face overlays. */
 .coverflow-card {
   contain: layout style;
   backface-visibility: hidden;
@@ -227,12 +227,29 @@ body {
     0 0 0 1px rgb(124 156 255 / 0.7);
 }
 
+/* Soft-coverflow (Qué ver): floating poster, no frame/ring, soft drop shadow. */
+.coverflow-card.is-cinematic {
+  box-shadow: 0 18px 34px rgb(0 0 0 / 0.42);
+}
+
+.coverflow-card.is-cinematic.is-focused {
+  box-shadow:
+    0 30px 48px rgb(0 0 0 / 0.52),
+    0 10px 18px rgb(0 0 0 / 0.28);
+}
+
 .coverflow-card-face {
   border-color: rgb(255 255 255 / 0.1);
 }
 
 .coverflow-card.is-focused .coverflow-card-face {
   border-color: rgb(124 156 255 / 0.4);
+}
+
+.coverflow-card.is-cinematic .coverflow-card-face,
+.coverflow-card.is-cinematic.is-focused .coverflow-card-face {
+  border-color: transparent;
+  border-width: 0;
 }
 
 .coverflow-card.is-compact.is-focused .coverflow-card-face {
@@ -272,51 +289,129 @@ body {
   opacity: 1;
 }
 
+.coverflow-card.is-cinematic .coverflow-card-specular {
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.28) 0%,
+    rgb(255 255 255 / 0.08) 18%,
+    transparent 42%
+  );
+  mix-blend-mode: soft-light;
+}
+
+.coverflow-card.is-cinematic.is-focused .coverflow-card-specular {
+  opacity: 0.9;
+}
+
 .coverflow-card.is-compact .coverflow-card-specular {
   display: none;
 }
 
-.coverflow-cinematic {
-  background: radial-gradient(
-    ellipse 72% 58% at 50% 42%,
-    rgb(124 156 255 / 0.09),
-    transparent 72%
-  );
+.coverflow-cinematic,
+.coverflow-cinematic-stage {
+  /* No outline/frame around the deck — floating soft stage only. */
+  background: transparent;
+  border: 0;
+  outline: none;
+  box-shadow: none;
 }
 
 .coverflow-cinematic-stage {
-  height: min(56dvh, calc(100dvh - 17rem));
-  min-height: 268px;
-  max-height: 560px;
+  /* Taller mazo; chrome above is compressed so slide stays above tab bar. */
+  flex: 1 1 auto;
+  height: min(50dvh, calc(100dvh - 22rem));
+  min-height: 260px;
+  max-height: 520px;
 }
 
 @media (min-width: 768px) {
   .coverflow-cinematic-stage {
-    height: min(62dvh, calc(100dvh - 15.5rem));
-    min-height: 360px;
-    max-height: 640px;
+    height: min(56dvh, calc(100dvh - 18rem));
+    min-height: 340px;
+    max-height: 580px;
   }
 }
 
 @media (min-width: 1024px) {
   .coverflow-cinematic-stage {
-    height: min(66dvh, calc(100dvh - 14.5rem));
-    min-height: 420px;
-    max-height: 720px;
+    height: min(62dvh, calc(100dvh - 16rem));
+    min-height: 400px;
+    max-height: 640px;
   }
 }
 
-.coverflow-shelf {
+/*
+ * Short tablet/desktop height (iPad landscape 1024×768): reclaim vertical room so
+ * title + meta + «Desliza para Vi esto» clear the fold. Scoped to min-width 768
+ * so phone portrait hero stays large (JOR-221).
+ */
+@media (max-height: 768px) and (min-width: 768px) {
+  .coverflow-cinematic-stage {
+    height: min(44dvh, calc(100dvh - 22rem));
+    min-height: 220px;
+    max-height: 360px;
+  }
+
+  .app-main {
+    padding-top: 1rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .diario-que-ver-shell {
+    gap: 0.35rem;
+  }
+
+  .diario-que-ver-body {
+    gap: 0.25rem;
+  }
+
+  .diario-que-ver-shell [role="tablist"] {
+    max-width: 18rem;
+    padding: 0.125rem;
+  }
+
+  .diario-que-ver-shell [role="tablist"] a {
+    padding-block: 0.3rem;
+    font-size: 0.625rem;
+  }
+
+  .diario-que-ver-body [role="group"][aria-label="Categorías de Quiero ver"] a {
+    padding-block: 0.2rem;
+    padding-inline: 0.55rem;
+    letter-spacing: 0.12em;
+  }
+
+  .diario-que-ver-deck {
+    gap: 0.35rem;
+  }
+
+  .deck-footer-watched {
+    gap: 0.45rem;
+  }
+
+  .deck-footer-watched .font-serif {
+    font-size: 1.35rem;
+  }
+}
+
+
+/* Soft indigo glow behind focused poster (not a hard shelf / boxed stage). */
+.coverflow-soft-glow {
   pointer-events: none;
   position: absolute;
   left: 50%;
-  bottom: 3%;
+  top: 46%;
   z-index: 0;
-  width: min(78%, 640px);
-  height: 22%;
-  transform: translateX(-50%);
-  background: radial-gradient(ellipse at center, rgb(0 0 0 / 0.58), transparent 72%);
-  filter: blur(3px);
+  width: min(62%, 520px);
+  height: min(70%, 420px);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    ellipse at center,
+    rgb(124 156 255 / 0.16),
+    rgb(124 156 255 / 0.04) 42%,
+    transparent 72%
+  );
+  filter: blur(18px);
   opacity: 0.95;
 }
 
@@ -539,12 +634,19 @@ body {
   .coverflow-card,
   .coverflow-card.is-focused,
   .coverflow-card.is-compact.is-focused,
+  .coverflow-card.is-cinematic,
+  .coverflow-card.is-cinematic.is-focused,
   .coverflow-card-specular {
     transition: none;
   }
 
   .coverflow-card.is-focused .coverflow-card-specular {
     opacity: 0.55;
+  }
+
+  .coverflow-soft-glow {
+    opacity: 0.55;
+    filter: blur(10px);
   }
 
   ::view-transition-group(*),

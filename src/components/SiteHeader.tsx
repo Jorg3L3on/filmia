@@ -20,8 +20,13 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
         className={focusRing}
         aria-label="Filmia, ir al inicio"
       >
-        <Logo size="sm" className="sm:hidden" />
-        <Logo size="md" className="hidden sm:inline-flex" />
+        {/* Wrappers own display so Logo's inline-flex cannot un-hide the unused size. */}
+        <span className="inline-flex sm:hidden">
+          <Logo size="sm" />
+        </span>
+        <span className="hidden sm:inline-flex">
+          <Logo size="md" />
+        </span>
       </Link>
       <SiteHeaderNav user={user} />
     </div>

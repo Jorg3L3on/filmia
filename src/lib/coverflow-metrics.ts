@@ -3,6 +3,8 @@ export const COVERFLOW_CARD_WIDTH_SHEET = 156;
 export const COVERFLOW_CARD_WIDTH_MIN = 148;
 export const COVERFLOW_CARD_WIDTH_SHEET_MIN = 112;
 export const COVERFLOW_CARD_WIDTH_MAX_WIDE = 400;
+export const COVERFLOW_CARD_WIDTH_CINEMATIC_MIN = 200;
+export const COVERFLOW_CARD_WIDTH_CINEMATIC_MAX = 440;
 export const COVERFLOW_DRAG_THRESHOLD = 6;
 export const COVERFLOW_WHEEL_SENSITIVITY = 0.0044;
 export const COVERFLOW_SNAP_LERP = 0.24;
@@ -11,7 +13,7 @@ export const COVERFLOW_COAST_MIN_VELOCITY = 0.003;
 export const COVERFLOW_WHEEL_SNAP_MS = 70;
 export const COVERFLOW_VISIBLE_SPAN = 5;
 export const COVERFLOW_PAGE_POSTER_SIZES =
-  "(max-width: 640px) 52vw, (max-width: 1024px) 36vw, 340px";
+  "(max-width: 640px) 68vw, (max-width: 1024px) 42vw, 400px";
 export const COVERFLOW_SHEET_POSTER_SIZES = "(max-width: 640px) 36vw, 156px";
 
 export type CoverflowCardMetrics = {
@@ -22,12 +24,14 @@ export type CoverflowCardMetrics = {
   scale: number;
   brightness: number;
   opacity: number;
+  blur: number;
   zIndex: number;
   isActive: boolean;
 };
 
 export type CoverflowPaintedCard = {
   root: HTMLElement;
+  face: HTMLElement | null;
   dim: HTMLElement | null;
   caption: HTMLElement | null;
   link: HTMLElement | null;
@@ -44,11 +48,34 @@ export const getCoverflowCardMetrics = (
   offset: number,
   sideRoom: number,
   compact = false,
+  cinematic = false,
 ): CoverflowCardMetrics => {
   const distance = Math.abs(offset);
   const side = Math.sign(offset) || 0;
   const isActive = distance < 0.45;
   const fittedRoom = Math.max(10, sideRoom);
+
+  if (cinematic) {
+    // Soft floating L+R fan: neighbors on both sides rotateY toward center,
+    // scale down, translateZ back, blur + dim (JOR-221 soft-coverflow).
+    const spread =
+      fittedRoom * (1 - Math.exp(-distance * 1.12)) * (fittedRoom < 70 ? 1.15 : 1.28);
+    const rotateCap = fittedRoom < 80 ? 40 : 56;
+
+    return {
+      rotateY: -side * Math.min(distance * 36, rotateCap),
+      translateX: side * spread,
+      translateZ: -Math.min(distance * 96, 260),
+      translateY: isActive ? -2 : Math.min(distance * 2.4, 9),
+      scale: 1 - Math.min(distance * 0.155, 0.34),
+      brightness: Math.max(0.38, 1 - distance * 0.24),
+      opacity: distance > 5.2 ? Math.max(0, 1 - (distance - 5.2) * 1.4) : 1,
+      blur: isActive ? 0 : Math.min(distance * 3.8, 9),
+      zIndex: Math.round(900 - distance * 80),
+      isActive,
+    };
+  }
+
   const spread = fittedRoom * (1 - Math.exp(-distance * (compact ? 0.86 : 0.78)));
   const rotateCap = compact ? 22 : fittedRoom < 90 ? 18 : 32;
 
@@ -60,6 +87,7 @@ export const getCoverflowCardMetrics = (
     scale: 1 - Math.min(distance * (compact ? 0.12 : 0.055), compact ? 0.28 : 0.14),
     brightness: Math.max(compact ? 0.62 : 0.55, 1 - distance * (compact ? 0.14 : 0.16)),
     opacity: distance > 5.2 ? Math.max(0, 1 - (distance - 5.2) * 1.4) : 1,
+    blur: 0,
     zIndex: Math.round(900 - distance * 80),
     isActive,
   };
@@ -71,9 +99,10 @@ export const paintCoverflowCard = (
   sideRoom: number,
   compact: boolean,
   moving: boolean,
+  cinematic = false,
 ) => {
-  const metrics = getCoverflowCardMetrics(offset, sideRoom, compact);
-  const { root, dim, caption, link } = node;
+  const metrics = getCoverflowCardMetrics(offset, sideRoom, compact, cinematic);
+  const { root, face, dim, caption, link } = node;
 
   root.style.transform = `translate3d(${metrics.translateX}px, ${metrics.translateY}px, ${metrics.translateZ}px) rotateY(${metrics.rotateY}deg) scale(${metrics.scale})`;
   root.style.opacity = String(metrics.opacity);
@@ -83,6 +112,14 @@ export const paintCoverflowCard = (
   root.classList.toggle("is-focused", metrics.isActive);
   root.setAttribute("aria-selected", metrics.isActive ? "true" : "false");
   root.setAttribute("aria-hidden", metrics.opacity < 0.08 ? "true" : "false");
+
+  if (face) {
+    // Blur on the face (not the transformed root) so preserve-3d stays intact.
+    const blurPx = prefersCoverflowReducedMotion()
+      ? Math.min(metrics.blur, 2.5) * 0.45
+      : metrics.blur;
+    face.style.filter = blurPx > 0.04 ? `blur(${blurPx.toFixed(2)}px)` : "none";
+  }
 
   if (dim) {
     dim.style.opacity = String(1 - metrics.brightness);
@@ -101,6 +138,7 @@ export const measureCoverflowCardWidth = (
   stageWidth: number,
   compact: boolean,
   stageHeight = 0,
+  cinematic = false,
 ) => {
   if (compact) {
     return Math.round(
@@ -111,13 +149,29 @@ export const measureCoverflowCardWidth = (
     );
   }
 
-  const maxWidth =
-    stageWidth >= 900 ? COVERFLOW_CARD_WIDTH_MAX_WIDE : COVERFLOW_CARD_WIDTH;
-  const widthBased = stageWidth * (stageWidth >= 700 ? 0.4 : 0.5);
+  const maxWidth = cinematic
+    ? stageWidth >= 900
+      ? COVERFLOW_CARD_WIDTH_CINEMATIC_MAX
+      : 360
+    : stageWidth >= 900
+      ? COVERFLOW_CARD_WIDTH_MAX_WIDE
+      : COVERFLOW_CARD_WIDTH;
+  // Qué ver: dominant hero (phone ~68vw). Historial keeps prior fill.
+  const widthRatio = cinematic
+    ? stageWidth >= 700
+      ? 0.38
+      : 0.68
+    : stageWidth >= 700
+      ? 0.4
+      : 0.5;
+  const widthBased = stageWidth * widthRatio;
   const heightBased =
     stageHeight > 0 ? stageHeight / 1.52 : Number.POSITIVE_INFINITY;
+  const minWidth = cinematic
+    ? Math.min(COVERFLOW_CARD_WIDTH_CINEMATIC_MIN, heightBased)
+    : COVERFLOW_CARD_WIDTH_MIN;
 
   return Math.round(
-    Math.min(maxWidth, Math.max(COVERFLOW_CARD_WIDTH_MIN, Math.min(widthBased, heightBased))),
+    Math.min(maxWidth, Math.max(minWidth, Math.min(widthBased, heightBased))),
   );
 };

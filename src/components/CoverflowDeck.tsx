@@ -32,7 +32,7 @@ export const CoverflowDeck = ({
   const cinematic = footer === "watched" && !isSheet;
   const focusSpring = useSpringFeedback();
   const notifiedIndex = useRef<number | null>(null);
-  const engine = useCoverflowEngine(titles.length, isSheet);
+  const engine = useCoverflowEngine(titles.length, isSheet, cinematic);
   const {
     containerRef,
     stageRef,
@@ -73,7 +73,8 @@ export const CoverflowDeck = ({
   if (!activeTitle) {
     return null;
   }
-  const showMarkSeenEye = footer === "watched" && !isSheet;
+  // Slide is the primary CTA in soft-coverflow; poster eye fights the floating look.
+  const showMarkSeenEye = false;
   const visibleSpan = stageWidth < 500 ? 4 : COVERFLOW_VISIBLE_SPAN;
   const firstVisible = Math.max(0, activeIndex - visibleSpan);
   const lastVisible = Math.min(titles.length - 1, activeIndex + visibleSpan);
@@ -84,7 +85,11 @@ export const CoverflowDeck = ({
     <div
       className={cn(
         "min-w-0",
-        isSheet ? "space-y-4" : cinematic ? "flex flex-col gap-5" : "space-y-6",
+        isSheet
+          ? "space-y-4"
+          : cinematic
+            ? "diario-que-ver-deck flex min-h-0 flex-1 flex-col gap-2 sm:gap-3"
+            : "space-y-6",
         className,
       )}
     >
@@ -103,7 +108,7 @@ export const CoverflowDeck = ({
           isSheet
             ? "overflow-visible bg-transparent px-0 pb-2 pt-1 focus-visible:ring-2 focus-visible:ring-accent/60"
             : cinematic
-              ? "coverflow-cinematic overflow-visible bg-transparent px-0 pb-2 pt-1 focus-visible:ring-2 focus-visible:ring-accent/50"
+              ? "coverflow-cinematic flex min-h-0 flex-1 flex-col overflow-visible border-0 bg-transparent px-0 py-0 outline-none ring-0"
               : "overflow-hidden rounded-md border border-line bg-gradient-to-b from-canvas-deep via-canvas to-[#0a0d10] px-1 pb-9 pt-4 focus-visible:ring-2 focus-visible:ring-accent/60 sm:px-8 sm:pb-14 sm:pt-14",
         )}
       >
@@ -116,10 +121,10 @@ export const CoverflowDeck = ({
           style={{
             height: stageHeightPx,
             perspective: cinematic ? "1400px" : "1200px",
-            perspectiveOrigin: "50% 48%",
+            perspectiveOrigin: "50% 45%",
           }}
         >
-          {cinematic ? <div className="coverflow-shelf" aria-hidden /> : null}
+          {cinematic ? <div className="coverflow-soft-glow" aria-hidden /> : null}
           <div
             className="absolute left-1/2 top-1/2"
             style={{
@@ -159,16 +164,18 @@ export const CoverflowDeck = ({
       </div>
 
       {activeTitle ? (
-        <DeckFooter
-          activeTitle={activeTitle}
-          isSheet={isSheet}
-          footer={footer}
-          listId={listId}
-          focusClassName={focusSpring.className}
-          onHide={handleHide}
-          onRestore={handleRestore}
-          onMarkedSeen={handleMarkedSeen}
-        />
+        <div className={cinematic ? "shrink-0" : undefined}>
+          <DeckFooter
+            activeTitle={activeTitle}
+            isSheet={isSheet}
+            footer={footer}
+            listId={listId}
+            focusClassName={focusSpring.className}
+            onHide={handleHide}
+            onRestore={handleRestore}
+            onMarkedSeen={handleMarkedSeen}
+          />
+        </div>
       ) : null}
     </div>
   );

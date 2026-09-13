@@ -40,6 +40,7 @@ type CoverflowEngine = {
 export const useCoverflowEngine = (
   titlesLength: number,
   isSheet: boolean,
+  cinematic = false,
 ): CoverflowEngine => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [cardWidth, setCardWidth] = useState(
@@ -61,6 +62,7 @@ export const useCoverflowEngine = (
   const cardWidthRef = useRef(COVERFLOW_CARD_WIDTH);
   const sideRoomRef = useRef(8);
   const compactRef = useRef(isSheet);
+  const cinematicRef = useRef(cinematic);
   const activeIndexRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const wheelSnapTimeout = useRef<number | null>(null);
@@ -96,7 +98,14 @@ export const useCoverflowEngine = (
     const compact = compactRef.current;
 
     cardNodes.current.forEach((node, index) => {
-      paintCoverflowCard(node, index - display, sideRoom, compact, moving);
+      paintCoverflowCard(
+        node,
+        index - display,
+        sideRoom,
+        compact,
+        moving,
+        cinematicRef.current,
+      );
     });
   };
 
@@ -118,6 +127,7 @@ export const useCoverflowEngine = (
 
     const painted: CoverflowPaintedCard = {
       root: node,
+      face: node.querySelector("[data-coverflow-face]"),
       dim: node.querySelector("[data-coverflow-dim]"),
       caption: node.querySelector("[data-coverflow-caption]"),
       link: node.querySelector("a"),
@@ -129,6 +139,7 @@ export const useCoverflowEngine = (
       sideRoomRef.current,
       compactRef.current,
       motionModeRef.current !== "idle" || isDraggingRef.current,
+      cinematicRef.current,
     );
   }, []);
 
@@ -401,26 +412,31 @@ export const useCoverflowEngine = (
       const height = node.clientHeight;
       setStageWidth(stage);
       setStageHeight(height);
-      setCardWidth(measureCoverflowCardWidth(stage, isSheet, height));
+      setCardWidth(measureCoverflowCardWidth(stage, isSheet, height, cinematic));
     };
 
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(node);
     return () => observer.disconnect();
-  }, [isSheet, titlesLength]);
+  }, [cinematic, isSheet, titlesLength]);
 
   useLayoutEffect(() => {
     titlesLengthRef.current = titlesLength;
     cardWidthRef.current = cardWidth;
     compactRef.current = isSheet;
-    sideRoomRef.current = Math.max(8, (stageWidth - cardWidth) / 2 - (isSheet ? 4 : 12));
+    cinematicRef.current = cinematic;
+    // Extra lateral room for soft L+R fan (cinematic); historial/sheet keep prior inset.
+    sideRoomRef.current = Math.max(
+      8,
+      (stageWidth - cardWidth) / 2 - (isSheet ? 4 : cinematic ? 2 : 12),
+    );
     tickRef.current = runTick;
   });
 
   useLayoutEffect(() => {
     paintCards(motionModeRef.current !== "idle" || isDraggingRef.current);
-  }, [activeIndex, cardWidth, stageWidth, titlesLength]);
+  }, [activeIndex, cardWidth, cinematic, stageWidth, titlesLength]);
 
   return {
     containerRef,

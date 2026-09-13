@@ -98,8 +98,16 @@ const HomeShell = async ({
       : "picks";
 
   return (
-    <div className="space-y-6">
-      <DiaryModeToggle mode={mode} />
+    <div
+      className={
+        mode === "historial"
+          ? "space-y-6"
+          : "diario-que-ver-shell flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-sm:-mt-1"
+      }
+    >
+      <div className="shrink-0">
+        <DiaryModeToggle mode={mode} />
+      </div>
       <Suspense
         fallback={
           <DiaryBodySkeleton
@@ -160,12 +168,14 @@ const PicksHome = async ({
     : rankDiaryPicks(titles);
 
   return (
-    <div className="flex min-h-0 flex-col gap-4 sm:gap-5">
+    <div className="diario-que-ver-body flex min-h-0 flex-1 flex-col gap-1.5 sm:gap-3">
       {activeCategory ? (
-        <DiaryGenreToggle
-          categories={categories}
-          activeSlug={activeCategory.slug}
-        />
+        <div className="shrink-0">
+          <DiaryGenreToggle
+            categories={categories}
+            activeSlug={activeCategory.slug}
+          />
+        </div>
       ) : null}
 
       {rawTitles.length === 0 ? (
