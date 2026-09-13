@@ -88,7 +88,7 @@ export const CoverflowDeck = ({
         isSheet
           ? "space-y-4"
           : cinematic
-            ? "flex min-h-0 flex-1 flex-col gap-2 sm:gap-3"
+            ? "diario-que-ver-deck flex min-h-0 flex-1 flex-col gap-2 sm:gap-3"
             : "space-y-6",
         className,
       )}

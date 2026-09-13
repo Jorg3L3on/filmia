@@ -102,7 +102,7 @@ const HomeShell = async ({
       className={
         mode === "historial"
           ? "space-y-6"
-          : "flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-sm:-mt-1"
+          : "diario-que-ver-shell flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-sm:-mt-1"
       }
     >
       <div className="shrink-0">
@@ -168,7 +168,7 @@ const PicksHome = async ({
     : rankDiaryPicks(titles);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-1.5 sm:gap-3">
+    <div className="diario-que-ver-body flex min-h-0 flex-1 flex-col gap-1.5 sm:gap-3">
       {activeCategory ? (
         <div className="shrink-0">
           <DiaryGenreToggle

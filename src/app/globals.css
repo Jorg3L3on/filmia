@@ -340,6 +340,61 @@ body {
   }
 }
 
+/*
+ * Short tablet/desktop height (iPad landscape 1024×768): reclaim vertical room so
+ * title + meta + «Desliza para Vi esto» clear the fold. Scoped to min-width 768
+ * so phone portrait hero stays large (JOR-221).
+ */
+@media (max-height: 768px) and (min-width: 768px) {
+  .coverflow-cinematic-stage {
+    height: min(44dvh, calc(100dvh - 22rem));
+    min-height: 220px;
+    max-height: 360px;
+  }
+
+  .app-main {
+    padding-top: 1rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .diario-que-ver-shell {
+    gap: 0.35rem;
+  }
+
+  .diario-que-ver-body {
+    gap: 0.25rem;
+  }
+
+  .diario-que-ver-shell [role="tablist"] {
+    max-width: 18rem;
+    padding: 0.125rem;
+  }
+
+  .diario-que-ver-shell [role="tablist"] a {
+    padding-block: 0.3rem;
+    font-size: 0.625rem;
+  }
+
+  .diario-que-ver-body [role="group"][aria-label="Categorías de Quiero ver"] a {
+    padding-block: 0.2rem;
+    padding-inline: 0.55rem;
+    letter-spacing: 0.12em;
+  }
+
+  .diario-que-ver-deck {
+    gap: 0.35rem;
+  }
+
+  .deck-footer-watched {
+    gap: 0.45rem;
+  }
+
+  .deck-footer-watched .font-serif {
+    font-size: 1.35rem;
+  }
+}
+
+
 /* Soft indigo glow behind focused poster (not a hard shelf / boxed stage). */
 .coverflow-soft-glow {
   pointer-events: none;
