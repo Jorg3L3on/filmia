@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { DiaryGenreToggle } from "@/components/DiaryGenreToggle";
 import { DiaryModeToggle } from "@/components/DiaryModeToggle";
 import { CatalogFilters } from "@/components/CatalogFilters";
 import { HISTORIAL_DEFAULT_VIEW, type DeckViewMode } from "@/lib/diary-view";
@@ -14,7 +13,8 @@ import {
 import { DiaryRouteSkeletonFallback } from "@/components/DiaryRouteSkeleton";
 import { DiaryBodySkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/PageHeader";
-import { TitleDeckView } from "@/components/TitleDeckView";
+import { QueVerPicks } from "@/components/QueVerPicks";
+import { TitleDeckView, toCoverflowTitle } from "@/components/TitleDeckView";
 import { scheduleDiaryWatchlistEnrichment } from "@/lib/diary-enrich";
 import {
   assignExclusiveDiaryPicks,
@@ -167,49 +167,52 @@ const PicksHome = async ({
     ? (picksByCategoryId.get(activeCategory.id) ?? [])
     : rankDiaryPicks(titles);
 
-  return (
-    <div className="diario-que-ver-body flex min-h-0 flex-1 flex-col gap-1.5 sm:gap-3">
-      {activeCategory ? (
-        <div className="shrink-0">
-          <DiaryGenreToggle
-            categories={categories}
-            activeSlug={activeCategory.slug}
-          />
-        </div>
-      ) : null}
+  const decks =
+    categories.length > 0
+      ? categories.map((category) => ({
+          category,
+          titles: (picksByCategoryId.get(category.id) ?? []).map((title) =>
+            toCoverflowTitle(title, userPlatforms),
+          ),
+        }))
+      : [];
 
-      {rawTitles.length === 0 ? (
-        <EmptyState
-          variant="watchlist"
-          title="Aún no hay nada en Quiero ver"
-          description="Añade títulos desde Buscar o desde una ficha."
-          actionHref="/buscar"
-          actionLabel="Ir a Buscar"
-        />
-      ) : titles.length === 0 ? (
-        <EmptyState
-          title="Nada en tus plataformas"
-          description={`Qué ver solo muestra lo incluido (suscripción) en ${formatUserPlatformsList(userPlatforms)}. Renta y compra no cuentan.`}
-          actionHref="/perfil"
-          actionLabel="Revisar plataformas"
-        />
-      ) : picks.length === 0 ? (
-        <EmptyState
-          title="Nada en esta categoría"
-          description="Prueba otra pestaña o agrega más títulos a Quiero ver."
-          actionHref={diaryHref(categories[0]?.slug)}
-          actionLabel="Ver otra categoría"
-        />
-      ) : (
-        <TitleDeckView
-          titles={picks}
-          mode="deck"
-          showToggle={false}
-          userPlatforms={userPlatforms}
-          footer="watched"
-        />
-      )}
-    </div>
+  if (rawTitles.length === 0) {
+    return (
+      <EmptyState
+        variant="watchlist"
+        title="Aún no hay nada en Quiero ver"
+        description="Añade títulos desde Buscar o desde una ficha."
+        actionHref="/buscar"
+        actionLabel="Ir a Buscar"
+      />
+    );
+  }
+
+  if (titles.length === 0) {
+    return (
+      <EmptyState
+        title="Nada en tus plataformas"
+        description={`Qué ver solo muestra lo incluido (suscripción) en ${formatUserPlatformsList(userPlatforms)}. Renta y compra no cuentan.`}
+        actionHref="/perfil"
+        actionLabel="Revisar plataformas"
+      />
+    );
+  }
+
+  if (!activeCategory || decks.length === 0 || picks.length === 0) {
+    return (
+      <EmptyState
+        title="Nada en esta categoría"
+        description="Prueba otra pestaña o agrega más títulos a Quiero ver."
+        actionHref={diaryHref(categories[0]?.slug)}
+        actionLabel="Ver otra categoría"
+      />
+    );
+  }
+
+  return (
+    <QueVerPicks decks={decks} initialSlug={activeCategory.slug} />
   );
 };
 

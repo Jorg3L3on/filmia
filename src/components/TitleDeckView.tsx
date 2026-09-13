@@ -20,7 +20,7 @@ type TitleDeckViewProps = {
   footer?: "full" | "watched";
 };
 
-const toCoverflowTitle = (
+export const toCoverflowTitle = (
   title: TitleWithTags,
   userPlatforms: readonly Platform[] = [],
 ): CoverflowTitle => {
