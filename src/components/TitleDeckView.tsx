@@ -2,6 +2,7 @@ import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
 import { PosterTile } from "@/components/PosterTile";
 import type { Platform } from "@/db";
+import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import type { TitleWithTags } from "@/lib/queries";
 import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { eyebrowClass } from "@/lib/ui";
@@ -44,6 +45,7 @@ const toCoverflowTitle = (
     seriesStatus: title.kind === "SERIES" ? title.seriesStatus : null,
     seriesSeason: title.kind === "SERIES" ? title.seriesSeason : null,
     flatrateProviders: watchProviders?.flatrate ?? [],
+    genres: parseStoredTmdbGenres(title.tmdbGenres),
   };
 };
 
@@ -62,9 +64,13 @@ export const TitleDeckView = ({
   }
 
   const showToolbar = Boolean(heading) || (showToggle && hrefFor);
+  const cinematic = footer === "watched" && mode === "deck";
 
   return (
-    <section className="space-y-4" aria-label={heading ?? "Mazo"}>
+    <section
+      className={cinematic ? "flex min-h-0 flex-1 flex-col gap-4" : "space-y-4"}
+      aria-label={heading ?? "Mazo"}
+    >
       {showToolbar ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           {heading ? <h2 className={eyebrowClass}>{heading}</h2> : null}
@@ -83,6 +89,7 @@ export const TitleDeckView = ({
         <CoverflowDeck
           titles={titles.map((title) => toCoverflowTitle(title, userPlatforms))}
           footer={footer}
+          className={cinematic ? "min-h-0 flex-1" : undefined}
         />
       ) : mode === "calendar" ? null : (
         <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">

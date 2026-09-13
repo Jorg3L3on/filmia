@@ -97,8 +97,8 @@ const run = () => {
   assert(!appShell.startsWith('"use client"'), "AppShell stays a server shell");
   assert(!siteHeader.startsWith('"use client"'), "SiteHeader chrome stays server");
   assert(!appChrome.startsWith('"use client"'), "AppChrome frame stays server");
-  assert(!siteHeaderNav.startsWith('"use client"'), "SiteHeaderNav stays server");
-  assert(!bottomNav.startsWith('"use client"'), "BottomNav stays server");
+  assert(siteHeaderNav.startsWith('"use client"'), "SiteHeaderNav is a client nav leaf (active profile chip)");
+  assert(bottomNav.startsWith('"use client"'), "BottomNav is a client leaf for Listas hub active state");
   assert(appShell.includes("AppChrome"), "AppShell slots chrome through AppChrome");
   assert(siteHeader.includes("SiteHeaderNav"), "SiteHeader composes SiteHeaderNav");
   assert(appChrome.includes("AuthChromeGate"), "AppChrome delegates auth hide to a client leaf");

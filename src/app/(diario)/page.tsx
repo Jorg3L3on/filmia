@@ -160,7 +160,7 @@ const PicksHome = async ({
     : rankDiaryPicks(titles);
 
   return (
-    <div className="space-y-6">
+    <div className="flex min-h-0 flex-col gap-4 sm:gap-5">
       {activeCategory ? (
         <DiaryGenreToggle
           categories={categories}

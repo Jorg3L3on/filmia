@@ -6,6 +6,7 @@ import { removeTitleFromList } from "@/app/actions/lists";
 import { Button } from "@/components/Button";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PlatformLogo } from "@/components/PlatformLogo";
+import { SlideToMarkSeen } from "@/components/SlideToMarkSeen";
 import { WatchProviderChips } from "@/components/WatchProvidersMx";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { cn } from "@/lib/cn";
@@ -17,6 +18,7 @@ import {
   SERIES_STATUS_LABEL,
   TITLE_KIND_LABEL,
 } from "@/lib/labels";
+import { PICKS_SAVE_LABEL } from "@/lib/mark-seen";
 import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { showToast } from "@/lib/toast";
 import type { Platform } from "@/db";
@@ -72,7 +74,57 @@ export const DeckFooter = ({
   }
 
   if (footer === "watched") {
-    return null;
+    const genreNames = (activeTitle.genres ?? [])
+      .map((genre) => genre.name)
+      .filter(Boolean)
+      .slice(0, 3);
+    const metaParts: Array<{ text: string; accent?: boolean }> = [];
+    if (activeTitle.year) {
+      metaParts.push({ text: String(activeTitle.year) });
+    }
+    if (genreNames.length > 0) {
+      metaParts.push({ text: genreNames.join(" · "), accent: true });
+    } else {
+      metaParts.push({ text: TITLE_KIND_LABEL[activeTitle.kind], accent: true });
+    }
+
+    return (
+      <div className={cn("mx-auto w-full max-w-xl space-y-5 text-center", focusClassName)}>
+        <div className="space-y-1.5 px-2">
+          <h2 className="font-serif text-[1.65rem] leading-tight text-paper sm:text-3xl md:text-4xl">
+            <Link
+              href={`/titulos/${activeTitle.id}`}
+              className="hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              {activeTitle.name}
+            </Link>
+          </h2>
+          <p className="text-sm sm:text-base">
+            {metaParts.map((part, index) => (
+              <span key={`${part.text}-${index}`}>
+                {index > 0 ? (
+                  <span className="text-fog/70"> · </span>
+                ) : null}
+                <span className={part.accent ? "text-accent" : "text-fog"}>
+                  {part.text}
+                </span>
+              </span>
+            ))}
+          </p>
+        </div>
+        {!activeTitle.watched ? (
+          <SlideToMarkSeen
+            key={activeTitle.id}
+            titleId={activeTitle.id}
+            titleName={activeTitle.name}
+            rating={activeTitle.rating}
+            review={activeTitle.review}
+            saveLabel={PICKS_SAVE_LABEL}
+            onSaved={() => onMarkedSeen(activeTitle.id)}
+          />
+        ) : null}
+      </div>
+    );
   }
 
   return (

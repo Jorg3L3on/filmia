@@ -252,6 +252,74 @@ body {
   opacity: 0;
 }
 
+.coverflow-card-specular {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0;
+  background: linear-gradient(
+    118deg,
+    transparent 28%,
+    rgb(255 255 255 / 0.2) 46%,
+    transparent 62%
+  );
+  mix-blend-mode: screen;
+  transition: opacity var(--duration-hover) var(--ease-out);
+}
+
+.coverflow-card.is-focused .coverflow-card-specular {
+  opacity: 1;
+}
+
+.coverflow-card.is-compact .coverflow-card-specular {
+  display: none;
+}
+
+.coverflow-cinematic {
+  background: radial-gradient(
+    ellipse 72% 58% at 50% 42%,
+    rgb(124 156 255 / 0.09),
+    transparent 72%
+  );
+}
+
+.coverflow-cinematic-stage {
+  height: min(56dvh, calc(100dvh - 17rem));
+  min-height: 268px;
+  max-height: 560px;
+}
+
+@media (min-width: 768px) {
+  .coverflow-cinematic-stage {
+    height: min(62dvh, calc(100dvh - 15.5rem));
+    min-height: 360px;
+    max-height: 640px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .coverflow-cinematic-stage {
+    height: min(66dvh, calc(100dvh - 14.5rem));
+    min-height: 420px;
+    max-height: 720px;
+  }
+}
+
+.coverflow-shelf {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  bottom: 3%;
+  z-index: 0;
+  width: min(78%, 640px);
+  height: 22%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgb(0 0 0 / 0.58), transparent 72%);
+  filter: blur(3px);
+  opacity: 0.95;
+}
+
 .cursor-inherit {
   cursor: inherit;
 }
@@ -470,8 +538,13 @@ body {
 
   .coverflow-card,
   .coverflow-card.is-focused,
-  .coverflow-card.is-compact.is-focused {
+  .coverflow-card.is-compact.is-focused,
+  .coverflow-card-specular {
     transition: none;
+  }
+
+  .coverflow-card.is-focused .coverflow-card-specular {
+    opacity: 0.55;
   }
 
   ::view-transition-group(*),

@@ -1,7 +1,8 @@
-export const COVERFLOW_CARD_WIDTH = 236;
+export const COVERFLOW_CARD_WIDTH = 340;
 export const COVERFLOW_CARD_WIDTH_SHEET = 156;
-export const COVERFLOW_CARD_WIDTH_MIN = 128;
+export const COVERFLOW_CARD_WIDTH_MIN = 148;
 export const COVERFLOW_CARD_WIDTH_SHEET_MIN = 112;
+export const COVERFLOW_CARD_WIDTH_MAX_WIDE = 400;
 export const COVERFLOW_DRAG_THRESHOLD = 6;
 export const COVERFLOW_WHEEL_SENSITIVITY = 0.0044;
 export const COVERFLOW_SNAP_LERP = 0.24;
@@ -9,7 +10,8 @@ export const COVERFLOW_COAST_FRICTION = 0.9;
 export const COVERFLOW_COAST_MIN_VELOCITY = 0.003;
 export const COVERFLOW_WHEEL_SNAP_MS = 70;
 export const COVERFLOW_VISIBLE_SPAN = 5;
-export const COVERFLOW_PAGE_POSTER_SIZES = "(max-width: 640px) 46vw, 236px";
+export const COVERFLOW_PAGE_POSTER_SIZES =
+  "(max-width: 640px) 52vw, (max-width: 1024px) 36vw, 340px";
 export const COVERFLOW_SHEET_POSTER_SIZES = "(max-width: 640px) 36vw, 156px";
 
 export type CoverflowCardMetrics = {
@@ -47,16 +49,16 @@ export const getCoverflowCardMetrics = (
   const side = Math.sign(offset) || 0;
   const isActive = distance < 0.45;
   const fittedRoom = Math.max(10, sideRoom);
-  const spread = fittedRoom * (1 - Math.exp(-distance * (compact ? 0.86 : 0.72)));
-  const rotateCap = compact ? 22 : fittedRoom < 90 ? 14 : 26;
+  const spread = fittedRoom * (1 - Math.exp(-distance * (compact ? 0.86 : 0.78)));
+  const rotateCap = compact ? 22 : fittedRoom < 90 ? 18 : 32;
 
   return {
-    rotateY: -side * Math.min(distance * (compact ? 11 : 7.5), rotateCap),
+    rotateY: -side * Math.min(distance * (compact ? 11 : 9.5), rotateCap),
     translateX: side * spread,
-    translateZ: -Math.min(distance * (compact ? 22 : 14), compact ? 64 : 48),
-    translateY: isActive ? -6 : Math.min(distance * (compact ? 6 : 3), compact ? 16 : 10),
-    scale: 1 - Math.min(distance * (compact ? 0.12 : 0.015), compact ? 0.28 : 0.05),
-    brightness: Math.max(compact ? 0.62 : 0.72, 1 - distance * (compact ? 0.14 : 0.08)),
+    translateZ: -Math.min(distance * (compact ? 22 : 22), compact ? 64 : 72),
+    translateY: isActive ? -8 : Math.min(distance * (compact ? 6 : 4), compact ? 16 : 14),
+    scale: 1 - Math.min(distance * (compact ? 0.12 : 0.055), compact ? 0.28 : 0.14),
+    brightness: Math.max(compact ? 0.62 : 0.55, 1 - distance * (compact ? 0.14 : 0.16)),
     opacity: distance > 5.2 ? Math.max(0, 1 - (distance - 5.2) * 1.4) : 1,
     zIndex: Math.round(900 - distance * 80),
     isActive,
@@ -98,10 +100,24 @@ export const paintCoverflowCard = (
 export const measureCoverflowCardWidth = (
   stageWidth: number,
   compact: boolean,
+  stageHeight = 0,
 ) => {
-  const maxWidth = compact ? COVERFLOW_CARD_WIDTH_SHEET : COVERFLOW_CARD_WIDTH;
-  const minWidth = compact ? COVERFLOW_CARD_WIDTH_SHEET_MIN : COVERFLOW_CARD_WIDTH_MIN;
+  if (compact) {
+    return Math.round(
+      Math.min(
+        COVERFLOW_CARD_WIDTH_SHEET,
+        Math.max(COVERFLOW_CARD_WIDTH_SHEET_MIN, stageWidth * 0.36),
+      ),
+    );
+  }
+
+  const maxWidth =
+    stageWidth >= 900 ? COVERFLOW_CARD_WIDTH_MAX_WIDE : COVERFLOW_CARD_WIDTH;
+  const widthBased = stageWidth * (stageWidth >= 700 ? 0.4 : 0.5);
+  const heightBased =
+    stageHeight > 0 ? stageHeight / 1.52 : Number.POSITIVE_INFINITY;
+
   return Math.round(
-    Math.min(maxWidth, Math.max(minWidth, stageWidth * (compact ? 0.36 : 0.46))),
+    Math.min(maxWidth, Math.max(COVERFLOW_CARD_WIDTH_MIN, Math.min(widthBased, heightBased))),
   );
 };
