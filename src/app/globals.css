@@ -496,28 +496,6 @@ body {
   animation: que-ver-haze-breath 6.4s ease-in-out infinite;
 }
 
-.que-ver-atmosphere-spotlight {
-  position: absolute;
-  left: 50%;
-  top: 0%;
-  width: min(68%, 520px);
-  height: min(88%, 620px);
-  transform: translateX(-50%);
-  background: linear-gradient(
-    180deg,
-    rgb(255 255 255 / 0.28) 0%,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.62) 8%,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.32) 34%,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.12) 58%,
-    transparent 82%
-  );
-  filter: blur(18px);
-  opacity: 1;
-  mix-blend-mode: screen;
-  clip-path: polygon(36% 0%, 64% 0%, 94% 100%, 6% 100%);
-  animation: que-ver-spot-breath 5.8s ease-in-out infinite;
-}
-
 /* Floor puddle / bounce under hero — legible “sala” charco. */
 .que-ver-atmosphere-floor {
   position: absolute;
@@ -700,18 +678,6 @@ body {
   }
   50% {
     opacity: 1;
-  }
-}
-
-@keyframes que-ver-spot-breath {
-  0%,
-  100% {
-    opacity: 0.9;
-    filter: blur(18px);
-  }
-  50% {
-    opacity: 1;
-    filter: blur(16px);
   }
 }
 
@@ -1120,7 +1086,6 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   .que-ver-atmosphere-flicker,
   .que-ver-atmosphere-grade,
   .que-ver-atmosphere-haze,
-  .que-ver-atmosphere-spotlight,
   .que-ver-atmosphere-leak {
     animation: none !important;
   }

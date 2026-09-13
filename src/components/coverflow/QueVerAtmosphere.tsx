@@ -6,7 +6,7 @@ import { usePrefersReducedMotion } from "@/lib/motion";
 import { tmdbPosterUrl } from "@/lib/tmdb";
 
 type QueVerAtmosphereProps = {
-  /** Space-separated RGB channels for the spotlight tint. */
+  /** Space-separated RGB channels for the ambient grade tint. */
   glowRgb: string;
   /** Soft double-exposure of the next poster in the haze (C). */
   ghostPosterPath?: string | null;
@@ -44,7 +44,6 @@ export const QueVerAtmosphere = ({
       <div className="que-ver-atmosphere-grade" />
       <div className="que-ver-atmosphere-vignette" />
       <div className="que-ver-atmosphere-haze" />
-      <div className="que-ver-atmosphere-spotlight" />
       <div className="que-ver-atmosphere-floor" />
       {showGhost && ghostSrc ? (
         <div
