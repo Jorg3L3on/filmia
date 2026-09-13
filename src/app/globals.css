@@ -390,8 +390,9 @@ body {
     gap: 0.45rem;
   }
 
-  .deck-footer-watched .font-serif {
-    font-size: 1.35rem;
+  .deck-footer-watched .font-serif,
+  .deck-footer-watched .deck-footer-title {
+    font-size: 1.45rem;
   }
 }
 
@@ -853,23 +854,54 @@ body:has(.diario-que-ver-shell) header.site-header {
 
 /* Title + meta arm's-length readable over sala grade (solid paper, not fog). */
 .diario-que-ver-shell .deck-footer-watched h2,
-.diario-que-ver-shell .deck-footer-watched h2 a {
+.diario-que-ver-shell .deck-footer-watched h2 a,
+.diario-que-ver-shell .deck-footer-watched .deck-footer-title,
+.diario-que-ver-shell .deck-footer-watched .deck-footer-title a {
   color: var(--paper);
   opacity: 1;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-shadow: 0 1px 14px rgb(0 0 0 / 0.75);
 }
 
 .diario-que-ver-shell .deck-footer-watched .deck-footer-meta {
   color: var(--paper);
   opacity: 1;
+  font-size: 1rem; /* ≥ text-base on mobile */
+  letter-spacing: normal;
+  font-weight: 500;
+  text-shadow: 0 1px 14px rgb(0 0 0 / 0.75);
 }
 
+/* Soft scrim behind title+meta so blur/grade does not wash type. */
 .diario-que-ver-shell .deck-footer-watched > div:first-child {
-  text-shadow: 0 1px 12px rgb(0 0 0 / 0.65);
+  position: relative;
+  isolation: isolate;
+  padding-block: 0.35rem 0.45rem;
+  text-shadow: 0 1px 14px rgb(0 0 0 / 0.75);
 }
 
-/* Middots: ≥0.85 over grade. */
+.diario-que-ver-shell .deck-footer-watched > div:first-child::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: -0.35rem -0.75rem -0.45rem;
+  z-index: -1;
+  border-radius: 0.85rem;
+  background: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 0) 0%,
+    rgb(0 0 0 / 0.35) 45%,
+    rgb(0 0 0 / 0.28) 100%
+  );
+}
+
+/* Middots: paper ≥0.9 (not muted accent / glow). */
+.diario-que-ver-shell .deck-footer-watched .deck-footer-middot,
 .diario-que-ver-shell .deck-footer-watched .text-accent {
-  color: rgb(var(--que-ver-glow, 124 156 255) / 0.85);
+  color: color-mix(in srgb, var(--paper) 92%, transparent);
+  opacity: 1;
+  text-shadow: 0 1px 14px rgb(0 0 0 / 0.75);
 }
 
 /* Tab bar quieter while Qué ver sala is up — Buscar FAB especially ghost. */
