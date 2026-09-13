@@ -375,7 +375,8 @@ body {
     font-size: 0.625rem;
   }
 
-  .diario-que-ver-body [role="group"][aria-label="Categorías de Quiero ver"] a {
+  .diario-que-ver-body [role="group"][aria-label="Categorías de Quiero ver"] a,
+  .diario-que-ver-body [role="group"][aria-label="Categorías de Quiero ver"] button {
     padding-block: 0.2rem;
     padding-inline: 0.55rem;
     letter-spacing: 0.12em;
@@ -395,7 +396,110 @@ body {
 }
 
 
-/* Soft indigo glow behind focused poster (not a hard shelf / boxed stage). */
+/*
+ * Qué ver room atmosphere (JOR-226 / JOR-228).
+ * Spotlight tint comes from --que-ver-glow (poster-sampled RGB).
+ * Soft-coverflow fan/radii/blur stay in coverflow-metrics — do not retune here.
+ */
+.diario-que-ver-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.que-ver-atmosphere {
+  pointer-events: none;
+  position: absolute;
+  inset: -12% -8% -18%;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.que-ver-atmosphere-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 78% 68% at 50% 42%,
+      transparent 0%,
+      transparent 38%,
+      rgb(0 0 0 / 0.35) 72%,
+      rgb(0 0 0 / 0.72) 100%
+    ),
+    radial-gradient(
+      ellipse 120% 90% at 50% 100%,
+      rgb(0 0 0 / 0.45),
+      transparent 55%
+    );
+}
+
+.que-ver-atmosphere-haze {
+  position: absolute;
+  inset: 8% 12% 18%;
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.14),
+    rgb(var(--que-ver-glow, 124 156 255) / 0.04) 45%,
+    transparent 70%
+  );
+  filter: blur(28px);
+  opacity: 0.9;
+  mix-blend-mode: screen;
+}
+
+.que-ver-atmosphere-spotlight {
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  width: min(54%, 420px);
+  height: min(78%, 520px);
+  transform: translateX(-50%);
+  background: linear-gradient(
+    180deg,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.22) 0%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.1) 32%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.03) 58%,
+    transparent 78%
+  );
+  filter: blur(22px);
+  opacity: 0.95;
+  mix-blend-mode: screen;
+  clip-path: polygon(32% 0%, 68% 0%, 92% 100%, 8% 100%);
+}
+
+.que-ver-atmosphere-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  mix-blend-mode: overlay;
+  animation: que-ver-grain-shift 1.8s steps(2) infinite;
+}
+
+.que-ver-atmosphere-grain.is-static {
+  animation: none;
+  opacity: 0.035;
+}
+
+@keyframes que-ver-grain-shift {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-1.5%, 1%);
+  }
+  50% {
+    transform: translate(1%, -1.5%);
+  }
+  75% {
+    transform: translate(-1%, -0.5%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+/* Soft glow behind focused poster — tint follows sampled --que-ver-glow. */
 .coverflow-soft-glow {
   pointer-events: none;
   position: absolute;
@@ -407,12 +511,81 @@ body {
   transform: translate(-50%, -50%);
   background: radial-gradient(
     ellipse at center,
-    rgb(124 156 255 / 0.16),
-    rgb(124 156 255 / 0.04) 42%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.2),
+    rgb(var(--que-ver-glow, 124 156 255) / 0.06) 42%,
     transparent 72%
   );
   filter: blur(18px);
   opacity: 0.95;
+  transition: background var(--duration-morph) var(--ease-out);
+}
+
+/* Quieter category chips — mist inactive, subtle active (no UI candy). */
+.que-ver-chip-mist {
+  color: rgb(139 147 156 / 0.72);
+  background: rgb(255 255 255 / 0.03);
+  border: 1px solid rgb(255 255 255 / 0.06);
+}
+
+.que-ver-chip-mist:hover {
+  color: var(--fog);
+  border-color: rgb(255 255 255 / 0.1);
+}
+
+.que-ver-chip-active {
+  color: var(--paper);
+  background: rgb(var(--que-ver-glow, 124 156 255) / 0.18);
+  border: 1px solid rgb(var(--que-ver-glow, 124 156 255) / 0.28);
+  box-shadow: 0 0 18px rgb(var(--que-ver-glow, 124 156 255) / 0.12);
+}
+
+/* Light idle breath on cinematic hero face (transform lives on root via JS). */
+@keyframes coverflow-idle-breath {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2.5px) scale(1.012);
+  }
+}
+
+.coverflow-card.is-cinematic.is-focused .coverflow-card-face {
+  animation: coverflow-idle-breath 5.6s ease-in-out infinite;
+}
+
+.que-ver-deck-slide-next {
+  animation: que-ver-deck-in-right 300ms var(--ease-out) both;
+}
+
+.que-ver-deck-slide-prev {
+  animation: que-ver-deck-in-left 300ms var(--ease-out) both;
+}
+
+@keyframes que-ver-deck-in-right {
+  from {
+    opacity: 0.35;
+    filter: blur(4px);
+    transform: translateX(4%);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes que-ver-deck-in-left {
+  from {
+    opacity: 0.35;
+    filter: blur(4px);
+    transform: translateX(-4%);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateX(0);
+  }
 }
 
 .cursor-inherit {
@@ -647,6 +820,24 @@ body {
   .coverflow-soft-glow {
     opacity: 0.55;
     filter: blur(10px);
+  }
+
+  .que-ver-atmosphere-grain {
+    animation: none !important;
+    opacity: 0.03;
+  }
+
+  .coverflow-card.is-cinematic.is-focused .coverflow-card-face {
+    animation: none !important;
+    transform: none;
+  }
+
+  .que-ver-deck-slide-next,
+  .que-ver-deck-slide-prev {
+    animation: none !important;
+    filter: none;
+    transform: none;
+    opacity: 1;
   }
 
   ::view-transition-group(*),

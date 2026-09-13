@@ -17,7 +17,7 @@ export const DiaryModeToggle = ({ mode }: DiaryModeToggleProps) => {
     <div
       role="tablist"
       aria-label="Modo del diario"
-      className="mx-auto flex w-full max-w-xs rounded-full border border-chrome bg-well p-0.5 sm:max-w-sm sm:p-1"
+      className="diario-mode-toggle mx-auto flex w-full max-w-xs rounded-full border border-chrome/80 bg-well/80 p-0.5 sm:max-w-sm sm:p-1"
     >
       {MODES.map((item) => {
         const isCurrent = mode === item.id;
@@ -31,7 +31,9 @@ export const DiaryModeToggle = ({ mode }: DiaryModeToggleProps) => {
             className={cn(
               "flex-1 rounded-full px-3 py-1.5 text-center text-[10px] font-semibold uppercase tracking-[0.14em] tab-transition sm:px-4 sm:py-2 sm:text-xs",
               focusRing,
-              isCurrent ? "bg-accent text-ink shadow-[0_6px_16px_rgba(124,156,255,0.28)]" : "text-fog hover:text-paper",
+              isCurrent
+                ? "bg-accent/90 text-ink"
+                : "text-fog hover:text-paper",
             )}
           >
             {item.label}

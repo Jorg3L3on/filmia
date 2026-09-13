@@ -23,6 +23,14 @@ import {
   type CoverflowPaintedCard,
 } from "@/lib/coverflow-metrics";
 
+export type CoverflowEdgeDirection = "prev" | "next";
+
+type CoverflowEngineOptions = {
+  initialIndex?: number;
+  /** Fired when the user keeps swiping/wheeling past the first/last card. */
+  onEdgeNavigate?: (direction: CoverflowEdgeDirection) => void;
+};
+
 type CoverflowEngine = {
   containerRef: React.RefObject<HTMLDivElement | null>;
   stageRef: React.RefObject<HTMLDivElement | null>;
@@ -37,12 +45,20 @@ type CoverflowEngine = {
   handleClickCapture: (event: React.MouseEvent<HTMLDivElement>) => void;
 };
 
+const EDGE_NAVIGATE_THRESHOLD = 0.42;
+
 export const useCoverflowEngine = (
   titlesLength: number,
   isSheet: boolean,
   cinematic = false,
+  options: CoverflowEngineOptions = {},
 ): CoverflowEngine => {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const { initialIndex = 0, onEdgeNavigate } = options;
+  const startIndex = clampCoverflowIndex(
+    initialIndex,
+    Math.max(titlesLength - 1, 0),
+  );
+  const [activeIndex, setActiveIndex] = useState(startIndex);
   const [cardWidth, setCardWidth] = useState(
     isSheet ? COVERFLOW_CARD_WIDTH_SHEET : COVERFLOW_CARD_WIDTH,
   );
@@ -50,20 +66,22 @@ export const useCoverflowEngine = (
   const [stageHeight, setStageHeight] = useState(360);
   const dragStartX = useRef(0);
   const dragStartIndex = useRef(0);
-  const targetIndexRef = useRef(0);
-  const displayIndexRef = useRef(0);
+  const targetIndexRef = useRef(startIndex);
+  const displayIndexRef = useRef(startIndex);
   const velocityRef = useRef(0);
   const prevPointerX = useRef(0);
   const prevPointerTime = useRef(0);
   const isDraggingRef = useRef(false);
   const motionModeRef = useRef<"idle" | "drag" | "coast">("idle");
   const suppressClick = useRef(false);
+  const overscrollRef = useRef(0);
+  const onEdgeNavigateRef = useRef(onEdgeNavigate);
   const titlesLengthRef = useRef(titlesLength);
   const cardWidthRef = useRef(COVERFLOW_CARD_WIDTH);
   const sideRoomRef = useRef(8);
   const compactRef = useRef(isSheet);
   const cinematicRef = useRef(cinematic);
-  const activeIndexRef = useRef(0);
+  const activeIndexRef = useRef(startIndex);
   const rafRef = useRef<number | null>(null);
   const wheelSnapTimeout = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -72,6 +90,16 @@ export const useCoverflowEngine = (
   const tickRef = useRef<() => void>(() => {});
 
   const maxIndex = () => Math.max(titlesLengthRef.current - 1, 0);
+
+  const tryEdgeNavigate = (direction: CoverflowEdgeDirection) => {
+    const handler = onEdgeNavigateRef.current;
+    if (!handler) {
+      return false;
+    }
+    handler(direction);
+    overscrollRef.current = 0;
+    return true;
+  };
 
   const setGrabbingCursor = (grabbing: boolean) => {
     const node = containerRef.current;
@@ -235,8 +263,26 @@ export const useCoverflowEngine = (
     isDraggingRef.current = false;
     setGrabbingCursor(false);
 
+    const ceiling = maxIndex();
+    const overscroll = overscrollRef.current;
+    if (overscroll < -EDGE_NAVIGATE_THRESHOLD && activeIndexRef.current <= 0) {
+      if (tryEdgeNavigate("prev")) {
+        motionModeRef.current = "idle";
+        velocityRef.current = 0;
+        return;
+      }
+    }
+    if (overscroll > EDGE_NAVIGATE_THRESHOLD && activeIndexRef.current >= ceiling) {
+      if (tryEdgeNavigate("next")) {
+        motionModeRef.current = "idle";
+        velocityRef.current = 0;
+        return;
+      }
+    }
+    overscrollRef.current = 0;
+
     const projected = displayIndexRef.current + velocityRef.current * 10;
-    const nearest = clampCoverflowIndex(Math.round(projected), maxIndex());
+    const nearest = clampCoverflowIndex(Math.round(projected), ceiling);
 
     if (Math.abs(velocityRef.current) > COVERFLOW_COAST_MIN_VELOCITY * 3) {
       motionModeRef.current = "coast";
@@ -249,7 +295,7 @@ export const useCoverflowEngine = (
   }, [ensureTick]);
 
   const handlePointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
-    if (titlesLengthRef.current <= 1 || event.button !== 0) {
+    if (titlesLengthRef.current <= 0 || event.button !== 0) {
       return;
     }
 
@@ -266,6 +312,7 @@ export const useCoverflowEngine = (
     prevPointerX.current = event.clientX;
     prevPointerTime.current = performance.now();
     velocityRef.current = 0;
+    overscrollRef.current = 0;
     setGrabbingCursor(true);
     stopRaf();
     paintCards(true);
@@ -292,10 +339,16 @@ export const useCoverflowEngine = (
         suppressClick.current = true;
       }
 
-      const next = clampCoverflowIndex(
-        dragStartIndex.current - delta / cardSpan,
-        maxIndex(),
-      );
+      const ceiling = maxIndex();
+      const raw = dragStartIndex.current - delta / cardSpan;
+      if (raw < 0) {
+        overscrollRef.current = raw;
+      } else if (raw > ceiling) {
+        overscrollRef.current = raw - ceiling;
+      } else {
+        overscrollRef.current = 0;
+      }
+      const next = clampCoverflowIndex(raw, ceiling);
       targetIndexRef.current = next;
       displayIndexRef.current = next;
       ensureTick();
@@ -342,20 +395,28 @@ export const useCoverflowEngine = (
     }
 
     const handleWheel = (event: WheelEvent) => {
-      if (titlesLengthRef.current <= 1) {
+      if (titlesLengthRef.current <= 0) {
         return;
       }
 
       event.preventDefault();
       const delta =
         Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      const ceiling = Math.max(titlesLengthRef.current - 1, 0);
+      const raw = targetIndexRef.current + delta * COVERFLOW_WHEEL_SENSITIVITY;
 
       motionModeRef.current = "idle";
       velocityRef.current = 0;
-      targetIndexRef.current = clampCoverflowIndex(
-        targetIndexRef.current + delta * COVERFLOW_WHEEL_SENSITIVITY,
-        titlesLengthRef.current - 1,
-      );
+
+      if (raw < 0) {
+        overscrollRef.current = (overscrollRef.current || 0) + (raw - 0);
+      } else if (raw > ceiling) {
+        overscrollRef.current = (overscrollRef.current || 0) + (raw - ceiling);
+      } else {
+        overscrollRef.current = 0;
+      }
+
+      targetIndexRef.current = clampCoverflowIndex(raw, ceiling);
       ensureTick();
 
       if (wheelSnapTimeout.current != null) {
@@ -363,6 +424,20 @@ export const useCoverflowEngine = (
       }
 
       wheelSnapTimeout.current = window.setTimeout(() => {
+        const edge = overscrollRef.current;
+        if (edge < -EDGE_NAVIGATE_THRESHOLD && activeIndexRef.current <= 0) {
+          if (tryEdgeNavigate("prev")) {
+            wheelSnapTimeout.current = null;
+            return;
+          }
+        }
+        if (edge > EDGE_NAVIGATE_THRESHOLD && activeIndexRef.current >= ceiling) {
+          if (tryEdgeNavigate("next")) {
+            wheelSnapTimeout.current = null;
+            return;
+          }
+        }
+        overscrollRef.current = 0;
         targetIndexRef.current = clampCoverflowIndex(
           Math.round(targetIndexRef.current),
           titlesLengthRef.current - 1,
@@ -379,10 +454,20 @@ export const useCoverflowEngine = (
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      snapTo(Math.round(targetIndexRef.current) + 1);
+      const next = Math.round(targetIndexRef.current) + 1;
+      if (next > maxIndex()) {
+        tryEdgeNavigate("next");
+        return;
+      }
+      snapTo(next);
     } else if (event.key === "ArrowLeft") {
       event.preventDefault();
-      snapTo(Math.round(targetIndexRef.current) - 1);
+      const next = Math.round(targetIndexRef.current) - 1;
+      if (next < 0) {
+        tryEdgeNavigate("prev");
+        return;
+      }
+      snapTo(next);
     } else if (event.key === "Home") {
       event.preventDefault();
       snapTo(0);
@@ -392,14 +477,25 @@ export const useCoverflowEngine = (
     }
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    onEdgeNavigateRef.current = onEdgeNavigate;
+  }, [onEdgeNavigate]);
+
+  // Remount (key) applies initialIndex via useState. Clamp when the local deck
+  // shrinks (mark seen) without remounting — adjust during render.
+  const indexCeiling = Math.max(titlesLength - 1, 0);
+  if (activeIndex > indexCeiling) {
+    setActiveIndex(indexCeiling);
+  }
+
+  useLayoutEffect(() => {
     const ceiling = Math.max(titlesLength - 1, 0);
-    targetIndexRef.current = clampCoverflowIndex(targetIndexRef.current, ceiling);
-    displayIndexRef.current = clampCoverflowIndex(displayIndexRef.current, ceiling);
-    const next = clampCoverflowIndex(Math.round(displayIndexRef.current), ceiling);
-    activeIndexRef.current = next;
-    setActiveIndex(next);
-  }, [titlesLength]);
+    if (displayIndexRef.current > ceiling || targetIndexRef.current > ceiling) {
+      displayIndexRef.current = ceiling;
+      targetIndexRef.current = ceiling;
+      activeIndexRef.current = ceiling;
+    }
+  }, [activeIndex, titlesLength]);
 
   useLayoutEffect(() => {
     const node = stageRef.current;

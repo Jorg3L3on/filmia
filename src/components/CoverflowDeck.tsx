@@ -4,8 +4,10 @@ import { useEffect, useRef } from "react";
 import { DeckCard } from "@/components/coverflow/DeckCard";
 import { DeckFooter } from "@/components/coverflow/DeckFooter";
 import { CoverflowIndicators } from "@/components/coverflow/CoverflowIndicators";
+import { QueVerAtmosphere } from "@/components/coverflow/QueVerAtmosphere";
 import { useCoverflowEngine } from "@/components/coverflow/useCoverflowEngine";
 import { useCoverflowLocalTitles } from "@/components/coverflow/useCoverflowLocalTitles";
+import { usePosterAmbientColor } from "@/components/coverflow/usePosterAmbientColor";
 import type { CoverflowDeckProps, CoverflowTitle } from "@/components/coverflow/types";
 import { cn } from "@/lib/cn";
 import { COVERFLOW_VISIBLE_SPAN } from "@/lib/coverflow-metrics";
@@ -20,6 +22,8 @@ export const CoverflowDeck = ({
   variant = "page",
   onActiveChange,
   footer = "full",
+  initialIndex = 0,
+  onEdgeNavigate,
 }: CoverflowDeckProps) => {
   const {
     titles,
@@ -32,7 +36,10 @@ export const CoverflowDeck = ({
   const cinematic = footer === "watched" && !isSheet;
   const focusSpring = useSpringFeedback();
   const notifiedIndex = useRef<number | null>(null);
-  const engine = useCoverflowEngine(titles.length, isSheet, cinematic);
+  const engine = useCoverflowEngine(titles.length, isSheet, cinematic, {
+    initialIndex,
+    onEdgeNavigate: cinematic ? onEdgeNavigate : undefined,
+  });
   const {
     containerRef,
     stageRef,
@@ -45,6 +52,11 @@ export const CoverflowDeck = ({
     handleKeyDown,
     handleClickCapture,
   } = engine;
+
+  const activeTitle = titles[activeIndex] ?? titles[0];
+  const ambient = usePosterAmbientColor(
+    cinematic ? activeTitle?.posterPath : null,
+  );
 
   useEffect(() => {
     if (titles.length === 0) {
@@ -69,7 +81,6 @@ export const CoverflowDeck = ({
     return null;
   }
 
-  const activeTitle = titles[activeIndex];
   if (!activeTitle) {
     return null;
   }
@@ -92,6 +103,7 @@ export const CoverflowDeck = ({
             : "space-y-6",
         className,
       )}
+      style={cinematic ? ambient.style : undefined}
     >
       <div
         ref={containerRef}
@@ -124,9 +136,12 @@ export const CoverflowDeck = ({
             perspectiveOrigin: "50% 45%",
           }}
         >
-          {cinematic ? <div className="coverflow-soft-glow" aria-hidden /> : null}
+          {cinematic ? <QueVerAtmosphere glowRgb={ambient.cssRgb} /> : null}
+          {cinematic ? (
+            <div className="coverflow-soft-glow" aria-hidden />
+          ) : null}
           <div
-            className="absolute left-1/2 top-1/2"
+            className="absolute left-1/2 top-1/2 z-[1]"
             style={{
               width: cardWidth,
               height: cardWidth * 1.5,

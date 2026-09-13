@@ -32,4 +32,8 @@ export type CoverflowDeckProps = {
   onActiveChange?: (index: number, title: CoverflowTitle) => void;
   /** `watched` = Qué ver picks: cinematic meta + slide, eye on posters. */
   footer?: "full" | "watched";
+  /** Focused card on mount / remount (category continuum). */
+  initialIndex?: number;
+  /** Swipe/wheel past first/last card → neighboring category (Qué ver). */
+  onEdgeNavigate?: (direction: "prev" | "next") => void;
 };
