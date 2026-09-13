@@ -93,8 +93,15 @@ export const DiaryCalendarSkeleton = () => (
 );
 
 export const DiaryDeckSkeleton = () => (
-  <div className={skeletonWellClass}>
-    <PosterRailSkeleton />
+  <div className="space-y-5" aria-hidden="true">
+    <div className="coverflow-cinematic-stage relative mx-auto flex w-full items-center justify-center">
+      <ShimmerBlock className="aspect-[2/3] w-[min(52vw,240px)] rounded-poster sm:w-[min(34vw,320px)]" />
+    </div>
+    <div className="mx-auto max-w-md space-y-3 text-center">
+      <ShimmerBlock className="mx-auto h-8 w-56 rounded-xl sm:h-9 sm:w-72" />
+      <ShimmerBlock className="mx-auto h-4 w-40 rounded-full" />
+      <ShimmerBlock className="mx-auto h-14 w-full max-w-sm rounded-full" />
+    </div>
   </div>
 );
 

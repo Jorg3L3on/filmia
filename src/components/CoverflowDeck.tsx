@@ -29,6 +29,7 @@ export const CoverflowDeck = ({
     handleMarkSeenError,
   } = useCoverflowLocalTitles(incomingTitles);
   const isSheet = variant === "sheet";
+  const cinematic = footer === "watched" && !isSheet;
   const focusSpring = useSpringFeedback();
   const notifiedIndex = useRef<number | null>(null);
   const engine = useCoverflowEngine(titles.length, isSheet);
@@ -77,9 +78,16 @@ export const CoverflowDeck = ({
   const firstVisible = Math.max(0, activeIndex - visibleSpan);
   const lastVisible = Math.min(titles.length - 1, activeIndex + visibleSpan);
   const visibleTitles = titles.slice(firstVisible, lastVisible + 1);
+  const stageHeightPx = cinematic ? undefined : cardWidth * 1.5;
 
   return (
-    <div className={cn("min-w-0", isSheet ? "space-y-4" : "space-y-6", className)}>
+    <div
+      className={cn(
+        "min-w-0",
+        isSheet ? "space-y-4" : cinematic ? "flex flex-col gap-5" : "space-y-6",
+        className,
+      )}
+    >
       <div
         ref={containerRef}
         role="listbox"
@@ -94,18 +102,24 @@ export const CoverflowDeck = ({
           "relative min-w-0 cursor-grab touch-none select-none overscroll-none outline-none",
           isSheet
             ? "overflow-visible bg-transparent px-0 pb-2 pt-1 focus-visible:ring-2 focus-visible:ring-accent/60"
-            : "overflow-hidden rounded-md border border-line bg-gradient-to-b from-canvas-deep via-canvas to-[#0a0d10] px-1 pb-9 pt-4 focus-visible:ring-2 focus-visible:ring-accent/60 sm:px-8 sm:pb-14 sm:pt-14",
+            : cinematic
+              ? "coverflow-cinematic overflow-visible bg-transparent px-0 pb-2 pt-1 focus-visible:ring-2 focus-visible:ring-accent/50"
+              : "overflow-hidden rounded-md border border-line bg-gradient-to-b from-canvas-deep via-canvas to-[#0a0d10] px-1 pb-9 pt-4 focus-visible:ring-2 focus-visible:ring-accent/60 sm:px-8 sm:pb-14 sm:pt-14",
         )}
       >
         <div
           ref={stageRef}
-          className="relative mx-auto w-full"
+          className={cn(
+            "relative mx-auto w-full",
+            cinematic && "coverflow-cinematic-stage",
+          )}
           style={{
-            height: cardWidth * 1.5,
-            perspective: "1200px",
+            height: stageHeightPx,
+            perspective: cinematic ? "1400px" : "1200px",
             perspectiveOrigin: "50% 48%",
           }}
         >
+          {cinematic ? <div className="coverflow-shelf" aria-hidden /> : null}
           <div
             className="absolute left-1/2 top-1/2"
             style={{
@@ -125,6 +139,7 @@ export const CoverflowDeck = ({
                   title={title}
                   index={index}
                   compact={isSheet}
+                  cinematic={cinematic}
                   nearFocus={Math.abs(index - activeIndex) <= 1}
                   showMarkSeenEye={showMarkSeenEye}
                   onSelect={handleSelectCard}
@@ -138,7 +153,7 @@ export const CoverflowDeck = ({
           </div>
         </div>
 
-        {isSheet ? null : (
+        {isSheet || cinematic ? null : (
           <CoverflowIndicators titles={titles} activeIndex={activeIndex} />
         )}
       </div>

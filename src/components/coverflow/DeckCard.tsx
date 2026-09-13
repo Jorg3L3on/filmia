@@ -66,6 +66,8 @@ type DeckCardProps = {
   index: number;
   compact?: boolean;
   nearFocus?: boolean;
+  /** Qué ver cinematic: hide on-poster caption (meta lives below). */
+  cinematic?: boolean;
   showMarkSeenEye?: boolean;
   onSelect: (index: number) => void;
   onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
@@ -79,6 +81,7 @@ export const DeckCard = memo(function DeckCard({
   index,
   compact = false,
   nearFocus = false,
+  cinematic = false,
   showMarkSeenEye = false,
   onSelect,
   onPointerDown,
@@ -97,6 +100,7 @@ export const DeckCard = memo(function DeckCard({
   const posterSizes = compact
     ? COVERFLOW_SHEET_POSTER_SIZES
     : COVERFLOW_PAGE_POSTER_SIZES;
+  const showCaption = !compact && !cinematic;
   const poster = (
     <PosterImage
       name={title.name}
@@ -134,6 +138,7 @@ export const DeckCard = memo(function DeckCard({
       className={cn(
         "coverflow-card absolute inset-0 origin-center",
         compact && "is-compact",
+        cinematic && "is-cinematic",
       )}
       onPointerDown={onPointerDown}
     >
@@ -156,6 +161,7 @@ export const DeckCard = memo(function DeckCard({
           </SharedPoster>
         )}
         <span data-coverflow-dim className="coverflow-card-dim" aria-hidden />
+        <span className="coverflow-card-specular" aria-hidden />
         {!compact && title.watched ? (
           <WatchedBadge compact className="absolute left-2 top-2 z-10" />
         ) : null}
@@ -169,7 +175,7 @@ export const DeckCard = memo(function DeckCard({
             className="absolute right-2 top-2 z-10"
           />
         ) : null}
-        {compact ? null : (
+        {showCaption ? (
           <div
             data-coverflow-caption
             className="coverflow-card-caption absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-10"
@@ -187,7 +193,7 @@ export const DeckCard = memo(function DeckCard({
               {imdbLabel ? ` · ${imdbLabel}` : ""}
             </p>
           </div>
-        )}
+        ) : null}
       </Link>
       {showMarkSeenEye && !title.watched ? (
         <MarkSeenEye

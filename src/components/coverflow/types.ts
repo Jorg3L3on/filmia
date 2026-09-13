@@ -1,6 +1,11 @@
 import type { Platform, SeriesStatus, TitleKind } from "@/db";
 import type { WatchProviderOffer } from "@/lib/watch-providers";
 
+export type CoverflowGenre = {
+  id: number;
+  name: string;
+};
+
 export type CoverflowTitle = {
   id: string;
   name: string;
@@ -15,6 +20,8 @@ export type CoverflowTitle = {
   seriesStatus?: SeriesStatus | null;
   seriesSeason?: number | null;
   flatrateProviders?: WatchProviderOffer[];
+  /** TMDB genres for cinematic Qué ver meta line. */
+  genres?: CoverflowGenre[];
 };
 
 export type CoverflowDeckProps = {
@@ -23,6 +30,6 @@ export type CoverflowDeckProps = {
   listId?: string;
   variant?: "page" | "sheet";
   onActiveChange?: (index: number, title: CoverflowTitle) => void;
-  /** `watched` = Qué ver picks: eye on unwatched posters, no footer form. */
+  /** `watched` = Qué ver picks: cinematic meta + slide, eye on posters. */
   footer?: "full" | "watched";
 };

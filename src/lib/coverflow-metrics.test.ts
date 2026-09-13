@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   clampCoverflowIndex,
+  COVERFLOW_CARD_WIDTH,
+  COVERFLOW_CARD_WIDTH_MAX_WIDE,
+  COVERFLOW_CARD_WIDTH_MIN,
   getCoverflowCardMetrics,
   measureCoverflowCardWidth,
 } from "./coverflow-metrics";
@@ -21,11 +24,19 @@ describe("coverflow metrics", () => {
     assert.equal(side.isActive, false);
     assert.ok(center.scale > side.scale);
     assert.ok(center.opacity >= side.opacity);
+    assert.ok(center.brightness > side.brightness);
   });
 
   it("fits card width between the page min and max", () => {
-    assert.equal(measureCoverflowCardWidth(800, false), 236);
-    assert.ok(measureCoverflowCardWidth(200, false) >= 128);
+    assert.equal(measureCoverflowCardWidth(1400, false, 700), COVERFLOW_CARD_WIDTH_MAX_WIDE);
+    assert.equal(measureCoverflowCardWidth(850, false, 560), COVERFLOW_CARD_WIDTH);
+    assert.ok(measureCoverflowCardWidth(200, false) >= COVERFLOW_CARD_WIDTH_MIN);
     assert.ok(measureCoverflowCardWidth(200, true) <= 156);
+  });
+
+  it("shrinks page cards when stage height is tight", () => {
+    const wideButShort = measureCoverflowCardWidth(900, false, 240);
+    assert.ok(wideButShort < COVERFLOW_CARD_WIDTH);
+    assert.ok(wideButShort >= COVERFLOW_CARD_WIDTH_MIN);
   });
 });

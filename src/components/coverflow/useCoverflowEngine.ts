@@ -29,6 +29,7 @@ type CoverflowEngine = {
   activeIndex: number;
   cardWidth: number;
   stageWidth: number;
+  stageHeight: number;
   registerNode: (index: number, node: HTMLElement | null) => void;
   handleSelectCard: (index: number) => void;
   handlePointerDown: (event: React.PointerEvent<HTMLElement>) => void;
@@ -45,6 +46,7 @@ export const useCoverflowEngine = (
     isSheet ? COVERFLOW_CARD_WIDTH_SHEET : COVERFLOW_CARD_WIDTH,
   );
   const [stageWidth, setStageWidth] = useState(480);
+  const [stageHeight, setStageHeight] = useState(360);
   const dragStartX = useRef(0);
   const dragStartIndex = useRef(0);
   const targetIndexRef = useRef(0);
@@ -396,8 +398,10 @@ export const useCoverflowEngine = (
 
     const measure = () => {
       const stage = node.clientWidth;
+      const height = node.clientHeight;
       setStageWidth(stage);
-      setCardWidth(measureCoverflowCardWidth(stage, isSheet));
+      setStageHeight(height);
+      setCardWidth(measureCoverflowCardWidth(stage, isSheet, height));
     };
 
     measure();
@@ -424,6 +428,7 @@ export const useCoverflowEngine = (
     activeIndex,
     cardWidth,
     stageWidth,
+    stageHeight,
     registerNode,
     handleSelectCard,
     handlePointerDown,

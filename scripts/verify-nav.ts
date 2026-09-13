@@ -56,9 +56,14 @@ assert(
 );
 assert(mobileNavItems[2]?.href === "/buscar", "Buscar must be the middle (3rd) mobile nav item");
 assert(mobileNavItems[4]?.href === "/perfil", "Perfil must be the last mobile nav item");
+{
+  const hrefs: string[] = desktopNavItems.map((item) => item.href);
+  const labels: string[] = desktopNavItems.map((item) => item.label);
+  assert(!hrefs.includes("/tags") && !labels.includes("Etiquetas"), "Desktop nav must not include a separate Etiquetas item");
+}
 assert(
-  desktopNavItems.some((item) => item.href === "/tags" && item.label === "Etiquetas"),
-  "Desktop nav must include Etiquetas",
+  isCurrentPath("/listas", "/tags") && isCurrentPath("/listas", "/tags/foo"),
+  "Listas stays active on Etiquetas routes",
 );
 
 assert(isAuthChromePath("/login"), "login hides app chrome");
@@ -68,5 +73,5 @@ assert(isAuthChromePath("/registro/missing"), "signup-path 404s hide app chrome"
 assert(!isAuthChromePath("/"), "diario keeps app chrome");
 assert(!isAuthChromePath("/watchlist"), "watchlist keeps app chrome");
 
-console.log("✓ Nested paths highlight Diario / Etiquetas / Listas");
+console.log("✓ Nested paths highlight Diario / Listas (tags hub) / Listas");
 console.log("✓ Mobile nav is 5 items with Buscar centered and Perfil at the end");

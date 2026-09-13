@@ -23,10 +23,10 @@ describe("isCurrentPath nested routes", () => {
   });
 
   it("desktop nav has no separate Etiquetas item", () => {
-    assert.equal(
-      desktopNavItems.some((item) => item.href === "/tags"),
-      false,
-    );
+    const hrefs: string[] = desktopNavItems.map((item) => item.href);
+    const labels: string[] = desktopNavItems.map((item) => item.label);
+    assert.equal(hrefs.includes("/tags"), false);
+    assert.equal(labels.includes("Etiquetas"), false);
   });
 });
 
