@@ -751,30 +751,30 @@ body {
   transition: background var(--duration-morph) var(--ease-out);
 }
 
-/* Quieter category chips — mist inactive, subtle active (chrome muerto). */
+/* Category chips — mist inactive readable at arm's length; subtle active. */
 .que-ver-chip-mist {
-  color: rgb(139 147 156 / 0.5);
-  background: rgb(255 255 255 / 0.02);
-  border: 1px solid rgb(255 255 255 / 0.04);
+  color: rgb(139 147 156 / 0.88);
+  background: rgb(255 255 255 / 0.04);
+  border: 1px solid rgb(255 255 255 / 0.12);
 }
 
 .que-ver-chip-mist:hover {
   color: var(--fog);
-  border-color: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.16);
 }
 
 .que-ver-chip-active {
-  color: rgb(236 238 242 / 0.82);
+  color: var(--paper);
   background: rgb(var(--que-ver-glow, 124 156 255) / 0.1);
   border: 1px solid rgb(var(--que-ver-glow, 124 156 255) / 0.16);
   box-shadow: 0 0 12px rgb(var(--que-ver-glow, 124 156 255) / 0.06);
 }
 
-/* Chrome muerto — mode toggle almost ghost so the sala light leads. */
+/* Mode toggle — chrome soft but readable (Qué ver / Historial at arm's length). */
 .diario-que-ver-shell .diario-mode-toggle {
-  border-color: rgb(255 255 255 / 0.035);
+  border-color: rgb(255 255 255 / 0.1);
   background: rgb(0 0 0 / 0.14);
-  opacity: 0.34;
+  opacity: 0.88;
   transition:
     opacity var(--duration-hover) var(--ease-out),
     border-color var(--duration-hover) var(--ease-out),
@@ -783,17 +783,17 @@ body {
 
 .diario-que-ver-shell .diario-mode-toggle:hover,
 .diario-que-ver-shell .diario-mode-toggle:focus-within {
-  opacity: 0.62;
+  opacity: 1;
 }
 
 .diario-que-ver-shell .diario-mode-toggle a[aria-selected="true"] {
   background: rgb(255 255 255 / 0.055);
-  color: rgb(236 238 242 / 0.72);
+  color: var(--accent);
   box-shadow: none;
 }
 
 .diario-que-ver-shell .diario-mode-toggle a:not([aria-selected="true"]) {
-  color: rgb(139 147 156 / 0.32);
+  color: var(--fog);
 }
 
 /* Meta stays serif/quiet — accent middots soften. */
