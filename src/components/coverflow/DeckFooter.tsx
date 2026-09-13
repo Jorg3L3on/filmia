@@ -32,6 +32,8 @@ type DeckFooterProps = {
   onHide: (titleId: string) => void;
   onRestore: (titleId: string) => void;
   onMarkedSeen: (titleId: string) => void;
+  /** Qué ver C: fire warm light-leak when the slide commits «Vi esto». */
+  onSlideCommit?: () => void;
 };
 
 export const DeckFooter = ({
@@ -43,6 +45,7 @@ export const DeckFooter = ({
   onHide,
   onRestore,
   onMarkedSeen,
+  onSlideCommit,
 }: DeckFooterProps) => {
   const [, startTransition] = useTransition();
   const activePlatform: Platform | null =
@@ -119,6 +122,7 @@ export const DeckFooter = ({
             review={activeTitle.review}
             saveLabel={PICKS_SAVE_LABEL}
             onSaved={() => onMarkedSeen(activeTitle.id)}
+            onCommit={onSlideCommit}
           />
         ) : null}
       </div>
