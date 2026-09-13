@@ -102,7 +102,7 @@ export const DeckFooter = ({
               {activeTitle.name}
             </Link>
           </h2>
-          <p className="text-sm text-fog sm:text-base">
+          <p className="deck-footer-meta text-sm text-paper/84 sm:text-base">
             {metaParts.map((part, index) => (
               <span key={`${part}-${index}`}>
                 {index > 0 ? (
