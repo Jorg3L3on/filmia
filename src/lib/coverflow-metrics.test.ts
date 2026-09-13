@@ -27,6 +27,37 @@ describe("coverflow metrics", () => {
     assert.ok(center.brightness > side.brightness);
   });
 
+  it("soft-coverflow fans left and right with blur + depth", () => {
+    const center = getCoverflowCardMetrics(0, 160, false, true);
+    const left = getCoverflowCardMetrics(-1.2, 160, false, true);
+    const right = getCoverflowCardMetrics(1.2, 160, false, true);
+    const farRight = getCoverflowCardMetrics(2.4, 160, false, true);
+
+    assert.equal(center.isActive, true);
+    assert.equal(center.blur, 0);
+    assert.ok(Math.abs(center.rotateY) < 1e-9);
+
+    // True L+R fan: opposite rotateY toward center, both scaled/dimmed/blurred.
+    assert.ok(left.rotateY > 0);
+    assert.ok(right.rotateY < 0);
+    assert.ok(Math.abs(left.rotateY + right.rotateY) < 0.001);
+    assert.ok(left.translateX < 0);
+    assert.ok(right.translateX > 0);
+    assert.ok(left.translateZ < 0);
+    assert.ok(right.translateZ < 0);
+    assert.ok(left.blur > 0);
+    assert.ok(right.blur > 0);
+    assert.ok(farRight.blur >= right.blur);
+    assert.ok(center.scale > right.scale);
+    assert.ok(center.brightness > right.brightness);
+
+    // Even at index=0 (only positive offsets), neighbors still fan — not a flat stack.
+    const edgeNeighbor = getCoverflowCardMetrics(1, 160, false, true);
+    assert.ok(edgeNeighbor.translateX > 40);
+    assert.ok(Math.abs(edgeNeighbor.rotateY) > 8);
+    assert.ok(edgeNeighbor.blur > 0);
+  });
+
   it("fits card width between the page min and max", () => {
     assert.equal(measureCoverflowCardWidth(1400, false, 700), COVERFLOW_CARD_WIDTH_MAX_WIDE);
     assert.equal(measureCoverflowCardWidth(850, false, 560), COVERFLOW_CARD_WIDTH);
@@ -38,5 +69,12 @@ describe("coverflow metrics", () => {
     const wideButShort = measureCoverflowCardWidth(900, false, 240);
     assert.ok(wideButShort < COVERFLOW_CARD_WIDTH);
     assert.ok(wideButShort >= COVERFLOW_CARD_WIDTH_MIN);
+  });
+
+  it("leaves lateral room for L+R soft fan on wide cinematic stages", () => {
+    const cinematic = measureCoverflowCardWidth(1000, false, 480, true);
+    const historial = measureCoverflowCardWidth(1000, false, 480, false);
+    assert.ok(cinematic <= 1000 * 0.34 + 1);
+    assert.ok(historial >= cinematic);
   });
 });

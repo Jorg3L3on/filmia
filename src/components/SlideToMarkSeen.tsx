@@ -169,7 +169,7 @@ export const SlideToMarkSeen = ({
             progress > 0.35 ? "opacity-0" : "opacity-100",
           )}
         >
-          Desliza para Vi esto
+          Desliza para <span className="text-accent">«Vi esto»</span>
         </p>
         <span
           aria-hidden

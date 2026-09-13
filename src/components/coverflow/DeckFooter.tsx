@@ -78,20 +78,20 @@ export const DeckFooter = ({
       .map((genre) => genre.name)
       .filter(Boolean)
       .slice(0, 3);
-    const metaParts: Array<{ text: string; accent?: boolean }> = [];
+    const metaParts: string[] = [];
     if (activeTitle.year) {
-      metaParts.push({ text: String(activeTitle.year) });
+      metaParts.push(String(activeTitle.year));
     }
     if (genreNames.length > 0) {
-      metaParts.push({ text: genreNames.join(" · "), accent: true });
+      metaParts.push(...genreNames);
     } else {
-      metaParts.push({ text: TITLE_KIND_LABEL[activeTitle.kind], accent: true });
+      metaParts.push(TITLE_KIND_LABEL[activeTitle.kind]);
     }
 
     return (
-      <div className={cn("mx-auto w-full max-w-xl space-y-5 text-center", focusClassName)}>
-        <div className="space-y-1.5 px-2">
-          <h2 className="font-serif text-[1.65rem] leading-tight text-paper sm:text-3xl md:text-4xl">
+      <div className={cn("mx-auto w-full max-w-xl space-y-3 text-center sm:space-y-4", focusClassName)}>
+        <div className="space-y-1 px-2 sm:space-y-1.5">
+          <h2 className="font-serif text-[1.45rem] leading-tight text-paper sm:text-3xl md:text-4xl">
             <Link
               href={`/titulos/${activeTitle.id}`}
               className="hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
@@ -99,15 +99,13 @@ export const DeckFooter = ({
               {activeTitle.name}
             </Link>
           </h2>
-          <p className="text-sm sm:text-base">
+          <p className="text-sm text-fog sm:text-base">
             {metaParts.map((part, index) => (
-              <span key={`${part.text}-${index}`}>
+              <span key={`${part}-${index}`}>
                 {index > 0 ? (
-                  <span className="text-fog/70"> · </span>
+                  <span className="text-accent"> · </span>
                 ) : null}
-                <span className={part.accent ? "text-accent" : "text-fog"}>
-                  {part.text}
-                </span>
+                <span>{part}</span>
               </span>
             ))}
           </p>

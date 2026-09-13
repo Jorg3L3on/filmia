@@ -150,7 +150,13 @@ export const DeckCard = memo(function DeckCard({
         }`}
         onClick={handleClick}
         onDragStart={handleDragStart}
-        className="coverflow-card-face relative block h-full cursor-inherit overflow-hidden rounded-poster border bg-surface [&_img]:pointer-events-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        data-coverflow-face
+        className={cn(
+          "coverflow-card-face relative block h-full cursor-inherit overflow-hidden bg-surface [&_img]:pointer-events-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+          cinematic
+            ? "rounded-[22px] border-0"
+            : "rounded-poster border",
+        )}
         draggable={false}
       >
         {compact ? (

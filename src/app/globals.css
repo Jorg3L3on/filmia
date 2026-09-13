@@ -206,7 +206,7 @@ body {
   animation: toast-out var(--duration-toast) var(--ease-out) both;
 }
 
-/* Coverflow mazo: compositor-only motion. Dim is an overlay, not filter. */
+/* Coverflow mazo: compositor-only transforms; dim/blur on face overlays. */
 .coverflow-card {
   contain: layout style;
   backface-visibility: hidden;
@@ -227,12 +227,29 @@ body {
     0 0 0 1px rgb(124 156 255 / 0.7);
 }
 
+/* Soft-coverflow (Qué ver): floating poster, no frame/ring, soft drop shadow. */
+.coverflow-card.is-cinematic {
+  box-shadow: 0 18px 34px rgb(0 0 0 / 0.42);
+}
+
+.coverflow-card.is-cinematic.is-focused {
+  box-shadow:
+    0 30px 48px rgb(0 0 0 / 0.52),
+    0 10px 18px rgb(0 0 0 / 0.28);
+}
+
 .coverflow-card-face {
   border-color: rgb(255 255 255 / 0.1);
 }
 
 .coverflow-card.is-focused .coverflow-card-face {
   border-color: rgb(124 156 255 / 0.4);
+}
+
+.coverflow-card.is-cinematic .coverflow-card-face,
+.coverflow-card.is-cinematic.is-focused .coverflow-card-face {
+  border-color: transparent;
+  border-width: 0;
 }
 
 .coverflow-card.is-compact.is-focused .coverflow-card-face {
@@ -272,51 +289,70 @@ body {
   opacity: 1;
 }
 
+.coverflow-card.is-cinematic .coverflow-card-specular {
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.28) 0%,
+    rgb(255 255 255 / 0.08) 18%,
+    transparent 42%
+  );
+  mix-blend-mode: soft-light;
+}
+
+.coverflow-card.is-cinematic.is-focused .coverflow-card-specular {
+  opacity: 0.9;
+}
+
 .coverflow-card.is-compact .coverflow-card-specular {
   display: none;
 }
 
 .coverflow-cinematic {
-  background: radial-gradient(
-    ellipse 72% 58% at 50% 42%,
-    rgb(124 156 255 / 0.09),
-    transparent 72%
-  );
+  /* No outline/frame around the deck — floating soft stage only. */
+  background: transparent;
 }
 
 .coverflow-cinematic-stage {
-  height: min(56dvh, calc(100dvh - 17rem));
-  min-height: 268px;
-  max-height: 560px;
+  /* Prefer leftover flex space; caps keep title+meta+slide in-viewport (JOR-221). */
+  flex: 1 1 auto;
+  height: min(38dvh, calc(100dvh - 26rem));
+  min-height: 180px;
+  max-height: 360px;
 }
 
 @media (min-width: 768px) {
   .coverflow-cinematic-stage {
-    height: min(62dvh, calc(100dvh - 15.5rem));
-    min-height: 360px;
-    max-height: 640px;
+    height: min(44dvh, calc(100dvh - 22rem));
+    min-height: 240px;
+    max-height: 420px;
   }
 }
 
 @media (min-width: 1024px) {
   .coverflow-cinematic-stage {
-    height: min(66dvh, calc(100dvh - 14.5rem));
-    min-height: 420px;
-    max-height: 720px;
+    height: min(48dvh, calc(100dvh - 20rem));
+    min-height: 280px;
+    max-height: 480px;
   }
 }
 
-.coverflow-shelf {
+/* Soft indigo glow behind focused poster (not a hard shelf / boxed stage). */
+.coverflow-soft-glow {
   pointer-events: none;
   position: absolute;
   left: 50%;
-  bottom: 3%;
+  top: 46%;
   z-index: 0;
-  width: min(78%, 640px);
-  height: 22%;
-  transform: translateX(-50%);
-  background: radial-gradient(ellipse at center, rgb(0 0 0 / 0.58), transparent 72%);
-  filter: blur(3px);
+  width: min(62%, 520px);
+  height: min(70%, 420px);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    ellipse at center,
+    rgb(124 156 255 / 0.16),
+    rgb(124 156 255 / 0.04) 42%,
+    transparent 72%
+  );
+  filter: blur(18px);
   opacity: 0.95;
 }
 
@@ -539,12 +575,19 @@ body {
   .coverflow-card,
   .coverflow-card.is-focused,
   .coverflow-card.is-compact.is-focused,
+  .coverflow-card.is-cinematic,
+  .coverflow-card.is-cinematic.is-focused,
   .coverflow-card-specular {
     transition: none;
   }
 
   .coverflow-card.is-focused .coverflow-card-specular {
     opacity: 0.55;
+  }
+
+  .coverflow-soft-glow {
+    opacity: 0.55;
+    filter: blur(10px);
   }
 
   ::view-transition-group(*),
