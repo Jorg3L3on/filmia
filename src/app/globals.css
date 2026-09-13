@@ -400,6 +400,7 @@ body {
  * Qué ver room atmosphere (JOR-226 / JOR-228).
  * Spotlight tint comes from --que-ver-glow (poster-sampled RGB).
  * Soft-coverflow fan/radii/blur stay in coverflow-metrics — do not retune here.
+ * Artist rework: opacities ×2.5–4 vs #77 so glow/beam/charco read at iPhone distance.
  */
 .diario-que-ver-shell {
   position: relative;
@@ -409,7 +410,7 @@ body {
 .que-ver-atmosphere {
   pointer-events: none;
   position: absolute;
-  inset: -12% -8% -18%;
+  inset: -14% -10% -22%;
   z-index: 0;
   overflow: hidden;
 }
@@ -419,57 +420,93 @@ body {
   inset: 0;
   background:
     radial-gradient(
-      ellipse 78% 68% at 50% 42%,
+      ellipse 72% 62% at 50% 40%,
       transparent 0%,
-      transparent 38%,
-      rgb(0 0 0 / 0.35) 72%,
-      rgb(0 0 0 / 0.72) 100%
+      transparent 28%,
+      rgb(0 0 0 / 0.42) 62%,
+      rgb(0 0 0 / 0.82) 100%
     ),
     radial-gradient(
-      ellipse 120% 90% at 50% 100%,
-      rgb(0 0 0 / 0.45),
+      ellipse 130% 95% at 50% 100%,
+      rgb(0 0 0 / 0.58),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 90% 70% at 50% 0%,
+      rgb(0 0 0 / 0.35),
       transparent 55%
     );
 }
 
 .que-ver-atmosphere-haze {
   position: absolute;
-  inset: 8% 12% 18%;
+  inset: 4% 6% 12%;
   background: radial-gradient(
-    ellipse at 50% 40%,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.14),
-    rgb(var(--que-ver-glow, 124 156 255) / 0.04) 45%,
-    transparent 70%
+    ellipse 70% 58% at 50% 38%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.42),
+    rgb(var(--que-ver-glow, 124 156 255) / 0.16) 42%,
+    transparent 72%
   );
-  filter: blur(28px);
-  opacity: 0.9;
+  filter: blur(32px);
+  opacity: 1;
   mix-blend-mode: screen;
 }
 
 .que-ver-atmosphere-spotlight {
   position: absolute;
   left: 50%;
-  top: 8%;
-  width: min(54%, 420px);
-  height: min(78%, 520px);
+  top: 0%;
+  width: min(68%, 520px);
+  height: min(88%, 620px);
   transform: translateX(-50%);
   background: linear-gradient(
     180deg,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.22) 0%,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.1) 32%,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.03) 58%,
-    transparent 78%
+    rgb(255 255 255 / 0.28) 0%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.62) 8%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.32) 34%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.12) 58%,
+    transparent 82%
   );
-  filter: blur(22px);
-  opacity: 0.95;
+  filter: blur(18px);
+  opacity: 1;
   mix-blend-mode: screen;
-  clip-path: polygon(32% 0%, 68% 0%, 92% 100%, 8% 100%);
+  clip-path: polygon(36% 0%, 64% 0%, 94% 100%, 6% 100%);
+}
+
+/* Floor puddle / bounce under hero — readable “sala” charco. */
+.que-ver-atmosphere-floor {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  width: min(78%, 560px);
+  height: min(28%, 180px);
+  transform: translateX(-50%);
+  background:
+    radial-gradient(
+      ellipse 70% 55% at 50% 45%,
+      rgb(var(--que-ver-glow, 124 156 255) / 0.55),
+      rgb(var(--que-ver-glow, 124 156 255) / 0.18) 38%,
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 45% 40% at 32% 55%,
+      rgb(255 170 90 / 0.22),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 40% 38% at 68% 52%,
+      rgb(120 190 255 / 0.2),
+      transparent 70%
+    );
+  filter: blur(16px);
+  opacity: 1;
+  mix-blend-mode: screen;
 }
 
 .que-ver-atmosphere-grain {
   position: absolute;
   inset: 0;
-  opacity: 0.045;
+  opacity: 0.055;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
   background-size: 160px 160px;
   mix-blend-mode: overlay;
@@ -478,7 +515,7 @@ body {
 
 .que-ver-atmosphere-grain.is-static {
   animation: none;
-  opacity: 0.035;
+  opacity: 0.04;
 }
 
 @keyframes que-ver-grain-shift {
@@ -506,17 +543,18 @@ body {
   left: 50%;
   top: 46%;
   z-index: 0;
-  width: min(62%, 520px);
-  height: min(70%, 420px);
+  width: min(78%, 640px);
+  height: min(82%, 520px);
   transform: translate(-50%, -50%);
   background: radial-gradient(
     ellipse at center,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.2),
-    rgb(var(--que-ver-glow, 124 156 255) / 0.06) 42%,
-    transparent 72%
+    rgb(var(--que-ver-glow, 124 156 255) / 0.58),
+    rgb(var(--que-ver-glow, 124 156 255) / 0.22) 38%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.06) 62%,
+    transparent 78%
   );
-  filter: blur(18px);
-  opacity: 0.95;
+  filter: blur(22px);
+  opacity: 1;
   transition: background var(--duration-morph) var(--ease-out);
 }
 
@@ -818,8 +856,8 @@ body {
   }
 
   .coverflow-soft-glow {
-    opacity: 0.55;
-    filter: blur(10px);
+    opacity: 0.9;
+    filter: blur(16px);
   }
 
   .que-ver-atmosphere-grain {

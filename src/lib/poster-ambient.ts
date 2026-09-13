@@ -48,7 +48,8 @@ export const sampleAmbientFromImageData = (
     const sat = max === 0 ? 0 : (max - min) / max;
 
     // Prefer mid-luma chroma so the spotlight reads cinematic, not muddy.
-    if (luma < 28 || luma > 230 || sat < 0.08) {
+    // Raise sat floor vs #77 to skip dead gray (e.g. 118 121 120).
+    if (luma < 28 || luma > 230 || sat < 0.14) {
       continue;
     }
 
@@ -69,13 +70,46 @@ export const sampleAmbientFromImageData = (
   };
 };
 
-/** Lift / desaturate slightly so glow stays soft behind the hero. */
+/**
+ * Boost saturation + luma so --que-ver-glow stays vivid behind the hero.
+ * Avoids washed / dead-gray ambient that disappears on dark canvas.
+ */
 export const softenAmbientRgb = (rgb: AmbientRgb): AmbientRgb => {
-  const lift = 18;
-  const mix = 0.22;
+  const max = Math.max(rgb.r, rgb.g, rgb.b);
+  const min = Math.min(rgb.r, rgb.g, rgb.b);
+  const sat = max === 0 ? 0 : (max - min) / max;
+
+  // Near-gray sample → fall back to cinematic indigo instead of a dead puddle.
+  if (sat < 0.12) {
+    return { ...AMBIENT_FALLBACK_RGB };
+  }
+
+  const luma = 0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b;
+  const satBoost = 1.45;
+  const targetLuma = Math.max(luma * 1.18, 110);
+  const mid = (rgb.r + rgb.g + rgb.b) / 3;
+
+  let r = mid + (rgb.r - mid) * satBoost;
+  let g = mid + (rgb.g - mid) * satBoost;
+  let b = mid + (rgb.b - mid) * satBoost;
+
+  const boostedLuma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  if (boostedLuma > 1) {
+    const scale = targetLuma / boostedLuma;
+    r *= scale;
+    g *= scale;
+    b *= scale;
+  }
+
+  // Small lift toward accent so cool/warm posters still read as glow, not mud.
+  const accentMix = 0.12;
+  r = r * (1 - accentMix) + AMBIENT_FALLBACK_RGB.r * accentMix;
+  g = g * (1 - accentMix) + AMBIENT_FALLBACK_RGB.g * accentMix;
+  b = b * (1 - accentMix) + AMBIENT_FALLBACK_RGB.b * accentMix;
+
   return {
-    r: clampByte(rgb.r * (1 - mix) + (rgb.r + lift) * mix),
-    g: clampByte(rgb.g * (1 - mix) + (rgb.g + lift) * mix),
-    b: clampByte(rgb.b * (1 - mix) + (rgb.b + lift) * mix),
+    r: clampByte(r),
+    g: clampByte(g),
+    b: clampByte(b),
   };
 };

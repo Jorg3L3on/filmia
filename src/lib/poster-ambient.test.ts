@@ -34,6 +34,15 @@ describe("poster ambient", () => {
     assert.deepEqual(sampleAmbientFromImageData(blacks), AMBIENT_FALLBACK_RGB);
   });
 
+  it("skips dead gray mid-tones", () => {
+    const grays = makeImageData([
+      [118, 121, 120, 255],
+      [130, 128, 129, 255],
+      [110, 112, 111, 255],
+    ]);
+    assert.deepEqual(sampleAmbientFromImageData(grays), AMBIENT_FALLBACK_RGB);
+  });
+
   it("averages saturated mid-tones", () => {
     const sample = makeImageData([
       [40, 80, 180, 255],
@@ -46,10 +55,20 @@ describe("poster ambient", () => {
     assert.equal(rgb.b, 185);
   });
 
-  it("softens ambient without leaving the byte range", () => {
+  it("boosts saturation/luma without leaving the byte range", () => {
     const soft = softenAmbientRgb({ r: 200, g: 40, b: 40 });
     assert.ok(soft.r >= 200 && soft.r <= 255);
     assert.ok(soft.g >= 40);
     assert.ok(soft.b >= 40);
+    const beforeSat = (200 - 40) / 200;
+    const afterSat =
+      (Math.max(soft.r, soft.g, soft.b) - Math.min(soft.r, soft.g, soft.b)) /
+      Math.max(soft.r, soft.g, soft.b);
+    assert.ok(afterSat >= beforeSat * 0.9);
+  });
+
+  it("maps near-gray samples to cinematic fallback", () => {
+    const soft = softenAmbientRgb({ r: 118, g: 121, b: 120 });
+    assert.deepEqual(soft, AMBIENT_FALLBACK_RGB);
   });
 });

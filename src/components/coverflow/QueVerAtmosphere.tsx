@@ -24,6 +24,7 @@ export const QueVerAtmosphere = ({ glowRgb }: QueVerAtmosphereProps) => {
       <div className="que-ver-atmosphere-vignette" />
       <div className="que-ver-atmosphere-haze" />
       <div className="que-ver-atmosphere-spotlight" />
+      <div className="que-ver-atmosphere-floor" />
       <div
         className={
           reducedMotion
