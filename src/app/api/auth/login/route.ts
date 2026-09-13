@@ -2,6 +2,15 @@ import { NextResponse } from "next/server";
 import { authenticateCredentials } from "@/lib/auth/credentials";
 import { setSessionCookie } from "@/lib/auth";
 
+const requestOrigin = (request: Request) => {
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  if (host) {
+    const proto = request.headers.get("x-forwarded-proto") ?? "http";
+    return `${proto}://${host}`;
+  }
+  return new URL(request.url).origin.replace("://0.0.0.0", "://127.0.0.1");
+};
+
 export const POST = async (request: Request) => {
   const formData = await request.formData();
   const email = String(formData.get("email") ?? "").trim();
@@ -23,7 +32,10 @@ export const POST = async (request: Request) => {
       );
     }
 
-    const response = NextResponse.json({ ok: true });
+    const wantsHtml = (request.headers.get("accept") ?? "").includes("text/html");
+    const response = wantsHtml
+      ? NextResponse.redirect(new URL("/", requestOrigin(request)), 303)
+      : NextResponse.json({ ok: true });
     await setSessionCookie(response, user);
     return response;
   } catch (error) {
