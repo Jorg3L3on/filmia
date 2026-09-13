@@ -94,7 +94,7 @@ export const DeckFooter = ({
     return (
       <div className={cn("deck-footer-watched mx-auto flex w-full max-w-xl flex-col gap-2.5 text-center sm:gap-3", focusClassName)}>
         <div className="space-y-0.5 px-2 sm:space-y-1">
-          <h2 className="font-serif text-[1.45rem] leading-tight text-paper sm:text-3xl md:text-4xl">
+          <h2 className="deck-footer-title font-serif text-[1.55rem] font-semibold leading-tight tracking-normal text-paper sm:text-3xl md:text-4xl">
             <Link
               href={`/titulos/${activeTitle.id}`}
               className="hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
@@ -102,11 +102,11 @@ export const DeckFooter = ({
               {activeTitle.name}
             </Link>
           </h2>
-          <p className="deck-footer-meta text-sm text-paper sm:text-base">
+          <p className="deck-footer-meta text-base font-medium tracking-normal text-paper sm:text-base">
             {metaParts.map((part, index) => (
               <span key={`${part}-${index}`}>
                 {index > 0 ? (
-                  <span className="text-accent"> · </span>
+                  <span className="deck-footer-middot"> · </span>
                 ) : null}
                 <span>{part}</span>
               </span>
