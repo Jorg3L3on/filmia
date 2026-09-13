@@ -15,7 +15,10 @@ import { DiaryBodySkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/PageHeader";
 import { QueVerPicks } from "@/components/QueVerPicks";
 import { TitleDeckView, toCoverflowTitle } from "@/components/TitleDeckView";
-import { scheduleDiaryWatchlistEnrichment } from "@/lib/diary-enrich";
+import {
+  enrichDiaryWatchlistTitles,
+  scheduleDiaryWatchlistEnrichment,
+} from "@/lib/diary-enrich";
 import {
   assignExclusiveDiaryPicks,
   diaryHref,
@@ -138,7 +141,9 @@ const PicksHome = async ({
     getUserStreamingPlatforms(),
   ]);
 
-  const rawTitles = watchlist?.items.map((item) => item.title) ?? [];
+  const rawWatchlist = watchlist?.items.map((item) => item.title) ?? [];
+  // Continuum needs live posters on first paint (stale 404 paths kill grade/cine).
+  const rawTitles = await enrichDiaryWatchlistTitles(rawWatchlist);
   scheduleDiaryWatchlistEnrichment(rawTitles);
 
   if (userPlatforms.length === 0) {

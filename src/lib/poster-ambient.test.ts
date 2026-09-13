@@ -4,6 +4,7 @@ import {
   AMBIENT_FALLBACK_RGB,
   clampByte,
   formatAmbientRgb,
+  normalizePosterAmbientPath,
   sampleAmbientFromImageData,
   softenAmbientRgb,
 } from "./poster-ambient";
@@ -34,13 +35,18 @@ describe("poster ambient", () => {
     assert.deepEqual(sampleAmbientFromImageData(blacks), AMBIENT_FALLBACK_RGB);
   });
 
-  it("skips dead gray mid-tones", () => {
+  it("skips dead gray mid-tones on vivid pass then averages soft gray last-resort", () => {
     const grays = makeImageData([
       [118, 121, 120, 255],
       [130, 128, 129, 255],
       [110, 112, 111, 255],
     ]);
-    assert.deepEqual(sampleAmbientFromImageData(grays), AMBIENT_FALLBACK_RGB);
+    const rgb = sampleAmbientFromImageData(grays);
+    // Last-resort average of near-gray is OK; softenAmbientRgb maps to indigo.
+    assert.ok(rgb.r >= 100 && rgb.r <= 140);
+    assert.ok(rgb.g >= 100 && rgb.g <= 140);
+    assert.ok(rgb.b >= 100 && rgb.b <= 140);
+    assert.deepEqual(softenAmbientRgb(rgb), AMBIENT_FALLBACK_RGB);
   });
 
   it("averages saturated mid-tones", () => {
@@ -58,8 +64,8 @@ describe("poster ambient", () => {
   it("boosts saturation/luma without leaving the byte range", () => {
     const soft = softenAmbientRgb({ r: 200, g: 40, b: 40 });
     assert.ok(soft.r >= 200 && soft.r <= 255);
-    assert.ok(soft.g >= 40);
-    assert.ok(soft.b >= 40);
+    assert.ok(soft.g >= 0 && soft.g <= 80);
+    assert.ok(soft.b >= 0 && soft.b <= 80);
     const beforeSat = (200 - 40) / 200;
     const afterSat =
       (Math.max(soft.r, soft.g, soft.b) - Math.min(soft.r, soft.g, soft.b)) /
@@ -70,5 +76,23 @@ describe("poster ambient", () => {
   it("maps near-gray samples to cinematic fallback", () => {
     const soft = softenAmbientRgb({ r: 118, g: 121, b: 120 });
     assert.deepEqual(soft, AMBIENT_FALLBACK_RGB);
+  });
+
+  it("keeps teal identity for Interstellar-like samples", () => {
+    const soft = softenAmbientRgb({ r: 40, g: 140, b: 160 });
+    assert.ok(soft.g > soft.r, "teal should stay green-forward");
+    assert.ok(soft.b > soft.r, "teal should stay blue-forward");
+    assert.notDeepEqual(soft, AMBIENT_FALLBACK_RGB);
+  });
+
+  it("normalizes poster ambient paths", () => {
+    assert.equal(normalizePosterAmbientPath("/abc.jpg"), "/abc.jpg");
+    assert.equal(normalizePosterAmbientPath("abc.jpg"), "/abc.jpg");
+    assert.equal(
+      normalizePosterAmbientPath("https://image.tmdb.org/t/p/w185/abc.jpg"),
+      "/abc.jpg",
+    );
+    assert.equal(normalizePosterAmbientPath("/posters/x.png"), "/posters/x.png");
+    assert.equal(normalizePosterAmbientPath(null), null);
   });
 });

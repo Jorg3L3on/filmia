@@ -548,41 +548,41 @@ body {
   mix-blend-mode: screen;
 }
 
-/* Ghost: double-exposure of the next poster in the fog. */
+/* Ghost: larger/softer double-exposure of the next poster in the fog. */
 .que-ver-atmosphere-ghost {
   position: absolute;
-  left: 54%;
-  top: 34%;
-  width: min(42%, 280px);
+  left: 58%;
+  top: 30%;
+  width: min(58%, 380px);
   aspect-ratio: 2 / 3;
-  transform: translate(-40%, -42%) rotate(3deg) scale(1.08);
-  filter: blur(14px) saturate(1.15);
+  transform: translate(-42%, -40%) rotate(2.5deg) scale(1.22);
+  filter: blur(22px) saturate(1.2) brightness(1.05);
   mix-blend-mode: screen;
   transition: opacity var(--duration-morph) var(--ease-out);
   z-index: 0;
   overflow: hidden;
-  border-radius: 0.65rem;
-  opacity: 0.85;
+  border-radius: 0.85rem;
+  opacity: 0.92;
 }
 
-/* Sprocket perforations — tenuous film edge L/R. */
+/* Sprocket perforations — legible film edge L/R (Artist: raise presence). */
 .que-ver-atmosphere-sprockets {
   position: absolute;
-  top: 6%;
-  bottom: 10%;
-  width: 14px;
-  opacity: 0.22;
+  top: 5%;
+  bottom: 8%;
+  width: 16px;
+  opacity: 0.42;
   background:
-    radial-gradient(ellipse 55% 18% at 50% 10%, rgb(255 255 255 / 0.55), transparent 70%),
+    radial-gradient(ellipse 55% 18% at 50% 10%, rgb(255 255 255 / 0.7), transparent 70%),
     repeating-linear-gradient(
       180deg,
-      transparent 0 10px,
-      rgb(255 245 230 / 0.55) 10px 16px,
-      transparent 16px 28px
+      transparent 0 9px,
+      rgb(255 245 230 / 0.72) 9px 15px,
+      transparent 15px 26px
     );
-  filter: blur(0.4px);
+  filter: blur(0.25px);
   mix-blend-mode: soft-light;
-  mask-image: linear-gradient(180deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 10%, #000 90%, transparent);
 }
 
 .que-ver-atmosphere-sprockets[data-side="left"] {
@@ -596,16 +596,16 @@ body {
 .que-ver-atmosphere-grain {
   position: absolute;
   inset: 0;
-  opacity: 0.16;
+  opacity: 0.28;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
-  background-size: 160px 160px;
+  background-size: 140px 140px;
   mix-blend-mode: overlay;
   animation: que-ver-grain-shift 1.8s steps(2) infinite;
 }
 
 .que-ver-atmosphere-grain.is-static {
   animation: none;
-  opacity: 0.1;
+  opacity: 0.18;
 }
 
 /* Idle projector flicker — subtle, not 60fps noise. */
@@ -751,30 +751,30 @@ body {
   transition: background var(--duration-morph) var(--ease-out);
 }
 
-/* Quieter category chips — mist inactive, subtle active (no UI candy). */
+/* Quieter category chips — mist inactive, subtle active (chrome muerto). */
 .que-ver-chip-mist {
-  color: rgb(139 147 156 / 0.72);
-  background: rgb(255 255 255 / 0.03);
-  border: 1px solid rgb(255 255 255 / 0.06);
+  color: rgb(139 147 156 / 0.5);
+  background: rgb(255 255 255 / 0.02);
+  border: 1px solid rgb(255 255 255 / 0.04);
 }
 
 .que-ver-chip-mist:hover {
   color: var(--fog);
-  border-color: rgb(255 255 255 / 0.1);
+  border-color: rgb(255 255 255 / 0.08);
 }
 
 .que-ver-chip-active {
-  color: var(--paper);
-  background: rgb(var(--que-ver-glow, 124 156 255) / 0.18);
-  border: 1px solid rgb(var(--que-ver-glow, 124 156 255) / 0.28);
-  box-shadow: 0 0 18px rgb(var(--que-ver-glow, 124 156 255) / 0.12);
+  color: rgb(236 238 242 / 0.82);
+  background: rgb(var(--que-ver-glow, 124 156 255) / 0.1);
+  border: 1px solid rgb(var(--que-ver-glow, 124 156 255) / 0.16);
+  box-shadow: 0 0 12px rgb(var(--que-ver-glow, 124 156 255) / 0.06);
 }
 
 /* Chrome muerto — mode toggle almost ghost so the sala light leads. */
 .diario-que-ver-shell .diario-mode-toggle {
-  border-color: rgb(255 255 255 / 0.05);
-  background: rgb(0 0 0 / 0.22);
-  opacity: 0.48;
+  border-color: rgb(255 255 255 / 0.035);
+  background: rgb(0 0 0 / 0.14);
+  opacity: 0.34;
   transition:
     opacity var(--duration-hover) var(--ease-out),
     border-color var(--duration-hover) var(--ease-out),
@@ -783,17 +783,17 @@ body {
 
 .diario-que-ver-shell .diario-mode-toggle:hover,
 .diario-que-ver-shell .diario-mode-toggle:focus-within {
-  opacity: 0.78;
+  opacity: 0.62;
 }
 
 .diario-que-ver-shell .diario-mode-toggle a[aria-selected="true"] {
-  background: rgb(255 255 255 / 0.09);
-  color: rgb(236 238 242 / 0.88);
+  background: rgb(255 255 255 / 0.055);
+  color: rgb(236 238 242 / 0.72);
   box-shadow: none;
 }
 
 .diario-que-ver-shell .diario-mode-toggle a:not([aria-selected="true"]) {
-  color: rgb(139 147 156 / 0.42);
+  color: rgb(139 147 156 / 0.32);
 }
 
 /* Meta stays serif/quiet — accent middots soften. */
@@ -801,18 +801,32 @@ body {
   color: rgb(var(--que-ver-glow, 124 156 255) / 0.55);
 }
 
-/* Tab bar quieter while Qué ver sala is up. */
+/* Tab bar quieter while Qué ver sala is up — Buscar FAB especially ghost. */
 body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] {
-  border-color: rgb(255 255 255 / 0.04);
-  background: rgb(8 10 12 / 0.78);
+  border-color: rgb(255 255 255 / 0.03);
+  background: rgb(8 10 12 / 0.62);
 }
 
 body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a {
-  opacity: 0.72;
+  opacity: 0.52;
 }
 
 body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[aria-current="page"] {
-  opacity: 0.9;
+  opacity: 0.78;
+}
+
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="search"] > span:first-child {
+  background: rgb(255 255 255 / 0.08) !important;
+  color: rgb(236 238 242 / 0.7) !important;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.22) !important;
+  opacity: 0.72;
+}
+
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="search"][aria-current="page"] > span:first-child {
+  background: rgb(var(--que-ver-glow, 124 156 255) / 0.28) !important;
+  color: rgb(236 238 242 / 0.88) !important;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.28) !important;
+  opacity: 0.88;
 }
 
 /* Light idle breath on cinematic hero face (transform lives on root via JS). */

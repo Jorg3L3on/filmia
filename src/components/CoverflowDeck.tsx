@@ -70,8 +70,8 @@ export const CoverflowDeck = ({
   const ghostOpacity = !ghostPosterPath
     ? 0
     : nearTrailingEdge
-      ? 0.38
-      : 0.16;
+      ? 0.48
+      : 0.28;
 
   const handleSlideCommit = useCallback(() => {
     if (!cinematic) {

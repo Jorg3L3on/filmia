@@ -49,7 +49,7 @@ export const QueVerAtmosphere = ({
       {showGhost && ghostSrc ? (
         <div
           className="que-ver-atmosphere-ghost"
-          style={{ opacity: Math.min(0.55, Math.max(0, ghostOpacity)) }}
+          style={{ opacity: Math.min(0.72, Math.max(0, ghostOpacity)) }}
         >
           <Image
             src={ghostSrc}

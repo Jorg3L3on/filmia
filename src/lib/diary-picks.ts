@@ -20,6 +20,8 @@ export type DiaryPickTitle = {
   id: string;
   imdbRating: number | null;
   tmdbGenres: unknown;
+  /** Prefer titles with posters so continuum cards stay cinematic. */
+  posterPath?: string | null;
 };
 
 export type DiaryCategory = {
@@ -173,12 +175,22 @@ export const resolveDiaryCategory = (
   return match ?? categories[0] ?? null;
 };
 
+const hasPosterPath = (title: DiaryPickTitle) =>
+  Boolean(title.posterPath && title.posterPath.trim());
+
 export const rankDiaryPicks = <T extends DiaryPickTitle>(
   titles: readonly T[],
   limit = DIARY_PICKS_LIMIT,
 ): T[] => {
   return [...titles]
     .toSorted((left, right) => {
+      // Continuum cine: posters first so we never center a broken placeholder.
+      const leftPoster = hasPosterPath(left) ? 0 : 1;
+      const rightPoster = hasPosterPath(right) ? 0 : 1;
+      if (leftPoster !== rightPoster) {
+        return leftPoster - rightPoster;
+      }
+
       const leftRating = left.imdbRating;
       const rightRating = right.imdbRating;
       if (leftRating == null && rightRating == null) {

@@ -40,6 +40,10 @@ const hasGenres = (value: unknown) => parseStoredTmdbGenres(value).length > 0;
 const titleNeedsDiaryExtras = (title: DiaryEnrichTitle) =>
   !hasGenres(title.tmdbGenres) || !title.posterPath || !title.overview;
 
+/** Continuum: also refresh posters that may be stale/404 once we have a tmdbId. */
+const titleNeedsPosterRefresh = (title: DiaryEnrichTitle) =>
+  Boolean(title.tmdbId) && Boolean(title.posterPath);
+
 const runPool = async <T>(
   items: readonly T[],
   concurrency: number,
@@ -111,7 +115,10 @@ const resolveDiaryTmdbId = async <T extends DiaryEnrichTitle>(title: T) => {
 };
 
 const enrichDiaryGenres = async <T extends DiaryEnrichTitle>(title: T): Promise<T> => {
-  if (!isTmdbConfigured() || !titleNeedsDiaryExtras(title)) {
+  if (
+    !isTmdbConfigured() ||
+    !(titleNeedsDiaryExtras(title) || titleNeedsPosterRefresh(title))
+  ) {
     return title;
   }
 
@@ -144,11 +151,15 @@ const enrichDiaryGenres = async <T extends DiaryEnrichTitle>(title: T): Promise<
       },
     );
 
+    // Always prefer live TMDB poster — stale/404 paths kill continuum cine.
+    const freshPoster = details.posterPath?.trim() || extrasPatch.posterPath || null;
+
     await db
       .update(titles)
       .set({
         tmdbId,
         ...extrasPatch,
+        ...(freshPoster ? { posterPath: freshPoster } : {}),
         ...(title.originalName ? {} : { originalName: details.originalName }),
       })
       .where(
@@ -162,7 +173,7 @@ const enrichDiaryGenres = async <T extends DiaryEnrichTitle>(title: T): Promise<
       tmdbId,
       tmdbGenres: extrasPatch.tmdbGenres ?? title.tmdbGenres,
       originalName: title.originalName ?? details.originalName,
-      posterPath: extrasPatch.posterPath ?? title.posterPath,
+      posterPath: freshPoster ?? title.posterPath,
       overview: extrasPatch.overview ?? title.overview,
       runtimeMinutes: extrasPatch.runtimeMinutes ?? title.runtimeMinutes,
       backdropPath: extrasPatch.backdropPath ?? title.backdropPath,
@@ -235,7 +246,22 @@ export const enrichDiaryWatchlistTitles = async <T extends DiaryEnrichTitle>(
     DIARY_GENRE_ENRICH_LIMIT - withTmdbId.length,
     (title) => !title.tmdbId && titleNeedsDiaryExtras(title),
   );
-  const genreIndexes = [...withTmdbId, ...withoutTmdbId];
+  const selected = new Set([...withTmdbId, ...withoutTmdbId]);
+  const posterRefresh: number[] = [];
+  for (let index = 0; index < nextTitles.length; index += 1) {
+    if (selected.has(index)) {
+      continue;
+    }
+    const title = nextTitles[index];
+    if (!title || !titleNeedsPosterRefresh(title)) {
+      continue;
+    }
+    posterRefresh.push(index);
+    if (selected.size + posterRefresh.length >= DIARY_GENRE_ENRICH_LIMIT) {
+      break;
+    }
+  }
+  const genreIndexes = [...withTmdbId, ...withoutTmdbId, ...posterRefresh];
 
   await runPool(genreIndexes, DIARY_ENRICH_CONCURRENCY, async (index) => {
     const title = nextTitles[index];
