@@ -38,7 +38,7 @@ export const DestinationCard = memo(function DestinationCard({
       aria-selected="false"
       data-coverflow-destination={direction}
       className={cn(
-        "coverflow-card coverflow-destination absolute inset-0 origin-center is-cinematic",
+        "coverflow-card coverflow-destination absolute origin-center is-cinematic",
       )}
       onPointerDown={onPointerDown}
     >
@@ -52,21 +52,20 @@ export const DestinationCard = memo(function DestinationCard({
           onSelect();
         }}
         className={cn(
-          "coverflow-card-face coverflow-destination-face relative flex h-full w-full cursor-inherit flex-col justify-center gap-2.5 overflow-hidden rounded-[22px] px-3 text-center sm:px-4",
-          direction === "next" ? "items-end pr-3 pl-8" : "items-start pl-3 pr-8",
+          "coverflow-card-face coverflow-destination-face relative flex h-full w-full cursor-inherit flex-col items-center justify-center gap-2.5 overflow-hidden rounded-[20px] px-2.5 text-center sm:px-3",
           focusRing,
         )}
       >
-        <span className="relative z-[1] max-w-[7.5rem] font-serif text-[1.25rem] leading-tight tracking-tight text-paper sm:text-[1.45rem]">
+        <span className="relative z-[1] max-w-[6.75rem] font-serif text-[1.2rem] leading-[1.15] tracking-tight text-paper sm:text-[1.35rem]">
           {name}
         </span>
         <span
-          className="relative z-[1] text-xl leading-none text-paper/90"
+          className="relative z-[1] text-[1.45rem] leading-none text-paper"
           aria-hidden
         >
           {arrow}
         </span>
-        <span className="relative z-[1] text-[9px] font-medium uppercase tracking-[0.16em] text-paper/80">
+        <span className="relative z-[1] text-[10px] font-semibold uppercase tracking-[0.18em] text-paper/90">
           {microcopy}
         </span>
       </button>

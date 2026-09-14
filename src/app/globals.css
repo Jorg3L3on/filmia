@@ -227,12 +227,16 @@ body {
     0 0 0 1px rgb(124 156 255 / 0.7);
 }
 
-/* Soft-coverflow (Qué ver): floating poster, no frame/ring, soft drop shadow. */
+/* Soft-coverflow (Qué ver): floating poster, no frame/ring, soft drop shadow.
+ * overflow clips face blur so side DOF cannot bleed onto the focused hero. */
 .coverflow-card.is-cinematic {
+  overflow: hidden;
+  border-radius: 22px;
   box-shadow: 0 18px 34px rgb(0 0 0 / 0.42);
 }
 
 .coverflow-card.is-cinematic.is-focused {
+  z-index: 920;
   box-shadow:
     0 30px 48px rgb(0 0 0 / 0.52),
     0 10px 18px rgb(0 0 0 / 0.28);
@@ -911,29 +915,44 @@ html[data-que-ver-grade="live"] body {
   opacity: 0.7;
 }
 
+/* Compact destination footprint — fits genre+arrow+Desliza in the side gutter. */
+.coverflow-card.coverflow-destination {
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  width: 7.75rem;
+  height: 11.75rem;
+  margin-left: -3.875rem;
+  margin-top: -5.875rem;
+}
+
 /* Frosted destination side slot — continuum into next/prev genre.
  * Specificity must beat .coverflow-card.is-cinematic .coverflow-card-face { border:0 }. */
 .coverflow-card.coverflow-destination.is-cinematic .coverflow-destination-face,
 .coverflow-card.coverflow-destination.is-cinematic.is-focused .coverflow-destination-face {
   border-width: 1px;
   border-style: solid;
-  border-color: rgb(255 255 255 / 0.42);
+  border-color: rgb(255 255 255 / 0.5);
   background: linear-gradient(
     165deg,
-    rgb(255 255 255 / 0.34),
-    rgb(255 255 255 / 0.16) 45%,
-    rgb(18 20 26 / 0.72)
+    rgb(255 255 255 / 0.42),
+    rgb(255 255 255 / 0.2) 42%,
+    rgb(14 16 22 / 0.78)
   );
   box-shadow:
-    0 1px 0 rgb(255 255 255 / 0.22) inset,
-    0 16px 36px rgb(0 0 0 / 0.5);
-  -webkit-backdrop-filter: blur(22px) saturate(1.3);
-  backdrop-filter: blur(22px) saturate(1.3);
+    0 1px 0 rgb(255 255 255 / 0.28) inset,
+    0 18px 40px rgb(0 0 0 / 0.55);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  backdrop-filter: blur(18px) saturate(1.35);
+  /* Destination face stays sharp — labels must read at arm's length. */
+  filter: none !important;
 }
 
 .coverflow-card.coverflow-destination .font-serif {
   color: var(--paper);
-  text-shadow: 0 1px 4px rgb(0 0 0 / 0.65);
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 0.75),
+    0 0 18px rgb(0 0 0 / 0.35);
 }
 
 /* Mode toggle — chrome soft but readable (Qué ver / Historial at arm's length). */
@@ -1073,6 +1092,8 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
 }
 
 .coverflow-card.is-cinematic.is-focused .coverflow-card-face {
+  /* Belt-and-suspenders: never let residual face blur soften the hero. */
+  filter: none !important;
   animation: coverflow-idle-breath 5.6s ease-in-out infinite;
 }
 
