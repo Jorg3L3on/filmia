@@ -103,10 +103,24 @@ export const paintCoverflowCard = (
 ) => {
   const metrics = getCoverflowCardMetrics(offset, sideRoom, compact, cinematic);
   const { root, face, dim, caption, link } = node;
+  const isDestination = root.hasAttribute("data-coverflow-destination");
+  // Continuum destination must clear the hero on phone — further out,
+  // flatter rotate, slightly larger so «Desliza» reads in the side slot.
+  const translateX = isDestination ? metrics.translateX * 2.15 : metrics.translateX;
+  const translateZ = isDestination
+    ? Math.max(metrics.translateZ, -90)
+    : metrics.translateZ;
+  const rotateY = isDestination ? metrics.rotateY * 0.55 : metrics.rotateY;
+  const scale = isDestination
+    ? Math.min(1, metrics.scale + 0.06)
+    : metrics.scale;
+  const zIndex = isDestination
+    ? Math.max(metrics.zIndex, 870)
+    : metrics.zIndex;
 
-  root.style.transform = `translate3d(${metrics.translateX}px, ${metrics.translateY}px, ${metrics.translateZ}px) rotateY(${metrics.rotateY}deg) scale(${metrics.scale})`;
+  root.style.transform = `translate3d(${translateX}px, ${metrics.translateY}px, ${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`;
   root.style.opacity = String(metrics.opacity);
-  root.style.zIndex = String(metrics.zIndex);
+  root.style.zIndex = String(zIndex);
   root.style.pointerEvents = metrics.opacity < 0.08 ? "none" : "auto";
   root.style.willChange = moving ? "transform" : "auto";
   root.classList.toggle("is-focused", metrics.isActive);
@@ -115,9 +129,11 @@ export const paintCoverflowCard = (
 
   if (face) {
     // Blur on the face (not the transformed root) so preserve-3d stays intact.
+    // Destination continuum cards stay legible — light blur only.
+    const rawBlur = isDestination ? Math.min(metrics.blur, 1.2) : metrics.blur;
     const blurPx = prefersCoverflowReducedMotion()
-      ? Math.min(metrics.blur, 2.5) * 0.45
-      : metrics.blur;
+      ? Math.min(rawBlur, 2.5) * 0.45
+      : rawBlur;
     face.style.filter = blurPx > 0.04 ? `blur(${blurPx.toFixed(2)}px)` : "none";
   }
 
