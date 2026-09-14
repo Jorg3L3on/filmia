@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CoverflowDeck } from "@/components/CoverflowDeck";
 import type { CoverflowTitle } from "@/components/coverflow/types";
-import { DiaryGenreToggle } from "@/components/DiaryGenreToggle";
+import { GenreCoverflow } from "@/components/GenreCoverflow";
 import {
   categoryHref,
   coverflowStartIndex,
@@ -46,6 +46,24 @@ export const QueVerPicks = ({ decks, initialSlug }: QueVerPicksProps) => {
 
   const activeDeck =
     decks.find((deck) => deck.category.slug === activeSlug) ?? decks[0];
+
+  const edgeNeighbors = useMemo(() => {
+    if (!activeDeck) {
+      return { prev: null, next: null };
+    }
+    return {
+      prev: resolveCategoryNeighbor(
+        categories,
+        activeDeck.category.slug,
+        "prev",
+      ),
+      next: resolveCategoryNeighbor(
+        categories,
+        activeDeck.category.slug,
+        "next",
+      ),
+    };
+  }, [activeDeck, categories]);
 
   const announce = (name: string) => {
     const node = liveRef.current;
@@ -103,7 +121,7 @@ export const QueVerPicks = ({ decks, initialSlug }: QueVerPicksProps) => {
   return (
     <div className="diario-que-ver-body flex min-h-0 flex-1 flex-col gap-1.5 sm:gap-3">
       <div className="shrink-0">
-        <DiaryGenreToggle
+        <GenreCoverflow
           categories={categories}
           activeSlug={activeDeck.category.slug}
           onSelect={(slug) => goToCategory(slug, "first")}
@@ -128,6 +146,7 @@ export const QueVerPicks = ({ decks, initialSlug }: QueVerPicksProps) => {
           className="min-h-0 flex-1"
           initialIndex={startIndex}
           onEdgeNavigate={handleEdgeNavigate}
+          edgeNeighbors={edgeNeighbors}
         />
       </div>
     </div>

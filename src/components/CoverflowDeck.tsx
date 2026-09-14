@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DeckCard } from "@/components/coverflow/DeckCard";
+import { DestinationCard } from "@/components/coverflow/DestinationCard";
 import { DeckFooter } from "@/components/coverflow/DeckFooter";
 import { CoverflowIndicators } from "@/components/coverflow/CoverflowIndicators";
 import { QueVerAtmosphere } from "@/components/coverflow/QueVerAtmosphere";
@@ -23,6 +24,7 @@ export const CoverflowDeck = ({
   footer = "full",
   initialIndex = 0,
   onEdgeNavigate,
+  edgeNeighbors,
 }: CoverflowDeckProps) => {
   const {
     titles,
@@ -224,6 +226,30 @@ export const CoverflowDeck = ({
                 />
               );
             })}
+            {cinematic && edgeNeighbors?.prev && activeIndex <= 0 ? (
+              <DestinationCard
+                key="destination-prev"
+                index={-1}
+                name={edgeNeighbors.prev.name}
+                direction="prev"
+                onSelect={() => onEdgeNavigate?.("prev")}
+                onPointerDown={handlePointerDown}
+                registerNode={registerNode}
+              />
+            ) : null}
+            {cinematic &&
+            edgeNeighbors?.next &&
+            activeIndex >= titles.length - 1 ? (
+              <DestinationCard
+                key="destination-next"
+                index={titles.length}
+                name={edgeNeighbors.next.name}
+                direction="next"
+                onSelect={() => onEdgeNavigate?.("next")}
+                onPointerDown={handlePointerDown}
+                registerNode={registerNode}
+              />
+            ) : null}
           </div>
         </div>
 

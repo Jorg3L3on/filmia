@@ -36,4 +36,9 @@ export type CoverflowDeckProps = {
   initialIndex?: number;
   /** Swipe/wheel past first/last card → neighboring category (Qué ver). */
   onEdgeNavigate?: (direction: "prev" | "next") => void;
+  /** Category continuum labels for frosted destination side slots. */
+  edgeNeighbors?: {
+    prev: { name: string } | null;
+    next: { name: string } | null;
+  };
 };
