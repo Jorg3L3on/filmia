@@ -75,11 +75,23 @@ describe("coverflow metrics", () => {
 
   it("grows cinematic hero while leaving room for the L+R fan", () => {
     const phone = measureCoverflowCardWidth(358, false, 400, true);
-    assert.ok(phone >= 220, `phone hero too small: ${phone}`);
-    assert.ok(phone <= 358 * 0.72);
+    assert.ok(phone >= 190, `phone hero too small: ${phone}`);
+    assert.ok(phone <= 358 * 0.62);
 
     const cinematic = measureCoverflowCardWidth(1000, false, 560, true);
     assert.ok(cinematic >= 300, `desktop hero too small: ${cinematic}`);
     assert.ok(cinematic < 1000 * 0.45);
   });
+
+  it("keeps soft-coverflow center unblurred while sides stay softer than before", () => {
+    const center = getCoverflowCardMetrics(0, 160, false, true);
+    const side = getCoverflowCardMetrics(1, 160, false, true);
+    const far = getCoverflowCardMetrics(3, 160, false, true);
+    assert.equal(center.blur, 0);
+    assert.ok(side.blur > 0);
+    assert.ok(side.blur <= 5.2);
+    assert.ok(far.blur <= 5.2);
+    assert.ok(far.blur >= side.blur);
+  });
+
 });

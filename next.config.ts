@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // iPad/LAN access in next dev (host != localhost)
-  allowedDevOrigins: ["192.168.1.97", "localhost"],
+  allowedDevOrigins: ["192.168.1.97", "localhost", "127.0.0.1"],
   // Hosting playbook (env names, migrate outside build, preview off): docs/vercel-playbook.md (JOR-213).
   // Do not run drizzle migrate from this config or from `next build`.
   devIndicators: false,
