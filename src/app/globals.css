@@ -1209,9 +1209,14 @@ html[data-que-ver-grade="live"] body {
 }
 
 .diario-que-ver-shell .diario-mode-toggle a[aria-selected="true"] {
-  background: rgb(255 255 255 / 0.055);
   color: var(--accent);
-  box-shadow: none;
+}
+
+/* Sala: quiet the sliding pill (no aura glow over the poster grade). */
+.diario-que-ver-shell .diario-mode-toggle .segment-indicator {
+  background-image: none;
+  background-color: rgb(255 255 255 / 0.055);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.08);
 }
 
 .diario-que-ver-shell .diario-mode-toggle a:not([aria-selected="true"]) {
