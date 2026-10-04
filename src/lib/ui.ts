@@ -83,6 +83,50 @@ export const wellClass = "rounded-2xl border border-line bg-surface";
 
 export const cardClass = "rounded-2xl border border-line bg-surface";
 
+/*
+ * Glass recipes (ported from MiCasa). One recipe per surface — reuse, don't
+ * restyle ad hoc. Base CSS lives in globals.css (.glass-panel, .liquid-glass*).
+ */
+
+/** Frosted container: segmented frames, list rows, cards, sheets. */
+export const glassPanelClass =
+  "glass-panel liquid-glass relative rounded-2xl border";
+
+/** Round glass button: header back / actions, tab-bar + button. */
+export const glassIconClass = cn(
+  "press-scale relative inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-paper/95 shadow-panel backdrop-blur-xl backdrop-saturate-150 transition-[background-color,border-color,opacity] duration-[var(--duration-hover)] hover:border-white/30 hover:bg-white/15 active:opacity-90 [&_svg:not([class*='size-'])]:size-5",
+  focusRing,
+);
+
+/** Capsule holding several icon buttons (search · sort · ⋯). */
+export const glassGroupClass =
+  "flex h-10 shrink-0 items-center overflow-hidden rounded-full border border-white/20 bg-white/10 px-0.5 shadow-panel backdrop-blur-xl backdrop-saturate-150";
+
+export const glassGroupItemClass = cn(
+  "relative inline-flex size-9 items-center justify-center rounded-full text-paper/90 transition-[background-color,opacity] duration-[var(--duration-hover)] hover:bg-white/12 active:bg-white/16 [&_svg]:size-[1.15rem]",
+  focusRing,
+);
+
+export const glassGroupDividerClass = "mx-0.5 h-4 w-px bg-white/25";
+
+/** Dropdown / popover panel (⋯ menu, tab-bar + menu). */
+export const glassMenuPanelClass =
+  "overflow-hidden rounded-2xl border border-white/10 bg-[var(--glass-fill-solid)] p-1.5 shadow-panel backdrop-blur-2xl backdrop-saturate-150";
+
+export const glassMenuItemClass = cn(
+  "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-paper hover:bg-white/5",
+  focusRing,
+);
+
+export const glassMenuIconPillClass =
+  "flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent ring-1 ring-accent/25";
+
+/** Active indicator behind the selected tab (tab bar, segmented tabs). */
+export const glassPillClass = "liquid-glass liquid-glass-pill rounded-full";
+
+/** Accent-glow variant of the active indicator (segmented tabs). */
+export const auraPillClass = "liquid-glass liquid-glass-pill liquid-glass-pill-aura rounded-full";
+
 export const eyebrowClass =
   "text-[11px] font-medium uppercase tracking-[0.22em] text-accent";
 
