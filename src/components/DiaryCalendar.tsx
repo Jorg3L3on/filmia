@@ -97,14 +97,14 @@ export const DiaryCalendar = ({
   return (
     <div className="space-y-5 px-0">
       <section
-        className="overflow-hidden rounded-2xl bg-transparent"
+        className="glass-panel liquid-glass relative overflow-hidden rounded-2xl border p-2 sm:p-3"
         aria-label={`Calendario de ${monthName}`}
       >
         <div className="grid grid-cols-7 gap-1.5 px-0">
           {WEEKDAY_LABELS_SHORT.map((label) => (
             <p
               key={label}
-              className="px-1 pb-1 text-center text-[10px] font-medium uppercase tracking-[0.16em] text-mist"
+              className="px-1 pb-1 text-center text-caption font-medium uppercase tracking-[0.12em] text-mist"
             >
               {label}
             </p>
@@ -207,7 +207,7 @@ const CalendarDayCell = ({
   const cellClass = cn(
     "relative aspect-square w-full overflow-hidden rounded-[8px] border-0 p-0 press-scale stagger-in",
     focusRing,
-    "bg-well",
+    "calendar-cell",
     !cell.inMonth && "opacity-40",
     selected && "ring-2 ring-accent",
     isToday && !hasEntries && !selected && "ring-1 ring-accent/40",
@@ -219,10 +219,10 @@ const CalendarDayCell = ({
       <span
         className={cn(
           "absolute top-1 left-1 z-10 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-medium",
-          hasEntries
-            ? "bg-canvas/80 text-paper"
-            : isToday
-              ? "text-accent"
+          isToday
+            ? "bg-accent font-bold text-ink shadow-glow"
+            : hasEntries
+              ? "bg-canvas/80 text-paper"
               : "text-mist",
         )}
       >

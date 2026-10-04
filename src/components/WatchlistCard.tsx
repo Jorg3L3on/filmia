@@ -10,9 +10,10 @@ import { SharedPoster } from "@/components/SharedPoster";
 import { WatchlistMarkSeenButton } from "@/components/WatchlistMarkSeenButton";
 import type { WatchlistItem } from "@/components/watchlist-types";
 import type { Platform } from "@/db";
+import { auraBloomImage, platformGlowRgb } from "@/lib/aura";
 import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
-import { focusRing } from "@/lib/ui";
+import { focusRing, glassRowClass } from "@/lib/ui";
 
 type WatchlistReorderRowProps = {
   item: WatchlistItem;
@@ -46,12 +47,15 @@ export const WatchlistReorderRow = ({
   return (
     <li
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        backgroundImage: auraBloomImage(platformGlowRgb(title.platform), position === 1 ? 1.2 : 0.8),
+      }}
       className={cn(
-        "relative flex items-center gap-3 rounded-2xl border bg-surface px-2 py-2",
-        isDragging
-          ? "z-30 border-accent/60 shadow-[0_18px_40px_rgba(0,0,0,0.55)]"
-          : "border-line",
+        glassRowClass,
+        "flex items-center gap-3 px-2 py-2",
+        isDragging && "z-30 border-accent/60 shadow-panel",
       )}
     >
       <button
