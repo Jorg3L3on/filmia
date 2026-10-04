@@ -295,8 +295,9 @@ const run = () => {
   );
   assert(
     read("src/components/EmptyState.tsx").includes('variant === "buscar"') &&
-      read("src/components/tmdb-search/TmdbKindFilterChips.tsx").includes("tab-transition"),
-    "Buscar empty uses well; kind chips use tab-transition",
+      read("src/components/tmdb-search/TmdbKindFilterChips.tsx").includes("catalogBarChipClass") &&
+      read("src/components/catalog-filters/filter-ui.tsx").includes("tab-transition"),
+    "Buscar empty uses well; kind chips share catalogBarChipClass (tab-transition)",
   );
 
 
