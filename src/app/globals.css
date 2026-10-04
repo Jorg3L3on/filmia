@@ -217,6 +217,29 @@ body {
     0 0 18px -6px rgb(var(--accent-rgb) / 0.75);
 }
 
+/* Dock: sliding glass pill + «+» menu pop. */
+.dock-indicator {
+  transition:
+    transform var(--duration-morph) var(--ease-out),
+    opacity var(--duration-tab) var(--ease-out);
+}
+
+.dock-menu-pop {
+  transform-origin: 50% 100%;
+  animation: dock-menu-pop var(--duration-enter) var(--ease-out) both;
+}
+
+@keyframes dock-menu-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
 .rail {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -1259,10 +1282,10 @@ body:has(.diario-que-ver-shell) header.site-header {
   text-shadow: 0 1px 14px rgb(0 0 0 / 0.75);
 }
 
-/* Tab bar quieter while Qué ver sala is up — Buscar FAB especially ghost. */
-body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] {
-  border-color: rgb(255 255 255 / 0.03);
-  background: rgb(8 10 12 / 0.62);
+/* Tab bar quieter while Qué ver sala is up — «+» especially ghost. */
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] [data-dock-shell] {
+  border-color: rgb(255 255 255 / 0.05);
+  background-color: rgb(8 10 12 / 0.5);
 }
 
 body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a {
@@ -1273,18 +1296,12 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[aria-curren
   opacity: 0.78;
 }
 
-body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="search"] > span:first-child {
-  background: rgb(255 255 255 / 0.08) !important;
-  color: rgb(236 238 242 / 0.7) !important;
-  box-shadow: 0 4px 14px rgb(0 0 0 / 0.22) !important;
-  opacity: 0.72;
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] [data-dock-indicator] {
+  background-color: rgb(var(--que-ver-glow, 124 156 255) / 0.16);
 }
 
-body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="search"][aria-current="page"] > span:first-child {
-  background: rgb(var(--que-ver-glow, 124 156 255) / 0.28) !important;
-  color: rgb(236 238 242 / 0.88) !important;
-  box-shadow: 0 4px 16px rgb(0 0 0 / 0.28) !important;
-  opacity: 0.88;
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-nav="create"][aria-expanded="false"] {
+  opacity: 0.72;
 }
 
 /* Light idle breath on cinematic hero face (transform lives on root via JS). */
