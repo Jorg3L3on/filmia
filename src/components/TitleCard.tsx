@@ -1,42 +1,66 @@
+"use client";
+
 import Link from "next/link";
-import { PosterPlaceholder } from "@/components/PosterPlaceholder";
+import { ImdbBadge } from "@/components/ImdbBadge";
+import { PersonalRating } from "@/components/PersonalRating";
+import { PosterImage } from "@/components/PosterImage";
+import { SharedPoster } from "@/components/SharedPoster";
 import { TagPills } from "@/components/TagPills";
-import {
-  formatRating,
-  PLATFORM_LABEL,
-  TITLE_KIND_LABEL,
-} from "@/lib/labels";
-import type { titleInclude } from "@/lib/queries";
-import type { Prisma } from "@/generated/prisma/client";
+import { WatchedBadge } from "@/components/WatchedBadge";
+import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
+import { TITLE_KIND_LABEL } from "@/lib/labels";
+import type { TitleWithTags } from "@/lib/queries";
+import { cn } from "@/lib/cn";
+import { focusRing, posterFrame } from "@/lib/ui";
 
 type TitleCardProps = {
-  title: Prisma.TitleGetPayload<{ include: typeof titleInclude }>;
+  title: TitleWithTags;
 };
 
 export const TitleCard = ({ title }: TitleCardProps) => {
   return (
-    <article className="group overflow-hidden rounded-lg border border-[#2c3440] bg-[#1c2228] shadow-sm transition hover:-translate-y-0.5 hover:border-[#00e054]/50">
+    <article className="group min-w-0">
       <Link
         href={`/titulos/${title.id}`}
-        className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054]"
+        className={cn("block", focusRing)}
         aria-label={`${title.name}${title.year ? ` (${title.year})` : ""}`}
       >
-        <PosterPlaceholder name={title.name} />
-        <div className="space-y-2 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-[#678]">
+        <div className="relative card-physics press-scale">
+          <SharedPoster titleId={title.id}>
+            <PosterImage
+              name={title.name}
+              posterPath={title.posterPath}
+              className={cn(posterFrame, "transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110")}
+            />
+          </SharedPoster>
+          {title.watchedAt ? (
+            <WatchedBadge compact className="absolute left-2 top-2" />
+          ) : null}
+          {title.kind === "SERIES" && title.seriesStatus ? (
+            <SeriesStatusBadge
+              status={title.seriesStatus}
+              compact
+              className="absolute right-2 top-2"
+            />
+          ) : null}
+        </div>
+        <div className="space-y-1.5 pt-2">
+          <p className="text-[11px] uppercase tracking-wider text-mist">
             {TITLE_KIND_LABEL[title.kind]}
             {title.year ? ` · ${title.year}` : ""}
           </p>
-          <h2 className="font-serif text-lg leading-tight text-white group-hover:text-[#00e054]">
+          <h2 className="font-serif text-base leading-tight text-paper group-hover:text-accent">
             {title.name}
           </h2>
-          <p className="text-sm text-[#ff8000]">{formatRating(title.rating)}</p>
-          {title.platform ? (
-            <p className="text-xs text-[#99aabb]">{PLATFORM_LABEL[title.platform]}</p>
-          ) : null}
-          <TagPills tags={title.tags.map((item) => item.tag)} />
+          <div className="flex flex-col gap-1">
+            <ImdbBadge rating={title.imdbRating} />
+            <PersonalRating rating={title.rating} size="sm" />
+          </div>
         </div>
       </Link>
+      <div className="pt-1.5">
+        <TagPills tags={title.tags.map((item) => item.tag)} compact />
+      </div>
     </article>
   );
 };

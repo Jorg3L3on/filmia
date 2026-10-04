@@ -1,45 +1,70 @@
 import { createList, updateList } from "@/app/actions/lists";
-import type { List } from "@/generated/prisma/client";
+import { EmptyListPreview } from "@/components/PosterStack";
+import { PageHeader } from "@/components/PageHeader";
+import { PendingSubmit } from "@/components/PendingSubmit";
+import type { List } from "@/db";
+import { isFixedListSlug } from "@/lib/lists";
+import { fieldClass, wellClass } from "@/lib/ui";
 
 type ListFormProps = {
   list?: List;
 };
 
-const fieldClass =
-  "w-full rounded-md border border-[#2c3440] bg-[#14181c] px-3 py-2 text-sm text-white placeholder:text-[#667] focus:border-[#00e054] focus:outline-none";
-
 export const ListForm = ({ list }: ListFormProps) => {
   const action = list ? updateList.bind(null, list.id) : createList;
+  const fixed = isFixedListSlug(list?.slug);
 
   return (
-    <form action={action} className="space-y-4">
-      <label className="block space-y-1.5">
-        <span className="text-xs uppercase tracking-wide text-[#99aabb]">Nombre</span>
-        <input
-          name="name"
-          required
-          defaultValue={list?.name ?? ""}
-          className={fieldClass}
-          autoComplete="off"
-        />
-      </label>
-      <label className="block space-y-1.5">
-        <span className="text-xs uppercase tracking-wide text-[#99aabb]">
-          Descripción
-        </span>
-        <textarea
-          name="description"
-          rows={3}
-          defaultValue={list?.description ?? ""}
-          className={fieldClass}
-        />
-      </label>
-      <button
-        type="submit"
-        className="rounded-full bg-[#00e054] px-5 py-2 text-sm font-semibold text-[#14181c] hover:bg-[#00c030] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-      >
-        {list ? "Guardar lista" : "Crear lista"}
-      </button>
+    <form action={action} className="space-y-8">
+      <PageHeader
+        eyebrow="Listas"
+        title={list ? "Editar lista" : "Nueva lista"}
+        backHref={list ? `/listas/${list.id}` : "/listas"}
+        backLabel="Volver"
+      />
+
+      <section className={`${wellClass} space-y-5 p-5`}>
+        <label className="block space-y-2">
+          <span className="text-sm text-fog">Nombre</span>
+          <input
+            name="name"
+            required={!fixed}
+            defaultValue={list?.name ?? ""}
+            readOnly={fixed}
+            className={fieldClass}
+            autoComplete="off"
+            placeholder="Ej. Películas favoritas"
+            aria-readonly={fixed || undefined}
+          />
+          {fixed ? (
+            <span className="block text-xs text-mist">
+              El nombre de las listas diarias no se puede cambiar.
+            </span>
+          ) : null}
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-sm text-fog">Descripción</span>
+          <textarea
+            name="description"
+            rows={4}
+            defaultValue={list?.description ?? ""}
+            className={fieldClass}
+            placeholder="Cuenta de qué trata tu lista (opcional)"
+          />
+        </label>
+
+        <div className="space-y-3">
+          <h2 className="text-sm font-medium text-paper">Vista previa</h2>
+          <EmptyListPreview />
+        </div>
+      </section>
+
+      <PendingSubmit
+        idleLabel={list ? "Guardar lista" : "Crear lista"}
+        pendingLabel={list ? "Guardando…" : "Creando…"}
+        className="w-full press-scale transition-[transform,background-color,filter] duration-[var(--duration-hover)] ease-[var(--ease-out)]"
+      />
     </form>
   );
 };

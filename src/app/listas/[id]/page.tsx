@@ -1,110 +1,209 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { addTitleToList, deleteList, removeTitleFromList } from "@/app/actions/lists";
-import { ConfirmSubmit } from "@/components/ConfirmSubmit";
-import { TitleCard } from "@/components/TitleCard";
-import { getListById, getTitleOptions } from "@/lib/queries";
+import { notFound, redirect } from "next/navigation";
+import { addTitleToList, deleteList } from "@/app/actions/lists";
+import { AddTitleToListCta } from "@/components/AddTitleToListCta";
+import { CatalogFilters } from "@/components/CatalogFilters";
+import { DeleteCollectionButton } from "@/components/DeleteCollectionButton";
+import { EmptyState } from "@/components/EmptyState";
+import { ListTitlesView } from "@/components/ListTitlesView";
+import {
+  MinePlatformsEmpty,
+  MinePlatformsSetupCta,
+  MissingStreamingDataNote,
+} from "@/components/MinePlatformsNotice";
+import { ListsBodySkeleton } from "@/components/PageSkeletons";
+import { PageHeader } from "@/components/PageHeader";
+import {
+  parseCatalogOrder,
+  parseKindFilter,
+  parsePlatformFilters,
+  sortCatalogByTitle,
+  titleMatchesKind,
+} from "@/lib/catalog-filters";
+import { emptyStateForList, isFixedListSlug, WATCHLIST_SLUG } from "@/lib/lists";
+import { getListById, getTagFilters, getTitleOptionsOutsideList, getUserStreamingPlatforms } from "@/lib/queries";
+import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
+import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
+import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
+import { pillActionClass } from "@/lib/ui";
+import { PencilIcon } from "@/components/SegmentAction";
 
 export const dynamic = "force-dynamic";
 
-export default async function ListDetailPage({
+export default function ListDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{
+    tag?: string | string[];
+    minePlatforms?: string | string[];
+    seriesStatus?: string | string[];
+    kind?: string | string[];
+    platform?: string | string[];
+    sort?: string | string[];
+  }>;
 }) {
+  return (
+    <Suspense fallback={<ListsBodySkeleton label="Cargando lista" />}>
+      <ListDetail params={params} searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+const ListDetail = async ({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{
+    tag?: string | string[];
+    minePlatforms?: string | string[];
+    seriesStatus?: string | string[];
+    kind?: string | string[];
+    platform?: string | string[];
+    sort?: string | string[];
+  }>;
+}) => {
   const { id } = await params;
-  const [list, titleOptions] = await Promise.all([
+  const query = await searchParams;
+  const selectedTags = parseTagSlugs(query.tag);
+  const minePlatforms = parseMinePlatforms(query.minePlatforms);
+  const seriesStatus = parseSeriesStatusFilter(query.seriesStatus);
+  const kindFilter = parseKindFilter(query.kind);
+  const platforms = parsePlatformFilters(query.platform);
+  const sort = parseCatalogOrder(query.sort);
+  const [list, availableTitles, tags, userPlatforms] = await Promise.all([
     getListById(id),
-    getTitleOptions(),
+    getTitleOptionsOutsideList(id),
+    getTagFilters(),
+    getUserStreamingPlatforms(),
   ]);
 
   if (!list) {
     notFound();
   }
 
-  const memberIds = new Set(list.items.map((item) => item.titleId));
-  const availableTitles = titleOptions.filter((title) => !memberIds.has(title.id));
+  if (list.kind === "WATCHLIST" || list.slug === WATCHLIST_SLUG) {
+    redirect("/watchlist");
+  }
+  const taggedItems = list.items.filter(
+    (item) =>
+      titleMatchesKind(item.title.kind, kindFilter) &&
+      titleMatchesAnyTag(item.title.tags, selectedTags),
+  );
+  const statusItems = taggedItems.filter((item) =>
+    titleMatchesSeriesStatus(item.title, seriesStatus),
+  );
+  const catalog = resolveCatalogAvailability(
+    statusItems.map((item) => item.title),
+    { platforms, minePlatforms, userPlatforms },
+  );
+  const visibleIds = new Set(catalog.titles.map((title) => title.id));
+  const visibleItems = sortCatalogByTitle(
+    catalog.needsSetup
+      ? []
+      : platforms.length > 0 || minePlatforms
+        ? statusItems.filter((item) => visibleIds.has(item.title.id))
+        : statusItems,
+    sort,
+  );
   const addAction = addTitleToList.bind(null, list.id);
-  const deleteAction = deleteList.bind(null, list.id);
+  const fixed = isFixedListSlug(list.slug);
+  const empty = emptyStateForList(list.slug);
+  const filteredEmpty = list.items.length > 0 && visibleItems.length === 0;
+  const clearHref = catalogHref(`/listas/${list.id}`, {});
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-[#00e054]">Lista</p>
-          <h1 className="font-serif text-4xl text-white">{list.name}</h1>
-          {list.description ? (
-            <p className="mt-2 max-w-2xl text-sm text-[#99aabb]">{list.description}</p>
-          ) : null}
-        </div>
-        <div className="flex gap-3">
-          <Link
-            href={`/listas/${list.id}/editar`}
-            className="rounded-full bg-[#00e054] px-4 py-2 text-sm font-semibold text-[#14181c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-          >
-            Editar
-          </Link>
-          <form action={deleteAction}>
-            <ConfirmSubmit
-              label="Borrar lista"
-              confirmMessage={`¿Borrar la lista “${list.name}”?`}
-              className="rounded-full border border-[#5a2a2a] px-4 py-2 text-sm text-[#ff8a80] hover:bg-[#2a1616] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff8a80]"
-            />
-          </form>
-        </div>
-      </div>
+      <PageHeader
+        title={list.name}
+        description={list.description ?? undefined}
+        backHref="/listas"
+        backLabel="Todas las listas"
+        actions={
+          <>
+            <AddTitleToListCta action={addAction} titles={availableTitles} compact />
+            <Link
+              href={`/listas/${list.id}/editar`}
+              aria-label={fixed ? "Editar descripción" : "Editar lista"}
+              className={pillActionClass.neutral}
+            >
+              <PencilIcon />
+              Editar
+            </Link>
+          </>
+        }
+      />
 
-      <form
-        action={addAction}
-        className="flex flex-wrap items-end gap-3 rounded-lg border border-[#2c3440] bg-[#1c2228] p-4"
-      >
-        <label className="block min-w-56 flex-1 space-y-1">
-          <span className="text-xs uppercase tracking-wide text-[#99aabb]">
-            Agregar título
-          </span>
-          <select
-            name="titleId"
-            required
-            className="w-full rounded-md border border-[#2c3440] bg-[#14181c] px-3 py-2 text-sm text-white focus:border-[#00e054] focus:outline-none"
-          >
-            <option value="">Elige un título</option>
-            {availableTitles.map((title) => (
-              <option key={title.id} value={title.id}>
-                {title.name}
-                {title.year ? ` (${title.year})` : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="submit"
-          className="rounded-full bg-[#2c3440] px-4 py-2 text-sm text-white hover:bg-[#3a4452] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054]"
-        >
-          Agregar
-        </button>
-      </form>
+      <CatalogFilters
+        tags={tags}
+        selectedSlugs={selectedTags}
+        pathname={`/listas/${list.id}`}
+        kind={kindFilter}
+        platforms={platforms}
+        sort={sort ?? undefined}
+        minePlatforms={minePlatforms}
+        hasStreamingPlatforms={userPlatforms.length > 0}
+        seriesStatus={seriesStatus}
+        showKindChips={false}
+      />
 
       {list.items.length === 0 ? (
-        <p className="text-[#99aabb]">Esta lista está vacía.</p>
+        <>
+          <AddTitleToListCta action={addAction} titles={availableTitles} />
+          <EmptyState
+            variant={empty.variant}
+            title={empty.title}
+            description={empty.description}
+            actionHref={empty.actionHref}
+            actionLabel={empty.actionLabel}
+          />
+        </>
+      ) : catalog.needsSetup ? (
+        <MinePlatformsSetupCta />
+      ) : filteredEmpty && minePlatforms ? (
+        <>
+          <MissingStreamingDataNote count={catalog.missingCache} />
+          <MinePlatformsEmpty
+            userPlatforms={userPlatforms}
+            actionHref={clearHref}
+            hasTagFilters={selectedTags.length > 0 || Boolean(seriesStatus)}
+          />
+        </>
+      ) : filteredEmpty ? (
+        <EmptyState
+          title="Nada con esos filtros"
+          description="Esta lista no tiene títulos con las etiquetas o el estado de serie elegidos. El estado ignora películas."
+          actionHref={clearHref}
+          actionLabel="Quitar filtros"
+        />
       ) : (
-        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {list.items.map((item) => {
-            const removeAction = removeTitleFromList.bind(null, list.id, item.titleId);
-            return (
-              <li key={item.titleId} className="space-y-2">
-                <TitleCard title={item.title} />
-                <form action={removeAction}>
-                  <button
-                    type="submit"
-                    className="w-full text-xs text-[#99aabb] underline-offset-2 hover:text-white hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054]"
-                  >
-                    Quitar de la lista
-                  </button>
-                </form>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="space-y-4">
+          <MissingStreamingDataNote count={catalog.missingCache} />
+          <ListTitlesView
+            listId={list.id}
+            items={visibleItems}
+            platforms={platforms}
+          />
+        </div>
+      )}
+
+      {fixed ? null : (
+        <footer className="mt-16 flex justify-center border-t border-line/70 pt-8 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <DeleteCollectionButton
+            action={deleteList.bind(null, list.id)}
+            redirectHref="/listas"
+            label="Borrar lista"
+            name={list.name}
+            impact={
+              list.items.length === 0
+                ? "La lista está vacía."
+                : `Contiene ${list.items.length === 1 ? "1 título" : `${list.items.length} títulos`}.`
+            }
+          />
+        </footer>
       )}
     </div>
   );

@@ -1,51 +1,132 @@
+import { Suspense } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
+import { EmptyState } from "@/components/EmptyState";
+import { ListCard, listCardGridClass } from "@/components/ListCard";
+import { ListsEtiquetasSegment } from "@/components/ListsEtiquetasSegment";
+import {
+  SegmentActionTooltip,
+  SegmentPlusIcon,
+  segmentActionClass,
+} from "@/components/SegmentAction";
+import { ListsBodySkeleton } from "@/components/PageSkeletons";
+import { listHref, partitionUserLists } from "@/lib/lists";
 import { getLists } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function ListsPage() {
-  const lists = await getLists();
+export const metadata = {
+  title: "Listas",
+} as const;
 
+type ListCollectionLayout = "rail" | "grid";
+
+const listCollectionClassName: Record<ListCollectionLayout, string> = {
+  rail: "rail -mx-4 flex gap-8 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4",
+  grid: listCardGridClass,
+};
+
+const ListCollection = ({
+  children,
+  layout = "rail",
+}: {
+  children: ReactNode;
+  layout?: ListCollectionLayout;
+}) => <ul className={listCollectionClassName[layout]}>{children}</ul>;
+
+export default function ListsPage() {
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-[#00e054]">Colecciones</p>
-          <h1 className="font-serif text-4xl text-white">Listas</h1>
-        </div>
-        <Link
-          href="/listas/nueva"
-          className="rounded-full bg-[#00e054] px-4 py-2 text-sm font-semibold text-[#14181c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-        >
-          Nueva lista
-        </Link>
-      </div>
-
-      {lists.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-[#2c3440] p-8 text-center text-[#99aabb]">
-          Todavía no hay listas.
-        </p>
-      ) : (
-        <ul className="grid gap-4 md:grid-cols-2">
-          {lists.map((list) => (
-            <li key={list.id}>
-              <Link
-                href={`/listas/${list.id}`}
-                className="block rounded-lg border border-[#2c3440] bg-[#1c2228] p-5 hover:border-[#00e054]/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054]"
-              >
-                <h2 className="font-serif text-2xl text-white">{list.name}</h2>
-                <p className="mt-1 text-sm text-[#99aabb]">
-                  {list._count.items}{" "}
-                  {list._count.items === 1 ? "título" : "títulos"}
-                </p>
-                {list.description ? (
-                  <p className="mt-2 text-sm text-[#c8d6e5]">{list.description}</p>
-                ) : null}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="space-y-8">
+      <h1 className="sr-only">Listas</h1>
+      <ListsEtiquetasSegment
+        action={
+          <Link
+            href="/listas/nueva"
+            aria-label="Nueva lista"
+            className={segmentActionClass}
+          >
+            <SegmentPlusIcon />
+            <SegmentActionTooltip label="Crear lista" />
+          </Link>
+        }
+      />
+      <Suspense fallback={<ListsBodySkeleton />}>
+        <ListsBody />
+      </Suspense>
     </div>
   );
 }
+
+const ListsBody = async () => {
+  const lists = await getLists();
+  const { fixed, custom } = partitionUserLists(lists);
+
+  return (
+    <div className="space-y-12">
+      <section className="space-y-4">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-paper">
+          <span className="text-accent" aria-hidden="true">
+            ▦
+          </span>
+          Listas diarias
+        </h2>
+        <ListCollection>
+          {fixed.map((list, index) => (
+            <li
+              key={list.id}
+              className="min-w-0 stagger-in"
+              style={{ "--stagger": index } as CSSProperties}
+            >
+              <ListCard
+                href={listHref(list)}
+                name={list.name}
+                slug={list.slug}
+                description={list.description}
+                itemCount={list._count.items}
+                posters={list.items.map((item) => item.title)}
+              />
+            </li>
+          ))}
+        </ListCollection>
+      </section>
+
+      <section className="space-y-4 pt-2">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-paper">
+          <span className="text-accent" aria-hidden="true">
+            ★
+          </span>
+          Personalizadas
+        </h2>
+        {custom.length === 0 ? (
+          <EmptyState
+            variant="listas"
+            title="Todavía no hay listas propias"
+            description="Crea una colección para un mood, un ciclo o un maratón."
+            actionHref="/listas/nueva"
+            actionLabel="Nueva lista"
+          />
+        ) : (
+          <ListCollection layout="grid">
+            {custom.map((list, index) => (
+              <li
+                key={list.id}
+                className="min-w-0 stagger-in"
+                style={{ "--stagger": index } as CSSProperties}
+              >
+                <ListCard
+                  href={listHref(list)}
+                  name={list.name}
+                  slug={list.slug}
+                  description={list.description}
+                  itemCount={list._count.items}
+                  posters={list.items.map((item) => item.title)}
+                  layout="grid"
+                />
+              </li>
+            ))}
+          </ListCollection>
+        )}
+      </section>
+    </div>
+  );
+};

@@ -1,0 +1,291 @@
+import { config as loadEnv } from "dotenv";
+import { createId } from "@paralleldrive/cuid2";
+import { and, eq } from "drizzle-orm";
+
+loadEnv({ path: ".env.local" });
+loadEnv();
+
+import { db, listItems, lists, titles, users, TitleKind } from "../src/db";
+import { upsertTitleFromTmdbForUser } from "../src/lib/add-title-from-tmdb";
+import { hashPassword } from "../src/lib/auth/password";
+import {
+  getTmdbDetails,
+  searchTmdbMulti,
+  TMDB_UNAVAILABLE_COPY,
+  TmdbRequestError,
+  tmdbErrorMessage,
+} from "../src/lib/tmdb";
+
+const TEST_EMAIL = "tmdb-search-test@filmia.local";
+const TEST_TMDB_ID = 9000155;
+
+const assert = (condition: unknown, message: string) => {
+  if (!condition) {
+    throw new Error(message);
+  }
+};
+
+const withMockFetch = async (
+  impl: typeof fetch,
+  run: () => Promise<void>,
+) => {
+  const previous = globalThis.fetch;
+  globalThis.fetch = impl;
+  try {
+    await run();
+  } finally {
+    globalThis.fetch = previous;
+  }
+};
+
+const jsonResponse = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+
+const verifyErrors = async () => {
+  const previousKey = process.env.TMDB_API_KEY;
+  delete process.env.TMDB_API_KEY;
+
+  try {
+    await searchTmdbMulti("Dune");
+    throw new Error("Expected missing-key error");
+  } catch (error) {
+    if (!(error instanceof TmdbRequestError)) {
+      throw new Error("Missing key should be TmdbRequestError");
+    }
+    if (error.code !== "missing_key") {
+      throw new Error(`Expected missing_key, got ${error.code}`);
+    }
+    if (tmdbErrorMessage(error) !== TMDB_UNAVAILABLE_COPY) {
+      throw new Error("Missing key should use friendly user copy");
+    }
+    if (
+      tmdbErrorMessage(error).includes("TMDB_API_KEY") ||
+      tmdbErrorMessage(error).includes(".env")
+    ) {
+      throw new Error("User-facing missing key must not dump infra");
+    }
+    if (!error.message.includes("TMDB_API_KEY")) {
+      throw new Error("Operator error should still mention TMDB_API_KEY");
+    }
+    console.log("✓ Missing TMDB_API_KEY:", tmdbErrorMessage(error));
+  }
+
+  process.env.TMDB_API_KEY = "test-key";
+
+  await withMockFetch(async () => {
+    throw new TypeError("fetch failed");
+  }, async () => {
+    try {
+      await searchTmdbMulti("Dune");
+      throw new Error("Expected network error");
+    } catch (error) {
+      if (!(error instanceof TmdbRequestError) || error.code !== "network") {
+        throw new Error("Expected network TmdbRequestError");
+      }
+      console.log("✓ Network error:", tmdbErrorMessage(error));
+    }
+  });
+
+  await withMockFetch(async () => jsonResponse({ status_message: "slow down" }, 429), async () => {
+    try {
+      await searchTmdbMulti("Dune");
+      throw new Error("Expected rate-limit error");
+    } catch (error) {
+      if (!(error instanceof TmdbRequestError) || error.code !== "rate_limit") {
+        throw new Error("Expected rate_limit TmdbRequestError");
+      }
+      console.log("✓ Rate limit:", tmdbErrorMessage(error));
+    }
+  });
+
+  await withMockFetch(async (input) => {
+    const url = String(input);
+    assert(url.includes("/search/multi"), `Unexpected URL ${url}`);
+    return jsonResponse({
+      results: [
+        {
+          id: 438631,
+          media_type: "movie",
+          title: "Dune",
+          original_title: "Dune",
+          release_date: "2021-10-22",
+          poster_path: "/dune.jpg",
+        },
+        {
+          id: 52814,
+          media_type: "tv",
+          name: "Dune",
+          first_air_date: "2000-12-03",
+          poster_path: "/dune-tv.jpg",
+        },
+        {
+          id: 1,
+          media_type: "person",
+          name: "Denis Villeneuve",
+        },
+      ],
+    });
+  }, async () => {
+    const results = await searchTmdbMulti("Dune");
+    assert(results.length === 2, `Expected 2 catalog hits, got ${results.length}`);
+    assert(results[0]?.kind === TitleKind.MOVIE, "First hit should be movie");
+    assert(results[0]?.year === 2021, "Movie year should parse");
+    assert(results[1]?.kind === TitleKind.SERIES, "Second hit should be series");
+    console.log(
+      "✓ Multi search maps poster/year/type:",
+      results.map((item) => `${item.name} ${item.year} ${item.kind}`),
+    );
+  });
+
+  process.env.TMDB_API_KEY = "eyJtest-access-token";
+  await withMockFetch(async (input, init) => {
+    const url = String(input);
+    assert(!url.includes("api_key="), "v4 token should not use api_key query");
+    const headers = new Headers(init?.headers);
+    assert(
+      headers.get("Authorization") === "Bearer eyJtest-access-token",
+      "v4 token should use Bearer auth",
+    );
+    return jsonResponse({ results: [] });
+  }, async () => {
+    await searchTmdbMulti("Dune");
+    console.log("✓ v4 access token uses Authorization Bearer");
+  });
+
+  process.env.TMDB_API_KEY = "test-key";
+  await withMockFetch(async (input) => {
+    const url = new URL(String(input));
+    const language = url.searchParams.get("language");
+    if (language === "es-MX") {
+      return jsonResponse({
+        id: 20595,
+        title: "The Last Days",
+        overview: "",
+        runtime: 87,
+        genres: [],
+      });
+    }
+    if (language === "es-ES") {
+      return jsonResponse({
+        id: 20595,
+        title: "Los últimos días",
+        overview: "Documental sobre el holocausto en Hungría.",
+        runtime: 87,
+      });
+    }
+    throw new Error(`Unexpected language ${language}`);
+  }, async () => {
+    const details = await getTmdbDetails(20595, TitleKind.MOVIE);
+    assert(
+      details.overview === "Documental sobre el holocausto en Hungría.",
+      "Empty es-MX overview should fall back to es-ES",
+    );
+    console.log("✓ Empty es-MX overview falls back to es-ES");
+  });
+
+  if (previousKey === undefined) {
+    delete process.env.TMDB_API_KEY;
+  } else {
+    process.env.TMDB_API_KEY = previousKey;
+  }
+};
+
+const ensureTestUser = async () => {
+  const existing = await db.query.users.findFirst({
+    where: eq(users.email, TEST_EMAIL),
+  });
+  if (existing) {
+    return existing;
+  }
+
+  const userId = createId();
+  await db.insert(users).values({
+    id: userId,
+    email: TEST_EMAIL,
+    passwordHash: await hashPassword("filmia-test-155"),
+    name: "TMDB search test",
+  });
+
+  const created = await db.query.users.findFirst({ where: eq(users.id, userId) });
+  if (!created) {
+    throw new Error("No se pudo crear el usuario de prueba.");
+  }
+  return created;
+};
+
+const verifyUpsert = async () => {
+  const user = await ensureTestUser();
+
+  await db.delete(titles).where(and(eq(titles.userId, user.id), eq(titles.tmdbId, TEST_TMDB_ID)));
+
+  const first = await upsertTitleFromTmdbForUser(user.id, {
+    tmdbId: TEST_TMDB_ID,
+    kind: TitleKind.MOVIE,
+    name: "Dune",
+    year: 2021,
+    posterPath: "/dune.jpg",
+    addToWatchlist: true,
+  });
+
+  assert(first.ok && first.created, "First add should create the title");
+  assert(first.ok && first.addedToWatchlist, "First add should enqueue watchlist");
+
+  const second = await upsertTitleFromTmdbForUser(user.id, {
+    tmdbId: TEST_TMDB_ID,
+    kind: TitleKind.MOVIE,
+    name: "Dune Duplicate",
+    year: 2024,
+    posterPath: "/other.jpg",
+    addToWatchlist: true,
+  });
+
+  assert(second.ok && !second.created, "Second add should reuse the title");
+  assert(first.ok && second.ok && first.titleId === second.titleId, "Same title id");
+
+  const copies = await db.query.titles.findMany({
+    where: and(eq(titles.userId, user.id), eq(titles.tmdbId, TEST_TMDB_ID)),
+  });
+  assert(copies.length === 1, `Expected 1 title, found ${copies.length}`);
+
+  const stored = first.ok
+    ? await db.query.titles.findFirst({ where: eq(titles.id, first.titleId) })
+    : null;
+
+  assert(stored?.name === "Dune", "Persisted name");
+  assert(stored?.year === 2021, "Persisted year");
+  assert(stored?.posterPath === "/dune.jpg", "Persisted poster");
+  assert(stored?.kind === TitleKind.MOVIE, "Persisted kind");
+  assert(stored?.tmdbId === TEST_TMDB_ID, "Persisted tmdbId");
+
+  const watchlist = await db.query.lists.findFirst({
+    where: and(eq(lists.userId, user.id), eq(lists.slug, "watchlist")),
+  });
+  const watchlistItems = watchlist
+    ? await db.query.listItems.findMany({
+        where: and(
+          eq(listItems.listId, watchlist.id),
+          eq(listItems.titleId, first.ok ? first.titleId : ""),
+        ),
+      })
+    : [];
+  assert(watchlistItems.length === 1, "Should be in Quiero ver once");
+
+  await db.delete(titles).where(and(eq(titles.userId, user.id), eq(titles.tmdbId, TEST_TMDB_ID)));
+  await db.delete(users).where(eq(users.id, user.id));
+
+  console.log("✓ Upsert by userId+tmdbId keeps a single title and can enqueue Quiero ver");
+};
+
+const run = async () => {
+  await verifyErrors();
+  await verifyUpsert();
+  console.log("\nAll TMDB search/add checks passed.");
+};
+
+run().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

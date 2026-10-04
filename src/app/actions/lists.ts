@@ -1,77 +1,210 @@
 "use server";
 
+import { createId } from "@paralleldrive/cuid2";
+import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { db, listItems, lists, titles } from "@/db";
 import { parseRequiredName } from "@/lib/form-data";
-import { prisma } from "@/lib/prisma";
+import { slugify } from "@/lib/labels";
+import { isFixedListSlug, isReservedListSlug, listHref, WATCHLIST_SLUG } from "@/lib/lists";
+import {
+  type ListMoveDirection,
+  reorderListItems,
+  swapAdjacentListItems,
+  swapListItemPositions,
+} from "@/lib/list-order";
+import { requireUserId } from "@/lib/session";
 
-const revalidateLists = (listId?: string) => {
-  revalidatePath("/");
+const revalidateLists = (
+  listId?: string,
+  titleId?: string,
+  slug?: string | null,
+) => {
   revalidatePath("/listas");
+  if (slug === WATCHLIST_SLUG) {
+    revalidatePath("/watchlist");
+  }
   if (listId) {
     revalidatePath(`/listas/${listId}`);
     revalidatePath(`/listas/${listId}/editar`);
   }
+  if (titleId) {
+    revalidatePath(`/titulos/${titleId}`);
+    revalidatePath(`/titulos/${titleId}/editar`);
+  }
+};
+
+const requireOwnedList = async (listId: string, userId: string) => {
+  const list = await db.query.lists.findFirst({
+    where: and(eq(lists.id, listId), eq(lists.userId, userId)),
+    columns: { id: true, slug: true, kind: true, name: true },
+  });
+
+  if (!list) {
+    throw new Error("Lista no encontrada.");
+  }
+
+  return list;
 };
 
 export const createList = async (formData: FormData) => {
+  const userId = await requireUserId();
   const name = parseRequiredName(formData.get("name"));
   const description = String(formData.get("description") ?? "").trim() || null;
 
-  const list = await prisma.list.create({
-    data: { name, description },
-  });
+  if (isReservedListSlug(slugify(name))) {
+    throw new Error("Ese nombre está reservado para una lista diaria.");
+  }
 
-  revalidateLists(list.id);
-  redirect(`/listas/${list.id}`);
-};
-
-export const updateList = async (listId: string, formData: FormData) => {
-  const name = parseRequiredName(formData.get("name"));
-  const description = String(formData.get("description") ?? "").trim() || null;
-
-  await prisma.list.update({
-    where: { id: listId },
-    data: { name, description },
+  const listId = createId();
+  const now = new Date();
+  await db.insert(lists).values({
+    id: listId,
+    userId,
+    name,
+    description,
+    kind: "COLLECTION",
+    createdAt: now,
+    updatedAt: now,
   });
 
   revalidateLists(listId);
   redirect(`/listas/${listId}`);
 };
 
-export const deleteList = async (listId: string) => {
-  await prisma.list.delete({ where: { id: listId } });
+export const updateList = async (listId: string, formData: FormData) => {
+  const userId = await requireUserId();
+  const description = String(formData.get("description") ?? "").trim() || null;
+  const existing = await requireOwnedList(listId, userId);
+  const name = isFixedListSlug(existing.slug)
+    ? existing.name
+    : parseRequiredName(formData.get("name"));
+
+  if (!isFixedListSlug(existing.slug) && isReservedListSlug(slugify(name))) {
+    throw new Error("Ese nombre está reservado para una lista diaria.");
+  }
+
+  await db.update(lists).set({ name, description }).where(eq(lists.id, listId));
+
   revalidateLists(listId);
-  redirect("/listas");
+  redirect(listHref(existing));
 };
 
-export const addTitleToList = async (listId: string, formData: FormData) => {
-  const titleId = String(formData.get("titleId") ?? "").trim();
+export const deleteList = async (listId: string) => {
+  const userId = await requireUserId();
+  const existing = await requireOwnedList(listId, userId);
+
+  if (isFixedListSlug(existing.slug)) {
+    throw new Error("Las listas diarias no se pueden borrar.");
+  }
+
+  await db.delete(lists).where(eq(lists.id, listId));
+  revalidateLists(listId);
+};
+
+export const addTitleToList = async (listId: string, titleId: string) => {
+  const userId = await requireUserId();
   if (!titleId) {
     throw new Error("Elige un título para agregar.");
   }
 
-  const last = await prisma.listItem.findFirst({
-    where: { listId },
-    orderBy: { position: "desc" },
+  const list = await requireOwnedList(listId, userId);
+
+  const title = await db.query.titles.findFirst({
+    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
+    columns: { id: true },
   });
 
-  await prisma.listItem.upsert({
-    where: { listId_titleId: { listId, titleId } },
-    update: {},
-    create: {
+  if (!title) {
+    throw new Error("Título no encontrado.");
+  }
+
+  const last = await db.query.listItems.findFirst({
+    where: eq(listItems.listId, listId),
+    orderBy: [desc(listItems.position)],
+  });
+
+  await db
+    .insert(listItems)
+    .values({
       listId,
       titleId,
       position: (last?.position ?? -1) + 1,
-    },
-  });
+    })
+    .onConflictDoNothing();
 
-  revalidateLists(listId);
+  revalidateLists(listId, titleId, list.slug);
 };
 
 export const removeTitleFromList = async (listId: string, titleId: string) => {
-  await prisma.listItem.delete({
-    where: { listId_titleId: { listId, titleId } },
+  const userId = await requireUserId();
+  const list = await requireOwnedList(listId, userId);
+
+  await db
+    .delete(listItems)
+    .where(and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)));
+  revalidateLists(listId, titleId, list.slug);
+};
+
+export const toggleTitleInList = async (listId: string, titleId: string) => {
+  const userId = await requireUserId();
+  const list = await requireOwnedList(listId, userId);
+
+  const title = await db.query.titles.findFirst({
+    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
+    columns: { id: true },
   });
-  revalidateLists(listId);
+
+  if (!title) {
+    throw new Error("Título no encontrado.");
+  }
+
+  const existing = await db.query.listItems.findFirst({
+    where: and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)),
+  });
+
+  if (existing) {
+    await db
+      .delete(listItems)
+      .where(and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)));
+  } else {
+    const last = await db.query.listItems.findFirst({
+      where: eq(listItems.listId, listId),
+      orderBy: [desc(listItems.position)],
+    });
+
+    await db.insert(listItems).values({
+      listId,
+      titleId,
+      position: (last?.position ?? -1) + 1,
+    });
+  }
+
+  revalidateLists(listId, titleId, list.slug);
+};
+
+export const moveListItem = async (
+  listId: string,
+  titleId: string,
+  direction: ListMoveDirection,
+  neighborTitleId?: string | null,
+) => {
+  const userId = await requireUserId();
+  const list = await requireOwnedList(listId, userId);
+  if (neighborTitleId) {
+    await swapListItemPositions(listId, titleId, neighborTitleId);
+  } else {
+    await swapAdjacentListItems(listId, titleId, direction);
+  }
+  revalidateLists(listId, titleId, list.slug);
+};
+
+export const reorderList = async (listId: string, orderedTitleIds: string[]) => {
+  const userId = await requireUserId();
+  const list = await requireOwnedList(listId, userId);
+  const changed = await reorderListItems(listId, orderedTitleIds);
+  if (changed) {
+    revalidateLists(listId, undefined, list.slug);
+  }
 };

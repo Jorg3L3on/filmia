@@ -1,92 +1,144 @@
-import { PLATFORM_LABEL, PLATFORMS, TITLE_KIND_LABEL, TITLE_KINDS } from "@/lib/labels";
+"use client";
 
-type CatalogFiltersProps = {
-  q: string;
-  kind: string;
-  platform: string;
-  tag: string;
-  sort: string;
-  tags: Array<{ slug: string; name: string }>;
+import {
+  CatalogFilterSheet,
+} from "@/components/catalog-filters/CatalogFilterSheet";
+import { CatalogKindChips } from "@/components/catalog-filters/CatalogKindChips";
+import { CatalogMinePlatformsChip } from "@/components/catalog-filters/CatalogMinePlatformsChip";
+import { CatalogSortSheet } from "@/components/catalog-filters/CatalogSortSheet";
+import { useCatalogFiltersState } from "@/components/catalog-filters/useCatalogFiltersState";
+import { CATALOG_ORDER_OPTIONS, type CatalogOrderOption } from "@/lib/catalog-filters";
+import type { CatalogKindFilter } from "@/lib/catalog-href";
+import type { Platform } from "@/db";
+import type { SeriesStatusFilter } from "@/lib/series";
+import type { CatalogSort } from "@/lib/tags";
+
+type FilterTag = {
+  id: string;
+  name: string;
+  slug: string;
+  _count?: { titles: number };
 };
 
-const selectClass =
-  "rounded-md border border-[#2c3440] bg-[#14181c] px-3 py-2 text-sm text-white focus:border-[#00e054] focus:outline-none";
+type CatalogFiltersProps = {
+  tags: FilterTag[];
+  selectedSlugs: string[];
+  pathname: string;
+  view?: string;
+  sort?: string;
+  defaultView?: string;
+  defaultSort?: CatalogSort | null;
+  minePlatforms?: boolean;
+  hasStreamingPlatforms?: boolean;
+  showTagFilters?: boolean;
+  showKind?: boolean;
+  /** `false` keeps Tipo only inside the Filtros sheet. */
+  showKindChips?: boolean;
+  orderOptions?: ReadonlyArray<CatalogOrderOption>;
+  /** Bar toggle «En mis plataformas» (takes the left slot instead of kind chips). */
+  showMinePlatformsChip?: boolean;
+  showPlatforms?: boolean;
+  showSort?: boolean;
+  seriesStatus?: SeriesStatusFilter;
+  month?: string;
+  day?: string | null;
+  mode?: string;
+  kind?: CatalogKindFilter;
+  platforms?: Platform[];
+};
 
 export const CatalogFilters = ({
-  q,
-  kind,
-  platform,
-  tag,
-  sort,
   tags,
+  selectedSlugs,
+  pathname,
+  view,
+  sort,
+  defaultView,
+  defaultSort = null,
+  minePlatforms = false,
+  hasStreamingPlatforms = false,
+  showTagFilters = true,
+  showKind = true,
+  showKindChips = true,
+  orderOptions = CATALOG_ORDER_OPTIONS,
+  showMinePlatformsChip = false,
+  showPlatforms = true,
+  showSort = true,
+  seriesStatus,
+  month,
+  day,
+  mode,
+  kind = "ALL",
+  platforms = [],
 }: CatalogFiltersProps) => {
+  const {
+    applied,
+    open,
+    draft,
+    setDraft,
+    hrefFor,
+    sheetActiveCount,
+    handleOpen,
+    handleClose,
+    handleApply,
+    handleClear,
+    handleSortSelect,
+  } = useCatalogFiltersState({
+    pathname,
+    view,
+    sort,
+    defaultView,
+    defaultSort,
+    minePlatforms,
+    selectedSlugs,
+    seriesStatus,
+    month,
+    day,
+    mode,
+    kind,
+    platforms,
+  });
+  const kindInSheetOnly = showKind && !showKindChips;
+  const activeCount =
+    sheetActiveCount +
+    (kindInSheetOnly && kind !== "ALL" ? 1 : 0) -
+    (showMinePlatformsChip && minePlatforms ? 1 : 0);
+
   return (
-    <form
-      method="get"
-      className="grid gap-3 rounded-lg border border-[#2c3440] bg-[#1c2228] p-4 md:grid-cols-5"
-      role="search"
-      aria-label="Filtrar títulos"
-    >
-      <label className="block space-y-1 md:col-span-2">
-        <span className="text-xs uppercase tracking-wide text-[#99aabb]">Buscar</span>
-        <input
-          type="search"
-          name="q"
-          defaultValue={q}
-          placeholder="Gladiator, Dune…"
-          className={`${selectClass} w-full`}
+    <section className="space-y-1" aria-label="Filtros del catálogo">
+      <div className="flex items-center gap-1.5">
+        {showMinePlatformsChip ? (
+          <CatalogMinePlatformsChip applied={applied} hrefFor={hrefFor} />
+        ) : showKind && showKindChips ? (
+          <CatalogKindChips kind={kind} applied={applied} hrefFor={hrefFor} />
+        ) : (
+          <div className="flex-1" />
+        )}
+
+        {showSort ? (
+          <CatalogSortSheet
+            options={orderOptions}
+            current={applied.sort}
+            onSelect={handleSortSelect}
+          />
+        ) : null}
+
+        <CatalogFilterSheet
+          open={open}
+          activeCount={activeCount}
+          draft={draft}
+          tags={tags}
+          hasStreamingPlatforms={hasStreamingPlatforms}
+          showKind={showKind}
+          showPlatforms={showPlatforms}
+          showTagFilters={showTagFilters}
+          onOpen={handleOpen}
+          onClose={handleClose}
+          onClear={handleClear}
+          onApply={handleApply}
+          onDraftChange={setDraft}
         />
-      </label>
-      <label className="block space-y-1">
-        <span className="text-xs uppercase tracking-wide text-[#99aabb]">Tipo</span>
-        <select name="kind" defaultValue={kind} className={`${selectClass} w-full`}>
-          <option value="ALL">Todos</option>
-          {TITLE_KINDS.map((value) => (
-            <option key={value} value={value}>
-              {TITLE_KIND_LABEL[value]}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="block space-y-1">
-        <span className="text-xs uppercase tracking-wide text-[#99aabb]">Plataforma</span>
-        <select name="platform" defaultValue={platform} className={`${selectClass} w-full`}>
-          <option value="ALL">Todas</option>
-          {PLATFORMS.map((value) => (
-            <option key={value} value={value}>
-              {PLATFORM_LABEL[value]}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="block space-y-1">
-        <span className="text-xs uppercase tracking-wide text-[#99aabb]">Etiqueta</span>
-        <select name="tag" defaultValue={tag} className={`${selectClass} w-full`}>
-          <option value="">Todas</option>
-          {tags.map((item) => (
-            <option key={item.slug} value={item.slug}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="block space-y-1 md:col-span-2">
-        <span className="text-xs uppercase tracking-wide text-[#99aabb]">Orden</span>
-        <select name="sort" defaultValue={sort} className={`${selectClass} w-full`}>
-          <option value="recent">Recientes</option>
-          <option value="rating">Mejor nota</option>
-          <option value="name">Nombre</option>
-          <option value="year">Año</option>
-        </select>
-      </label>
-      <div className="flex items-end md:col-span-3">
-        <button
-          type="submit"
-          className="rounded-full bg-[#2c3440] px-4 py-2 text-sm text-white hover:bg-[#3a4452] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054]"
-        >
-          Aplicar filtros
-        </button>
       </div>
-    </form>
+    </section>
   );
 };

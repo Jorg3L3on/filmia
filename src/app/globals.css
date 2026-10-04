@@ -1,23 +1,1524 @@
 @import "tailwindcss";
 
 :root {
-  --background: #14181c;
-  --foreground: #ddeeff;
+  --background: #0e1114;
+  --foreground: #f0f2f4;
+  --canvas: #0e1114;
+  --canvas-deep: #090b0d;
+  --well: #161a1f;
+  --surface: #1c2228;
+  --chrome: #2a323a;
+  --chrome-hover: #3a4452;
+  --line: #252b32;
+  --line-hover: #555555;
+  --accent: #7c9cff;
+  --accent-hover: #9bb3ff;
+  --accent-soft: rgb(124 156 255 / 0.4);
+  --ink: #0e1114;
+  --paper: #f0f2f4;
+  --fog: #8b939c;
+  --mist: #8b939c;
+  --faint: #6d757e;
+  --star: #f0c14a;
+  --rating: #f0c14a;
+  --imdb: #f5c518;
+  --success: #3dd68c;
+  --success-hover: #2fc47a;
+  --success-well: #13261c;
+  --danger: #ff6b7a;
+  --danger-well: #2a1618;
+  --danger-line: #5a2a32;
+  --sheet-shadow: 0 -16px 48px rgb(0 0 0 / 0.55);
+  --stagger-step: 50ms;
+  --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-press: 160ms;
+  --duration-tab: 200ms;
+  --duration-hover: 220ms;
+  --duration-enter: 280ms;
+  --duration-toast: 280ms;
+  --duration-morph: 380ms;
+  --duration-stagger: 420ms;
+  --duration-pop: 420ms;
+  --duration-sheet: 480ms;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-serif: var(--font-fraunces);
+  --color-background: var(--canvas);
+  --color-foreground: var(--paper);
+  --color-canvas: var(--canvas);
+  --color-canvas-deep: var(--canvas-deep);
+  --color-well: var(--well);
+  --color-surface: var(--surface);
+  --color-chrome: var(--chrome);
+  --color-chrome-hover: var(--chrome-hover);
+  --color-line: var(--line);
+  --color-line-hover: var(--line-hover);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-fog: var(--fog);
+  --color-mist: var(--mist);
+  --color-faint: var(--faint);
+  --color-star: var(--star);
+  --color-rating: var(--rating);
+  --color-imdb: var(--imdb);
+  --color-success: var(--success);
+  --color-success-hover: var(--success-hover);
+  --color-success-well: var(--success-well);
+  --color-danger: var(--danger);
+  --color-danger-well: var(--danger-well);
+  --color-danger-line: var(--danger-line);
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces", "Fraunces Fallback", ui-serif, Georgia, serif;
+  --radius-poster: 8px;
+  --radius-card: 14px;
+  --radius-sheet: 24px;
+  --radius-button: 12px;
+  --z-index-sheet-preview: 40;
+  --z-index-sheet: 50;
+  --z-index-sheet-top: 100;
+  --z-index-toast: 110;
+}
+
+/*
+ * Text on canvas / well / surface: text-paper (primary), text-fog/mist/faint
+ * (secondary). text-white is reserved for overlays on posters, photos, and
+ * solid brand chips. text-ink sits on accent / success fills.
+ */
+
+html {
+  overflow-x: clip;
+  overscroll-behavior: none;
+  background-color: var(--canvas);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--canvas);
+  color: var(--paper);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  overflow-x: clip;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 100dvh;
+}
+
+/* iPhone PWA standalone: canvas edge-to-edge, no rubber-band flash (JOR-218). */
+@media all and (display-mode: standalone) {
+  html,
+  body {
+    overscroll-behavior: none;
+    background-color: var(--canvas);
+  }
 }
 
 .font-serif {
   font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+}
+
+.rail {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.month-list-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 64px;
+}
+
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+/* --- Motion language (Fase 2) -------------------------------------------
+ * Durations
+ *   press  160ms  · tab  200ms  · hover  220ms
+ *   enter/toast  280ms  · morph  380ms
+ *   stagger/pop  420ms  · sheet  480ms
+ * Curves
+ *   --ease-out  sheets, toasts, tabs, stagger, morph (no overshoot)
+ *   --spring    press, spring-pop, spring-fill (chips / log / rating only)
+ * Sheets open with `.sheet-rise` (translateY + ease-out). Never `.spring-pop`.
+ * Shared-element poster → ficha: React <ViewTransition name={`poster-${id}`}>
+ * with share="morph" on calendar/grid/deck/list/tag/search tiles + ficha hero.
+ * Next 16 App Router treats navigations as transitions — no extra config.
+ * Diary Deck/Grid/Calendar morph uses `diary-stage` plus `diary-month` slides.
+ * `prefers-reduced-motion: reduce` zeroes movement (including view transitions).
+ * ---------------------------------------------------------------------- */
+
+.card-physics {
+  transform: translateZ(0) scale(1);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.4);
+  transition:
+    transform var(--duration-hover) var(--ease-out),
+    box-shadow var(--duration-hover) var(--ease-out),
+    filter var(--duration-hover) var(--ease-out);
+  will-change: transform;
+}
+
+.card-physics:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 18px 36px rgb(0 0 0 / 0.5);
+  filter: brightness(1.06);
+}
+
+.press-scale {
+  transition: transform var(--duration-press) var(--spring);
+}
+
+.press-scale:active {
+  transform: scale(0.96);
+}
+
+.stagger-in {
+  --stagger: 0;
+  animation: stagger-enter var(--duration-stagger) var(--ease-out) both;
+  animation-delay: calc(var(--stagger) * var(--stagger-step));
+}
+
+.fade-up {
+  animation: fade-up var(--duration-enter) var(--ease-out) both;
+}
+
+.fade-up-late {
+  animation: fade-up var(--duration-enter) var(--ease-out) both;
+  animation-delay: 120ms;
+}
+
+.spring-pop {
+  animation: spring-pop var(--duration-pop) var(--spring);
+}
+
+.tab-transition {
+  transition:
+    color var(--duration-tab) var(--ease-out),
+    background-color var(--duration-tab) var(--ease-out),
+    box-shadow var(--duration-tab) var(--ease-out),
+    border-color var(--duration-tab) var(--ease-out);
+}
+
+.toast-in {
+  animation: toast-in var(--duration-toast) var(--ease-out) both;
+}
+
+.toast-out {
+  animation: toast-out var(--duration-toast) var(--ease-out) both;
+}
+
+/* Coverflow mazo: compositor-only transforms; dim/blur on face overlays. */
+.coverflow-card {
+  contain: layout style;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-shadow: 0 14px 28px rgb(0 0 0 / 0.38);
+  opacity: 0;
+}
+
+.coverflow-card.is-focused {
+  box-shadow:
+    0 28px 50px rgb(0 0 0 / 0.55),
+    0 0 0 1px rgb(124 156 255 / 0.28);
+}
+
+.coverflow-card.is-compact.is-focused {
+  box-shadow:
+    0 18px 36px rgb(0 0 0 / 0.5),
+    0 0 0 1px rgb(124 156 255 / 0.7);
+}
+
+/* Soft-coverflow (Qué ver): floating poster, no frame/ring, soft drop shadow.
+ * overflow clips face blur so side DOF cannot bleed onto the focused hero. */
+.coverflow-card.is-cinematic {
+  overflow: hidden;
+  border-radius: 22px;
+  box-shadow: 0 18px 34px rgb(0 0 0 / 0.42);
+}
+
+.coverflow-card.is-cinematic.is-focused {
+  z-index: 920;
+  box-shadow:
+    0 30px 48px rgb(0 0 0 / 0.52),
+    0 10px 18px rgb(0 0 0 / 0.28);
+}
+
+.coverflow-card-face {
+  border-color: rgb(255 255 255 / 0.1);
+}
+
+.coverflow-card.is-focused .coverflow-card-face {
+  border-color: rgb(124 156 255 / 0.4);
+}
+
+.coverflow-card.is-cinematic .coverflow-card-face,
+.coverflow-card.is-cinematic.is-focused .coverflow-card-face {
+  border-color: transparent;
+  border-width: 0;
+}
+
+.coverflow-card.is-compact.is-focused .coverflow-card-face {
+  border-color: var(--accent);
+}
+
+.coverflow-card-dim {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: #000;
+  opacity: 0;
+}
+
+.coverflow-card-caption {
+  opacity: 0;
+}
+
+.coverflow-card-specular {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0;
+  background: linear-gradient(
+    118deg,
+    transparent 28%,
+    rgb(255 255 255 / 0.2) 46%,
+    transparent 62%
+  );
+  mix-blend-mode: screen;
+  transition: opacity var(--duration-hover) var(--ease-out);
+}
+
+.coverflow-card.is-focused .coverflow-card-specular {
+  opacity: 1;
+}
+
+.coverflow-card.is-cinematic .coverflow-card-specular {
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.28) 0%,
+    rgb(255 255 255 / 0.08) 18%,
+    transparent 42%
+  );
+  mix-blend-mode: soft-light;
+}
+
+.coverflow-card.is-cinematic.is-focused .coverflow-card-specular {
+  opacity: 0.9;
+}
+
+.coverflow-card.is-compact .coverflow-card-specular {
+  display: none;
+}
+
+.coverflow-cinematic,
+.coverflow-cinematic-stage {
+  /* No outline/frame around the deck — floating soft stage only. */
+  background: transparent;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+}
+
+.coverflow-cinematic-stage {
+  /* Taller mazo; chrome above is compressed so slide stays above tab bar. */
+  flex: 1 1 auto;
+  height: min(50dvh, calc(100dvh - 22rem));
+  min-height: 260px;
+  max-height: 520px;
+}
+
+@media (min-width: 768px) {
+  .coverflow-cinematic-stage {
+    height: min(56dvh, calc(100dvh - 18rem));
+    min-height: 340px;
+    max-height: 580px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .coverflow-cinematic-stage {
+    height: min(62dvh, calc(100dvh - 16rem));
+    min-height: 400px;
+    max-height: 640px;
+  }
+}
+
+/*
+ * Short tablet/desktop height (iPad landscape 1024×768): reclaim vertical room so
+ * title + meta + «Desliza para Vi esto» clear the fold. Scoped to min-width 768
+ * so phone portrait hero stays large (JOR-221).
+ */
+@media (max-height: 768px) and (min-width: 768px) {
+  .coverflow-cinematic-stage {
+    height: min(44dvh, calc(100dvh - 22rem));
+    min-height: 220px;
+    max-height: 360px;
+  }
+
+  .app-main {
+    padding-top: 1rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .diario-que-ver-shell {
+    gap: 0.35rem;
+  }
+
+  .diario-que-ver-body {
+    gap: 0.25rem;
+  }
+
+  .diario-que-ver-shell [role="tablist"] {
+    max-width: 18rem;
+    padding: 0.125rem;
+  }
+
+  .diario-que-ver-shell [role="tablist"] a {
+    padding-block: 0.3rem;
+    font-size: 0.625rem;
+  }
+
+  .genre-coverflow-active .font-serif {
+    font-size: 1.5rem;
+  }
+
+  .genre-coverflow-neighbor {
+    font-size: 0.58rem;
+    max-width: 5.75rem;
+  }
+
+  .genre-coverflow-dots {
+    margin-top: 0.2rem;
+  }
+
+  .diario-que-ver-deck {
+    gap: 0.35rem;
+  }
+
+  .deck-footer-watched {
+    gap: 0.45rem;
+  }
+
+  .deck-footer-watched .font-serif,
+  .deck-footer-watched .deck-footer-title {
+    font-size: 1.45rem;
+  }
+}
+
+
+/*
+ * Qué ver room atmosphere — Norte C «Película viva» (JOR-228).
+ * Grade from --que-ver-glow (poster-sampled) tints the whole sala.
+ * Soft-coverflow fan/radii/blur stay in coverflow-metrics — do not retune here.
+ * Continuum (edge category swipe) is untouched.
+ */
+.diario-que-ver-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Viewport full-bleed poster wash — behind transparent SiteHeader (not clipped by main). */
+html[data-que-ver-grade="live"]::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(
+      ellipse 95% 70% at 50% 28%,
+      rgb(var(--que-ver-glow, 124 156 255) / 0.42),
+      rgb(var(--que-ver-glow, 124 156 255) / 0.18) 38%,
+      rgb(var(--que-ver-glow, 124 156 255) / 0.06) 58%,
+      transparent 78%
+    ),
+    radial-gradient(
+      ellipse 110% 55% at 50% 100%,
+      rgb(var(--que-ver-glow, 124 156 255) / 0.22),
+      transparent 62%
+    );
+  filter: blur(64px);
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    rgb(0 0 0 / 0.22) 0%,
+    rgb(0 0 0 / 0.7) 10%,
+    #000 22%,
+    #000 84%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    rgb(0 0 0 / 0.22) 0%,
+    rgb(0 0 0 / 0.7) 10%,
+    #000 22%,
+    #000 84%,
+    transparent 100%
+  );
+  mix-blend-mode: screen;
+}
+
+html[data-que-ver-grade="live"] {
+  background-color: var(--canvas);
+}
+
+html[data-que-ver-grade="live"] body {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+
+/* In-sala grade (html::before owns header bleed). Soft top so no hard plate. */
+.diario-que-ver-shell[data-que-ver-grade="live"]::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: -10% -8% -14%;
+  z-index: 0;
+  background:
+    radial-gradient(
+      ellipse 88% 72% at 50% 40%,
+      rgb(var(--que-ver-glow, 124 156 255) / 0.28),
+      rgb(var(--que-ver-glow, 124 156 255) / 0.1) 48%,
+      transparent 76%
+    ),
+    radial-gradient(
+      ellipse 110% 60% at 50% 100%,
+      rgb(var(--que-ver-glow, 124 156 255) / 0.16),
+      transparent 60%
+    );
+  filter: blur(48px);
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgb(0 0 0 / 0.4) 12%,
+    #000 28%,
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgb(0 0 0 / 0.4) 12%,
+    #000 28%,
+    #000 100%
+  );
+  mix-blend-mode: screen;
+  transition: opacity var(--duration-morph) var(--ease-out);
+}
+
+.diario-que-ver-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.que-ver-atmosphere {
+  pointer-events: none;
+  position: absolute;
+  inset: -18% -12% -24%;
+  z-index: 0;
+  overflow: hidden;
+  /* Soft top + bottom edges so grade/vignette never hard-cut under logo or above the footer. */
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgb(0 0 0 / 0.4) 10%,
+    #000 24%,
+    #000 72%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgb(0 0 0 / 0.4) 10%,
+    #000 24%,
+    #000 72%,
+    transparent 100%
+  );
+}
+
+.que-ver-atmosphere-grade {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 78% 64% at 50% 40%,
+      rgb(var(--que-ver-glow, 124 156 255) / 0.34),
+      rgb(var(--que-ver-glow, 124 156 255) / 0.12) 48%,
+      transparent 74%
+    );
+  mix-blend-mode: soft-light;
+  opacity: 1;
+  animation: que-ver-grade-breath 7.2s ease-in-out infinite;
+}
+
+.que-ver-atmosphere-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 72% 62% at 50% 40%,
+      transparent 0%,
+      transparent 28%,
+      rgb(0 0 0 / 0.42) 62%,
+      rgb(0 0 0 / 0.82) 100%
+    ),
+    radial-gradient(
+      ellipse 130% 95% at 50% 100%,
+      rgb(0 0 0 / 0.58),
+      transparent 58%
+    ),
+    /* Soft top falloff — avoid hard dark plate under Filmia logo. */
+    radial-gradient(
+      ellipse 100% 55% at 50% 0%,
+      rgb(0 0 0 / 0.18),
+      transparent 70%
+    );
+}
+
+.que-ver-atmosphere-haze {
+  position: absolute;
+  inset: 0% 2% 8%;
+  background: radial-gradient(
+    ellipse 78% 68% at 50% 36%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.5),
+    rgb(var(--que-ver-glow, 124 156 255) / 0.22) 40%,
+    transparent 74%
+  );
+  filter: blur(64px);
+  opacity: 1;
+  mix-blend-mode: screen;
+  animation: que-ver-haze-breath 6.4s ease-in-out infinite;
+}
+
+/* Floor puddle / bounce under hero — legible “sala” charco. */
+.que-ver-atmosphere-floor {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  width: min(78%, 560px);
+  height: min(28%, 180px);
+  transform: translateX(-50%);
+  background:
+    radial-gradient(
+      ellipse 70% 55% at 50% 45%,
+      rgb(var(--que-ver-glow, 124 156 255) / 0.62),
+      rgb(var(--que-ver-glow, 124 156 255) / 0.22) 38%,
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 45% 40% at 32% 55%,
+      rgb(255 170 90 / 0.26),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 40% 38% at 68% 52%,
+      rgb(120 190 255 / 0.22),
+      transparent 70%
+    );
+  filter: blur(16px);
+  opacity: 1;
+  mix-blend-mode: screen;
+}
+
+/* Ghost: larger/softer double-exposure of the next poster in the fog. */
+.que-ver-atmosphere-ghost {
+  position: absolute;
+  left: 58%;
+  top: 30%;
+  width: min(58%, 380px);
+  aspect-ratio: 2 / 3;
+  transform: translate(-42%, -40%) rotate(2.5deg) scale(1.22);
+  filter: blur(22px) saturate(1.2) brightness(1.05);
+  mix-blend-mode: screen;
+  transition: opacity var(--duration-morph) var(--ease-out);
+  z-index: 0;
+  overflow: hidden;
+  border-radius: 0.85rem;
+  opacity: 0.92;
+}
+
+/* Sprockets removed (Artist): no L/R edge dots on Qué ver. */
+
+.que-ver-atmosphere-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.28;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  background-size: 140px 140px;
+  mix-blend-mode: overlay;
+  animation: que-ver-grain-shift 1.8s steps(2) infinite;
+}
+
+.que-ver-atmosphere-grain.is-static {
+  animation: none;
+  opacity: 0.18;
+}
+
+/* Idle projector flicker — subtle, not 60fps noise. */
+.que-ver-atmosphere-flicker {
+  position: absolute;
+  inset: 0;
+  background: rgb(255 250 240 / 0.045);
+  mix-blend-mode: soft-light;
+  animation: que-ver-flicker 4.2s steps(3) infinite;
+  opacity: 1;
+}
+
+.que-ver-atmosphere-flicker.is-static {
+  animation: none;
+  opacity: 0;
+}
+
+/* Warm light-leak streak on «Vi esto» commit (~400ms). */
+.que-ver-atmosphere-leak {
+  position: absolute;
+  left: -20%;
+  top: 18%;
+  width: 70%;
+  height: 70%;
+  background: linear-gradient(
+    108deg,
+    transparent 20%,
+    rgb(255 186 120 / 0.55) 42%,
+    rgb(255 120 80 / 0.4) 52%,
+    rgb(255 220 170 / 0.35) 58%,
+    transparent 78%
+  );
+  filter: blur(18px);
+  mix-blend-mode: screen;
+  animation: que-ver-light-leak 420ms var(--ease-out) both;
+  pointer-events: none;
+}
+
+.que-ver-atmosphere-leak.is-static {
+  animation: none;
+  opacity: 0.28;
+  transform: none;
+}
+
+@keyframes que-ver-grain-shift {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-1.5%, 1%);
+  }
+  50% {
+    transform: translate(1%, -1.5%);
+  }
+  75% {
+    transform: translate(-1%, -0.5%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes que-ver-flicker {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  33% {
+    opacity: 0.7;
+  }
+  66% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes que-ver-grade-breath {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes que-ver-haze-breath {
+  0%,
+  100% {
+    opacity: 0.88;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes que-ver-light-leak {
+  0% {
+    opacity: 0;
+    transform: translateX(-18%) rotate(-10deg);
+  }
+  28% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(42%) rotate(-6deg);
+  }
+}
+
+/* Soft glow behind focused poster — tint follows sampled --que-ver-glow. */
+.coverflow-soft-glow {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  z-index: 0;
+  width: min(96%, 820px);
+  height: min(96%, 680px);
+  transform: translate(-50%, -50%);
+  /* closest-side reaches transparent inside the box: no blur, because the mask
+     clips a blur halo to the border-box and leaves a hard vertical seam. */
+  background: radial-gradient(
+    ellipse closest-side at center,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.58),
+    rgb(var(--que-ver-glow, 124 156 255) / 0.3) 34%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.12) 62%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.03) 84%,
+    transparent 100%
+  );
+  opacity: 1;
+  /* Soft top so glow never reads as a hard plate under Filmia. */
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgb(0 0 0 / 0.45) 14%,
+    #000 32%,
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgb(0 0 0 / 0.45) 14%,
+    #000 32%,
+    #000 100%
+  );
+  transition: background var(--duration-morph) var(--ease-out);
+}
+
+/* Genre coverflow — replaces category chips (JOR-230 Solo B). */
+.genre-coverflow {
+  min-height: 2.75rem;
+  isolation: isolate;
+  padding-block: 0.15rem 0.35rem;
+}
+
+/* Single poster-tinted halo behind the active title — no plate, no box. */
+.genre-coverflow-glow {
+  pointer-events: none;
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  z-index: 0;
+  width: min(62%, 15rem);
+  height: 2.6rem;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    ellipse at center,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.42),
+    rgb(var(--que-ver-glow, 124 156 255) / 0.12) 55%,
+    transparent 75%
+  );
+  filter: blur(16px);
+  transition: background var(--duration-morph) var(--ease-out);
+}
+
+.genre-coverflow-active {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  max-width: 56%;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  padding: 0.1rem 0.85rem;
+  color: var(--paper);
+}
+
+.genre-coverflow-active .font-serif {
+  display: block;
+  overflow: hidden;
+  font-size: 1.75rem;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-shadow:
+    0 0 18px rgb(var(--que-ver-glow, 124 156 255) / 0.55),
+    0 1px 2px rgb(0 0 0 / 0.45);
+  animation: genre-coverflow-title-in var(--duration-enter) var(--ease-out) both;
+}
+
+@keyframes genre-coverflow-title-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* Neighbors speak the same language as the Qué ver / Historial toggle. */
+.genre-coverflow-neighbor {
+  z-index: 1;
+  display: inline-flex;
+  max-width: 6.75rem;
+  min-width: 0;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 0.3rem;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  padding: 0.4rem 0.5rem;
+  color: var(--fog);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.8;
+  transition:
+    opacity var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out);
+}
+
+.genre-coverflow-neighbor-prev {
+  justify-content: flex-end;
+  text-align: right;
+  -webkit-mask-image: linear-gradient(90deg, rgb(0 0 0 / 0.6), #000 32%);
+  mask-image: linear-gradient(90deg, rgb(0 0 0 / 0.6), #000 32%);
+}
+
+.genre-coverflow-neighbor-next {
+  justify-content: flex-start;
+  text-align: left;
+  -webkit-mask-image: linear-gradient(270deg, rgb(0 0 0 / 0.6), #000 32%);
+  mask-image: linear-gradient(270deg, rgb(0 0 0 / 0.6), #000 32%);
+}
+
+.genre-coverflow-neighbor:hover,
+.genre-coverflow-neighbor:focus-visible {
+  color: var(--paper);
+  opacity: 1;
+}
+
+.genre-coverflow-neighbor-spacer {
+  flex: 1 1 0;
+  max-width: 6.75rem;
+  min-height: 1px;
+}
+
+.genre-coverflow-chevron {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1;
+  transition: transform var(--duration-hover) var(--ease-out);
+}
+
+.genre-coverflow-neighbor-prev:hover .genre-coverflow-chevron {
+  transform: translateX(-2px);
+}
+
+.genre-coverflow-neighbor-next:hover .genre-coverflow-chevron {
+  transform: translateX(2px);
+}
+
+/* Position rail — active dot stretches into an accent pill. */
+.genre-coverflow-dots {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+}
+
+.genre-coverflow-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.2);
+  transition:
+    width var(--duration-morph) var(--ease-out),
+    background-color var(--duration-morph) var(--ease-out),
+    box-shadow var(--duration-morph) var(--ease-out);
+}
+
+.genre-coverflow-dot.is-active {
+  width: 18px;
+  background: var(--accent);
+  box-shadow: 0 0 10px rgb(var(--que-ver-glow, 124 156 255) / 0.7);
+}
+
+/* Compact destination footprint — fits genre+arrow+Desliza in the side gutter. */
+.coverflow-card.coverflow-destination {
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  width: 7.75rem;
+  height: 11.75rem;
+  margin-left: -3.875rem;
+  margin-top: -5.875rem;
+}
+
+/* Tinted-glass destination side slot — same chrome family as the mode toggle / slider.
+ * Specificity must beat .coverflow-card.is-cinematic .coverflow-card-face { border:0 }. */
+.coverflow-card.coverflow-destination.is-cinematic .coverflow-destination-face,
+.coverflow-card.coverflow-destination.is-cinematic.is-focused .coverflow-destination-face {
+  border-width: 1px;
+  border-style: solid;
+  border-color: rgb(255 255 255 / 0.12);
+  background:
+    radial-gradient(
+      ellipse 120% 80% at var(--dest-glow-x, 0%) 0%,
+      rgb(var(--que-ver-glow, 124 156 255) / 0.26),
+      transparent 70%
+    ),
+    linear-gradient(180deg, rgb(18 22 28 / 0.62), rgb(8 10 13 / 0.78));
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.08) inset,
+    0 18px 40px rgb(0 0 0 / 0.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  backdrop-filter: blur(16px) saturate(1.2);
+  transition:
+    border-color var(--duration-hover) var(--ease-out),
+    background-color var(--duration-hover) var(--ease-out);
+  /* Destination face stays sharp — labels must read at arm's length. */
+  filter: none !important;
+}
+
+.coverflow-card.coverflow-destination[data-coverflow-destination="next"] {
+  --dest-glow-x: 100%;
+}
+
+.coverflow-card.coverflow-destination.is-cinematic .coverflow-destination-face:hover {
+  border-color: rgb(255 255 255 / 0.22);
+}
+
+.coverflow-destination-kicker {
+  color: var(--fog);
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.coverflow-destination-name {
+  max-width: 100%;
+  overflow-wrap: normal;
+  color: var(--paper);
+  font-size: 1.15rem;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  text-shadow:
+    0 0 14px rgb(var(--que-ver-glow, 124 156 255) / 0.45),
+    0 1px 2px rgb(0 0 0 / 0.6);
+}
+
+.coverflow-destination-name.is-long {
+  font-size: 0.85rem;
+}
+
+.coverflow-destination-arrow {
+  display: inline-flex;
+  width: 1.75rem;
+  height: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.15rem;
+  border: 1px solid rgb(124 156 255 / 0.35);
+  border-radius: 9999px;
+  background: rgb(124 156 255 / 0.12);
+  color: var(--accent);
+  box-shadow: 0 0 12px rgb(var(--que-ver-glow, 124 156 255) / 0.35);
+  transition: transform var(--duration-hover) var(--ease-out);
+}
+
+[data-coverflow-destination="prev"] .coverflow-destination-face:hover .coverflow-destination-arrow {
+  transform: translateX(-2px);
+}
+
+[data-coverflow-destination="next"] .coverflow-destination-face:hover .coverflow-destination-arrow {
+  transform: translateX(2px);
+}
+
+/* Mode toggle — chrome soft but readable (Qué ver / Historial at arm's length). */
+.diario-que-ver-shell .diario-mode-toggle {
+  border-color: rgb(255 255 255 / 0.1);
+  background: rgb(0 0 0 / 0.14);
+  opacity: 0.88;
+  transition:
+    opacity var(--duration-hover) var(--ease-out),
+    border-color var(--duration-hover) var(--ease-out),
+    background-color var(--duration-hover) var(--ease-out);
+}
+
+.diario-que-ver-shell .diario-mode-toggle:hover,
+.diario-que-ver-shell .diario-mode-toggle:focus-within {
+  opacity: 1;
+}
+
+.diario-que-ver-shell .diario-mode-toggle a[aria-selected="true"] {
+  background: rgb(255 255 255 / 0.055);
+  color: var(--accent);
+  box-shadow: none;
+}
+
+.diario-que-ver-shell .diario-mode-toggle a:not([aria-selected="true"]) {
+  color: var(--fog);
+}
+
+/* SiteHeader plate — default chrome; Qué ver sala kills the seam under logo. */
+header.site-header {
+  border-bottom: 1px solid var(--line);
+  background: rgb(14 17 20 / 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+body:has(.diario-que-ver-shell) header.sticky,
+body:has(.diario-que-ver-shell) header.site-header {
+  border: none;
+  border-bottom-width: 0;
+  border-bottom-color: transparent;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* Title + meta arm's-length readable over sala grade (solid paper, not fog). */
+.diario-que-ver-shell .deck-footer-watched h2,
+.diario-que-ver-shell .deck-footer-watched h2 a,
+.diario-que-ver-shell .deck-footer-watched .deck-footer-title,
+.diario-que-ver-shell .deck-footer-watched .deck-footer-title a {
+  color: var(--paper);
+  opacity: 1;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-shadow: 0 1px 14px rgb(0 0 0 / 0.75);
+}
+
+.diario-que-ver-shell .deck-footer-watched .deck-footer-meta {
+  color: var(--paper);
+  opacity: 1;
+  font-size: 1rem; /* ≥ text-base on mobile */
+  letter-spacing: normal;
+  font-weight: 500;
+  text-shadow: 0 1px 14px rgb(0 0 0 / 0.75);
+}
+
+/* Soft scrim behind title+meta so blur/grade does not wash type. */
+.diario-que-ver-shell .deck-footer-watched > div:first-child {
+  position: relative;
+  isolation: isolate;
+  padding-block: 0.35rem 0.45rem;
+  text-shadow: 0 1px 14px rgb(0 0 0 / 0.75);
+}
+
+.diario-que-ver-shell .deck-footer-watched > div:first-child::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: -1.25rem -1.5rem -1.5rem;
+  z-index: -1;
+  /* Edgeless scrim: reaches transparent before every edge so no plate corners show. */
+  background: radial-gradient(
+    ellipse closest-side at 50% 55%,
+    rgb(0 0 0 / 0.42) 0%,
+    rgb(0 0 0 / 0.3) 45%,
+    rgb(0 0 0 / 0.1) 78%,
+    transparent 100%
+  );
+}
+
+/* Middots: paper ≥0.9 (not muted accent / glow). */
+.diario-que-ver-shell .deck-footer-watched .deck-footer-middot,
+.diario-que-ver-shell .deck-footer-watched .text-accent {
+  color: color-mix(in srgb, var(--paper) 92%, transparent);
+  opacity: 1;
+  text-shadow: 0 1px 14px rgb(0 0 0 / 0.75);
+}
+
+/* Tab bar quieter while Qué ver sala is up — Buscar FAB especially ghost. */
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] {
+  border-color: rgb(255 255 255 / 0.03);
+  background: rgb(8 10 12 / 0.62);
+}
+
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a {
+  opacity: 0.52;
+}
+
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[aria-current="page"] {
+  opacity: 0.78;
+}
+
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="search"] > span:first-child {
+  background: rgb(255 255 255 / 0.08) !important;
+  color: rgb(236 238 242 / 0.7) !important;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.22) !important;
+  opacity: 0.72;
+}
+
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="search"][aria-current="page"] > span:first-child {
+  background: rgb(var(--que-ver-glow, 124 156 255) / 0.28) !important;
+  color: rgb(236 238 242 / 0.88) !important;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.28) !important;
+  opacity: 0.88;
+}
+
+/* Light idle breath on cinematic hero face (transform lives on root via JS). */
+@keyframes coverflow-idle-breath {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2.5px) scale(1.012);
+  }
+}
+
+.coverflow-card.is-cinematic.is-focused .coverflow-card-face {
+  /* Belt-and-suspenders: never let residual face blur soften the hero. */
+  filter: none !important;
+  animation: coverflow-idle-breath 5.6s ease-in-out infinite;
+}
+
+.que-ver-deck-slide-next {
+  animation: que-ver-deck-in-right 300ms var(--ease-out) both;
+}
+
+.que-ver-deck-slide-prev {
+  animation: que-ver-deck-in-left 300ms var(--ease-out) both;
+}
+
+@keyframes que-ver-deck-in-right {
+  from {
+    opacity: 0.35;
+    filter: blur(4px);
+    transform: translateX(4%);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes que-ver-deck-in-left {
+  from {
+    opacity: 0.35;
+    filter: blur(4px);
+    transform: translateX(-4%);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateX(0);
+  }
+}
+
+.cursor-inherit {
+  cursor: inherit;
+}
+
+.sheet-rise {
+  animation: sheet-rise var(--duration-sheet) var(--ease-out) both;
+}
+
+.spring-fill {
+  transition:
+    background-color var(--duration-press) var(--spring),
+    color var(--duration-press) var(--spring),
+    box-shadow var(--duration-press) var(--spring),
+    transform var(--duration-press) var(--spring);
+}
+
+.diary-stage {
+  view-transition-name: diary-stage;
+}
+
+.diary-month {
+  view-transition-name: diary-month;
+}
+
+.shimmer {
+  background: linear-gradient(
+    110deg,
+    var(--well) 0%,
+    var(--surface) 40%,
+    var(--well) 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+::view-transition-group(.morph) {
+  animation-duration: var(--duration-morph);
+  animation-timing-function: var(--ease-out);
+}
+
+::view-transition-image-pair(.morph) {
+  animation-name: via-blur;
+}
+
+::view-transition-old(.diary-slide-left) {
+  animation: slide-out-left 320ms var(--ease-out) both;
+}
+
+::view-transition-new(.diary-slide-left) {
+  animation: slide-in-right 320ms var(--ease-out) both;
+}
+
+::view-transition-old(.diary-slide-right) {
+  animation: slide-out-right 320ms var(--ease-out) both;
+}
+
+::view-transition-new(.diary-slide-right) {
+  animation: slide-in-left 320ms var(--ease-out) both;
+}
+
+::view-transition-old(.diary-morph),
+::view-transition-new(.diary-morph) {
+  animation-duration: 320ms;
+  animation-timing-function: var(--ease-out);
+  animation-name: diary-morph-cross;
+}
+
+@keyframes stagger-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spring-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes sheet-rise {
+  from {
+    opacity: 0;
+    transform: translateY(22%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -40% 0;
+  }
+}
+
+@keyframes via-blur {
+  30% {
+    filter: blur(3px);
+  }
+}
+
+@keyframes slide-out-left {
+  to {
+    opacity: 0;
+    transform: translateX(-18%);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(18%);
+  }
+}
+
+@keyframes slide-out-right {
+  to {
+    opacity: 0;
+    transform: translateX(18%);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-18%);
+  }
+}
+
+@keyframes diary-morph-cross {
+  from {
+    opacity: 0.35;
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .card-physics:hover,
+  .press-scale:active,
+  .stagger-in,
+  .fade-up,
+  .fade-up-late,
+  .spring-pop,
+  .sheet-rise,
+  .toast-in,
+  .toast-out {
+    transform: none;
+    filter: none;
+    animation: none;
+  }
+
+  .tab-transition {
+    transition: none;
+  }
+
+  .coverflow-card,
+  .coverflow-card.is-focused,
+  .coverflow-card.is-compact.is-focused,
+  .coverflow-card.is-cinematic,
+  .coverflow-card.is-cinematic.is-focused,
+  .coverflow-card-specular {
+    transition: none;
+  }
+
+  .coverflow-card.is-focused .coverflow-card-specular {
+    opacity: 0.55;
+  }
+
+  .coverflow-soft-glow {
+    opacity: 0.9;
+  }
+
+  .que-ver-atmosphere-grain {
+    animation: none !important;
+    opacity: 0.08;
+  }
+
+  .que-ver-atmosphere-flicker,
+  .que-ver-atmosphere-grade,
+  .que-ver-atmosphere-haze,
+  .que-ver-atmosphere-leak {
+    animation: none !important;
+  }
+
+  .que-ver-atmosphere-flicker {
+    opacity: 0 !important;
+  }
+
+  .que-ver-atmosphere-grade {
+    opacity: 0.9;
+    transform: none;
+  }
+
+  .coverflow-card.is-cinematic.is-focused .coverflow-card-face {
+    animation: none !important;
+    transform: none;
+  }
+
+  .que-ver-deck-slide-next,
+  .que-ver-deck-slide-prev {
+    animation: none !important;
+    filter: none;
+    transform: none;
+    opacity: 1;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-image-pair(*) {
+    animation: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .genre-coverflow-active .font-serif {
+    animation: none;
+  }
+
+  .genre-coverflow-dot {
+    transition: none;
+  }
 }

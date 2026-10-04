@@ -1,23 +1,96 @@
-import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { deleteTitle } from "@/app/actions/titles";
+import { Button } from "@/components/Button";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
-import { PosterPlaceholder } from "@/components/PosterPlaceholder";
-import { TagPills } from "@/components/TagPills";
+import { FichaWatchedSection } from "@/components/FichaWatchedSection";
 import {
-  formatRating,
-  PLATFORM_LABEL,
-  TITLE_KIND_LABEL,
-} from "@/lib/labels";
-import { getTitleById } from "@/lib/queries";
+  TitleActionsSkeleton,
+  TitleProvidersSkeleton,
+} from "@/components/PageSkeletons";
+import { SeriesStatusPanel } from "@/components/SeriesStatusPanel";
+import {
+  getAssignableLists,
+  getRelatedTitles,
+  getTagFilters,
+  getTitleById,
+  getUserStreamingPlatforms,
+} from "@/lib/queries";
+import { FichaVisit } from "@/components/FichaVisit";
+import { resolveTitleExtras, storedTitleExtras } from "@/lib/title-extras";
+import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
+import TitleLoading from "./loading";
+import {
+  TitleActionsBlock,
+  TitleHeroBlock,
+  TitleHeroFallback,
+  TitleProvidersBlock,
+  TitleRelatedBlock,
+  TitleSynopsisBlock,
+  isSeriesTitle,
+} from "./title-sections";
 
 export const dynamic = "force-dynamic";
 
-export default async function TitleDetailPage({
+type TitlePageProps = {
+  params: Promise<{ id: string }>;
+};
+
+const buildFichaDescription = (
+  title: NonNullable<Awaited<ReturnType<typeof getTitleById>>>,
+) => {
+  const kindLabel = title.kind === "SERIES" ? "Serie" : "Película";
+  const lead = [title.year ? String(title.year) : null, kindLabel]
+    .filter(Boolean)
+    .join(" · ");
+  const overview = title.overview?.trim();
+  if (overview) {
+    const short = overview.length > 140 ? `${overview.slice(0, 137)}…` : overview;
+    return lead ? `${lead}. ${short}` : short;
+  }
+  return lead
+    ? `${lead} en Filmia.`
+    : "Ficha en Filmia, tu diario de películas y series.";
+};
+
+export const generateMetadata = async ({
+  params,
+}: TitlePageProps): Promise<Metadata> => {
+  const { id } = await params;
+  const title = await getTitleById(id);
+  if (!title) {
+    return {
+      title: "Título",
+      description: "Ficha en Filmia, tu diario de películas y series.",
+    };
+  }
+
+  const description = buildFichaDescription(title);
+  return {
+    title: title.name,
+    description,
+    openGraph: {
+      title: title.name,
+      description,
+      type: "website",
+    },
+  };
+};
+
+export default function TitleDetailPage({ params }: TitlePageProps) {
+  return (
+    <Suspense fallback={<TitleLoading />}>
+      <TitleDetail params={params} />
+    </Suspense>
+  );
+}
+
+const TitleDetail = async ({
   params,
 }: {
   params: Promise<{ id: string }>;
-}) {
+}) => {
   const { id } = await params;
   const title = await getTitleById(id);
 
@@ -25,71 +98,82 @@ export default async function TitleDetailPage({
     notFound();
   }
 
+  const extrasPromise = resolveTitleExtras(title);
+  const listsPromise = getAssignableLists();
+  const tagsPromise = getTagFilters();
+  const platformsPromise = getUserStreamingPlatforms();
+  const providersPromise = getWatchProvidersForTitle(title);
+  const relatedPromise = getRelatedTitles(
+    title.id,
+    title.tags.map((item) => item.tagId),
+  );
+
   const deleteAction = deleteTitle.bind(null, title.id);
 
   return (
-    <article className="grid gap-8 md:grid-cols-[220px_1fr]">
-      <PosterPlaceholder name={title.name} className="rounded-lg" />
-      <div className="space-y-4">
-        <p className="text-xs uppercase tracking-[0.2em] text-[#00e054]">
-          {TITLE_KIND_LABEL[title.kind]}
-          {title.year ? ` · ${title.year}` : ""}
-        </p>
-        <h1 className="font-serif text-4xl text-white">{title.name}</h1>
-        {title.originalName ? (
-          <p className="text-sm text-[#99aabb]">{title.originalName}</p>
-        ) : null}
-        <p className="text-lg text-[#ff8000]">{formatRating(title.rating)}</p>
-        {title.platform ? (
-          <p className="text-sm text-[#99aabb]">{PLATFORM_LABEL[title.platform]}</p>
-        ) : null}
-        {title.watchedAt ? (
-          <p className="text-sm text-[#99aabb]">
-            Vista el{" "}
-            {title.watchedAt.toLocaleDateString("es-MX", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              timeZone: "UTC",
-            })}
-          </p>
-        ) : null}
-        <TagPills tags={title.tags.map((item) => item.tag)} />
-        {title.listItems.length > 0 ? (
-          <p className="text-sm text-[#99aabb]">
-            En listas:{" "}
-            {title.listItems.map((item, index) => (
-              <span key={item.listId}>
-                {index > 0 ? ", " : ""}
-                <Link
-                  href={`/listas/${item.list.id}`}
-                  className="text-[#00e054] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e054]"
-                >
-                  {item.list.name}
-                </Link>
-              </span>
-            ))}
-          </p>
-        ) : null}
-        {title.review ? (
-          <p className="max-w-2xl whitespace-pre-wrap text-[#c8d6e5]">{title.review}</p>
-        ) : null}
-        <div className="flex flex-wrap gap-3 pt-2">
-          <Link
-            href={`/titulos/${title.id}/editar`}
-            className="rounded-full bg-[#00e054] px-4 py-2 text-sm font-semibold text-[#14181c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-          >
-            Editar
-          </Link>
-          <form action={deleteAction}>
-            <ConfirmSubmit
-              label="Borrar"
-              confirmMessage={`¿Borrar “${title.name}”?`}
-              className="rounded-full border border-[#5a2a2a] px-4 py-2 text-sm text-[#ff8a80] hover:bg-[#2a1616] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff8a80]"
-            />
-          </form>
-        </div>
-      </div>
+    <article className="space-y-8">
+      <FichaVisit titleId={title.id} />
+      <Suspense fallback={<TitleHeroFallback title={title} extras={storedTitleExtras(title)} />}>
+        <TitleHeroBlock title={title} extrasPromise={extrasPromise} />
+      </Suspense>
+
+      <Suspense fallback={<TitleActionsSkeleton />}>
+        <TitleActionsBlock
+          title={title}
+          listsPromise={listsPromise}
+          tagsPromise={tagsPromise}
+        />
+      </Suspense>
+
+      <Suspense fallback={<TitleProvidersSkeleton />}>
+        <TitleProvidersBlock
+          providersPromise={providersPromise}
+          platformsPromise={platformsPromise}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <TitleSynopsisBlock
+          storedOverview={title.overview}
+          extrasPromise={extrasPromise}
+        />
+      </Suspense>
+
+      {isSeriesTitle(title) ? (
+        <SeriesStatusPanel
+          titleId={title.id}
+          seriesStatus={title.seriesStatus}
+          seriesSeason={title.seriesSeason}
+        />
+      ) : null}
+
+      {title.watchedAt ? (
+        <FichaWatchedSection
+          titleId={title.id}
+          titleName={title.name}
+          watchedAt={title.watchedAt}
+          rating={title.rating}
+          review={title.review}
+        />
+      ) : null}
+
+      <Suspense fallback={null}>
+        <TitleRelatedBlock relatedPromise={relatedPromise} />
+      </Suspense>
+
+      <footer className="mt-16 flex flex-wrap items-center justify-between gap-4 border-t border-line/70 pt-8 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <Button href={`/titulos/${title.id}/editar`} variant="ghost">
+          Editar ficha
+        </Button>
+        <ConfirmSubmit
+          label="Borrar"
+          confirmMessage={`¿Borrar “${title.name}”?`}
+          href="/"
+          action={deleteAction}
+          variant="danger"
+          className="ml-auto"
+        />
+      </footer>
     </article>
   );
-}
+};

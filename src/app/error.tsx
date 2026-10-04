@@ -1,26 +1,45 @@
 "use client";
 
+import { useEffect } from "react";
+import { Button } from "@/components/Button";
+
 type ErrorPageProps = {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry?: () => void;
+  reset?: () => void;
 };
 
-const ErrorPage = ({ error, reset }: ErrorPageProps) => {
-  const handleClick = () => {
-    reset();
+const ErrorPage = ({ error, retry, reset }: ErrorPageProps) => {
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+
+  const handleRetry = () => {
+    if (retry) {
+      retry();
+      return;
+    }
+    reset?.();
   };
 
   return (
-    <div className="space-y-3">
-      <h1 className="font-serif text-3xl text-white">Algo salió mal</h1>
-      <p className="text-[#99aabb]">{error.message}</p>
-      <button
-        type="button"
-        onClick={handleClick}
-        className="rounded-full bg-[#00e054] px-4 py-2 text-sm font-semibold text-[#14181c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-      >
-        Reintentar
-      </button>
+    <div className="mx-auto max-w-lg space-y-4 rounded-2xl border border-danger-line bg-danger-well px-6 py-16 text-center">
+      <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-danger">
+        Corte
+      </p>
+      <h1 className="font-serif text-3xl text-paper">Algo salió mal</h1>
+      <p className="text-sm leading-relaxed text-fog">
+        Esta escena no cargó. Reintenta o vuelve al Diario; si sigue fallando, el
+        problema es nuestro, no tuyo.
+      </p>
+      <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+        <Button type="button" variant="secondary" onClick={handleRetry}>
+          Reintentar
+        </Button>
+        <Button href="/" variant="ghost">
+          Volver al Diario
+        </Button>
+      </div>
     </div>
   );
 };
