@@ -1,4 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
+import { eq } from "drizzle-orm";
 import { cache } from "react";
 import { db, tags } from "@/db";
 import { slugify } from "@/lib/labels";
@@ -81,26 +82,25 @@ export const parseMinePlatforms = (value: unknown): boolean => {
   return normalized === "1" || normalized === "true" || normalized === "on";
 };
 
+/** Seeds starter tags only for accounts with none, so renamed or deleted defaults stay gone. */
 export const ensureDefaultTags = cache(async (userId: string) => {
-  await Promise.all(
-    DEFAULT_TAG_NAMES.map(async (name) => {
-      const slug = slugify(name);
-      if (!slug) {
-        return;
-      }
+  const existing = await db.query.tags.findFirst({
+    where: eq(tags.userId, userId),
+    columns: { id: true },
+  });
+  if (existing) {
+    return;
+  }
 
-      await db
-        .insert(tags)
-        .values({
-          id: createId(),
-          userId,
-          name,
-          slug,
-        })
-        .onConflictDoUpdate({
-          target: [tags.userId, tags.slug],
-          set: { name },
-        });
-    }),
-  );
+  await db
+    .insert(tags)
+    .values(
+      DEFAULT_TAG_NAMES.map((name) => ({
+        id: createId(),
+        userId,
+        name,
+        slug: slugify(name),
+      })),
+    )
+    .onConflictDoNothing();
 });

@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useCallback, useId, useMemo, useState, useTransition } from "react";
-import { addTitleToList } from "@/app/actions/lists";
 import { Button } from "@/components/Button";
 import { PosterImage } from "@/components/PosterImage";
 import { Sheet, SheetHandle } from "@/components/Sheet";
 import { cn } from "@/lib/cn";
 import { showToast } from "@/lib/toast";
 import { actionErrorMessage } from "@/lib/use-optimistic-action";
-import { fieldClass, focusRing } from "@/lib/ui";
+import { fieldClass, focusRing, pillActionClass } from "@/lib/ui";
+import { SegmentPlusIcon } from "@/components/SegmentAction";
 
 export type AddableListTitle = {
   id: string;
@@ -18,14 +18,19 @@ export type AddableListTitle = {
   posterPath: string | null;
 };
 
+type AddTitleTarget = "lista" | "etiqueta";
+
 type AddTitleToListCtaProps = {
-  listId: string;
+  /** Bound server action that adds one title to the collection. */
+  action: (titleId: string) => Promise<void>;
+  target?: AddTitleTarget;
   titles: AddableListTitle[];
   compact?: boolean;
 };
 
 export const AddTitleToListCta = ({
-  listId,
+  action,
+  target = "lista",
   titles,
   compact = false,
 }: AddTitleToListCtaProps) => {
@@ -67,12 +72,10 @@ export const AddTitleToListCta = ({
     setAddedIds((current) => new Set(current).add(title.id));
     setPendingId(title.id);
     handleClose();
-    showToast({ title: "En la lista", description: title.name });
+    showToast({ title: `En la ${target}`, description: title.name });
     startTransition(async () => {
       try {
-        const formData = new FormData();
-        formData.set("titleId", title.id);
-        await addTitleToList(listId, formData);
+        await action(title.id);
       } catch (caught) {
         setAddedIds((current) => {
           const next = new Set(current);
@@ -94,20 +97,31 @@ export const AddTitleToListCta = ({
 
   return (
     <div className={compact ? undefined : "flex justify-center"}>
-      <Button
-        type="button"
-        size={compact ? "md" : "lg"}
-        onClick={handleOpen}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-label="Agregar título a la lista"
-        className={cn(
-          "press-scale transition-[filter,opacity] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
-          compact ? undefined : "min-w-[min(100%,20rem)]",
-        )}
-      >
-        {compact ? "Agregar" : "+ Agregar título"}
-      </Button>
+      {compact ? (
+        <button
+          type="button"
+          onClick={handleOpen}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label={`Agregar título a la ${target}`}
+          className={pillActionClass.primary}
+        >
+          <SegmentPlusIcon className="size-4 group-hover:rotate-90" />
+          Agregar
+        </button>
+      ) : (
+        <Button
+          type="button"
+          size="lg"
+          onClick={handleOpen}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label={`Agregar título a la ${target}`}
+          className="press-scale min-w-[min(100%,20rem)] transition-[filter,opacity] duration-[var(--duration-hover)] ease-[var(--ease-out)]"
+        >
+          + Agregar título
+        </Button>
+      )}
 
       <Sheet
         open={open}
@@ -115,6 +129,7 @@ export const AddTitleToListCta = ({
         labelledBy={titleId}
         overlayLabel="Cerrar agregar título"
         dragDismiss
+        portal
         panelClassName="max-h-[min(40rem,88dvh)] bg-surface"
       >
         <div className="flex flex-col items-center px-5 pt-3">
@@ -123,7 +138,7 @@ export const AddTitleToListCta = ({
         <div className="flex items-start justify-between gap-3 border-b border-line px-5 pb-4">
           <div className="min-w-0">
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">
-              Lista
+              {target === "lista" ? "Lista" : "Etiqueta"}
             </p>
             <h2 id={titleId} className="font-serif text-2xl text-paper">
               Agregar título
@@ -186,7 +201,7 @@ export const AddTitleToListCta = ({
                       type="button"
                       onClick={() => handleAdd(title)}
                       disabled={isPending}
-                      aria-label={`Agregar ${title.name} a la lista`}
+                      aria-label={`Agregar ${title.name} a la ${target}`}
                       className={cn(
                         "card-physics press-scale flex w-full items-center gap-3 rounded-2xl border border-line bg-well px-3 py-2.5 text-left disabled:opacity-60",
                         "transition-[border-color,background-color,opacity] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
@@ -220,7 +235,7 @@ export const AddTitleToListCta = ({
             </ul>
           ) : titles.length === 0 ? (
             <p className="text-sm text-fog">
-              No hay más títulos en Filmia para esta lista.{" "}
+              No hay más títulos en Filmia para esta {target}.{" "}
               <Link
                 href={buscarHref}
                 className={`text-accent underline-offset-2 hover:underline ${focusRing}`}

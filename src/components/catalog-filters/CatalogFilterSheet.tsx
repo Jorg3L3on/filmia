@@ -4,23 +4,16 @@ import Link from "next/link";
 import { CatalogMoreFilters } from "@/components/CatalogMoreFilters";
 import {
   CatalogFilmIcon,
-  CatalogOrderIcon,
   CatalogPlatformChipList,
   CatalogSheetSection,
   CatalogTvIcon,
   catalogSheetChipClass,
 } from "@/components/catalog-filters/filter-ui";
-import {
-  CATALOG_ORDER_OPTIONS,
-  MX_SHEET_PLATFORMS,
-} from "@/lib/catalog-filters";
+import { MX_SHEET_PLATFORMS } from "@/lib/catalog-filters";
 import type { CatalogKindFilter } from "@/lib/catalog-href";
 import { focusRing } from "@/lib/ui";
 import type { Platform } from "@/db";
-import {
-  SERIES_STATUS_FILTER_OPTIONS,
-  type SeriesStatusFilter,
-} from "@/lib/series";
+import type { SeriesStatusFilter } from "@/lib/series";
 import type { CatalogSort } from "@/lib/tags";
 
 const TitleKindMovie = "MOVIE" as const;
@@ -46,13 +39,10 @@ type CatalogFilterSheetProps = {
   open: boolean;
   activeCount: number;
   draft: CatalogFilterDraft;
-  defaultSort: CatalogSort | null;
   tags: FilterTag[];
   hasStreamingPlatforms: boolean;
   showKind: boolean;
   showPlatforms: boolean;
-  showSort: boolean;
-  showSeriesStatus: boolean;
   showTagFilters: boolean;
   onOpen: () => void;
   onClose: () => void;
@@ -65,13 +55,10 @@ export const CatalogFilterSheet = ({
   open,
   activeCount,
   draft,
-  defaultSort,
   tags,
   hasStreamingPlatforms,
   showKind,
   showPlatforms,
-  showSort,
-  showSeriesStatus,
   showTagFilters,
   onOpen,
   onClose,
@@ -155,33 +142,6 @@ export const CatalogFilterSheet = ({
         </CatalogSheetSection>
       ) : null}
 
-      {showSort ? (
-        <CatalogSheetSection title="Orden">
-          <div className="flex flex-wrap gap-2">
-            {CATALOG_ORDER_OPTIONS.map((option) => {
-              const isSelected = draft.sort === option.id;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  aria-pressed={isSelected}
-                  onClick={() =>
-                    onDraftChange((current) => ({
-                      ...current,
-                      sort: current.sort === option.id ? defaultSort : option.id,
-                    }))
-                  }
-                  className={catalogSheetChipClass(isSelected)}
-                >
-                  <CatalogOrderIcon name={option.icon} />
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-        </CatalogSheetSection>
-      ) : null}
-
       {showPlatforms ? (
         <CatalogSheetSection title="Más plataformas">
           <CatalogPlatformChipList
@@ -189,36 +149,6 @@ export const CatalogFilterSheet = ({
             selected={draft.platforms}
             onToggle={handleTogglePlatform}
           />
-        </CatalogSheetSection>
-      ) : null}
-
-      {showSeriesStatus ? (
-        <CatalogSheetSection
-          title="Estado de serie"
-          hint="Solo series. Las películas no entran en este filtro."
-        >
-          <ul className="flex flex-wrap gap-2">
-            {SERIES_STATUS_FILTER_OPTIONS.map((option) => {
-              const isSelected = draft.seriesStatus === option.id;
-              return (
-                <li key={option.id}>
-                  <button
-                    type="button"
-                    aria-pressed={isSelected}
-                    onClick={() =>
-                      onDraftChange((current) => ({
-                        ...current,
-                        seriesStatus: isSelected ? undefined : option.id,
-                      }))
-                    }
-                    className={catalogSheetChipClass(isSelected)}
-                  >
-                    {option.label}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
         </CatalogSheetSection>
       ) : null}
 

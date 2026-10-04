@@ -168,14 +168,6 @@ const run = () => {
   );
 
   assert(
-    read("src/components/ListTitlesGrid.tsx").includes("WindowVirtualGrid"),
-    "Long list grids window-virtualize",
-  );
-  assert(
-    read("src/components/WatchlistList.tsx").includes("WindowVirtualList"),
-    "Long Quiero ver queues stay window-virtualized",
-  );
-  assert(
     collectWarmNavHrefs("/watchlist", ["/titulos/a"]).includes("/titulos/a") &&
       !collectWarmNavHrefs("/watchlist").includes("/watchlist"),
     "Nav prefetch skips the current route and keeps recent fichas",
@@ -207,12 +199,6 @@ const run = () => {
       read("src/components/NavPrefetch.tsx").includes("scheduleStaggeredWork"),
     "Nav prefetch idles, budgets by connection, and does not re-warm the same href",
   );
-  assert(
-    read("src/components/ListTitlesGrid.tsx").includes("renderCell(item, index, false)") &&
-      read("src/components/WatchlistList.tsx").includes("WATCHLIST_VIRTUALIZE_AFTER"),
-    "Virtualized listas/watchlist keep F3 wells and skip scroll thrash stagger",
-  );
-
   // PWA worker lives in ServiceWorkerRegister + public/sw.js (Fase 5 / JOR-219).
   // Keep the rest of the tree free of ad-hoc SW registration.
   const sources = [...walkTsx("src/app"), ...walkTsx("src/components"), ...walkTsx("src/lib")];

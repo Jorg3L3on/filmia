@@ -11,7 +11,7 @@ import {
   isNull,
   lt,
   ne,
-  not,
+  notInArray,
   or,
   sql,
 } from "drizzle-orm";
@@ -117,18 +117,15 @@ const buildTagSlugCondition = (userId: string, tagSlugs: string[]) => {
     return undefined;
   }
 
-  return exists(
+  // Uncorrelated on purpose: db.query aliases "Title" and would not rewrite a
+  // titles.id reference inside the subquery.
+  return inArray(
+    titles.id,
     db
       .select({ titleId: titleTags.titleId })
       .from(titleTags)
       .innerJoin(tags, eq(titleTags.tagId, tags.id))
-      .where(
-        and(
-          eq(titleTags.titleId, titles.id),
-          inArray(tags.slug, tagSlugs),
-          eq(tags.userId, userId),
-        ),
-      ),
+      .where(and(inArray(tags.slug, tagSlugs), eq(tags.userId, userId))),
   );
 };
 
@@ -512,15 +509,31 @@ export const getTitleOptionsOutsideList = cache(async (listId: string) => {
   return db.query.titles.findMany({
     where: and(
       eq(titles.userId, userId),
-      not(
-        exists(
-          db
-            .select({ titleId: listItems.titleId })
-            .from(listItems)
-            .where(
-              and(eq(listItems.listId, listId), eq(listItems.titleId, titles.id)),
-            ),
-        ),
+      notInArray(
+        titles.id,
+        db
+          .select({ titleId: listItems.titleId })
+          .from(listItems)
+          .where(eq(listItems.listId, listId)),
+      ),
+    ),
+    columns: { id: true, name: true, year: true, posterPath: true },
+    orderBy: [asc(titles.name)],
+  });
+});
+
+export const getTitleOptionsOutsideTag = cache(async (tagId: string) => {
+  const userId = await requireUserId();
+
+  return db.query.titles.findMany({
+    where: and(
+      eq(titles.userId, userId),
+      notInArray(
+        titles.id,
+        db
+          .select({ titleId: titleTags.titleId })
+          .from(titleTags)
+          .where(eq(titleTags.tagId, tagId)),
       ),
     ),
     columns: { id: true, name: true, year: true, posterPath: true },

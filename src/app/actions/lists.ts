@@ -8,7 +8,12 @@ import { db, listItems, lists, titles } from "@/db";
 import { parseRequiredName } from "@/lib/form-data";
 import { slugify } from "@/lib/labels";
 import { isFixedListSlug, isReservedListSlug, listHref, WATCHLIST_SLUG } from "@/lib/lists";
-import { type ListMoveDirection, swapAdjacentListItems, swapListItemPositions } from "@/lib/list-order";
+import {
+  type ListMoveDirection,
+  reorderListItems,
+  swapAdjacentListItems,
+  swapListItemPositions,
+} from "@/lib/list-order";
 import { requireUserId } from "@/lib/session";
 
 const revalidateLists = (
@@ -96,12 +101,10 @@ export const deleteList = async (listId: string) => {
 
   await db.delete(lists).where(eq(lists.id, listId));
   revalidateLists(listId);
-  redirect("/listas");
 };
 
-export const addTitleToList = async (listId: string, formData: FormData) => {
+export const addTitleToList = async (listId: string, titleId: string) => {
   const userId = await requireUserId();
-  const titleId = String(formData.get("titleId") ?? "").trim();
   if (!titleId) {
     throw new Error("Elige un título para agregar.");
   }
@@ -195,4 +198,13 @@ export const moveListItem = async (
     await swapAdjacentListItems(listId, titleId, direction);
   }
   revalidateLists(listId, titleId, list.slug);
+};
+
+export const reorderList = async (listId: string, orderedTitleIds: string[]) => {
+  const userId = await requireUserId();
+  const list = await requireOwnedList(listId, userId);
+  const changed = await reorderListItems(listId, orderedTitleIds);
+  if (changed) {
+    revalidateLists(listId, undefined, list.slug);
+  }
 };

@@ -106,24 +106,19 @@ const WatchlistBody = async ({
 
   return (
     <>
-      <div className="space-y-2">
-        <CatalogFilters
-          tags={tags}
-          selectedSlugs={selectedTags}
-          pathname="/watchlist"
-          kind={kindFilter}
-          platforms={platforms}
-          sort={sort ?? undefined}
-          minePlatforms={minePlatforms}
-          hasStreamingPlatforms={userPlatforms.length > 0}
-          seriesStatus={seriesStatus}
-        />
-        {rawItems.length > 0 && items.length > 0 && hasExtraFilters ? (
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-mist">
-            {items.length === 1 ? "1 título" : `${items.length} títulos`}
-          </p>
-        ) : null}
-      </div>
+      <CatalogFilters
+        tags={tags}
+        selectedSlugs={selectedTags}
+        pathname="/watchlist"
+        kind={kindFilter}
+        platforms={platforms}
+        sort={sort ?? undefined}
+        minePlatforms={minePlatforms}
+        hasStreamingPlatforms={userPlatforms.length > 0}
+        seriesStatus={seriesStatus}
+        showKindChips={false}
+        showMinePlatformsChip
+      />
 
       {rawItems.length === 0 ? (
         <EmptyState
@@ -163,6 +158,7 @@ const WatchlistBody = async ({
             items={items}
             listId={listId}
             preferredPlatforms={userPlatforms}
+            isManualOrder={!hasExtraFilters}
           />
         </div>
       )}

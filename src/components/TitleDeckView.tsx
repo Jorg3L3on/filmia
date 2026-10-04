@@ -4,10 +4,10 @@ import { PosterTile } from "@/components/PosterTile";
 import type { Platform } from "@/db";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import type { TitleWithTags } from "@/lib/queries";
-import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
+import { currentAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { eyebrowClass } from "@/lib/ui";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
-import { staggerStyle } from "@/lib/motion";
+import { staggerStyle } from "@/lib/motion-style";
 
 type TitleDeckViewProps = {
   titles: TitleWithTags[];
@@ -18,6 +18,7 @@ type TitleDeckViewProps = {
   showToggle?: boolean;
   userPlatforms?: readonly Platform[];
   footer?: "full" | "watched";
+  tagId?: string;
 };
 
 export const toCoverflowTitle = (
@@ -25,12 +26,6 @@ export const toCoverflowTitle = (
   userPlatforms: readonly Platform[] = [],
 ): CoverflowTitle => {
   const watchProviders = parseStoredWatchProviders(title.watchProvidersMx);
-  const availabilityPlatform = primaryAvailabilityPlatform(
-    watchProviders?.flatrate,
-    title.platform,
-    userPlatforms,
-  );
-
   return {
     id: title.id,
     name: title.name,
@@ -38,7 +33,7 @@ export const toCoverflowTitle = (
     year: title.year,
     rating: title.rating,
     posterPath: title.posterPath,
-    platform: availabilityPlatform ?? title.platform,
+    platform: currentAvailabilityPlatform(watchProviders, title.platform, userPlatforms),
     imdbRating: title.imdbRating,
     watched: Boolean(title.watchedAt),
     review: title.review,
@@ -58,6 +53,7 @@ export const TitleDeckView = ({
   showToggle = true,
   userPlatforms = [],
   footer = "full",
+  tagId,
 }: TitleDeckViewProps) => {
   if (titles.length === 0) {
     return null;
@@ -89,6 +85,7 @@ export const TitleDeckView = ({
         <CoverflowDeck
           titles={titles.map((title) => toCoverflowTitle(title, userPlatforms))}
           footer={footer}
+          tagId={tagId}
           className={cinematic ? "min-h-0 flex-1" : undefined}
         />
       ) : mode === "calendar" ? null : (

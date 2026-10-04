@@ -26,7 +26,7 @@ export type WatchProvidersResult = {
 
 const persistWatchProviders = async (
   titleId: string,
-  data: WatchProvidersMxData | null,
+  data: WatchProvidersMxData,
 ) => {
   await db
     .update(titles)
@@ -41,7 +41,7 @@ export const refreshWatchProvidersMx = async (
   titleId: string,
   tmdbId: number,
   kind: TitleKind,
-): Promise<WatchProvidersMxData | null> => {
+): Promise<WatchProvidersMxData> => {
   const data = await fetchMxWatchProviders(tmdbId, kind);
   await persistWatchProviders(titleId, data);
   return data;

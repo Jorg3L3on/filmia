@@ -52,27 +52,20 @@ const normalizeProviders = (providers: TmdbProvider[] | undefined): WatchProvide
     }));
 };
 
+/**
+ * A successful TMDB lookup always yields data — empty lists mean «not offered in
+ * MX right now». A stored `null` therefore only ever means «never checked».
+ */
 export const parseMxWatchProviders = (
   response: TmdbWatchProvidersResponse,
-): WatchProvidersMxData | null => {
+): WatchProvidersMxData => {
   const mx = response.results?.[MX_REGION];
-  if (!mx) {
-    return null;
-  }
-
-  const flatrate = normalizeProviders(mx.flatrate);
-  const rent = normalizeProviders(mx.rent);
-  const buy = normalizeProviders(mx.buy);
-
-  if (flatrate.length === 0 && rent.length === 0 && buy.length === 0) {
-    return null;
-  }
 
   return {
-    link: mx.link ?? null,
-    flatrate,
-    rent,
-    buy,
+    link: mx?.link ?? null,
+    flatrate: normalizeProviders(mx?.flatrate),
+    rent: normalizeProviders(mx?.rent),
+    buy: normalizeProviders(mx?.buy),
   };
 };
 
@@ -119,7 +112,7 @@ export const titleNeedsWatchProvidersRefresh = (
 export const fetchMxWatchProviders = async (
   tmdbId: number,
   kind: TitleKind,
-): Promise<WatchProvidersMxData | null> => {
+): Promise<WatchProvidersMxData> => {
   const response = await getTmdbWatchProviders(tmdbId, kind);
   return parseMxWatchProviders(response);
 };

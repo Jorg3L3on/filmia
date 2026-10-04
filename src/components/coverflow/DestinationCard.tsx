@@ -15,7 +15,8 @@ type DestinationCardProps = {
 };
 
 /**
- * Frosted side-slot card hinting continuum into the neighboring genre.
+ * Tinted-glass side-slot card hinting continuum into the neighboring genre.
+ * Content hugs the outer edge — the hero poster overlaps the inner ~18%.
  * Same footprint as a soft-coverflow side poster; painted by useCoverflowEngine.
  */
 export const DestinationCard = memo(function DestinationCard({
@@ -26,8 +27,9 @@ export const DestinationCard = memo(function DestinationCard({
   onPointerDown,
   registerNode,
 }: DestinationCardProps) {
-  const microcopy = direction === "next" ? "Desliza" : "Anterior";
-  const arrow = direction === "next" ? "→" : "←";
+  const isNext = direction === "next";
+  const kicker = isNext ? "Siguiente" : "Anterior";
+  const hasLongWord = name.split(/\s+/).some((word) => word.length > 8);
 
   return (
     <article
@@ -52,21 +54,34 @@ export const DestinationCard = memo(function DestinationCard({
           onSelect();
         }}
         className={cn(
-          "coverflow-card-face coverflow-destination-face relative flex h-full w-full cursor-inherit flex-col items-center justify-center gap-2.5 overflow-hidden rounded-[20px] px-2.5 text-center sm:px-3",
+          "coverflow-card-face coverflow-destination-face relative flex h-full w-full cursor-inherit flex-col justify-center gap-2 overflow-hidden rounded-[20px] py-4",
+          isNext
+            ? "items-end pl-[20%] pr-3 text-right"
+            : "items-start pl-3 pr-[20%] text-left",
           focusRing,
         )}
       >
-        <span className="relative z-[1] max-w-[6.75rem] font-serif text-[1.2rem] leading-[1.15] tracking-tight text-paper sm:text-[1.35rem]">
-          {name}
+        <span className="coverflow-destination-kicker relative z-[1]">
+          {kicker}
         </span>
         <span
-          className="relative z-[1] text-[1.45rem] leading-none text-paper"
-          aria-hidden
+          className={cn(
+            "coverflow-destination-name relative z-[1] font-serif",
+            hasLongWord && "is-long",
+          )}
         >
-          {arrow}
+          {name}
         </span>
-        <span className="relative z-[1] text-[10px] font-semibold uppercase tracking-[0.18em] text-paper/90">
-          {microcopy}
+        <span className="coverflow-destination-arrow relative z-[1]" aria-hidden>
+          <svg viewBox="0 0 16 16" fill="none" className="size-3.5">
+            <path
+              d={isNext ? "M3 8h10M9 4l4 4-4 4" : "M13 8H3M7 4 3 8l4 4"}
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </span>
       </button>
     </article>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
-import { eyebrowClass, iconButtonClass } from "@/lib/ui";
+import { eyebrowClass, focusRing } from "@/lib/ui";
 
 type PageHeaderProps = {
   eyebrow?: string;
@@ -26,9 +26,23 @@ export const PageHeader = ({
           <Link
             href={backHref}
             aria-label={backLabel}
-            className={cn(iconButtonClass, "press-scale mt-1 shrink-0")}
+            className={cn(
+              "press-scale group mt-0.5 inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-chrome bg-well text-paper transition-colors duration-[var(--duration-hover)] hover:border-accent/60 hover:text-accent md:mt-1.5",
+              focusRing,
+            )}
           >
-            ←
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="size-5 transition-transform duration-[var(--duration-hover)] group-hover:-translate-x-0.5"
+            >
+              <path d="M19 12H5M11 6l-6 6 6 6" />
+            </svg>
           </Link>
         ) : null}
         <div className="min-w-0 space-y-2">

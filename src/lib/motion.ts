@@ -16,12 +16,7 @@ export {
   POSTER_TRANSITION_PREFIX,
   posterTransitionName,
 } from "@/lib/motion-ids";
-
-export const staggerStyle = (index: number, stepMs = 50): CSSProperties =>
-  ({
-    "--stagger": index,
-    "--stagger-step": `${stepMs}ms`,
-  }) as CSSProperties;
+export { staggerStyle } from "@/lib/motion-style";
 
 const reducedMotionQuery = "(prefers-reduced-motion: reduce)";
 

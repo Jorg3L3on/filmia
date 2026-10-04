@@ -1,3 +1,4 @@
+import { listCardGridClass } from "@/components/ListCard";
 import { cn } from "@/lib/cn";
 
 type SkeletonProps = {
@@ -151,48 +152,40 @@ export const DiaryBodySkeleton = ({
 };
 
 export const WatchlistFiltersSkeleton = () => (
-  <div className="flex items-center gap-1" aria-hidden="true">
-    <ShimmerBlock className="h-7 w-14 rounded-full" />
-    <ShimmerBlock className="h-7 w-16 rounded-full" />
-    <ShimmerBlock className="h-7 w-14 rounded-full" />
-    <ShimmerBlock className="ml-auto h-9 w-9 shrink-0 rounded-full" />
+  <div className="flex items-center justify-end gap-2" aria-hidden="true">
+    <ShimmerBlock className="h-8 w-20 rounded-full" />
+    <ShimmerBlock className="h-8 w-20 rounded-full" />
   </div>
 );
 
 export const WatchlistBodySkeleton = ({
   label = "Cargando Quiero ver",
 }: SkeletonProps) => (
-  <div className="space-y-5" aria-busy="true" aria-label={label}>
+  <div className="space-y-6" aria-busy="true" aria-label={label}>
     <WatchlistFiltersSkeleton />
-    <div className={cn(skeletonWellClass, "space-y-3")}>
-      <div className="flex gap-4 rounded-card border border-line bg-surface p-4 sm:p-5">
-        <ShimmerBlock className="aspect-[2/3] w-[112px] shrink-0 rounded-poster sm:w-[140px]" />
-        <div className="min-w-0 flex-1 space-y-3">
-          <ShimmerBlock className="h-3 w-28 rounded-full" />
-          <ShimmerBlock className="h-8 w-48 rounded-xl sm:w-64" />
-          <ShimmerBlock className="h-4 w-24 rounded-full" />
-          <div className="flex gap-2 pt-1">
-            <ShimmerBlock className="h-8 w-8 rounded-full" />
-            <ShimmerBlock className="h-8 w-8 rounded-full" />
-            <ShimmerBlock className="h-8 w-16 rounded-full" />
-          </div>
-        </div>
+    <div className="flex items-center justify-between">
+      <ShimmerBlock className="h-3 w-20 rounded-full" />
+      <ShimmerBlock className="h-10 w-32 rounded-full" />
+    </div>
+    <div className="-mx-4 flex flex-col items-center gap-4 border-y border-line/60 bg-surface/40 px-5 pb-6 pt-7 sm:mx-0 sm:rounded-card sm:border">
+      <ShimmerBlock className="aspect-[2/3] w-[min(44vw,210px)] rounded-poster" />
+      <ShimmerBlock className="h-3 w-32 rounded-full" />
+      <ShimmerBlock className="h-9 w-56 rounded-xl" />
+      <ShimmerBlock className="h-4 w-40 rounded-full" />
+      <div className="flex w-full max-w-sm gap-2 pt-2">
+        <ShimmerBlock className="h-12 flex-1 rounded-full" />
+        <ShimmerBlock className="h-12 flex-1 rounded-full" />
+        <ShimmerBlock className="size-12 shrink-0 rounded-full" />
       </div>
-      <ul className="divide-y divide-line">
-        {Array.from({ length: 5 }, (_, index) => (
-          <li key={index} className="flex items-center gap-3 px-1 py-2">
-            <ShimmerBlock className="h-4 w-5 shrink-0 rounded" />
-            <ShimmerBlock className="h-14 w-14 shrink-0 rounded-lg" />
-            <div className="min-w-0 flex-1 space-y-2">
-              <ShimmerBlock className="h-4 w-40 rounded-full sm:w-52" />
-              <ShimmerBlock className="h-3 w-24 rounded-full" />
-            </div>
-            <ShimmerBlock className="hidden h-8 w-8 rounded-full sm:block" />
-            <ShimmerBlock className="h-8 w-8 rounded-full" />
-            <ShimmerBlock className="h-8 w-8 rounded-full" />
-          </li>
-        ))}
-      </ul>
+    </div>
+    <div className="grid grid-cols-3 gap-x-3 gap-y-7 sm:grid-cols-4 sm:gap-x-5 lg:grid-cols-5">
+      {Array.from({ length: 6 }, (_, index) => (
+        <div key={index} className="min-w-0 space-y-2 pl-3">
+          <ShimmerBlock className="aspect-[2/3] w-full rounded-poster" />
+          <ShimmerBlock className="h-3.5 w-4/5 rounded-full" />
+          <ShimmerBlock className="h-3 w-1/2 rounded-full" />
+        </div>
+      ))}
     </div>
   </div>
 );
@@ -345,15 +338,15 @@ export const TagsCreateFormSkeleton = () => (
 
 export const TagsBodySkeleton = ({ label = "Cargando etiquetas" }: SkeletonProps) => (
   <div
-    className={cn(skeletonWellClass, "grid grid-cols-2 gap-5 sm:gap-6")}
+    className={cn(skeletonWellClass, listCardGridClass)}
     aria-busy="true"
     aria-label={label}
   >
     {Array.from({ length: 6 }, (_, index) => (
-      <div key={index} className="space-y-3">
-        <ShimmerBlock className="h-[120px] w-full rounded-2xl" />
-        <ShimmerBlock className="mx-auto h-5 w-24 rounded-full" />
-        <ShimmerBlock className="mx-auto h-3 w-16 rounded-full" />
+      <div key={index} className="min-w-0 space-y-2">
+        <ShimmerBlock className="aspect-[3/4] w-full max-w-[124px] rounded-2xl" />
+        <ShimmerBlock className="hidden h-4 w-24 rounded-full sm:block" />
+        <ShimmerBlock className="hidden h-3 w-16 rounded-full sm:block" />
       </div>
     ))}
   </div>

@@ -69,8 +69,9 @@ const run = () => {
     "Quiero ver header does not duplicate the Buscar lupa",
   );
   assert(
-    read("src/components/WatchlistList.tsx").includes("WindowVirtualList"),
-    "Long Quiero ver queues are window-virtualized",
+    read("src/components/WatchlistList.tsx").includes("WatchlistHero") &&
+      read("src/components/WatchlistList.tsx").includes("WatchlistGrid"),
+    "Quiero ver renders a hero for #1 and a ranked grid for the rest",
   );
 
   const ratingLabel = CATALOG_ORDER_OPTIONS.find((option) => option.id === "rating");
@@ -123,8 +124,8 @@ const run = () => {
 
   const listDetail = read("src/app/listas/[id]/page.tsx");
   assert(
-    listDetail.includes("compact") && listDetail.includes('variant="ghost"'),
-    "List detail has a header add CTA and lighter edit chrome",
+    listDetail.includes("compact") && listDetail.includes("pillActionClass"),
+    "List detail has a header add CTA and pill edit chrome",
   );
   assert(
     read("src/components/ListCard.tsx").includes("truncate"),
@@ -133,20 +134,20 @@ const run = () => {
 
   const tags = read("src/app/tags/page.tsx");
   assert(
-    tags.includes("Escribe un nombre arriba") &&
+    tags.includes("Pulsa + arriba") &&
       !tags.includes("Ir a Buscar") &&
       tags.includes('variant="tags"') &&
-      tags.includes("prominent") &&
-      tags.includes("ListsEtiquetasSegment"),
-    "Tags empty points at create form; tags well + segment kept",
+      tags.includes("TagsIndexHeader") &&
+      read("src/components/TagsIndexHeader.tsx").includes("prominent") &&
+      read("src/components/TagsIndexHeader.tsx").includes("ListsEtiquetasSegment"),
+    "Tags empty points at the «+» create toggle; tags well + segment kept",
   );
   assert(
     tags.includes("--stagger-step") &&
       tags.includes('"40ms"') &&
-      tags.includes("card-physics") &&
-      tags.includes("press-scale") &&
-      tags.includes("group"),
-    "Tags grid tightens stagger (40ms) with card-physics / press-scale",
+      tags.includes("ListCard") &&
+      tags.includes('layout="grid"'),
+    "Tags grid tightens stagger (40ms) and reuses ListCard grid layout",
   );
 
   const account = read("src/components/ProfileAccountForm.tsx");
@@ -226,21 +227,23 @@ const run = () => {
   );
   const watchlistList = read("src/components/WatchlistList.tsx");
   assert(
-    watchlistList.includes("WindowVirtualList") &&
-      watchlistList.includes("WATCHLIST_VIRTUALIZE_AFTER") &&
-      watchlistList.includes("WATCHLIST_QUEUE_ESTIMATE"),
-    "Quiero ver queue virtualizes earlier with tuned row estimate",
+    watchlistList.includes("DndContext") &&
+      watchlistList.includes("reorderList") &&
+      watchlistList.includes("isManualOrder"),
+    "Quiero ver Reordenar mode drags/persists and only appears in manual order",
   );
+  const watchlistGrid = read("src/components/WatchlistGrid.tsx");
   assert(
-    watchlistList.includes("danger-well") && watchlistList.includes("staggerStyle"),
-    "Quiero ver list errors use danger-well; short queues stagger",
+    watchlistList.includes("danger-well") && watchlistGrid.includes("staggerStyle"),
+    "Quiero ver list errors use danger-well; grid tiles stagger",
   );
-  const watchlistCard = read("src/components/WatchlistCard.tsx");
+  const watchlistHero = read("src/components/WatchlistHero.tsx");
   assert(
-    watchlistCard.includes("card-physics") &&
-      watchlistCard.includes("press-scale") &&
-      watchlistCard.includes("var(--duration-hover)"),
-    "Quiero ver cards use card-physics / press-scale / duration-hover",
+    watchlistHero.includes("press-scale") &&
+      watchlistHero.includes("var(--duration-hover)") &&
+      watchlistGrid.includes("var(--duration-hover)") &&
+      read("src/components/WatchlistCard.tsx").includes("useSortable"),
+    "Quiero ver hero/grid use press-scale / duration-hover; reorder rows are sortable",
   );
   assert(
     read("src/components/EmptyState.tsx").includes('variant === "watchlist"') &&
@@ -413,15 +416,15 @@ const run = () => {
     "Listas empty uses well; Listas|Etiquetas segment kept",
   );
   assert(
-    read("src/components/ListTitlesGrid.tsx").includes("danger-well") &&
+    read("src/app/listas/[id]/page.tsx").includes("ListTitlesView") &&
       read("src/components/AppChrome.tsx").includes("safe-area-inset-bottom"),
-    "Lista grid errors use danger-well; chrome keeps safe-area",
+    "Lista detail renders ListTitlesView; chrome keeps safe-area",
   );
 
 
   console.log("✓ Fase 3 page polish: historial IA, buscar copy, ficha sheet, Button forms");
   console.log("✓ Fase 3 Diario lote: skeletons por modo, day-sheet affordance, error well");
-  console.log("✓ Fase 3 Quiero ver lote: virtual list, skeleton well, error well, empty polish");
+  console.log("✓ Fase 3 Quiero ver lote: hero + grid, Reordenar, skeleton well, error well, empty polish");
   console.log("✓ Fase 3 Buscar lote: preview sheet, skeleton well, error well, client island split");
   console.log("✓ Fase 3 Ficha lote: LCP poster, action/panels type, delete far, skeleton/error wells");
   console.log("✓ Fase 3 Listas lote: SharedPoster stacks, CTA sheet, skeleton/error wells, PageHeader");
@@ -450,19 +453,10 @@ const run = () => {
       read("src/app/tags/[slug]/loading.tsx").includes("TagDetailBodySkeleton"),
     "Tags loading keeps segment + skeleton wells (index + detail)",
   );
-  const ranking = read("src/components/TitleRankingList.tsx");
   assert(
-    ranking.includes("press-scale") &&
-      ranking.includes("var(--duration-hover)") &&
-      ranking.includes("--stagger-step") &&
-      ranking.includes('"40ms"') &&
-      ranking.includes("SharedPoster"),
-    "Ranking rows use press/hover tokens + tightened stagger",
-  );
-  assert(
-    read("src/components/TagSortLinks.tsx").includes("tab-transition") &&
-      read("src/components/TagSortLinks.tsx").includes("press-scale"),
-    "Tag sort chips use tab-transition + press-scale",
+    read("src/app/tags/[slug]/page.tsx").includes("TAG_ORDER_OPTIONS") &&
+      read("src/app/tags/[slug]/page.tsx").includes("showKindChips={false}"),
+    "Tag detail keeps Tipo + Orden inside the Filtros sheet",
   );
   assert(
     read("src/components/EmptyState.tsx").includes('variant === "tags"') &&
@@ -471,7 +465,7 @@ const run = () => {
       read("src/components/AppChrome.tsx").includes("safe-area-inset-bottom"),
     "Tag detail empty uses tags well + Buscar CTA; chrome keeps safe-area",
   );
-  console.log("✓ Fase 3 Tags lote: stagger 40ms, ranking polish, skeleton/error wells, empty CTA");
+  console.log("✓ Fase 3 Tags lote: skeleton/error wells, empty CTA");
 
   const perfilError = read("src/app/perfil/error.tsx");
   assert(

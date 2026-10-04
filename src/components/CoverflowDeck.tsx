@@ -19,6 +19,7 @@ export const CoverflowDeck = ({
   titles: incomingTitles,
   className,
   listId,
+  tagId,
   variant = "page",
   onActiveChange,
   footer = "full",
@@ -124,10 +125,6 @@ export const CoverflowDeck = ({
       focusSpring.trigger();
     }
   }, [activeIndex, focusSpring, isSheet, onActiveChange, titles]);
-
-  if (titles.length === 0) {
-    return null;
-  }
 
   if (!activeTitle) {
     return null;
@@ -265,6 +262,7 @@ export const CoverflowDeck = ({
             isSheet={isSheet}
             footer={footer}
             listId={listId}
+            tagId={tagId}
             focusClassName={focusSpring.className}
             onHide={handleHide}
             onRestore={handleRestore}

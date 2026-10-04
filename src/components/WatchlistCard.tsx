@@ -1,173 +1,106 @@
 "use client";
 
 import Link from "next/link";
-import { ImdbBadge } from "@/components/ImdbBadge";
-import { Button } from "@/components/Button";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { ListItemOrderControls } from "@/components/ListItemOrderControls";
 import { PosterImage } from "@/components/PosterImage";
 import { PosterPlatformBadge } from "@/components/PosterPlatformBadge";
 import { SharedPoster } from "@/components/SharedPoster";
 import { WatchlistMarkSeenButton } from "@/components/WatchlistMarkSeenButton";
+import type { WatchlistItem } from "@/components/watchlist-types";
+import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
-import type { TitleWithTags } from "@/lib/queries";
-import { compactGenreLabel, titleSynopsis } from "@/lib/title-overview";
 import { focusRing } from "@/lib/ui";
-import type { ListItem, Platform } from "@/db";
 
-type WatchlistItem = ListItem & {
-  title: TitleWithTags;
-};
-
-type WatchlistCardProps = {
+type WatchlistReorderRowProps = {
   item: WatchlistItem;
-  variant: "hero" | "queue";
   position: number;
   canMoveUp: boolean;
   canMoveDown: boolean;
   pendingOrder?: boolean;
-  removeAction: () => void | Promise<void>;
   onMove: (direction: "up" | "down") => void;
-  onMarkedSeen?: () => void;
-  onMarkSeenError?: () => void;
-  preferredPlatforms?: readonly Platform[];
 };
 
-export const WatchlistCard = ({
+/** Edit-mode row: drag handle + arrows; the whole queue reorders in place. */
+export const WatchlistReorderRow = ({
   item,
-  variant,
   position,
   canMoveUp,
   canMoveDown,
   pendingOrder = false,
-  removeAction,
   onMove,
-  onMarkedSeen,
-  onMarkSeenError,
-  preferredPlatforms = [],
-}: WatchlistCardProps) => {
+}: WatchlistReorderRowProps) => {
   const { title } = item;
-  const yearLabel = title.year ? String(title.year) : TITLE_KIND_LABEL[title.kind];
-
-  if (variant === "hero") {
-    return (
-      <article className="card-physics overflow-hidden rounded-card border border-line bg-surface p-4 sm:p-5">
-        <div className="flex gap-4">
-          <WatchlistPoster
-            title={title}
-            size="hero"
-            className="isolate z-0 w-[112px] shrink-0 sm:w-[140px]"
-            posterClassName="rounded-poster transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110"
-            sizes="140px"
-            preferredPlatforms={preferredPlatforms}
-            priority
-            onMarkedSeen={onMarkedSeen}
-            onMarkSeenError={onMarkSeenError}
-          />
-          <div className="min-w-0 flex-1 space-y-3">
-            <div className="flex items-start gap-3">
-              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-sm font-bold text-ink">
-                {position}
-              </span>
-              <div className="min-w-0 space-y-1">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-mist">
-                  Próxima en tu lista
-                </p>
-                <h2 className="font-serif text-2xl leading-tight text-paper sm:text-3xl">
-                  <Link href={`/titulos/${title.id}`} className={`hover:text-accent ${focusRing}`}>
-                    {title.name}
-                  </Link>
-                </h2>
-                <p className="text-sm text-fog">
-                  {yearLabel}
-                  {title.year ? ` · ${TITLE_KIND_LABEL[title.kind]}` : ""}
-                </p>
-              </div>
-            </div>
-            {item.queueNote ? (
-              <p className="line-clamp-3 text-sm text-fog">
-                <span className="mr-2 text-mist">Nota personal</span>
-                {item.queueNote}
-              </p>
-            ) : null}
-            <div className="flex flex-wrap items-center gap-2">
-              <ListItemOrderControls
-                canMoveUp={canMoveUp}
-                canMoveDown={canMoveDown}
-                pending={pendingOrder}
-                onMove={onMove}
-              />
-              <Button type="button" variant="ghost" onClick={removeAction}>
-                Quitar
-              </Button>
-            </div>
-          </div>
-        </div>
-      </article>
-    );
-  }
-
-  const synopsis = titleSynopsis(title.overview);
-  const genreLabel = compactGenreLabel(title.tmdbGenres);
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.titleId });
 
   return (
-    <article
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        "flex items-center gap-3 rounded-2xl px-1 py-2",
-        "transition-[background-color,filter] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
-        "hover:bg-surface/55",
+        "relative flex items-center gap-3 rounded-2xl border bg-surface px-2 py-2",
+        isDragging
+          ? "z-30 border-accent/60 shadow-[0_18px_40px_rgba(0,0,0,0.55)]"
+          : "border-line",
       )}
     >
-      <span className="w-5 shrink-0 text-center text-sm font-semibold text-mist">
+      <button
+        type="button"
+        ref={setActivatorNodeRef}
+        {...attributes}
+        {...listeners}
+        aria-label={`Arrastrar ${title.name}`}
+        className={cn(
+          "inline-flex h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-mist hover:text-paper active:cursor-grabbing",
+          focusRing,
+        )}
+      >
+        <DragHandleIcon />
+      </button>
+      <span
+        className={cn(
+          "w-6 shrink-0 text-center font-serif text-lg font-bold",
+          position === 1 ? "text-accent" : "text-fog",
+        )}
+      >
         {position}
       </span>
-      <WatchlistPoster
-        title={title}
-        size="queue"
-        className="isolate z-0 w-14 shrink-0"
-        posterClassName="rounded-lg transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110"
-        sizes="56px"
-        preferredPlatforms={preferredPlatforms}
-        onMarkedSeen={onMarkedSeen}
-        onMarkSeenError={onMarkSeenError}
-      />
-      <div className="min-w-0 w-[8.5rem] shrink-0 sm:w-[13rem]">
-        <h3 className="truncate font-medium text-paper">
-          <Link href={`/titulos/${title.id}`} className={`hover:text-accent ${focusRing}`}>
-            {title.name}
-          </Link>
-        </h3>
-        <p className="truncate text-sm text-fog">
-          {genreLabel ? `${yearLabel} · ${genreLabel}` : yearLabel}
-        </p>
-        <ImdbBadge rating={title.imdbRating} compact />
+      <div className="w-12 shrink-0">
+        <PosterImage
+          name={title.name}
+          posterPath={title.posterPath}
+          sizes="48px"
+          className="rounded-md"
+        />
       </div>
-      {synopsis ? (
-        <p className="hidden min-w-0 flex-1 line-clamp-2 text-sm leading-5 text-fog sm:block">
-          {synopsis}
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium text-paper">{title.name}</p>
+        <p className="truncate text-xs text-mist">
+          {title.year ? `${title.year} · ` : ""}
+          {TITLE_KIND_LABEL[title.kind]}
         </p>
-      ) : null}
+      </div>
       <ListItemOrderControls
         canMoveUp={canMoveUp}
         canMoveDown={canMoveDown}
         pending={pendingOrder}
         onMove={onMove}
       />
-    </article>
+    </li>
   );
 };
 
-const WatchlistPoster = ({
-  title,
-  size,
-  className,
-  posterClassName,
-  sizes,
-  preferredPlatforms = [],
-  priority = false,
-  onMarkedSeen,
-  onMarkSeenError,
-}: {
+type WatchlistPosterProps = {
   title: WatchlistItem["title"];
   size: "hero" | "queue";
   className: string;
@@ -177,7 +110,19 @@ const WatchlistPoster = ({
   priority?: boolean;
   onMarkedSeen?: () => void;
   onMarkSeenError?: () => void;
-}) => (
+};
+
+export const WatchlistPoster = ({
+  title,
+  size,
+  className,
+  posterClassName,
+  sizes,
+  preferredPlatforms = [],
+  priority = false,
+  onMarkedSeen,
+  onMarkSeenError,
+}: WatchlistPosterProps) => (
   <div className={cn("group relative", className)}>
     <Link
       href={`/titulos/${title.id}`}
@@ -209,4 +154,15 @@ const WatchlistPoster = ({
       size={size}
     />
   </div>
+);
+
+const DragHandleIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="size-5">
+    <circle cx="9" cy="6" r="1.6" />
+    <circle cx="15" cy="6" r="1.6" />
+    <circle cx="9" cy="12" r="1.6" />
+    <circle cx="15" cy="12" r="1.6" />
+    <circle cx="9" cy="18" r="1.6" />
+    <circle cx="15" cy="18" r="1.6" />
+  </svg>
 );

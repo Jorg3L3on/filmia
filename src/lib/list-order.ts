@@ -1,5 +1,6 @@
 import { and, asc, eq } from "drizzle-orm";
 import { db, listItems } from "@/db";
+import { planListReorder } from "@/lib/list-reorder";
 
 export type ListMoveDirection = "up" | "down";
 
@@ -24,6 +25,27 @@ export const swapAdjacentListItems = async (
   const neighbor = items[swapIndex]!;
 
   await swapListItemPositionsAtomic(listId, current, neighbor);
+  return true;
+};
+
+/** Rewrites the whole manual order (0..n-1) in one batch; only changed rows are written. */
+export const reorderListItems = async (listId: string, orderedTitleIds: readonly string[]) => {
+  const current = await db.query.listItems.findMany({
+    where: eq(listItems.listId, listId),
+    columns: { titleId: true, position: true },
+  });
+  const updates = planListReorder(current, orderedTitleIds);
+  const [first, ...rest] = updates.map(({ titleId, position }) =>
+    db
+      .update(listItems)
+      .set({ position })
+      .where(and(eq(listItems.listId, listId), eq(listItems.titleId, titleId))),
+  );
+  if (!first) {
+    return false;
+  }
+
+  await db.batch([first, ...rest]);
   return true;
 };
 

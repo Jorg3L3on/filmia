@@ -217,8 +217,18 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
             </div>
 
             <div className="space-y-2">
-              <p className={fieldLabel}>Plataforma</p>
-              <div role="group" aria-label="Plataforma" className="group flex flex-wrap gap-2">
+              <div className="space-y-0.5">
+                <p className={fieldLabel}>Dónde la vi</p>
+                <p id="platform-hint" className="text-xs text-mist">
+                  Solo para tu registro. Dónde verla hoy se actualiza sola con JustWatch.
+                </p>
+              </div>
+              <div
+                role="group"
+                aria-label="Dónde la vi"
+                aria-describedby="platform-hint"
+                className="group flex flex-wrap gap-2"
+              >
                 <button
                   type="button"
                   aria-pressed={platform === ""}

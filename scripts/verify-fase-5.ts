@@ -137,7 +137,7 @@ const run = () => {
   assert(!exists("src/app/sw.ts"), "Prefer public/sw.js over App Router sw.ts (JOR-219)");
   const sw = read("public/sw.js");
   assert(
-    sw.includes("filmia-assets-v1") &&
+    /filmia-assets-v\d+/.test(sw) &&
       sw.includes("/_next/static/") &&
       sw.includes('mode === "navigate"') &&
       sw.includes('headers.has("rsc")') &&

@@ -42,10 +42,6 @@ const mockResponse = {
 const run = async () => {
   const parsed = parseMxWatchProviders(mockResponse);
 
-  if (!parsed) {
-    throw new Error("Expected parsed MX providers");
-  }
-
   console.log("✓ Mock parse:", {
     flatrate: parsed.flatrate.map((p) => p.name),
     rent: parsed.rent.map((p) => p.name),
@@ -54,10 +50,15 @@ const run = async () => {
   });
 
   const empty = parseMxWatchProviders({ results: { US: { flatrate: [] } } });
-  if (empty !== null) {
-    throw new Error("Expected null for missing MX region");
+  if (
+    empty.link !== null ||
+    empty.flatrate.length > 0 ||
+    empty.rent.length > 0 ||
+    empty.buy.length > 0
+  ) {
+    throw new Error("Expected empty lists for missing MX region");
   }
-  console.log("✓ Empty MX region returns null");
+  console.log("✓ Missing MX region returns empty lists (checked, not available)");
 
   if (!titleNeedsWatchProvidersRefresh(null, null)) {
     throw new Error("Missing cache without fetchedAt should refresh");
@@ -77,9 +78,9 @@ const run = async () => {
   if (isTmdbConfigured()) {
     const live = await fetchMxWatchProviders(1396, TitleKind.SERIES);
     console.log("✓ Live TMDB (Breaking Bad):", {
-      flatrate: live?.flatrate.map((p) => p.name) ?? [],
-      rent: live?.rent.map((p) => p.name) ?? [],
-      buy: live?.buy.map((p) => p.name) ?? [],
+      flatrate: live.flatrate.map((p) => p.name),
+      rent: live.rent.map((p) => p.name),
+      buy: live.buy.map((p) => p.name),
     });
   } else {
     console.log("ℹ TMDB_API_KEY not set — skipped live API test");

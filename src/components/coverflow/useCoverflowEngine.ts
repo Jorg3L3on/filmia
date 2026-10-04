@@ -47,6 +47,14 @@ type CoverflowEngine = {
 
 const EDGE_NAVIGATE_THRESHOLD = 0.42;
 
+/** Which edges a gesture may cross — only those it started resting on. */
+type EdgeArming = { prev: boolean; next: boolean };
+
+const edgeArmingFrom = (index: number, ceiling: number): EdgeArming => ({
+  prev: index <= 0.15,
+  next: index >= ceiling - 0.15,
+});
+
 export const useCoverflowEngine = (
   titlesLength: number,
   isSheet: boolean,
@@ -75,6 +83,7 @@ export const useCoverflowEngine = (
   const motionModeRef = useRef<"idle" | "drag" | "coast">("idle");
   const suppressClick = useRef(false);
   const overscrollRef = useRef(0);
+  const edgeArmedRef = useRef<EdgeArming>({ prev: false, next: false });
   const onEdgeNavigateRef = useRef(onEdgeNavigate);
   const titlesLengthRef = useRef(titlesLength);
   const cardWidthRef = useRef(COVERFLOW_CARD_WIDTH);
@@ -90,7 +99,6 @@ export const useCoverflowEngine = (
   const tickRef = useRef<() => void>(() => {});
 
   const maxIndex = () => Math.max(titlesLengthRef.current - 1, 0);
-
   const tryEdgeNavigate = (direction: CoverflowEdgeDirection) => {
     const handler = onEdgeNavigateRef.current;
     if (!handler) {
@@ -265,14 +273,23 @@ export const useCoverflowEngine = (
 
     const ceiling = maxIndex();
     const overscroll = overscrollRef.current;
-    if (overscroll < -EDGE_NAVIGATE_THRESHOLD && activeIndexRef.current <= 0) {
+    const armed = edgeArmedRef.current;
+    if (
+      armed.prev &&
+      overscroll < -EDGE_NAVIGATE_THRESHOLD &&
+      activeIndexRef.current <= 0
+    ) {
       if (tryEdgeNavigate("prev")) {
         motionModeRef.current = "idle";
         velocityRef.current = 0;
         return;
       }
     }
-    if (overscroll > EDGE_NAVIGATE_THRESHOLD && activeIndexRef.current >= ceiling) {
+    if (
+      armed.next &&
+      overscroll > EDGE_NAVIGATE_THRESHOLD &&
+      activeIndexRef.current >= ceiling
+    ) {
       if (tryEdgeNavigate("next")) {
         motionModeRef.current = "idle";
         velocityRef.current = 0;
@@ -309,6 +326,7 @@ export const useCoverflowEngine = (
     suppressClick.current = false;
     dragStartX.current = event.clientX;
     dragStartIndex.current = displayIndexRef.current;
+    edgeArmedRef.current = edgeArmingFrom(displayIndexRef.current, maxIndex());
     prevPointerX.current = event.clientX;
     prevPointerTime.current = performance.now();
     velocityRef.current = 0;
@@ -400,6 +418,13 @@ export const useCoverflowEngine = (
       }
 
       event.preventDefault();
+      // Trackpad momentum keeps one burst alive (events < WHEEL_SNAP_MS apart).
+      if (wheelSnapTimeout.current == null) {
+        edgeArmedRef.current = edgeArmingFrom(
+          targetIndexRef.current,
+          Math.max(titlesLengthRef.current - 1, 0),
+        );
+      }
       const delta =
         Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
       const ceiling = Math.max(titlesLengthRef.current - 1, 0);
@@ -425,13 +450,22 @@ export const useCoverflowEngine = (
 
       wheelSnapTimeout.current = window.setTimeout(() => {
         const edge = overscrollRef.current;
-        if (edge < -EDGE_NAVIGATE_THRESHOLD && activeIndexRef.current <= 0) {
+        const armed = edgeArmedRef.current;
+        if (
+          armed.prev &&
+          edge < -EDGE_NAVIGATE_THRESHOLD &&
+          activeIndexRef.current <= 0
+        ) {
           if (tryEdgeNavigate("prev")) {
             wheelSnapTimeout.current = null;
             return;
           }
         }
-        if (edge > EDGE_NAVIGATE_THRESHOLD && activeIndexRef.current >= ceiling) {
+        if (
+          armed.next &&
+          edge > EDGE_NAVIGATE_THRESHOLD &&
+          activeIndexRef.current >= ceiling
+        ) {
           if (tryEdgeNavigate("next")) {
             wheelSnapTimeout.current = null;
             return;

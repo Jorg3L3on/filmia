@@ -63,6 +63,7 @@ export const CatalogMoreFilters = ({
         overlayLabel="Cerrar filtros"
         layer="top"
         dragDismiss
+        portal
         panelClassName="max-h-[min(42rem,90dvh)]"
       >
         <div className="flex flex-col items-center px-5 pt-3">

@@ -212,6 +212,21 @@ export const primaryAvailabilityPlatform = (
   return fallback;
 };
 
+/**
+ * Where a title streams now: TMDB data wins once fetched (even if empty); the saved
+ * «Dónde la vi» platform is only a stand-in for titles never checked against TMDB.
+ */
+export const currentAvailabilityPlatform = (
+  watchProviders: WatchProvidersMxData | null,
+  savedPlatform: Platform | null,
+  preferredPlatforms: readonly Platform[] = [],
+): Platform | null =>
+  primaryAvailabilityPlatform(
+    watchProviders?.flatrate,
+    watchProviders ? null : savedPlatform,
+    preferredPlatforms,
+  );
+
 export type PosterAvailabilityBadge = {
   platform: Platform | null;
   extraCount: number;
@@ -275,15 +290,19 @@ export type MinePlatformsFilterResult<T> = {
   missingCache: number;
 };
 
+type PlatformFilterable = { watchProvidersMx?: unknown; platform?: Platform | null };
+
 /**
  * Post-filtro de catálogo (JOR-157).
  *
- * - Pasa si algún provider **flatrate** coincide con las plataformas del usuario.
- * - Sin cache `watchProvidersMx`: se excluye (sin datos de streaming), salvo
+ * - Pasa si algún provider **flatrate** coincide con las plataformas del usuario,
+ *   o si la plataforma guardada en el título (`platform`) es una de ellas — es la
+ *   misma que muestran las tarjetas cuando TMDB no la lista.
+ * - Sin cache `watchProvidersMx` ni plataforma guardada: se excluye, salvo
  *   `includeMissingCache` (Qué ver: unknown ≠ “no está en tus plataformas”).
  * - Prefs vacías: ningún título pasa (la UI debe mostrar CTA a `/perfil`).
  */
-export const applyMinePlatformsFilter = <T extends { watchProvidersMx?: unknown }>(
+export const applyMinePlatformsFilter = <T extends PlatformFilterable>(
   titles: readonly T[],
   userPlatforms: readonly Platform[],
   options: { includeMissingCache?: boolean } = {},
@@ -298,15 +317,20 @@ export const applyMinePlatformsFilter = <T extends { watchProvidersMx?: unknown 
 
   for (const title of titles) {
     const data = parseStoredWatchProviders(title.watchProvidersMx);
-    if (!data) {
-      missingCache += 1;
-      if (includeMissingCache) {
+    if (data) {
+      if (titleAvailableOnUserPlatforms(data, userPlatforms)) {
         visible.push(title);
       }
       continue;
     }
 
-    if (titleAvailableOnUserPlatforms(data, userPlatforms)) {
+    // Never checked against TMDB: the saved «Dónde la vi» is the best guess.
+    if (title.platform != null && userPlatforms.includes(title.platform)) {
+      visible.push(title);
+      continue;
+    }
+    missingCache += 1;
+    if (includeMissingCache) {
       visible.push(title);
     }
   }
@@ -314,7 +338,7 @@ export const applyMinePlatformsFilter = <T extends { watchProvidersMx?: unknown 
   return { visible, missingCache };
 };
 
-export const resolveMinePlatformsCatalog = <T extends { watchProvidersMx?: unknown }>(
+export const resolveMinePlatformsCatalog = <T extends PlatformFilterable>(
   titles: readonly T[],
   minePlatforms: boolean,
   userPlatforms: readonly Platform[],
@@ -331,7 +355,7 @@ export const resolveMinePlatformsCatalog = <T extends { watchProvidersMx?: unkno
   return { titles: visible, missingCache, needsSetup: false };
 };
 
-export const resolveCatalogAvailability = <T extends { watchProvidersMx?: unknown }>(
+export const resolveCatalogAvailability = <T extends PlatformFilterable>(
   titles: readonly T[],
   {
     platforms = [],

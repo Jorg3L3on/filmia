@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { staggerStyle } from "./motion";
+import { staggerStyle } from "./motion-style";
 
 describe("staggerStyle", () => {
   it("sets CSS custom properties for stagger-in", () => {

@@ -15,7 +15,14 @@ const requestOrigin = (request: Request) => {
 
 const SIGNUP_PATH = "/registro";
 
-const PUBLIC_PATHS = [LOGIN_PATH, SIGNUP_PATH, "/api/auth", "/api/poster-ambient"];
+// /api/cron authenticates itself with CRON_SECRET instead of a session.
+const PUBLIC_PATHS = [
+  LOGIN_PATH,
+  SIGNUP_PATH,
+  "/api/auth",
+  "/api/poster-ambient",
+  "/api/cron",
+];
 
 const isPublicPath = (pathname: string) =>
   PUBLIC_PATHS.some(
@@ -25,7 +32,7 @@ const isPublicPath = (pathname: string) =>
 const isStaticAsset = (pathname: string) =>
   pathname.startsWith("/_next/") ||
   pathname === "/favicon.ico" ||
-  pathname === "/logo.png" ||
+  pathname === "/filmia-mark.png" ||
   pathname === "/manifest.webmanifest" ||
   pathname === "/manifest.webmanifest/" ||
   pathname.startsWith("/icon-") ||
@@ -68,6 +75,6 @@ export const proxy = async (request: Request) => {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|logo.png|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|filmia-mark.png|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico)$).*)",
   ],
 };

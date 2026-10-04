@@ -76,10 +76,10 @@
   --radius-card: 14px;
   --radius-sheet: 24px;
   --radius-button: 12px;
-  --z-sheet-preview: 40;
-  --z-sheet: 50;
-  --z-sheet-top: 100;
-  --z-toast: 110;
+  --z-index-sheet-preview: 40;
+  --z-index-sheet: 50;
+  --z-index-sheet-top: 100;
+  --z-index-toast: 110;
 }
 
 /*
@@ -379,18 +379,17 @@ body {
     font-size: 0.625rem;
   }
 
-  .genre-coverflow-active {
-    min-width: 7.5rem;
-    padding: 0.45rem 1rem;
-  }
-
   .genre-coverflow-active .font-serif {
-    font-size: 1.35rem;
+    font-size: 1.5rem;
   }
 
   .genre-coverflow-neighbor {
-    font-size: 0.72rem;
-    max-width: 5.5rem;
+    font-size: 0.58rem;
+    max-width: 5.75rem;
+  }
+
+  .genre-coverflow-dots {
+    margin-top: 0.2rem;
   }
 
   .diario-que-ver-deck {
@@ -518,20 +517,22 @@ html[data-que-ver-grade="live"] body {
   inset: -18% -12% -24%;
   z-index: 0;
   overflow: hidden;
-  /* Soft top edge so grade/haze never hard-cuts under logo/chrome. */
+  /* Soft top + bottom edges so grade/vignette never hard-cut under logo or above the footer. */
   -webkit-mask-image: linear-gradient(
     180deg,
     transparent 0%,
     rgb(0 0 0 / 0.4) 10%,
     #000 24%,
-    #000 100%
+    #000 72%,
+    transparent 100%
   );
   mask-image: linear-gradient(
     180deg,
     transparent 0%,
     rgb(0 0 0 / 0.4) 10%,
     #000 24%,
-    #000 100%
+    #000 72%,
+    transparent 100%
   );
 }
 
@@ -772,14 +773,16 @@ html[data-que-ver-grade="live"] body {
   width: min(96%, 820px);
   height: min(96%, 680px);
   transform: translate(-50%, -50%);
+  /* closest-side reaches transparent inside the box: no blur, because the mask
+     clips a blur halo to the border-box and leaves a hard vertical seam. */
   background: radial-gradient(
-    ellipse at center,
+    ellipse closest-side at center,
     rgb(var(--que-ver-glow, 124 156 255) / 0.58),
-    rgb(var(--que-ver-glow, 124 156 255) / 0.24) 36%,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.08) 58%,
-    transparent 78%
+    rgb(var(--que-ver-glow, 124 156 255) / 0.3) 34%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.12) 62%,
+    rgb(var(--que-ver-glow, 124 156 255) / 0.03) 84%,
+    transparent 100%
   );
-  filter: blur(52px);
   opacity: 1;
   /* Soft top so glow never reads as a hard plate under Filmia. */
   -webkit-mask-image: linear-gradient(
@@ -803,116 +806,164 @@ html[data-que-ver-grade="live"] body {
 .genre-coverflow {
   min-height: 2.75rem;
   isolation: isolate;
+  padding-block: 0.15rem 0.35rem;
 }
 
+/* Single poster-tinted halo behind the active title — no plate, no box. */
 .genre-coverflow-glow {
   pointer-events: none;
   position: absolute;
-  top: 50%;
+  top: 42%;
+  left: 50%;
   z-index: 0;
-  width: 4.5rem;
-  height: 2.4rem;
-  transform: translateY(-50%);
-  filter: blur(18px);
-  opacity: 0.55;
-}
-
-.genre-coverflow-glow-left {
-  left: 8%;
+  width: min(62%, 15rem);
+  height: 2.6rem;
+  transform: translate(-50%, -50%);
   background: radial-gradient(
     ellipse at center,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.45),
-    transparent 70%
+    rgb(var(--que-ver-glow, 124 156 255) / 0.42),
+    rgb(var(--que-ver-glow, 124 156 255) / 0.12) 55%,
+    transparent 75%
   );
-}
-
-.genre-coverflow-glow-right {
-  right: 8%;
-  background: radial-gradient(
-    ellipse at center,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.38),
-    transparent 70%
-  );
+  filter: blur(16px);
+  transition: background var(--duration-morph) var(--ease-out);
 }
 
 .genre-coverflow-active {
   position: relative;
   z-index: 2;
-  min-width: 8.5rem;
-  max-width: 58%;
-  border-radius: 14px;
-  border: 1px solid rgb(255 255 255 / 0.28);
-  background: linear-gradient(
-    165deg,
-    rgb(255 255 255 / 0.16),
-    rgb(255 255 255 / 0.06) 55%,
-    rgb(0 0 0 / 0.12)
-  );
-  box-shadow:
-    0 1px 0 rgb(255 255 255 / 0.12) inset,
-    0 8px 24px rgb(0 0 0 / 0.28);
-  -webkit-backdrop-filter: blur(14px) saturate(1.15);
-  backdrop-filter: blur(14px) saturate(1.15);
-  padding: 0.55rem 1.15rem;
+  min-width: 0;
+  max-width: 56%;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  padding: 0.1rem 0.85rem;
   color: var(--paper);
-  opacity: 1;
 }
 
 .genre-coverflow-active .font-serif {
   display: block;
-  font-size: 1.55rem;
+  overflow: hidden;
+  font-size: 1.75rem;
+  font-style: italic;
+  font-weight: 500;
   line-height: 1.15;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-shadow:
+    0 0 18px rgb(var(--que-ver-glow, 124 156 255) / 0.55),
+    0 1px 2px rgb(0 0 0 / 0.45);
+  animation: genre-coverflow-title-in var(--duration-enter) var(--ease-out) both;
 }
 
+@keyframes genre-coverflow-title-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* Neighbors speak the same language as the Qué ver / Historial toggle. */
 .genre-coverflow-neighbor {
   z-index: 1;
   display: inline-flex;
-  max-width: 6.25rem;
+  max-width: 6.75rem;
+  min-width: 0;
   flex: 1 1 0;
   align-items: center;
-  gap: 0.2rem;
+  gap: 0.3rem;
   border: 0;
+  border-radius: 9999px;
   background: transparent;
-  padding: 0.35rem 0.4rem;
-  color: var(--paper);
-  font-size: 0.78rem;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  opacity: 0.52;
-  filter: blur(0.55px);
+  padding: 0.4rem 0.5rem;
+  color: var(--fog);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.8;
   transition:
     opacity var(--duration-hover) var(--ease-out),
-    filter var(--duration-hover) var(--ease-out);
-}
-
-.genre-coverflow-neighbor:hover,
-.genre-coverflow-neighbor:focus-visible {
-  opacity: 0.78;
-  filter: blur(0);
+    color var(--duration-hover) var(--ease-out);
 }
 
 .genre-coverflow-neighbor-prev {
   justify-content: flex-end;
   text-align: right;
+  -webkit-mask-image: linear-gradient(90deg, rgb(0 0 0 / 0.6), #000 32%);
+  mask-image: linear-gradient(90deg, rgb(0 0 0 / 0.6), #000 32%);
 }
 
 .genre-coverflow-neighbor-next {
   justify-content: flex-start;
   text-align: left;
+  -webkit-mask-image: linear-gradient(270deg, rgb(0 0 0 / 0.6), #000 32%);
+  mask-image: linear-gradient(270deg, rgb(0 0 0 / 0.6), #000 32%);
+}
+
+.genre-coverflow-neighbor:hover,
+.genre-coverflow-neighbor:focus-visible {
+  color: var(--paper);
+  opacity: 1;
 }
 
 .genre-coverflow-neighbor-spacer {
   flex: 1 1 0;
-  max-width: 6.25rem;
+  max-width: 6.75rem;
   min-height: 1px;
 }
 
 .genre-coverflow-chevron {
   flex-shrink: 0;
-  font-size: 0.95rem;
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 400;
+  letter-spacing: 0;
   line-height: 1;
-  opacity: 0.7;
+  transition: transform var(--duration-hover) var(--ease-out);
+}
+
+.genre-coverflow-neighbor-prev:hover .genre-coverflow-chevron {
+  transform: translateX(-2px);
+}
+
+.genre-coverflow-neighbor-next:hover .genre-coverflow-chevron {
+  transform: translateX(2px);
+}
+
+/* Position rail — active dot stretches into an accent pill. */
+.genre-coverflow-dots {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+}
+
+.genre-coverflow-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.2);
+  transition:
+    width var(--duration-morph) var(--ease-out),
+    background-color var(--duration-morph) var(--ease-out),
+    box-shadow var(--duration-morph) var(--ease-out);
+}
+
+.genre-coverflow-dot.is-active {
+  width: 18px;
+  background: var(--accent);
+  box-shadow: 0 0 10px rgb(var(--que-ver-glow, 124 156 255) / 0.7);
 }
 
 /* Compact destination footprint — fits genre+arrow+Desliza in the side gutter. */
@@ -926,33 +977,88 @@ html[data-que-ver-grade="live"] body {
   margin-top: -5.875rem;
 }
 
-/* Frosted destination side slot — continuum into next/prev genre.
+/* Tinted-glass destination side slot — same chrome family as the mode toggle / slider.
  * Specificity must beat .coverflow-card.is-cinematic .coverflow-card-face { border:0 }. */
 .coverflow-card.coverflow-destination.is-cinematic .coverflow-destination-face,
 .coverflow-card.coverflow-destination.is-cinematic.is-focused .coverflow-destination-face {
   border-width: 1px;
   border-style: solid;
-  border-color: rgb(255 255 255 / 0.5);
-  background: linear-gradient(
-    165deg,
-    rgb(255 255 255 / 0.42),
-    rgb(255 255 255 / 0.2) 42%,
-    rgb(14 16 22 / 0.78)
-  );
+  border-color: rgb(255 255 255 / 0.12);
+  background:
+    radial-gradient(
+      ellipse 120% 80% at var(--dest-glow-x, 0%) 0%,
+      rgb(var(--que-ver-glow, 124 156 255) / 0.26),
+      transparent 70%
+    ),
+    linear-gradient(180deg, rgb(18 22 28 / 0.62), rgb(8 10 13 / 0.78));
   box-shadow:
-    0 1px 0 rgb(255 255 255 / 0.28) inset,
-    0 18px 40px rgb(0 0 0 / 0.55);
-  -webkit-backdrop-filter: blur(18px) saturate(1.35);
-  backdrop-filter: blur(18px) saturate(1.35);
+    0 1px 0 rgb(255 255 255 / 0.08) inset,
+    0 18px 40px rgb(0 0 0 / 0.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  backdrop-filter: blur(16px) saturate(1.2);
+  transition:
+    border-color var(--duration-hover) var(--ease-out),
+    background-color var(--duration-hover) var(--ease-out);
   /* Destination face stays sharp — labels must read at arm's length. */
   filter: none !important;
 }
 
-.coverflow-card.coverflow-destination .font-serif {
+.coverflow-card.coverflow-destination[data-coverflow-destination="next"] {
+  --dest-glow-x: 100%;
+}
+
+.coverflow-card.coverflow-destination.is-cinematic .coverflow-destination-face:hover {
+  border-color: rgb(255 255 255 / 0.22);
+}
+
+.coverflow-destination-kicker {
+  color: var(--fog);
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.coverflow-destination-name {
+  max-width: 100%;
+  overflow-wrap: normal;
   color: var(--paper);
+  font-size: 1.15rem;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
   text-shadow:
-    0 1px 2px rgb(0 0 0 / 0.75),
-    0 0 18px rgb(0 0 0 / 0.35);
+    0 0 14px rgb(var(--que-ver-glow, 124 156 255) / 0.45),
+    0 1px 2px rgb(0 0 0 / 0.6);
+}
+
+.coverflow-destination-name.is-long {
+  font-size: 0.85rem;
+}
+
+.coverflow-destination-arrow {
+  display: inline-flex;
+  width: 1.75rem;
+  height: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.15rem;
+  border: 1px solid rgb(124 156 255 / 0.35);
+  border-radius: 9999px;
+  background: rgb(124 156 255 / 0.12);
+  color: var(--accent);
+  box-shadow: 0 0 12px rgb(var(--que-ver-glow, 124 156 255) / 0.35);
+  transition: transform var(--duration-hover) var(--ease-out);
+}
+
+[data-coverflow-destination="prev"] .coverflow-destination-face:hover .coverflow-destination-arrow {
+  transform: translateX(-2px);
+}
+
+[data-coverflow-destination="next"] .coverflow-destination-face:hover .coverflow-destination-arrow {
+  transform: translateX(2px);
 }
 
 /* Mode toggle — chrome soft but readable (Qué ver / Historial at arm's length). */
@@ -1033,14 +1139,15 @@ body:has(.diario-que-ver-shell) header.site-header {
   content: "";
   pointer-events: none;
   position: absolute;
-  inset: -0.35rem -0.75rem -0.45rem;
+  inset: -1.25rem -1.5rem -1.5rem;
   z-index: -1;
-  border-radius: 0.85rem;
-  background: linear-gradient(
-    to bottom,
-    rgb(0 0 0 / 0) 0%,
-    rgb(0 0 0 / 0.35) 45%,
-    rgb(0 0 0 / 0.28) 100%
+  /* Edgeless scrim: reaches transparent before every edge so no plate corners show. */
+  background: radial-gradient(
+    ellipse closest-side at 50% 55%,
+    rgb(0 0 0 / 0.42) 0%,
+    rgb(0 0 0 / 0.3) 45%,
+    rgb(0 0 0 / 0.1) 78%,
+    transparent 100%
   );
 }
 
@@ -1362,7 +1469,6 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
 
   .coverflow-soft-glow {
     opacity: 0.9;
-    filter: blur(40px);
   }
 
   .que-ver-atmosphere-grain {
@@ -1408,7 +1514,11 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .genre-coverflow-neighbor {
-    filter: none;
+  .genre-coverflow-active .font-serif {
+    animation: none;
+  }
+
+  .genre-coverflow-dot {
+    transition: none;
   }
 }

@@ -152,7 +152,9 @@ assert(
   "PosterStack wraps posters in SharedPoster for list morph",
 );
 assert(
-  tagsPage.includes("stagger-in") && tagsPage.includes("card-physics"),
+  tagsPage.includes("stagger-in") &&
+    tagsPage.includes("<ListCard") &&
+    listCard.includes("card-physics"),
   "Tags grid uses stagger + card-physics",
 );
 assert(

@@ -1,6 +1,10 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { CatalogFilters } from "@/components/CatalogFilters";
+import { addTitleToTag, deleteTag } from "@/app/actions/tags";
+import { AddTitleToListCta } from "@/components/AddTitleToListCta";
+import { DeleteCollectionButton } from "@/components/DeleteCollectionButton";
+import { EditTagButton } from "@/components/EditTagButton";
 import { EmptyState } from "@/components/EmptyState";
 import {
   MinePlatformsEmpty,
@@ -8,18 +12,20 @@ import {
   MissingStreamingDataNote,
 } from "@/components/MinePlatformsNotice";
 import { TagDetailBodySkeleton } from "@/components/PageSkeletons";
-import { Button } from "@/components/Button";
 import { PageHeader } from "@/components/PageHeader";
-import { TagSortLinks } from "@/components/TagSortLinks";
 import { TitleDeckView } from "@/components/TitleDeckView";
-import { TitleRankingList } from "@/components/TitleRankingList";
-import type { DeckViewMode } from "@/components/DeckViewToggle";
 import {
   parseKindFilter,
   parsePlatformFilters,
+  TAG_ORDER_OPTIONS,
   titleMatchesKind,
 } from "@/lib/catalog-filters";
-import { getTagBySlug, getTitles, getUserStreamingPlatforms } from "@/lib/queries";
+import {
+  getTagBySlug,
+  getTitleOptionsOutsideTag,
+  getTitles,
+  getUserStreamingPlatforms,
+} from "@/lib/queries";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import {
   catalogHref,
@@ -35,7 +41,6 @@ export const dynamic = "force-dynamic";
 type TagDetailPageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{
-    view?: string;
     sort?: string;
     minePlatforms?: string | string[];
     seriesStatus?: string | string[];
@@ -49,9 +54,6 @@ export const generateMetadata = async ({ params }: TagDetailPageProps) => {
   const tag = await getTagBySlug(slug);
   return { title: tag?.name ?? "Etiqueta" };
 };
-
-const isView = (value: string | undefined): value is DeckViewMode =>
-  value === "deck" || value === "grid";
 
 export default function TagDetailPage({
   params,
@@ -70,7 +72,6 @@ const TagDetail = async ({
 }: TagDetailPageProps) => {
   const { slug } = await params;
   const query = await searchParams;
-  const view: DeckViewMode = isView(query.view) ? query.view : "deck";
   const sort: CatalogSort = isCatalogSort(query.sort) ? query.sort : "rating";
   const minePlatforms = parseMinePlatforms(query.minePlatforms);
   const seriesStatus = parseSeriesStatusFilter(query.seriesStatus);
@@ -87,6 +88,8 @@ const TagDetail = async ({
     notFound();
   }
 
+  const addableTitles = await getTitleOptionsOutsideTag(tag.id);
+
   const kindTitles = taggedTitles.filter((title) =>
     titleMatchesKind(title.kind, kindFilter),
   );
@@ -97,33 +100,26 @@ const TagDetail = async ({
   });
   const titles = catalog.titles;
   const pathname = tagHref(tag.slug);
-  const hrefFor = (mode: DeckViewMode) =>
-    catalogHref(pathname, {
-      view: mode,
-      sort: sort === "rating" ? null : sort,
-      minePlatforms,
-      seriesStatus,
-      kind: kindFilter,
-      platforms,
-    });
   const clearHref = catalogHref(pathname, {
-    view,
     sort: sort === "rating" ? null : sort,
   });
-
-  const countLabel =
-    titles.length === 1 ? "1 título" : `${titles.length} títulos`;
 
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Ranking"
         title={tag.name}
-        description={`${countLabel} con esta etiqueta. Ordena por nota o por fecha vista. Filtra por estado de serie o por tus plataformas.`}
+        backHref="/tags"
+        backLabel="Todas las etiquetas"
         actions={
-          <Button href="/tags" variant="ghost">
-            Todas las etiquetas
-          </Button>
+          <>
+            <AddTitleToListCta
+              action={addTitleToTag.bind(null, tag.id)}
+              target="etiqueta"
+              titles={addableTitles}
+              compact
+            />
+            <EditTagButton tagId={tag.id} tagName={tag.name} />
+          </>
         }
       />
 
@@ -131,7 +127,6 @@ const TagDetail = async ({
         tags={[]}
         selectedSlugs={[]}
         pathname={pathname}
-        view={view}
         sort={sort === "rating" ? undefined : sort}
         defaultSort="rating"
         minePlatforms={minePlatforms}
@@ -140,46 +135,56 @@ const TagDetail = async ({
         seriesStatus={seriesStatus}
         kind={kindFilter}
         platforms={platforms}
-      />
-
-      <TagSortLinks
-        pathname={pathname}
-        current={sort}
-        view={view}
-        minePlatforms={minePlatforms}
-        seriesStatus={seriesStatus}
+        showKindChips={false}
+        orderOptions={TAG_ORDER_OPTIONS}
       />
 
       {catalog.needsSetup ? (
         <MinePlatformsSetupCta />
-      ) : titles.length === 0 && minePlatforms ? (
+      ) : taggedTitles.length === 0 ? (
+        <EmptyState
+          variant="tags"
+          title="Nada en esta etiqueta"
+          description="Pulsa Agregar para sumar títulos de tu catálogo, o busca uno nuevo."
+          actionHref="/buscar"
+          actionLabel="Ir a Buscar"
+        />
+      ) : titles.length === 0 && (minePlatforms || platforms.length > 0) ? (
         <>
           <MissingStreamingDataNote count={catalog.missingCache} />
           <MinePlatformsEmpty
-            userPlatforms={userPlatforms}
+            userPlatforms={platforms.length > 0 ? platforms : userPlatforms}
             actionHref={clearHref}
           />
         </>
       ) : titles.length === 0 ? (
         <EmptyState
           variant="tags"
-          title="Nada en esta etiqueta"
-          description="Asigna el tag desde la ficha de un título, o busca uno nuevo."
-          actionHref="/buscar"
-          actionLabel="Ir a Buscar"
+          title="Nada con estos filtros"
+          description="Ningún título de esta etiqueta coincide. Prueba con otro tipo."
+          actionHref={clearHref}
+          actionLabel="Quitar filtros"
         />
       ) : (
         <>
           <MissingStreamingDataNote count={catalog.missingCache} />
-          <TitleDeckView
-            heading="Mazo"
-            titles={titles}
-            mode={view}
-            hrefFor={hrefFor}
-          />
-          <TitleRankingList titles={titles} />
+          <TitleDeckView titles={titles} tagId={tag.id} />
         </>
       )}
+
+      <footer className="mt-16 flex justify-center border-t border-line/70 pt-8 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <DeleteCollectionButton
+          action={deleteTag.bind(null, tag.id)}
+          redirectHref="/tags"
+          label="Eliminar etiqueta"
+          name={tag.name}
+          impact={
+            taggedTitles.length === 0
+              ? "No está asignada a ningún título."
+              : `Se quitará de ${taggedTitles.length === 1 ? "1 título" : `${taggedTitles.length} títulos`}.`
+          }
+        />
+      </footer>
     </div>
   );
 }

@@ -81,10 +81,11 @@ export const useCatalogFiltersState = ({
       minePlatforms: next.minePlatforms,
     });
 
+  /** Sort lives in its own sheet — Limpiar keeps it and the badge ignores it. */
   const clearDraft: CatalogFilterDraft = {
     kind: "ALL",
     platforms: [],
-    sort: defaultSort,
+    sort: applied.sort,
     tags: [],
     seriesStatus: undefined,
     minePlatforms: false,
@@ -92,12 +93,14 @@ export const useCatalogFiltersState = ({
 
   const sheetActiveCount = countSheetFilters({
     platforms,
-    sort: applied.sort,
-    defaultSort,
     tags: selectedSlugs,
     seriesStatus,
     minePlatforms,
   });
+
+  const handleSortSelect = (nextSort: CatalogSort) => {
+    router.push(hrefFor({ ...applied, sort: nextSort }));
+  };
 
   const handleApply = () => {
     router.push(hrefFor(draft));
@@ -121,5 +124,6 @@ export const useCatalogFiltersState = ({
     handleClose,
     handleApply,
     handleClear,
+    handleSortSelect,
   };
 };

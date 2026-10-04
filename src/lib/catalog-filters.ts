@@ -9,15 +9,27 @@ export const KIND_CHIPS = [
   { value: TitleKind.SERIES, label: "Series" },
 ] as const;
 
+export type CatalogOrderIconName = "clock" | "star" | "az" | "eye";
+
+export type CatalogOrderOption = {
+  id: CatalogSort;
+  label: string;
+  icon: CatalogOrderIconName;
+};
+
 export const CATALOG_ORDER_OPTIONS = [
   { id: "recent" as const, label: "Recientes", icon: "clock" },
   { id: "rating" as const, label: "Nota", icon: "star" },
   { id: "name" as const, label: "Título", icon: "az" },
-] as const satisfies ReadonlyArray<{
-  id: CatalogSort;
-  label: string;
-  icon: "clock" | "star" | "az";
-}>;
+] as const satisfies ReadonlyArray<CatalogOrderOption>;
+
+/** Tag detail also ranks by watch date. */
+export const TAG_ORDER_OPTIONS = [
+  { id: "rating", label: "Nota", icon: "star" },
+  { id: "watched", label: "Fecha vista", icon: "eye" },
+  { id: "name", label: "Título", icon: "az" },
+  { id: "recent", label: "Recientes", icon: "clock" },
+] as const satisfies ReadonlyArray<CatalogOrderOption>;
 
 const FEATURED_MX: Platform[] = [
   Platform.NETFLIX,

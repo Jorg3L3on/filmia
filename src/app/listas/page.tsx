@@ -1,10 +1,14 @@
 import { Suspense } from "react";
 import type { CSSProperties, ReactNode } from "react";
-import { Button } from "@/components/Button";
+import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
-import { ListCard } from "@/components/ListCard";
+import { ListCard, listCardGridClass } from "@/components/ListCard";
 import { ListsEtiquetasSegment } from "@/components/ListsEtiquetasSegment";
-import { PageHeader } from "@/components/PageHeader";
+import {
+  SegmentActionTooltip,
+  SegmentPlusIcon,
+  segmentActionClass,
+} from "@/components/SegmentAction";
 import { ListsBodySkeleton } from "@/components/PageSkeletons";
 import { listHref, partitionUserLists } from "@/lib/lists";
 import { getLists } from "@/lib/queries";
@@ -15,23 +19,37 @@ export const metadata = {
   title: "Listas",
 } as const;
 
-const listCollectionClassName =
-  "rail -mx-4 flex gap-8 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4";
+type ListCollectionLayout = "rail" | "grid";
 
-const ListCollection = ({ children }: { children: ReactNode }) => (
-  <ul className={listCollectionClassName}>{children}</ul>
-);
+const listCollectionClassName: Record<ListCollectionLayout, string> = {
+  rail: "rail -mx-4 flex gap-8 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4",
+  grid: listCardGridClass,
+};
+
+const ListCollection = ({
+  children,
+  layout = "rail",
+}: {
+  children: ReactNode;
+  layout?: ListCollectionLayout;
+}) => <ul className={listCollectionClassName[layout]}>{children}</ul>;
 
 export default function ListsPage() {
   return (
     <div className="space-y-8">
-      <div className="space-y-4">
-        <PageHeader
-          title="Listas"
-          actions={<Button href="/listas/nueva">Nueva lista</Button>}
-        />
-        <ListsEtiquetasSegment />
-      </div>
+      <h1 className="sr-only">Listas</h1>
+      <ListsEtiquetasSegment
+        action={
+          <Link
+            href="/listas/nueva"
+            aria-label="Nueva lista"
+            className={segmentActionClass}
+          >
+            <SegmentPlusIcon />
+            <SegmentActionTooltip label="Crear lista" />
+          </Link>
+        }
+      />
       <Suspense fallback={<ListsBodySkeleton />}>
         <ListsBody />
       </Suspense>
@@ -88,7 +106,7 @@ const ListsBody = async () => {
             actionLabel="Nueva lista"
           />
         ) : (
-          <ListCollection>
+          <ListCollection layout="grid">
             {custom.map((list, index) => (
               <li
                 key={list.id}
@@ -102,6 +120,7 @@ const ListsBody = async () => {
                   description={list.description}
                   itemCount={list._count.items}
                   posters={list.items.map((item) => item.title)}
+                  layout="grid"
                 />
               </li>
             ))}

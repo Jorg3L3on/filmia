@@ -66,6 +66,19 @@ export const iconButtonClass = cn(
   focusRing,
 );
 
+const pillActionBase =
+  "press-scale group inline-flex h-10 items-center gap-1.5 rounded-full pl-3 pr-4 text-sm font-semibold transition-colors duration-[var(--duration-hover)]";
+
+/** Header actions on collection pages (Agregar / Editar). */
+export const pillActionClass = {
+  primary: cn(pillActionBase, "bg-accent text-ink hover:bg-accent-hover", focusRing),
+  neutral: cn(
+    pillActionBase,
+    "border border-chrome bg-well text-paper hover:border-accent/50 hover:text-accent",
+    focusRing,
+  ),
+} as const;
+
 export const wellClass = "rounded-2xl border border-line bg-surface";
 
 export const cardClass = "rounded-2xl border border-line bg-surface";

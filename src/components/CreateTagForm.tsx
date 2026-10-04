@@ -13,6 +13,7 @@ type CreateTagFormProps = {
   placeholder?: string;
   /** Index CTA chrome: well around the create field. */
   prominent?: boolean;
+  autoFocus?: boolean;
 };
 
 export const CreateTagForm = ({
@@ -22,6 +23,7 @@ export const CreateTagForm = ({
   pendingLabel = "Creando…",
   placeholder = "Nueva etiqueta",
   prominent = false,
+  autoFocus = false,
 }: CreateTagFormProps) => {
   const handleSubmit = onCreate
     ? (event: FormEvent<HTMLFormElement>) => {
@@ -51,6 +53,7 @@ export const CreateTagForm = ({
           placeholder={placeholder}
           className={fieldClass}
           autoComplete="off"
+          autoFocus={autoFocus}
           aria-label="Nombre de la nueva etiqueta"
         />
       </label>

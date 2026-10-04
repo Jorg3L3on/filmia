@@ -19,11 +19,11 @@ export const Logo = ({ size = "md", showWordmark = true, className }: LogoProps)
   return (
     <span className={cn("inline-flex items-center gap-2.5", className)}>
       <Image
-        src="/logo.png"
+        src="/filmia-mark.png"
         alt=""
         width={image}
         height={image}
-        className="h-auto w-auto rounded-poster"
+        className="shrink-0"
         priority
       />
       {showWordmark ? (

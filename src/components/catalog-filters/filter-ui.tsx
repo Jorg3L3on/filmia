@@ -1,4 +1,5 @@
 import { PlatformLogo } from "@/components/PlatformLogo";
+import type { CatalogOrderIconName } from "@/lib/catalog-filters";
 import { cn } from "@/lib/cn";
 import { PLATFORM_LABEL } from "@/lib/labels";
 import type { Platform } from "@/db";
@@ -86,7 +87,16 @@ export const CatalogTvIcon = () => (
   </svg>
 );
 
-export const CatalogOrderIcon = ({ name }: { name: "clock" | "star" | "az" }) => {
+export const CatalogOrderIcon = ({ name }: { name: CatalogOrderIconName }) => {
+  if (name === "eye") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
+        <path strokeLinejoin="round" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+        <circle cx="12" cy="12" r="2.75" />
+      </svg>
+    );
+  }
+
   if (name === "star") {
     return (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">

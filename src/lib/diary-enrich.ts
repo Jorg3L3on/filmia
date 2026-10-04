@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db, titles, type TitleKind } from "@/db";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
+import { runPool } from "@/lib/run-pool";
 import { titleExtrasPatch } from "@/lib/title-extras-core";
 import {
   getTmdbDetails,
@@ -43,32 +44,6 @@ const titleNeedsDiaryExtras = (title: DiaryEnrichTitle) =>
 /** Continuum: also refresh posters that may be stale/404 once we have a tmdbId. */
 const titleNeedsPosterRefresh = (title: DiaryEnrichTitle) =>
   Boolean(title.tmdbId) && Boolean(title.posterPath);
-
-const runPool = async <T>(
-  items: readonly T[],
-  concurrency: number,
-  worker: (item: T) => Promise<void>,
-) => {
-  if (items.length === 0) {
-    return;
-  }
-
-  let cursor = 0;
-  const run = async () => {
-    while (cursor < items.length) {
-      const index = cursor;
-      cursor += 1;
-      const item = items[index];
-      if (item !== undefined) {
-        await worker(item);
-      }
-    }
-  };
-
-  await Promise.all(
-    Array.from({ length: Math.min(concurrency, items.length) }, () => run()),
-  );
-};
 
 export const pickDiaryTmdbMatch = (
   results: readonly TmdbSearchResult[],

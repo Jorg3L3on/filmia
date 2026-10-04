@@ -1,10 +1,10 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { deleteList } from "@/app/actions/lists";
+import { addTitleToList, deleteList } from "@/app/actions/lists";
 import { AddTitleToListCta } from "@/components/AddTitleToListCta";
 import { CatalogFilters } from "@/components/CatalogFilters";
-import { Button } from "@/components/Button";
-import { ConfirmSubmit } from "@/components/ConfirmSubmit";
+import { DeleteCollectionButton } from "@/components/DeleteCollectionButton";
 import { EmptyState } from "@/components/EmptyState";
 import { ListTitlesView } from "@/components/ListTitlesView";
 import {
@@ -14,7 +14,6 @@ import {
 } from "@/components/MinePlatformsNotice";
 import { ListsBodySkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/PageHeader";
-import type { DeckViewMode } from "@/components/DeckViewToggle";
 import {
   parseCatalogOrder,
   parseKindFilter,
@@ -27,6 +26,8 @@ import { getListById, getTagFilters, getTitleOptionsOutsideList, getUserStreamin
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
+import { pillActionClass } from "@/lib/ui";
+import { PencilIcon } from "@/components/SegmentAction";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,6 @@ export default function ListDetailPage({
 }: {
   params: Promise<{ id: string }>;
   searchParams: Promise<{
-    view?: string;
     tag?: string | string[];
     minePlatforms?: string | string[];
     seriesStatus?: string | string[];
@@ -58,7 +58,6 @@ const ListDetail = async ({
 }: {
   params: Promise<{ id: string }>;
   searchParams: Promise<{
-    view?: string;
     tag?: string | string[];
     minePlatforms?: string | string[];
     seriesStatus?: string | string[];
@@ -69,7 +68,6 @@ const ListDetail = async ({
 }) => {
   const { id } = await params;
   const query = await searchParams;
-  const view: DeckViewMode = query.view === "grid" ? "grid" : "deck";
   const selectedTags = parseTagSlugs(query.tag);
   const minePlatforms = parseMinePlatforms(query.minePlatforms);
   const seriesStatus = parseSeriesStatusFilter(query.seriesStatus);
@@ -111,32 +109,30 @@ const ListDetail = async ({
         : statusItems,
     sort,
   );
-  const deleteAction = deleteList.bind(null, list.id);
+  const addAction = addTitleToList.bind(null, list.id);
   const fixed = isFixedListSlug(list.slug);
   const empty = emptyStateForList(list.slug);
   const filteredEmpty = list.items.length > 0 && visibleItems.length === 0;
-  const clearHref = catalogHref(`/listas/${list.id}`, { view });
+  const clearHref = catalogHref(`/listas/${list.id}`, {});
 
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={fixed ? "Lista diaria" : "Lista"}
         title={list.name}
         description={list.description ?? undefined}
+        backHref="/listas"
+        backLabel="Todas las listas"
         actions={
           <>
-            <AddTitleToListCta listId={list.id} titles={availableTitles} compact />
-            <Button href={`/listas/${list.id}/editar`} variant="ghost" size="sm">
-              {fixed ? "Editar descripción" : "Editar"}
-            </Button>
-            {fixed ? null : (
-              <ConfirmSubmit
-                label="Borrar lista"
-                confirmMessage={`¿Borrar la lista “${list.name}”?`}
-                href="/listas"
-                action={deleteAction}
-              />
-            )}
+            <AddTitleToListCta action={addAction} titles={availableTitles} compact />
+            <Link
+              href={`/listas/${list.id}/editar`}
+              aria-label={fixed ? "Editar descripción" : "Editar lista"}
+              className={pillActionClass.neutral}
+            >
+              <PencilIcon />
+              Editar
+            </Link>
           </>
         }
       />
@@ -145,18 +141,18 @@ const ListDetail = async ({
         tags={tags}
         selectedSlugs={selectedTags}
         pathname={`/listas/${list.id}`}
-        view={view}
         kind={kindFilter}
         platforms={platforms}
         sort={sort ?? undefined}
         minePlatforms={minePlatforms}
         hasStreamingPlatforms={userPlatforms.length > 0}
         seriesStatus={seriesStatus}
+        showKindChips={false}
       />
 
       {list.items.length === 0 ? (
         <>
-          <AddTitleToListCta listId={list.id} titles={availableTitles} />
+          <AddTitleToListCta action={addAction} titles={availableTitles} />
           <EmptyState
             variant={empty.variant}
             title={empty.title}
@@ -189,15 +185,25 @@ const ListDetail = async ({
           <ListTitlesView
             listId={list.id}
             items={visibleItems}
-            mode={view}
-            selectedTags={selectedTags}
-            minePlatforms={minePlatforms}
-            seriesStatus={seriesStatus}
-            kind={kindFilter}
             platforms={platforms}
-            sort={sort}
           />
         </div>
+      )}
+
+      {fixed ? null : (
+        <footer className="mt-16 flex justify-center border-t border-line/70 pt-8 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <DeleteCollectionButton
+            action={deleteList.bind(null, list.id)}
+            redirectHref="/listas"
+            label="Borrar lista"
+            name={list.name}
+            impact={
+              list.items.length === 0
+                ? "La lista está vacía."
+                : `Contiene ${list.items.length === 1 ? "1 título" : `${list.items.length} títulos`}.`
+            }
+          />
+        </footer>
       )}
     </div>
   );

@@ -28,6 +28,8 @@ export type CoverflowDeckProps = {
   titles: CoverflowTitle[];
   className?: string;
   listId?: string;
+  /** Tag detail: footer becomes a single «Quitar de esta etiqueta» action. */
+  tagId?: string;
   variant?: "page" | "sheet";
   onActiveChange?: (index: number, title: CoverflowTitle) => void;
   /** `watched` = Qué ver picks: cinematic meta + slide, eye on posters. */

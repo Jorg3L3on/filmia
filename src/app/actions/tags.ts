@@ -70,6 +70,99 @@ export const createAndAssignTag = async (titleId: string, formData: FormData) =>
   revalidateTags(titleId, tag.slug);
 };
 
+/** Title links go with the tag via `onDelete: cascade`; titles themselves stay. */
+export const deleteTag = async (tagId: string) => {
+  const userId = await requireUserId();
+  const tag = await db.query.tags.findFirst({
+    where: and(eq(tags.id, tagId), eq(tags.userId, userId)),
+    columns: { id: true, slug: true },
+  });
+
+  if (!tag) {
+    throw new Error("Etiqueta no encontrada.");
+  }
+
+  await db.delete(tags).where(eq(tags.id, tag.id));
+  revalidateTags(undefined, tag.slug);
+};
+
+export const removeTitleFromTag = async (tagId: string, titleId: string) => {
+  const userId = await requireUserId();
+  const tag = await db.query.tags.findFirst({
+    where: and(eq(tags.id, tagId), eq(tags.userId, userId)),
+    columns: { id: true, slug: true },
+  });
+
+  if (!tag) {
+    throw new Error("Etiqueta no encontrada.");
+  }
+
+  await db
+    .delete(titleTags)
+    .where(and(eq(titleTags.tagId, tag.id), eq(titleTags.titleId, titleId)));
+  revalidateTags(titleId, tag.slug);
+};
+
+export const addTitleToTag = async (tagId: string, titleId: string) => {
+  const userId = await requireUserId();
+
+  const [tag, title] = await Promise.all([
+    db.query.tags.findFirst({
+      where: and(eq(tags.id, tagId), eq(tags.userId, userId)),
+      columns: { id: true, slug: true },
+    }),
+    db.query.titles.findFirst({
+      where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
+      columns: { id: true },
+    }),
+  ]);
+
+  if (!tag) {
+    throw new Error("Etiqueta no encontrada.");
+  }
+
+  if (!title) {
+    throw new Error("Título no encontrado.");
+  }
+
+  await db.insert(titleTags).values({ titleId, tagId: tag.id }).onConflictDoNothing();
+  revalidateTags(titleId, tag.slug);
+};
+
+/** Returns the new slug so the client can move to the renamed tag's URL. */
+export const renameTag = async (tagId: string, formData: FormData) => {
+  const userId = await requireUserId();
+  const name = parseRequiredName(formData.get("name"));
+  const slug = slugify(name);
+  if (!slug) {
+    throw new Error("Usa letras o números en el nombre.");
+  }
+
+  const tag = await db.query.tags.findFirst({
+    where: and(eq(tags.id, tagId), eq(tags.userId, userId)),
+    columns: { id: true, slug: true },
+  });
+
+  if (!tag) {
+    throw new Error("Etiqueta no encontrada.");
+  }
+
+  if (slug !== tag.slug) {
+    const clash = await db.query.tags.findFirst({
+      where: and(eq(tags.userId, userId), eq(tags.slug, slug)),
+      columns: { id: true },
+    });
+    if (clash) {
+      throw new Error("Ya tienes una etiqueta con ese nombre.");
+    }
+  }
+
+  await db.update(tags).set({ name, slug }).where(eq(tags.id, tag.id));
+  revalidateTags(undefined, tag.slug);
+  revalidateTags(undefined, slug);
+  return slug;
+};
+
 export const toggleTitleTag = async (tagId: string, titleId: string) => {
   const userId = await requireUserId();
 

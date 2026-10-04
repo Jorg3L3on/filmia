@@ -15,7 +15,7 @@ const SWIPE_THRESHOLD_PX = 42;
 
 /**
  * Horizontal genre coverflow under Qué ver / Historial — replaces category chips.
- * Active center: large serif + glass. Neighbors: smaller, blurred, muted.
+ * Active center: large italic serif with poster-tinted halo. Neighbors: tracked caps.
  */
 export const GenreCoverflow = ({
   categories,
@@ -52,7 +52,6 @@ export const GenreCoverflow = ({
     dragStartX.current = event.clientX;
     dragDeltaX.current = 0;
     suppressClick.current = false;
-    event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -60,8 +59,10 @@ export const GenreCoverflow = ({
       return;
     }
     dragDeltaX.current = event.clientX - dragStartX.current;
-    if (Math.abs(dragDeltaX.current) > 8) {
+    if (!suppressClick.current && Math.abs(dragDeltaX.current) > 8) {
       suppressClick.current = true;
+      // Capture only once it's a swipe; capturing on pointerdown retargets taps away from the buttons.
+      event.currentTarget.setPointerCapture(event.pointerId);
     }
   };
 
@@ -72,10 +73,8 @@ export const GenreCoverflow = ({
     const delta = dragDeltaX.current;
     dragStartX.current = null;
     dragDeltaX.current = 0;
-    try {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
-    } catch {
-      // already released
     }
     if (delta <= -SWIPE_THRESHOLD_PX) {
       goRelative(1);
@@ -123,10 +122,9 @@ export const GenreCoverflow = ({
       onPointerMove={handlePointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
-      className="genre-coverflow relative mx-auto flex w-full max-w-lg touch-pan-y select-none items-center justify-center gap-0 px-1 outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+      className="genre-coverflow relative mx-auto flex w-full max-w-lg touch-pan-y select-none flex-col items-center justify-center gap-0 rounded-2xl px-1 outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
     >
-      <div className="genre-coverflow-glow genre-coverflow-glow-left" aria-hidden />
-      <div className="genre-coverflow-glow genre-coverflow-glow-right" aria-hidden />
+      <div className="genre-coverflow-glow" aria-hidden />
 
       <div className="relative z-[1] flex w-full items-center justify-center">
         {prev ? (
@@ -170,7 +168,9 @@ export const GenreCoverflow = ({
           }}
           className={cn("genre-coverflow-active", focusRing)}
         >
-          <span className="font-serif tracking-tight">{active.name}</span>
+          <span key={active.slug} className="font-serif">
+            {active.name}
+          </span>
         </button>
 
         {next ? (
@@ -200,6 +200,20 @@ export const GenreCoverflow = ({
           <span className="genre-coverflow-neighbor-spacer" aria-hidden />
         )}
       </div>
+
+      {categories.length > 1 ? (
+        <div className="genre-coverflow-dots" aria-hidden>
+          {categories.map((category, index) => (
+            <span
+              key={category.slug}
+              className={cn(
+                "genre-coverflow-dot",
+                index === safeIndex && "is-active",
+              )}
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 };

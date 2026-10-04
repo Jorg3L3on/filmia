@@ -151,15 +151,13 @@ const MarkWatchedSheetFields = ({
       <div className="flex flex-col items-center px-5 pt-3">
         <SheetHandle className="sm:hidden" />
         <div className="flex w-full items-start justify-between gap-3">
-          <div className="min-w-0 space-y-1">
-            <h2 id={titleDomId} className="font-serif text-3xl text-paper">
-              Marqué visto
-            </h2>
-            <p className="truncate text-sm font-medium text-accent">
-              <span aria-hidden="true">• </span>
-              {titleName}
-            </p>
-          </div>
+          <h2
+            id={titleDomId}
+            className="min-w-0 line-clamp-2 text-balance pt-1 font-serif text-[1.75rem] leading-[1.1] tracking-tight text-paper"
+          >
+            <span className="sr-only">Marqué visto: </span>
+            {titleName}
+          </h2>
           <Button
             type="button"
             variant="ghost"
