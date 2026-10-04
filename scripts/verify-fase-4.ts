@@ -271,10 +271,12 @@ const run = () => {
   );
   const vercelJson = read("vercel.json");
   assert(
-    vercelJson.includes('"enabled": false') &&
-      vercelJson.includes('"ignoreCommand": "exit 0"') &&
-      vercelJson.includes('"sandbox": false'),
-    "vercel.json keeps Git deploys + preview blocked (sandbox paused)",
+    vercelJson.includes('"enabled": true') &&
+      vercelJson.includes('"main": true') &&
+      vercelJson.includes('$VERCEL_ENV') &&
+      vercelJson.includes("then exit 1; else exit 0") &&
+      !vercelJson.includes('"ignoreCommand": "exit 0"'),
+    "vercel.json builds production on main and skips every other environment",
   );
   const pkg = JSON.parse(read("package.json"));
   assert(

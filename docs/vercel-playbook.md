@@ -5,13 +5,13 @@ Never put real secrets, connection strings, passwords, or live URLs in the repo 
 
 Parent epic: [JOR-209](https://linear.app/jorg3l3on/issue/JOR-209) (canónico F4). This lote: [JOR-213](https://linear.app/jorg3l3on/issue/JOR-213).
 
-## Current policy (paused on sandbox)
+## Current policy (production only)
 
 | Concern | State today |
 | --- | --- |
-| Git auto-deploys (GitHub → Vercel) | **Off** — `vercel.json` disables GitHub / per-branch deploys |
-| Preview deployments | **Blocked** — `ignoreCommand` always exits `0` (skip build) as a belt-and-suspenders with Git off |
-| Production deploy | **Not shipping** — do not promote / do not flip Git on for `main`/`sandbox` until Jorge decides |
+| Git auto-deploys (GitHub → Vercel) | **On for `main` only** — other branches stay disabled |
+| Preview deployments | **Skipped** — `ignoreCommand` exits `0` unless `VERCEL_ENV` is production |
+| Production deploy | **Ships from `main`** — merging into `main` builds and publishes |
 | Migrations | **Outside** `next build` — run `npm run db:migrate` locally or in a dedicated CI job |
 
 Jorge preference while the sandbox workflow is the integration lane: **prod-only deploys when publishing**, and **no preview noise** on PRs/feature branches. Preview stays optional and documented below for a later turn-on — this lote does **not** enable it.
