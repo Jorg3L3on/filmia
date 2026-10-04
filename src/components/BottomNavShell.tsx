@@ -9,7 +9,10 @@ type BottomNavShellProps = {
   children: ReactNode;
 };
 
-/** Tiny client leaf: mobile nav frame + blur stale focus on route change. */
+/**
+ * Tiny client leaf: floating glass dock frame + blur stale focus on route change.
+ * The dock floats above the home indicator: max(safe-area-inset-bottom, 0.75rem).
+ */
 export const BottomNavShell = ({ children }: BottomNavShellProps) => {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
@@ -31,11 +34,11 @@ export const BottomNavShell = ({ children }: BottomNavShellProps) => {
       ref={navRef}
       aria-label="Principal móvil"
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 border-t border-line bg-canvas/95 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur sm:hidden",
+        "pointer-events-none fixed inset-x-0 bottom-0 z-50 pb-[max(env(safe-area-inset-bottom),0.75rem)] sm:hidden",
         safeAreaInsetXPadClass,
       )}
     >
-      {children}
+      <div className="pointer-events-auto relative mx-auto max-w-lg">{children}</div>
     </nav>
   );
 };

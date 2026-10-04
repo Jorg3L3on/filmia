@@ -92,9 +92,9 @@ export const cardClass = "rounded-2xl border border-line bg-surface";
 export const glassPanelClass =
   "glass-panel liquid-glass relative rounded-2xl border";
 
-/** Round glass button: header back / actions, tab-bar + button. */
+/** Round glass button: header back / actions, tab-bar «+». Caller sets size (size-10 / size-12). */
 export const glassIconClass = cn(
-  "press-scale relative inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-paper/95 shadow-panel backdrop-blur-xl backdrop-saturate-150 transition-[background-color,border-color,opacity] duration-[var(--duration-hover)] hover:border-white/30 hover:bg-white/15 active:opacity-90 [&_svg:not([class*='size-'])]:size-5",
+  "press-scale relative inline-flex shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-paper/95 shadow-panel backdrop-blur-xl backdrop-saturate-150 transition-[background-color,border-color,opacity] duration-[var(--duration-hover)] hover:border-white/30 hover:bg-white/15 active:opacity-90 [&_svg:not([class*='size-'])]:size-5",
   focusRing,
 );
 
