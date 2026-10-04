@@ -79,9 +79,16 @@ export const pillActionClass = {
   ),
 } as const;
 
-export const wellClass = "rounded-2xl border border-line bg-surface";
+/** Calm surface (MiCasa .card-surface): translucent over the atmosphere, no blur — safe for long pages. */
+export const wellClass =
+  "rounded-2xl border border-white/[0.08] bg-surface/70 shadow-card";
 
-export const cardClass = "rounded-2xl border border-line bg-surface";
+export const cardClass =
+  "rounded-2xl border border-white/[0.08] bg-surface/70 shadow-card";
+
+/** List row surface: glass rim + translucent fill, no backdrop blur (rows repeat). Pair with an aura bloom. */
+export const glassRowClass =
+  "liquid-glass relative isolate overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-card";
 
 /*
  * Glass recipes (ported from MiCasa). One recipe per surface — reuse, don't
