@@ -30,6 +30,7 @@ const titleCard = read("src/components/TitleCard.tsx");
 const titleHero = read("src/components/TitleHero.tsx");
 const bottomNav = read("src/components/BottomNav.tsx");
 const segment = read("src/components/ListsEtiquetasSegment.tsx");
+const segmentedTabs = read("src/components/SegmentedTabs.tsx");
 const listasLoading = read("src/app/listas/loading.tsx");
 const tagsLoading = read("src/app/tags/loading.tsx");
 const listCard = read("src/components/ListCard.tsx");
@@ -139,7 +140,10 @@ assert(
 );
 
 assert(bottomNav.includes("tab-transition"), "Bottom nav uses tab-transition");
-assert(segment.includes("tab-transition"), "Listas|Etiquetas uses tab-transition");
+assert(
+  segment.includes("SegmentedTabs") && segmentedTabs.includes("tab-transition"),
+  "Listas|Etiquetas uses SegmentedTabs (tab-transition)",
+);
 assert(
   listasLoading.includes("ListsEtiquetasSegment") &&
     tagsLoading.includes("ListsEtiquetasSegment"),

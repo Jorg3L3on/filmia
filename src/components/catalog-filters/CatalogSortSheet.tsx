@@ -1,7 +1,10 @@
 "use client";
 
 import { useId, useState } from "react";
-import { CatalogOrderIcon } from "@/components/catalog-filters/filter-ui";
+import {
+  CatalogOrderIcon,
+  catalogBarButtonClass,
+} from "@/components/catalog-filters/filter-ui";
 import { Sheet, SheetHandle } from "@/components/Sheet";
 import type { CatalogOrderOption } from "@/lib/catalog-filters";
 import { cn } from "@/lib/cn";
@@ -37,8 +40,7 @@ export const CatalogSortSheet = ({ options, current, onSelect }: CatalogSortShee
         aria-expanded={open}
         aria-label={currentOption ? `Orden: ${currentOption.label}` : "Orden"}
         className={cn(
-          "inline-flex shrink-0 items-center gap-1.5 rounded-full bg-well px-3 py-1.5 text-xs font-medium text-paper",
-          focusRing,
+          catalogBarButtonClass,
         )}
       >
         <SortIcon />

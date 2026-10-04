@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { DIARY_VIEW_MODES, type DeckViewMode } from "@/lib/diary-view";
-import { focusRing } from "@/lib/ui";
+import { auraPillClass, focusRing } from "@/lib/ui";
 
 export type { DeckViewMode };
 export { DIARY_VIEW_MODES };
@@ -34,7 +34,7 @@ export const DeckViewToggle = ({
       role="group"
       aria-label="Modo de visualización"
       className={cn(
-        "inline-flex rounded-full border border-chrome bg-well p-1",
+        "inline-flex items-center gap-0.5 rounded-full border border-white/20 bg-white/10 p-1 shadow-panel backdrop-blur-xl backdrop-saturate-150",
         className,
       )}
     >
@@ -48,12 +48,12 @@ export const DeckViewToggle = ({
             aria-label={MODE_LABEL[item]}
             title={MODE_LABEL[item]}
             className={cn(
-              "inline-flex items-center justify-center rounded-full tab-transition",
+              "relative inline-flex items-center justify-center rounded-full tab-transition press-scale",
               focusRing,
-              isIcons ? "size-9" : "px-3 py-1.5 text-xs font-medium uppercase tracking-wide",
+              isIcons ? "size-9" : "min-h-9 px-3.5 py-1.5 text-sm font-medium",
               isCurrent
-                ? "bg-accent text-ink"
-                : "text-fog hover:text-paper",
+                ? cn(auraPillClass, "text-paper")
+                : "text-fog hover:bg-white/8 hover:text-paper",
             )}
           >
             {isIcons ? <ViewModeIcon mode={item} /> : MODE_LABEL[item]}

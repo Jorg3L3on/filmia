@@ -3,8 +3,8 @@
 import { useCallback, useId, type ReactNode } from "react";
 import { Button } from "@/components/Button";
 import { Sheet, SheetHandle } from "@/components/Sheet";
+import { catalogBarButtonClass } from "@/components/catalog-filters/filter-ui";
 import { cn } from "@/lib/cn";
-import { focusRing } from "@/lib/ui";
 
 type CatalogMoreFiltersProps = {
   open: boolean;
@@ -42,9 +42,8 @@ export const CatalogMoreFilters = ({
           activeCount > 0 ? `Filtros, ${activeCount} activos` : "Filtros"
         }
         className={cn(
-          "inline-flex shrink-0 items-center gap-1.5 rounded-full bg-well px-3 py-1.5 text-xs font-medium text-paper",
-          focusRing,
-          activeCount > 0 && "ring-1 ring-accent/50",
+          catalogBarButtonClass,
+          activeCount > 0 && "border-accent/50 shadow-glow",
         )}
       >
         <FunnelIcon />

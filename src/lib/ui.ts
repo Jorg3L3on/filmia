@@ -88,9 +88,8 @@ export const cardClass = "rounded-2xl border border-line bg-surface";
  * restyle ad hoc. Base CSS lives in globals.css (.glass-panel, .liquid-glass*).
  */
 
-/** Frosted container: segmented frames, list rows, cards, sheets. */
-export const glassPanelClass =
-  "glass-panel liquid-glass relative rounded-2xl border";
+/** Frosted container: segmented frames, list rows, cards, sheets. Caller sets radius. */
+export const glassPanelClass = "glass-panel liquid-glass relative border";
 
 /** Round glass button: header back / actions, tab-bar «+». Caller sets size (size-10 / size-12). */
 export const glassIconClass = cn(
