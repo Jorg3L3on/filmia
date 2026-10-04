@@ -166,10 +166,11 @@ export const sheetAlignClass: Record<SheetAlign, string> = {
   center: "fixed inset-0 flex items-end justify-center sm:items-center",
 };
 
-export const sheetOverlayClass = "absolute inset-0 bg-canvas-deep/60";
+export const sheetOverlayClass = "absolute inset-0 bg-black/50";
 
+/** Floating glass sheet: lifted off the edges on mobile like the dock, centered from sm. */
 export const sheetPanelClass = (className?: string) =>
   cn(
-    "relative z-10 flex w-full max-w-lg max-h-[min(92dvh,calc(100dvh-env(safe-area-inset-top)-0.75rem))] flex-col overflow-hidden rounded-t-sheet border border-line bg-well pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[var(--sheet-shadow)] sheet-rise sm:rounded-sheet",
+    "glass-panel glass-sheet liquid-glass relative z-10 mx-1.5 mb-1.5 flex w-[calc(100%-0.75rem)] max-w-lg max-h-[min(92dvh,calc(100dvh-env(safe-area-inset-top)-0.75rem))] flex-col overflow-hidden rounded-sheet border pb-[max(1rem,env(safe-area-inset-bottom))] sheet-rise sm:mx-0 sm:w-full",
     className,
   );

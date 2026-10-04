@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
-import { eyebrowClass, focusRing } from "@/lib/ui";
+import { eyebrowClass, glassIconClass } from "@/lib/ui";
 
 type PageHeaderProps = {
   eyebrow?: string;
@@ -27,8 +27,8 @@ export const PageHeader = ({
             href={backHref}
             aria-label={backLabel}
             className={cn(
-              "press-scale group mt-0.5 inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-chrome bg-well text-paper transition-colors duration-[var(--duration-hover)] hover:border-accent/60 hover:text-accent md:mt-1.5",
-              focusRing,
+              glassIconClass,
+              "group mt-0.5 size-10 hover:text-accent md:mt-1.5",
             )}
           >
             <svg
