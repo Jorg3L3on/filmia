@@ -89,7 +89,6 @@ export const DeleteCollectionButton = ({
         labelledBy={headingId}
         overlayLabel="Cancelar"
         portal
-        panelClassName="bg-surface"
       >
         <div className="flex flex-col items-center px-6 pb-2 pt-3 text-center">
           <SheetHandle className="sm:hidden" />

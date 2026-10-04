@@ -75,7 +75,6 @@ export const EditTagButton = ({ tagId, tagName }: EditTagButtonProps) => {
         labelledBy={headingId}
         overlayLabel="Cancelar"
         portal
-        panelClassName="bg-surface"
       >
         <form onSubmit={handleSubmit} className="flex flex-col px-6 pb-2 pt-3">
           <SheetHandle className="self-center sm:hidden" />

@@ -1224,11 +1224,38 @@ html[data-que-ver-grade="live"] body {
 }
 
 /* SiteHeader plate — default chrome; Qué ver sala kills the seam under logo. */
+/* Glass header (MiCasa): frosted, hairline, blue-tinted float shadow. */
 header.site-header {
-  border-bottom: 1px solid var(--line);
-  background: rgb(14 17 20 / 0.9);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(10 13 20 / 0.85);
+  box-shadow: var(--glass-shadow-panel);
+  /* Stays put while posters morph between routes. */
+  view-transition-name: app-header;
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  header.site-header {
+    background: rgb(10 13 20 / 0.55);
+    -webkit-backdrop-filter: blur(24px) saturate(120%);
+    backdrop-filter: blur(24px) saturate(120%);
+  }
+}
+
+::view-transition-group(app-header),
+::view-transition-old(app-header),
+::view-transition-new(app-header) {
+  animation: none;
+}
+
+/* Sheets: glass but dense enough to read over posters. */
+.glass-panel.glass-sheet {
+  background-color: rgb(16 20 28 / 0.9);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .glass-panel.glass-sheet {
+    background-color: rgb(16 20 28 / 0.8);
+  }
 }
 
 body:has(.diario-que-ver-shell) header.sticky,
