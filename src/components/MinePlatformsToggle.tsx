@@ -82,11 +82,11 @@ export const MinePlatformsToggle = ({
             : "Mostrar solo títulos en mis plataformas"
         }
         className={cn(
-          "inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-wide transition",
+          "press-scale relative inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium transition",
           focusRing,
           minePlatforms
-            ? "border-accent bg-accent text-ink"
-            : "border-chrome text-fog hover:border-line-hover hover:text-paper",
+            ? "liquid-glass liquid-glass-pill liquid-glass-pill-aura border-transparent text-paper"
+            : "border-white/10 bg-white/[0.04] text-fog hover:border-white/20 hover:text-paper",
         )}
       >
         Solo en mis plataformas

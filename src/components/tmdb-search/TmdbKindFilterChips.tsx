@@ -2,8 +2,7 @@
 
 import type { TitleKind } from "@/db";
 import { KIND_CHIPS } from "@/lib/catalog-filters";
-import { cn } from "@/lib/cn";
-import { focusRing } from "@/lib/ui";
+import { catalogBarChipClass } from "@/components/catalog-filters/filter-ui";
 
 type TmdbKindFilterChipsProps = {
   kindFilter: "ALL" | TitleKind;
@@ -17,7 +16,7 @@ export const TmdbKindFilterChips = ({
   <div
     role="group"
     aria-label="Filtro por tipo"
-    className="rail flex gap-2 overflow-x-auto"
+    className="rail rail-fade flex gap-2 overflow-x-auto"
   >
     {KIND_CHIPS.map((chip) => {
       const isCurrent = kindFilter === chip.value;
@@ -27,11 +26,7 @@ export const TmdbKindFilterChips = ({
           type="button"
           aria-pressed={isCurrent}
           onClick={() => onKindFilterChange(chip.value)}
-          className={cn(
-            "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium tab-transition",
-            focusRing,
-            isCurrent ? "bg-accent text-ink" : "bg-well text-paper hover:bg-chrome",
-          )}
+          className={catalogBarChipClass(isCurrent)}
         >
           {chip.label}
         </button>

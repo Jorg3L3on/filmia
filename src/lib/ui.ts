@@ -79,9 +79,59 @@ export const pillActionClass = {
   ),
 } as const;
 
-export const wellClass = "rounded-2xl border border-line bg-surface";
+/** Calm surface (MiCasa .card-surface): translucent over the atmosphere, no blur — safe for long pages. */
+export const wellClass =
+  "rounded-2xl border border-white/[0.08] bg-surface/70 shadow-card";
 
-export const cardClass = "rounded-2xl border border-line bg-surface";
+export const cardClass =
+  "rounded-2xl border border-white/[0.08] bg-surface/70 shadow-card";
+
+/** List row surface: glass rim + translucent fill, no backdrop blur (rows repeat). Pair with an aura bloom. */
+export const glassRowClass =
+  "liquid-glass relative isolate overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-card";
+
+/*
+ * Glass recipes (ported from MiCasa). One recipe per surface — reuse, don't
+ * restyle ad hoc. Base CSS lives in globals.css (.glass-panel, .liquid-glass*).
+ */
+
+/** Frosted container: segmented frames, list rows, cards, sheets. Caller sets radius. */
+export const glassPanelClass = "glass-panel liquid-glass relative border";
+
+/** Round glass button: header back / actions, tab-bar «+». Caller sets size (size-10 / size-12). */
+export const glassIconClass = cn(
+  "press-scale relative inline-flex shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-paper/95 shadow-panel backdrop-blur-xl backdrop-saturate-150 transition-[background-color,border-color,opacity] duration-[var(--duration-hover)] hover:border-white/30 hover:bg-white/15 active:opacity-90 [&_svg:not([class*='size-'])]:size-5",
+  focusRing,
+);
+
+/** Capsule holding several icon buttons (search · sort · ⋯). */
+export const glassGroupClass =
+  "flex h-10 shrink-0 items-center overflow-hidden rounded-full border border-white/20 bg-white/10 px-0.5 shadow-panel backdrop-blur-xl backdrop-saturate-150";
+
+export const glassGroupItemClass = cn(
+  "relative inline-flex size-9 items-center justify-center rounded-full text-paper/90 transition-[background-color,opacity] duration-[var(--duration-hover)] hover:bg-white/12 active:bg-white/16 [&_svg]:size-[1.15rem]",
+  focusRing,
+);
+
+export const glassGroupDividerClass = "mx-0.5 h-4 w-px bg-white/25";
+
+/** Dropdown / popover panel (⋯ menu, tab-bar + menu). */
+export const glassMenuPanelClass =
+  "overflow-hidden rounded-2xl border border-white/10 bg-[var(--glass-fill-solid)] p-1.5 shadow-panel backdrop-blur-2xl backdrop-saturate-150";
+
+export const glassMenuItemClass = cn(
+  "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-paper hover:bg-white/5",
+  focusRing,
+);
+
+export const glassMenuIconPillClass =
+  "flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent ring-1 ring-accent/25";
+
+/** Active indicator behind the selected tab (tab bar, segmented tabs). */
+export const glassPillClass = "liquid-glass liquid-glass-pill rounded-full";
+
+/** Accent-glow variant of the active indicator (segmented tabs). */
+export const auraPillClass = "liquid-glass liquid-glass-pill liquid-glass-pill-aura rounded-full";
 
 export const eyebrowClass =
   "text-[11px] font-medium uppercase tracking-[0.22em] text-accent";
@@ -123,10 +173,11 @@ export const sheetAlignClass: Record<SheetAlign, string> = {
   center: "fixed inset-0 flex items-end justify-center sm:items-center",
 };
 
-export const sheetOverlayClass = "absolute inset-0 bg-canvas-deep/60";
+export const sheetOverlayClass = "absolute inset-0 bg-black/50";
 
+/** Floating glass sheet: lifted off the edges on mobile like the dock, centered from sm. */
 export const sheetPanelClass = (className?: string) =>
   cn(
-    "relative z-10 flex w-full max-w-lg max-h-[min(92dvh,calc(100dvh-env(safe-area-inset-top)-0.75rem))] flex-col overflow-hidden rounded-t-sheet border border-line bg-well pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[var(--sheet-shadow)] sheet-rise sm:rounded-sheet",
+    "glass-panel glass-sheet liquid-glass relative z-10 mx-1.5 mb-1.5 flex w-[calc(100%-0.75rem)] max-w-lg max-h-[min(92dvh,calc(100dvh-env(safe-area-inset-top)-0.75rem))] flex-col overflow-hidden rounded-sheet border pb-[max(1rem,env(safe-area-inset-bottom))] sheet-rise sm:mx-0 sm:w-full",
     className,
   );

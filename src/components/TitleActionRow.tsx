@@ -19,7 +19,7 @@ const actionChipClass = (active?: boolean) =>
     focusRing,
     active
       ? undefined
-      : "border-chrome bg-well text-fog hover:border-line-hover hover:text-paper",
+      : "liquid-glass relative border-white/10 bg-white/[0.05] text-fog shadow-card hover:border-white/20 hover:bg-white/[0.08] hover:text-paper",
   );
 
 type TitleActionRowProps = {

@@ -1,10 +1,10 @@
 import { cn } from "@/lib/cn";
-import { focusRing } from "@/lib/ui";
+import { glassIconClass } from "@/lib/ui";
 
-/** Round companion to the Listas|Etiquetas pill — same chrome, same 46px height. */
+/** Round glass companion to the Listas|Etiquetas segment — same 46px height as the capsule. */
 export const segmentActionClass = cn(
-  "group/action press-scale relative inline-flex size-[2.875rem] shrink-0 items-center justify-center rounded-full border border-chrome bg-well text-accent transition-colors duration-[var(--duration-hover)] hover:border-accent/60 hover:text-paper",
-  focusRing,
+  glassIconClass,
+  "group/action size-[2.875rem] text-accent hover:text-paper",
 );
 
 export const SegmentPlusIcon = ({ className }: { className?: string }) => (
@@ -25,7 +25,7 @@ export const SegmentPlusIcon = ({ className }: { className?: string }) => (
 export const SegmentActionTooltip = ({ label }: { label: string }) => (
   <span
     aria-hidden="true"
-    className="pointer-events-none absolute right-0 top-[calc(100%+0.5rem)] z-20 translate-y-1 whitespace-nowrap rounded-lg border border-chrome bg-well px-2.5 py-1.5 text-xs font-medium text-paper opacity-0 shadow-[0_8px_20px_rgba(0,0,0,0.45)] transition-[opacity,translate] duration-[var(--duration-hover)] group-hover/action:translate-y-0 group-hover/action:opacity-100 group-focus-visible/action:translate-y-0 group-focus-visible/action:opacity-100"
+    className="pointer-events-none absolute right-0 top-[calc(100%+0.5rem)] z-20 translate-y-1 whitespace-nowrap rounded-lg border border-white/10 bg-[var(--glass-fill-solid)] px-2.5 py-1.5 text-xs font-medium text-paper opacity-0 shadow-panel backdrop-blur-xl transition-[opacity,translate] duration-[var(--duration-hover)] group-hover/action:translate-y-0 group-hover/action:opacity-100 group-focus-visible/action:translate-y-0 group-focus-visible/action:opacity-100"
   >
     {label}
   </span>

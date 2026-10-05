@@ -117,6 +117,6 @@ export const Sheet = ({
 export const SheetHandle = ({ className }: { className?: string }) => (
   <span
     aria-hidden="true"
-    className={cn("mb-3 h-1 w-10 rounded-full bg-chrome", className)}
+    className={cn("mb-3 h-1 w-10 rounded-full bg-white/20", className)}
   />
 );

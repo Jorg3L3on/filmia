@@ -295,8 +295,9 @@ const run = () => {
   );
   assert(
     read("src/components/EmptyState.tsx").includes('variant === "buscar"') &&
-      read("src/components/tmdb-search/TmdbKindFilterChips.tsx").includes("tab-transition"),
-    "Buscar empty uses well; kind chips use tab-transition",
+      read("src/components/tmdb-search/TmdbKindFilterChips.tsx").includes("catalogBarChipClass") &&
+      read("src/components/catalog-filters/filter-ui.tsx").includes("tab-transition"),
+    "Buscar empty uses well; kind chips share catalogBarChipClass (tab-transition)",
   );
 
 
@@ -405,7 +406,7 @@ const run = () => {
   const pageHeader = read("src/components/PageHeader.tsx");
   assert(
     pageHeader.includes("sm:w-auto") &&
-      pageHeader.includes("press-scale") &&
+      (pageHeader.includes("press-scale") || pageHeader.includes("glassIconClass")) &&
       pageHeader.includes("sm:gap-4"),
     "PageHeader actions wrap full-width on mobile with press back",
   );
@@ -560,7 +561,8 @@ const run = () => {
   assert(
     read("src/app/titulos/[id]/editar/page.tsx").includes("PageHeader") &&
       read("src/app/titulos/[id]/editar/page.tsx").includes("Editar título") &&
-      read("src/components/PageHeader.tsx").includes("press-scale") &&
+      (read("src/components/PageHeader.tsx").includes("press-scale") ||
+        read("src/components/PageHeader.tsx").includes("glassIconClass")) &&
       read("src/components/AppChrome.tsx").includes("safe-area-inset-bottom"),
     "Editar título keeps PageHeader + press back; chrome safe-area",
   );

@@ -51,12 +51,45 @@ export const desktopNavItems = [
   { href: "/buscar", label: "Buscar" },
 ] as const;
 
+/** Bottom tab bar: four tabs around the center «+» create action. */
 export const mobileNavItems = [
   { href: "/", label: "Diario", icon: "diary" },
   { href: "/watchlist", label: "Quiero ver", icon: "queue" },
-  { href: "/buscar", label: "Buscar", icon: "search" },
   { href: "/listas", label: "Listas", icon: "lists" },
   { href: "/perfil", label: "Perfil", icon: "profile" },
 ] as const;
 
-export type MobileNavIcon = (typeof mobileNavItems)[number]["icon"];
+/** Grid column the «+» occupies (between Quiero ver and Listas). */
+export const mobileNavCreateSlot = 2;
+
+/** Quick actions behind the tab bar «+». Buscar lives here and in the header. */
+export const mobileCreateActions = [
+  {
+    href: "/buscar",
+    label: "Buscar y agregar",
+    hint: "Películas y series de TMDB",
+    icon: "search",
+  },
+  {
+    href: "/titulos/nuevo",
+    label: "Agregar a mano",
+    hint: "Un título que no aparece",
+    icon: "add",
+  },
+  {
+    href: "/listas/nueva",
+    label: "Nueva lista",
+    hint: "Agrupa títulos a tu modo",
+    icon: "lists",
+  },
+  {
+    href: "/tags",
+    label: "Etiquetas",
+    hint: "Crea y organiza etiquetas",
+    icon: "tag",
+  },
+] as const;
+
+export type MobileNavIcon =
+  | (typeof mobileNavItems)[number]["icon"]
+  | (typeof mobileCreateActions)[number]["icon"];

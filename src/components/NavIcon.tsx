@@ -42,9 +42,31 @@ export const NavIcon = ({ name }: { name: MobileNavIcon }) => {
 
   if (name === "search") {
     return (
-      <svg {...common} className="h-6 w-6">
+      <svg {...common}>
         <circle cx="11" cy="11" r="5.5" />
         <path strokeLinecap="round" d="m15.5 15.5 4 4" />
+      </svg>
+    );
+  }
+
+  if (name === "add") {
+    return (
+      <svg {...common}>
+        <rect x="5" y="5" width="14" height="14" rx="3" />
+        <path strokeLinecap="round" d="M12 9v6M9 12h6" />
+      </svg>
+    );
+  }
+
+  if (name === "tag") {
+    return (
+      <svg {...common}>
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4.75 12.6V5.75a1 1 0 0 1 1-1h6.85a1 1 0 0 1 .7.3l6.2 6.2a1 1 0 0 1 0 1.4l-6.85 6.85a1 1 0 0 1-1.4 0l-6.2-6.2a1 1 0 0 1-.3-.7Z"
+        />
+        <circle cx="8.75" cy="8.75" r="1.25" />
       </svg>
     );
   }

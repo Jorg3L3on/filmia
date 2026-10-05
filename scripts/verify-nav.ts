@@ -1,4 +1,11 @@
-import { desktopNavItems, isAuthChromePath, isCurrentPath, mobileNavItems } from "../src/lib/nav";
+import {
+  desktopNavItems,
+  isAuthChromePath,
+  isCurrentPath,
+  mobileCreateActions,
+  mobileNavCreateSlot,
+  mobileNavItems,
+} from "../src/lib/nav";
 
 const assert = (condition: unknown, message: string) => {
   if (!condition) {
@@ -48,14 +55,17 @@ assert(isCurrentPath("/", "/titulos/abc"), "Diario highlights nested ficha route
 assert(isCurrentPath("/tags", "/tags/visual"), "Etiquetas highlights nested tag routes");
 assert(isCurrentPath("/listas", "/listas/abc"), "Listas highlights nested list routes");
 
-assert(mobileNavItems.length === 5, "Mobile nav should have 5 items so Buscar is centered");
+assert(mobileNavItems.length === 4, "Mobile tab bar has 4 tabs around the center «+»");
 assert(
-  mobileNavItems.map((item) => item.label).join("|") ===
-    "Diario|Quiero ver|Buscar|Listas|Perfil",
-  "Mobile nav order must be Diario, Quiero ver, Buscar, Listas, Perfil",
+  mobileNavItems.map((item) => item.label).join("|") === "Diario|Quiero ver|Listas|Perfil",
+  "Mobile nav order must be Diario, Quiero ver, (+), Listas, Perfil",
 );
-assert(mobileNavItems[2]?.href === "/buscar", "Buscar must be the middle (3rd) mobile nav item");
-assert(mobileNavItems[4]?.href === "/perfil", "Perfil must be the last mobile nav item");
+assert(mobileNavCreateSlot === 2, "«+» must sit in the middle (3rd) dock column");
+assert(mobileNavItems[3]?.href === "/perfil", "Perfil must be the last mobile nav item");
+assert(
+  mobileCreateActions[0]?.href === "/buscar",
+  "Buscar y agregar must be the first «+» action",
+);
 {
   const hrefs: string[] = desktopNavItems.map((item) => item.href);
   const labels: string[] = desktopNavItems.map((item) => item.label);
@@ -74,4 +84,4 @@ assert(!isAuthChromePath("/"), "diario keeps app chrome");
 assert(!isAuthChromePath("/watchlist"), "watchlist keeps app chrome");
 
 console.log("✓ Nested paths highlight Diario / Listas (tags hub) / Listas");
-console.log("✓ Mobile nav is 5 items with Buscar centered and Perfil at the end");
+console.log("✓ Mobile dock is 4 tabs around a center «+» (Buscar first) with Perfil at the end");
