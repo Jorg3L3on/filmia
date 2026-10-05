@@ -80,12 +80,6 @@ export const mobileCreateActions = [
     icon: "search",
   },
   {
-    href: "/titulos/nuevo",
-    label: "Agregar a mano",
-    hint: "Un título que no aparece",
-    icon: "add",
-  },
-  {
     href: "/listas/nueva",
     label: "Nueva lista",
     hint: "Agrupa títulos a tu modo",
