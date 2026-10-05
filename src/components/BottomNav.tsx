@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useSyncExternalStore } from "react";
 import { ActiveNavLink } from "@/components/ActiveNavLink";
 import { BottomNavCreate } from "@/components/BottomNavCreate";
 import { BottomNavShell } from "@/components/BottomNavShell";
@@ -13,9 +14,17 @@ import { focusRing, glassPillClass } from "@/lib/ui";
 const columnFor = (index: number) =>
   index < mobileNavCreateSlot ? index : index + 1;
 
+const subscribeNoop = () => () => {};
+const todayDay = () => new Date().getDate();
+const noDay = () => null;
+
+/** Day number for the Hoy glyph; null during SSR/hydration so markup matches. */
+const useTodayDay = () => useSyncExternalStore(subscribeNoop, todayDay, noDay);
+
 /** Floating glass dock: four tabs + center «+», sliding glass pill on the active tab. */
 export const BottomNav = () => {
   const pathname = usePathname();
+  const day = useTodayDay();
   const activeIndex = mobileNavItems.findIndex((item) =>
     isMobileNavCurrent(item.href, pathname),
   );
@@ -55,7 +64,7 @@ export const BottomNav = () => {
             >
               {(isCurrent) => (
                 <>
-                  <NavIcon name={item.icon} />
+                  <NavIcon name={item.icon} day={item.icon === "today" ? day : null} />
                   <span
                     className={cn(
                       "max-w-full truncate text-center leading-tight",

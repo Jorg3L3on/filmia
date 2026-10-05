@@ -7,7 +7,7 @@ import { removeTitleFromTag } from "@/app/actions/tags";
 import { Button } from "@/components/Button";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PlatformLogo } from "@/components/PlatformLogo";
-import { SlideToMarkSeen } from "@/components/SlideToMarkSeen";
+import { TonightFooter } from "@/components/tonight/TonightFooter";
 import { WatchProviderChips } from "@/components/WatchProvidersMx";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { cn } from "@/lib/cn";
@@ -19,7 +19,6 @@ import {
   SERIES_STATUS_LABEL,
   TITLE_KIND_LABEL,
 } from "@/lib/labels";
-import { PICKS_SAVE_LABEL } from "@/lib/mark-seen";
 import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { showToast } from "@/lib/toast";
 import { focusRing } from "@/lib/ui";
@@ -44,14 +43,14 @@ const TagRemoveIcon = () => (
 type DeckFooterProps = {
   activeTitle: CoverflowTitle;
   isSheet: boolean;
-  footer: "full" | "watched";
+  footer: "full" | "watched" | "tonight";
   listId?: string;
   tagId?: string;
   focusClassName?: string;
   onHide: (titleId: string) => void;
   onRestore: (titleId: string) => void;
   onMarkedSeen: (titleId: string) => void;
-  /** Qué ver C: fire warm light-leak when the slide commits «Vi esto». */
+  /** Kept for the cinematic «watched» footer; Esta noche fires the leak from the stub. */
   onSlideCommit?: () => void;
 };
 
@@ -112,7 +111,12 @@ export const DeckFooter = ({
     );
   }
 
+  if (footer === "tonight") {
+    return <TonightFooter title={activeTitle} className={focusClassName} />;
+  }
+
   if (footer === "watched") {
+    void onSlideCommit;
     const genreNames = (activeTitle.genres ?? [])
       .map((genre) => genre.name)
       .filter(Boolean)
@@ -149,18 +153,6 @@ export const DeckFooter = ({
             ))}
           </p>
         </div>
-        {!activeTitle.watched ? (
-          <SlideToMarkSeen
-            key={activeTitle.id}
-            titleId={activeTitle.id}
-            titleName={activeTitle.name}
-            rating={activeTitle.rating}
-            review={activeTitle.review}
-            saveLabel={PICKS_SAVE_LABEL}
-            onSaved={() => onMarkedSeen(activeTitle.id)}
-            onCommit={onSlideCommit}
-          />
-        ) : null}
       </div>
     );
   }

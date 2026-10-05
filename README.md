@@ -31,10 +31,29 @@ git fetch --prune
 
 `main` y `sandbox` se conservan. No dejes ramas `jl/` huérfanas: GitHub las lista aunque el PR ya esté cerrado o mergeado.
 
+## Hoy · Esta noche
+
+La pestaña de inicio es **Hoy**: un mazo («Esta noche») con lo que vale la pena ver de Quiero ver para la noche que queda, no la lista entera.
+
+- **Lentes**: «Para ti» (score personal) y después tus tres géneros con más afinidad. Cada título vive en una sola lente.
+- **Score** (`src/lib/tonight/`): filtro duro (incluida en tus plataformas, no vista, sin «Ahora no» reciente) → perfil de gusto (géneros, keywords, director, reparto, década, idioma y tus etiquetas, ponderados por tu nota menos tu media con decaimiento de 18 meses) → `0,30·gusto + 0,20·calidad (IMDb bayesiano con votos) + 0,20·encaje con la noche + 0,15·impulso (serie en curso, Por rewatch, tu nota, tu orden) + 0,10·novedad + 0,05·reposo`, × fatiga por impresiones → MMR (λ 0,65, máximo 2 por género) + comodín → dos razones en español por carta.
+- **Encaje con la hora** se calcula en el cliente con la hora local y tu «hora de dormir» (Perfil → Esta noche): «acaba 23:19» o «se pasa 14 min».
+- **Precálculo**: `TonightPick` se escribe en el cron `/api/cron/tonight-picks` (09:30 UTC) y con `after()` tras cada «Vi esto», alta/baja en Quiero ver, nota, etiqueta, lista o plataforma. La petición de `/` lee una consulta indexada; si no hay cálculo o tiene más de un día, calcula en línea y persiste después de responder.
+- **Aprende**: `PickEvent` guarda impresiones, saltos, «Ahora no» (oculta 14 días), aperturas y «Más así / Menos así».
+- **Gestos**: arrastra (o toca) el **talón** bajo el póster para «Vi esto»; mantén pulsado el póster para Ver ficha · Ahora no · Mover · Quitar.
+- **Tu diario** (calendario, mazo, cuadrícula) vive en Perfil y en `/diario`; `/?mode=historial` redirige.
+
+Para rellenar keywords, créditos, votos IMDb y color ambiente en títulos existentes y precalcular los mazos:
+
+```bash
+npm run db:backfill-tonight
+```
+
 ## Modelo
 
 - **User**: cuenta con email, contraseña hasheada (PBKDF2; hashes bcrypt legacy se verifican al entrar), nombre opcional y `streamingPlatforms` (JSON: claves del enum `Platform`)
-- **Title**: película o serie del usuario, nota personal 1–10, poster (TMDB), rating IMDb (OMDb), plataforma opcional, notas, fecha vista
+- **Title**: película o serie del usuario, nota personal 1–10, poster (TMDB), rating IMDb + votos (OMDb), keywords y personas (TMDB), color ambiente, plataforma opcional, notas, fecha vista
+- **TonightPick** + **PickEvent**: mazos precalculados de «Esta noche» por usuario y su retroalimentación (ver [Hoy · Esta noche](#hoy--esta-noche))
 - **Tag** + **TitleTag**: categorías libres por usuario (épica/guerra, visual/espectáculo, etc.). El filtro de diario y listas combina varias etiquetas con **OR**. Ranking en `/tags/[slug]`.
 - **List** + **ListItem**: listas y membresía por usuario (Quiero ver, Favoritas, Por rewatch + personalizadas)
 - **Platform** (enum): Netflix, Prime, Max, Disney+, Claro, Apple, Mubi y otras de JustWatch MX
@@ -165,6 +184,7 @@ Busca en TMDB por nombre + año + tipo, guarda poster e IMDb rating vía OMDb.
 | `npm run db:seed` | Carga títulos dummy + usuario demo |
 | `npm run db:import-watchlist` | Importa `scripts/data/watchlist-queue.json` a Quiero ver |
 | `npm run db:backfill-metadata` | Posters TMDB + rating IMDb para títulos existentes |
+| `npm run db:backfill-tonight` | Keywords, créditos, votos IMDb y color ambiente + precálculo de «Esta noche» |
 | `npm run db:set-password` | Rehash PBKDF2 para un email: `-- <email> <password>` |
 | `npm run db:studio` | Drizzle Studio |
 

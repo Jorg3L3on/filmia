@@ -979,7 +979,7 @@ html[data-que-ver-grade="live"] body {
   position: relative;
   z-index: 2;
   min-width: 0;
-  max-width: 56%;
+  max-width: 66%;
   border: 0;
   border-radius: 12px;
   background: transparent;
@@ -990,7 +990,7 @@ html[data-que-ver-grade="live"] body {
 .genre-coverflow-active .font-serif {
   display: block;
   overflow: hidden;
-  font-size: 1.75rem;
+  font-size: 1.65rem;
   font-style: italic;
   font-weight: 500;
   line-height: 1.15;
@@ -1598,6 +1598,313 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-n
   }
 }
 
+
+/* --- Esta noche (Hoy) ---------------------------------------------------
+ * Talón de boleto bajo el héroe (drag down / tap → «Marqué visto»), sello
+ * VISTO, vuelo del póster a la pestaña Perfil, razón y chips, reparto del mazo.
+ * Tokens: --spring para talón/sello, --ease-out para el resto (docs/motion.md).
+ * ---------------------------------------------------------------------- */
+/* Esta noche: the footer gained a reason pill + chips, so the stage gives back ~2rem. */
+.tonight-sala .coverflow-cinematic-stage {
+  height: min(46dvh, calc(100dvh - 24.5rem));
+  min-height: 300px;
+  max-height: 520px;
+}
+
+@media (min-width: 768px) {
+  .tonight-sala .coverflow-cinematic-stage {
+    height: min(54dvh, calc(100dvh - 20rem));
+    min-height: 340px;
+    max-height: 580px;
+  }
+}
+
+.coverflow-card.is-tonight.is-focused {
+  /* The stub hangs below the card; the focused face has no blur to clip. */
+  overflow: visible;
+}
+
+.coverflow-card.is-tonight .coverflow-card-face {
+  -webkit-touch-callout: none;
+}
+
+.ticket-stub {
+  position: absolute;
+  left: 50%;
+  bottom: -30px;
+  z-index: 12;
+  width: 120px;
+  height: 30px;
+  border: 0;
+  border-top: 1.5px dashed rgb(255 255 255 / 0.42);
+  border-radius: 0 0 14px 14px;
+  background: rgb(10 12 15 / 0.82);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #dfe6ff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 14px 28px rgb(0 0 0 / 0.45);
+  cursor: grab;
+  touch-action: none;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--duration-hover) var(--ease-out),
+    box-shadow var(--duration-press) var(--spring),
+    border-color var(--duration-press) var(--spring);
+}
+
+.ticket-stub svg {
+  color: #9bb3ff;
+}
+
+.coverflow-card.is-focused .ticket-stub {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ticket-stub-notch {
+  position: absolute;
+  top: -5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 9999px;
+  background: var(--canvas);
+}
+
+.ticket-stub-notch.is-left {
+  left: -5px;
+}
+
+.ticket-stub-notch.is-right {
+  right: -5px;
+}
+
+.ticket-stub.is-dragging {
+  cursor: grabbing;
+}
+
+.ticket-stub.is-armed {
+  border-top-color: rgb(124 156 255 / 0.9);
+  box-shadow:
+    0 22px 36px rgb(0 0 0 / 0.55),
+    0 0 0 1.5px rgb(124 156 255 / 0.6),
+    0 0 24px rgb(124 156 255 / 0.35);
+}
+
+.ticket-stub.is-torn {
+  animation: stub-tear 420ms var(--ease-out) both;
+}
+
+@keyframes stub-tear {
+  to {
+    transform: translate3d(-50%, 140px, 0) rotate(8deg);
+    opacity: 0;
+  }
+}
+
+.ticket-stub-hint {
+  position: absolute;
+  left: 50%;
+  bottom: -80px;
+  z-index: 12;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--paper);
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.7);
+  animation: fade-up var(--duration-enter) var(--ease-out) both;
+  pointer-events: none;
+}
+
+.visto-stamp {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 11;
+  padding: 6px 14px;
+  border: 3px solid var(--success);
+  border-radius: 8px;
+  color: var(--success);
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-weight: 700;
+  font-size: 30px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  line-height: 1;
+  background: rgb(19 38 28 / 0.55);
+  box-shadow:
+    0 0 0 2px rgb(19 38 28 / 0.6),
+    0 10px 30px rgb(0 0 0 / 0.5);
+  animation: visto-stamp var(--duration-pop) var(--spring) both;
+  pointer-events: none;
+}
+
+@keyframes visto-stamp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-12deg) scale(1.6);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-12deg) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-12deg) scale(1);
+  }
+}
+
+.coverflow-card.is-stamped .coverflow-card-face img {
+  filter: brightness(0.78);
+}
+
+.fly-poster {
+  position: fixed;
+  z-index: 120;
+  border-radius: 22px;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--surface);
+  box-shadow: 0 20px 40px rgb(0 0 0 / 0.5);
+  pointer-events: none;
+  transform-origin: center;
+}
+
+/* Perfil tab receives the poster. */
+.nav-receive > :first-child {
+  animation: nav-receive 900ms var(--spring) both;
+  border-radius: 9999px;
+}
+
+@keyframes nav-receive {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgb(124 156 255 / 0.6);
+  }
+  40% {
+    transform: scale(1.18);
+    box-shadow: 0 0 0 8px rgb(124 156 255 / 0.25);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgb(124 156 255 / 0);
+  }
+}
+
+/* Footer: title, meta, reason pill, chips (readable over the sala grade). */
+.tonight-footer .tonight-title,
+.tonight-footer .tonight-title a {
+  color: var(--paper);
+  text-shadow: 0 1px 14px rgb(0 0 0 / 0.75);
+}
+
+.tonight-footer .tonight-meta {
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.75);
+}
+
+.tonight-title-in {
+  animation: genre-coverflow-title-in var(--duration-enter) var(--ease-out) both;
+}
+
+.tonight-reason {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: min(100%, 22rem);
+  height: 26px;
+  padding: 0 10px 0 8px;
+  border-radius: 9999px;
+  border: 1px solid rgb(124 156 255 / 0.3);
+  background: rgb(124 156 255 / 0.12);
+  color: #dfe6ff;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-hover) var(--ease-out),
+    background-color var(--duration-hover) var(--ease-out);
+}
+
+.tonight-reason:hover {
+  border-color: rgb(124 156 255 / 0.55);
+  background: rgb(124 156 255 / 0.18);
+}
+
+.tonight-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  background: rgb(0 0 0 / 0.36);
+  color: var(--paper);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.tonight-chip.is-over {
+  border-color: rgb(240 179 90 / 0.45);
+}
+
+.tonight-chip-imdb {
+  display: inline-flex;
+  align-items: center;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: 2px;
+  background: var(--imdb);
+  color: #000;
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-weight: 800;
+  font-size: 9px;
+  letter-spacing: -0.01em;
+}
+
+/* Reparto del mazo: cards fan in from below with a 50 ms stagger. */
+.deck-deal .coverflow-card-face {
+  animation: deck-deal var(--duration-stagger) var(--spring) both;
+  animation-delay: calc(var(--deal-i, 0) * 50ms);
+}
+
+@keyframes deck-deal {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Lens rail: neighbors in the same serif voice as the active lens, readable. */
+.genre-coverflow-neighbor {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-size: 0.95rem;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  text-transform: none;
+  color: #aab2bb;
+  opacity: 1;
+  max-width: 7.5rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1675,6 +1982,22 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-n
     filter: none;
     transform: none;
     opacity: 1;
+  }
+
+  .ticket-stub,
+  .ticket-stub.is-torn,
+  .ticket-stub-hint,
+  .visto-stamp,
+  .deck-deal .coverflow-card-face,
+  .tonight-title-in,
+  .nav-receive > :first-child {
+    animation: none !important;
+    transition: none;
+  }
+
+  .visto-stamp {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-12deg);
   }
 
   ::view-transition-group(*),

@@ -183,11 +183,11 @@ export const measureCoverflowCardWidth = (
     : stageWidth >= 900
       ? COVERFLOW_CARD_WIDTH_MAX_WIDE
       : COVERFLOW_CARD_WIDTH;
-  // Qué ver: dominant hero (phone ~68vw). Historial keeps prior fill.
+  // Esta noche: dominant hero (phone ~62% of the stage). Historial keeps prior fill.
   const widthRatio = cinematic
     ? stageWidth >= 700
       ? 0.38
-      : 0.56
+      : 0.62
     : stageWidth >= 700
       ? 0.4
       : 0.5;

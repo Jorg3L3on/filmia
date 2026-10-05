@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { memo } from "react";
+import { memo, useRef, useState, type CSSProperties } from "react";
 import { MarkSeenEye } from "@/components/MarkSeenEye";
+import { TicketStub } from "@/components/tonight/TicketStub";
+import { useTonight } from "@/components/tonight/TonightContext";
+import { flyPosterToProfile } from "@/lib/fly-to-nav";
+import { useLongPress } from "@/lib/motion";
+import { tmdbPosterUrl } from "@/lib/tmdb";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { PosterImage } from "@/components/PosterImage";
 import { SharedPoster } from "@/components/SharedPoster";
@@ -74,7 +79,11 @@ type DeckCardProps = {
   registerNode: (index: number, node: HTMLElement | null) => void;
   onMarkedSeen?: (titleId: string) => void;
   onMarkSeenError?: (titleId: string) => void;
+  /** Esta noche: the stub tore — fire the sala light leak. */
+  onStubCommit?: () => void;
 };
+
+const STAMP_MS = 520;
 
 export const DeckCard = memo(function DeckCard({
   title,
@@ -88,7 +97,18 @@ export const DeckCard = memo(function DeckCard({
   registerNode,
   onMarkedSeen,
   onMarkSeenError,
+  onStubCommit,
 }: DeckCardProps) {
+  const sala = useTonight();
+  const tonight = title.tonight;
+  const isTonight = Boolean(tonight && sala && cinematic && !compact);
+  const [stamped, setStamped] = useState(false);
+  const rootRef = useRef<HTMLElement | null>(null);
+  const longPress = useLongPress(() => {
+    if (isTonight && sala) {
+      sala.onOpenMenu(title);
+    }
+  });
   const imdbLabel = formatImdbRating(title.imdbRating);
   const availabilityPlatform = primaryAvailabilityPlatform(
     title.flatrateProviders,
@@ -126,7 +146,24 @@ export const DeckCard = memo(function DeckCard({
   };
 
   const handleRef = (node: HTMLElement | null) => {
+    rootRef.current = node;
     registerNode(index, node);
+  };
+
+  const handleStubSaved = () => {
+    setStamped(true);
+    onMarkedSeen?.(title.id);
+    window.setTimeout(() => {
+      void flyPosterToProfile(rootRef.current, tmdbPosterUrl(title.posterPath, "w185")).then(
+        () => sala?.onWatched(title),
+      );
+    }, STAMP_MS);
+  };
+
+  const handleStubError = (message: string) => {
+    setStamped(false);
+    onMarkSeenError?.(title.id);
+    sala?.onWatchError(title, message);
   };
 
   return (
@@ -139,8 +176,27 @@ export const DeckCard = memo(function DeckCard({
         "coverflow-card absolute inset-0 origin-center",
         compact && "is-compact",
         cinematic && "is-cinematic",
+        isTonight && "is-tonight",
+        stamped && "is-stamped",
       )}
-      onPointerDown={onPointerDown}
+      onPointerDown={(event) => {
+        onPointerDown(event);
+        if (isTonight) {
+          longPress.onPointerDown(event);
+        }
+      }}
+      onPointerMove={isTonight ? longPress.onPointerMove : undefined}
+      onPointerUp={isTonight ? longPress.onPointerUp : undefined}
+      onPointerCancel={isTonight ? longPress.onPointerCancel : undefined}
+      onPointerLeave={isTonight ? longPress.onPointerLeave : undefined}
+      onContextMenu={
+        isTonight
+          ? (event) => {
+              event.preventDefault();
+              sala?.onOpenMenu(title);
+            }
+          : undefined
+      }
     >
       <Link
         href={`/titulos/${title.id}`}
@@ -148,9 +204,15 @@ export const DeckCard = memo(function DeckCard({
         aria-label={`${title.name}${title.year ? ` (${title.year})` : ""}${
           availabilityLabel ? ` en ${availabilityLabel}` : ""
         }`}
-        onClick={handleClick}
+        onClick={(event) => {
+          handleClick(event);
+          if (isTonight && !event.defaultPrevented) {
+            sala?.onOpened(title);
+          }
+        }}
         onDragStart={handleDragStart}
         data-coverflow-face
+        style={{ "--deal-i": index } as CSSProperties}
         className={cn(
           "coverflow-card-face relative block h-full cursor-inherit overflow-hidden bg-surface [&_img]:pointer-events-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
           cinematic
@@ -168,7 +230,7 @@ export const DeckCard = memo(function DeckCard({
         )}
         <span data-coverflow-dim className="coverflow-card-dim" aria-hidden />
         <span className="coverflow-card-specular" aria-hidden />
-        {!compact && title.watched ? (
+        {!compact && title.watched && !isTonight ? (
           <WatchedBadge
             compact
             className={cn(
@@ -179,7 +241,12 @@ export const DeckCard = memo(function DeckCard({
             )}
           />
         ) : null}
-        {cinematic && imdbLabel && title.imdbRating != null ? (
+        {stamped ? (
+          <span className="visto-stamp" aria-hidden="true">
+            Visto
+          </span>
+        ) : null}
+        {cinematic && !isTonight && imdbLabel && title.imdbRating != null ? (
           <span
             data-deck-imdb-badge
             aria-label={imdbLabel}
@@ -237,6 +304,17 @@ export const DeckCard = memo(function DeckCard({
           </div>
         ) : null}
       </Link>
+      {isTonight && !title.watched ? (
+        <TicketStub
+          titleId={title.id}
+          titleName={title.name}
+          rating={title.rating}
+          review={title.review}
+          onCommit={onStubCommit}
+          onSaved={handleStubSaved}
+          onError={handleStubError}
+        />
+      ) : null}
       {showMarkSeenEye && !title.watched ? (
         <MarkSeenEye
           titleId={title.id}

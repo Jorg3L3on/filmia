@@ -19,7 +19,8 @@
  * reads in the root layout.
  *
  * Route surface → decision (audit):
- * - `/` (diario)              → force-dynamic — user diary / picks / platforms
+ * - `/` (Hoy · Esta noche)    → force-dynamic — precomputed TonightPick + session
+ * - `/diario` (Tu diario)     → force-dynamic — user calendar / historial
  * - `/watchlist`              → force-dynamic — user Quiero ver queue
  * - `/buscar`                 → force-dynamic — user TMDB index + session;
  *                               public TMDB search still hits tagged cache
@@ -55,6 +56,7 @@ export const OMDB_CACHE_TAG = "omdb-metadata" as const;
 /** Auth-gated App Router pages that must stay request-time (Neon + session). */
 export const AUTH_DYNAMIC_PAGES = [
   "src/app/(diario)/page.tsx",
+  "src/app/diario/page.tsx",
   "src/app/watchlist/page.tsx",
   "src/app/buscar/page.tsx",
   "src/app/listas/page.tsx",

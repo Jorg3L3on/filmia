@@ -8,7 +8,7 @@ type ErrorPageProps = {
   reset: () => void;
 };
 
-export default function DiarioError({ error, reset }: ErrorPageProps) {
+export default function HoyError({ error, reset }: ErrorPageProps) {
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -18,7 +18,7 @@ export default function DiarioError({ error, reset }: ErrorPageProps) {
       <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-danger">
         Corte
       </p>
-      <h1 className="font-serif text-3xl text-paper">El Diario no cargó</h1>
+      <h1 className="font-serif text-3xl text-paper">Esta noche no cargó</h1>
       <p className="text-sm leading-relaxed text-fog">
         Esta escena falló. Reintenta; si sigue igual, el problema es nuestro, no
         tuyo.
@@ -27,8 +27,8 @@ export default function DiarioError({ error, reset }: ErrorPageProps) {
         <Button type="button" variant="secondary" onClick={reset}>
           Reintentar
         </Button>
-        <Button href="/" variant="ghost">
-          Volver al inicio
+        <Button href="/watchlist" variant="ghost">
+          Ir a Quiero ver
         </Button>
       </div>
     </div>

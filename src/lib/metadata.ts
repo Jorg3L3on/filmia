@@ -1,5 +1,5 @@
 import { TitleKind } from "@/db";
-import { fetchImdbRating, isOmdbConfigured } from "@/lib/omdb";
+import { fetchImdbScore, isOmdbConfigured } from "@/lib/omdb";
 import {
   getTmdbDetails,
   getTmdbExternalIds,
@@ -7,6 +7,8 @@ import {
   searchTmdb,
   searchTmdbMulti,
   type TmdbGenre,
+  type TmdbKeyword,
+  type TmdbPerson,
 } from "@/lib/tmdb";
 
 export type TitleMetadata = {
@@ -16,7 +18,11 @@ export type TitleMetadata = {
   runtimeMinutes?: number | null;
   imdbId: string | null;
   imdbRating: number | null;
+  imdbVotes?: number | null;
   tmdbGenres: TmdbGenre[];
+  tmdbKeywords?: TmdbKeyword[];
+  tmdbPeople?: TmdbPerson[];
+  originalLanguage?: string | null;
   overview?: string | null;
   name?: string;
   originalName?: string | null;
@@ -37,7 +43,7 @@ export const resolveTitleMetadata = async (
     getTmdbExternalIds(tmdbId, kind),
   ]);
 
-  const imdbRating = imdbId ? await fetchImdbRating(imdbId) : null;
+  const score = imdbId ? await fetchImdbScore(imdbId) : { rating: null, votes: null };
 
   return {
     tmdbId: details.tmdbId,
@@ -45,8 +51,12 @@ export const resolveTitleMetadata = async (
     backdropPath: details.backdropPath,
     runtimeMinutes: details.runtimeMinutes,
     imdbId,
-    imdbRating,
+    imdbRating: score.rating,
+    imdbVotes: score.votes,
     tmdbGenres: details.genres,
+    tmdbKeywords: details.keywords,
+    tmdbPeople: details.people,
+    originalLanguage: details.originalLanguage,
     overview: details.overview,
     name: details.name,
     originalName: details.originalName,
@@ -110,6 +120,7 @@ export const enrichMetadataOnSave = async (
       runtimeMinutes: resolved.runtimeMinutes ?? metadata.runtimeMinutes,
       imdbId: resolved.imdbId ?? metadata.imdbId,
       imdbRating: resolved.imdbRating ?? metadata.imdbRating,
+      imdbVotes: resolved.imdbVotes ?? metadata.imdbVotes ?? null,
       tmdbGenres:
         resolved.tmdbGenres.length > 0 ? resolved.tmdbGenres : metadata.tmdbGenres,
     };

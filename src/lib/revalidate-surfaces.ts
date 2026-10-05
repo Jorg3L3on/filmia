@@ -15,12 +15,16 @@ export const revalidateWatchlistSurfaces = (titleId?: string) => {
 
 export const revalidateDiarySurfaces = (titleId: string) => {
   revalidatePath("/");
+  revalidatePath("/diario");
+  revalidatePath("/perfil");
   revalidatePath("/watchlist");
   revalidateTitlePages(titleId);
 };
 
 export const revalidateRatingSurfaces = (titleId: string) => {
   revalidatePath("/");
+  revalidatePath("/diario");
+  revalidatePath("/perfil");
   revalidateTitlePages(titleId);
 };
 
@@ -47,6 +51,7 @@ export const revalidateListMembership = (listId: string, titleId: string) => {
 
 export const revalidateCatalogSurfaces = (titleId?: string) => {
   revalidatePath("/");
+  revalidatePath("/diario");
   revalidatePath("/listas");
   revalidatePath("/watchlist");
   revalidatePath("/buscar");
@@ -58,12 +63,14 @@ export const revalidateCatalogSurfaces = (titleId?: string) => {
 
 export const revalidateSeriesSurfaces = (titleId: string) => {
   revalidatePath("/");
+  revalidatePath("/diario");
   revalidatePath("/listas");
   revalidateTitlePages(titleId);
 };
 
 export const revalidateTagSurfaces = (titleId?: string, slug?: string) => {
   revalidatePath("/");
+  revalidatePath("/diario");
   revalidatePath("/tags");
   if (slug) {
     revalidatePath(tagHref(slug));

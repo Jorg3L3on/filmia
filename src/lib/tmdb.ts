@@ -143,71 +143,78 @@ const tmdbFetch = async <T>(path: string, params: Record<string, string> = {}) =
     if (error instanceof TmdbRequestError) {
       throw error;
     }
-    throw new TmdbRequestError(
-      "network",
-      "No se pudo conectar con TMDB. Revisa tu red.",
-    );
-  }
-};
-
-const loadCachedTmdbJson = unstable_cache(
-  async (path: string, search: string): Promise<unknown> => {
-    const apiKey = getTmdbApiKey();
-    if (!apiKey) {
-      throw new TmdbRequestError(
-        "missing_key",
-        "Falta TMDB_API_KEY. Agrégala en el entorno para buscar títulos.",
-      );
-    }
-
-    const url = new URL(`${TMDB_BASE}${path}${search}`);
-    const headers: Record<string, string> = { Accept: "application/json" };
-    if (isTmdbAccessToken(apiKey)) {
-      headers.Authorization = `Bearer ${apiKey}`;
-    } else {
-      url.searchParams.set("api_key", apiKey);
-    }
-
-    let response: Response;
+    // Outside a Next request scope (scripts, cron workers) unstable_cache has no
+    // incremental cache: fall through to the plain fetch instead of failing.
     try {
-      response = await fetch(url, {
-        next: {
-          revalidate: METADATA_REVALIDATE_SECONDS,
-          tags: [TMDB_CACHE_TAG],
-        },
-        headers,
-      });
-    } catch {
+      return (await fetchTmdbJson(path, url.search)) as T;
+    } catch (direct) {
+      if (direct instanceof TmdbRequestError) {
+        throw direct;
+      }
       throw new TmdbRequestError(
         "network",
         "No se pudo conectar con TMDB. Revisa tu red.",
       );
     }
+  }
+};
 
-    if (response.status === 429) {
-      throw new TmdbRequestError(
-        "rate_limit",
-        "TMDB está limitando las peticiones. Espera un momento e inténtalo de nuevo.",
-        429,
-      );
-    }
+const fetchTmdbJson = async (path: string, search: string): Promise<unknown> => {
+  const apiKey = getTmdbApiKey();
+  if (!apiKey) {
+    throw new TmdbRequestError(
+      "missing_key",
+      "Falta TMDB_API_KEY. Agrégala en el entorno para buscar títulos.",
+    );
+  }
 
-    if (!response.ok) {
-      throw new TmdbRequestError(
-        "http",
-        `TMDB respondió ${response.status}.`,
-        response.status,
-      );
-    }
+  const url = new URL(`${TMDB_BASE}${path}${search}`);
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (isTmdbAccessToken(apiKey)) {
+    headers.Authorization = `Bearer ${apiKey}`;
+  } else {
+    url.searchParams.set("api_key", apiKey);
+  }
 
-    return response.json() as Promise<unknown>;
-  },
-  ["tmdb-json"],
-  {
-    revalidate: METADATA_REVALIDATE_SECONDS,
-    tags: [TMDB_CACHE_TAG],
-  },
-);
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      next: {
+        revalidate: METADATA_REVALIDATE_SECONDS,
+        tags: [TMDB_CACHE_TAG],
+      },
+      headers,
+    });
+  } catch {
+    throw new TmdbRequestError(
+      "network",
+      "No se pudo conectar con TMDB. Revisa tu red.",
+    );
+  }
+
+  if (response.status === 429) {
+    throw new TmdbRequestError(
+      "rate_limit",
+      "TMDB está limitando las peticiones. Espera un momento e inténtalo de nuevo.",
+      429,
+    );
+  }
+
+  if (!response.ok) {
+    throw new TmdbRequestError(
+      "http",
+      `TMDB respondió ${response.status}.`,
+      response.status,
+    );
+  }
+
+  return response.json() as Promise<unknown>;
+};
+
+const loadCachedTmdbJson = unstable_cache(fetchTmdbJson, ["tmdb-json"], {
+  revalidate: METADATA_REVALIDATE_SECONDS,
+  tags: [TMDB_CACHE_TAG],
+});
 
 const parseYear = (value: string | null | undefined) => {
   if (!value) {
@@ -444,6 +451,9 @@ export type TmdbTitleExtras = {
   backdropPath: string | null;
   posterPath: string | null;
   genres: TmdbGenre[];
+  keywords?: TmdbKeyword[];
+  people?: TmdbPerson[];
+  originalLanguage?: string | null;
 };
 
 const parseRuntimeMinutes = (data: {
@@ -480,50 +490,146 @@ const overviewWithFallback = async (
   return null;
 };
 
+export type TmdbKeyword = { id: number; name: string };
+export type TmdbPersonRole = "director" | "creator" | "cast";
+export type TmdbPerson = { id: number; name: string; role: TmdbPersonRole };
+
+const TMDB_CAST_LIMIT = 5;
+
+type TmdbCreditsPayload = {
+  cast?: Array<{ id?: number; name?: string; order?: number; total_episode_count?: number }>;
+  crew?: Array<{ id?: number; name?: string; job?: string; jobs?: Array<{ job?: string }> }>;
+};
+
+type TmdbKeywordsPayload = {
+  keywords?: Array<{ id?: number; name?: string }>;
+  results?: Array<{ id?: number; name?: string }>;
+};
+
+export const parseTmdbKeywords = (payload: TmdbKeywordsPayload | null | undefined): TmdbKeyword[] => {
+  const raw = payload?.keywords ?? payload?.results ?? [];
+  const seen = new Set<number>();
+  const keywords: TmdbKeyword[] = [];
+  for (const item of raw) {
+    const id = Number(item?.id);
+    const name = item?.name?.trim();
+    if (!Number.isInteger(id) || id <= 0 || !name || seen.has(id)) {
+      continue;
+    }
+    seen.add(id);
+    keywords.push({ id, name });
+  }
+  return keywords;
+};
+
+const isDirectorJob = (job: string | undefined) => job === "Director";
+
+export const parseTmdbPeople = (
+  credits: TmdbCreditsPayload | null | undefined,
+  createdBy: Array<{ id?: number; name?: string }> | undefined,
+): TmdbPerson[] => {
+  const people: TmdbPerson[] = [];
+  const seen = new Set<number>();
+  const push = (id: unknown, name: string | undefined, role: TmdbPersonRole) => {
+    const numeric = Number(id);
+    const label = name?.trim();
+    if (!Number.isInteger(numeric) || numeric <= 0 || !label || seen.has(numeric)) {
+      return;
+    }
+    seen.add(numeric);
+    people.push({ id: numeric, name: label, role });
+  };
+
+  for (const person of createdBy ?? []) {
+    push(person.id, person.name, "creator");
+  }
+  for (const member of credits?.crew ?? []) {
+    const jobs = member.jobs?.map((item) => item.job) ?? [member.job];
+    if (jobs.some(isDirectorJob)) {
+      push(member.id, member.name, "director");
+    }
+  }
+  const cast = [...(credits?.cast ?? [])].sort((a, b) => {
+    const episodes = (b.total_episode_count ?? 0) - (a.total_episode_count ?? 0);
+    if (episodes !== 0) {
+      return episodes;
+    }
+    return (a.order ?? 999) - (b.order ?? 999);
+  });
+  let castCount = 0;
+  for (const member of cast) {
+    if (castCount >= TMDB_CAST_LIMIT) {
+      break;
+    }
+    const before = people.length;
+    push(member.id, member.name, "cast");
+    if (people.length > before) {
+      castCount += 1;
+    }
+  }
+  return people;
+};
+
 export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
   const segment = kind === "SERIES" ? "tv" : "movie";
   type MovieDetails = {
     id: number;
     title: string;
     original_title?: string;
+    original_language?: string;
     release_date?: string;
     poster_path?: string | null;
     backdrop_path?: string | null;
     overview?: string;
     runtime?: number | null;
     genres?: Array<{ id?: number; name?: string }>;
+    keywords?: TmdbKeywordsPayload;
+    credits?: TmdbCreditsPayload;
   };
   type TvDetails = {
     id: number;
     name: string;
     original_name?: string;
+    original_language?: string;
     first_air_date?: string;
     poster_path?: string | null;
     backdrop_path?: string | null;
     overview?: string;
     episode_run_time?: number[];
     genres?: Array<{ id?: number; name?: string }>;
+    keywords?: TmdbKeywordsPayload;
+    aggregate_credits?: TmdbCreditsPayload;
+    created_by?: Array<{ id?: number; name?: string }>;
   };
 
-  const data = await tmdbFetch<MovieDetails | TvDetails>(`/${segment}/${tmdbId}`);
+  // One call: details + keywords + credits (Esta noche taste vector). TV keywords
+  // come back under `results`, movies under `keywords`; parseTmdbKeywords handles both.
+  const data = await tmdbFetch<MovieDetails | TvDetails>(`/${segment}/${tmdbId}`, {
+    append_to_response: segment === "tv" ? "keywords,aggregate_credits" : "keywords,credits",
+  });
   const genres = parseTmdbGenres(data.genres);
+  const keywords = parseTmdbKeywords(data.keywords);
   const overview = await overviewWithFallback(
     segment,
     data.id,
     data.overview?.trim() || null,
   );
+  const originalLanguage = data.original_language?.trim() || null;
 
   if ("title" in data) {
     return {
       tmdbId: data.id,
       name: data.title,
       originalName: data.original_title ?? null,
+      originalLanguage,
       year: parseYear(data.release_date),
       posterPath: data.poster_path ?? null,
       backdropPath: data.backdrop_path ?? null,
       overview,
       runtimeMinutes: parseRuntimeMinutes(data),
       genres,
+      keywords,
+      people: parseTmdbPeople(data.credits, undefined),
     };
   }
 
@@ -531,12 +637,15 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
     tmdbId: data.id,
     name: data.name,
     originalName: data.original_name ?? null,
+    originalLanguage,
     year: parseYear(data.first_air_date),
     posterPath: data.poster_path ?? null,
     backdropPath: data.backdrop_path ?? null,
     overview,
     runtimeMinutes: parseRuntimeMinutes(data),
     genres,
+    keywords,
+    people: parseTmdbPeople(data.aggregate_credits, data.created_by),
   };
 };
 
@@ -557,6 +666,9 @@ export const getTmdbTitleExtras = cache(async (
       backdropPath: details.backdropPath,
       posterPath: details.posterPath,
       genres: details.genres,
+      keywords: details.keywords,
+      people: details.people,
+      originalLanguage: details.originalLanguage,
     };
   } catch {
     return null;

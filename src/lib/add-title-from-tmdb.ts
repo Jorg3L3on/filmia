@@ -8,6 +8,9 @@ import { ensureDefaultLists, WATCHLIST_SLUG } from "@/lib/lists";
 import { resolveTitleMetadata } from "@/lib/metadata";
 import { revalidateTitlePages } from "@/lib/revalidate-surfaces";
 import type { TmdbGenre } from "@/lib/tmdb";
+import { sampleAmbientFromPosterPath } from "@/lib/poster-ambient-server";
+import { formatAmbientRgb } from "@/lib/poster-ambient";
+import { scheduleTonightRecompute } from "@/lib/tonight-store";
 import { enrichWatchProvidersOnSave } from "@/lib/watch-providers-cache";
 
 export type AddTitleDestination = "watchlist" | "watched";
@@ -79,6 +82,7 @@ const resolveWatchedAt = (value?: string | null) =>
   parseOptionalDate(value ?? null) ?? new Date();
 
 const enrichCreatedTitleInBackground = (
+  userId: string,
   titleId: string,
   tmdbId: number,
   kind: TitleKind,
@@ -92,6 +96,9 @@ const enrichCreatedTitleInBackground = (
       ]);
 
       if (resolved) {
+        const ambient = resolved.posterPath
+          ? formatAmbientRgb(await sampleAmbientFromPosterPath(resolved.posterPath))
+          : null;
         await db
           .update(titles)
           .set({
@@ -103,14 +110,20 @@ const enrichCreatedTitleInBackground = (
             runtimeMinutes: resolved.runtimeMinutes,
             imdbId: resolved.imdbId,
             imdbRating: resolved.imdbRating,
+            imdbVotes: resolved.imdbVotes ?? null,
             overview: resolved.overview ?? null,
             tmdbGenres: resolved.tmdbGenres,
+            tmdbKeywords: resolved.tmdbKeywords ?? [],
+            tmdbPeople: resolved.tmdbPeople ?? [],
+            originalLanguage: resolved.originalLanguage ?? null,
+            posterAmbient: ambient,
             tmdbId: resolved.tmdbId ?? tmdbId,
           })
           .where(eq(titles.id, titleId));
       }
 
       revalidateTitlePages(titleId);
+      scheduleTonightRecompute(userId);
     } catch {
       // Snapshot row already exists; enrichment is best-effort.
     }
@@ -214,7 +227,7 @@ export const upsertTitleFromTmdbForUser = async (
     await enqueueInWatchlist(userId, titleId);
   }
 
-  enrichCreatedTitleInBackground(titleId, tmdbId, kind, snapshotName);
+  enrichCreatedTitleInBackground(userId, titleId, tmdbId, kind, snapshotName);
 
   return {
     ok: true,

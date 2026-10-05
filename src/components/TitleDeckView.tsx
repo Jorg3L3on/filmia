@@ -1,12 +1,10 @@
-import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
+import { CoverflowDeck } from "@/components/CoverflowDeck";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
 import { PosterTile } from "@/components/PosterTile";
 import type { Platform } from "@/db";
-import { parseStoredTmdbGenres } from "@/lib/diary-picks";
+import { toCoverflowTitle } from "@/lib/coverflow-title";
 import type { TitleWithTags } from "@/lib/queries";
-import { currentAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { eyebrowClass } from "@/lib/ui";
-import { parseStoredWatchProviders } from "@/lib/watch-providers";
 import { staggerStyle } from "@/lib/motion-style";
 
 type TitleDeckViewProps = {
@@ -21,28 +19,7 @@ type TitleDeckViewProps = {
   tagId?: string;
 };
 
-export const toCoverflowTitle = (
-  title: TitleWithTags,
-  userPlatforms: readonly Platform[] = [],
-): CoverflowTitle => {
-  const watchProviders = parseStoredWatchProviders(title.watchProvidersMx);
-  return {
-    id: title.id,
-    name: title.name,
-    kind: title.kind,
-    year: title.year,
-    rating: title.rating,
-    posterPath: title.posterPath,
-    platform: currentAvailabilityPlatform(watchProviders, title.platform, userPlatforms),
-    imdbRating: title.imdbRating,
-    watched: Boolean(title.watchedAt),
-    review: title.review,
-    seriesStatus: title.kind === "SERIES" ? title.seriesStatus : null,
-    seriesSeason: title.kind === "SERIES" ? title.seriesSeason : null,
-    flatrateProviders: watchProviders?.flatrate ?? [],
-    genres: parseStoredTmdbGenres(title.tmdbGenres),
-  };
-};
+export { toCoverflowTitle } from "@/lib/coverflow-title";
 
 export const TitleDeckView = ({
   titles,

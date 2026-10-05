@@ -1,9 +1,18 @@
 export type ToastVariant = "success" | "error";
 
+export type ToastAction = {
+  label: string;
+  onClick: () => void;
+};
+
 export type ToastPayload = {
   title: string;
   description?: string;
   variant?: ToastVariant;
+  /** Optional inline action (e.g. «Deshacer»). */
+  action?: ToastAction;
+  /** Override auto-dismiss (ms). */
+  durationMs?: number;
 };
 
 export type ToastItem = {
@@ -11,6 +20,8 @@ export type ToastItem = {
   title: string;
   description?: string;
   variant: ToastVariant;
+  action?: ToastAction;
+  durationMs?: number;
 };
 
 const EMPTY: ToastItem[] = [];
@@ -30,6 +41,8 @@ export const showToast = (payload: ToastPayload) => {
     title: payload.title,
     description: payload.description,
     variant: payload.variant ?? "success",
+    action: payload.action,
+    durationMs: payload.durationMs,
   };
   nextId += 1;
   items = [...items.slice(-(MAX_TOASTS - 1)), next];

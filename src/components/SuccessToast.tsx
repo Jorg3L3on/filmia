@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
-import type { ToastVariant } from "@/lib/toast";
+import type { ToastAction, ToastVariant } from "@/lib/toast";
 
 type SuccessToastProps = {
   title: string;
   description?: string;
   variant?: ToastVariant;
+  action?: ToastAction;
+  durationMs?: number;
   onDismiss?: () => void;
 };
 
@@ -16,6 +18,8 @@ export const SuccessToast = ({
   title,
   description,
   variant = "success",
+  action,
+  durationMs,
   onDismiss,
 }: SuccessToastProps) => {
   const [phase, setPhase] = useState<"in" | "out">("in");
@@ -26,12 +30,12 @@ export const SuccessToast = ({
   }, [onDismiss]);
 
   useEffect(() => {
-    const duration = variant === "error" ? 4500 : 3200;
+    const duration = durationMs ?? (variant === "error" ? 4500 : 3200);
     const timer = window.setTimeout(() => {
       setPhase("out");
     }, duration);
     return () => window.clearTimeout(timer);
-  }, [variant]);
+  }, [durationMs, variant]);
 
   useEffect(() => {
     if (phase !== "out") {
@@ -80,6 +84,21 @@ export const SuccessToast = ({
         </p>
         {description ? <p className="text-fog">{description}</p> : null}
       </div>
+      {action ? (
+        <button
+          type="button"
+          onClick={() => {
+            action.onClick();
+            setPhase("out");
+          }}
+          className={cn(
+            "press-scale -my-1 shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-accent hover:bg-accent/10",
+            focusRing,
+          )}
+        >
+          {action.label}
+        </button>
+      ) : null}
       <button
         type="button"
         onClick={handleDismiss}

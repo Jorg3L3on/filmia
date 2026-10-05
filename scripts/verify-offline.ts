@@ -14,6 +14,7 @@ const offlineScripts = [
   "verify-profile.ts",
   "verify-mark-seen.ts",
   "verify-motion.ts",
+  "verify-hoy.ts",
   "verify-title-overview.ts",
   "verify-fase-3.ts",
   "verify-fase-4.ts",

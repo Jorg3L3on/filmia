@@ -157,7 +157,7 @@ const run = () => {
   );
   assert(
     rendering.includes("Route surface → decision") &&
-      AUTH_DYNAMIC_PAGES.length === 12 &&
+      AUTH_DYNAMIC_PAGES.length === 13 &&
       PUBLIC_STATIC_ELIGIBLE_PAGES.length === 2,
     "Rendering audit table documents route → dynamic/cached decisions",
   );

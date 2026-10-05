@@ -37,10 +37,15 @@ const run = () => {
     "Deck is explicit once calendar is the default",
   );
 
-  const diario = read("src/app/(diario)/page.tsx");
+  const diario = read("src/app/diario/page.tsx");
   assert(
     diario.includes("HISTORIAL_DEFAULT_VIEW"),
-    "Diario historial uses the shared deck default",
+    "Tu diario (/diario) uses the shared deck default",
+  );
+  assert(
+    read("src/app/(diario)/page.tsx").includes("TonightSala") &&
+      !read("src/app/(diario)/page.tsx").includes("DiaryModeToggle"),
+    "Hoy renders the Esta noche sala without the old Qué ver | Historial toggle",
   );
   assert(
     !diario.includes("DiaryMonthList"),
@@ -184,8 +189,9 @@ const run = () => {
     "Diario has mode-aware calendar/grid/deck skeleton wells",
   );
   assert(
-    read("src/app/(diario)/loading.tsx").includes("DiaryRouteSkeleton"),
-    "Diario loading uses route skeleton by mode/view",
+    read("src/app/(diario)/loading.tsx").includes("HoySkeleton") &&
+      read("src/app/diario/loading.tsx").includes("DiaryBodySkeleton"),
+    "Hoy loading uses the sala skeleton; Tu diario loading keeps the calendar well",
   );
   const diarioError = read("src/app/(diario)/error.tsx");
   assert(

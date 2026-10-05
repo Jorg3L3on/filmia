@@ -36,6 +36,8 @@ export const ToastHost = () => {
             title={toast.title}
             description={toast.description}
             variant={toast.variant}
+            action={toast.action}
+            durationMs={toast.durationMs}
             onDismiss={() => dismissToast(toast.id)}
           />
         </div>
