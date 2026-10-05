@@ -50,7 +50,7 @@ describe("buttonClass", () => {
 });
 
 describe("sheet tokens", () => {
-  it("uses floating glass surface, 50% scrim, z-50, radius, and safe-area", () => {
+  it("uses floating glass surface, 50% scrim, layers above the tab bar, radius, and safe-area", () => {
     const panel = sheetPanelClass();
     assert.match(panel, /glass-panel glass-sheet/);
     assert.match(panel, /rounded-sheet/);
@@ -59,7 +59,7 @@ describe("sheet tokens", () => {
     assert.match(panel, /sheet-rise/);
     assert.match(sheetOverlayClass, /bg-black\/50/);
     assert.equal(sheetLayerClass.preview, "z-sheet-preview");
-    assert.equal(sheetLayerClass.default, "z-50");
+    assert.equal(sheetLayerClass.default, "z-sheet");
     assert.equal(sheetLayerClass.top, "z-sheet-top");
     assert.equal(toastLayerClass, "z-toast");
   });

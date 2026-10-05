@@ -4,7 +4,7 @@ import { useId, useState, useTransition } from "react";
 import { markTitleWatched } from "@/app/actions/watchlist";
 import { Button } from "@/components/Button";
 import { RatingStars } from "@/components/RatingStars";
-import { Sheet, SheetHandle } from "@/components/Sheet";
+import { Sheet, SheetHandle, useOpenGeneration } from "@/components/Sheet";
 import { cn } from "@/lib/cn";
 import {
   dateInputForPreset,
@@ -52,13 +52,12 @@ export const MarkWatchedSheet = ({
   onSaved,
   onError,
 }: MarkWatchedSheetProps) => {
-  if (!open) {
-    return null;
-  }
+  const generation = useOpenGeneration(open);
 
   return (
     <MarkWatchedSheetFields
-      key={`${titleId}:${initialWatchedAt}:${rating}:${review}`}
+      key={`${generation}:${titleId}:${initialWatchedAt}:${rating}:${review}`}
+      open={open}
       titleId={titleId}
       titleName={titleName}
       initialWatchedAt={initialWatchedAt}
@@ -74,6 +73,7 @@ export const MarkWatchedSheet = ({
 };
 
 const MarkWatchedSheetFields = ({
+  open,
   titleId,
   titleName,
   initialWatchedAt = null,
@@ -84,7 +84,7 @@ const MarkWatchedSheetFields = ({
   onClose,
   onSaved,
   onError,
-}: Omit<MarkWatchedSheetProps, "open">) => {
+}: MarkWatchedSheetProps) => {
   const titleDomId = useId();
   const hasInitialDate = Boolean(initialWatchedAt);
   const [datePreset, setDatePreset] = useState<WatchedDatePreset>(
@@ -147,7 +147,7 @@ const MarkWatchedSheetFields = ({
 
   return (
     <Sheet
-      open
+      open={open}
       onClose={onClose}
       labelledBy={titleDomId}
       overlayLabel="Cerrar Marqué visto"
