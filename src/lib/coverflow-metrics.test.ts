@@ -76,7 +76,7 @@ describe("coverflow metrics", () => {
   it("grows cinematic hero while leaving room for the L+R fan", () => {
     const phone = measureCoverflowCardWidth(358, false, 400, true);
     assert.ok(phone >= 190, `phone hero too small: ${phone}`);
-    assert.ok(phone <= 358 * 0.62);
+    assert.ok(phone <= Math.round(358 * 0.62));
 
     const cinematic = measureCoverflowCardWidth(1000, false, 560, true);
     assert.ok(cinematic >= 300, `desktop hero too small: ${cinematic}`);

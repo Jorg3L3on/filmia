@@ -21,6 +21,16 @@ Canonical tokens live in `src/app/globals.css` (`:root` + comment block).
 
 Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` for sheet open.
 
+## Esta noche (Hoy)
+
+| Piece | Token | Notes |
+| --- | --- | --- |
+| Talón `.ticket-stub` | `--duration-press` · `--spring` (arm) | Drag down; perforation arms at 60 px (haptic), tears with `stub-tear` 420 ms ease-out. Tap = same result. |
+| Sello `.visto-stamp` | `--duration-pop` · `--spring` | 1.6 → 0.96 → 1, −12°, after «Guardar». |
+| Vuelo `.fly-poster` → `.nav-receive` | 620 ms ease-out · 900 ms spring pulse | Poster clone flies into the Perfil tab (Web Animations); reduced motion = pulse only. |
+| Reparto `.deck-deal` | `--duration-stagger` · `--spring` · 50 ms/card | On mount and on lens change (`--deal-i` per card). |
+| Razón / título `.tonight-title-in` | `--duration-enter` · `--ease-out` | Reuses `genre-coverflow-title-in` (blur-in). |
+
 ## SharedPoster
 
 React `<ViewTransition name={\`poster-${id}\`} share="morph">` via `SharedPoster` on tile → ficha paths (lists, tags results, buscar, deck, calendar, rail, ranking, watchlist).

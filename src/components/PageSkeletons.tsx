@@ -106,6 +106,44 @@ export const DiaryDeckSkeleton = () => (
   </div>
 );
 
+/** Esta noche (Hoy): lens rail + mazo + footer, no mode toggle. */
+export const HoyDeckSkeleton = () => (
+  <div className="diario-que-ver-body flex min-h-0 flex-1 flex-col gap-3" aria-hidden="true">
+    <div className="flex items-center justify-center gap-4">
+      <ShimmerBlock className="h-4 w-16 rounded-full" />
+      <ShimmerBlock className="h-9 w-32 rounded-xl" />
+      <ShimmerBlock className="h-4 w-16 rounded-full" />
+    </div>
+    <div className="coverflow-cinematic-stage relative mx-auto flex w-full items-center justify-center">
+      <ShimmerBlock className="aspect-[2/3] w-[min(62vw,256px)] rounded-[22px] sm:w-[min(34vw,380px)]" />
+    </div>
+    <div className="mx-auto max-w-md space-y-3 text-center">
+      <ShimmerBlock className="mx-auto h-8 w-56 rounded-xl sm:h-9 sm:w-72" />
+      <ShimmerBlock className="mx-auto h-4 w-44 rounded-full" />
+      <ShimmerBlock className="mx-auto h-6 w-60 rounded-full" />
+      <div className="flex justify-center gap-2">
+        <ShimmerBlock className="h-7 w-20 rounded-full" />
+        <ShimmerBlock className="h-7 w-28 rounded-full" />
+        <ShimmerBlock className="h-7 w-32 rounded-full" />
+      </div>
+    </div>
+  </div>
+);
+
+export const HoySkeleton = ({ label = "Cargando Esta noche" }: SkeletonProps) => (
+  <div
+    className="diario-que-ver-shell flex min-h-0 flex-1 flex-col gap-3 max-sm:-mt-1"
+    aria-busy="true"
+    aria-label={label}
+  >
+    <div className="mx-auto flex w-full max-w-lg items-center justify-between px-1">
+      <ShimmerBlock className="h-3 w-36 rounded-full" />
+      <ShimmerBlock className="h-7 w-28 rounded-full" />
+    </div>
+    <HoyDeckSkeleton />
+  </div>
+);
+
 export const DiaryFiltersSkeleton = () => (
   <div className="flex items-center gap-1.5" aria-hidden="true">
     <ShimmerBlock className="h-8 w-16 rounded-full" />

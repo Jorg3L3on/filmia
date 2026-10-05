@@ -9,6 +9,7 @@ type GenreCoverflowProps = {
   categories: readonly DiaryCategory[];
   activeSlug: string;
   onSelect: (slug: string) => void;
+  label?: string;
 };
 
 const SWIPE_THRESHOLD_PX = 42;
@@ -21,6 +22,7 @@ export const GenreCoverflow = ({
   categories,
   activeSlug,
   onSelect,
+  label = "Categorías de Quiero ver",
 }: GenreCoverflowProps) => {
   const dragStartX = useRef<number | null>(null);
   const dragDeltaX = useRef(0);
@@ -114,7 +116,7 @@ export const GenreCoverflow = ({
   return (
     <div
       role="listbox"
-      aria-label="Categorías de Quiero ver"
+      aria-label={label}
       aria-activedescendant={`genre-coverflow-${active.slug}`}
       tabIndex={0}
       onKeyDown={handleKeyDown}

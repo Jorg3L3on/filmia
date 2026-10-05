@@ -35,7 +35,7 @@ export const CoverflowDeck = ({
     handleMarkSeenError,
   } = useCoverflowLocalTitles(incomingTitles);
   const isSheet = variant === "sheet";
-  const cinematic = footer === "watched" && !isSheet;
+  const cinematic = (footer === "watched" || footer === "tonight") && !isSheet;
   const focusSpring = useSpringFeedback();
   const notifiedIndex = useRef<number | null>(null);
   const deckRootRef = useRef<HTMLDivElement>(null);
@@ -60,6 +60,7 @@ export const CoverflowDeck = ({
   const activeTitle = titles[activeIndex] ?? titles[0];
   const ambient = usePosterAmbientColor(
     cinematic ? activeTitle?.posterPath : null,
+    activeTitle?.tonight?.posterAmbient ?? null,
   );
 
   const nextTitle =
@@ -220,6 +221,7 @@ export const CoverflowDeck = ({
                   registerNode={registerNode}
                   onMarkedSeen={handleMarkedSeen}
                   onMarkSeenError={handleMarkSeenError}
+                  onStubCommit={footer === "tonight" ? handleSlideCommit : undefined}
                 />
               );
             })}

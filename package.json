@@ -19,7 +19,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:import-watchlist": "tsx scripts/import-watchlist.ts",
     "db:backfill-metadata": "tsx scripts/backfill-metadata.ts",
-    "db:set-password": "tsx scripts/set-password.ts"
+    "db:set-password": "tsx scripts/set-password.ts",
+    "db:backfill-tonight": "tsx scripts/backfill-tonight.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

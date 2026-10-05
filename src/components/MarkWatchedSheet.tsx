@@ -32,6 +32,8 @@ type MarkWatchedSheetProps = {
   rating?: number | null;
   review?: string | null;
   saveLabel?: string;
+  /** Skip the generic «Marcada como vista» toast (the caller shows its own). */
+  silent?: boolean;
   onClose: () => void;
   onSaved?: () => void;
   onError?: (message: string) => void;
@@ -45,6 +47,7 @@ export const MarkWatchedSheet = ({
   rating = null,
   review = "",
   saveLabel = WATCHLIST_SAVE_LABEL,
+  silent = false,
   onClose,
   onSaved,
   onError,
@@ -62,6 +65,7 @@ export const MarkWatchedSheet = ({
       rating={rating}
       review={review}
       saveLabel={saveLabel}
+      silent={silent}
       onClose={onClose}
       onSaved={onSaved}
       onError={onError}
@@ -76,6 +80,7 @@ const MarkWatchedSheetFields = ({
   rating = null,
   review = "",
   saveLabel = WATCHLIST_SAVE_LABEL,
+  silent = false,
   onClose,
   onSaved,
   onError,
@@ -115,10 +120,12 @@ const MarkWatchedSheetFields = ({
 
     onClose();
     onSaved?.();
-    showToast({
-      title: hasInitialDate ? "Diario actualizado" : "Marcada como vista",
-      description: titleName,
-    });
+    if (!silent) {
+      showToast({
+        title: hasInitialDate ? "Diario actualizado" : "Marcada como vista",
+        description: titleName,
+      });
+    }
     startTransition(async () => {
       try {
         const formData = new FormData();

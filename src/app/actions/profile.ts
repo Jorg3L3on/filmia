@@ -15,6 +15,7 @@ import {
 } from "@/lib/form-data";
 import { revalidateProfileSurfaces } from "@/lib/revalidate-surfaces";
 import { requireUserId } from "@/lib/session";
+import { scheduleTonightRecompute } from "@/lib/tonight-store";
 
 export type ProfileActionState = { error: string } | { ok: true } | null;
 
@@ -29,6 +30,7 @@ export const updateStreamingPlatforms = async (formData: FormData) => {
   await db.update(users).set({ streamingPlatforms }).where(eq(users.id, userId));
 
   revalidateProfile();
+  scheduleTonightRecompute(userId);
 };
 
 export const updateAccount = async (

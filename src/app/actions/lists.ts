@@ -15,6 +15,7 @@ import {
   swapListItemPositions,
 } from "@/lib/list-order";
 import { requireUserId } from "@/lib/session";
+import { scheduleTonightRecompute } from "@/lib/tonight-store";
 
 const revalidateLists = (
   listId?: string,
@@ -135,6 +136,7 @@ export const addTitleToList = async (listId: string, titleId: string) => {
     .onConflictDoNothing();
 
   revalidateLists(listId, titleId, list.slug);
+  scheduleTonightRecompute(userId);
 };
 
 export const removeTitleFromList = async (listId: string, titleId: string) => {
@@ -145,6 +147,7 @@ export const removeTitleFromList = async (listId: string, titleId: string) => {
     .delete(listItems)
     .where(and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)));
   revalidateLists(listId, titleId, list.slug);
+  scheduleTonightRecompute(userId);
 };
 
 export const toggleTitleInList = async (listId: string, titleId: string) => {
@@ -182,6 +185,7 @@ export const toggleTitleInList = async (listId: string, titleId: string) => {
   }
 
   revalidateLists(listId, titleId, list.slug);
+  scheduleTonightRecompute(userId);
 };
 
 export const moveListItem = async (

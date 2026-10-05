@@ -49,7 +49,7 @@ const run = () => {
   assert(parseDiaryMode("historial") === "historial", "Historial mode is explicit");
   assert(parseDiaryMode(["picks", "historial"]) === "historial", "Repeated mode keeps last");
   assert(diaryModeHref("picks") === "/", "Qué ver href is the Diario home");
-  assert(diaryModeHref("historial") === "/?mode=historial", "Historial href uses mode param");
+  assert(diaryModeHref("historial") === "/diario", "Historial href points at Tu diario (under Perfil)");
 
   const titles = [
     title("a", 9.0, [

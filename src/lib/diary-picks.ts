@@ -13,8 +13,11 @@ export const parseDiaryMode = (value: unknown): DiaryMode => {
   return raw === "historial" ? "historial" : "picks";
 };
 
+/** Tu diario moved to its own route under Perfil; `/?mode=historial` redirects there. */
+export const DIARY_HISTORIAL_PATH = "/diario";
+
 export const diaryModeHref = (mode: DiaryMode) =>
-  mode === "historial" ? `/?${DIARY_MODE_PARAM}=historial` : "/";
+  mode === "historial" ? DIARY_HISTORIAL_PATH : "/";
 
 export type DiaryPickTitle = {
   id: string;

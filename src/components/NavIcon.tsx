@@ -1,6 +1,13 @@
 import type { MobileNavIcon } from "@/lib/nav";
 
-export const NavIcon = ({ name }: { name: MobileNavIcon }) => {
+export const NavIcon = ({
+  name,
+  day,
+}: {
+  name: MobileNavIcon;
+  /** Hoy: today's day number inside the calendar glyph (client-only). */
+  day?: number | null;
+}) => {
   const common = {
     viewBox: "0 0 24 24",
     fill: "none",
@@ -10,20 +17,25 @@ export const NavIcon = ({ name }: { name: MobileNavIcon }) => {
     "aria-hidden": true,
   } as const;
 
-  if (name === "diary") {
+  if (name === "today") {
     return (
       <svg {...common}>
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M6 5.25h5.25A1.75 1.75 0 0 1 13 7v12.25H7.75A1.75 1.75 0 0 1 6 17.5V5.25Z"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M13 7h4.25A1.75 1.75 0 0 1 19 8.75V19.25H13"
-        />
-        <path strokeLinecap="round" d="M8.25 8.75h2.5M8.25 11.5h2.5" />
+        <rect x="4" y="5" width="16" height="15" rx="3" />
+        <path strokeLinecap="round" d="M4 9.5h16M8.5 3.5v3M15.5 3.5v3" />
+        {day != null ? (
+          <text
+            x="12"
+            y="17.6"
+            textAnchor="middle"
+            fontSize="7.5"
+            fontWeight="700"
+            fill="currentColor"
+            stroke="none"
+            fontFamily="var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif"
+          >
+            {day}
+          </text>
+        ) : null}
       </svg>
     );
   }

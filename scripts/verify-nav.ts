@@ -2,6 +2,7 @@ import {
   desktopNavItems,
   isAuthChromePath,
   isCurrentPath,
+  isMobileNavCurrent,
   mobileCreateActions,
   mobileNavCreateSlot,
   mobileNavItems,
@@ -57,8 +58,8 @@ assert(isCurrentPath("/listas", "/listas/abc"), "Listas highlights nested list r
 
 assert(mobileNavItems.length === 4, "Mobile tab bar has 4 tabs around the center «+»");
 assert(
-  mobileNavItems.map((item) => item.label).join("|") === "Diario|Quiero ver|Listas|Perfil",
-  "Mobile nav order must be Diario, Quiero ver, (+), Listas, Perfil",
+  mobileNavItems.map((item) => item.label).join("|") === "Hoy|Quiero ver|Listas|Perfil",
+  "Mobile nav order must be Hoy, Quiero ver, (+), Listas, Perfil",
 );
 assert(mobileNavCreateSlot === 2, "«+» must sit in the middle (3rd) dock column");
 assert(mobileNavItems[3]?.href === "/perfil", "Perfil must be the last mobile nav item");
@@ -76,6 +77,13 @@ assert(
   "Listas stays active on Etiquetas routes",
 );
 
+assert(desktopNavItems[0]?.label === "Hoy", "Desktop nav leads with Hoy");
+assert(mobileNavItems[0]?.icon === "today", "Hoy tab uses the dated calendar glyph");
+assert(!isCurrentPath("/", "/diario"), "Hoy stays inactive on Tu diario");
+assert(isMobileNavCurrent("/perfil", "/diario"), "Perfil lights up on /diario (Tu diario lives there)");
+assert(isMobileNavCurrent("/perfil", "/diario?view=grid"), "Perfil lights up on /diario with params");
+assert(!isMobileNavCurrent("/", "/diario"), "Hoy tab is not active on /diario");
+
 assert(isAuthChromePath("/login"), "login hides app chrome");
 assert(isAuthChromePath("/registro"), "registro hides app chrome");
 assert(isAuthChromePath("/login/missing"), "auth-path 404s hide app chrome");
@@ -83,5 +91,5 @@ assert(isAuthChromePath("/registro/missing"), "signup-path 404s hide app chrome"
 assert(!isAuthChromePath("/"), "diario keeps app chrome");
 assert(!isAuthChromePath("/watchlist"), "watchlist keeps app chrome");
 
-console.log("✓ Nested paths highlight Diario / Listas (tags hub) / Listas");
+console.log("✓ Nested paths highlight Hoy / Listas (tags hub) / Perfil (Tu diario)");
 console.log("✓ Mobile dock is 4 tabs around a center «+» (Buscar first) with Perfil at the end");

@@ -133,8 +133,31 @@ const resolveAmbient = async (posterPath: string): Promise<AmbientRgb> => {
   return request;
 };
 
-export const usePosterAmbientColor = (posterPath: string | null | undefined) => {
+/** `"122 146 172"` (server-sampled posterAmbient) → rgb, or null when malformed. */
+const parseSeedRgb = (seed: string | null | undefined): AmbientRgb | null => {
+  if (!seed) {
+    return null;
+  }
+  const parts = seed.trim().split(/\s+/).map(Number);
+  if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part))) {
+    return null;
+  }
+  const [r, g, b] = parts as [number, number, number];
+  return { r, g, b };
+};
+
+export const usePosterAmbientColor = (
+  posterPath: string | null | undefined,
+  seedRgb: string | null = null,
+) => {
   const path = normalizePosterAmbientPath(posterPath);
+  // Esta noche ships the sampled color with the card: correct glow on first paint.
+  if (path && !cache.has(path)) {
+    const seeded = parseSeedRgb(seedRgb);
+    if (seeded) {
+      cache.set(path, seeded);
+    }
+  }
   const [tick, setTick] = useState(0);
   const rgb = useMemo(() => {
     void tick;

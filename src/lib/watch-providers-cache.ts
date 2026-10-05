@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db, titles, type TitleKind } from "@/db";
 import { scheduleAfterResponse } from "@/lib/after-response";
@@ -28,11 +28,17 @@ const persistWatchProviders = async (
   titleId: string,
   data: WatchProvidersMxData,
 ) => {
+  const now = new Date();
   await db
     .update(titles)
     .set({
       watchProvidersMx: data,
-      watchProvidersFetchedAt: new Date(),
+      watchProvidersFetchedAt: now,
+      // Esta noche «Acaba de llegar»: remember the first time a flatrate offer showed up.
+      availableSince:
+        data.flatrate.length > 0
+          ? sql`COALESCE(${titles.availableSince}, ${now})`
+          : sql`${titles.availableSince}`,
     })
     .where(eq(titles.id, titleId));
 };
