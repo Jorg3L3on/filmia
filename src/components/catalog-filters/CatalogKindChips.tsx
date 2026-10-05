@@ -19,7 +19,7 @@ export const CatalogKindChips = ({
   <div
     role="group"
     aria-label="Filtro por tipo"
-    className="rail flex min-w-0 flex-1 items-center gap-1 overflow-x-auto"
+    className="rail rail-fade flex min-w-0 flex-1 items-center gap-1 overflow-x-auto"
   >
     {KIND_CHIPS.map((chip) => {
       const isCurrent = kind === chip.value;

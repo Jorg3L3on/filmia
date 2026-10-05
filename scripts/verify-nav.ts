@@ -1,4 +1,12 @@
-import { desktopNavItems, isAuthChromePath, isCurrentPath, mobileNavItems } from "../src/lib/nav";
+import {
+  desktopNavItems,
+  isAuthChromePath,
+  isCurrentPath,
+  isMobileNavCurrent,
+  mobileCreateActions,
+  mobileNavCreateSlot,
+  mobileNavItems,
+} from "../src/lib/nav";
 
 const assert = (condition: unknown, message: string) => {
   if (!condition) {
@@ -48,14 +56,17 @@ assert(isCurrentPath("/", "/titulos/abc"), "Diario highlights nested ficha route
 assert(isCurrentPath("/tags", "/tags/visual"), "Etiquetas highlights nested tag routes");
 assert(isCurrentPath("/listas", "/listas/abc"), "Listas highlights nested list routes");
 
-assert(mobileNavItems.length === 5, "Mobile nav should have 5 items so Buscar is centered");
+assert(mobileNavItems.length === 4, "Mobile tab bar has 4 tabs around the center «+»");
 assert(
-  mobileNavItems.map((item) => item.label).join("|") ===
-    "Diario|Quiero ver|Buscar|Listas|Perfil",
-  "Mobile nav order must be Diario, Quiero ver, Buscar, Listas, Perfil",
+  mobileNavItems.map((item) => item.label).join("|") === "Hoy|Quiero ver|Listas|Perfil",
+  "Mobile nav order must be Hoy, Quiero ver, (+), Listas, Perfil",
 );
-assert(mobileNavItems[2]?.href === "/buscar", "Buscar must be the middle (3rd) mobile nav item");
-assert(mobileNavItems[4]?.href === "/perfil", "Perfil must be the last mobile nav item");
+assert(mobileNavCreateSlot === 2, "«+» must sit in the middle (3rd) dock column");
+assert(mobileNavItems[3]?.href === "/perfil", "Perfil must be the last mobile nav item");
+assert(
+  mobileCreateActions[0]?.href === "/buscar",
+  "Buscar y agregar must be the first «+» action",
+);
 {
   const hrefs: string[] = desktopNavItems.map((item) => item.href);
   const labels: string[] = desktopNavItems.map((item) => item.label);
@@ -66,6 +77,13 @@ assert(
   "Listas stays active on Etiquetas routes",
 );
 
+assert(desktopNavItems[0]?.label === "Hoy", "Desktop nav leads with Hoy");
+assert(mobileNavItems[0]?.icon === "today", "Hoy tab uses the dated calendar glyph");
+assert(!isCurrentPath("/", "/diario"), "Hoy stays inactive on Tu diario");
+assert(isMobileNavCurrent("/perfil", "/diario"), "Perfil lights up on /diario (Tu diario lives there)");
+assert(isMobileNavCurrent("/perfil", "/diario?view=grid"), "Perfil lights up on /diario with params");
+assert(!isMobileNavCurrent("/", "/diario"), "Hoy tab is not active on /diario");
+
 assert(isAuthChromePath("/login"), "login hides app chrome");
 assert(isAuthChromePath("/registro"), "registro hides app chrome");
 assert(isAuthChromePath("/login/missing"), "auth-path 404s hide app chrome");
@@ -73,5 +91,5 @@ assert(isAuthChromePath("/registro/missing"), "signup-path 404s hide app chrome"
 assert(!isAuthChromePath("/"), "diario keeps app chrome");
 assert(!isAuthChromePath("/watchlist"), "watchlist keeps app chrome");
 
-console.log("✓ Nested paths highlight Diario / Listas (tags hub) / Listas");
-console.log("✓ Mobile nav is 5 items with Buscar centered and Perfil at the end");
+console.log("✓ Nested paths highlight Hoy / Listas (tags hub) / Perfil (Tu diario)");
+console.log("✓ Mobile dock is 4 tabs around a center «+» (Buscar first) with Perfil at the end");

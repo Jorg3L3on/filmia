@@ -36,6 +36,7 @@ import { sortUserLists } from "@/lib/lists";
 import { requireUserId } from "@/lib/session";
 import { type SeriesStatusFilter } from "@/lib/series";
 import { parseStoredStreamingPlatforms } from "@/lib/streaming-platforms";
+import { parseNightEnds } from "@/lib/tonight/time";
 import { WATCHLIST_SLUG } from "@/lib/watchlist";
 
 export type {
@@ -551,6 +552,27 @@ export const getUserStreamingPlatforms = cache(async () => {
   return parseStoredStreamingPlatforms(user?.streamingPlatforms);
 });
 
+/** Perfil «Tu diario»: last entries, newest first (rating + review ride along). */
+export const getRecentWatchedTitles = cache(async (limit = 3) => {
+  const userId = await requireUserId();
+  return db.query.titles.findMany({
+    where: and(eq(titles.userId, userId), isNotNull(titles.watchedAt)),
+    with: titleWithTags,
+    orderBy: [desc(titles.watchedAt), asc(titles.name)],
+    limit,
+  });
+});
+
+/** Perfil week strip: everything watched since `since` (inclusive). */
+export const getWatchedSince = cache(async (since: Date) => {
+  const userId = await requireUserId();
+  return db.query.titles.findMany({
+    where: and(eq(titles.userId, userId), gte(titles.watchedAt, since)),
+    with: titleWithTags,
+    orderBy: [desc(titles.watchedAt)],
+  });
+});
+
 export const getCurrentUserProfile = cache(async () => {
   const userId = await requireUserId();
   const user = await db.query.users.findFirst({
@@ -560,6 +582,7 @@ export const getCurrentUserProfile = cache(async () => {
       email: true,
       name: true,
       streamingPlatforms: true,
+      nightEndsAt: true,
       createdAt: true,
     },
   });
@@ -571,6 +594,7 @@ export const getCurrentUserProfile = cache(async () => {
   return {
     ...user,
     streamingPlatforms: parseStoredStreamingPlatforms(user.streamingPlatforms),
+    nightEnds: parseNightEnds(user.nightEndsAt),
   };
 });
 

@@ -1,5 +1,5 @@
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
-import type { TmdbGenre, TmdbTitleExtras } from "@/lib/tmdb";
+import type { TmdbGenre, TmdbKeyword, TmdbPerson, TmdbTitleExtras } from "@/lib/tmdb";
 
 type TitleKind = "MOVIE" | "SERIES";
 
@@ -18,6 +18,9 @@ export type TitleExtrasRow = {
   tmdbGenres?: unknown;
   runtimeMinutes?: number | null;
   backdropPath?: string | null;
+  tmdbKeywords?: unknown;
+  tmdbPeople?: unknown;
+  originalLanguage?: string | null;
 };
 
 export type TitleExtrasPatch = {
@@ -27,7 +30,18 @@ export type TitleExtrasPatch = {
   runtimeMinutes?: number;
   tmdbGenres?: TmdbGenre[];
   tmdbId?: number;
+  tmdbKeywords?: TmdbKeyword[];
+  tmdbPeople?: TmdbPerson[];
+  originalLanguage?: string;
 };
+
+const storedArrayLength = (value: unknown) => (Array.isArray(value) ? value.length : 0);
+
+/** Esta noche needs keywords + people; refetch when a TMDB title has none stored. */
+export const titleNeedsTasteFeatures = (title: Pick<TitleExtrasRow, "tmdbId" | "tmdbKeywords" | "tmdbPeople">) =>
+  Boolean(title.tmdbId) &&
+  storedArrayLength(title.tmdbKeywords) === 0 &&
+  storedArrayLength(title.tmdbPeople) === 0;
 
 export type FetchedTitleExtras = TmdbTitleExtras & {
   tmdbId?: number | null;
@@ -85,6 +99,18 @@ export const titleExtrasPatch = (
 
   if (fetched.tmdbId && !current.tmdbId) {
     patch.tmdbId = fetched.tmdbId;
+  }
+
+  if (fetched.keywords && fetched.keywords.length > 0 && storedArrayLength(current.tmdbKeywords) === 0) {
+    patch.tmdbKeywords = fetched.keywords;
+  }
+
+  if (fetched.people && fetched.people.length > 0 && storedArrayLength(current.tmdbPeople) === 0) {
+    patch.tmdbPeople = fetched.people;
+  }
+
+  if (fetched.originalLanguage && !current.originalLanguage) {
+    patch.originalLanguage = fetched.originalLanguage;
   }
 
   return patch;

@@ -1,0 +1,60 @@
+import { readFileSync, existsSync } from "node:fs";
+import path from "node:path";
+import { PARA_TI_SLUG } from "../src/lib/tonight";
+import { bedtimeFor, parseNightEnds } from "../src/lib/tonight/time";
+
+const assert = (condition: unknown, message: string) => {
+  if (!condition) {
+    throw new Error(message);
+  }
+};
+
+const root = process.cwd();
+const read = (file: string) => readFileSync(path.join(root, file), "utf8");
+const exists = (file: string) => existsSync(path.join(root, file));
+
+const run = () => {
+  // IA: Hoy = Esta noche; Tu diario under Perfil; no slider, stub on the card.
+  assert(!exists("src/components/SlideToMarkSeen.tsx"), "The slide-to-confirm bar is gone (talón on the card instead)");
+  assert(!exists("src/components/DiaryModeToggle.tsx"), "Qué ver | Historial toggle is gone");
+  assert(exists("src/app/diario/page.tsx"), "Tu diario lives at /diario");
+  assert(read("src/app/perfil/page.tsx").includes("ProfileDiary") && read("src/app/perfil/page.tsx").includes("NightEndsForm"), "Perfil hosts Tu diario + bedtime");
+
+  const card = read("src/components/coverflow/DeckCard.tsx");
+  assert(card.includes("TicketStub") && card.includes("visto-stamp") && card.includes("flyPosterToProfile"), "Deck card: stub → stamp → flight to Perfil");
+  assert(card.includes("useLongPress") && card.includes("onContextMenu"), "Long-press / right-click opens the card menu");
+
+  const stub = read("src/components/tonight/TicketStub.tsx");
+  assert(stub.includes("STUB_TEAR_PX = 60") && stub.includes("setPointerCapture") && stub.includes("MarkWatchedSheet"), "Stub tears at 60px and opens Marqué visto");
+  assert(stub.includes('type="button"') && stub.includes("onKeyDown"), "Stub is a real button (keyboard + screen reader)");
+
+  const css = read("src/app/globals.css");
+  assert(css.includes(".ticket-stub") && css.includes(".visto-stamp") && css.includes(".deck-deal") && css.includes(".nav-receive"), "Esta noche motion CSS present");
+  assert(css.includes("@keyframes visto-stamp") && css.includes("var(--spring)"), "Stamp uses the spring curve");
+
+  const sala = read("src/components/tonight/TonightSala.tsx");
+  assert(sala.includes("rankForNow") && sala.includes("keepWildcardLast") && sala.includes("useImpressions"), "Sala ranks with the clock, keeps the comodín last, logs impressions");
+  assert(sala.includes("Deshacer") && sala.includes("undoMarkWatched"), "Vi esto offers Deshacer");
+
+  const footer = read("src/components/tonight/TonightFooter.tsx");
+  assert(footer.includes("tonight-reason") && footer.includes("acaba") && footer.includes("se pasa"), "Footer: reason pill + fit chip copy");
+
+  // Data path: precompute + cron + after() hooks.
+  const store = read("src/lib/tonight-store.ts");
+  assert(store.includes("computeTonightForUser") && store.includes("scheduleTonightRecompute") && store.includes("TONIGHT_STALE_MS"), "Store precomputes, recomputes after writes, expires after a day");
+  assert(exists("src/app/api/cron/tonight-picks/route.ts") && read("vercel.json").includes("/api/cron/tonight-picks"), "Nightly cron registered");
+  for (const file of ["src/app/actions/watchlist.ts", "src/app/actions/titles.ts", "src/app/actions/tags.ts", "src/app/actions/profile.ts", "src/app/actions/lists.ts"]) {
+    assert(read(file).includes("scheduleTonightRecompute"), `${file} schedules an Esta noche recompute`);
+  }
+  assert(read("src/lib/tmdb.ts").includes("append_to_response") && read("src/lib/omdb.ts").includes("imdbVotes"), "Enrichment fetches keywords/credits in one call and IMDb votes");
+  assert(exists("drizzle/0004_tonight_picks.sql") && read("drizzle/0004_tonight_picks.sql").includes("IF NOT EXISTS"), "Migration 0004 is additive and idempotent");
+
+  // Pure engine sanity.
+  assert(PARA_TI_SLUG === "para-ti", "First lens is Para ti");
+  const friday = new Date(2026, 9, 2, 22, 0);
+  assert(bedtimeFor(friday, parseNightEnds(null)).getDate() === 3, "Weekend bedtime 01:00 rolls to Saturday");
+
+  console.log("✓ Hoy · Esta noche: talón, sello, vuelo a Perfil, lentes, razones, precálculo + cron");
+};
+
+run();

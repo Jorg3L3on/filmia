@@ -51,7 +51,6 @@ export const SearchPreviewSheet = ({
       layer="preview"
       portal
       dragDismiss
-      panelClassName="bg-surface"
     >
       <div className="flex flex-col items-center px-5 pt-3">
         <SheetHandle className="sm:hidden" />

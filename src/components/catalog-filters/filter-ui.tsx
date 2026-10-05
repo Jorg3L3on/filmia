@@ -3,25 +3,31 @@ import type { CatalogOrderIconName } from "@/lib/catalog-filters";
 import { cn } from "@/lib/cn";
 import { PLATFORM_LABEL } from "@/lib/labels";
 import type { Platform } from "@/db";
-import { focusRing } from "@/lib/ui";
+import { auraPillClass, focusRing } from "@/lib/ui";
 import type { ReactNode } from "react";
 
 export const catalogBarChipClass = (selected: boolean) =>
   cn(
-    "inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-medium tab-transition",
+    "relative inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-xs font-medium tab-transition press-scale",
     focusRing,
     selected
-      ? "bg-accent text-ink"
-      : "bg-well text-paper hover:bg-chrome",
+      ? cn(auraPillClass, "text-paper")
+      : "border border-white/8 bg-white/[0.04] text-fog hover:bg-white/10 hover:text-paper",
   );
+
+/** Neutral glass pill for bar buttons (Filtros, Orden). */
+export const catalogBarButtonClass = cn(
+  "press-scale inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-paper backdrop-blur-xl transition-colors hover:bg-white/10",
+  focusRing,
+);
 
 export const catalogSheetChipClass = (selected: boolean) =>
   cn(
     "inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition",
     focusRing,
     selected
-      ? "border-accent bg-accent/10 text-accent"
-      : "border-chrome bg-well text-fog hover:border-line-hover hover:text-paper",
+      ? "border-accent/50 bg-accent/12 text-paper shadow-glow"
+      : "border-white/10 bg-white/[0.04] text-fog hover:border-white/20 hover:text-paper",
   );
 
 export const CatalogSheetSection = ({

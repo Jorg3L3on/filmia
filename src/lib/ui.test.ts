@@ -50,14 +50,14 @@ describe("buttonClass", () => {
 });
 
 describe("sheet tokens", () => {
-  it("uses well surface, 60% overlay, z-50, radius, and safe-area", () => {
+  it("uses floating glass surface, 50% scrim, z-50, radius, and safe-area", () => {
     const panel = sheetPanelClass();
-    assert.match(panel, /rounded-t-sheet/);
-    assert.match(panel, /bg-well/);
-    assert.match(panel, /sm:rounded-sheet/);
+    assert.match(panel, /glass-panel glass-sheet/);
+    assert.match(panel, /rounded-sheet/);
+    assert.match(panel, /mx-1\.5 mb-1\.5/);
     assert.match(panel, /safe-area-inset-bottom/);
     assert.match(panel, /sheet-rise/);
-    assert.match(sheetOverlayClass, /bg-canvas-deep\/60/);
+    assert.match(sheetOverlayClass, /bg-black\/50/);
     assert.equal(sheetLayerClass.preview, "z-sheet-preview");
     assert.equal(sheetLayerClass.default, "z-50");
     assert.equal(sheetLayerClass.top, "z-sheet-top");

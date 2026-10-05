@@ -14,6 +14,8 @@ import type { SeriesStatusFilter } from "@/lib/series";
 import type { CatalogSort } from "@/lib/tags";
 
 type DiaryViewHeaderProps = {
+  /** Route that owns the month navigation (Tu diario lives at /diario). */
+  pathname?: string;
   month: string;
   view: DeckViewMode;
   hrefFor: (mode: DeckViewMode) => string;
@@ -27,6 +29,7 @@ type DiaryViewHeaderProps = {
 };
 
 export const DiaryViewHeader = ({
+  pathname = "/diario",
   month,
   view,
   hrefFor,
@@ -43,7 +46,6 @@ export const DiaryViewHeader = ({
     minePlatforms,
     seriesStatus,
     defaultView: HISTORIAL_DEFAULT_VIEW,
-    mode: "historial",
     kind,
     platforms,
     sort,
@@ -54,7 +56,7 @@ export const DiaryViewHeader = ({
   return (
     <header className="flex items-center justify-between gap-2">
       <Link
-        href={catalogHref("/", { ...query, view, month: prevMonth })}
+        href={catalogHref(pathname, { ...query, view, month: prevMonth })}
         aria-label={`Mes anterior, ${formatMonthHeading(prevMonth)}`}
         className={cn(
           "inline-flex h-10 w-10 items-center justify-center rounded-full text-fog hover:bg-well hover:text-paper",
@@ -81,7 +83,7 @@ export const DiaryViewHeader = ({
           variant="icons"
         />
         <Link
-          href={catalogHref("/", { ...query, view, month: nextMonth })}
+          href={catalogHref(pathname, { ...query, view, month: nextMonth })}
           aria-label={`Mes siguiente, ${formatMonthHeading(nextMonth)}`}
           className={cn(
             "inline-flex h-10 w-10 items-center justify-center rounded-full text-fog hover:bg-well hover:text-paper",

@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { LogoutButton } from "@/components/LogoutButton";
+import { NightEndsForm } from "@/components/NightEndsForm";
 import { PageHeader } from "@/components/PageHeader";
+import { ProfileDiary } from "@/components/ProfileDiary";
 import { PageHeaderSkeleton, ProfileBodySkeleton } from "@/components/PageSkeletons";
 import { ProfileAccountForm } from "@/components/ProfileAccountForm";
 import { ProfilePasswordForm } from "@/components/ProfilePasswordForm";
@@ -59,10 +61,14 @@ const ProfileBody = async () => {
         }
       />
 
-      <div className="space-y-5">
-        <ProfileAccountForm name={profile.name} email={profile.email} />
-        <ProfilePasswordForm />
-        <StreamingPlatformPicker selected={profile.streamingPlatforms} />
+      <div className="space-y-8">
+        <ProfileDiary />
+        <div className="space-y-5">
+          <NightEndsForm value={profile.nightEnds} />
+          <StreamingPlatformPicker selected={profile.streamingPlatforms} />
+          <ProfileAccountForm name={profile.name} email={profile.email} />
+          <ProfilePasswordForm />
+        </div>
       </div>
     </>
   );

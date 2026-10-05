@@ -1,6 +1,7 @@
 "use server";
 
 import { and, desc, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { todayDateInput } from "@/lib/dates";
 import { parseOptionalDate, parseOptionalReview, parseRating } from "@/lib/form-data";
 import { ensureDefaultLists, WATCHLIST_SLUG } from "@/lib/lists";
@@ -11,6 +12,7 @@ import {
 } from "@/lib/revalidate-surfaces";
 import { db, listItems, lists, titles } from "@/db";
 import { requireUserId } from "@/lib/session";
+import { scheduleTonightRecompute } from "@/lib/tonight-store";
 
 const revalidateWatchlist = (titleId?: string) => {
   revalidateWatchlistSurfaces(titleId);
@@ -84,6 +86,8 @@ export const addToWatchlist = async (titleId: string, queueNote?: string) => {
   }
 
   revalidateWatchlist(titleId);
+  revalidatePath("/");
+  scheduleTonightRecompute(userId);
 };
 
 export const addToWatchlistById = async (titleId: string) => {
@@ -118,6 +122,8 @@ export const removeFromWatchlist = async (titleId: string) => {
     .where(and(eq(listItems.listId, watchlist.id), eq(listItems.titleId, titleId)));
 
   revalidateWatchlist(titleId);
+  revalidatePath("/");
+  scheduleTonightRecompute(userId);
 };
 
 export const removeFromWatchlistById = async (titleId: string) => {
@@ -183,6 +189,34 @@ export const markTitleWatched = async (
   }
 
   revalidateDiary(titleId);
+  scheduleTonightRecompute(userId);
+};
+
+/** Undo for «Vi esto» from the sala: clear the entry and put it back in Quiero ver. */
+export const undoMarkWatched = async (titleId: string) => {
+  const userId = await requireUserId();
+  const watchlist = await ensureWatchlist(userId);
+  const updated = await db
+    .update(titles)
+    .set({ watchedAt: null })
+    .where(and(eq(titles.id, titleId), eq(titles.userId, userId)))
+    .returning({ id: titles.id });
+
+  if (updated.length === 0) {
+    throw new Error("Título no encontrado.");
+  }
+
+  const last = await db.query.listItems.findFirst({
+    where: eq(listItems.listId, watchlist.id),
+    orderBy: [desc(listItems.position)],
+  });
+  await db
+    .insert(listItems)
+    .values({ listId: watchlist.id, titleId, position: (last?.position ?? -1) + 1 })
+    .onConflictDoNothing();
+
+  revalidateDiary(titleId);
+  scheduleTonightRecompute(userId);
 };
 
 export const clearTitleWatched = async (titleId: string) => {
@@ -199,6 +233,7 @@ export const clearTitleWatched = async (titleId: string) => {
   }
 
   revalidateDiary(titleId);
+  scheduleTonightRecompute(userId);
 };
 
 export const updateWatchlistNote = async (titleId: string, formData: FormData) => {
@@ -212,6 +247,7 @@ export const updateWatchlistNote = async (titleId: string, formData: FormData) =
     .where(and(eq(listItems.listId, watchlist.id), eq(listItems.titleId, titleId)));
 
   revalidateWatchlist();
+  scheduleTonightRecompute(userId);
 };
 
 export const bumpWatchlistItem = async (titleId: string) => {

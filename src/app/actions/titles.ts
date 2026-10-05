@@ -45,6 +45,7 @@ import {
   revalidateTitlePages,
 } from "@/lib/revalidate-surfaces";
 import { requireUserId } from "@/lib/session";
+import { scheduleTonightRecompute } from "@/lib/tonight-store";
 import { enrichWatchProvidersOnSave } from "@/lib/watch-providers-cache";
 
 export type { AddTitleFromTmdbInput, AddTitleFromTmdbResult };
@@ -355,6 +356,7 @@ export const setTitleRating = async (titleId: string, formData: FormData) => {
   }
 
   revalidateRatingSurfaces(titleId);
+  scheduleTonightRecompute(userId);
 };
 
 export const setSeriesStatus = async (

@@ -1,15 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/cn";
+import { SegmentedTabs } from "@/components/SegmentedTabs";
 import { isTagsPath } from "@/lib/nav";
-import { focusRing } from "@/lib/ui";
 
 const SEGMENTS = [
-  { href: "/listas", id: "listas", label: "Listas" },
-  { href: "/tags", id: "etiquetas", label: "Etiquetas" },
+  { href: "/listas", key: "listas", label: "Listas" },
+  { href: "/tags", key: "etiquetas", label: "Etiquetas" },
 ] as const;
 
 type ListsEtiquetasSegmentProps = {
@@ -17,40 +15,19 @@ type ListsEtiquetasSegmentProps = {
   action?: ReactNode;
 };
 
+/** Listas | Etiquetas glass segment (SegmentedTabs uses tab-transition + sliding aura pill). */
 export const ListsEtiquetasSegment = ({ action }: ListsEtiquetasSegmentProps) => {
   const pathname = usePathname();
   const onTags = isTagsPath(pathname);
 
   return (
     <div className="mx-auto flex w-full max-w-md items-center gap-2">
-      <div
-        role="tablist"
+      <SegmentedTabs
+        items={SEGMENTS}
+        activeKey={onTags ? "etiquetas" : "listas"}
         aria-label="Listas y etiquetas"
-        className="flex min-w-0 flex-1 rounded-full border border-chrome bg-well p-1"
-      >
-        {SEGMENTS.map((item) => {
-          const selected = item.id === "etiquetas" ? onTags : !onTags;
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              role="tab"
-              aria-selected={selected}
-              aria-current={selected ? "page" : undefined}
-              className={cn(
-                "flex-1 rounded-full px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-[0.14em] tab-transition",
-                focusRing,
-                selected
-                  ? "bg-accent text-ink shadow-[0_6px_16px_rgba(124,156,255,0.28)]"
-                  : "text-fog hover:text-paper",
-              )}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </div>
+        className="flex-1"
+      />
       {action}
     </div>
   );

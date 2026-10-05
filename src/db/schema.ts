@@ -59,6 +59,8 @@ export const users = pgTable(
     passwordHash: text("passwordHash").notNull(),
     name: text("name"),
     streamingPlatforms: jsonb("streamingPlatforms").notNull().default([]),
+    /** `{ weekday: "23:30", weekend: "01:00" }` — when the night ends (Esta noche fit). */
+    nightEndsAt: jsonb("nightEndsAt").notNull().default({}),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),
@@ -96,6 +98,16 @@ export const titles = pgTable(
       precision: 3,
       mode: "date",
     }),
+    /** Esta noche (Hoy): TMDB keywords `[{ id, name }]` for the taste vector. */
+    tmdbKeywords: jsonb("tmdbKeywords").notNull().default([]),
+    /** Esta noche: `[{ id, name, role: "director" | "creator" | "cast" }]`. */
+    tmdbPeople: jsonb("tmdbPeople").notNull().default([]),
+    originalLanguage: text("originalLanguage"),
+    imdbVotes: integer("imdbVotes"),
+    /** Space-separated RGB (`"122 146 172"`) sampled server-side for the sala glow. */
+    posterAmbient: text("posterAmbient"),
+    /** First time we saw a flatrate MX offer — drives «Acaba de llegar». */
+    availableSince: timestamp("availableSince", { precision: 3, mode: "date" }),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),
@@ -196,6 +208,57 @@ export const listItems = pgTable(
   ],
 );
 
+/** Precomputed «Esta noche» decks per user (Hoy). Fit with the clock is applied at read time. */
+export const tonightPicks = pgTable(
+  "TonightPick",
+  {
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    titleId: text("titleId")
+      .notNull()
+      .references(() => titles.id, { onDelete: "cascade" }),
+    lens: text("lens").notNull(),
+    lensName: text("lensName").notNull(),
+    lensRank: integer("lensRank").notNull().default(0),
+    rank: integer("rank").notNull().default(0),
+    score: real("score").notNull().default(0),
+    components: jsonb("components").notNull().default({}),
+    reasons: jsonb("reasons").notNull().default([]),
+    wildcard: integer("wildcard").notNull().default(0),
+    computedAt: timestamp("computedAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.lens, table.titleId] }),
+    index("TonightPick_userId_lensRank_rank_idx").on(table.userId, table.lensRank, table.rank),
+  ],
+);
+
+/** Feedback for Esta noche: impressions, skips, «Ahora no», opens, Más/Menos así. */
+export const pickEvents = pgTable(
+  "PickEvent",
+  {
+    id: text("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    titleId: text("titleId")
+      .notNull()
+      .references(() => titles.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    lens: text("lens"),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("PickEvent_userId_createdAt_idx").on(table.userId, table.createdAt),
+    index("PickEvent_userId_titleId_idx").on(table.userId, table.titleId),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   titles: many(titles),
   lists: many(lists),
@@ -233,6 +296,8 @@ export type Title = typeof titles.$inferSelect;
 export type Tag = typeof tags.$inferSelect;
 export type List = typeof lists.$inferSelect;
 export type ListItem = typeof listItems.$inferSelect;
+export type TonightPickRow = typeof tonightPicks.$inferSelect;
+export type PickEventRow = typeof pickEvents.$inferSelect;
 
 export type TitleTagWithTag = typeof titleTags.$inferSelect & {
   tag: Tag;

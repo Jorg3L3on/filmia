@@ -8,6 +8,7 @@ import { parseRequiredName } from "@/lib/form-data";
 import { slugify } from "@/lib/labels";
 import { revalidateTagSurfaces } from "@/lib/revalidate-surfaces";
 import { requireUserId } from "@/lib/session";
+import { scheduleTonightRecompute } from "@/lib/tonight-store";
 import { tagHref } from "@/lib/tags";
 
 const revalidateTags = (titleId?: string, slug?: string) => {
@@ -198,4 +199,5 @@ export const toggleTitleTag = async (tagId: string, titleId: string) => {
   }
 
   revalidateTags(titleId, tag.slug);
+  scheduleTonightRecompute(userId);
 };
