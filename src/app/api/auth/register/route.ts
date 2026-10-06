@@ -32,12 +32,17 @@ export const POST = async (request: Request) => {
 
   const existing = await db.query.users.findFirst({
     where: eq(users.email, email),
-    columns: { id: true },
+    columns: { id: true, passwordHash: true, googleId: true },
   });
 
   if (existing) {
+    const googleOnly = Boolean(existing.googleId) && !existing.passwordHash;
     return NextResponse.json(
-      { error: "Ya existe una cuenta con ese correo." },
+      {
+        error: googleOnly
+          ? "Ese correo ya entra con Google. Usa «Continuar con Google»."
+          : "Ya existe una cuenta con ese correo.",
+      },
       { status: 409 },
     );
   }

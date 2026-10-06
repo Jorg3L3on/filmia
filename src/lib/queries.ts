@@ -584,6 +584,8 @@ export const getCurrentUserProfile = cache(async () => {
       streamingPlatforms: true,
       nightEndsAt: true,
       createdAt: true,
+      passwordHash: true,
+      googleId: true,
     },
   });
 
@@ -591,8 +593,12 @@ export const getCurrentUserProfile = cache(async () => {
     return null;
   }
 
+  const { passwordHash, googleId, ...account } = user;
+
   return {
-    ...user,
+    ...account,
+    hasPassword: Boolean(passwordHash),
+    googleLinked: Boolean(googleId),
     streamingPlatforms: parseStoredStreamingPlatforms(user.streamingPlatforms),
     nightEnds: parseNightEnds(user.nightEndsAt),
   };

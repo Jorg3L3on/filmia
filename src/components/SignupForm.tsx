@@ -5,10 +5,15 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AuthScreen } from "@/components/AuthScreen";
 import { Button } from "@/components/Button";
+import { AuthDivider, GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { PasswordField } from "@/components/PasswordField";
 import { fieldClass, focusRing } from "@/lib/ui";
 
-export const SignupForm = () => {
+type SignupFormProps = {
+  googleEnabled: boolean;
+};
+
+export const SignupForm = ({ googleEnabled }: SignupFormProps) => {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,15 +55,23 @@ export const SignupForm = () => {
         </p>
       }
     >
+      {error ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger"
+        >
+          {error}
+        </p>
+      ) : null}
+
+      {googleEnabled ? (
+        <div className="space-y-6">
+          <GoogleSignInButton next="/" />
+          <AuthDivider label="o con tu correo" />
+        </div>
+      ) : null}
+
       <form onSubmit={handleSubmit} className="space-y-6">
-        {error ? (
-          <p
-            role="alert"
-            className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger"
-          >
-            {error}
-          </p>
-        ) : null}
 
         <label className="block space-y-1.5">
           <span className="text-xs font-medium uppercase tracking-wide text-fog">Nombre</span>

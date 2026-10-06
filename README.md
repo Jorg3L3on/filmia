@@ -51,7 +51,7 @@ npm run db:backfill-tonight
 
 ## Modelo
 
-- **User**: cuenta con email, contraseña hasheada (PBKDF2; hashes bcrypt legacy se verifican al entrar), nombre opcional y `streamingPlatforms` (JSON: claves del enum `Platform`)
+- **User**: cuenta con email, contraseña hasheada opcional (PBKDF2; hashes bcrypt legacy se verifican al entrar; `null` si solo entra con Google), `googleId` opcional, nombre opcional y `streamingPlatforms` (JSON: claves del enum `Platform`)
 - **Title**: película o serie del usuario, nota personal 1–10, poster (TMDB), rating IMDb + votos (OMDb), keywords y personas (TMDB), color ambiente, plataforma opcional, notas, fecha vista
 - **TonightPick** + **PickEvent**: mazos precalculados de «Esta noche» por usuario y su retroalimentación (ver [Hoy · Esta noche](#hoy--esta-noche))
 - **Tag** + **TitleTag**: categorías libres por usuario (épica/guerra, visual/espectáculo, etc.). El filtro de diario y listas combina varias etiquetas con **OR**. Ranking en `/tags/[slug]`.
@@ -87,6 +87,7 @@ Abre [http://localhost:3000](http://localhost:3000). Las rutas de la app requier
 
 - **Registro**: `/registro` — email, contraseña (mín. 8 caracteres), nombre opcional
 - **Login**: `/login` — email + contraseña; la sesión es un JWT en cookie httpOnly (`filmia.session-token`)
+- **Google**: botón «Continuar con Google» en `/login` y `/registro` (OAuth 2.0 + PKCE, sin librerías extra ni coste). Aparece solo si `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` están definidas. Si el correo de Google ya tiene cuenta, se enlaza automáticamente; si no, se crea una cuenta **sin contraseña** (en Perfil no sale el bloque de contraseña). Ver [Acceso con Google](#acceso-con-google).
 - **Logout**: botón «Salir» en la cabecera
 - **Perfil**: `/perfil` — plataformas de streaming contratadas (México)
 - Rutas protegidas redirigen a `/login` si no hay sesión (proxy + comprobaciones en servidor)
@@ -103,6 +104,24 @@ Variables de entorno:
 | `AUTH_SECRET` | Firma del JWT de sesión (obligatoria) |
 | `NEXTAUTH_SECRET` | Alias de compatibilidad de `AUTH_SECRET` |
 | `AUTH_URL` | URL pública de la app. Local: `http://localhost:3000` |
+| `GOOGLE_CLIENT_ID` | ID de cliente OAuth de Google (opcional; activa el botón de Google) |
+| `GOOGLE_CLIENT_SECRET` | Secreto del cliente OAuth de Google (opcional) |
+
+### Acceso con Google
+
+Gratis: Google no cobra por «Iniciar sesión con Google» y, con los scopes `openid email profile`, no hace falta pasar verificación de la app.
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → crea un proyecto (p. ej. `filmia`).
+2. **APIs y servicios → Pantalla de consentimiento OAuth**: tipo *Externo*, nombre «Filmia», tu correo de soporte. Publica la app (*In production*); con scopes no sensibles no requiere revisión.
+3. **APIs y servicios → Credenciales → Crear credenciales → ID de cliente OAuth**, tipo *Aplicación web*:
+   - Orígenes autorizados: `http://localhost:3000` y la URL de producción.
+   - URIs de redirección autorizadas: `http://localhost:3000/api/auth/google/callback` y `https://<dominio>/api/auth/google/callback`.
+4. Copia el ID y el secreto a `.env` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) y a Vercel.
+5. `AUTH_URL` debe coincidir con el origen que registraste (`http://localhost:3000` en local): el callback se construye a partir de ella. Abre la app en ese mismo origen, no en `127.0.0.1`.
+
+Flujo: `GET /api/auth/google` guarda `state` + verificador PKCE en una cookie de 10 min y redirige a Google; `GET /api/auth/google/callback` valida el `state`, cambia el código por el `id_token`, lo verifica contra las claves públicas de Google (`jose`) y emite la misma cookie de sesión que el login con contraseña. Una cuenta de Google sin contraseña no puede entrar por `/login` con correo (mensaje explícito); una cuenta con contraseña que entra con Google queda enlazada y conserva ambas vías.
+
+Pendiente de probar en la PWA de iOS (pantalla de inicio): el salto a `accounts.google.com` abre una hoja de navegador y hay que confirmar que la cookie de sesión vuelve a la app.
 
 ### Migraciones (Drizzle)
 
@@ -196,7 +215,7 @@ Playbook canónico (env **names** only, migrate fuera de `next build`, cómo enc
 
 Resumen rápido:
 
-1. Variables en Vercel (nombres): `DATABASE_URL` (pooled), `AUTH_SECRET`, `TMDB_API_KEY`, `OMDB_API_KEY`; `AUTH_URL` opcional. Nunca secretos reales en el repo — ver `.env.example`.
+1. Variables en Vercel (nombres): `DATABASE_URL` (pooled), `AUTH_SECRET`, `TMDB_API_KEY`, `OMDB_API_KEY`; `AUTH_URL` opcional; `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` si quieres el botón de Google. Nunca secretos reales en el repo — ver `.env.example`.
 2. Migraciones: `npm run db:migrate` con `DATABASE_URL_UNPOOLED` **fuera** del build de Vercel / CI Next.
 3. Preview: opcional y documentado en el playbook; hoy blocked (`ignoreCommand` + Git off). Preferencia al publicar: prod-only.
 

@@ -30,6 +30,8 @@ Set these in **Vercel → Project → Settings → Environment Variables**. Valu
 | `AUTH_URL` | Optional | Public app origin. Local: `http://localhost:3000`. On Vercel often inferred; set if callbacks need a fixed origin. |
 | `TMDB_API_KEY` | Production (and Preview if enabled) | Posters / search. Free tier key. |
 | `OMDB_API_KEY` | Production (and Preview if enabled) | IMDb ratings via OMDb. Free tier key. |
+| `GOOGLE_CLIENT_ID` | Production (and Preview if enabled) | Optional. Google OAuth web client id; enables «Continuar con Google». Register `https://<domain>/api/auth/google/callback` as an authorized redirect URI. |
+| `GOOGLE_CLIENT_SECRET` | Production (and Preview if enabled) | Optional. Secret of the same OAuth client. Free (no Google billing for Sign in with Google). |
 
 Compatibility alias (app may accept): `NEXTAUTH_SECRET` → treated like `AUTH_SECRET` where documented in README. Prefer setting `AUTH_SECRET`.
 

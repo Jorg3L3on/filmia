@@ -56,7 +56,10 @@ export const users = pgTable(
   {
     id: text("id").primaryKey(),
     email: text("email").notNull(),
-    passwordHash: text("passwordHash").notNull(),
+    /** Null for accounts that only sign in with Google. */
+    passwordHash: text("passwordHash"),
+    /** Google `sub` claim; set when the account signs in with Google. */
+    googleId: text("googleId"),
     name: text("name"),
     streamingPlatforms: jsonb("streamingPlatforms").notNull().default([]),
     /** `{ weekday: "23:30", weekend: "01:00" }` — when the night ends (Esta noche fit). */
@@ -65,7 +68,11 @@ export const users = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [uniqueIndex("User_email_key").on(table.email), index("User_email_idx").on(table.email)],
+  (table) => [
+    uniqueIndex("User_email_key").on(table.email),
+    index("User_email_idx").on(table.email),
+    uniqueIndex("User_googleId_key").on(table.googleId),
+  ],
 );
 
 export const titles = pgTable(

@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { ProfileDiary } from "@/components/ProfileDiary";
 import { PageHeaderSkeleton, ProfileBodySkeleton } from "@/components/PageSkeletons";
 import { ProfileAccountForm } from "@/components/ProfileAccountForm";
+import { ProfileGoogleAccess } from "@/components/ProfileGoogleAccess";
 import { ProfilePasswordForm } from "@/components/ProfilePasswordForm";
 import { StreamingPlatformPicker } from "@/components/StreamingPlatformPicker";
 import { getCurrentUserProfile } from "@/lib/queries";
@@ -67,7 +68,10 @@ const ProfileBody = async () => {
           <NightEndsForm value={profile.nightEnds} />
           <StreamingPlatformPicker selected={profile.streamingPlatforms} />
           <ProfileAccountForm name={profile.name} email={profile.email} />
-          <ProfilePasswordForm />
+          {profile.googleLinked ? (
+            <ProfileGoogleAccess hasPassword={profile.hasPassword} />
+          ) : null}
+          {profile.hasPassword ? <ProfilePasswordForm /> : null}
         </div>
       </div>
     </>

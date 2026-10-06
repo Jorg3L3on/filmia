@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
 import { authenticateCredentials } from "@/lib/auth/credentials";
 import { setSessionCookie } from "@/lib/auth";
+import { requestOrigin } from "@/lib/request-origin";
 
-const requestOrigin = (request: Request) => {
-  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
-  if (host) {
-    const proto = request.headers.get("x-forwarded-proto") ?? "http";
-    return `${proto}://${host}`;
-  }
-  return new URL(request.url).origin.replace("://0.0.0.0", "://127.0.0.1");
-};
+const FAILURE_MESSAGES = {
+  invalid: "Correo o contraseña incorrectos.",
+  "google-only": "Esa cuenta entra con Google. Usa «Continuar con Google».",
+} as const;
 
 export const POST = async (request: Request) => {
   const formData = await request.formData();
@@ -24,10 +21,10 @@ export const POST = async (request: Request) => {
   }
 
   try {
-    const user = await authenticateCredentials(email, password);
-    if (!user) {
+    const result = await authenticateCredentials(email, password);
+    if (!result.ok) {
       return NextResponse.json(
-        { error: "Correo o contraseña incorrectos." },
+        { error: FAILURE_MESSAGES[result.reason] },
         { status: 401 },
       );
     }
@@ -36,7 +33,7 @@ export const POST = async (request: Request) => {
     const response = wantsHtml
       ? NextResponse.redirect(new URL("/", requestOrigin(request)), 303)
       : NextResponse.json({ ok: true });
-    await setSessionCookie(response, user);
+    await setSessionCookie(response, result.user);
     return response;
   } catch (error) {
     const message =
