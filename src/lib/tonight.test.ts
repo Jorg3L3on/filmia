@@ -6,8 +6,10 @@ import { findPinnedTitleId } from "./tonight/pin";
 import { rankForNow } from "./tonight/serve";
 import {
   bedtimeFor,
+  dayPartOf,
   fitForRuntime,
   isWeekendNight,
+  nextDayPartChange,
   parseNightEnds,
   remainingMinutes,
 } from "./tonight/time";
@@ -97,6 +99,34 @@ describe("tonight/time", () => {
     assert.ok(over.fit > 0.5 && over.fit < 0.6);
     assert.equal(fitForRuntime(240, 180, NOW).fit, 0);
     assert.equal(fitForRuntime(null, 180, NOW).fit, 0.6);
+  });
+
+  it("splits the day into mañana / tarde / noche by the viewer's clock", () => {
+    const at = (hour: number, minute = 0) => new Date(2026, 9, 6, hour, minute); // Tuesday
+    assert.equal(dayPartOf(at(9), NIGHT), "manana");
+    assert.equal(dayPartOf(at(13, 35), NIGHT), "tarde");
+    assert.equal(dayPartOf(at(18, 59), NIGHT), "tarde");
+    assert.equal(dayPartOf(at(19), NIGHT), "noche");
+    assert.equal(dayPartOf(at(23, 45), NIGHT), "noche"); // past bedtime, still tonight
+    assert.equal(dayPartOf(at(2), NIGHT), "noche"); // small hours = last night
+    assert.equal(dayPartOf(at(6), NIGHT), "manana");
+  });
+
+  it("starts the night early for early sleepers (bedtime less than 4 h away)", () => {
+    const early = { weekday: "21:00", weekend: "01:00" };
+    assert.equal(dayPartOf(new Date(2026, 9, 6, 16, 30), early), "tarde");
+    assert.equal(dayPartOf(new Date(2026, 9, 6, 17, 0), early), "noche");
+  });
+
+  it("knows when the part of the day changes next", () => {
+    const tuesday = (hour: number, minute = 0) => new Date(2026, 9, 6, hour, minute);
+    assert.equal(nextDayPartChange(tuesday(13, 35), NIGHT).getHours(), 19);
+    assert.equal(nextDayPartChange(tuesday(9), NIGHT).getHours(), 12);
+    const early = { weekday: "21:00", weekend: "01:00" };
+    assert.equal(nextDayPartChange(tuesday(13, 35), early).getHours(), 17); // bedtime − 4 h
+    const nextMorning = nextDayPartChange(tuesday(23), NIGHT);
+    assert.equal(nextMorning.getDate(), 7);
+    assert.equal(nextMorning.getHours(), 6);
   });
 });
 
@@ -236,6 +266,21 @@ describe("computeTonight", () => {
     assert.ok(interstellarLate && interstellarLate.fit.overflowMinutes > 0);
     assert.ok(late[0]?.id !== "interstellar", "a film that overflows bedtime is no longer the hero");
     assert.ok(interstellarLate?.headline.some((reason) => reason.kind === "fit_over"));
+  });
+
+  it("says nothing about the night by day: no «le caben a tu noche» at 13:35", () => {
+    const cards = (paraTi?.picks ?? []).map((pick) => ({
+      id: pick.titleId,
+      runtimeMinutes: titles.find((item) => item.id === pick.titleId)?.runtimeMinutes ?? null,
+      components: pick.components,
+      reasons: pick.reasons,
+      wildcard: pick.wildcard,
+    }));
+    const afternoon = rankForNow(cards, { now: new Date(2026, 9, 6, 13, 35), nightEnds: NIGHT });
+    assert.ok(afternoon.every((card) => !card.reasons.some((reason) => reason.kind === "fit" || reason.kind === "fit_over")));
+    assert.ok(afternoon.every((card) => card.fit.overflowMinutes === 0), "ten hours to bedtime: everything fits");
+    const night = rankForNow(cards, { now: NOW, nightEnds: NIGHT });
+    assert.ok(night.some((card) => card.reasons.some((reason) => reason.kind === "fit")));
   });
 
   it("keeps a pinned card first even when the clock would bury it", () => {

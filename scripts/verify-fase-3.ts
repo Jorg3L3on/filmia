@@ -157,7 +157,9 @@ const run = () => {
 
   const account = read("src/components/ProfileAccountForm.tsx");
   const password = read("src/components/ProfilePasswordForm.tsx");
-  const platforms = read("src/components/StreamingPlatformPicker.tsx");
+  // The toggle grid moved to PlatformToggleGrid (shared with the Bienvenida); the picker keeps the header + error.
+  const platforms =
+    read("src/components/StreamingPlatformPicker.tsx") + read("src/components/PlatformToggleGrid.tsx");
   assert(account.includes("Guardar cuenta"), "Account save is labeled Guardar cuenta");
   assert(
     password.includes("Actualizar contraseña"),

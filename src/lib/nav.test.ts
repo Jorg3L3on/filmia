@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   desktopNavItems,
+  isAuthChromePath,
   isCurrentPath,
   isListasHubPath,
   isMobileNavCurrent,
@@ -27,6 +28,16 @@ describe("isCurrentPath nested routes", () => {
     const labels: string[] = desktopNavItems.map((item) => item.label);
     assert.equal(hrefs.includes("/tags"), false);
     assert.equal(labels.includes("Etiquetas"), false);
+  });
+});
+
+describe("isAuthChromePath", () => {
+  it("hides the chrome on auth screens and the Bienvenida", () => {
+    assert.equal(isAuthChromePath("/login"), true);
+    assert.equal(isAuthChromePath("/registro?callbackUrl=%2F"), true);
+    assert.equal(isAuthChromePath("/bienvenida"), true);
+    assert.equal(isAuthChromePath("/"), false);
+    assert.equal(isAuthChromePath("/perfil"), false);
   });
 });
 

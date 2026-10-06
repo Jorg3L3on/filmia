@@ -14,6 +14,7 @@ import { TonightProvider, type TonightHandlers } from "@/components/tonight/Toni
 import { TonightEyebrow } from "@/components/tonight/TonightEyebrow";
 import { WhySheet } from "@/components/tonight/WhySheet";
 import { useImpressions } from "@/components/tonight/useImpressions";
+import { useTonightClock } from "@/components/tonight/useTonightClock";
 import { cn } from "@/lib/cn";
 import {
   coverflowStartIndex,
@@ -21,8 +22,8 @@ import {
 } from "@/lib/diary-category-continuum";
 import { showToast } from "@/lib/toast";
 import { rankForNow } from "@/lib/tonight/serve";
+import { dayPartOf } from "@/lib/tonight/time";
 import type { TonightDecks } from "@/lib/tonight-store";
-import { useMountedNow } from "@/lib/use-mounted-now";
 
 export const TONIGHT_LENS_PARAM = "lente";
 const DEAL_MS = 700;
@@ -35,7 +36,8 @@ type TonightSalaProps = {
 
 export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => {
   const router = useRouter();
-  const now = useMountedNow();
+  const now = useTonightClock(decks.nightEnds);
+  const dayPart = now ? dayPartOf(now, decks.nightEnds) : "noche";
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
   const [activeSlug, setActiveSlug] = useState(
     () => decks.lenses.find((lens) => lens.slug === initialSlug)?.slug ?? decks.lenses[0]?.slug ?? "",
@@ -187,6 +189,7 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
 
   const handlers: TonightHandlers = {
     lens: activeLens?.slug ?? "",
+    dayPart,
     onWhy: (title) => setWhyTitle(title),
     onOpenMenu: (title) => setMenuTitle(title),
     onOpened: (title) => impressions.push(title.id, "opened"),
@@ -254,7 +257,7 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
         ) : lenses.length === 0 || !activeLens ? (
           <EmptyState
             title="Por hoy, listo"
-            description="Ya no queda nada en el mazo de esta noche. Añade títulos a Quiero ver o vuelve mañana."
+            description="Ya no queda nada en el mazo de hoy. Añade títulos a Quiero ver o vuelve mañana."
             actionHref="/watchlist"
             actionLabel="Ir a Quiero ver"
           />
@@ -265,7 +268,7 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
                 categories={lenses}
                 activeSlug={activeLens.slug}
                 onSelect={(slug) => goToLens(slug, "first")}
-                label="Lentes de esta noche"
+                label="Lentes de hoy"
               />
             </div>
             <div ref={liveRef} className="sr-only" aria-live="polite" aria-atomic="true" />

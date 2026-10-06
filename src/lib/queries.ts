@@ -583,6 +583,8 @@ export const getCurrentUserProfile = cache(async () => {
       name: true,
       streamingPlatforms: true,
       nightEndsAt: true,
+      onboardedAt: true,
+      onboardingStep: true,
       createdAt: true,
       passwordHash: true,
       googleId: true,

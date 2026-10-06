@@ -178,6 +178,7 @@ const WatchlistBody = async ({
             query={railQuery}
             sort={sort}
             genres={genresInList(rawItems)}
+            nightEnds={nightEnds}
           />
         }
       />

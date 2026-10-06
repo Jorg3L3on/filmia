@@ -59,6 +59,53 @@ export const remainingMinutes = (now: Date, nightEnds: NightEnds) => {
   return Math.max(0, Math.round((bedtime.getTime() - now.getTime()) / 60_000));
 };
 
+export type DayPart = "manana" | "tarde" | "noche";
+
+export const MORNING_STARTS_AT_HOUR = 6;
+export const AFTERNOON_STARTS_AT_HOUR = 12;
+export const NIGHT_STARTS_AT_HOUR = 19;
+/** Early sleepers: the night also starts once bedtime is this close. */
+export const NIGHT_LEAD_MINUTES = 4 * 60;
+
+/**
+ * Which part of the day Hoy is in. Night = from 19:00 (or when bedtime is less
+ * than four hours away) until 06:00; only then does the clock shape the sala.
+ */
+export const dayPartOf = (now: Date, nightEnds: NightEnds): DayPart => {
+  const hour = now.getHours();
+  if (hour < MORNING_STARTS_AT_HOUR || hour >= NIGHT_STARTS_AT_HOUR) {
+    return "noche";
+  }
+  if (remainingMinutes(now, nightEnds) <= NIGHT_LEAD_MINUTES) {
+    return "noche";
+  }
+  return hour < AFTERNOON_STARTS_AT_HOUR ? "manana" : "tarde";
+};
+
+export const isNight = (now: Date, nightEnds: NightEnds) => dayPartOf(now, nightEnds) === "noche";
+
+export const DAY_PART_LABEL: Record<DayPart, string> = {
+  manana: "Esta mañana",
+  tarde: "Esta tarde",
+  noche: "Esta noche",
+};
+
+/** The next moment `dayPartOf` can change (06:00, 12:00, 19:00 or bedtime − 4 h). */
+export const nextDayPartChange = (now: Date, nightEnds: NightEnds) => {
+  const at = (hour: number, dayOffset = 0) =>
+    new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset, hour, 0, 0, 0);
+  const candidates = [
+    at(MORNING_STARTS_AT_HOUR),
+    at(AFTERNOON_STARTS_AT_HOUR),
+    at(NIGHT_STARTS_AT_HOUR),
+    new Date(bedtimeFor(now, nightEnds).getTime() - NIGHT_LEAD_MINUTES * 60_000),
+    at(MORNING_STARTS_AT_HOUR, 1),
+  ];
+  return candidates
+    .filter((candidate) => candidate.getTime() > now.getTime())
+    .sort((a, b) => a.getTime() - b.getTime())[0]!;
+};
+
 export const formatClock = (date: Date) =>
   `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 

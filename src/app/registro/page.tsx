@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { AuthScreenSkeleton } from "@/components/PageSkeletons";
 import { SignupForm } from "@/components/SignupForm";
 import { isGoogleSignInEnabled } from "@/lib/auth/google";
 
@@ -6,5 +8,9 @@ export const metadata = {
 };
 
 export default function SignupPage() {
-  return <SignupForm googleEnabled={isGoogleSignInEnabled()} />;
+  return (
+    <Suspense fallback={<AuthScreenSkeleton label="Cargando registro" />}>
+      <SignupForm googleEnabled={isGoogleSignInEnabled()} />
+    </Suspense>
+  );
 }

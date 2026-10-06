@@ -38,6 +38,7 @@ describe("google oauth helpers", () => {
     assert.equal(safeNextPath("/registro"), "/");
     assert.equal(safeNextPath("/api/auth/google"), "/");
     assert.equal(safeNextPath("/loginpage"), "/loginpage");
+    assert.equal(safeNextPath("/bienvenida"), "/bienvenida");
   });
 
   it("builds the start href with an optional next", () => {

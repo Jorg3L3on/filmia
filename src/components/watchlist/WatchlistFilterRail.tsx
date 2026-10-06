@@ -9,6 +9,9 @@ import { ChevronIcon, ClockIcon, LaurelIcon, MoonIcon, TvIcon } from "@/componen
 import { WatchlistGenreSheet } from "@/components/watchlist/WatchlistGenreSheet";
 import { catalogHref, type CatalogQuery } from "@/lib/catalog-href";
 import { cn } from "@/lib/cn";
+import { isNight } from "@/lib/tonight/time";
+import type { NightEnds } from "@/lib/tonight/types";
+import { useMountedNow } from "@/lib/use-mounted-now";
 import {
   WATCHLIST_SORT_OPTIONS,
   type WatchlistGenreCount,
@@ -21,11 +24,15 @@ type WatchlistFilterRailProps = {
   query: CatalogQuery;
   sort: WatchlistSort | null;
   genres: WatchlistGenreCount[];
+  nightEnds: NightEnds;
 };
 
-/** Esta noche · Mis plataformas · Cortas · Premiadas · Género, plus the sort sheet. */
-export const WatchlistFilterRail = ({ pathname, query, sort, genres }: WatchlistFilterRailProps) => {
+/** Esta noche (at night) · Mis plataformas · Cortas · Premiadas · Género, plus the sort sheet. */
+export const WatchlistFilterRail = ({ pathname, query, sort, genres, nightEnds }: WatchlistFilterRailProps) => {
   const router = useRouter();
+  const now = useMountedNow();
+  // By day «Esta noche» filters nothing (everything fits): hide it unless it is already on.
+  const showTonight = Boolean(query.tonight) || (now !== null && isNight(now, nightEnds));
   const [genreOpen, setGenreOpen] = useState(false);
   const selectedGenres = query.genres ?? [];
   const genreLabel =
@@ -47,15 +54,17 @@ export const WatchlistFilterRail = ({ pathname, query, sort, genres }: Watchlist
           buttonLabel={WATCHLIST_SORT_OPTIONS.find((option) => option.id === sort)?.label ?? "Mi orden"}
           onSelect={(next) => router.push(hrefFor({ sort: next }))}
         />
-        <Link
-          href={hrefFor({ tonight: !query.tonight })}
-          scroll={false}
-          aria-pressed={Boolean(query.tonight)}
-          className={cn(catalogBarChipClass(Boolean(query.tonight)), "gap-1.5")}
-        >
-          <MoonIcon size={14} />
-          Esta noche
-        </Link>
+        {showTonight ? (
+          <Link
+            href={hrefFor({ tonight: !query.tonight })}
+            scroll={false}
+            aria-pressed={Boolean(query.tonight)}
+            className={cn(catalogBarChipClass(Boolean(query.tonight)), "gap-1.5")}
+          >
+            <MoonIcon size={14} />
+            Esta noche
+          </Link>
+        ) : null}
         <Link
           href={hrefFor({ minePlatforms: !query.minePlatforms, platforms: [] })}
           scroll={false}

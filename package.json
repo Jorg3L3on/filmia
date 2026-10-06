@@ -20,6 +20,7 @@
     "db:import-watchlist": "tsx scripts/import-watchlist.ts",
     "db:backfill-metadata": "tsx scripts/backfill-metadata.ts",
     "db:set-password": "tsx scripts/set-password.ts",
+    "db:clone-account": "tsx scripts/clone-account.ts",
     "db:backfill-tonight": "tsx scripts/backfill-tonight.ts",
     "db:backfill-awards": "tsx scripts/backfill-awards.ts",
     "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs"

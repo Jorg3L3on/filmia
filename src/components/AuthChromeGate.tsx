@@ -14,7 +14,7 @@ type AuthChromeGateProps = {
   children: ReactNode;
 };
 
-/** Tiny client leaf: hide app chrome on /login|/registro (incl. auth-path 404s). */
+/** Tiny client leaf: hide app chrome on /login|/registro|/bienvenida (incl. auth-path 404s). */
 export const AuthChromeGate = ({
   header,
   prefetch,

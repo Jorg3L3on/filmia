@@ -28,7 +28,7 @@ const HISTORIAL_PARAMS = [
   "seriesStatus",
 ] as const;
 
-/** Hoy — «Esta noche»: the ranked mazo of your queue for the night that is left. */
+/** Hoy — «Esta mañana / tarde / noche»: your queue ranked; at night, for the night that is left. */
 export default function HomePage({
   searchParams,
 }: {
@@ -68,9 +68,9 @@ const HoyShell = async ({
     return (
       <EmptyState
         title="Elige tus plataformas"
-        description="Esta noche solo muestra lo incluido en tus suscripciones de México. Indica cuáles tienes en el perfil."
-        actionHref="/perfil"
-        actionLabel="Ir a perfil"
+        description="Hoy solo muestra lo incluido en tus suscripciones de México. La bienvenida te ayuda a elegirlas y a llenar Quiero ver."
+        actionHref="/bienvenida"
+        actionLabel="Configurar en la bienvenida"
       />
     );
   }
@@ -90,7 +90,7 @@ const HoyShell = async ({
     return (
       <EmptyState
         title="Tu mazo está vacío"
-        description={`Esta noche solo cuenta lo incluido en ${formatUserPlatformsList(decks.userPlatforms)}. Renta y compra no cuentan.`}
+        description={`Hoy solo cuenta lo incluido en ${formatUserPlatformsList(decks.userPlatforms)}. Renta y compra no cuentan.`}
         actionHref="/buscar"
         actionLabel="Buscar un título"
       />

@@ -34,8 +34,10 @@ export const TonightFooter = ({ title, className }: TonightFooterProps) => {
     ? PLATFORM_SERVICE_LABEL[platform]
     : (title.flatrateProviders?.[0]?.name ?? null);
   const runtime = formatRuntimeShort(tonight?.runtimeMinutes ?? null);
-  const fit = tonight?.fit ?? null;
   const headline = tonight?.headline[0] ?? null;
+  // By day the chip is just the runtime: «acaba 15:31» only means something at night.
+  const night = (sala?.dayPart ?? "noche") === "noche";
+  const fit = night ? (tonight?.fit ?? null) : null;
   const overflow = Boolean(fit && fit.overflowMinutes > 0);
   const nightOver = Boolean(fit && fit.remainingMinutes === 0);
 
