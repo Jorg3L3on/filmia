@@ -189,39 +189,52 @@ export const DiaryBodySkeleton = ({
   );
 };
 
+/** Rail chips (Esta noche · Mis plataformas · Cortas · Premiadas · Género) + Filtros. */
 export const WatchlistFiltersSkeleton = () => (
-  <div className="flex items-center justify-end gap-2" aria-hidden="true">
-    <ShimmerBlock className="h-8 w-20 rounded-full" />
-    <ShimmerBlock className="h-8 w-20 rounded-full" />
+  <div className="flex items-center gap-1.5 overflow-hidden" aria-hidden="true">
+    {Array.from({ length: 5 }, (_, index) => (
+      <ShimmerBlock key={index} className="h-8 w-24 shrink-0 rounded-full" />
+    ))}
+    <div className="flex-1" />
+    <ShimmerBlock className="h-8 w-20 shrink-0 rounded-full" />
   </div>
 );
 
+/** Compact hero for #1 + a stack of fichas. */
 export const WatchlistBodySkeleton = ({
   label = "Cargando Quiero ver",
 }: SkeletonProps) => (
-  <div className="space-y-6" aria-busy="true" aria-label={label}>
+  <div className="space-y-4" aria-busy="true" aria-label={label}>
     <WatchlistFiltersSkeleton />
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between py-2">
       <ShimmerBlock className="h-3 w-20 rounded-full" />
       <ShimmerBlock className="h-10 w-32 rounded-full" />
     </div>
-    <div className="-mx-4 flex flex-col items-center gap-4 border-y border-line/60 bg-surface/40 px-5 pb-6 pt-7 sm:mx-0 sm:rounded-card sm:border">
-      <ShimmerBlock className="aspect-[2/3] w-[min(44vw,210px)] rounded-poster" />
-      <ShimmerBlock className="h-3 w-32 rounded-full" />
-      <ShimmerBlock className="h-9 w-56 rounded-xl" />
-      <ShimmerBlock className="h-4 w-40 rounded-full" />
-      <div className="flex w-full max-w-sm gap-2 pt-2">
-        <ShimmerBlock className="h-12 flex-1 rounded-full" />
-        <ShimmerBlock className="h-12 flex-1 rounded-full" />
-        <ShimmerBlock className="size-12 shrink-0 rounded-full" />
+    <div className="-mx-4 flex gap-4 border-y border-line/60 bg-surface/40 px-4 py-4 sm:mx-0 sm:rounded-card sm:border sm:px-6 sm:py-5">
+      <ShimmerBlock className="aspect-[2/3] w-[min(30vw,132px)] shrink-0 rounded-poster" />
+      <div className="min-w-0 flex-1 space-y-2.5 pt-1">
+        <ShimmerBlock className="h-3 w-28 rounded-full" />
+        <ShimmerBlock className="h-8 w-4/5 rounded-xl" />
+        <ShimmerBlock className="h-3.5 w-1/2 rounded-full" />
+        <ShimmerBlock className="h-5 w-2/3 rounded-full" />
+        <ShimmerBlock className="h-10 w-full rounded-full" />
+        <div className="flex gap-2 pt-1">
+          <ShimmerBlock className="h-11 flex-1 rounded-full" />
+          <ShimmerBlock className="h-11 w-28 rounded-full" />
+          <ShimmerBlock className="size-11 shrink-0 rounded-full" />
+        </div>
       </div>
     </div>
-    <div className="grid grid-cols-3 gap-x-3 gap-y-7 sm:grid-cols-4 sm:gap-x-5 lg:grid-cols-5">
-      {Array.from({ length: 6 }, (_, index) => (
-        <div key={index} className="min-w-0 space-y-2 pl-3">
-          <ShimmerBlock className="aspect-[2/3] w-full rounded-poster" />
-          <ShimmerBlock className="h-3.5 w-4/5 rounded-full" />
-          <ShimmerBlock className="h-3 w-1/2 rounded-full" />
+    <div className="space-y-2.5">
+      {Array.from({ length: 5 }, (_, index) => (
+        <div key={index} className={cn(skeletonWellClass, "flex gap-3 p-2.5")}>
+          <ShimmerBlock className="aspect-[2/3] w-16 shrink-0 rounded-poster" />
+          <div className="min-w-0 flex-1 space-y-2 pt-0.5">
+            <ShimmerBlock className="h-4 w-3/5 rounded-full" />
+            <ShimmerBlock className="h-3 w-2/5 rounded-full" />
+            <ShimmerBlock className="h-3 w-1/2 rounded-full" />
+            <ShimmerBlock className="h-5 w-3/4 rounded-full" />
+          </div>
         </div>
       ))}
     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { SearchPreviewSheet } from "@/components/SearchPreviewSheet";
 import { TmdbSearchUnavailable } from "@/components/TmdbSearchUnavailable";
@@ -59,6 +60,12 @@ export const TmdbSearchAdd = ({
     defaultDestination,
   });
 
+  // Keep the last preview mounted while the sheet plays its exit animation.
+  const [sheetResult, setSheetResult] = useState(preview);
+  if (preview && preview !== sheetResult) {
+    setSheetResult(preview);
+  }
+
   if (!configured.tmdb) {
     return <TmdbSearchUnavailable />;
   }
@@ -100,15 +107,16 @@ export const TmdbSearchAdd = ({
         />
       ) : null}
 
-      {preview ? (
+      {sheetResult ? (
         <SearchPreviewSheet
-          result={preview}
+          open={Boolean(preview)}
+          result={sheetResult}
           local={previewLocal}
-          pending={isAdding && pendingKey === tmdbCatalogKey(preview.tmdbId, preview.kind)}
+          pending={isAdding && pendingKey === tmdbCatalogKey(sheetResult.tmdbId, sheetResult.kind)}
           pendingAction={pendingAction}
           onClose={() => setPreview(null)}
-          onAdd={(destination) => handleAdd(preview, destination)}
-          onOpen={() => handleOpen(preview)}
+          onAdd={(destination) => handleAdd(sheetResult, destination)}
+          onOpen={() => handleOpen(sheetResult)}
         />
       ) : null}
 

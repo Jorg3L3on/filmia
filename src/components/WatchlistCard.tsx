@@ -1,22 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ListItemOrderControls } from "@/components/ListItemOrderControls";
 import { PosterImage } from "@/components/PosterImage";
-import { PosterPlatformBadge } from "@/components/PosterPlatformBadge";
-import { SharedPoster } from "@/components/SharedPoster";
-import { WatchlistMarkSeenButton } from "@/components/WatchlistMarkSeenButton";
-import type { WatchlistItem } from "@/components/watchlist-types";
-import type { Platform } from "@/db";
+import type { FichaView } from "@/components/watchlist/types";
 import { auraBloomImage, platformGlowRgb } from "@/lib/aura";
 import { cn } from "@/lib/cn";
-import { TITLE_KIND_LABEL } from "@/lib/labels";
 import { focusRing, glassRowClass } from "@/lib/ui";
 
 type WatchlistReorderRowProps = {
-  item: WatchlistItem;
+  ficha: FichaView;
   position: number;
   canMoveUp: boolean;
   canMoveDown: boolean;
@@ -26,14 +20,13 @@ type WatchlistReorderRowProps = {
 
 /** Edit-mode row: drag handle + arrows; the whole queue reorders in place. */
 export const WatchlistReorderRow = ({
-  item,
+  ficha,
   position,
   canMoveUp,
   canMoveDown,
   pendingOrder = false,
   onMove,
 }: WatchlistReorderRowProps) => {
-  const { title } = item;
   const {
     attributes,
     listeners,
@@ -42,7 +35,7 @@ export const WatchlistReorderRow = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: item.titleId });
+  } = useSortable({ id: ficha.id });
 
   return (
     <li
@@ -50,7 +43,10 @@ export const WatchlistReorderRow = ({
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
-        backgroundImage: auraBloomImage(platformGlowRgb(title.platform), position === 1 ? 1.2 : 0.8),
+        backgroundImage: auraBloomImage(
+          platformGlowRgb(ficha.platform?.platform ?? null),
+          position === 1 ? 1.2 : 0.8,
+        ),
       }}
       className={cn(
         glassRowClass,
@@ -63,7 +59,7 @@ export const WatchlistReorderRow = ({
         ref={setActivatorNodeRef}
         {...attributes}
         {...listeners}
-        aria-label={`Arrastrar ${title.name}`}
+        aria-label={`Arrastrar ${ficha.name}`}
         className={cn(
           "inline-flex h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-mist hover:text-paper active:cursor-grabbing",
           focusRing,
@@ -80,19 +76,11 @@ export const WatchlistReorderRow = ({
         {position}
       </span>
       <div className="w-12 shrink-0">
-        <PosterImage
-          name={title.name}
-          posterPath={title.posterPath}
-          sizes="48px"
-          className="rounded-md"
-        />
+        <PosterImage name={ficha.name} posterPath={ficha.posterPath} sizes="48px" className="rounded-md" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-paper">{title.name}</p>
-        <p className="truncate text-xs text-mist">
-          {title.year ? `${title.year} · ` : ""}
-          {TITLE_KIND_LABEL[title.kind]}
-        </p>
+        <p className="truncate font-medium text-paper">{ficha.name}</p>
+        <p className="truncate text-xs text-mist">{ficha.meta}</p>
       </div>
       <ListItemOrderControls
         canMoveUp={canMoveUp}
@@ -103,62 +91,6 @@ export const WatchlistReorderRow = ({
     </li>
   );
 };
-
-type WatchlistPosterProps = {
-  title: WatchlistItem["title"];
-  size: "hero" | "queue";
-  className: string;
-  posterClassName: string;
-  sizes: string;
-  preferredPlatforms?: readonly Platform[];
-  priority?: boolean;
-  onMarkedSeen?: () => void;
-  onMarkSeenError?: () => void;
-};
-
-export const WatchlistPoster = ({
-  title,
-  size,
-  className,
-  posterClassName,
-  sizes,
-  preferredPlatforms = [],
-  priority = false,
-  onMarkedSeen,
-  onMarkSeenError,
-}: WatchlistPosterProps) => (
-  <div className={cn("group relative", className)}>
-    <Link
-      href={`/titulos/${title.id}`}
-      aria-label={title.name}
-      className={cn("press-scale block", focusRing)}
-    >
-      <SharedPoster titleId={title.id}>
-        <PosterImage
-          name={title.name}
-          posterPath={title.posterPath}
-          className={posterClassName}
-          sizes={sizes}
-          priority={priority}
-        />
-      </SharedPoster>
-    </Link>
-    <WatchlistMarkSeenButton
-      titleId={title.id}
-      titleName={title.name}
-      rating={title.rating}
-      review={title.review}
-      size={size}
-      onSaved={onMarkedSeen}
-      onError={onMarkSeenError}
-    />
-    <PosterPlatformBadge
-      watchProvidersMx={title.watchProvidersMx}
-      preferredPlatforms={preferredPlatforms}
-      size={size}
-    />
-  </div>
-);
 
 const DragHandleIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="size-5">

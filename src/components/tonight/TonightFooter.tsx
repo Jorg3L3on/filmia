@@ -42,6 +42,11 @@ export const TonightFooter = ({ title, className }: TonightFooterProps) => {
   return (
     <div className={cn("tonight-footer mx-auto flex w-full max-w-xl flex-col items-center gap-2 text-center", className)}>
       <div key={title.id} className="tonight-title-in space-y-1 px-2">
+        {tonight?.pinned ? (
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">
+            Tu elección de esta noche
+          </p>
+        ) : null}
         <h2 className="tonight-title font-serif text-[1.55rem] font-semibold leading-tight text-paper sm:text-3xl md:text-4xl">
           <Link
             href={`/titulos/${title.id}`}

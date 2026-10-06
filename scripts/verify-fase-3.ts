@@ -74,9 +74,9 @@ const run = () => {
     "Quiero ver header does not duplicate the Buscar lupa",
   );
   assert(
-    read("src/components/WatchlistList.tsx").includes("WatchlistHero") &&
-      read("src/components/WatchlistList.tsx").includes("WatchlistGrid"),
-    "Quiero ver renders a hero for #1 and a ranked grid for the rest",
+    read("src/components/watchlist/WatchlistCartelera.tsx").includes("WatchlistHeroCompact") &&
+      read("src/components/watchlist/WatchlistCartelera.tsx").includes("WatchlistFicha"),
+    "Quiero ver renders a compact hero for #1 and a dense list of fichas",
   );
 
   const ratingLabel = CATALOG_ORDER_OPTIONS.find((option) => option.id === "rating");
@@ -231,25 +231,26 @@ const run = () => {
       !read("src/app/watchlist/loading.tsx").includes("withAction"),
     "Quiero ver loading matches header without duplicate action",
   );
-  const watchlistList = read("src/components/WatchlistList.tsx");
+  const cartelera = read("src/components/watchlist/WatchlistCartelera.tsx");
+  const reorderList = read("src/components/watchlist/WatchlistReorderList.tsx");
   assert(
-    watchlistList.includes("DndContext") &&
-      watchlistList.includes("reorderList") &&
-      watchlistList.includes("isManualOrder"),
+    reorderList.includes("DndContext") &&
+      reorderList.includes("reorderList") &&
+      cartelera.includes("isManualOrder"),
     "Quiero ver Reordenar mode drags/persists and only appears in manual order",
   );
-  const watchlistGrid = read("src/components/WatchlistGrid.tsx");
+  const ficha = read("src/components/watchlist/WatchlistFicha.tsx");
   assert(
-    watchlistList.includes("danger-well") && watchlistGrid.includes("staggerStyle"),
-    "Quiero ver list errors use danger-well; grid tiles stagger",
+    cartelera.includes("danger-well") && ficha.includes("staggerStyle"),
+    "Quiero ver list errors use danger-well; fichas stagger",
   );
-  const watchlistHero = read("src/components/WatchlistHero.tsx");
+  const watchlistHero = read("src/components/watchlist/WatchlistHeroCompact.tsx");
   assert(
     watchlistHero.includes("press-scale") &&
       watchlistHero.includes("var(--duration-hover)") &&
-      watchlistGrid.includes("var(--duration-hover)") &&
+      ficha.includes("var(--duration-hover)") &&
       read("src/components/WatchlistCard.tsx").includes("useSortable"),
-    "Quiero ver hero/grid use press-scale / duration-hover; reorder rows are sortable",
+    "Quiero ver hero/fichas use press-scale / duration-hover; reorder rows are sortable",
   );
   assert(
     read("src/components/EmptyState.tsx").includes('variant === "watchlist"') &&
@@ -431,7 +432,7 @@ const run = () => {
 
   console.log("✓ Fase 3 page polish: historial IA, buscar copy, ficha sheet, Button forms");
   console.log("✓ Fase 3 Diario lote: skeletons por modo, day-sheet affordance, error well");
-  console.log("✓ Fase 3 Quiero ver lote: hero + grid, Reordenar, skeleton well, error well, empty polish");
+  console.log("✓ Fase 3 Quiero ver lote: cartelera (hero compacto + fichas), Reordenar, skeleton well, error well, empty polish");
   console.log("✓ Fase 3 Buscar lote: preview sheet, skeleton well, error well, client island split");
   console.log("✓ Fase 3 Ficha lote: LCP poster, action/panels type, delete far, skeleton/error wells");
   console.log("✓ Fase 3 Listas lote: SharedPoster stacks, CTA sheet, skeleton/error wells, PageHeader");

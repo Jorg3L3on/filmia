@@ -19,6 +19,8 @@ export type RankableCard = {
   components: TonightComponents;
   reasons: TonightReason[];
   wildcard: boolean;
+  /** Chosen from Quiero ver for tonight (see `tonight/pin.ts`). */
+  pinned?: boolean;
 };
 
 export type RankedCard<T extends RankableCard> = T & {
@@ -78,6 +80,8 @@ export const rankForNow = <T extends RankableCard>(
     nightEnds: NightEnds;
     eventsByTitle?: ReadonlyMap<string, TonightEvent[]>;
     keepWildcardLast?: boolean;
+    /** The pinned card stays first whatever the clock says. */
+    keepPinnedFirst?: boolean;
   },
 ): RankedCard<T>[] => {
   const remaining = remainingMinutes(options.now, options.nightEnds);
@@ -100,6 +104,13 @@ export const rankForNow = <T extends RankableCard>(
   });
 
   ranked.sort((a, b) => {
+    if (options.keepPinnedFirst) {
+      const pinnedA = Boolean(a.pinned);
+      const pinnedB = Boolean(b.pinned);
+      if (pinnedA !== pinnedB) {
+        return pinnedA ? -1 : 1;
+      }
+    }
     if (options.keepWildcardLast) {
       if (a.wildcard !== b.wildcard) {
         return a.wildcard ? 1 : -1;

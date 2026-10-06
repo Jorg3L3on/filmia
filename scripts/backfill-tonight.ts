@@ -47,6 +47,7 @@ const backfill = async () => {
           or(
             needsTaste,
             and(isNotNull(titles.imdbId), isNull(titles.imdbVotes)),
+            and(isNotNull(titles.imdbId), isNull(titles.awards)),
             and(isNotNull(titles.posterPath), isNull(titles.posterAmbient)),
           ),
         ),
@@ -72,10 +73,15 @@ const backfill = async () => {
         if (!title.posterPath && details.posterPath) patch.posterPath = details.posterPath;
       }
 
-      if (title.imdbId && (force || title.imdbVotes == null) && isOmdbConfigured()) {
+      if (
+        title.imdbId &&
+        (force || title.imdbVotes == null || title.awards == null) &&
+        isOmdbConfigured()
+      ) {
         const score = await fetchImdbScore(title.imdbId);
         if (score.votes != null) patch.imdbVotes = score.votes;
         if (score.rating != null && title.imdbRating == null) patch.imdbRating = score.rating;
+        if (score.awards && (force || !title.awards)) patch.awards = score.awards;
       }
 
       const posterPath = (patch.posterPath as string | undefined) ?? title.posterPath;

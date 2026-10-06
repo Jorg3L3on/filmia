@@ -21,6 +21,7 @@
     "db:backfill-metadata": "tsx scripts/backfill-metadata.ts",
     "db:set-password": "tsx scripts/set-password.ts",
     "db:backfill-tonight": "tsx scripts/backfill-tonight.ts",
+    "db:backfill-awards": "tsx scripts/backfill-awards.ts",
     "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs"
   },
   "dependencies": {

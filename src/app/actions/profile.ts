@@ -91,7 +91,9 @@ export const updatePassword = async (
   });
 
   if (!user?.passwordHash) {
-    return { error: "No se pudo actualizar la contraseña." };
+    return {
+      error: "Esta cuenta entra con Google y no tiene contraseña que cambiar.",
+    };
   }
 
   const valid = await verifyPassword(currentPassword, user.passwordHash);

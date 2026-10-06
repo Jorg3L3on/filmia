@@ -61,15 +61,6 @@ export const NavIcon = ({
     );
   }
 
-  if (name === "add") {
-    return (
-      <svg {...common}>
-        <rect x="5" y="5" width="14" height="14" rx="3" />
-        <path strokeLinecap="round" d="M12 9v6M9 12h6" />
-      </svg>
-    );
-  }
-
   if (name === "tag") {
     return (
       <svg {...common}>

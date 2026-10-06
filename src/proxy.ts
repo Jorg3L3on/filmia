@@ -1,17 +1,9 @@
 import { NextResponse } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 import { verifySessionToken } from "@/lib/auth/session-token";
+import { requestOrigin } from "@/lib/request-origin";
 
 const LOGIN_PATH = "/login";
-
-const requestOrigin = (request: Request) => {
-  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
-  if (host) {
-    const proto = request.headers.get("x-forwarded-proto") ?? "http";
-    return `${proto}://${host}`;
-  }
-  return new URL(request.url).origin.replace("://0.0.0.0", "://127.0.0.1");
-};
 
 const SIGNUP_PATH = "/registro";
 

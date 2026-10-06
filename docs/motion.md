@@ -31,6 +31,19 @@ Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` 
 | Reparto `.deck-deal` | `--duration-stagger` · `--spring` · 50 ms/card | On mount and on lens change (`--deal-i` per card). |
 | Razón / título `.tonight-title-in` | `--duration-enter` · `--ease-out` | Reuses `genre-coverflow-title-in` (blur-in). |
 
+## Quiero ver (La cartelera)
+
+| Piece | Token | Notes |
+| --- | --- | --- |
+| Fichas `.stagger-in` | `--duration-stagger` · 50 ms/row (cap 12) | Entry of the list, same as every grid. |
+| Abrir ficha `.ficha-detail` | 420 ms · `--spring` | `grid-template-rows: 0fr → 1fr`. The one sanctioned spring outside press/pop: it answers a direct tap. Poster 64 → 84 px and title 15 → 23 px ride the same spring; the backdrop `.ficha-backdrop` fades in with `--ease-out` and settles from scale 1.06 over 1.2 s. |
+| Detalle `.ficha-detail-in` | `--duration-enter` · `--ease-out` · 120 ms delay | Opacity + blur(6px) + 6 px rise, fill-mode `backwards`. |
+| Swipe `.ficha-sheet` | `--duration-hover` · `--ease-out` (spring back) | Axis locks after 8 px; arms at 60 px (haptic 12 ms, label pops with `spring-pop`), stops at 96. Right = «Vi esto», left = «Ahora no». |
+| Sello `.visto-stamp.is-row` | `--duration-pop` · `--spring` | Same stamp as Hoy at row size; 520 ms later the poster flies to Perfil (`.fly-poster`). |
+| Conteo `.num-ticker-col` | `--duration-morph` · `--ease-out` | Digits roll when a chip changes the count. |
+| Título condensado `.cartelera-condensed-title` | `--duration-tab` · `--ease-out` | Appears in the sticky bar once the H1 scrolls away (IntersectionObserver). |
+| Menú / nota / género | `.sheet-rise` | Bottom sheets, never spring. |
+
 ## SharedPoster
 
 React `<ViewTransition name={\`poster-${id}\`} share="morph">` via `SharedPoster` on tile → ficha paths (lists, tags results, buscar, deck, calendar, rail, ranking, watchlist).

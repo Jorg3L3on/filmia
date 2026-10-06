@@ -1,11 +1,11 @@
 "use server";
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { todayDateInput } from "@/lib/dates";
 import { parseOptionalDate, parseOptionalReview, parseRating } from "@/lib/form-data";
 import { ensureDefaultLists, WATCHLIST_SLUG } from "@/lib/lists";
-import { swapAdjacentListItems } from "@/lib/list-order";
+import { reorderListItems } from "@/lib/list-order";
 import {
   revalidateDiarySurfaces,
   revalidateWatchlistSurfaces,
@@ -250,9 +250,23 @@ export const updateWatchlistNote = async (titleId: string, formData: FormData) =
   scheduleTonightRecompute(userId);
 };
 
-export const bumpWatchlistItem = async (titleId: string) => {
+/** «Subir al principio» from the ficha menu: the title becomes #1, everything else keeps its order. */
+export const moveWatchlistItemToTop = async (titleId: string) => {
   const userId = await requireUserId();
   const watchlist = await ensureWatchlist(userId);
-  await swapAdjacentListItems(watchlist.id, titleId, "up");
+  const items = await db.query.listItems.findMany({
+    where: eq(listItems.listId, watchlist.id),
+    orderBy: [asc(listItems.position)],
+    columns: { titleId: true },
+  });
+  if (!items.some((item) => item.titleId === titleId)) {
+    throw new Error("Ese título no está en Quiero ver.");
+  }
+  await reorderListItems(watchlist.id, [
+    titleId,
+    ...items.map((item) => item.titleId).filter((id) => id !== titleId),
+  ]);
   revalidateWatchlist();
+  revalidatePath("/");
+  scheduleTonightRecompute(userId);
 };

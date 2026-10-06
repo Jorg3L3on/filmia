@@ -111,6 +111,7 @@ const enrichCreatedTitleInBackground = (
             imdbId: resolved.imdbId,
             imdbRating: resolved.imdbRating,
             imdbVotes: resolved.imdbVotes ?? null,
+            awards: resolved.awards ?? null,
             overview: resolved.overview ?? null,
             tmdbGenres: resolved.tmdbGenres,
             tmdbKeywords: resolved.tmdbKeywords ?? [],

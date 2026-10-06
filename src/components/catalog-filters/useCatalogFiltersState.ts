@@ -24,6 +24,8 @@ type UseCatalogFiltersStateArgs = {
   mode?: string;
   kind?: CatalogKindFilter;
   platforms?: Platform[];
+  /** Params owned by another control on the page (Quiero ver rail), kept on every href. */
+  extraQuery?: Partial<CatalogQuery>;
 };
 
 export const useCatalogFiltersState = ({
@@ -40,6 +42,7 @@ export const useCatalogFiltersState = ({
   mode,
   kind = "ALL",
   platforms = [],
+  extraQuery,
 }: UseCatalogFiltersStateArgs) => {
   const router = useRouter();
   const applied: CatalogFilterDraft = {
@@ -63,6 +66,7 @@ export const useCatalogFiltersState = ({
   };
 
   const queryBase = {
+    ...extraQuery,
     view,
     defaultView,
     month,

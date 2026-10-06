@@ -153,26 +153,34 @@ export const useSheetDragDismiss = (onClose: () => void, threshold = 96) => {
 
     const shouldClose = offsetRef.current >= threshold;
     startY.current = null;
+    setDragging(false);
+    if (shouldClose) {
+      // Leave the panel where the finger released it: the exit animation falls from there.
+      onClose();
+      return;
+    }
+    offsetRef.current = 0;
+    setOffsetY(0);
+  };
+
+  /** Call when a sheet reopens so a previous drag-dismiss offset does not carry over. */
+  const reset = () => {
+    startY.current = null;
     offsetRef.current = 0;
     setDragging(false);
     setOffsetY(0);
-    if (shouldClose) {
-      onClose();
-    }
   };
 
   return {
     offsetY,
     dragging,
-    sheetStyle:
-      dragging || offsetY > 0
-        ? ({
-            transform: `translateY(${offsetY}px)`,
-            transition: dragging
-              ? "none"
-              : "transform var(--duration-sheet) var(--ease-out)",
-          } as CSSProperties)
-        : undefined,
+    reset,
+    // Always set: once `.sheet-rise` ends (fill-mode backwards) the inline transform is live,
+    // and a permanent transition makes a short drag spring back instead of snapping.
+    sheetStyle: {
+      transform: offsetY > 0 ? `translateY(${offsetY}px)` : undefined,
+      transition: dragging ? "none" : "transform var(--duration-sheet) var(--ease-out)",
+    } as CSSProperties,
     dragHandlers: {
       onPointerDown: handlePointerDown,
       onPointerMove: handlePointerMove,

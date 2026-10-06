@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import { Button } from "@/components/Button";
 import { RatingStars } from "@/components/RatingStars";
-import { Sheet, SheetHandle } from "@/components/Sheet";
+import { Sheet, SheetHandle, useOpenGeneration } from "@/components/Sheet";
 import { cn } from "@/lib/cn";
 import { fieldClass } from "@/lib/ui";
 
@@ -28,13 +28,12 @@ export const RatingSheet = ({
   onClose,
   onSave,
 }: RatingSheetProps) => {
-  if (!open) {
-    return null;
-  }
+  const generation = useOpenGeneration(open);
 
   return (
     <RatingSheetFields
-      key={`${titleId}:${rating}:${review}`}
+      key={`${generation}:${titleId}:${rating}:${review}`}
+      open={open}
       rating={rating}
       review={review}
       pending={pending}
@@ -45,12 +44,13 @@ export const RatingSheet = ({
 };
 
 const RatingSheetFields = ({
+  open,
   rating,
   review = "",
   pending,
   onClose,
   onSave,
-}: Omit<RatingSheetProps, "open" | "titleId">) => {
+}: Omit<RatingSheetProps, "titleId">) => {
   const titleDomId = useId();
   const [value, setValue] = useState<number | null>(rating);
   const [note, setNote] = useState(review ?? "");
@@ -64,7 +64,7 @@ const RatingSheetFields = ({
 
   return (
     <Sheet
-      open
+      open={open}
       onClose={onClose}
       labelledBy={titleDomId}
       overlayLabel="Cerrar tu nota"
