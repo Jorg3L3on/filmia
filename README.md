@@ -123,6 +123,15 @@ Flujo: `GET /api/auth/google` guarda `state` + verificador PKCE en una cookie de
 
 Pendiente de probar en la PWA de iOS (pantalla de inicio): el salto a `accounts.google.com` abre una hoja de navegador y hay que confirmar que la cookie de sesión vuelve a la app.
 
+### Premios (OMDb) — chip «Premiadas» en Quiero ver
+
+`Title.awards` guarda la frase `Awards` de OMDb («Won 2 Oscars. 23 wins & 12 nominations total») tal cual; `src/lib/awards.ts` la convierte en el chip corto («2 Óscar», «Nominada al Óscar», «7 premios»). Llega sola al agregar títulos (misma llamada que la nota IMDb). Para el catálogo existente, tras `npm run db:migrate` (0006):
+
+```bash
+npm run db:backfill-awards -- --dry-run   # solo reporta
+npm run db:backfill-awards                # una llamada OMDb por título con imdbId; el plan gratuito permite 1 000/día
+```
+
 ### Migraciones (Drizzle)
 
 El journal en `drizzle/` es la fuente de verdad. Neon prod ya tiene `0000_baseline` + `0001_add_title_overview`. **No re-apliques SQL histórico de Prisma.**

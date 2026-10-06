@@ -19,6 +19,8 @@ export type TitleMetadata = {
   imdbId: string | null;
   imdbRating: number | null;
   imdbVotes?: number | null;
+  /** Raw OMDb awards sentence (see `src/lib/awards.ts`). */
+  awards?: string | null;
   tmdbGenres: TmdbGenre[];
   tmdbKeywords?: TmdbKeyword[];
   tmdbPeople?: TmdbPerson[];
@@ -43,7 +45,9 @@ export const resolveTitleMetadata = async (
     getTmdbExternalIds(tmdbId, kind),
   ]);
 
-  const score = imdbId ? await fetchImdbScore(imdbId) : { rating: null, votes: null };
+  const score = imdbId
+    ? await fetchImdbScore(imdbId)
+    : { rating: null, votes: null, awards: null };
 
   return {
     tmdbId: details.tmdbId,
@@ -53,6 +57,7 @@ export const resolveTitleMetadata = async (
     imdbId,
     imdbRating: score.rating,
     imdbVotes: score.votes,
+    awards: score.awards,
     tmdbGenres: details.genres,
     tmdbKeywords: details.keywords,
     tmdbPeople: details.people,
@@ -121,6 +126,7 @@ export const enrichMetadataOnSave = async (
       imdbId: resolved.imdbId ?? metadata.imdbId,
       imdbRating: resolved.imdbRating ?? metadata.imdbRating,
       imdbVotes: resolved.imdbVotes ?? metadata.imdbVotes ?? null,
+      awards: resolved.awards ?? metadata.awards ?? null,
       tmdbGenres:
         resolved.tmdbGenres.length > 0 ? resolved.tmdbGenres : metadata.tmdbGenres,
     };

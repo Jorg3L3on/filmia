@@ -43,6 +43,13 @@
       "when": 1791262165199,
       "tag": "0005_google_sso",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791263059921,
+      "tag": "0006_title_awards",
+      "breakpoints": true
     }
   ]
 }

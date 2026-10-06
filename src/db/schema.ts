@@ -111,6 +111,8 @@ export const titles = pgTable(
     tmdbPeople: jsonb("tmdbPeople").notNull().default([]),
     originalLanguage: text("originalLanguage"),
     imdbVotes: integer("imdbVotes"),
+    /** OMDb `Awards` text, e.g. "Won 2 Oscars. 23 wins & 12 nominations total." */
+    awards: text("awards"),
     /** Space-separated RGB (`"122 146 172"`) sampled server-side for the sala glow. */
     posterAmbient: text("posterAmbient"),
     /** First time we saw a flatrate MX offer — drives «Acaba de llegar». */
