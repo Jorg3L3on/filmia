@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState, type ChangeEventHandler, type FocusEventHandler, type ReactNode, type Ref } from "react";
 import { cn } from "@/lib/cn";
 import { fieldClass, focusRing } from "@/lib/ui";
 
@@ -12,6 +12,13 @@ type PasswordFieldProps = {
   required?: boolean;
   minLength?: number;
   ariaLabel?: string;
+  onChange?: ChangeEventHandler<HTMLInputElement>;
+  onBlur?: FocusEventHandler<HTMLInputElement>;
+  inputRef?: Ref<HTMLInputElement>;
+  /** Validation message; shown under the field and announced with the input. */
+  error?: string;
+  /** Extra content under the field (hints, strength meter). */
+  children?: ReactNode;
 };
 
 export const PasswordField = ({
@@ -22,8 +29,14 @@ export const PasswordField = ({
   required = true,
   minLength,
   ariaLabel,
+  onChange,
+  onBlur,
+  inputRef,
+  error,
+  children,
 }: PasswordFieldProps) => {
   const [visible, setVisible] = useState(false);
+  const errorId = useId();
 
   const handleToggle = () => {
     setVisible((current) => !current);
@@ -42,6 +55,11 @@ export const PasswordField = ({
           className={`${fieldClass} pr-11`}
           placeholder={placeholder}
           aria-label={ariaLabel ?? label}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
+          onChange={onChange}
+          onBlur={onBlur}
+          ref={inputRef}
         />
         <button
           type="button"
@@ -56,6 +74,12 @@ export const PasswordField = ({
           <EyeIcon off={visible} />
         </button>
       </span>
+      {error ? (
+        <span id={errorId} className="block text-xs text-danger">
+          {error}
+        </span>
+      ) : null}
+      {children}
     </label>
   );
 };

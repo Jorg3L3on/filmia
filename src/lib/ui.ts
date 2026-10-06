@@ -4,7 +4,7 @@ export const focusRing =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 export const fieldClass =
-  "w-full rounded-xl border border-chrome bg-well px-3 py-2 text-base text-paper placeholder:text-faint focus:border-accent focus:outline-none sm:text-sm";
+  "w-full rounded-xl border border-chrome bg-well px-3 py-2 text-base text-paper placeholder:text-faint focus:border-accent focus:outline-none aria-invalid:border-danger sm:text-sm";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "success";
 export type ButtonSize = "sm" | "md" | "lg";

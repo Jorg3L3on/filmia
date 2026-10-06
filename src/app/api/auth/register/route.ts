@@ -5,27 +5,22 @@ import { db, users } from "@/db";
 import { setSessionCookie } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth/password";
 import { ensureDefaultLists } from "@/lib/lists";
+import { SIGNUP_FIELD_ORDER, normalizeEmail, validateSignup } from "@/lib/signup-validation";
 import { ensureDefaultTags } from "@/lib/tags";
-
-const normalizeEmail = (value: FormDataEntryValue | null) =>
-  String(value ?? "").trim().toLowerCase();
 
 export const POST = async (request: Request) => {
   const formData = await request.formData();
-  const email = normalizeEmail(formData.get("email"));
+  const rawEmail = String(formData.get("email") ?? "");
+  const email = normalizeEmail(rawEmail);
   const password = String(formData.get("password") ?? "");
-  const name = String(formData.get("name") ?? "").trim() || null;
+  const rawName = String(formData.get("name") ?? "");
+  const name = rawName.trim() || null;
 
-  if (!email || !password) {
+  const fieldErrors = validateSignup({ name: rawName, email: rawEmail, password });
+  const [firstInvalid] = SIGNUP_FIELD_ORDER.filter((field) => fieldErrors[field]);
+  if (firstInvalid) {
     return NextResponse.json(
-      { error: "Correo y contraseña son obligatorios." },
-      { status: 400 },
-    );
-  }
-
-  if (password.length < 8) {
-    return NextResponse.json(
-      { error: "La contraseña debe tener al menos 8 caracteres." },
+      { error: fieldErrors[firstInvalid], fieldErrors },
       { status: 400 },
     );
   }
@@ -37,12 +32,11 @@ export const POST = async (request: Request) => {
 
   if (existing) {
     const googleOnly = Boolean(existing.googleId) && !existing.passwordHash;
+    const message = googleOnly
+      ? "Ese correo ya entra con Google. Usa «Continuar con Google»."
+      : "Ya existe una cuenta con ese correo. ¿Quieres entrar?";
     return NextResponse.json(
-      {
-        error: googleOnly
-          ? "Ese correo ya entra con Google. Usa «Continuar con Google»."
-          : "Ya existe una cuenta con ese correo.",
-      },
+      { error: message, fieldErrors: { email: message }, existingAccount: true },
       { status: 409 },
     );
   }

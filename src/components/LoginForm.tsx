@@ -22,6 +22,8 @@ export const LoginForm = ({ googleEnabled }: LoginFormProps) => {
     messageForSignInError(searchParams.get("error")),
   );
   const [isLoading, setIsLoading] = useState(false);
+  const signupHref =
+    callbackUrl === "/" ? "/registro" : `/registro?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -59,7 +61,7 @@ export const LoginForm = ({ googleEnabled }: LoginFormProps) => {
             <span className="h-px flex-1 bg-line" />
           </div>
           <p className="text-center text-sm">
-            <Link href="/registro" className={`text-accent hover:text-accent-hover ${focusRing}`}>
+            <Link href={signupHref} className={`text-accent hover:text-accent-hover ${focusRing}`}>
               Crear cuenta
             </Link>
           </p>
