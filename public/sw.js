@@ -3,7 +3,7 @@
  * Never caches HTML navigations, RSC/flight, API, or diary/user data.
  * No offline sync.
  */
-const CACHE = "filmia-assets-v2";
+const CACHE = "filmia-assets-v3";
 
 const PRECACHE = [
   "/icon-192.png",

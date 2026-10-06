@@ -1,8 +1,8 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { db, users } from "@/db";
+import { db, titles, users } from "@/db";
 import { requireUserId } from "@/lib/session";
 import { isHHMM, parseNightEnds } from "@/lib/tonight/time";
 import type { PickEventKind } from "@/lib/tonight";
@@ -40,6 +40,23 @@ export const markNotTonight = async (titleId: string, lens?: string | null) => {
   await persistPickEvents(userId, [{ titleId, kind: "not_tonight", lens }]);
   scheduleTonightRecompute(userId);
   revalidatePath("/");
+  revalidatePath("/watchlist");
+};
+
+/** «Esta noche» from Quiero ver: pin the title first in Para ti for tonight. */
+export const pinTonight = async (titleId: string) => {
+  const userId = await requireUserId();
+  const owned = await db.query.titles.findFirst({
+    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
+    columns: { id: true },
+  });
+  if (!owned) {
+    throw new Error("Ese título no está en tu biblioteca.");
+  }
+  await persistPickEvents(userId, [{ titleId, kind: "pinned", lens: "quiero-ver" }]);
+  scheduleTonightRecompute(userId);
+  revalidatePath("/");
+  revalidatePath("/watchlist");
 };
 
 /** Más así / Menos así from the «Por qué esta» sheet. */

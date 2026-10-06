@@ -94,6 +94,39 @@ export const CatalogTvIcon = () => (
 );
 
 export const CatalogOrderIcon = ({ name }: { name: CatalogOrderIconName }) => {
+  if (name === "queue") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
+        <path strokeLinecap="round" d="M5 7h14M5 12h14M5 17h9" />
+      </svg>
+    );
+  }
+
+  if (name === "sparkle") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
+        <path strokeLinejoin="round" d="M12 4l1.9 5.1L19 11l-5.1 1.9L12 18l-1.9-5.1L5 11l5.1-1.9Z" />
+      </svg>
+    );
+  }
+
+  if (name === "hourglass") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7 4h10M7 20h10M8 4c0 4 4 5.5 4 8s-4 4-4 8M16 4c0 4-4 5.5-4 8s4 4 4 8" />
+      </svg>
+    );
+  }
+
+  if (name === "calendar") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
+        <rect x="4" y="5" width="16" height="15" rx="2" />
+        <path strokeLinecap="round" d="M4 10h16M8 3v4M16 3v4" />
+      </svg>
+    );
+  }
+
   if (name === "eye") {
     return (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">

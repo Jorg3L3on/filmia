@@ -17,6 +17,8 @@ import { toCoverflowTitle } from "@/lib/coverflow-title";
 import { scheduleDiaryWatchlistEnrichment } from "@/lib/diary-enrich";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { WATCHLIST_SLUG } from "@/lib/lists";
+import { PARA_TI_NAME, PARA_TI_SLUG } from "@/lib/tonight/select";
+import { findPinnedTitleId, PINNED_REASON } from "@/lib/tonight/pin";
 import {
   parseStoredStreamingPlatforms,
   titleAvailableOnUserPlatforms,
@@ -51,6 +53,7 @@ export const PICK_EVENT_KINDS: readonly PickEventKind[] = [
   "watched",
   "more_like",
   "less_like",
+  "pinned",
 ];
 
 export const isPickEventKind = (value: unknown): value is PickEventKind =>
@@ -62,6 +65,8 @@ export type TonightCard = CoverflowTitle & {
   components: TonightComponents;
   reasons: TonightReason[];
   wildcard: boolean;
+  /** Chosen from Quiero ver for tonight: stays first in Para ti. */
+  pinned: boolean;
   posterAmbient: string | null;
   queueNote: string | null;
   overview: string | null;
@@ -321,16 +326,55 @@ const toCard = (
   row: TitleRowWithLists,
   pick: TonightPickBase,
   userPlatforms: readonly Platform[],
+  pinned = false,
 ): TonightCard => ({
   ...toCoverflowTitle(row, userPlatforms),
   runtimeMinutes: row.runtimeMinutes,
   components: pick.components,
   reasons: pick.reasons,
   wildcard: pick.wildcard,
+  pinned,
   posterAmbient: row.posterAmbient,
   queueNote: queueEntryOf(row)?.queueNote ?? null,
   overview: row.overview,
 });
+
+/**
+ * Put the pinned title first in Para ti (creating the lens if needed). It skips
+ * `isTonightCandidate` on purpose: the user chose it, available on their platforms or not.
+ */
+const applyPinnedCard = (
+  lenses: TonightLensView[],
+  row: TitleRowWithLists | undefined,
+  pick: TonightPickBase | null,
+  userPlatforms: readonly Platform[],
+): TonightLensView[] => {
+  if (!row || row.watchedAt || !queueEntryOf(row)) {
+    return lenses;
+  }
+  const base: TonightPickBase = pick ?? {
+    titleId: row.id,
+    components: parseComponents({}),
+    baseScore: 0,
+    reasons: [],
+    wildcard: false,
+  };
+  const card = toCard(
+    row,
+    { ...base, wildcard: false, reasons: [PINNED_REASON, ...base.reasons.filter((r) => r.kind !== "pinned")] },
+    userPlatforms,
+    true,
+  );
+  const paraTi = lenses.find((lens) => lens.kind === "para-ti");
+  if (!paraTi) {
+    return [{ slug: PARA_TI_SLUG, name: PARA_TI_NAME, kind: "para-ti", titles: [card] }, ...lenses];
+  }
+  return lenses.map((lens) =>
+    lens === paraTi
+      ? { ...lens, titles: [card, ...lens.titles.filter((title) => title.id !== card.id)] }
+      : lens,
+  );
+};
 
 const lensesFromResult = (
   result: TonightResult,
@@ -349,7 +393,7 @@ const lensesFromResult = (
     }))
     .filter((lens) => lens.titles.length > 0);
 
-const parseComponents = (value: unknown): TonightComponents => {
+export const parseComponents = (value: unknown): TonightComponents => {
   const record = isRecord(value) ? value : {};
   const num = (key: keyof TonightComponents, fallback: number) => {
     const raw = Number(record[key]);
@@ -365,7 +409,7 @@ const parseComponents = (value: unknown): TonightComponents => {
   };
 };
 
-const parseReasons = (value: unknown): TonightReason[] =>
+export const parseReasons = (value: unknown): TonightReason[] =>
   Array.isArray(value)
     ? value.flatMap((item) =>
         isRecord(item) && typeof item.text === "string" && typeof item.kind === "string"
@@ -415,8 +459,18 @@ export const getTonightDecks = async (
       input.rows.filter((row) => queuedIds.has(row.id) && row.watchedAt == null),
     );
     const rowsById = new Map(input.rows.map((row) => [row.id, row]));
+    const freshPinnedId = findPinnedTitleId(input.events, now);
+    const freshLenses = lensesFromResult(result, rowsById, input.userPlatforms);
     return {
-      lenses: lensesFromResult(result, rowsById, input.userPlatforms),
+      lenses: freshPinnedId
+        ? applyPinnedCard(
+            freshLenses,
+            rowsById.get(freshPinnedId),
+            result.lenses.flatMap((lens) => lens.picks).find((pick) => pick.titleId === freshPinnedId) ??
+              null,
+            input.userPlatforms,
+          )
+        : freshLenses,
       nightEnds: input.nightEnds,
       userPlatforms: input.userPlatforms,
       profileSize: result.profileSize,
@@ -425,18 +479,21 @@ export const getTonightDecks = async (
     };
   }
 
-  const titleIds = [...new Set(picks.map((pick) => pick.titleId))];
-  const [rows, prefs, events, queueCount] = await Promise.all([
-    (titleIds.length > 0
-      ? db.query.titles.findMany({
-          where: and(eq(titles.userId, userId), inArray(titles.id, titleIds)),
-          with: TITLE_WITH_LISTS,
-        })
-      : Promise.resolve([])) as Promise<TitleRowWithLists[]>,
+  const [prefs, events, queueCount] = await Promise.all([
     loadUserPrefs(userId),
     loadEvents(userId, now),
     countQueue(userId),
   ]);
+  const pinnedId = findPinnedTitleId(events, now);
+  const titleIds = [...new Set([...picks.map((pick) => pick.titleId), ...(pinnedId ? [pinnedId] : [])])];
+  const rows = (
+    titleIds.length > 0
+      ? await db.query.titles.findMany({
+          where: and(eq(titles.userId, userId), inArray(titles.id, titleIds)),
+          with: TITLE_WITH_LISTS,
+        })
+      : []
+  ) as TitleRowWithLists[];
 
   const rowsById = new Map(rows.map((row) => [row.id, row]));
   const excluded = new Set(
@@ -483,8 +540,28 @@ export const getTonightDecks = async (
     scheduleTonightRecompute(userId);
   }
 
+  const pinnedPick = pinnedId
+    ? (picks.find((pick) => pick.titleId === pinnedId && pick.lens === PARA_TI_SLUG) ??
+      picks.find((pick) => pick.titleId === pinnedId))
+    : undefined;
+
   return {
-    lenses,
+    lenses: pinnedId
+      ? applyPinnedCard(
+          lenses,
+          rowsById.get(pinnedId),
+          pinnedPick
+            ? {
+                titleId: pinnedPick.titleId,
+                components: parseComponents(pinnedPick.components),
+                baseScore: pinnedPick.score,
+                reasons: parseReasons(pinnedPick.reasons),
+                wildcard: pinnedPick.wildcard === 1,
+              }
+            : null,
+          prefs.userPlatforms,
+        )
+      : lenses,
     nightEnds: prefs.nightEnds,
     userPlatforms: prefs.userPlatforms,
     profileSize: 0,

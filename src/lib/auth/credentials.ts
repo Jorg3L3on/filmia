@@ -12,26 +12,36 @@ export type AuthenticatedUser = {
   name: string | null;
 };
 
+export type CredentialsResult =
+  | { ok: true; user: AuthenticatedUser }
+  | { ok: false; reason: "invalid" | "google-only" };
+
 export const authenticateCredentials = async (
   email: string,
   password: string,
-): Promise<AuthenticatedUser | null> => {
+): Promise<CredentialsResult> => {
   const normalizedEmail = email.trim().toLowerCase();
   if (!normalizedEmail || !password) {
-    return null;
+    return { ok: false, reason: "invalid" };
   }
 
   const user = await db.query.users.findFirst({
     where: eq(users.email, normalizedEmail),
   });
 
-  if (!user?.passwordHash) {
-    return null;
+  if (!user) {
+    return { ok: false, reason: "invalid" };
+  }
+
+  if (!user.passwordHash) {
+    // Password-less account (signed up with Google). Say so instead of a generic
+    // mismatch: this is a personal app, the hint is worth more than the secrecy.
+    return { ok: false, reason: user.googleId ? "google-only" : "invalid" };
   }
 
   const valid = await verifyPassword(password, user.passwordHash);
   if (!valid) {
-    return null;
+    return { ok: false, reason: "invalid" };
   }
 
   if (needsPasswordUpgrade(user.passwordHash)) {
@@ -40,8 +50,11 @@ export const authenticateCredentials = async (
   }
 
   return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
+    ok: true,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    },
   };
 };

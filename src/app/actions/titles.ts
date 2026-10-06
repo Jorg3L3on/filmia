@@ -179,6 +179,7 @@ const scheduleTitleEnrichment = (
           runtimeMinutes: resolved.runtimeMinutes ?? snapshot.runtimeMinutes,
           imdbId: resolved.imdbId ?? snapshot.imdbId,
           imdbRating: resolved.imdbRating ?? snapshot.imdbRating,
+          awards: resolved.awards ?? undefined,
           overview: resolved.overview ?? undefined,
           tmdbGenres: resolved.tmdbGenres,
         })

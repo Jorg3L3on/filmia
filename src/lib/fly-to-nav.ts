@@ -1,26 +1,40 @@
 /**
  * «Vi esto» → the poster shrinks and flies into the Perfil tab (where Tu diario
  * lives); the tab pulses on arrival. Pure DOM + Web Animations, reduced-motion aware.
+ * `pulseNav("today")` reuses the pulse for «Esta noche» from Quiero ver.
  */
 
 const RECEIVE_CLASS = "nav-receive";
 const FLY_MS = 620;
 
+export type NavTab = "today" | "queue" | "lists" | "profile";
+
+const NAV_HREF: Record<NavTab, string> = {
+  today: "/",
+  queue: "/watchlist",
+  lists: "/listas",
+  profile: "/perfil",
+};
+
 const prefersReducedMotion = () =>
   typeof window !== "undefined" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-export const findProfileNavTarget = () =>
-  (document.querySelector('[data-nav="profile"]') as HTMLElement | null) ??
-  (document.querySelector('a[href="/perfil"]') as HTMLElement | null);
+export const findNavTarget = (tab: NavTab) =>
+  (document.querySelector(`[data-nav="${tab}"]`) as HTMLElement | null) ??
+  (document.querySelector(`a[href="${NAV_HREF[tab]}"]`) as HTMLElement | null);
 
-export const pulseProfileNav = (target = findProfileNavTarget()) => {
+export const pulseNav = (tab: NavTab, target = findNavTarget(tab)) => {
   if (!target) {
     return;
   }
   target.classList.add(RECEIVE_CLASS);
   window.setTimeout(() => target.classList.remove(RECEIVE_CLASS), 900);
 };
+
+export const findProfileNavTarget = () => findNavTarget("profile");
+
+export const pulseProfileNav = (target = findProfileNavTarget()) => pulseNav("profile", target);
 
 /** Returns a promise that resolves when the poster has landed (or immediately). */
 export const flyPosterToProfile = (card: HTMLElement | null, posterSrc: string | null) =>

@@ -8,19 +8,31 @@ import {
 } from "@/components/MinePlatformsNotice";
 import { PageHeader } from "@/components/PageHeader";
 import { WatchlistBodySkeleton } from "@/components/PageSkeletons";
-import { WatchlistList } from "@/components/WatchlistList";
+import { WatchlistCartelera } from "@/components/watchlist/WatchlistCartelera";
+import { WatchlistFilterRail } from "@/components/watchlist/WatchlistFilterRail";
+import { parseKindFilter, parsePlatformFilters, titleMatchesKind } from "@/lib/catalog-filters";
+import type { CatalogQuery } from "@/lib/catalog-href";
 import {
-  parseCatalogOrder,
-  parseKindFilter,
-  parsePlatformFilters,
-  sortCatalogByTitle,
-  titleMatchesKind,
-} from "@/lib/catalog-filters";
-import { getTagFilters, getUserStreamingPlatforms, getWatchlist } from "@/lib/queries";
+  getCurrentUserProfile,
+  getTagFilters,
+  getUserStreamingPlatforms,
+  getWatchlist,
+} from "@/lib/queries";
 import { scheduleMissingTitleOverviews } from "@/lib/title-overview-schedule";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
+import { parseNightEnds } from "@/lib/tonight/time";
+import { buildWatchlistFichas, type WatchlistSignals } from "@/lib/watchlist-ficha";
+import {
+  applyWatchlistFilters,
+  genresInList,
+  parseFlag,
+  parseGenreIds,
+  parseWatchlistSort,
+  sortWatchlistItems,
+} from "@/lib/watchlist-filters";
+import { loadWatchlistSignals } from "@/lib/watchlist-hook-store";
 
 export const dynamic = "force-dynamic";
 
@@ -35,9 +47,19 @@ type WatchlistSearchParams = {
   sort?: string | string[];
   tag?: string | string[];
   seriesStatus?: string | string[];
+  tonight?: string | string[];
+  short?: string | string[];
+  awarded?: string | string[];
+  genre?: string | string[];
 };
 
 const WatchlistHeader = () => <PageHeader title="Quiero ver" />;
+
+const EMPTY_SIGNALS: WatchlistSignals = {
+  reasonsByTitle: new Map(),
+  snoozedUntilByTitle: new Map(),
+  pinnedTitleId: null,
+};
 
 export default function WatchlistPage({
   searchParams,
@@ -63,14 +85,20 @@ const WatchlistBody = async ({
   const kindFilter = parseKindFilter(params.kind);
   const minePlatforms = parseMinePlatforms(params.minePlatforms);
   const platforms = parsePlatformFilters(params.platform);
-  const sort = parseCatalogOrder(params.sort);
+  const sort = parseWatchlistSort(params.sort);
   const selectedTags = parseTagSlugs(params.tag);
   const seriesStatus = parseSeriesStatusFilter(params.seriesStatus);
+  const tonight = parseFlag(params.tonight);
+  const short = parseFlag(params.short);
+  const awarded = parseFlag(params.awarded);
+  const genreIds = parseGenreIds(params.genre);
+  const now = new Date();
 
-  const [watchlist, userPlatforms, tags] = await Promise.all([
+  const [watchlist, userPlatforms, tags, profile] = await Promise.all([
     getWatchlist(),
     getUserStreamingPlatforms(),
     getTagFilters(),
+    getCurrentUserProfile(),
   ]);
 
   const rawItems = watchlist?.items ?? [];
@@ -85,14 +113,22 @@ const WatchlistBody = async ({
     { platforms, minePlatforms, userPlatforms },
   );
   const visibleIds = new Set(catalog.titles.map((title) => title.id));
-  const filteredItems =
+  const availableItems =
     catalog.needsSetup
       ? []
       : platforms.length > 0 || minePlatforms
         ? kindItems.filter((item) => visibleIds.has(item.title.id))
         : kindItems;
-  const items = sortCatalogByTitle(filteredItems, sort);
+  // «Esta noche» is applied on the client: it needs the viewer's clock.
+  const items = sortWatchlistItems(
+    applyWatchlistFilters(availableItems, { short, awarded, genreIds }),
+    sort,
+  );
   scheduleMissingTitleOverviews(items.map((item) => item.title));
+
+  const signals = profile ? await loadWatchlistSignals(profile.id, now) : EMPTY_SIGNALS;
+  const fichas = buildWatchlistFichas(items, { signals, userPlatforms, now });
+  const nightEnds = profile?.nightEnds ?? parseNightEnds(null);
 
   const listId = watchlist?.id ?? "";
   const clearHref = catalogHref("/watchlist");
@@ -102,7 +138,24 @@ const WatchlistBody = async ({
     Boolean(seriesStatus) ||
     platforms.length > 0 ||
     minePlatforms ||
-    Boolean(sort);
+    Boolean(sort) ||
+    tonight ||
+    short ||
+    awarded ||
+    genreIds.length > 0;
+
+  const railQuery: CatalogQuery = {
+    tags: selectedTags,
+    sort,
+    minePlatforms,
+    seriesStatus,
+    kind: kindFilter,
+    platforms,
+    tonight,
+    short,
+    awarded,
+    genres: genreIds,
+  };
 
   return (
     <>
@@ -117,7 +170,16 @@ const WatchlistBody = async ({
         hasStreamingPlatforms={userPlatforms.length > 0}
         seriesStatus={seriesStatus}
         showKindChips={false}
-        showMinePlatformsChip
+        showSort={false}
+        extraQuery={{ tonight, short, awarded, genres: genreIds }}
+        leading={
+          <WatchlistFilterRail
+            pathname="/watchlist"
+            query={railQuery}
+            sort={sort}
+            genres={genresInList(rawItems)}
+          />
+        }
       />
 
       {rawItems.length === 0 ? (
@@ -139,7 +201,10 @@ const WatchlistBody = async ({
             hasTagFilters={
               kindFilter !== "ALL" ||
               selectedTags.length > 0 ||
-              Boolean(seriesStatus)
+              Boolean(seriesStatus) ||
+              short ||
+              awarded ||
+              genreIds.length > 0
             }
           />
         </div>
@@ -154,11 +219,13 @@ const WatchlistBody = async ({
       ) : (
         <div className="space-y-4">
           <MissingStreamingDataNote count={catalog.missingCache} />
-          <WatchlistList
-            items={items}
+          <WatchlistCartelera
+            fichas={fichas}
             listId={listId}
-            preferredPlatforms={userPlatforms}
+            nightEnds={nightEnds}
             isManualOrder={!hasExtraFilters}
+            tonightOnly={tonight}
+            pinnedTitleId={signals.pinnedTitleId}
           />
         </div>
       )}

@@ -3,6 +3,7 @@ import { cn } from "@/lib/cn";
 
 type LogoProps = {
   size?: "sm" | "md" | "lg";
+  showMark?: boolean;
   showWordmark?: boolean;
   className?: string;
 };
@@ -13,19 +14,26 @@ const sizeMap = {
   lg: { image: 48, wordmark: "text-3xl" },
 } as const;
 
-export const Logo = ({ size = "md", showWordmark = true, className }: LogoProps) => {
+export const Logo = ({
+  size = "md",
+  showMark = true,
+  showWordmark = true,
+  className,
+}: LogoProps) => {
   const { image, wordmark } = sizeMap[size];
 
   return (
     <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <Image
-        src="/filmia-mark.png"
-        alt=""
-        width={image}
-        height={image}
-        className="shrink-0"
-        priority
-      />
+      {showMark ? (
+        <Image
+          src="/filmia-mark.png"
+          alt=""
+          width={image}
+          height={image}
+          className="shrink-0"
+          priority
+        />
+      ) : null}
       {showWordmark ? (
         <span className={cn("font-serif tracking-wide text-paper", wordmark)}>
           Film<span className="text-accent">ia</span>

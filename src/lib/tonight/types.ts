@@ -49,7 +49,9 @@ export type PickEventKind =
   | "opened"
   | "watched"
   | "more_like"
-  | "less_like";
+  | "less_like"
+  /** «Esta noche» from Quiero ver: force this title to the front of Para ti tonight. */
+  | "pinned";
 
 export type TonightEvent = {
   titleId: string;
@@ -86,7 +88,8 @@ export type ReasonKind =
   | "fresh_platform"
   | "fresh_added"
   | "aging"
-  | "wildcard";
+  | "wildcard"
+  | "pinned";
 
 export type TonightReason = {
   kind: ReasonKind;

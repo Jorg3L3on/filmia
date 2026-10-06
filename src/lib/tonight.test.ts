@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { computeTonight, PARA_TI_SLUG } from "./tonight";
 import { itemVector, cosine } from "./tonight/features";
+import { findPinnedTitleId } from "./tonight/pin";
 import { rankForNow } from "./tonight/serve";
 import {
   bedtimeFor,
@@ -235,6 +236,44 @@ describe("computeTonight", () => {
     assert.ok(interstellarLate && interstellarLate.fit.overflowMinutes > 0);
     assert.ok(late[0]?.id !== "interstellar", "a film that overflows bedtime is no longer the hero");
     assert.ok(interstellarLate?.headline.some((reason) => reason.kind === "fit_over"));
+  });
+
+  it("keeps a pinned card first even when the clock would bury it", () => {
+    const cards = (paraTi?.picks ?? []).map((pick) => ({
+      id: pick.titleId,
+      runtimeMinutes: titles.find((item) => item.id === pick.titleId)?.runtimeMinutes ?? null,
+      components: pick.components,
+      reasons: pick.reasons,
+      wildcard: pick.wildcard,
+      pinned: pick.titleId === "interstellar",
+    }));
+    const late = rankForNow(cards, {
+      now: new Date(2026, 9, 4, 22, 0),
+      nightEnds: NIGHT,
+      keepWildcardLast: true,
+      keepPinnedFirst: true,
+    });
+    assert.equal(late[0]?.id, "interstellar");
+    assert.ok(late.at(-1)?.wildcard || !late.some((card) => card.wildcard), "wildcard still last");
+  });
+});
+
+describe("tonight/pin", () => {
+  const event = (titleId: string, kind: TonightEvent["kind"], minutesAgo: number): TonightEvent => ({
+    titleId,
+    kind,
+    createdAt: new Date(NOW.getTime() - minutesAgo * 60_000),
+  });
+
+  it("returns the newest pin inside the 18 h window", () => {
+    assert.equal(findPinnedTitleId([event("a", "pinned", 120), event("b", "pinned", 10)], NOW), "b");
+    assert.equal(findPinnedTitleId([event("a", "pinned", 19 * 60)], NOW), null);
+    assert.equal(findPinnedTitleId([event("a", "shown", 5)], NOW), null);
+  });
+
+  it("is cancelled by a later «Ahora no» on the same title", () => {
+    assert.equal(findPinnedTitleId([event("a", "pinned", 30), event("a", "not_tonight", 5)], NOW), null);
+    assert.equal(findPinnedTitleId([event("a", "not_tonight", 30), event("a", "pinned", 5)], NOW), "a");
   });
 });
 

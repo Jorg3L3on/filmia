@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 
 /** Filmia canvas from globals.css --canvas (JOR-217). */
 const CANVAS = "#0e1114";
+/** globals.css --canvas-deep; same plate as the PWA icons so the splash blends into the maskable icon. */
+const PLATE = "#090b0d";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -12,7 +14,7 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     display_override: ["standalone", "minimal-ui"],
-    background_color: CANVAS,
+    background_color: PLATE,
     theme_color: CANVAS,
     lang: "es",
     orientation: "any",

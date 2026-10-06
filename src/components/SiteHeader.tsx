@@ -24,10 +24,10 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
       >
         {/* Wrappers own display so Logo's inline-flex cannot un-hide the unused size. */}
         <span className="inline-flex sm:hidden">
-          <Logo size="sm" />
+          <Logo size="sm" showMark={false} />
         </span>
         <span className="hidden sm:inline-flex">
-          <Logo size="md" />
+          <Logo size="md" showMark={false} />
         </span>
       </Link>
       <div className="flex min-w-0 items-center gap-2">

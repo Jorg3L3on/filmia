@@ -25,7 +25,24 @@ export type CatalogQuery = {
   mode?: string | null;
   kind?: CatalogKindFilter | null;
   platforms?: Platform[];
+  /** Quiero ver rail: fits before bedtime (client-side filter). */
+  tonight?: boolean;
+  /** Quiero ver rail: movies under 100 min. */
+  short?: boolean;
+  /** Quiero ver rail: has an awards chip. */
+  awarded?: boolean;
+  /** Quiero ver rail: TMDB genre ids. */
+  genres?: number[];
 };
+
+export const TONIGHT_PARAM = "tonight";
+export const SHORT_PARAM = "short";
+export const AWARDED_PARAM = "awarded";
+export const GENRE_PARAM = "genre";
+
+const uniqueGenreIds = (values: number[]) => [
+  ...new Set(values.filter((id) => Number.isInteger(id) && id > 0)),
+];
 
 export const catalogSearchParams = ({
   tags = [],
@@ -39,6 +56,10 @@ export const catalogSearchParams = ({
   mode,
   kind,
   platforms = [],
+  tonight,
+  short,
+  awarded,
+  genres = [],
 }: CatalogQuery) => {
   const params = new URLSearchParams();
 
@@ -81,6 +102,20 @@ export const catalogSearchParams = ({
 
   for (const platform of uniquePlatforms(platforms)) {
     params.append("platform", platform);
+  }
+
+  // Quiero ver rail params go last so the older exact-href checks keep their shape.
+  if (tonight) {
+    params.set(TONIGHT_PARAM, "1");
+  }
+  if (short) {
+    params.set(SHORT_PARAM, "1");
+  }
+  if (awarded) {
+    params.set(AWARDED_PARAM, "1");
+  }
+  for (const id of uniqueGenreIds(genres)) {
+    params.append(GENRE_PARAM, String(id));
   }
 
   return params;

@@ -18,6 +18,7 @@ type LocalTitle = {
 export type SearchAddDestination = "watchlist" | "watched";
 
 type SearchPreviewSheetProps = {
+  open: boolean;
   result: TmdbCatalogResult;
   local: LocalTitle | null;
   pending: boolean;
@@ -28,6 +29,7 @@ type SearchPreviewSheetProps = {
 };
 
 export const SearchPreviewSheet = ({
+  open,
   result,
   local,
   pending,
@@ -44,7 +46,7 @@ export const SearchPreviewSheet = ({
 
   return (
     <Sheet
-      open
+      open={open}
       onClose={onClose}
       label={result.name}
       overlayLabel="Cerrar vista previa"
