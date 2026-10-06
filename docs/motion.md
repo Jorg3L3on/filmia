@@ -48,6 +48,8 @@ Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` 
 
 React `<ViewTransition name={\`poster-${id}\`} share="morph">` via `SharedPoster` on tile → ficha paths (lists, tags results, buscar, deck, calendar, rail, ranking, watchlist).
 
+`poster-{id}` must be mounted at most once per page. Where the same title can appear twice (PosterStack, the watchlist stage, the Perfil week strip next to «Últimas entradas»), pass `share={false}` to the secondary occurrence so only one tile owns the morph.
+
 ## Reduced motion
 
 `prefers-reduced-motion: reduce` zeroes animations, transitions, and view-transition image pairs.

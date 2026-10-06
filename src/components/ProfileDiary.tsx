@@ -100,7 +100,8 @@ export const ProfileDiary = async () => {
                   )}
                 >
                   {primary ? (
-                    <SharedPoster titleId={primary.id} className="absolute inset-0">
+                    // share={false}: the same title can also sit in «Últimas entradas», which owns the poster-{id} morph.
+                    <SharedPoster titleId={primary.id} share={false} className="absolute inset-0">
                       <PosterImage
                         name={primary.name}
                         posterPath={primary.posterPath}
