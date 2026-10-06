@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import type { FichaView } from "@/components/watchlist/types";
 import { PINNED_REASON } from "@/lib/tonight/pin";
-import { fitForRuntime, remainingMinutes } from "@/lib/tonight/time";
+import { fitForRuntime, isNight, remainingMinutes } from "@/lib/tonight/time";
 import type { NightEnds } from "@/lib/tonight/types";
 import type { WatchlistFicha } from "@/lib/watchlist-ficha";
 import { chooseHook } from "@/lib/watchlist-hook";
@@ -12,7 +12,7 @@ type UseFichaViewsArgs = {
   order: readonly string[];
   byId: ReadonlyMap<string, WatchlistFicha>;
   hiddenIds: ReadonlySet<string>;
-  /** `null` until hydration: no fit, no «te cabe» line. */
+  /** `null` until hydration: no fit, no «te cabe» line. By day the clock stays quiet too. */
   now: Date | null;
   nightEnds: NightEnds;
   /** Optimistic overrides from this session. */
@@ -33,7 +33,7 @@ export const useFichaViews = ({
   pinnedId,
 }: UseFichaViewsArgs): FichaView[] =>
   useMemo(() => {
-    const remaining = now ? remainingMinutes(now, nightEnds) : null;
+    const remaining = now && isNight(now, nightEnds) ? remainingMinutes(now, nightEnds) : null;
     const clock = now ?? new Date(0);
     return order.flatMap((id) => {
       const row = byId.get(id);

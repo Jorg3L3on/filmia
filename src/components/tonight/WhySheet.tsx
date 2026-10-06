@@ -48,7 +48,7 @@ export const WhySheet = ({ title, lens, onClose }: WhySheetProps) => {
     onClose();
     showToast({
       title: kind === "more_like" ? "Más como esta" : "Menos como esta",
-      description: "Esta noche aprende de ti.",
+      description: "Hoy aprende de ti.",
     });
     startTransition(async () => {
       try {

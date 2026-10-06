@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { PARA_TI_SLUG } from "../src/lib/tonight";
-import { bedtimeFor, parseNightEnds } from "../src/lib/tonight/time";
+import { bedtimeFor, dayPartOf, parseNightEnds } from "../src/lib/tonight/time";
 
 const assert = (condition: unknown, message: string) => {
   if (!condition) {
@@ -39,6 +39,13 @@ const run = () => {
   const footer = read("src/components/tonight/TonightFooter.tsx");
   assert(footer.includes("tonight-reason") && footer.includes("acaba") && footer.includes("se pasa"), "Footer: reason pill + fit chip copy");
 
+  // Time of day: Esta mañana / tarde / noche; the moon, bedtime chip and fit copy only at night.
+  const eyebrow = read("src/components/tonight/TonightEyebrow.tsx");
+  assert(eyebrow.includes("DAY_PART_LABEL") && eyebrow.includes('dayPart === "noche"'), "Eyebrow follows the viewer's part of the day; bedtime chip only at night");
+  assert(footer.includes("sala?.dayPart") , "Footer hides «acaba / se pasa» by day");
+  assert(read("src/lib/tonight/serve.ts").includes("night ? fitReason"), "rankForNow adds the fit reason only at night");
+  assert(sala.includes("useTonightClock"), "Sala clock re-evaluates at the next day-part boundary");
+
   // Data path: precompute + cron + after() hooks.
   const store = read("src/lib/tonight-store.ts");
   assert(store.includes("computeTonightForUser") && store.includes("scheduleTonightRecompute") && store.includes("TONIGHT_STALE_MS"), "Store precomputes, recomputes after writes, expires after a day");
@@ -53,6 +60,7 @@ const run = () => {
   assert(PARA_TI_SLUG === "para-ti", "First lens is Para ti");
   const friday = new Date(2026, 9, 2, 22, 0);
   assert(bedtimeFor(friday, parseNightEnds(null)).getDate() === 3, "Weekend bedtime 01:00 rolls to Saturday");
+  assert(dayPartOf(new Date(2026, 9, 6, 13, 35), parseNightEnds(null)) === "tarde", "13:35 is «Esta tarde», not «Esta noche»");
 
   console.log("✓ Hoy · Esta noche: talón, sello, vuelo a Perfil, lentes, razones, precálculo + cron");
 };

@@ -12,6 +12,7 @@ import type { FichaView } from "@/components/watchlist/types";
 import { useFichaViews } from "@/components/watchlist/useFichaViews";
 import { useWatchlistActions } from "@/components/watchlist/useWatchlistActions";
 import { useWatchlistKeyboard } from "@/components/watchlist/useWatchlistKeyboard";
+import { isNight } from "@/lib/tonight/time";
 import type { NightEnds } from "@/lib/tonight/types";
 import { DESKTOP_QUERY, useMediaQuery } from "@/lib/use-media-query";
 import { useMountedNow } from "@/lib/use-mounted-now";
@@ -106,12 +107,13 @@ export const WatchlistCartelera = ({
   }, []);
 
   const views = useFichaViews({ order, byId, hiddenIds, now, nightEnds, notes, snoozed, pinnedId });
+  // «Esta noche» only bites at night; by day everything fits and the list stays whole.
   const visible = useMemo(
     () =>
-      tonightOnly && now
+      tonightOnly && now && isNight(now, nightEnds)
         ? views.filter((view) => view.fit && view.fit.overflowMinutes === 0 && view.fit.remainingMinutes > 0)
         : views,
-    [now, tonightOnly, views],
+    [nightEnds, now, tonightOnly, views],
   );
   const visibleIds = visible.map((view) => view.id);
   const hiddenInOrder = order.filter((id) => !visibleIds.includes(id));

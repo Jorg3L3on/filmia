@@ -21,9 +21,14 @@ export * from "@/lib/tonight/types";
 export { WEIGHTS, combineScore, fatigueMultiplier } from "@/lib/tonight/score";
 export { PARA_TI_SLUG, PARA_TI_NAME, LENS_SIZE } from "@/lib/tonight/select";
 export {
+  DAY_PART_LABEL,
   DEFAULT_NIGHT_ENDS,
+  type DayPart,
   bedtimeFor,
+  dayPartOf,
   fitForRuntime,
+  isNight,
+  nextDayPartChange,
   formatRuntimeShort,
   isWeekendNight,
   nightEndsLabel,

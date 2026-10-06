@@ -130,7 +130,7 @@ export const HoyDeckSkeleton = () => (
   </div>
 );
 
-export const HoySkeleton = ({ label = "Cargando Esta noche" }: SkeletonProps) => (
+export const HoySkeleton = ({ label = "Cargando Hoy" }: SkeletonProps) => (
   <div
     className="diario-que-ver-shell flex min-h-0 flex-1 flex-col gap-3 max-sm:-mt-1"
     aria-busy="true"

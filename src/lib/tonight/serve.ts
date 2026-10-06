@@ -2,6 +2,7 @@ import { combineScore, fatigueMultiplier } from "@/lib/tonight/score";
 import {
   fitForRuntime,
   formatRuntimeShort,
+  isNight,
   remainingMinutes,
 } from "@/lib/tonight/time";
 import type {
@@ -72,6 +73,8 @@ export const pickHeadline = (reasons: readonly TonightReason[]) => {
 /**
  * Apply the clock (and fresh feedback) to precomputed cards: fit for the
  * remaining night, fatigue from the latest events, final score, headline.
+ * By day the fit still scores (everything fits) but says nothing: «le caben
+ * a tu noche» only makes sense once it is night.
  */
 export const rankForNow = <T extends RankableCard>(
   cards: readonly T[],
@@ -85,13 +88,14 @@ export const rankForNow = <T extends RankableCard>(
   },
 ): RankedCard<T>[] => {
   const remaining = remainingMinutes(options.now, options.nightEnds);
+  const night = isNight(options.now, options.nightEnds);
   const ranked = cards.map((card) => {
     const fit = fitForRuntime(card.runtimeMinutes, remaining, options.now);
     const events = options.eventsByTitle?.get(card.id);
     const components = events
       ? { ...card.components, fatiga: fatigueMultiplier(events, options.now) }
       : card.components;
-    const reason = fitReason(fit, card.runtimeMinutes);
+    const reason = night ? fitReason(fit, card.runtimeMinutes) : null;
     const reasons = reason ? [...card.reasons, reason] : card.reasons;
     return {
       ...card,
