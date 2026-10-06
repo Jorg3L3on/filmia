@@ -152,6 +152,15 @@ export const WatchlistPoster = ({
       onSaved={onMarkedSeen}
       onError={onMarkSeenError}
     />
+    {title.imdbRating != null ? (
+      <span
+        title={`IMDb ${title.imdbRating.toFixed(1)}/10`}
+        className="pointer-events-none absolute left-1.5 top-1.5 z-10 inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/55 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-[#f5c518] shadow-[0_4px_12px_rgba(0,0,0,0.35)] backdrop-blur-md"
+      >
+        <span aria-hidden="true">★</span>
+        {title.imdbRating.toFixed(1)}
+      </span>
+    ) : null}
     <PosterPlatformBadge
       watchProvidersMx={title.watchProvidersMx}
       preferredPlatforms={preferredPlatforms}
