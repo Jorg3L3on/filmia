@@ -6,26 +6,43 @@ import {
   catalogBarButtonClass,
 } from "@/components/catalog-filters/filter-ui";
 import { Sheet, SheetHandle } from "@/components/Sheet";
-import type { CatalogOrderOption } from "@/lib/catalog-filters";
+import type { CatalogOrderIconName } from "@/lib/catalog-filters";
 import { cn } from "@/lib/cn";
-import type { CatalogSort } from "@/lib/tags";
 import { focusRing } from "@/lib/ui";
 
-type CatalogSortSheetProps = {
-  options: ReadonlyArray<CatalogOrderOption>;
-  current: CatalogSort | null;
-  onSelect: (sort: CatalogSort) => void;
+export type SortSheetOption<Id extends string | null> = {
+  id: Id;
+  label: string;
+  icon: CatalogOrderIconName;
+  /** Small line under the label (Quiero ver). */
+  hint?: string;
 };
 
-export const CatalogSortSheet = ({ options, current, onSelect }: CatalogSortSheetProps) => {
+type CatalogSortSheetProps<Id extends string | null> = {
+  options: ReadonlyArray<SortSheetOption<Id>>;
+  current: Id | null;
+  onSelect: (sort: Id) => void;
+  title?: string;
+  /** Bar button text; defaults to the current option's label or «Orden». */
+  buttonLabel?: string;
+};
+
+export const CatalogSortSheet = <Id extends string | null>({
+  options,
+  current,
+  onSelect,
+  title = "Orden",
+  buttonLabel,
+}: CatalogSortSheetProps<Id>) => {
   const [open, setOpen] = useState(false);
   const titleId = useId();
   const currentOption = options.find((option) => option.id === current);
+  const label = buttonLabel ?? (currentOption ? currentOption.label : title);
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
-  const handleSelect = (sort: CatalogSort) => {
+  const handleSelect = (sort: Id) => {
     setOpen(false);
     if (sort === current) return;
     onSelect(sort);
@@ -38,20 +55,20 @@ export const CatalogSortSheet = ({ options, current, onSelect }: CatalogSortShee
         onClick={handleOpen}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={currentOption ? `Orden: ${currentOption.label}` : "Orden"}
+        aria-label={`${title}: ${label}`}
         className={cn(
           catalogBarButtonClass,
         )}
       >
         <SortIcon />
-        {currentOption ? currentOption.label : "Orden"}
+        {label}
       </button>
 
       <Sheet
         open={open}
         onClose={handleClose}
         labelledBy={titleId}
-        overlayLabel="Cerrar orden"
+        overlayLabel={`Cerrar ${title.toLowerCase()}`}
         layer="top"
         dragDismiss
         portal
@@ -59,14 +76,14 @@ export const CatalogSortSheet = ({ options, current, onSelect }: CatalogSortShee
         <div className="flex flex-col items-center px-5 pt-3">
           <SheetHandle />
           <h2 id={titleId} className="w-full text-left font-serif text-3xl text-paper">
-            Orden
+            {title}
           </h2>
         </div>
         <ul className="space-y-1.5 px-3 py-4" role="radiogroup" aria-labelledby={titleId}>
           {options.map((option) => {
             const isSelected = option.id === current;
             return (
-              <li key={option.id}>
+              <li key={String(option.id)}>
                 <button
                   type="button"
                   role="radio"
@@ -90,7 +107,10 @@ export const CatalogSortSheet = ({ options, current, onSelect }: CatalogSortShee
                   >
                     <CatalogOrderIcon name={option.icon} />
                   </span>
-                  <span className="flex-1 font-medium">{option.label}</span>
+                  <span className="flex-1">
+                    <span className="block font-medium">{option.label}</span>
+                    {option.hint ? <span className="block text-xs text-mist">{option.hint}</span> : null}
+                  </span>
                   {isSelected ? <CheckIcon /> : null}
                 </button>
               </li>

@@ -9,7 +9,15 @@ export const KIND_CHIPS = [
   { value: TitleKind.SERIES, label: "Series" },
 ] as const;
 
-export type CatalogOrderIconName = "clock" | "star" | "az" | "eye";
+export type CatalogOrderIconName =
+  | "clock"
+  | "star"
+  | "az"
+  | "eye"
+  | "queue"
+  | "sparkle"
+  | "hourglass"
+  | "calendar";
 
 export type CatalogOrderOption = {
   id: CatalogSort;

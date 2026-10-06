@@ -2057,3 +2057,223 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-n
     transition: none;
   }
 }
+
+/* --- Quiero ver · La cartelera ------------------------------------------
+ * Dense fichas that unfold in place. The 420 ms --spring unfold is the one
+ * sanctioned spring outside press/pop: it answers a direct tap (docs/motion.md).
+ */
+.ficha-row {
+  touch-action: pan-y;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 118px;
+}
+
+.ficha-row[data-expanded="true"] {
+  content-visibility: visible;
+}
+
+.ficha-sheet {
+  transition: transform var(--duration-hover) var(--ease-out);
+}
+
+.ficha-row.is-swiping .ficha-sheet {
+  transition: none;
+}
+
+.ficha-poster {
+  width: 64px;
+  transition: width 420ms var(--spring);
+}
+
+[data-expanded="true"] .ficha-poster {
+  width: 84px;
+}
+
+.ficha-rank {
+  position: absolute;
+  left: -2px;
+  bottom: -6px;
+  font-family: var(--font-fraunces);
+  font-weight: 700;
+  font-size: 1.875rem;
+  line-height: 1;
+  color: var(--canvas);
+  -webkit-text-stroke: 1.2px rgb(255 255 255 / 0.75);
+  text-shadow: 0 4px 12px rgb(0 0 0 / 0.6);
+  pointer-events: none;
+}
+
+.ficha-title {
+  font-size: 15px;
+  line-height: 1.25;
+  transition:
+    font-size 420ms var(--spring),
+    line-height 420ms var(--spring);
+}
+
+[data-expanded="true"] .ficha-title {
+  font-family: var(--font-fraunces);
+  font-size: 23px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.ficha-detail {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 420ms var(--spring);
+}
+
+[data-expanded="true"] .ficha-detail {
+  grid-template-rows: 1fr;
+}
+
+.ficha-detail > div {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.ficha-detail-in {
+  animation: ficha-detail-in var(--duration-enter) var(--ease-out) backwards;
+  animation-delay: 120ms;
+}
+
+@keyframes ficha-detail-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+.ficha-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0;
+  transform: scale(1.06);
+  transition:
+    opacity 420ms var(--ease-out),
+    transform 1200ms var(--ease-out);
+}
+
+[data-expanded="true"] .ficha-backdrop {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.ficha-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgb(14 17 20 / 0.25) 0%,
+    rgb(14 17 20 / 0.62) 36%,
+    rgb(14 17 20 / 0.94) 100%
+  );
+}
+
+.ficha-swipe-under {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.ficha-swipe-under.is-right {
+  justify-content: flex-start;
+  background: linear-gradient(90deg, rgb(61 214 140 / 0.28), rgb(61 214 140 / 0.06) 60%, transparent);
+  color: var(--success);
+}
+
+.ficha-swipe-under.is-left {
+  justify-content: flex-end;
+  background: linear-gradient(270deg, rgb(240 179 90 / 0.26), rgb(240 179 90 / 0.06) 60%, transparent);
+  color: #f0b35a;
+}
+
+.ficha-swipe-under.is-armed .ficha-swipe-label {
+  animation: spring-pop var(--duration-pop) var(--spring);
+}
+
+.visto-stamp.is-row {
+  font-size: 18px;
+  padding: 3px 8px;
+  border-width: 2px;
+  letter-spacing: 0.14em;
+}
+
+.ficha-row.is-seen .ficha-sheet > :not(.visto-stamp) {
+  opacity: 0.45;
+  filter: saturate(0.5);
+  transition:
+    opacity var(--duration-enter) var(--ease-out),
+    filter var(--duration-enter) var(--ease-out);
+}
+
+.num-ticker {
+  display: inline-flex;
+  height: 1em;
+  overflow: hidden;
+  line-height: 1;
+}
+
+.num-ticker-col {
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--duration-morph) var(--ease-out);
+}
+
+.num-ticker-col > span {
+  height: 1em;
+  line-height: 1;
+}
+
+.cartelera-condensed-title {
+  transform: translateY(4px) scale(0.9);
+  opacity: 0;
+  transition:
+    transform var(--duration-tab) var(--ease-out),
+    opacity var(--duration-tab) var(--ease-out);
+}
+
+[data-condensed="true"] .cartelera-condensed-title {
+  transform: none;
+  opacity: 1;
+}
+
+.cartelera-stage-backdrop {
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ficha-sheet,
+  .ficha-poster,
+  .ficha-title,
+  .ficha-detail,
+  .ficha-backdrop,
+  .num-ticker-col,
+  .cartelera-condensed-title {
+    transition: none !important;
+  }
+
+  .ficha-detail-in,
+  .ficha-swipe-under.is-armed .ficha-swipe-label {
+    animation: none !important;
+  }
+
+  .ficha-backdrop {
+    transform: none;
+  }
+}

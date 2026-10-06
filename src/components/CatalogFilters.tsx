@@ -8,10 +8,11 @@ import { CatalogMinePlatformsChip } from "@/components/catalog-filters/CatalogMi
 import { CatalogSortSheet } from "@/components/catalog-filters/CatalogSortSheet";
 import { useCatalogFiltersState } from "@/components/catalog-filters/useCatalogFiltersState";
 import { CATALOG_ORDER_OPTIONS, type CatalogOrderOption } from "@/lib/catalog-filters";
-import type { CatalogKindFilter } from "@/lib/catalog-href";
+import type { CatalogKindFilter, CatalogQuery } from "@/lib/catalog-href";
 import type { Platform } from "@/db";
 import type { SeriesStatusFilter } from "@/lib/series";
 import type { CatalogSort } from "@/lib/tags";
+import type { ReactNode } from "react";
 
 type FilterTag = {
   id: string;
@@ -45,6 +46,10 @@ type CatalogFiltersProps = {
   mode?: string;
   kind?: CatalogKindFilter;
   platforms?: Platform[];
+  /** Replaces the left slot (Quiero ver rail). */
+  leading?: ReactNode;
+  /** Page-specific params the Filtros sheet must carry along (Quiero ver rail). */
+  extraQuery?: Partial<CatalogQuery>;
 };
 
 export const CatalogFilters = ({
@@ -70,6 +75,8 @@ export const CatalogFilters = ({
   mode,
   kind = "ALL",
   platforms = [],
+  leading,
+  extraQuery,
 }: CatalogFiltersProps) => {
   const {
     applied,
@@ -97,6 +104,7 @@ export const CatalogFilters = ({
     mode,
     kind,
     platforms,
+    extraQuery,
   });
   const kindInSheetOnly = showKind && !showKindChips;
   const activeCount =
@@ -107,7 +115,9 @@ export const CatalogFilters = ({
   return (
     <section className="space-y-1" aria-label="Filtros del catálogo">
       <div className="flex items-center gap-1.5">
-        {showMinePlatformsChip ? (
+        {leading ? (
+          <div className="min-w-0 flex-1">{leading}</div>
+        ) : showMinePlatformsChip ? (
           <CatalogMinePlatformsChip applied={applied} hrefFor={hrefFor} />
         ) : showKind && showKindChips ? (
           <CatalogKindChips kind={kind} applied={applied} hrefFor={hrefFor} />

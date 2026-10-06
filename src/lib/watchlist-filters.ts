@@ -1,5 +1,6 @@
 import type { TitleKind } from "@/db";
 import { awardChipLabel } from "@/lib/awards";
+import type { CatalogOrderIconName } from "@/lib/catalog-filters";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { parseMinePlatforms } from "@/lib/tags";
 
@@ -19,14 +20,12 @@ export const WATCHLIST_SORTS: readonly WatchlistSort[] = [
   "added",
 ];
 
-export type WatchlistSortIcon = "queue" | "sparkle" | "star" | "hourglass" | "calendar" | "clock";
-
 export type WatchlistSortOption = {
   /** `null` = the manual order (Mi orden). */
   id: WatchlistSort | null;
   label: string;
   hint: string;
-  icon: WatchlistSortIcon;
+  icon: CatalogOrderIconName;
 };
 
 export const WATCHLIST_SORT_OPTIONS: readonly WatchlistSortOption[] = [

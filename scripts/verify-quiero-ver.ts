@@ -35,7 +35,41 @@ const run = () => {
   assert(exists("src/lib/use-mounted-now.ts") && !read("src/components/tonight/TonightSala.tsx").includes("createMountedNowStore"), "useMountedNow is shared");
   assert(read("src/lib/fly-to-nav.ts").includes("pulseNav") && read("src/lib/fly-to-nav.ts").includes("flyPosterToProfile"), "Nav pulse generalised, flight kept");
 
-  console.log("✓ Quiero ver · La cartelera: premios (0006 + OMDb + backfill), pin «Esta noche» en Hoy");
+  // The cartelera itself.
+  const components = [
+    "WatchlistCartelera", "WatchlistFicha", "WatchlistFichaDetail", "WatchlistFichaChips", "WatchlistHookLine",
+    "WatchlistHeroCompact", "WatchlistFichaMenu", "WatchlistNoteSheet", "WatchlistFilterRail", "WatchlistGenreSheet",
+    "WatchlistReorderList", "WatchlistStickyBar", "WatchlistCountTicker", "WatchlistStage", "WatchlistSwipeLayer",
+  ];
+  for (const name of components) {
+    const file = `src/components/watchlist/${name}.tsx`;
+    assert(exists(file), `${file} exists`);
+    assert(read(file).split("\n").length < 300, `${file} stays under 300 lines`);
+  }
+  for (const old of ["WatchlistList", "WatchlistHero", "WatchlistGrid", "WatchlistMarkSeenButton", "PosterPlatformBadge"]) {
+    assert(!exists(`src/components/${old}.tsx`), `${old} replaced by the cartelera`);
+  }
+  const page = read("src/app/watchlist/page.tsx");
+  assert(page.includes("WatchlistCartelera") && page.includes("getCurrentUserProfile") && page.includes("tonightOnly"), "Page wires the cartelera with the bedtime");
+  assert(page.includes("WatchlistFilterRail") && page.includes("extraQuery"), "Rail chips ride inside CatalogFilters and the Filtros sheet keeps them");
+  const fichaRow = read("src/components/watchlist/WatchlistFicha.tsx");
+  assert(fichaRow.includes("useSwipeActions") && fichaRow.includes("useLongPress") && fichaRow.includes("onContextMenu") && fichaRow.includes("SharedPoster"), "Ficha: swipe, long-press, right-click, shared poster morph");
+  assert(read("src/components/watchlist/WatchlistStage.tsx").includes("share={false}"), "Stage poster never collides with the row's ViewTransition name");
+  const swipe = read("src/components/watchlist/useSwipeActions.ts");
+  assert(swipe.includes("setPointerCapture") && swipe.includes("SWIPE_ARM_PX = 60"), "Swipe arms at 60 px like the ticket stub");
+  const actions = read("src/components/watchlist/useWatchlistActions.ts");
+  for (const needle of ["flyPosterToProfile", "undoMarkWatched", "Deshacer", "pinTonight", "markNotTonight", "moveWatchlistItemToTop", "updateWatchlistNote"]) {
+    assert(actions.includes(needle), `Cartelera actions include ${needle}`);
+  }
+  const css = read("src/app/globals.css");
+  for (const needle of [".ficha-detail", "grid-template-rows", "@keyframes ficha-detail-in", ".visto-stamp.is-row", "touch-action: pan-y", ".ficha-backdrop"]) {
+    assert(css.includes(needle), `globals.css has ${needle}`);
+  }
+  assert(!/ficha-detail-in[^;]*both/.test(css), "ficha-detail-in never uses fill-mode both");
+  assert(read("src/components/CatalogFilters.tsx").split("\n").length < 220, "CatalogFilters stays under 220 lines");
+  assert(read("docs/motion.md").includes("cartelera"), "Motion doc covers the cartelera");
+
+  console.log("✓ Quiero ver · La cartelera: premios (0006 + OMDb + backfill), pin «Esta noche» en Hoy, fichas + gestos + escenario");
 };
 
 run();
