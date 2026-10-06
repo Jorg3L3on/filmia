@@ -9,6 +9,8 @@ export type CoverflowTonightMeta = {
   headline: TonightReason[];
   fit: TonightFit;
   wildcard: boolean;
+  /** Chosen from Quiero ver for tonight. */
+  pinned: boolean;
   queueNote: string | null;
   lens: string;
   posterAmbient: string | null;

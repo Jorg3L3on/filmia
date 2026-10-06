@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { markNotTonight } from "@/app/actions/tonight";
 import { removeFromWatchlist, undoMarkWatched } from "@/app/actions/watchlist";
@@ -22,6 +22,7 @@ import {
 import { showToast } from "@/lib/toast";
 import { rankForNow } from "@/lib/tonight/serve";
 import type { TonightDecks } from "@/lib/tonight-store";
+import { useMountedNow } from "@/lib/use-mounted-now";
 
 export const TONIGHT_LENS_PARAM = "lente";
 const DEAL_MS = 700;
@@ -30,33 +31,6 @@ const STAMP_TO_FLIGHT_MS = 0;
 type TonightSalaProps = {
   decks: TonightDecks;
   initialSlug?: string | null;
-};
-
-/**
- * The viewer's clock, fixed once after hydration. The snapshot must be stable
- * (a fresh Date.now() per read would re-render forever), so the stamp lives in
- * a tiny per-mount store that notifies exactly once on subscribe.
- */
-const createMountedNowStore = () => {
-  let stamp = 0;
-  return {
-    subscribe(listener: () => void) {
-      if (stamp === 0) {
-        stamp = Date.now();
-        listener();
-      }
-      return () => {};
-    },
-    getSnapshot: () => stamp,
-    getServerSnapshot: () => 0,
-  };
-};
-
-/** Ranking needs the viewer's clock, so the deck only renders after hydration. */
-const useMountedNow = () => {
-  const [store] = useState(createMountedNowStore);
-  const stamp = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
-  return useMemo(() => (stamp === 0 ? null : new Date(stamp)), [stamp]);
 };
 
 export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => {
@@ -108,6 +82,7 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
         now,
         nightEnds: decks.nightEnds,
         keepWildcardLast: lens.kind === "para-ti",
+        keepPinnedFirst: lens.kind === "para-ti",
       });
       map.set(
         lens.slug,
@@ -119,6 +94,7 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
             headline: card.headline,
             fit: card.fit,
             wildcard: card.wildcard,
+            pinned: card.pinned,
             queueNote: card.queueNote,
             lens: lens.slug,
             posterAmbient: card.posterAmbient,
