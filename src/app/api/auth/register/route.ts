@@ -5,6 +5,7 @@ import { db, users } from "@/db";
 import { setSessionCookie } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth/password";
 import { ensureDefaultLists } from "@/lib/lists";
+import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
 import { SIGNUP_FIELD_ORDER, normalizeEmail, validateSignup } from "@/lib/signup-validation";
 import { ensureDefaultTags } from "@/lib/tags";
 
@@ -53,7 +54,8 @@ export const POST = async (request: Request) => {
 
   await Promise.all([ensureDefaultLists(userId), ensureDefaultTags(userId)]);
 
-  const response = NextResponse.json({ ok: true });
-  await setSessionCookie(response, { id: userId, email, name });
+  // New accounts go through the Bienvenida first; the claim lifts when they finish or skip it.
+  const response = NextResponse.json({ ok: true, onboarding: true, next: ONBOARDING_PATH });
+  await setSessionCookie(response, { id: userId, email, name }, { onboarded: false });
   return response;
 };

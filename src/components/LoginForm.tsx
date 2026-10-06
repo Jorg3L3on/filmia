@@ -8,6 +8,7 @@ import { Button } from "@/components/Button";
 import { AuthDivider, GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { PasswordField } from "@/components/PasswordField";
 import { messageForSignInError } from "@/lib/auth-errors";
+import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
 import { fieldClass, focusRing } from "@/lib/ui";
 
 type LoginFormProps = {
@@ -37,12 +38,19 @@ export const LoginForm = ({ googleEnabled }: LoginFormProps) => {
       body: formData,
     });
 
-    const payload = (await response.json()) as { error?: string };
+    const payload = (await response.json()) as { error?: string; onboarding?: boolean };
 
     setIsLoading(false);
 
     if (!response.ok) {
       setError(payload.error ?? "Correo o contraseña incorrectos.");
+      return;
+    }
+
+    // An account that never finished the Bienvenida picks up where it left off.
+    if (payload.onboarding) {
+      router.push(ONBOARDING_PATH);
+      router.refresh();
       return;
     }
 

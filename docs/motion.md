@@ -44,6 +44,17 @@ Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` 
 | Título condensado `.cartelera-condensed-title` | `--duration-tab` · `--ease-out` | Appears in the sticky bar once the H1 scrolls away (IntersectionObserver). |
 | Menú / nota / género | `.sheet-rise` | Bottom sheets, never spring. |
 
+## Bienvenida (first run)
+
+| Piece | Token | Notes |
+| --- | --- | --- |
+| Pasos `.bienvenida-forward` / `.bienvenida-back` | 320 ms · `--ease-out` | React `<ViewTransition key={step}>` + `addTransitionType` inside `startTransition`; reuses the diary `slide-*` keyframes. Strip + action bar anchored (`.bienvenida-chrome`). |
+| Agujeros `.film-hole.is-current` | `--duration-pop` · `--spring` | Sprocket pops when the step changes (direct consequence of the tap). |
+| Sello `.visto-stamp.is-tile` · corona `.year-crown` · check `.year-check` | `--duration-pop` · `--spring` | Tap feedback on poster tiles. |
+| Fondo `.bienvenida-glow` / `.bienvenida-poster-wash` | 9 s breath · 1.2 s wash-in · `--ease-out` | Sampled `--que-ver-glow` from the favorite poster. |
+| Tambor `.hour-tick` / luna `.bedtime-moon` | `--duration-tab` / `--duration-morph` · `--ease-out` | Scroll-snap drum; moon rises with `--elev`. |
+| Payoff `.payoff-card-in` | `--duration-stagger` · `--ease-out` | Same blur-in as `genre-coverflow-title-in`. |
+
 ## SharedPoster
 
 React `<ViewTransition name={\`poster-${id}\`} share="morph">` via `SharedPoster` on tile → ficha paths (lists, tags results, buscar, deck, calendar, rail, ranking, watchlist).

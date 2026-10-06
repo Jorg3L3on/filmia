@@ -10,6 +10,7 @@ import { PasswordField } from "@/components/PasswordField";
 import { messageForSignInError } from "@/lib/auth-errors";
 import { cn } from "@/lib/cn";
 import { safeNextPath } from "@/lib/google-oauth";
+import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
 import {
   PASSWORD_MIN_LENGTH,
   SIGNUP_FIELD_ORDER,
@@ -153,7 +154,8 @@ export const SignupForm = ({ googleEnabled }: SignupFormProps) => {
         return;
       }
 
-      router.push(next);
+      // A fresh account always opens the Bienvenida; finishing it lands on Hoy.
+      router.push(ONBOARDING_PATH);
       router.refresh();
     } catch {
       setFormError("No pudimos conectar. Revisa tu conexión y reintenta.");

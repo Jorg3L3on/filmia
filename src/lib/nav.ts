@@ -1,12 +1,15 @@
 const pathOnly = (pathname: string) => pathname.split("?")[0] ?? pathname;
 
+/** Full-screen routes without header/dock: auth screens and the Bienvenida. */
 export const isAuthChromePath = (pathname: string) => {
   const path = pathOnly(pathname);
   return (
     path === "/login" ||
     path === "/registro" ||
+    path === "/bienvenida" ||
     path.startsWith("/login/") ||
-    path.startsWith("/registro/")
+    path.startsWith("/registro/") ||
+    path.startsWith("/bienvenida/")
   );
 };
 

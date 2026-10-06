@@ -50,6 +50,13 @@
       "when": 1791263059921,
       "tag": "0006_title_awards",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791317602929,
+      "tag": "0007_bienvenida",
+      "breakpoints": true
     }
   ]
 }

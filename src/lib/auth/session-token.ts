@@ -1,7 +1,9 @@
 import { SignJWT, jwtVerify } from "jose";
 import {
+  DEFAULT_SESSION_FLAGS,
   SESSION_MAX_AGE_SECONDS,
   resolveAuthSecret,
+  type SessionFlags,
   type SessionPayload,
   type SessionUser,
 } from "@/lib/auth/constants";
@@ -17,13 +19,17 @@ const getSecretKey = () => {
   return encoder.encode(secret);
 };
 
-export const createSessionToken = async (user: SessionUser) => {
+export const createSessionToken = async (
+  user: SessionUser,
+  flags: SessionFlags = DEFAULT_SESSION_FLAGS,
+) => {
   const now = Math.floor(Date.now() / 1000);
 
   return new SignJWT({
     id: user.id,
     email: user.email,
     name: user.name,
+    onboarded: flags.onboarded,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt(now)
@@ -54,6 +60,8 @@ export const verifySessionToken = async (
       id: payload.id,
       email: payload.email,
       name,
+      // Tokens minted before the Bienvenida existed carry no claim: those sessions are never gated.
+      onboarded: payload.onboarded !== false,
       iat: payload.iat ?? 0,
       exp: payload.exp ?? 0,
     };

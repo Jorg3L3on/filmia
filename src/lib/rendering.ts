@@ -33,6 +33,8 @@
  * - `/titulos/[id]/editar`    → force-dynamic — user title edit
  * - `/titulos/nuevo`          → no force-dynamic — redirect-only to `/buscar`
  * - `/perfil`                 → force-dynamic — user profile / platforms
+ * - `/bienvenida`             → force-dynamic — first-run flow: session claim,
+ *                               user library, resume step; year grid via tagged cache
  * - `/login`, `/registro`     → no force-dynamic — public auth screens
  * - `AppShell` / chrome       → server fragments; no route `dynamic` export
  * - Shared catalogs (labels, platform ids) → module constants, not RSC cache
@@ -68,6 +70,7 @@ export const AUTH_DYNAMIC_PAGES = [
   "src/app/titulos/[id]/page.tsx",
   "src/app/titulos/[id]/editar/page.tsx",
   "src/app/perfil/page.tsx",
+  "src/app/bienvenida/page.tsx",
 ] as const;
 
 /** Public screens that must NOT force-dynamic (static-eligible shells). */

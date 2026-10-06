@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 import { verifySessionToken } from "@/lib/auth/session-token";
+import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
 import { requestOrigin } from "@/lib/request-origin";
 
 const LOGIN_PATH = "/login";
@@ -41,6 +42,8 @@ export const proxy = async (request: Request) => {
 
   const session = token ? await verifySessionToken(decodeURIComponent(token)) : null;
   const loggedIn = Boolean(session?.id);
+  // New accounts stay on /bienvenida until they finish or skip it (the claim is re-minted then).
+  const gated = loggedIn && session?.onboarded === false;
 
   if (isStaticAsset(pathname) || pathname.startsWith("/api/auth")) {
     return NextResponse.next();
@@ -48,9 +51,16 @@ export const proxy = async (request: Request) => {
 
   if (isPublicPath(pathname)) {
     if (loggedIn && (pathname === LOGIN_PATH || pathname === SIGNUP_PATH)) {
-      return NextResponse.redirect(new URL("/", requestOrigin(request)));
+      return NextResponse.redirect(
+        new URL(gated ? ONBOARDING_PATH : "/", requestOrigin(request)),
+      );
     }
     return NextResponse.next();
+  }
+
+  // Server Functions POST to the page they are used on, so /bienvenida itself must stay reachable.
+  if (gated && pathname !== ONBOARDING_PATH && !pathname.startsWith("/api/")) {
+    return NextResponse.redirect(new URL(ONBOARDING_PATH, requestOrigin(request)));
   }
 
   if (!loggedIn) {

@@ -105,6 +105,9 @@ const main = async () => {
       name: targetName?.trim() || null,
       streamingPlatforms: source.streamingPlatforms,
       nightEndsAt: source.nightEndsAt,
+      // A clone copies a lived-in account: never send it through the Bienvenida.
+      onboardedAt: source.onboardedAt ?? new Date(),
+      onboardingStep: null,
     }),
     ...chunk(sourceTitles, 100).map((rows) =>
       db.insert(titles).values(

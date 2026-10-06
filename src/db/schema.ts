@@ -64,6 +64,10 @@ export const users = pgTable(
     streamingPlatforms: jsonb("streamingPlatforms").notNull().default([]),
     /** `{ weekday: "23:30", weekend: "01:00" }` — when the night ends (Esta noche fit). */
     nightEndsAt: jsonb("nightEndsAt").notNull().default({}),
+    /** Bienvenida finished or skipped; null = still gated to /bienvenida. Backfilled = createdAt for older accounts. */
+    onboardedAt: timestamp("onboardedAt", { precision: 3, mode: "date" }),
+    /** Resume pointer (OnboardingStepId) while the Bienvenida is in progress. */
+    onboardingStep: text("onboardingStep"),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),

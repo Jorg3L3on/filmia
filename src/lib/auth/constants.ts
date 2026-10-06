@@ -13,7 +13,15 @@ export type SessionUser = {
   name: string | null;
 };
 
-export type SessionPayload = SessionUser & {
-  exp: number;
-  iat: number;
+/** Claims beyond identity. `onboarded: false` keeps the proxy redirecting to /bienvenida. */
+export type SessionFlags = {
+  onboarded: boolean;
 };
+
+export const DEFAULT_SESSION_FLAGS: SessionFlags = { onboarded: true };
+
+export type SessionPayload = SessionUser &
+  SessionFlags & {
+    exp: number;
+    iat: number;
+  };
