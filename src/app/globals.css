@@ -2173,9 +2173,9 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-n
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgb(14 17 20 / 0.25) 0%,
-    rgb(14 17 20 / 0.62) 36%,
-    rgb(14 17 20 / 0.94) 100%
+    rgb(14 17 20 / 0.12) 0%,
+    rgb(14 17 20 / 0.5) 38%,
+    rgb(14 17 20 / 0.92) 100%
   );
 }
 
@@ -2239,6 +2239,22 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-n
   line-height: 1;
 }
 
+.cartelera-condensed-wrap {
+  display: grid;
+  grid-template-columns: 0fr;
+  min-width: 0;
+  transition: grid-template-columns var(--duration-tab) var(--ease-out);
+}
+
+.cartelera-condensed-wrap > * {
+  min-width: 0;
+  overflow: hidden;
+}
+
+[data-condensed="true"] .cartelera-condensed-wrap {
+  grid-template-columns: 1fr;
+}
+
 .cartelera-condensed-title {
   transform: translateY(4px) scale(0.9);
   opacity: 0;
@@ -2264,6 +2280,7 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-n
   .ficha-detail,
   .ficha-backdrop,
   .num-ticker-col,
+  .cartelera-condensed-wrap,
   .cartelera-condensed-title {
     transition: none !important;
   }

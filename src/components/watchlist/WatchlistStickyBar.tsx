@@ -33,8 +33,12 @@ export const WatchlistStickyBar = ({
       (condensed || isEditing) && "border-b border-line/70 bg-canvas/90 backdrop-blur-md",
     )}
   >
-    <div className="flex min-w-0 items-baseline gap-2">
-      <span className="cartelera-condensed-title font-serif text-lg font-semibold text-paper">Quiero ver</span>
+    <div className="flex min-w-0 items-baseline">
+      <span className="cartelera-condensed-wrap" aria-hidden={!(condensed || isEditing)}>
+        <span className="cartelera-condensed-title block whitespace-nowrap pr-2 font-serif text-lg font-semibold text-paper">
+          Quiero ver
+        </span>
+      </span>
       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-mist">
         {isEditing ? "Arrastra o usa las flechas" : <WatchlistCountTicker count={count} />}
       </p>

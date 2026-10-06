@@ -106,34 +106,35 @@ export const WatchlistHeroCompact = ({ ficha, stamped, onMarkSeen, onMenu }: Wat
               {ficha.overview}
             </p>
           ) : null}
-          <div className="mt-4 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onMarkSeen(ficha)}
-              className={cn(pillActionClass.primary, "h-11 flex-1 justify-center")}
-            >
-              <EyeIcon />
-              Vi esto
-            </button>
-            <Link
-              href={`/titulos/${ficha.id}`}
-              className={cn(pillActionClass.neutral, "h-11 bg-black/30 px-4 backdrop-blur-md")}
-            >
-              Ver ficha
-            </Link>
-            <button
-              type="button"
-              onClick={() => onMenu(ficha)}
-              aria-label={`Más opciones de ${ficha.name}`}
-              className={cn(
-                "press-scale inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-chrome bg-black/30 text-fog backdrop-blur-md transition-colors duration-[var(--duration-hover)] hover:text-paper",
-                focusRing,
-              )}
-            >
-              <DotsIcon />
-            </button>
-          </div>
         </div>
+      </div>
+
+      <div className="ficha-sheet flex items-center gap-2 px-4 pb-4 sm:px-6 sm:pb-5">
+        <button
+          type="button"
+          onClick={() => onMarkSeen(ficha)}
+          className={cn(pillActionClass.primary, "h-11 flex-1 justify-center")}
+        >
+          <EyeIcon />
+          Vi esto
+        </button>
+        <Link
+          href={`/titulos/${ficha.id}`}
+          className={cn(pillActionClass.neutral, "h-11 flex-1 justify-center bg-black/30 backdrop-blur-md")}
+        >
+          Ver ficha
+        </Link>
+        <button
+          type="button"
+          onClick={() => onMenu(ficha)}
+          aria-label={`Más opciones de ${ficha.name}`}
+          className={cn(
+            "press-scale inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-chrome bg-black/30 text-fog backdrop-blur-md transition-colors duration-[var(--duration-hover)] hover:text-paper",
+            focusRing,
+          )}
+        >
+          <DotsIcon />
+        </button>
       </div>
     </article>
   );

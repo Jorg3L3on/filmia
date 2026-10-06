@@ -40,6 +40,13 @@ export const WatchlistFilterRail = ({ pathname, query, sort, genres }: Watchlist
   return (
     <div className="flex min-w-0 items-center gap-1.5">
       <div className="scrollbar-none flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-0.5" role="group" aria-label="Filtros rápidos">
+        <CatalogSortSheet
+          options={WATCHLIST_SORT_OPTIONS}
+          current={sort}
+          title="Ordenar"
+          buttonLabel={WATCHLIST_SORT_OPTIONS.find((option) => option.id === sort)?.label ?? "Mi orden"}
+          onSelect={(next) => router.push(hrefFor({ sort: next }))}
+        />
         <Link
           href={hrefFor({ tonight: !query.tonight })}
           scroll={false}
@@ -87,13 +94,6 @@ export const WatchlistFilterRail = ({ pathname, query, sort, genres }: Watchlist
           <ChevronIcon size={13} />
         </button>
       </div>
-      <CatalogSortSheet
-        options={WATCHLIST_SORT_OPTIONS}
-        current={sort}
-        title="Ordenar"
-        buttonLabel={WATCHLIST_SORT_OPTIONS.find((option) => option.id === sort)?.label ?? "Mi orden"}
-        onSelect={(next) => router.push(hrefFor({ sort: next }))}
-      />
       <WatchlistGenreSheet
         open={genreOpen}
         genres={genres}

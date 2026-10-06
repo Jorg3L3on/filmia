@@ -170,8 +170,8 @@ export const WatchlistCartelera = ({
   const canReorder = isManualOrder && visible.length > 1;
 
   return (
-    <div className="space-y-4">
-      <div ref={sentinelRef} aria-hidden="true" className="h-px" />
+    <div className="relative space-y-4">
+      <div ref={sentinelRef} aria-hidden="true" className="absolute left-0 top-0 h-px w-px" />
       <WatchlistStickyBar
         count={visible.length}
         condensed={condensed}

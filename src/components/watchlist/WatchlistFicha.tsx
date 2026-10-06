@@ -173,6 +173,7 @@ const WatchlistFichaImpl = ({
                 <div className={cn("px-3 pb-3 pt-0.5", expanded && "ficha-detail-in")} inert={!expanded}>
                   <WatchlistFichaDetail
                     ficha={ficha}
+                    compact
                     onMarkSeen={() => onMarkSeen(ficha)}
                     onTonight={() => onTonight(ficha)}
                     onMenu={() => onMenu(ficha)}
