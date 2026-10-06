@@ -15,6 +15,7 @@ import {
   loginErrorPath,
   type GoogleSignInErrorCode,
 } from "@/lib/google-oauth";
+import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
 import { publicOrigin, requestOrigin } from "@/lib/request-origin";
 
 export const dynamic = "force-dynamic";
@@ -74,12 +75,13 @@ export const GET = async (request: Request) => {
       config,
     );
     const identity = await verifyGoogleIdToken(idToken, config.clientId);
-    const user = await findOrCreateGoogleUser(identity);
+    const { user, onboarded } = await findOrCreateGoogleUser(identity);
 
+    // Accounts that still owe the Bienvenida land there instead of the requested page.
     const response = clearOAuthCookie(
-      NextResponse.redirect(new URL(stored.next, origin), 303),
+      NextResponse.redirect(new URL(onboarded ? stored.next : ONBOARDING_PATH, origin), 303),
     );
-    await setSessionCookie(response, user);
+    await setSessionCookie(response, user, { onboarded });
     return response;
   } catch (error) {
     if (!(error instanceof GoogleSignInError)) {

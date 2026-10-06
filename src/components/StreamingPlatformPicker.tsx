@@ -1,12 +1,10 @@
 "use client";
 
 import { updateStreamingPlatforms } from "@/app/actions/profile";
-import { PlatformLogo } from "@/components/PlatformLogo";
+import { PlatformToggleGrid } from "@/components/PlatformToggleGrid";
 import type { Platform } from "@/db";
-import { cn } from "@/lib/cn";
-import { PLATFORM_SERVICE_LABEL, PLATFORMS } from "@/lib/labels";
 import { sameIdList, useStickyOptimistic } from "@/lib/use-optimistic-action";
-import { focusRing, wellClass } from "@/lib/ui";
+import { wellClass } from "@/lib/ui";
 
 type StreamingPlatformPickerProps = {
   selected: Platform[];
@@ -52,42 +50,7 @@ export const StreamingPlatformPicker = ({
         </p>
       ) : null}
 
-      <fieldset>
-        <legend className="sr-only">Plataformas de streaming en México</legend>
-        <ul className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-          {PLATFORMS.map((platform) => {
-            const isSelected = value.includes(platform);
-            return (
-              <li key={platform} className="group">
-                <button
-                  type="button"
-                  onClick={() => handleToggle(platform)}
-                  disabled={isPending}
-                  aria-pressed={isSelected}
-                  aria-label={
-                    isSelected
-                      ? `Quitar ${PLATFORM_SERVICE_LABEL[platform]}`
-                      : `Añadir ${PLATFORM_SERVICE_LABEL[platform]}`
-                  }
-                  className={cn(
-                    "press-scale flex w-full cursor-pointer items-center gap-2 rounded-xl border px-2.5 py-2 text-left text-sm",
-                    "transition-[color,background-color,border-color,transform] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
-                    focusRing,
-                    isSelected
-                      ? "border-accent bg-accent/15 text-paper"
-                      : "border-chrome bg-well text-fog hover:border-line hover:text-paper group-hover:text-paper",
-                  )}
-                >
-                  <PlatformLogo platform={platform} size={20} />
-                  <span className="min-w-0 truncate">
-                    {PLATFORM_SERVICE_LABEL[platform]}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </fieldset>
+      <PlatformToggleGrid value={value} onToggle={handleToggle} disabled={isPending} />
     </div>
   );
 };

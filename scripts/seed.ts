@@ -396,6 +396,7 @@ const ensureDemoUser = async (userId: string) => {
         name: "Demo Filmia",
         passwordHash,
         streamingPlatforms,
+        onboardedAt: new Date(),
       })
       .where(eq(users.id, userId));
     return existing;
@@ -407,6 +408,7 @@ const ensureDemoUser = async (userId: string) => {
     name: "Demo Filmia",
     passwordHash,
     streamingPlatforms,
+    onboardedAt: new Date(),
   });
 
   return db.query.users.findFirst({ where: eq(users.id, userId) }).then((user) => {

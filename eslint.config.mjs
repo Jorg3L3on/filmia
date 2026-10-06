@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "src/generated/**",
+    // Sibling worktrees (other sessions) carry their own node_modules and lint themselves.
+    ".claude/**",
   ]),
 ]);
 

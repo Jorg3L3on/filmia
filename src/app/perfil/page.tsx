@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { Button } from "@/components/Button";
 import { LogoutButton } from "@/components/LogoutButton";
 import { NightEndsForm } from "@/components/NightEndsForm";
 import { PageHeader } from "@/components/PageHeader";
@@ -9,6 +10,7 @@ import { ProfileGoogleAccess } from "@/components/ProfileGoogleAccess";
 import { ProfilePasswordForm } from "@/components/ProfilePasswordForm";
 import { StreamingPlatformPicker } from "@/components/StreamingPlatformPicker";
 import { getCurrentUserProfile } from "@/lib/queries";
+import { wellClass } from "@/lib/ui";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -67,6 +69,19 @@ const ProfileBody = async () => {
         <div className="space-y-5">
           <NightEndsForm value={profile.nightEnds} />
           <StreamingPlatformPicker selected={profile.streamingPlatforms} />
+          <section className={`${wellClass} flex flex-wrap items-center justify-between gap-3 p-5`} aria-labelledby="bienvenida-h">
+            <div className="space-y-1">
+              <h2 id="bienvenida-h" className="text-lg font-semibold text-paper">
+                Bienvenida
+              </h2>
+              <p className="text-sm text-fog">
+                Rehaz el recorrido inicial: favorita, lo mejor del año, plataformas y hora de dormir.
+              </p>
+            </div>
+            <Button href="/bienvenida" variant="secondary" size="sm">
+              Volver a la bienvenida
+            </Button>
+          </section>
           <ProfileAccountForm name={profile.name} email={profile.email} />
           {profile.googleLinked ? (
             <ProfileGoogleAccess hasPassword={profile.hasPassword} />

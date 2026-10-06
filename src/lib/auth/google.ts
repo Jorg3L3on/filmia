@@ -110,6 +110,16 @@ export const verifyGoogleIdToken = async (
   return identity;
 };
 
+export type GoogleUserResolution = {
+  user: SessionUser;
+  /** A brand-new Filmia account was created for this identity. */
+  created: boolean;
+  /** False while the account still owes the Bienvenida (new, or registered by email and never finished). */
+  onboarded: boolean;
+};
+
+const SESSION_COLUMNS = { id: true, email: true, name: true, onboardedAt: true } as const;
+
 /**
  * Resolve the Filmia account for a verified Google identity:
  * 1. already linked by Google id;
@@ -118,18 +128,19 @@ export const verifyGoogleIdToken = async (
  */
 export const findOrCreateGoogleUser = async (
   identity: GoogleIdentity,
-): Promise<SessionUser> => {
+): Promise<GoogleUserResolution> => {
   const linked = await db.query.users.findFirst({
     where: eq(users.googleId, identity.sub),
-    columns: { id: true, email: true, name: true },
+    columns: SESSION_COLUMNS,
   });
   if (linked) {
-    return linked;
+    const { onboardedAt, ...user } = linked;
+    return { user, created: false, onboarded: onboardedAt != null };
   }
 
   const byEmail = await db.query.users.findFirst({
     where: eq(users.email, identity.email),
-    columns: { id: true, email: true, name: true },
+    columns: SESSION_COLUMNS,
   });
   if (byEmail) {
     const name = byEmail.name ?? identity.name;
@@ -137,7 +148,11 @@ export const findOrCreateGoogleUser = async (
       .update(users)
       .set({ googleId: identity.sub, name })
       .where(eq(users.id, byEmail.id));
-    return { id: byEmail.id, email: byEmail.email, name };
+    return {
+      user: { id: byEmail.id, email: byEmail.email, name },
+      created: false,
+      onboarded: byEmail.onboardedAt != null,
+    };
   }
 
   const id = createId();
@@ -150,5 +165,9 @@ export const findOrCreateGoogleUser = async (
   });
   await Promise.all([ensureDefaultLists(id), ensureDefaultTags(id)]);
 
-  return { id, email: identity.email, name: identity.name };
+  return {
+    user: { id, email: identity.email, name: identity.name },
+    created: true,
+    onboarded: false,
+  };
 };

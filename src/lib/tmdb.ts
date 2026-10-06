@@ -365,6 +365,109 @@ export const searchTmdbMulti = async (
   return results;
 };
 
+export type TmdbDiscoverSort = "popularity.desc" | "vote_count.desc" | "vote_average.desc";
+
+export type TmdbDiscoverOptions = {
+  /** MOVIE (default) → /discover/movie, SERIES → /discover/tv. */
+  kind?: TitleKind;
+  /** `primary_release_year` for movies, `first_air_date_year` for series. */
+  year?: number;
+  sortBy?: TmdbDiscoverSort;
+  voteCountGte?: number;
+  /** Release-date region (ISO 3166-1), e.g. "MX". */
+  region?: string;
+  /** TMDB provider ids, OR-joined; needs `watchRegion`. */
+  withWatchProviders?: readonly number[];
+  watchRegion?: string;
+  watchMonetizationTypes?: "flatrate";
+  page?: number;
+};
+
+export type TmdbDiscoverResult = TmdbCatalogResult & {
+  voteAverage: number | null;
+  voteCount: number;
+  popularity: number;
+};
+
+type TmdbDiscoverItem = {
+  id: number;
+  title?: string;
+  name?: string;
+  original_title?: string;
+  original_name?: string;
+  release_date?: string;
+  first_air_date?: string;
+  poster_path?: string | null;
+  backdrop_path?: string | null;
+  overview?: string;
+  vote_average?: number;
+  vote_count?: number;
+  popularity?: number;
+  genre_ids?: number[];
+};
+
+const toDiscoverResult = (
+  item: TmdbDiscoverItem,
+  kind: TitleKind,
+): TmdbDiscoverResult | null => {
+  const name = (kind === "SERIES" ? item.name : item.title)?.trim() ?? "";
+  if (!name) {
+    return null;
+  }
+  return {
+    tmdbId: item.id,
+    name,
+    originalName: (kind === "SERIES" ? item.original_name : item.original_title) ?? null,
+    year: parseYear(kind === "SERIES" ? item.first_air_date : item.release_date),
+    posterPath: item.poster_path ?? null,
+    backdropPath: item.backdrop_path ?? null,
+    overview: item.overview ?? null,
+    kind,
+    voteAverage: typeof item.vote_average === "number" && item.vote_average > 0 ? item.vote_average : null,
+    voteCount: item.vote_count ?? 0,
+    popularity: item.popularity ?? 0,
+  };
+};
+
+/**
+ * TMDB /discover — popular releases of a year, or what streams flatrate on given providers.
+ * Goes through `tmdbFetch`, so results share the 24 h metadata cache.
+ */
+export const discoverTmdb = async (
+  options: TmdbDiscoverOptions = {},
+): Promise<TmdbDiscoverResult[]> => {
+  const kind: TitleKind = options.kind ?? "MOVIE";
+  const params: Record<string, string> = {
+    sort_by: options.sortBy ?? "popularity.desc",
+    include_adult: "false",
+    page: String(options.page ?? 1),
+  };
+  if (options.year) {
+    params[kind === "SERIES" ? "first_air_date_year" : "primary_release_year"] = String(options.year);
+  }
+  if (options.voteCountGte != null) {
+    params["vote_count.gte"] = String(options.voteCountGte);
+  }
+  if (options.region) {
+    params.region = options.region;
+  }
+  if (options.withWatchProviders && options.withWatchProviders.length > 0) {
+    params.with_watch_providers = [...options.withWatchProviders].join("|");
+    params.watch_region = options.watchRegion ?? "MX";
+    params.with_watch_monetization_types = options.watchMonetizationTypes ?? "flatrate";
+  }
+
+  const data = await tmdbFetch<{ results?: TmdbDiscoverItem[] }>(
+    kind === "SERIES" ? "/discover/tv" : "/discover/movie",
+    params,
+  );
+
+  return (data.results ?? []).flatMap((item) => {
+    const result = toDiscoverResult(item, kind);
+    return result ? [result] : [];
+  });
+};
+
 export const getTmdbExternalIds = async (
   tmdbId: number,
   kind: TitleKind,

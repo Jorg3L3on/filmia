@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateCredentials } from "@/lib/auth/credentials";
 import { setSessionCookie } from "@/lib/auth";
+import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
 import { requestOrigin } from "@/lib/request-origin";
 
 const FAILURE_MESSAGES = {
@@ -30,10 +31,11 @@ export const POST = async (request: Request) => {
     }
 
     const wantsHtml = (request.headers.get("accept") ?? "").includes("text/html");
+    const landing = result.onboarded ? "/" : ONBOARDING_PATH;
     const response = wantsHtml
-      ? NextResponse.redirect(new URL("/", requestOrigin(request)), 303)
-      : NextResponse.json({ ok: true });
-    await setSessionCookie(response, result.user);
+      ? NextResponse.redirect(new URL(landing, requestOrigin(request)), 303)
+      : NextResponse.json({ ok: true, onboarding: !result.onboarded });
+    await setSessionCookie(response, result.user, { onboarded: result.onboarded });
     return response;
   } catch (error) {
     const message =
