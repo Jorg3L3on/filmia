@@ -1,20 +1,41 @@
 "use client";
 
 import { useCallback, useId, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { unstable_rethrow, useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
 import { Sheet, SheetHandle } from "@/components/Sheet";
 import { cn } from "@/lib/cn";
+import { showToast } from "@/lib/toast";
 import { focusRing } from "@/lib/ui";
 import { actionErrorMessage } from "@/lib/use-optimistic-action";
 
 type DeleteCollectionButtonProps = {
-  /** Bound server action; must not redirect — navigation happens client-side. */
+  /**
+   * Bound server action. Navigation to `redirectHref` happens client-side; an action that
+   * calls `redirect()` instead is also treated as done (Next navigates in the same roundtrip).
+   */
   action: () => Promise<void>;
   redirectHref: string;
   label: string;
   name: string;
   impact: string;
+  /** Sheet heading. Defaults to «¿Eliminar «name»?». */
+  heading?: string;
+  /** Reassurance after `impact`. Defaults to the list copy. */
+  note?: string;
+  pendingLabel?: string;
+  /** Toast shown once the action succeeds. */
+  successToast?: string;
+};
+
+/** True for Next's control-flow errors (e.g. a server action's `redirect()`). */
+const isNextNavigation = (error: unknown) => {
+  try {
+    unstable_rethrow(error);
+    return false;
+  } catch {
+    return true;
+  }
 };
 
 const TrashIcon = ({ className }: { className?: string }) => (
@@ -38,6 +59,10 @@ export const DeleteCollectionButton = ({
   label,
   name,
   impact,
+  heading,
+  note = "Tus películas y series no se borran.",
+  pendingLabel = "Eliminando…",
+  successToast,
 }: DeleteCollectionButtonProps) => {
   const router = useRouter();
   const headingId = useId();
@@ -60,10 +85,17 @@ export const DeleteCollectionButton = ({
     startTransition(async () => {
       try {
         await action();
-        router.replace(redirectHref);
       } catch (caught) {
-        setError(actionErrorMessage(caught));
+        if (!isNextNavigation(caught)) {
+          setError(actionErrorMessage(caught));
+          return;
+        }
+        // The action redirected server-side; the router is already navigating.
+        if (successToast) showToast({ title: successToast });
+        return;
       }
+      if (successToast) showToast({ title: successToast });
+      router.replace(redirectHref);
     });
   };
 
@@ -99,10 +131,10 @@ export const DeleteCollectionButton = ({
             <TrashIcon className="size-6" />
           </span>
           <h2 id={headingId} className="mt-4 text-balance font-serif text-2xl leading-tight text-paper">
-            ¿Eliminar «{name}»?
+            {heading ?? `¿Eliminar «${name}»?`}
           </h2>
           <p className="mt-2 max-w-xs text-sm leading-relaxed text-fog">
-            {impact} Tus películas y series no se borran.
+            {impact} {note}
           </p>
           {error ? (
             <p
@@ -120,7 +152,7 @@ export const DeleteCollectionButton = ({
             size="lg"
             onClick={handleConfirm}
             pending={isPending}
-            pendingLabel="Eliminando…"
+            pendingLabel={pendingLabel}
             className="press-scale w-full rounded-full"
           >
             {label}
@@ -131,6 +163,7 @@ export const DeleteCollectionButton = ({
             size="lg"
             onClick={handleClose}
             disabled={isPending}
+            autoFocus
             className="w-full rounded-full"
           >
             Cancelar
