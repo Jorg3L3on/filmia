@@ -7,7 +7,13 @@ import { redirect } from "next/navigation";
 import { db, listItems, lists, titles } from "@/db";
 import { parseRequiredName } from "@/lib/form-data";
 import { slugify } from "@/lib/labels";
-import { isFixedListSlug, isReservedListSlug, listHref, WATCHLIST_SLUG } from "@/lib/lists";
+import {
+  isFixedListSlug,
+  isReservedListSlug,
+  isSeriesStatusListSlug,
+  listHref,
+  WATCHLIST_SLUG,
+} from "@/lib/lists";
 import {
   type ListMoveDirection,
   reorderListItems,
@@ -112,6 +118,10 @@ export const addTitleToList = async (listId: string, titleId: string) => {
 
   const list = await requireOwnedList(listId, userId);
 
+  if (isSeriesStatusListSlug(list.slug)) {
+    throw new Error("Esta lista se actualiza sola con el estado de la serie.");
+  }
+
   const title = await db.query.titles.findFirst({
     where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
     columns: { id: true },
@@ -143,6 +153,10 @@ export const removeTitleFromList = async (listId: string, titleId: string) => {
   const userId = await requireUserId();
   const list = await requireOwnedList(listId, userId);
 
+  if (isSeriesStatusListSlug(list.slug)) {
+    throw new Error("Esta lista se actualiza sola con el estado de la serie.");
+  }
+
   await db
     .delete(listItems)
     .where(and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)));
@@ -153,6 +167,10 @@ export const removeTitleFromList = async (listId: string, titleId: string) => {
 export const toggleTitleInList = async (listId: string, titleId: string) => {
   const userId = await requireUserId();
   const list = await requireOwnedList(listId, userId);
+
+  if (isSeriesStatusListSlug(list.slug)) {
+    throw new Error("Esta lista se actualiza sola con el estado de la serie.");
+  }
 
   const title = await db.query.titles.findFirst({
     where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
