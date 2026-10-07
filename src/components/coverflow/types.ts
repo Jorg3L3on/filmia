@@ -55,7 +55,7 @@ export type CoverflowDeckProps = {
   onEdgeNavigate?: (direction: "prev" | "next") => void;
   /** Category continuum labels for frosted destination side slots. */
   edgeNeighbors?: {
-    prev: { name: string } | null;
-    next: { name: string } | null;
+    prev: { name: string; posterPath?: string | null } | null;
+    next: { name: string; posterPath?: string | null } | null;
   };
 };

@@ -229,6 +229,7 @@ export const CoverflowDeck = ({
                 key="destination-prev"
                 index={-1}
                 name={edgeNeighbors.prev.name}
+                posterPath={edgeNeighbors.prev.posterPath}
                 direction="prev"
                 onSelect={() => onEdgeNavigate?.("prev")}
                 onPointerDown={handlePointerDown}
@@ -242,6 +243,7 @@ export const CoverflowDeck = ({
                 key="destination-next"
                 index={titles.length}
                 name={edgeNeighbors.next.name}
+                posterPath={edgeNeighbors.next.posterPath}
                 direction="next"
                 onSelect={() => onEdgeNavigate?.("next")}
                 onPointerDown={handlePointerDown}

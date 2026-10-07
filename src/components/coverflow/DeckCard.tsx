@@ -104,11 +104,16 @@ export const DeckCard = memo(function DeckCard({
   const isTonight = Boolean(tonight && sala && cinematic && !compact);
   const [stamped, setStamped] = useState(false);
   const rootRef = useRef<HTMLElement | null>(null);
-  const longPress = useLongPress(() => {
-    if (isTonight && sala) {
-      sala.onOpenMenu(title);
-    }
-  });
+  const [pressing, setPressing] = useState(false);
+  const longPress = useLongPress(
+    () => {
+      if (isTonight && sala) {
+        navigator.vibrate?.(12);
+        sala.onOpenMenu(title);
+      }
+    },
+    { onPressChange: setPressing },
+  );
   const imdbLabel = formatImdbRating(title.imdbRating);
   const availabilityPlatform = primaryAvailabilityPlatform(
     title.flatrateProviders,
@@ -178,6 +183,7 @@ export const DeckCard = memo(function DeckCard({
         cinematic && "is-cinematic",
         isTonight && "is-tonight",
         stamped && "is-stamped",
+        pressing && "is-pressing",
       )}
       onPointerDown={(event) => {
         onPointerDown(event);
@@ -230,6 +236,7 @@ export const DeckCard = memo(function DeckCard({
         )}
         <span data-coverflow-dim className="coverflow-card-dim" aria-hidden />
         <span className="coverflow-card-specular" aria-hidden />
+        {isTonight ? <span className="coverflow-card-hold" aria-hidden /> : null}
         {!compact && title.watched && !isTonight ? (
           <WatchedBadge
             compact

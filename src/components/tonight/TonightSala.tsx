@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { markNotTonight } from "@/app/actions/tonight";
 import { removeFromWatchlist, undoMarkWatched } from "@/app/actions/watchlist";
 import { CoverflowDeck } from "@/components/CoverflowDeck";
@@ -35,7 +34,6 @@ type TonightSalaProps = {
 };
 
 export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => {
-  const router = useRouter();
   const now = useTonightClock(decks.nightEnds);
   const dayPart = now ? dayPartOf(now, decks.nightEnds) : "noche";
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
@@ -149,22 +147,30 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
       setActiveSlug(slug);
       setStartIndex(coverflowStartIndex(lens.count, start));
       announce(lens.name);
-      router.replace(`/?${TONIGHT_LENS_PARAM}=${encodeURIComponent(slug)}`, { scroll: false });
+      // Shallow URL sync: router.replace would refetch the server page before the deck feels settled.
+      window.history.replaceState(null, "", `/?${TONIGHT_LENS_PARAM}=${encodeURIComponent(slug)}`);
     },
     // playTransition only touches state setters + timers.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [lenses, router],
+    [lenses],
   );
 
   const edgeNeighbors = useMemo(() => {
     if (!activeLens) {
       return { prev: null, next: null };
     }
-    return {
-      prev: resolveCategoryNeighbor(lenses, activeLens.slug, "prev"),
-      next: resolveCategoryNeighbor(lenses, activeLens.slug, "next"),
+    // The destination peeks the poster the visitor will land on (first of next, last of prev).
+    const withPoster = (direction: "prev" | "next") => {
+      const neighbor = resolveCategoryNeighbor(lenses, activeLens.slug, direction);
+      if (!neighbor) {
+        return null;
+      }
+      const titles = lensCards.get(neighbor.slug) ?? [];
+      const landing = neighbor.startIndex === "first" ? titles[0] : titles[titles.length - 1];
+      return { ...neighbor, posterPath: landing?.posterPath ?? null };
     };
-  }, [activeLens, lenses]);
+    return { prev: withPoster("prev"), next: withPoster("next") };
+  }, [activeLens, lensCards, lenses]);
 
   const handleEdgeNavigate = useCallback(
     (direction: "prev" | "next") => {

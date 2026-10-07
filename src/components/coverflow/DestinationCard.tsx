@@ -1,13 +1,17 @@
 "use client";
 
 import { memo } from "react";
+import { PosterImage } from "@/components/PosterImage";
 import { cn } from "@/lib/cn";
+import { COVERFLOW_PAGE_POSTER_SIZES } from "@/lib/coverflow-metrics";
 import { focusRing } from "@/lib/ui";
 
 type DestinationCardProps = {
   /** Virtual coverflow index: -1 (prev) or titles.length (next). */
   index: number;
   name: string;
+  /** Poster of the title the visitor lands on; shown blurred as a peek. */
+  posterPath?: string | null;
   direction: "prev" | "next";
   onSelect: () => void;
   onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
@@ -15,13 +19,15 @@ type DestinationCardProps = {
 };
 
 /**
- * Tinted-glass side-slot card hinting continuum into the neighboring genre.
- * Content hugs the outer edge — the hero poster overlaps the inner ~18%.
- * Same footprint as a soft-coverflow side poster; painted by useCoverflowEngine.
+ * Side-slot "peek" into the neighboring genre: the poster you land on, dimmed and
+ * softened, with the genre label over a bottom gradient.
+ * Same footprint as a coverflow poster (inset-0); painted by useCoverflowEngine.
+ * Poster `sizes` match DeckCard so the browser reuses the cached image on arrival.
  */
 export const DestinationCard = memo(function DestinationCard({
   index,
   name,
+  posterPath,
   direction,
   onSelect,
   onPointerDown,
@@ -40,7 +46,7 @@ export const DestinationCard = memo(function DestinationCard({
       aria-selected="false"
       data-coverflow-destination={direction}
       className={cn(
-        "coverflow-card coverflow-destination absolute origin-center is-cinematic",
+        "coverflow-card coverflow-destination absolute inset-0 origin-center is-cinematic",
       )}
       onPointerDown={onPointerDown}
     >
@@ -54,13 +60,23 @@ export const DestinationCard = memo(function DestinationCard({
           onSelect();
         }}
         className={cn(
-          "coverflow-card-face coverflow-destination-face relative flex h-full w-full cursor-inherit flex-col justify-center gap-2 overflow-hidden rounded-[20px] py-4",
+          "coverflow-card-face coverflow-destination-face relative flex h-full w-full cursor-inherit flex-col justify-end gap-1.5 overflow-hidden rounded-[22px] pb-5 pt-4",
+          // Label sits toward the hero: the outer half of the card is off-screen.
           isNext
-            ? "items-end pl-[20%] pr-3 text-right"
-            : "items-start pl-3 pr-[20%] text-left",
+            ? "items-start pl-[56%] pr-2 text-left"
+            : "items-end pl-2 pr-[56%] text-right",
           focusRing,
         )}
       >
+        <span className="coverflow-destination-peek" aria-hidden>
+          <PosterImage
+            name={name}
+            posterPath={posterPath}
+            sizes={COVERFLOW_PAGE_POSTER_SIZES}
+            className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
+          />
+        </span>
+        <span className="coverflow-destination-scrim" aria-hidden />
         <span className="coverflow-destination-kicker relative z-[1]">
           {kicker}
         </span>
