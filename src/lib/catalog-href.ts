@@ -7,14 +7,27 @@ const uniquePlatforms = (values: Platform[]) =>
 
 export const MINE_PLATFORMS_PARAM = "minePlatforms";
 
-const uniqueSlugs = (values: string[]) => [
-  ...new Set(values.map((value) => value.trim()).filter(Boolean)),
-];
-
 export type CatalogKindFilter = TitleKind | "ALL";
 
+export type CatalogSort = "recent" | "watched" | "rating" | "name" | "year";
+
+/**
+ * `?minePlatforms=1` (también `true` / `on`) activa “Solo en mis plataformas”.
+ */
+export const parseMinePlatforms = (value: unknown): boolean => {
+  if (Array.isArray(value)) {
+    return value.some((item) => parseMinePlatforms(item));
+  }
+
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "on";
+};
+
 export type CatalogQuery = {
-  tags?: string[];
   view?: string | null;
   sort?: string | null;
   minePlatforms?: boolean;
@@ -45,7 +58,6 @@ const uniqueGenreIds = (values: number[]) => [
 ];
 
 export const catalogSearchParams = ({
-  tags = [],
   view,
   sort,
   minePlatforms,
@@ -62,10 +74,6 @@ export const catalogSearchParams = ({
   genres = [],
 }: CatalogQuery) => {
   const params = new URLSearchParams();
-
-  for (const slug of uniqueSlugs(tags)) {
-    params.append("tag", slug);
-  }
 
   if (view && view !== defaultView) {
     params.set("view", view);

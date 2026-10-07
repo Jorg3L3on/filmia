@@ -19,7 +19,6 @@ export const CoverflowDeck = ({
   titles: incomingTitles,
   className,
   listId,
-  tagId,
   variant = "page",
   onActiveChange,
   footer = "full",
@@ -264,7 +263,6 @@ export const CoverflowDeck = ({
             isSheet={isSheet}
             footer={footer}
             listId={listId}
-            tagId={tagId}
             focusClassName={focusSpring.className}
             onHide={handleHide}
             onRestore={handleRestore}

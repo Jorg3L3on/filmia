@@ -16,21 +16,19 @@ describe("warm nav hrefs", () => {
         "/",
         "/buscar",
         "/listas",
-        "/tags",
         "/perfil",
         "/titulos/a",
       ],
     );
   });
 
-  it("keeps the six app surfaces", () => {
+  it("keeps the five app surfaces", () => {
     assert.deepEqual([...NAV_PREFETCH_HREFS], [
       "/",
       "/watchlist",
       "/buscar",
       "/listas",
       "/perfil",
-      "/tags",
     ]);
     assert.ok(!collectWarmNavHrefs("/").includes("/"));
   });

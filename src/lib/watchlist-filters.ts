@@ -2,7 +2,7 @@ import type { TitleKind } from "@/db";
 import { awardChipLabel } from "@/lib/awards";
 import type { CatalogOrderIconName } from "@/lib/catalog-filters";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
-import { parseMinePlatforms } from "@/lib/tags";
+import { parseMinePlatforms } from "@/lib/catalog-href";
 
 /**
  * Quiero ver «La cartelera»: rail chips (Esta noche · Cortas · Premiadas · Género)

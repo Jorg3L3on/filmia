@@ -26,17 +26,12 @@ const dayLog = read("src/components/DayLogSheet.tsx");
 const toast = read("src/components/SuccessToast.tsx");
 const sharedPoster = read("src/components/SharedPoster.tsx");
 const posterTile = read("src/components/PosterTile.tsx");
-const titleCard = read("src/components/TitleCard.tsx");
 const titleHero = read("src/components/TitleHero.tsx");
 const bottomNav = read("src/components/BottomNav.tsx");
-const segment = read("src/components/ListsEtiquetasSegment.tsx");
-const segmentedTabs = read("src/components/SegmentedTabs.tsx");
 const listasLoading = read("src/app/listas/loading.tsx");
-const tagsLoading = read("src/app/tags/loading.tsx");
 const listCard = read("src/components/ListCard.tsx");
 const posterStack = read("src/components/PosterStack.tsx");
-const tagsPage = read("src/app/tags/page.tsx");
-const diaryMonth = read("src/components/DiaryMonthList.tsx");
+const listasPage = read("src/app/listas/page.tsx");
 
 assert(
   actionRow.includes("MarkWatchedSheet"),
@@ -47,8 +42,8 @@ assert(
   "TitleActionRow must not duplicate Quiero ver (primary lives on TitleSaveCta)",
 );
 assert(
-  actionRow.includes("grid-cols-4"),
-  "TitleActionRow chip row is four actions after dropping the watchlist chip",
+  actionRow.includes("grid-cols-3"),
+  "TitleActionRow chip row is three actions (Visto · Nota · Lista)",
 );
 assert(
   saveCta.includes("useStickyOptimistic"),
@@ -130,24 +125,11 @@ assert(
   posterTile.includes("SharedPoster") && titleHero.includes("SharedPoster"),
   "PosterTile and ficha hero share poster-{id}",
 );
-assert(
-  titleCard.includes("SharedPoster") && titleCard.includes("card-physics"),
-  "TitleCard tile→ficha uses SharedPoster + card-physics",
-);
-assert(
-  titleCard.includes("var(--duration-hover)") && !titleCard.includes("duration-200"),
-  "TitleCard poster hover uses --duration-hover (not duration-200)",
-);
 
 assert(bottomNav.includes("tab-transition"), "Bottom nav uses tab-transition");
 assert(
-  segment.includes("SegmentedTabs") && segmentedTabs.includes("tab-transition"),
-  "Listas|Etiquetas uses SegmentedTabs (tab-transition)",
-);
-assert(
-  listasLoading.includes("ListsEtiquetasSegment") &&
-    tagsLoading.includes("ListsEtiquetasSegment"),
-  "Soft Listas↔Etiquetas loading keeps the segment chrome",
+  listasLoading.includes("PageHeader") && listasLoading.includes("ListsBodySkeleton"),
+  "Listas loading keeps the header and only shimmers the body",
 );
 
 assert(listCard.includes("card-physics"), "ListCard uses card-physics");
@@ -156,14 +138,10 @@ assert(
   "PosterStack wraps posters in SharedPoster for list morph",
 );
 assert(
-  tagsPage.includes("stagger-in") &&
-    tagsPage.includes("<ListCard") &&
+  listasPage.includes("stagger-in") &&
+    listasPage.includes("<ListCard") &&
     listCard.includes("card-physics"),
-  "Tags grid uses stagger + card-physics",
-);
-assert(
-  diaryMonth.includes("stagger-in") && diaryMonth.includes("press-scale"),
-  "Historial month rows stagger + press",
+  "Listas grid uses stagger + card-physics",
 );
 
 assert(

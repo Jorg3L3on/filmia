@@ -7,7 +7,6 @@ import { hashPassword } from "@/lib/auth/password";
 import { ensureDefaultLists } from "@/lib/lists";
 import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
 import { SIGNUP_FIELD_ORDER, normalizeEmail, validateSignup } from "@/lib/signup-validation";
-import { ensureDefaultTags } from "@/lib/tags";
 
 export const POST = async (request: Request) => {
   const formData = await request.formData();
@@ -52,7 +51,7 @@ export const POST = async (request: Request) => {
     name,
   });
 
-  await Promise.all([ensureDefaultLists(userId), ensureDefaultTags(userId)]);
+  await ensureDefaultLists(userId);
 
   // New accounts go through the Bienvenida first; the claim lifts when they finish or skip it.
   const response = NextResponse.json({ ok: true, onboarding: true, next: ONBOARDING_PATH });

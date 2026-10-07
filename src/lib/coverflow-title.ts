@@ -1,13 +1,12 @@
 import type { CoverflowTitle } from "@/components/coverflow/types";
-import type { Platform } from "@/db";
-import type { TitleWithTags } from "@/lib/queries";
+import type { Platform, Title } from "@/db";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { currentAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
 
 /** Shared title → coverflow card mapper (deck, historial, Esta noche). */
 export const toCoverflowTitle = (
-  title: TitleWithTags,
+  title: Title,
   userPlatforms: readonly Platform[] = [],
 ): CoverflowTitle => {
   const watchProviders = parseStoredWatchProviders(title.watchProvidersMx);

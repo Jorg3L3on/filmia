@@ -57,6 +57,13 @@
       "when": 1791317602929,
       "tag": "0007_bienvenida",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791327251089,
+      "tag": "0008_drop_etiquetas",
+      "breakpoints": true
     }
   ]
 }

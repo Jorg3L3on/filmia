@@ -31,10 +31,9 @@ type TitleActionRowProps = {
   rating: number | null;
   review?: string | null;
   listsPanel: ReactNode;
-  tagsPanel: ReactNode;
 };
 
-type Panel = "lists" | "tags" | null;
+type Panel = "lists" | null;
 
 type ActionState = {
   watched: boolean;
@@ -58,7 +57,6 @@ export const TitleActionRow = ({
   rating,
   review = null,
   listsPanel,
-  tagsPanel,
 }: TitleActionRowProps) => {
   const [panel, setPanel] = useState<Panel>(null);
   const [ratingOpen, setRatingOpen] = useState(false);
@@ -149,7 +147,7 @@ export const TitleActionRow = ({
       <div
         role="group"
         aria-label="Acciones del título"
-        className="grid grid-cols-4 gap-2"
+        className="grid grid-cols-3 gap-2"
       >
         <button
           type="button"
@@ -199,19 +197,6 @@ export const TitleActionRow = ({
           <PlusListIcon />
           {inCustomList ? "En lista" : "Lista"}
         </button>
-
-        <button
-          type="button"
-          onClick={() => handleTogglePanel("tags")}
-          aria-expanded={panel === "tags"}
-          className={cn(
-            actionChipClass(panel === "tags"),
-            panel === "tags" && "border-accent bg-accent/10 text-accent",
-          )}
-        >
-          <TagIcon />
-          Etiquetas
-        </button>
       </div>
 
       {error ? (
@@ -242,8 +227,6 @@ export const TitleActionRow = ({
       />
 
       {panel === "lists" ? listsPanel : null}
-
-      {panel === "tags" ? tagsPanel : null}
     </div>
   );
 };
@@ -294,22 +277,5 @@ const PlusListIcon = () => (
     strokeWidth={1.75}
   >
     <path strokeLinecap="round" d="M6 8h12M6 12h12M6 16h7M16.5 15.5v5M14 18h5" />
-  </svg>
-);
-
-const TagIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    className="h-5 w-5"
-    aria-hidden="true"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.75}
-  >
-    <path
-      strokeLinejoin="round"
-      d="M4.5 12.5 12 5h6.5V11.5L11.5 18.5 4.5 12.5Z"
-    />
-    <circle cx="16" cy="8" r="1" fill="currentColor" />
   </svg>
 );

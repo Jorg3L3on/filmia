@@ -10,8 +10,6 @@ import {
   listItems,
   lists,
   pickEvents,
-  tags,
-  titleTags,
   titles,
   tonightPicks,
   users,
@@ -55,25 +53,19 @@ const main = async () => {
   }
 
   const sourceTitles = await db.select().from(titles).where(eq(titles.userId, source.id));
-  const sourceTags = await db.select().from(tags).where(eq(tags.userId, source.id));
   const sourceLists = await db.select().from(lists).where(eq(lists.userId, source.id));
   const sourcePicks = await db.select().from(tonightPicks).where(eq(tonightPicks.userId, source.id));
   const sourceEvents = await db.select().from(pickEvents).where(eq(pickEvents.userId, source.id));
 
   const titleIds = new Set(sourceTitles.map((row) => row.id));
-  const tagIds = new Set(sourceTags.map((row) => row.id));
   const listIds = new Set(sourceLists.map((row) => row.id));
 
-  const sourceTitleTags = (await db.select().from(titleTags)).filter(
-    (row) => titleIds.has(row.titleId) && tagIds.has(row.tagId),
-  );
   const sourceListItems = (await db.select().from(listItems)).filter(
     (row) => listIds.has(row.listId) && titleIds.has(row.titleId),
   );
 
   console.log(
-    `Origen ${sourceEmail}: ${sourceTitles.length} títulos, ${sourceTags.length} tags, ` +
-      `${sourceTitleTags.length} títulos-tag, ${sourceLists.length} listas, ` +
+    `Origen ${sourceEmail}: ${sourceTitles.length} títulos, ${sourceLists.length} listas, ` +
       `${sourceListItems.length} items de lista, ${sourcePicks.length} picks, ${sourceEvents.length} eventos`,
   );
   console.log(`Plataformas: ${JSON.stringify(source.streamingPlatforms)}`);
@@ -85,7 +77,6 @@ const main = async () => {
 
   const userId = createId();
   const titleMap = new Map(sourceTitles.map((row) => [row.id, createId()]));
-  const tagMap = new Map(sourceTags.map((row) => [row.id, createId()]));
   const listMap = new Map(sourceLists.map((row) => [row.id, createId()]));
   const mapped = (map: Map<string, string>, id: string) => {
     const value = map.get(id);
@@ -112,17 +103,6 @@ const main = async () => {
     ...chunk(sourceTitles, 100).map((rows) =>
       db.insert(titles).values(
         rows.map((row) => ({ ...row, id: mapped(titleMap, row.id), userId })),
-      ),
-    ),
-    ...chunk(sourceTags).map((rows) =>
-      db.insert(tags).values(rows.map((row) => ({ ...row, id: mapped(tagMap, row.id), userId }))),
-    ),
-    ...chunk(sourceTitleTags).map((rows) =>
-      db.insert(titleTags).values(
-        rows.map((row) => ({
-          titleId: mapped(titleMap, row.titleId),
-          tagId: mapped(tagMap, row.tagId),
-        })),
       ),
     ),
     ...chunk(sourceLists).map((rows) =>

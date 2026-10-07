@@ -31,9 +31,6 @@ const cases: Array<{ href: string; pathname: string; expected: boolean }> = [
   { href: "/watchlist", pathname: "/", expected: false },
   { href: "/buscar", pathname: "/buscar", expected: true },
   { href: "/buscar", pathname: "/titulos/abc", expected: false },
-  { href: "/tags", pathname: "/tags", expected: true },
-  { href: "/tags", pathname: "/tags/epica-guerra", expected: true },
-  { href: "/tags", pathname: "/", expected: false },
   { href: "/perfil", pathname: "/perfil", expected: true },
   { href: "/perfil", pathname: "/perfil?guardado=cuenta", expected: true },
   { href: "/perfil", pathname: "/", expected: false },
@@ -53,7 +50,6 @@ for (const pathname of onListas) {
 }
 
 assert(isCurrentPath("/", "/titulos/abc"), "Diario highlights nested ficha routes");
-assert(isCurrentPath("/tags", "/tags/visual"), "Etiquetas highlights nested tag routes");
 assert(isCurrentPath("/listas", "/listas/abc"), "Listas highlights nested list routes");
 
 assert(mobileNavItems.length === 4, "Mobile tab bar has 4 tabs around the center «+»");
@@ -68,14 +64,11 @@ assert(
   "Buscar y agregar must be the first «+» action",
 );
 {
-  const hrefs: string[] = desktopNavItems.map((item) => item.href);
-  const labels: string[] = desktopNavItems.map((item) => item.label);
-  assert(!hrefs.includes("/tags") && !labels.includes("Etiquetas"), "Desktop nav must not include a separate Etiquetas item");
+  const items = [...desktopNavItems, ...mobileCreateActions];
+  const hrefs: string[] = items.map((item) => item.href);
+  const labels: string[] = items.map((item) => item.label);
+  assert(!hrefs.includes("/tags") && !labels.includes("Etiquetas"), "Nav must not include Etiquetas");
 }
-assert(
-  isCurrentPath("/listas", "/tags") && isCurrentPath("/listas", "/tags/foo"),
-  "Listas stays active on Etiquetas routes",
-);
 
 assert(desktopNavItems[0]?.label === "Hoy", "Desktop nav leads with Hoy");
 assert(mobileNavItems[0]?.icon === "today", "Hoy tab uses the dated calendar glyph");
@@ -91,5 +84,5 @@ assert(isAuthChromePath("/registro/missing"), "signup-path 404s hide app chrome"
 assert(!isAuthChromePath("/"), "diario keeps app chrome");
 assert(!isAuthChromePath("/watchlist"), "watchlist keeps app chrome");
 
-console.log("✓ Nested paths highlight Hoy / Listas (tags hub) / Perfil (Tu diario)");
+console.log("✓ Nested paths highlight Hoy / Listas / Perfil (Tu diario)");
 console.log("✓ Mobile dock is 4 tabs around a center «+» (Buscar first) with Perfil at the end");

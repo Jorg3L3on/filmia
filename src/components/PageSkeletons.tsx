@@ -1,4 +1,3 @@
-import { listCardGridClass } from "@/components/ListCard";
 import { cn } from "@/lib/cn";
 
 type SkeletonProps = {
@@ -377,67 +376,6 @@ export const EditListBodySkeleton = ({
   </div>
 );
 
-export const TagsCreateFormSkeleton = () => (
-  <div
-    className={cn(skeletonWellClass, "flex items-center gap-2")}
-    aria-hidden="true"
-  >
-    <ShimmerBlock className="h-12 min-w-0 flex-1 rounded-xl" />
-    <ShimmerBlock className="h-12 w-24 shrink-0 rounded-full" />
-  </div>
-);
-
-export const TagsBodySkeleton = ({ label = "Cargando etiquetas" }: SkeletonProps) => (
-  <div
-    className={cn(skeletonWellClass, listCardGridClass)}
-    aria-busy="true"
-    aria-label={label}
-  >
-    {Array.from({ length: 6 }, (_, index) => (
-      <div key={index} className="min-w-0 space-y-2">
-        <ShimmerBlock className="aspect-[3/4] w-full max-w-[124px] rounded-2xl" />
-        <ShimmerBlock className="hidden h-4 w-24 rounded-full sm:block" />
-        <ShimmerBlock className="hidden h-3 w-16 rounded-full sm:block" />
-      </div>
-    ))}
-  </div>
-);
-
-export const TagDetailBodySkeleton = ({
-  label = "Cargando etiqueta",
-}: SkeletonProps) => (
-  <div className="space-y-6" aria-busy="true" aria-label={label}>
-    <div className={cn(skeletonWellClass, "space-y-3")}>
-      <div className="flex flex-wrap gap-2">
-        {Array.from({ length: 4 }, (_, index) => (
-          <ShimmerBlock key={index} className="h-9 w-24 rounded-full" />
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {Array.from({ length: 2 }, (_, index) => (
-          <ShimmerBlock key={`sort-${index}`} className="h-8 w-28 rounded-full" />
-        ))}
-      </div>
-    </div>
-    <div className={cn(skeletonWellClass, "space-y-3")}>
-      <ShimmerBlock className="h-3 w-20 rounded-full" />
-      <div className="space-y-0 divide-y divide-line overflow-hidden rounded-md border border-line">
-        {Array.from({ length: 5 }, (_, index) => (
-          <div key={index} className="flex gap-3 p-3">
-            <ShimmerBlock className="mt-6 h-4 w-6 shrink-0 rounded-full" />
-            <ShimmerBlock className="aspect-[2/3] w-12 shrink-0 rounded-poster" />
-            <div className="min-w-0 flex-1 space-y-2 py-1">
-              <ShimmerBlock className="h-4 w-40 max-w-full rounded-full" />
-              <ShimmerBlock className="h-3 w-28 rounded-full" />
-              <ShimmerBlock className="h-3 w-20 rounded-full" />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  </div>
-);
-
 export const AuthScreenSkeleton = ({
   label = "Cargando",
 }: SkeletonProps) => (
@@ -463,8 +401,8 @@ export const AuthScreenSkeleton = ({
 export const TitleActionsSkeleton = () => (
   <div className="space-y-3" aria-hidden="true">
     <ShimmerBlock className="h-14 w-full rounded-2xl" />
-    <div className="grid grid-cols-4 gap-2">
-      {Array.from({ length: 4 }, (_, index) => (
+    <div className="grid grid-cols-3 gap-2">
+      {Array.from({ length: 3 }, (_, index) => (
         <ShimmerBlock key={index} className="h-16 rounded-2xl" />
       ))}
     </div>

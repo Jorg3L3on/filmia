@@ -6,7 +6,7 @@ import { PendingSubmit } from "@/components/PendingSubmit";
 import { RatingStars } from "@/components/RatingStars";
 import { TmdbPicker, type TmdbPick } from "@/components/TmdbPicker";
 import { PosterImage } from "@/components/PosterImage";
-import type { List, Platform, Tag, Title, TitleKind } from "@/db";
+import type { List, Platform, Title, TitleKind } from "@/db";
 import { cn } from "@/lib/cn";
 import {
   PLATFORM_CLASS,
@@ -26,10 +26,8 @@ import {
 
 type TitleFormProps = {
   title?: Title & {
-    tags: Array<{ tagId: string }>;
     listItems: Array<{ listId: string }>;
   };
-  tags: Array<Pick<Tag, "id" | "name" | "slug">>;
   lists: Array<Pick<List, "id" | "name" | "slug">>;
   metadataConfig: { tmdb: boolean; omdb: boolean };
 };
@@ -45,9 +43,8 @@ const chipClass = (active: boolean) =>
       : "border-chrome text-fog hover:border-line-hover hover:text-paper",
   );
 
-export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps) => {
+export const TitleForm = ({ title, lists, metadataConfig }: TitleFormProps) => {
   const action = title ? updateTitle.bind(null, title.id) : createTitle;
-  const selectedTagIds = new Set(title?.tags.map((item) => item.tagId) ?? []);
   const selectedListIds = new Set(title?.listItems.map((item) => item.listId) ?? []);
 
   const [kind, setKind] = useState<TitleKind>(title?.kind ?? "MOVIE");
@@ -287,41 +284,11 @@ export const TitleForm = ({ title, tags, lists, metadataConfig }: TitleFormProps
           <section className={cn(wellClass, "space-y-5 p-5")}>
             <header className="space-y-1">
               <p className={eyebrowClass}>Colección</p>
-              <h2 className="font-serif text-xl text-paper">Etiquetas y listas</h2>
+              <h2 className="font-serif text-xl text-paper">Listas</h2>
             </header>
 
             <fieldset className="space-y-3">
-              <legend className={fieldLabel}>Etiquetas</legend>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag) => (
-                  <label
-                    key={tag.id}
-                    className="cursor-pointer rounded-full border border-chrome px-3 py-1.5 text-xs text-fog press-scale transition-[transform,background-color,border-color,filter,color] duration-[var(--duration-hover)] ease-[var(--ease-out)] hover:text-paper has-checked:border-accent has-checked:bg-accent has-checked:text-ink"
-                  >
-                    <input
-                      type="checkbox"
-                      name="tagIds"
-                      value={tag.id}
-                      defaultChecked={selectedTagIds.has(tag.id)}
-                      className="sr-only"
-                    />
-                    {tag.name}
-                  </label>
-                ))}
-              </div>
-              <label className="block max-w-md space-y-1.5">
-                <span className="text-xs text-fog">Nuevas, separadas por coma</span>
-                <input
-                  name="newTags"
-                  placeholder="épico, sci-fi"
-                  className={fieldClass}
-                  autoComplete="off"
-                />
-              </label>
-            </fieldset>
-
-            <fieldset className="space-y-3">
-              <legend className={fieldLabel}>Listas</legend>
+              <legend className="sr-only">Listas</legend>
               {lists.length === 0 ? (
                 <p className="text-sm text-mist">
                   Todavía no hay listas de colección. Favoritas y Por rewatch

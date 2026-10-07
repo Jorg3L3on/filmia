@@ -31,7 +31,6 @@ export const HOOK_PRIORITY: readonly ReasonKind[] = [
   "note",
   "taste_anchor",
   "taste_person",
-  "taste_tag",
   "series",
   "rewatch",
   "quality",

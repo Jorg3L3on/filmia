@@ -9,7 +9,7 @@ import {
   tonightPicks,
   users,
   type Platform,
-  type TitleWithTags,
+  type Title,
 } from "@/db";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { scheduleAfterResponse } from "@/lib/after-response";
@@ -89,7 +89,7 @@ export type TonightDecks = {
   queueSize: number;
 };
 
-type TitleRowWithLists = TitleWithTags & {
+type TitleRowWithLists = Title & {
   listItems: Array<{
     position: number;
     addedAt: Date;
@@ -99,7 +99,6 @@ type TitleRowWithLists = TitleWithTags & {
 };
 
 const TITLE_WITH_LISTS = {
-  tags: { with: { tag: true } },
   listItems: {
     with: { list: { columns: { id: true, slug: true } } },
   },
@@ -191,11 +190,6 @@ export const toTonightTitle = (
     review: row.review,
     seriesStatus: row.seriesStatus,
     seriesSeason: row.seriesSeason,
-    tags: row.tags.map((item) => ({
-      id: item.tag.id,
-      name: item.tag.name,
-      slug: item.tag.slug,
-    })),
     listSlugs: row.listItems
       .filter((item) => item.list.slug !== WATCHLIST_SLUG)
       .map((item) => item.list.slug ?? item.list.id),

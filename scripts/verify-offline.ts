@@ -10,7 +10,6 @@ const offlineScripts = [
   "verify-watch-providers.ts",
   "verify-diary-calendar.ts",
   "verify-diary-picks.ts",
-  "verify-tags.ts",
   "verify-profile.ts",
   "verify-mark-seen.ts",
   "verify-motion.ts",

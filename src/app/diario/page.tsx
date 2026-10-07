@@ -29,13 +29,12 @@ import { DIARY_HISTORIAL_PATH } from "@/lib/diary-picks";
 import { HISTORIAL_DEFAULT_VIEW, type DeckViewMode } from "@/lib/diary-view";
 import {
   getLatestWatchedMonth,
-  getTagFilters,
   getTitles,
   getUserStreamingPlatforms,
 } from "@/lib/queries";
 import { parseSeriesStatusFilter } from "@/lib/series";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
-import { catalogHref, parseMinePlatforms, parseTagSlugs } from "@/lib/tags";
+import { catalogHref, parseMinePlatforms } from "@/lib/catalog-href";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +47,6 @@ const isView = (value: string | undefined): value is DeckViewMode =>
 
 type DiarioSearchParams = {
   view?: string;
-  tag?: string | string[];
   minePlatforms?: string | string[];
   seriesStatus?: string | string[];
   month?: string | string[];
@@ -81,7 +79,6 @@ const HistorialHome = async ({
 }) => {
   const params = await searchParams;
   const view = isView(params.view) ? params.view : HISTORIAL_DEFAULT_VIEW;
-  const selectedTags = parseTagSlugs(params.tag);
   const minePlatforms = parseMinePlatforms(params.minePlatforms);
   const seriesStatus = parseSeriesStatusFilter(params.seriesStatus);
   const kindFilter = parseKindFilter(params.kind);
@@ -93,42 +90,37 @@ const HistorialHome = async ({
   const titleFilters = {
     sort: "watched" as const,
     onlyWatched: true,
-    tags: selectedTags,
     seriesStatus,
     kind: kindFilter,
   };
 
-  let taggedTitles;
-  let tags;
+  let watchedTitles;
   let userPlatforms;
   let latestWatchedMonth: string | null = null;
   let month = requestedMonth;
 
   if (canScopeMonth && explicitMonth) {
-    [taggedTitles, tags, userPlatforms, latestWatchedMonth] = await Promise.all([
+    [watchedTitles, userPlatforms, latestWatchedMonth] = await Promise.all([
       getTitles({ ...titleFilters, watchedMonth: requestedMonth }),
-      getTagFilters(),
       getUserStreamingPlatforms(),
       getLatestWatchedMonth(titleFilters),
     ]);
     month = requestedMonth;
   } else if (canScopeMonth) {
-    [latestWatchedMonth, tags, userPlatforms] = await Promise.all([
+    [latestWatchedMonth, userPlatforms] = await Promise.all([
       getLatestWatchedMonth(titleFilters),
-      getTagFilters(),
       getUserStreamingPlatforms(),
     ]);
     month = latestWatchedMonth ?? requestedMonth;
-    taggedTitles = await getTitles({ ...titleFilters, watchedMonth: month });
+    watchedTitles = await getTitles({ ...titleFilters, watchedMonth: month });
   } else {
-    [taggedTitles, tags, userPlatforms] = await Promise.all([
+    [watchedTitles, userPlatforms] = await Promise.all([
       getTitles(titleFilters),
-      getTagFilters(),
       getUserStreamingPlatforms(),
     ]);
   }
 
-  const kindTitles = taggedTitles.filter((title) =>
+  const kindTitles = watchedTitles.filter((title) =>
     titleMatchesKind(title.kind, kindFilter),
   );
   const catalog = resolveCatalogAvailability(kindTitles, {
@@ -148,7 +140,6 @@ const HistorialHome = async ({
     ? Boolean(latestWatchedMonth)
     : titles.length > 0;
   const hasActiveFilters =
-    selectedTags.length > 0 ||
     minePlatforms ||
     Boolean(seriesStatus) ||
     kindFilter !== "ALL" ||
@@ -161,7 +152,6 @@ const HistorialHome = async ({
   };
   const hrefFor = (mode: DeckViewMode) =>
     catalogHref(DIARY_HISTORIAL_PATH, {
-      tags: selectedTags,
       view: mode,
       defaultView: HISTORIAL_DEFAULT_VIEW,
       minePlatforms,
@@ -187,7 +177,6 @@ const HistorialHome = async ({
         view={view}
         hrefFor={hrefFor}
         countLabel={monthCountLabel}
-        tags={selectedTags}
         minePlatforms={minePlatforms}
         seriesStatus={seriesStatus}
         kind={kindFilter}
@@ -198,8 +187,6 @@ const HistorialHome = async ({
       {catalog.needsSetup ? <MinePlatformsSetupCta /> : null}
 
       <CatalogFilters
-        tags={tags}
-        selectedSlugs={selectedTags}
         pathname={DIARY_HISTORIAL_PATH}
         view={view}
         defaultView={HISTORIAL_DEFAULT_VIEW}
@@ -221,14 +208,13 @@ const HistorialHome = async ({
               <MinePlatformsEmpty
                 userPlatforms={userPlatforms}
                 actionHref={clearHref}
-                hasTagFilters={selectedTags.length > 0 || Boolean(seriesStatus)}
+                hasFilters={Boolean(seriesStatus)}
               />
             ) : (
               <DiaryCalendar
                 titles={monthTitles}
                 month={month}
                 selectedDay={selectedDay}
-                tags={selectedTags}
                 minePlatforms={minePlatforms}
                 seriesStatus={seriesStatus}
                 kind={kindFilter}
@@ -246,7 +232,7 @@ const HistorialHome = async ({
             <MinePlatformsEmpty
               userPlatforms={userPlatforms}
               actionHref={clearHref}
-              hasTagFilters={selectedTags.length > 0 || Boolean(seriesStatus)}
+              hasFilters={Boolean(seriesStatus)}
             />
           </>
         ) : titles.length === 0 ? (

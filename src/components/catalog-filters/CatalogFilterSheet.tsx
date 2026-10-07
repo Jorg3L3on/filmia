@@ -10,27 +10,18 @@ import {
   catalogSheetChipClass,
 } from "@/components/catalog-filters/filter-ui";
 import { MX_SHEET_PLATFORMS } from "@/lib/catalog-filters";
-import type { CatalogKindFilter } from "@/lib/catalog-href";
+import type { CatalogKindFilter, CatalogSort } from "@/lib/catalog-href";
 import { focusRing } from "@/lib/ui";
 import type { Platform } from "@/db";
 import type { SeriesStatusFilter } from "@/lib/series";
-import type { CatalogSort } from "@/lib/tags";
 
 const TitleKindMovie = "MOVIE" as const;
 const TitleKindSeries = "SERIES" as const;
-
-type FilterTag = {
-  id: string;
-  name: string;
-  slug: string;
-  _count?: { titles: number };
-};
 
 export type CatalogFilterDraft = {
   kind: CatalogKindFilter;
   platforms: Platform[];
   sort: CatalogSort | null;
-  tags: string[];
   seriesStatus?: SeriesStatusFilter;
   minePlatforms: boolean;
 };
@@ -39,11 +30,9 @@ type CatalogFilterSheetProps = {
   open: boolean;
   activeCount: number;
   draft: CatalogFilterDraft;
-  tags: FilterTag[];
   hasStreamingPlatforms: boolean;
   showKind: boolean;
   showPlatforms: boolean;
-  showTagFilters: boolean;
   onOpen: () => void;
   onClose: () => void;
   onClear: () => void;
@@ -55,11 +44,9 @@ export const CatalogFilterSheet = ({
   open,
   activeCount,
   draft,
-  tags,
   hasStreamingPlatforms,
   showKind,
   showPlatforms,
-  showTagFilters,
   onOpen,
   onClose,
   onClear,
@@ -152,56 +139,6 @@ export const CatalogFilterSheet = ({
         </CatalogSheetSection>
       ) : null}
 
-      {showTagFilters ? (
-        <CatalogSheetSection
-          title="Etiquetas"
-          hint="Un título entra si tiene cualquiera de las elegidas (OR)."
-        >
-          {tags.length === 0 ? (
-            <p className="text-sm text-mist">
-              Aún no hay etiquetas. Créalas en un título o en{" "}
-              <Link
-                href="/tags"
-                className={`text-accent hover:underline ${focusRing}`}
-              >
-                Etiquetas
-              </Link>
-              .
-            </p>
-          ) : (
-            <ul className="flex flex-wrap gap-2">
-              {tags.map((tag) => {
-                const isSelected = draft.tags.includes(tag.slug);
-                const count = tag._count?.titles;
-                return (
-                  <li key={tag.id}>
-                    <button
-                      type="button"
-                      aria-pressed={isSelected}
-                      onClick={() =>
-                        onDraftChange((current) => ({
-                          ...current,
-                          tags: isSelected
-                            ? current.tags.filter((slug) => slug !== tag.slug)
-                            : [...current.tags, tag.slug],
-                        }))
-                      }
-                      className={catalogSheetChipClass(isSelected)}
-                    >
-                      {tag.name}
-                      {typeof count === "number" ? (
-                        <span className={isSelected ? "text-accent/70" : "text-mist"}>
-                          {count}
-                        </span>
-                      ) : null}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </CatalogSheetSection>
-      ) : null}
     </CatalogMoreFilters>
   );
 };

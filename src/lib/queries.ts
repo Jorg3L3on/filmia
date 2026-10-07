@@ -3,7 +3,6 @@ import {
   asc,
   desc,
   eq,
-  exists,
   gte,
   ilike,
   inArray,
@@ -20,8 +19,6 @@ import {
   db,
   listItems,
   lists,
-  tags,
-  titleTags,
   titles,
   users,
   type ListKind,
@@ -29,7 +26,6 @@ import {
   type SeriesStatus,
   type TitleKind,
   type TitleWithRelations,
-  type TitleWithTags,
 } from "@/db";
 import { monthUtcRange, toDateInput } from "@/lib/dates";
 import { sortUserLists } from "@/lib/lists";
@@ -45,33 +41,19 @@ export type {
   Platform,
   ListKind,
   TitleWithRelations,
-  TitleWithTags,
 };
 
-export const titleWithTags = {
-  tags: { with: { tag: true } },
-} as const;
-
 export const titleWithRelations = {
-  ...titleWithTags,
   listItems: { with: { list: true } },
 } as const;
 
 /** @deprecated Use TitleWithRelations — kept for gradual migration of type imports */
 export const titleInclude = titleWithRelations;
 
-export type FilterTag = {
-  id: string;
-  name: string;
-  slug: string;
-  _count: { titles: number };
-};
-
 type TitleFilters = {
   q?: string;
   kind?: TitleKind | "ALL";
   platform?: Platform | "ALL";
-  tags?: string[];
   sort?: "recent" | "watched" | "rating" | "name" | "year";
   onlyWatched?: boolean;
   seriesStatus?: SeriesStatusFilter;
@@ -81,8 +63,8 @@ type TitleFilters = {
 const EMPTY_TITLE_FILTERS: TitleFilters = {};
 
 const countByIds = async (
-  column: typeof titleTags.tagId | typeof listItems.listId,
-  table: typeof titleTags | typeof listItems,
+  column: typeof listItems.listId,
+  table: typeof listItems,
   ids: string[],
 ) => {
   if (ids.length === 0) {
@@ -113,34 +95,15 @@ const buildSeriesStatusCondition = (filter: SeriesStatusFilter | undefined) => {
   return and(eq(titles.kind, "SERIES"), eq(titles.seriesStatus, filter));
 };
 
-const buildTagSlugCondition = (userId: string, tagSlugs: string[]) => {
-  if (tagSlugs.length === 0) {
-    return undefined;
-  }
-
-  // Uncorrelated on purpose: db.query aliases "Title" and would not rewrite a
-  // titles.id reference inside the subquery.
-  return inArray(
-    titles.id,
-    db
-      .select({ titleId: titleTags.titleId })
-      .from(titleTags)
-      .innerJoin(tags, eq(titleTags.tagId, tags.id))
-      .where(and(inArray(tags.slug, tagSlugs), eq(tags.userId, userId))),
-  );
-};
-
 const buildTitleConditions = (userId: string, filters: TitleFilters) => {
   const {
     q,
     kind,
     platform,
-    tags: tagFilter,
     onlyWatched = false,
     seriesStatus,
     watchedMonth,
   } = filters;
-  const tagSlugs = [...new Set((tagFilter ?? []).map((slug) => slug.trim()).filter(Boolean))];
   const conditions = [eq(titles.userId, userId)];
 
   if (q) {
@@ -159,11 +122,6 @@ const buildTitleConditions = (userId: string, filters: TitleFilters) => {
 
   if (platform && platform !== "ALL") {
     conditions.push(eq(titles.platform, platform));
-  }
-
-  const tagCondition = buildTagSlugCondition(userId, tagSlugs);
-  if (tagCondition) {
-    conditions.push(tagCondition);
   }
 
   if (onlyWatched) {
@@ -205,7 +163,6 @@ export const getTitles = cache(async (filters: TitleFilters = EMPTY_TITLE_FILTER
 
   return db.query.titles.findMany({
     where: and(...buildTitleConditions(userId, filters)),
-    with: titleWithTags,
     orderBy: titleOrderBy(sort),
   });
 });
@@ -244,15 +201,24 @@ export const getTitleById = cache(async (id: string) => {
   });
 });
 
-export const getRelatedTitles = cache(async (titleId: string, tagIds: string[]) => {
-  if (tagIds.length === 0) {
+/** Ficha «Relacionadas»: titles sharing TMDB genres, most shared first. */
+export const getRelatedTitles = cache(async (titleId: string, genreIds: number[]) => {
+  if (genreIds.length === 0) {
     return [];
   }
 
   const userId = await requireUserId();
+  const genreList = sql.join(
+    genreIds.map((id) => sql`${id}`),
+    sql`, `,
+  );
+  const sharedGenres = sql<number>`(
+    select count(*)::int
+    from jsonb_array_elements(${titles.tmdbGenres}) as genre
+    where (genre->>'id')::int in (${genreList})
+  )`;
 
-  // One round-trip: filter by shared tags via exists + inArray, order with
-  // Title_userId_watchedAt_idx (no per-tag follow-up queries).
+  // One round-trip: the shared-genre count both filters and ranks.
   return db
     .select({
       id: titles.id,
@@ -261,102 +227,9 @@ export const getRelatedTitles = cache(async (titleId: string, tagIds: string[]) 
       posterPath: titles.posterPath,
     })
     .from(titles)
-    .where(
-      and(
-        eq(titles.userId, userId),
-        ne(titles.id, titleId),
-        exists(
-          db
-            .select({ titleId: titleTags.titleId })
-            .from(titleTags)
-            .where(
-              and(eq(titleTags.titleId, titles.id), inArray(titleTags.tagId, tagIds)),
-            ),
-        ),
-      ),
-    )
-    .orderBy(desc(titles.watchedAt), asc(titles.name))
+    .where(and(eq(titles.userId, userId), ne(titles.id, titleId), sql`${sharedGenres} > 0`))
+    .orderBy(desc(sharedGenres), desc(titles.watchedAt), asc(titles.name))
     .limit(12);
-});
-
-export const getTagFilters = cache(async (): Promise<FilterTag[]> => {
-  const userId = await requireUserId();
-
-  const rows = await db.query.tags.findMany({
-    where: eq(tags.userId, userId),
-    columns: { id: true, name: true, slug: true },
-    orderBy: [asc(tags.name)],
-  });
-
-  const counts = await countByIds(
-    titleTags.tagId,
-    titleTags,
-    rows.map((row) => row.id),
-  );
-
-  return rows.map((row) => ({
-    ...row,
-    _count: { titles: counts.get(row.id) ?? 0 },
-  }));
-});
-
-export const getTags = cache(async () => {
-  const userId = await requireUserId();
-
-  const rows = await db.query.tags.findMany({
-    where: eq(tags.userId, userId),
-    orderBy: [asc(tags.name)],
-    with: {
-      titles: {
-        limit: 3,
-        with: {
-          title: {
-            columns: { id: true, name: true, posterPath: true },
-          },
-        },
-      },
-    },
-  });
-
-  const counts = await countByIds(
-    titleTags.tagId,
-    titleTags,
-    rows.map((row) => row.id),
-  );
-
-  return rows.map((row) => ({
-    ...row,
-    _count: { titles: counts.get(row.id) ?? 0 },
-  }));
-});
-
-export const getTagBySlug = cache(async (slug: string) => {
-  const userId = await requireUserId();
-
-  const row = await db.query.tags.findFirst({
-    where: and(eq(tags.userId, userId), eq(tags.slug, slug)),
-    columns: {
-      id: true,
-      userId: true,
-      name: true,
-      slug: true,
-      createdAt: true,
-    },
-  });
-
-  if (!row) {
-    return null;
-  }
-
-  const countRows = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(titleTags)
-    .where(eq(titleTags.tagId, row.id));
-
-  return {
-    ...row,
-    _count: { titles: countRows[0]?.count ?? 0 },
-  };
 });
 
 export const getLists = cache(async () => {
@@ -400,7 +273,7 @@ export const getWatchlist = cache(async () => {
       items: {
         orderBy: [asc(listItems.position)],
         with: {
-          title: { with: titleWithTags },
+          title: true,
         },
       },
     },
@@ -477,14 +350,14 @@ export const getListById = cache(async (id: string) => {
       items: {
         orderBy: [asc(listItems.position)],
         with: {
-          title: { with: titleWithTags },
+          title: true,
         },
       },
     },
   });
 });
 
-/** List row only — avoids hydrating every ListItem/Title/Tag on editar. */
+/** List row only — avoids hydrating every ListItem/Title on editar. */
 export const getListMetaById = cache(async (id: string) => {
   const userId = await requireUserId();
 
@@ -523,25 +396,6 @@ export const getTitleOptionsOutsideList = cache(async (listId: string) => {
   });
 });
 
-export const getTitleOptionsOutsideTag = cache(async (tagId: string) => {
-  const userId = await requireUserId();
-
-  return db.query.titles.findMany({
-    where: and(
-      eq(titles.userId, userId),
-      notInArray(
-        titles.id,
-        db
-          .select({ titleId: titleTags.titleId })
-          .from(titleTags)
-          .where(eq(titleTags.tagId, tagId)),
-      ),
-    ),
-    columns: { id: true, name: true, year: true, posterPath: true },
-    orderBy: [asc(titles.name)],
-  });
-});
-
 export const getUserStreamingPlatforms = cache(async () => {
   const userId = await requireUserId();
   const user = await db.query.users.findFirst({
@@ -557,7 +411,6 @@ export const getRecentWatchedTitles = cache(async (limit = 3) => {
   const userId = await requireUserId();
   return db.query.titles.findMany({
     where: and(eq(titles.userId, userId), isNotNull(titles.watchedAt)),
-    with: titleWithTags,
     orderBy: [desc(titles.watchedAt), asc(titles.name)],
     limit,
   });
@@ -568,7 +421,6 @@ export const getWatchedSince = cache(async (since: Date) => {
   const userId = await requireUserId();
   return db.query.titles.findMany({
     where: and(eq(titles.userId, userId), gte(titles.watchedAt, since)),
-    with: titleWithTags,
     orderBy: [desc(titles.watchedAt)],
   });
 });

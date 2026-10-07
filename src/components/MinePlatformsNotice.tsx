@@ -46,13 +46,13 @@ export const MinePlatformsSetupCta = () => (
 type MinePlatformsEmptyProps = {
   userPlatforms: readonly Platform[];
   actionHref: string;
-  hasTagFilters?: boolean;
+  hasFilters?: boolean;
 };
 
 export const MinePlatformsEmpty = ({
   userPlatforms,
   actionHref,
-  hasTagFilters = false,
+  hasFilters = false,
 }: MinePlatformsEmptyProps) => {
   const platforms = formatUserPlatformsList(userPlatforms);
 
@@ -61,8 +61,8 @@ export const MinePlatformsEmpty = ({
       variant="watchlist"
       title="Nada en tus plataformas"
       description={
-        hasTagFilters
-          ? `Ningún título con esas etiquetas está incluido en ${platforms}. El filtro no cuenta renta ni compra.`
+        hasFilters
+          ? `Ningún título con esos filtros está incluido en ${platforms}. El filtro no cuenta renta ni compra.`
           : `Ningún título está incluido en ${platforms}. El filtro no cuenta renta ni compra.`
       }
       actionHref={actionHref}

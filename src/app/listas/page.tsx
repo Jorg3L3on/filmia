@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
 import { ListCard, listCardGridClass } from "@/components/ListCard";
-import { ListsEtiquetasSegment } from "@/components/ListsEtiquetasSegment";
+import { PageHeader } from "@/components/PageHeader";
 import {
   SegmentActionTooltip,
   SegmentPlusIcon,
@@ -37,9 +37,9 @@ const ListCollection = ({
 export default function ListsPage() {
   return (
     <div className="space-y-8">
-      <h1 className="sr-only">Listas</h1>
-      <ListsEtiquetasSegment
-        action={
+      <PageHeader
+        title="Listas"
+        actions={
           <Link
             href="/listas/nueva"
             aria-label="Nueva lista"

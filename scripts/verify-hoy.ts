@@ -50,7 +50,7 @@ const run = () => {
   const store = read("src/lib/tonight-store.ts");
   assert(store.includes("computeTonightForUser") && store.includes("scheduleTonightRecompute") && store.includes("TONIGHT_STALE_MS"), "Store precomputes, recomputes after writes, expires after a day");
   assert(exists("src/app/api/cron/tonight-picks/route.ts") && read("vercel.json").includes("/api/cron/tonight-picks"), "Nightly cron registered");
-  for (const file of ["src/app/actions/watchlist.ts", "src/app/actions/titles.ts", "src/app/actions/tags.ts", "src/app/actions/profile.ts", "src/app/actions/lists.ts"]) {
+  for (const file of ["src/app/actions/watchlist.ts", "src/app/actions/titles.ts", "src/app/actions/profile.ts", "src/app/actions/lists.ts"]) {
     assert(read(file).includes("scheduleTonightRecompute"), `${file} schedules an Esta noche recompute`);
   }
   assert(read("src/lib/tmdb.ts").includes("append_to_response") && read("src/lib/omdb.ts").includes("imdbVotes"), "Enrichment fetches keywords/credits in one call and IMDb votes");
