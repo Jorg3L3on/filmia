@@ -192,35 +192,37 @@ export type LibraryEntry = {
 /** Everything the flow needs to resume: the user's TMDB-backed titles with list membership. */
 export const getOnboardingLibrary = async (userId: string): Promise<LibraryEntry[]> => {
   const rows = await db.query.titles.findMany({
-    where: and(eq(titles.userId, userId), isNotNull(titles.tmdbId)),
-    columns: {
-      id: true,
-      tmdbId: true,
-      kind: true,
-      name: true,
-      year: true,
-      posterPath: true,
-      posterAmbient: true,
-      watchedAt: true,
-      rating: true,
-      createdAt: true,
+    where: and(eq(titles.userId, userId), isNotNull(titles.catalogId)),
+    columns: { id: true, watchedAt: true, rating: true, createdAt: true },
+    with: {
+      catalog: {
+        columns: {
+          tmdbId: true,
+          kind: true,
+          name: true,
+          year: true,
+          posterPath: true,
+          posterAmbient: true,
+        },
+      },
+      listItems: { with: { list: { columns: { slug: true } } } },
     },
-    with: { listItems: { with: { list: { columns: { slug: true } } } } },
   });
   return rows.flatMap((row) => {
-    if (row.tmdbId == null) {
+    const film = row.catalog;
+    if (!film) {
       return [];
     }
     const slugs = row.listItems.map((item) => item.list.slug);
     return [
       {
         titleId: row.id,
-        tmdbId: row.tmdbId,
-        kind: row.kind,
-        name: row.name,
-        year: row.year,
-        posterPath: row.posterPath,
-        posterAmbient: row.posterAmbient,
+        tmdbId: film.tmdbId,
+        kind: film.kind,
+        name: film.name,
+        year: film.year,
+        posterPath: film.posterPath,
+        posterAmbient: film.posterAmbient,
         watched: row.watchedAt != null,
         rating: row.rating,
         inWatchlist: slugs.includes(WATCHLIST_SLUG),

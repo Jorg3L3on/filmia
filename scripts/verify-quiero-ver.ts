@@ -21,7 +21,7 @@ const run = () => {
   assert(omdb.includes("Awards") && omdb.includes('"v2"') && omdb.includes("imdbVotes"), "OMDb keeps Awards and bumped its cache key");
   assert(awardChipLabel("Won 2 Oscars. 23 wins & 12 nominations total.") === "2 Óscar", "Awards parser → «2 Óscar»");
   assert(awardChipLabel("Nominated for 1 Oscar. 4 wins & 12 nominations total") === "Nominada al Óscar", "Awards parser → «Nominada al Óscar»");
-  for (const file of ["src/lib/metadata.ts", "src/lib/add-title-from-tmdb.ts", "scripts/backfill-tonight.ts"]) {
+  for (const file of ["src/lib/metadata.ts", "src/lib/catalog-enrich.ts", "scripts/backfill-tonight.ts"]) {
     assert(read(file).includes("awards"), `${file} carries awards along with imdbRating`);
   }
   assert(exists("scripts/backfill-awards.ts") && read("package.json").includes("db:backfill-awards"), "Awards backfill script registered");

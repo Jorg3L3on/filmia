@@ -16,6 +16,7 @@ import {
 } from "drizzle-orm";
 import { cache } from "react";
 import {
+  catalog,
   db,
   listItems,
   lists,
@@ -26,7 +27,9 @@ import {
   type SeriesStatus,
   type TitleKind,
   type TitleWithRelations,
+  type UserTitle,
 } from "@/db";
+import { flattenTitle, WITH_CATALOG, type RowWithCatalog } from "@/lib/catalog";
 import { monthUtcRange, toDateInput } from "@/lib/dates";
 import { sortUserLists } from "@/lib/lists";
 import { requireUserId } from "@/lib/session";
@@ -43,9 +46,15 @@ export type {
   TitleWithRelations,
 };
 
+// Every title read joins its shared catalog row; `flattenTitle` folds it into
+// the flat `Title` shape components expect (name, poster, keywords… + personal fields).
 export const titleWithRelations = {
+  ...WITH_CATALOG,
   listItems: { with: { list: true } },
 } as const;
+
+/** Film-level columns live on `Catalog`; the personal ones stay on `Title`. */
+const joinCatalog = () => db.select({ title: titles, catalog }).from(titles).innerJoin(catalog, eq(titles.catalogId, catalog.id));
 
 /** @deprecated Use TitleWithRelations — kept for gradual migration of type imports */
 export const titleInclude = titleWithRelations;
@@ -89,10 +98,10 @@ const buildSeriesStatusCondition = (filter: SeriesStatusFilter | undefined) => {
   }
 
   if (filter === "NONE") {
-    return and(eq(titles.kind, "SERIES"), isNull(titles.seriesStatus));
+    return and(eq(catalog.kind, "SERIES"), isNull(titles.seriesStatus));
   }
 
-  return and(eq(titles.kind, "SERIES"), eq(titles.seriesStatus, filter));
+  return and(eq(catalog.kind, "SERIES"), eq(titles.seriesStatus, filter));
 };
 
 const buildTitleConditions = (userId: string, filters: TitleFilters) => {
@@ -109,15 +118,15 @@ const buildTitleConditions = (userId: string, filters: TitleFilters) => {
   if (q) {
     conditions.push(
       or(
-        ilike(titles.name, `%${q}%`),
-        ilike(titles.originalName, `%${q}%`),
+        ilike(catalog.name, `%${q}%`),
+        ilike(catalog.originalName, `%${q}%`),
         ilike(titles.review, `%${q}%`),
       )!,
     );
   }
 
   if (kind && kind !== "ALL") {
-    conditions.push(eq(titles.kind, kind));
+    conditions.push(eq(catalog.kind, kind));
   }
 
   if (platform && platform !== "ALL") {
@@ -145,13 +154,13 @@ const buildTitleConditions = (userId: string, filters: TitleFilters) => {
 const titleOrderBy = (sort: TitleFilters["sort"]) => {
   switch (sort) {
     case "rating":
-      return [desc(titles.rating), asc(titles.name)];
+      return [desc(titles.rating), asc(catalog.name)];
     case "name":
-      return [asc(titles.name)];
+      return [asc(catalog.name)];
     case "year":
-      return [desc(titles.year), asc(titles.name)];
+      return [desc(catalog.year), asc(catalog.name)];
     case "watched":
-      return [desc(titles.watchedAt), asc(titles.name)];
+      return [desc(titles.watchedAt), asc(catalog.name)];
     default:
       return [desc(titles.updatedAt)];
   }
@@ -161,10 +170,11 @@ export const getTitles = cache(async (filters: TitleFilters = EMPTY_TITLE_FILTER
   const userId = await requireUserId();
   const { sort = "recent" } = filters;
 
-  return db.query.titles.findMany({
-    where: and(...buildTitleConditions(userId, filters)),
-    orderBy: titleOrderBy(sort),
-  });
+  const rows = await joinCatalog()
+    .where(and(...buildTitleConditions(userId, filters)))
+    .orderBy(...titleOrderBy(sort));
+
+  return rows.map((row) => flattenTitle({ ...row.title, catalog: row.catalog }));
 });
 
 export const getLatestWatchedMonth = cache(async (filters: TitleFilters = EMPTY_TITLE_FILTERS) => {
@@ -172,6 +182,7 @@ export const getLatestWatchedMonth = cache(async (filters: TitleFilters = EMPTY_
   const rows = await db
     .select({ watchedAt: titles.watchedAt })
     .from(titles)
+    .innerJoin(catalog, eq(titles.catalogId, catalog.id))
     .where(
       and(
         ...buildTitleConditions(userId, {
@@ -195,10 +206,12 @@ export const getLatestWatchedMonth = cache(async (filters: TitleFilters = EMPTY_
 export const getTitleById = cache(async (id: string) => {
   const userId = await requireUserId();
 
-  return db.query.titles.findFirst({
+  const row = await db.query.titles.findFirst({
     where: and(eq(titles.id, id), eq(titles.userId, userId)),
     with: titleWithRelations,
   });
+
+  return row ? flattenTitle(row) : undefined;
 });
 
 /** Ficha «Relacionadas»: titles sharing TMDB genres, most shared first. */
@@ -214,7 +227,7 @@ export const getRelatedTitles = cache(async (titleId: string, genreIds: number[]
   );
   const sharedGenres = sql<number>`(
     select count(*)::int
-    from jsonb_array_elements(${titles.tmdbGenres}) as genre
+    from jsonb_array_elements(${catalog.tmdbGenres}) as genre
     where (genre->>'id')::int in (${genreList})
   )`;
 
@@ -222,13 +235,14 @@ export const getRelatedTitles = cache(async (titleId: string, genreIds: number[]
   return db
     .select({
       id: titles.id,
-      name: titles.name,
-      year: titles.year,
-      posterPath: titles.posterPath,
+      name: catalog.name,
+      year: catalog.year,
+      posterPath: catalog.posterPath,
     })
     .from(titles)
+    .innerJoin(catalog, eq(titles.catalogId, catalog.id))
     .where(and(eq(titles.userId, userId), ne(titles.id, titleId), sql`${sharedGenres} > 0`))
-    .orderBy(desc(sharedGenres), desc(titles.watchedAt), asc(titles.name))
+    .orderBy(desc(sharedGenres), desc(titles.watchedAt), asc(catalog.name))
     .limit(12);
 });
 
@@ -243,7 +257,8 @@ export const getLists = cache(async () => {
         limit: 5,
         with: {
           title: {
-            columns: { id: true, name: true, posterPath: true },
+            columns: { id: true },
+            with: { catalog: { columns: { name: true, posterPath: true } } },
           },
         },
       },
@@ -259,25 +274,58 @@ export const getLists = cache(async () => {
   return sortUserLists(
     rows.map((list) => ({
       ...list,
+      items: list.items.map((item) => ({
+        ...item,
+        title: {
+          id: item.title.id,
+          name: item.title.catalog?.name ?? "",
+          posterPath: item.title.catalog?.posterPath ?? null,
+        },
+      })),
       _count: { items: counts.get(list.id) ?? 0 },
     })),
   );
 });
 
+/**
+ * Lists carry their items' titles; fold each title's catalog in. Destructuring
+ * (not spreading the generic) keeps the raw `catalog` key out of the result type.
+ */
+const flattenListItems = <
+  TItem extends { title: RowWithCatalog<UserTitle> },
+  TRest extends object,
+>(
+  list: (TRest & { items: TItem[] }) | undefined,
+) => {
+  if (!list) {
+    return undefined;
+  }
+  const { items, ...rest } = list;
+  return {
+    ...rest,
+    items: items.map((item) => {
+      const { title, ...itemRest } = item;
+      return { ...itemRest, title: flattenTitle(title) };
+    }),
+  };
+};
+
 export const getWatchlist = cache(async () => {
   const userId = await requireUserId();
 
-  return db.query.lists.findFirst({
+  const list = await db.query.lists.findFirst({
     where: and(eq(lists.userId, userId), eq(lists.slug, WATCHLIST_SLUG)),
     with: {
       items: {
         orderBy: [asc(listItems.position)],
         with: {
-          title: true,
+          title: { with: WITH_CATALOG },
         },
       },
     },
   });
+
+  return flattenListItems(list);
 });
 
 export const getWatchlistCount = cache(async () => {
@@ -333,17 +381,19 @@ export const getAssignableLists = cache(async () => {
 export const getListById = cache(async (id: string) => {
   const userId = await requireUserId();
 
-  return db.query.lists.findFirst({
+  const list = await db.query.lists.findFirst({
     where: and(eq(lists.id, id), eq(lists.userId, userId)),
     with: {
       items: {
         orderBy: [asc(listItems.position)],
         with: {
-          title: true,
+          title: { with: WITH_CATALOG },
         },
       },
     },
   });
+
+  return flattenListItems(list);
 });
 
 /** List row only — avoids hydrating every ListItem/Title on editar. */
@@ -358,31 +408,42 @@ export const getListMetaById = cache(async (id: string) => {
 export const getTitleOptions = cache(async () => {
   const userId = await requireUserId();
 
-  return db.query.titles.findMany({
-    where: eq(titles.userId, userId),
-    columns: { id: true, name: true, year: true, posterPath: true },
-    orderBy: [asc(titles.name)],
-  });
+  return db
+    .select({ id: titles.id, name: catalog.name, year: catalog.year, posterPath: catalog.posterPath })
+    .from(titles)
+    .innerJoin(catalog, eq(titles.catalogId, catalog.id))
+    .where(eq(titles.userId, userId))
+    .orderBy(asc(catalog.name));
 });
 
 /** Titles not already on the list — SQL exclusion instead of load-all + filter. */
 export const getTitleOptionsOutsideList = cache(async (listId: string) => {
   const userId = await requireUserId();
 
-  return db.query.titles.findMany({
-    where: and(
-      eq(titles.userId, userId),
-      notInArray(
-        titles.id,
-        db
-          .select({ titleId: listItems.titleId })
-          .from(listItems)
-          .where(eq(listItems.listId, listId)),
+  return db
+    .select({
+      id: titles.id,
+      name: catalog.name,
+      year: catalog.year,
+      posterPath: catalog.posterPath,
+      tmdbId: catalog.tmdbId,
+      kind: catalog.kind,
+    })
+    .from(titles)
+    .innerJoin(catalog, eq(titles.catalogId, catalog.id))
+    .where(
+      and(
+        eq(titles.userId, userId),
+        notInArray(
+          titles.id,
+          db
+            .select({ titleId: listItems.titleId })
+            .from(listItems)
+            .where(eq(listItems.listId, listId)),
+        ),
       ),
-    ),
-    columns: { id: true, name: true, year: true, posterPath: true, tmdbId: true, kind: true },
-    orderBy: [asc(titles.name)],
-  });
+    )
+    .orderBy(asc(catalog.name));
 });
 
 export const getUserStreamingPlatforms = cache(async () => {
@@ -398,20 +459,24 @@ export const getUserStreamingPlatforms = cache(async () => {
 /** Perfil «Tu diario»: last entries, newest first (rating + review ride along). */
 export const getRecentWatchedTitles = cache(async (limit = 3) => {
   const userId = await requireUserId();
-  return db.query.titles.findMany({
+  const rows = await db.query.titles.findMany({
     where: and(eq(titles.userId, userId), isNotNull(titles.watchedAt)),
-    orderBy: [desc(titles.watchedAt), asc(titles.name)],
+    orderBy: [desc(titles.watchedAt), asc(titles.createdAt)],
     limit,
+    with: WITH_CATALOG,
   });
+  return rows.map((row) => flattenTitle(row));
 });
 
 /** Perfil week strip: everything watched since `since` (inclusive). */
 export const getWatchedSince = cache(async (since: Date) => {
   const userId = await requireUserId();
-  return db.query.titles.findMany({
+  const rows = await db.query.titles.findMany({
     where: and(eq(titles.userId, userId), gte(titles.watchedAt, since)),
     orderBy: [desc(titles.watchedAt)],
+    with: WITH_CATALOG,
   });
+  return rows.map((row) => flattenTitle(row));
 });
 
 export const getCurrentUserProfile = cache(async () => {
@@ -460,13 +525,9 @@ export const getUserTmdbIndex = cache(async (): Promise<UserTmdbEntry[]> => {
 
   const [titleRows, watchlist] = await Promise.all([
     db.query.titles.findMany({
-      where: and(eq(titles.userId, userId), isNotNull(titles.tmdbId)),
-      columns: {
-        id: true,
-        tmdbId: true,
-        kind: true,
-        watchedAt: true,
-      },
+      where: and(eq(titles.userId, userId), isNotNull(titles.catalogId)),
+      columns: { id: true, watchedAt: true },
+      with: { catalog: { columns: { tmdbId: true, kind: true } } },
     }),
     db.query.lists.findFirst({
       where: and(eq(lists.userId, userId), eq(lists.slug, WATCHLIST_SLUG)),
@@ -482,15 +543,15 @@ export const getUserTmdbIndex = cache(async (): Promise<UserTmdbEntry[]> => {
   const watchlistIds = new Set(watchlist?.items.map((item) => item.titleId) ?? []);
 
   return titleRows.flatMap((title) => {
-    if (title.tmdbId == null) {
+    if (!title.catalog) {
       return [];
     }
 
     return [
       {
         titleId: title.id,
-        tmdbId: title.tmdbId,
-        kind: title.kind,
+        tmdbId: title.catalog.tmdbId,
+        kind: title.catalog.kind,
         inWatchlist: watchlistIds.has(title.id),
         watched: title.watchedAt != null,
       },

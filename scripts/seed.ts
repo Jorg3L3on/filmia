@@ -6,6 +6,7 @@ loadEnv({ path: ".env.local" });
 loadEnv();
 
 import {
+  catalog,
   db,
   listItems,
   lists,
@@ -16,6 +17,7 @@ import {
   type TitleKind,
 } from "../src/db/index";
 import { hashPassword } from "../src/lib/auth/password";
+import { findOrCreateCatalog } from "../src/lib/catalog";
 import { DEFAULT_LISTS, WATCHLIST_SLUG } from "../src/lib/lists";
 
 if (!process.env.DATABASE_URL) {
@@ -474,21 +476,32 @@ const seed = async () => {
   }
 
   for (const [index, title] of seedTitles.entries()) {
+    // The film lives once in Catalog; the demo user's row only carries personal fields.
+    const { row: film } = await findOrCreateCatalog({
+      tmdbId: title.tmdbId,
+      kind: title.kind,
+      name: title.name,
+      originalName: title.originalName,
+      year: title.year,
+      posterPath: title.posterPath,
+    });
     const existing = await db.query.titles.findFirst({
-      where: and(eq(titles.userId, userId), eq(titles.name, title.name), eq(titles.year, title.year)),
+      where: and(eq(titles.userId, userId), eq(titles.catalogId, film.id)),
     });
 
     const data = {
       userId,
-      name: title.name,
-      originalName: title.originalName,
-      kind: title.kind,
-      year: title.year,
+      catalogId: film.id,
+      // Snapshot columns until 0010 drops them; reads go through the catalog.
+      name: film.name,
+      originalName: film.originalName,
+      kind: film.kind,
+      year: film.year,
+      tmdbId: film.tmdbId,
+      posterPath: film.posterPath,
       rating: title.rating ?? null,
       review: title.review ?? null,
       platform: title.platform ?? null,
-      tmdbId: title.tmdbId,
-      posterPath: title.posterPath,
       watchedAt: title.watched
         ? new Date(`${title.year}-06-15T12:00:00.000Z`)
         : null,
@@ -522,19 +535,35 @@ const seed = async () => {
   }
 
   for (const item of watchlistQueue) {
+    const { row: film } = await findOrCreateCatalog({
+      tmdbId: item.tmdbId,
+      kind: item.kind,
+      name: item.name,
+      year: item.year,
+      posterPath: item.posterPath,
+    });
+    // Demo metadata goes on the shared row (the seed is the source of truth for the demo).
+    await db
+      .update(catalog)
+      .set({
+        imdbRating: item.imdbRating ?? null,
+        overview: item.overview ?? null,
+        tmdbGenres: item.tmdbGenres ?? [],
+        watchProvidersMx: item.watchProvidersMx ?? null,
+        watchProvidersFetchedAt: item.watchProvidersMx ? new Date() : null,
+      })
+      .where(eq(catalog.id, film.id));
     const existing = await db.query.titles.findFirst({
-      where: and(eq(titles.userId, userId), eq(titles.name, item.name), eq(titles.year, item.year)),
+      where: and(eq(titles.userId, userId), eq(titles.catalogId, film.id)),
     });
 
     const queueData = {
-      kind: item.kind,
+      catalogId: film.id,
+      kind: film.kind,
+      year: film.year,
+      tmdbId: film.tmdbId,
+      posterPath: film.posterPath,
       platform: item.platform ?? null,
-      tmdbId: item.tmdbId,
-      posterPath: item.posterPath,
-      imdbRating: item.imdbRating ?? null,
-      overview: item.overview ?? null,
-      tmdbGenres: item.tmdbGenres ?? [],
-      watchProvidersMx: item.watchProvidersMx ?? null,
       seriesStatus: item.kind === "SERIES" ? (item.seriesStatus ?? null) : null,
       seriesSeason: item.kind === "SERIES" ? (item.seriesSeason ?? null) : null,
     };
@@ -554,8 +583,7 @@ const seed = async () => {
       await db.insert(titles).values({
         id: savedId,
         userId,
-        name: item.name,
-        year: item.year,
+        name: film.name,
         ...queueData,
       });
     }

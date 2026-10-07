@@ -323,7 +323,15 @@ export const listItemsRelations = relations(listItems, ({ one }) => ({
 
 export type User = typeof users.$inferSelect;
 export type CatalogRow = typeof catalog.$inferSelect;
-export type Title = typeof titles.$inferSelect;
+/** The personal row as stored (until 0010 it still carries stale metadata columns). */
+export type UserTitle = typeof titles.$inferSelect;
+/** What `Catalog` contributes to a flattened title. */
+export type CatalogFields = Omit<CatalogRow, "id" | "createdAt" | "updatedAt">;
+/**
+ * What the app works with: the personal row with its shared catalog spread on
+ * top (see `flattenTitle`). Components never see the two tables separately.
+ */
+export type Title = UserTitle & CatalogFields & { catalogId: string };
 export type List = typeof lists.$inferSelect;
 export type ListItem = typeof listItems.$inferSelect;
 export type TonightPickRow = typeof tonightPicks.$inferSelect;

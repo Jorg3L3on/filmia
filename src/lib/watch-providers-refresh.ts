@@ -1,5 +1,5 @@
-import { and, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
-import { db, titles } from "@/db";
+import { exists, isNull, lt, or, sql } from "drizzle-orm";
+import { catalog, db, titles } from "@/db";
 import { runPool } from "@/lib/run-pool";
 import { WATCH_PROVIDERS_CACHE_TTL_MS } from "@/lib/watch-providers";
 import { refreshWatchProvidersMx } from "@/lib/watch-providers-cache";
@@ -14,30 +14,34 @@ export type WatchProvidersRefreshSummary = {
 };
 
 /**
- * Refreshes the oldest MX availability caches across all users. Watchlist
- * (unwatched) titles go first — that is where «¿dónde la veo hoy?» matters —
- * then never-checked titles, then the stalest caches.
+ * Refreshes the oldest MX availability caches, one lookup per film (the
+ * catalog is shared, so the daily budget covers distinct titles, not copies).
+ * Films somebody still has unwatched go first — that is where «¿dónde la veo
+ * hoy?» matters — then never-checked rows, then the stalest caches.
  */
 export const refreshStaleWatchProviders = async (
   limit = WATCH_PROVIDERS_REFRESH_BATCH,
 ): Promise<WatchProvidersRefreshSummary> => {
   const staleBefore = new Date(Date.now() - WATCH_PROVIDERS_CACHE_TTL_MS);
+  const unwatchedSomewhere = exists(
+    db
+      .select({ one: sql`1` })
+      .from(titles)
+      .where(sql`${titles.catalogId} = ${catalog.id} AND ${titles.watchedAt} IS NULL`),
+  );
 
   const rows = await db
-    .select({ id: titles.id, tmdbId: titles.tmdbId, kind: titles.kind })
-    .from(titles)
+    .select({ id: catalog.id, tmdbId: catalog.tmdbId, kind: catalog.kind })
+    .from(catalog)
     .where(
-      and(
-        isNotNull(titles.tmdbId),
-        or(
-          isNull(titles.watchProvidersFetchedAt),
-          lt(titles.watchProvidersFetchedAt, staleBefore),
-        ),
+      or(
+        isNull(catalog.watchProvidersFetchedAt),
+        lt(catalog.watchProvidersFetchedAt, staleBefore),
       ),
     )
     .orderBy(
-      sql`${titles.watchedAt} IS NOT NULL`,
-      sql`${titles.watchProvidersFetchedAt} ASC NULLS FIRST`,
+      sql`CASE WHEN ${unwatchedSomewhere} THEN 0 ELSE 1 END`,
+      sql`${catalog.watchProvidersFetchedAt} ASC NULLS FIRST`,
     )
     .limit(limit);
 
@@ -45,10 +49,6 @@ export const refreshStaleWatchProviders = async (
   let failed = 0;
 
   await runPool(rows, WATCH_PROVIDERS_REFRESH_CONCURRENCY, async (row) => {
-    if (row.tmdbId == null) {
-      return;
-    }
-
     try {
       await refreshWatchProvidersMx(row.id, row.tmdbId, row.kind);
       refreshed += 1;

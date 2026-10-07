@@ -11,6 +11,8 @@ const extrasSynopsis = (overview?: string | null) => {
 export type TitleExtrasRow = {
   id: string;
   userId: string;
+  /** Shared film row the extras are persisted to. */
+  catalogId: string;
   tmdbId: number | null;
   kind: TitleKind;
   posterPath: string | null;

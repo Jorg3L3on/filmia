@@ -1,7 +1,7 @@
 "use server";
 
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
-import { db, listItems, lists, titles, users, type TitleKind } from "@/db";
+import { catalog, db, listItems, lists, titles, users, type TitleKind } from "@/db";
 import { refreshSessionUser } from "@/lib/auth";
 import { upsertTitleFromTmdbForUser } from "@/lib/add-title-from-tmdb";
 import { ensureDefaultLists, FAVORITAS_SLUG, WATCHLIST_SLUG } from "@/lib/lists";
@@ -235,15 +235,18 @@ const enrichQueueInline = async (userId: string) => {
       items: {
         with: {
           title: {
-            columns: {
-              id: true,
-              tmdbId: true,
-              kind: true,
-              name: true,
-              watchedAt: true,
-              runtimeMinutes: true,
-              watchProvidersMx: true,
-              tmdbGenres: true,
+            columns: { id: true, watchedAt: true },
+            with: {
+              catalog: {
+                columns: {
+                  id: true,
+                  tmdbId: true,
+                  kind: true,
+                  name: true,
+                  runtimeMinutes: true,
+                  watchProvidersMx: true,
+                },
+              },
             },
           },
         },
@@ -251,13 +254,13 @@ const enrichQueueInline = async (userId: string) => {
       },
     },
   });
+  // The gaps live on the shared catalog row; filling them helps every user who has the film.
   const pending = (watchlist?.items ?? [])
-    .map((item) => item.title)
+    .flatMap((item) =>
+      item.title.catalog && item.title.watchedAt == null ? [item.title.catalog] : [],
+    )
     .filter(
-      (title) =>
-        title.tmdbId != null &&
-        title.watchedAt == null &&
-        (title.runtimeMinutes == null || !parseStoredWatchProviders(title.watchProvidersMx)),
+      (film) => film.runtimeMinutes == null || !parseStoredWatchProviders(film.watchProvidersMx),
     )
     .slice(0, 12);
 
@@ -266,18 +269,17 @@ const enrichQueueInline = async (userId: string) => {
   }
 
   await withTimeout(
-    runPool(pending, 4, async (title) => {
-      const tmdbId = title.tmdbId as number;
+    runPool(pending, 4, async (film) => {
       const tasks: Promise<unknown>[] = [];
-      if (!parseStoredWatchProviders(title.watchProvidersMx)) {
-        tasks.push(refreshWatchProvidersMx(title.id, tmdbId, title.kind).catch(() => null));
+      if (!parseStoredWatchProviders(film.watchProvidersMx)) {
+        tasks.push(refreshWatchProvidersMx(film.id, film.tmdbId, film.kind).catch(() => null));
       }
-      if (title.runtimeMinutes == null) {
+      if (film.runtimeMinutes == null) {
         tasks.push(
-          resolveTitleMetadata(tmdbId, title.kind)
+          resolveTitleMetadata(film.tmdbId, film.kind)
             .then((resolved) =>
               db
-                .update(titles)
+                .update(catalog)
                 .set({
                   runtimeMinutes: resolved.runtimeMinutes ?? null,
                   imdbId: resolved.imdbId,
@@ -289,10 +291,10 @@ const enrichQueueInline = async (userId: string) => {
                   tmdbKeywords: resolved.tmdbKeywords ?? [],
                   tmdbPeople: resolved.tmdbPeople ?? [],
                   originalLanguage: resolved.originalLanguage ?? null,
-                  posterPath: sql`COALESCE(${titles.posterPath}, ${resolved.posterPath})`,
+                  posterPath: sql`COALESCE(${catalog.posterPath}, ${resolved.posterPath})`,
                   backdropPath: resolved.backdropPath ?? null,
                 })
-                .where(eq(titles.id, title.id)),
+                .where(eq(catalog.id, film.id)),
             )
             .catch(() => null),
         );
