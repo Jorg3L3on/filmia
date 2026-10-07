@@ -33,7 +33,7 @@ export default function SearchPage({
     <div className="mx-auto max-w-2xl space-y-6">
       <PageHeader
         title="Buscar"
-        description="Añade a Quiero ver, márcala vista o guárdala en una o varias listas."
+        description="Lo que añades se guarda en tu Filmia: en Quiero ver, como vista o en tus listas."
       />
       <Suspense fallback={<SearchBodySkeleton />}>
         <SearchBody searchParams={searchParams} />

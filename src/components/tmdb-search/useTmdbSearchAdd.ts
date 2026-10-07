@@ -37,6 +37,10 @@ type UseTmdbSearchAddArgs = {
   memberships?: Record<string, string[]>;
 };
 
+/** A title new to the user's catalog says where it went (#104 ítem 9). */
+const savedInFilmiaCopy = (name: string, created: boolean) =>
+  created ? `${name} · se guarda en tu Filmia` : name;
+
 export const useTmdbSearchAdd = ({
   configuredTmdb,
   existing,
@@ -172,10 +176,11 @@ export const useTmdbSearchAdd = ({
         inWatchlist: outcome.addedToWatchlist || destination === "watchlist",
         watched: outcome.markedWatched || destination === "watched",
       });
+      const description = savedInFilmiaCopy(result.name, outcome.created);
       showToast(
         destination === "watchlist"
-          ? { title: "En Quiero ver", description: result.name }
-          : { title: "Marcada como vista", description: result.name },
+          ? { title: "En Quiero ver", description }
+          : { title: "Marcada como vista", description },
       );
     });
   };
@@ -233,7 +238,9 @@ export const useTmdbSearchAdd = ({
           inWatchlist: watchlistId ? selectedIds.includes(watchlistId) : Boolean(previous?.inWatchlist),
           watched: Boolean(previous?.watched),
         });
-        showToast(listSelectionToast(lists, diff, result.name));
+        showToast(
+          listSelectionToast(lists, diff, savedInFilmiaCopy(result.name, outcome.created)),
+        );
         resolve(true);
       });
     });
