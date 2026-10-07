@@ -13,7 +13,6 @@ import {
   type GoogleIdentity,
 } from "@/lib/google-oauth";
 import { ensureDefaultLists } from "@/lib/lists";
-import { ensureDefaultTags } from "@/lib/tags";
 
 export type GoogleSignInConfig = {
   clientId: string;
@@ -124,7 +123,7 @@ const SESSION_COLUMNS = { id: true, email: true, name: true, onboardedAt: true }
  * Resolve the Filmia account for a verified Google identity:
  * 1. already linked by Google id;
  * 2. same email → link it (Google verified the address, so auto-link is safe);
- * 3. otherwise create a password-less account with the default lists and tags.
+ * 3. otherwise create a password-less account with the default lists.
  */
 export const findOrCreateGoogleUser = async (
   identity: GoogleIdentity,
@@ -163,7 +162,7 @@ export const findOrCreateGoogleUser = async (
     name: identity.name,
     passwordHash: null,
   });
-  await Promise.all([ensureDefaultLists(id), ensureDefaultTags(id)]);
+  await ensureDefaultLists(id);
 
   return {
     user: { id, email: identity.email, name: identity.name },

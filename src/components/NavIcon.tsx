@@ -61,19 +61,6 @@ export const NavIcon = ({
     );
   }
 
-  if (name === "tag") {
-    return (
-      <svg {...common}>
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M4.75 12.6V5.75a1 1 0 0 1 1-1h6.85a1 1 0 0 1 .7.3l6.2 6.2a1 1 0 0 1 0 1.4l-6.85 6.85a1 1 0 0 1-1.4 0l-6.2-6.2a1 1 0 0 1-.3-.7Z"
-        />
-        <circle cx="8.75" cy="8.75" r="1.25" />
-      </svg>
-    );
-  }
-
   if (name === "profile") {
     return (
       <svg {...common}>

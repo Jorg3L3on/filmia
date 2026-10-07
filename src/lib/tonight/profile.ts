@@ -32,7 +32,6 @@ export type TasteProfile = {
   size: number;
   anchors: TasteAnchor[];
   genreAffinity: Map<number, number>;
-  tagAffinity: Map<string, number>;
   people: Map<number, PersonAffinity>;
 };
 
@@ -81,7 +80,6 @@ export const buildTasteProfile = (
 
   const vector: FeatureVector = new Map();
   const genreAffinity = new Map<number, number>();
-  const tagAffinity = new Map<string, number>();
   const people = new Map<number, PersonAffinity>();
   const anchors: TasteAnchor[] = [];
 
@@ -95,9 +93,6 @@ export const buildTasteProfile = (
 
     for (const genre of title.genres) {
       genreAffinity.set(genre.id, (genreAffinity.get(genre.id) ?? 0) + weight);
-    }
-    for (const tag of title.tags) {
-      tagAffinity.set(tag.slug, (tagAffinity.get(tag.slug) ?? 0) + weight);
     }
     for (const person of title.people) {
       if (person.role === "cast") {
@@ -153,7 +148,6 @@ export const buildTasteProfile = (
     size: watched.length,
     anchors: anchors.slice(0, ANCHOR_LIMIT),
     genreAffinity,
-    tagAffinity,
     people,
   };
 };

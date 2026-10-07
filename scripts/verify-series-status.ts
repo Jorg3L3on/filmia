@@ -1,7 +1,7 @@
 import { SeriesStatus, TitleKind } from "../src/db";
 import { parseSeriesSeason, parseSeriesStatus } from "../src/lib/form-data";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "../src/lib/series";
-import { catalogHref } from "../src/lib/tags";
+import { catalogHref } from "../src/lib/catalog-href";
 
 const assert = (condition: unknown, message: string) => {
   if (!condition) {
@@ -57,10 +57,9 @@ const run = () => {
   );
   assert(
     catalogHref("/", {
-      tags: ["sci-fi"],
       minePlatforms: true,
       seriesStatus: "NONE",
-    }) === "/?tag=sci-fi&minePlatforms=1&seriesStatus=NONE",
+    }) === "/?minePlatforms=1&seriesStatus=NONE",
     "Catalog href should keep seriesStatus with other filters",
   );
   assert(

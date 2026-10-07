@@ -14,13 +14,12 @@ import { parseKindFilter, parsePlatformFilters, titleMatchesKind } from "@/lib/c
 import type { CatalogQuery } from "@/lib/catalog-href";
 import {
   getCurrentUserProfile,
-  getTagFilters,
   getUserStreamingPlatforms,
   getWatchlist,
 } from "@/lib/queries";
 import { scheduleMissingTitleOverviews } from "@/lib/title-overview-schedule";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
-import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
+import { catalogHref, parseMinePlatforms } from "@/lib/catalog-href";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
 import { parseNightEnds } from "@/lib/tonight/time";
 import { buildWatchlistFichas, type WatchlistSignals } from "@/lib/watchlist-ficha";
@@ -45,7 +44,6 @@ type WatchlistSearchParams = {
   minePlatforms?: string | string[];
   platform?: string | string[];
   sort?: string | string[];
-  tag?: string | string[];
   seriesStatus?: string | string[];
   tonight?: string | string[];
   short?: string | string[];
@@ -86,7 +84,6 @@ const WatchlistBody = async ({
   const minePlatforms = parseMinePlatforms(params.minePlatforms);
   const platforms = parsePlatformFilters(params.platform);
   const sort = parseWatchlistSort(params.sort);
-  const selectedTags = parseTagSlugs(params.tag);
   const seriesStatus = parseSeriesStatusFilter(params.seriesStatus);
   const tonight = parseFlag(params.tonight);
   const short = parseFlag(params.short);
@@ -94,10 +91,9 @@ const WatchlistBody = async ({
   const genreIds = parseGenreIds(params.genre);
   const now = new Date();
 
-  const [watchlist, userPlatforms, tags, profile] = await Promise.all([
+  const [watchlist, userPlatforms, profile] = await Promise.all([
     getWatchlist(),
     getUserStreamingPlatforms(),
-    getTagFilters(),
     getCurrentUserProfile(),
   ]);
 
@@ -105,7 +101,6 @@ const WatchlistBody = async ({
   const kindItems = rawItems.filter(
     (item) =>
       titleMatchesKind(item.title.kind, kindFilter) &&
-      titleMatchesAnyTag(item.title.tags, selectedTags) &&
       titleMatchesSeriesStatus(item.title, seriesStatus),
   );
   const catalog = resolveCatalogAvailability(
@@ -134,7 +129,6 @@ const WatchlistBody = async ({
   const clearHref = catalogHref("/watchlist");
   const hasExtraFilters =
     kindFilter !== "ALL" ||
-    selectedTags.length > 0 ||
     Boolean(seriesStatus) ||
     platforms.length > 0 ||
     minePlatforms ||
@@ -145,7 +139,6 @@ const WatchlistBody = async ({
     genreIds.length > 0;
 
   const railQuery: CatalogQuery = {
-    tags: selectedTags,
     sort,
     minePlatforms,
     seriesStatus,
@@ -160,8 +153,6 @@ const WatchlistBody = async ({
   return (
     <>
       <CatalogFilters
-        tags={tags}
-        selectedSlugs={selectedTags}
         pathname="/watchlist"
         kind={kindFilter}
         platforms={platforms}
@@ -199,9 +190,8 @@ const WatchlistBody = async ({
           <MinePlatformsEmpty
             userPlatforms={platforms.length > 0 ? platforms : userPlatforms}
             actionHref={clearHref}
-            hasTagFilters={
+            hasFilters={
               kindFilter !== "ALL" ||
-              selectedTags.length > 0 ||
               Boolean(seriesStatus) ||
               short ||
               awarded ||

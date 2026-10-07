@@ -4,12 +4,10 @@ import { TitleListsPanel } from "@/components/TitleListsPanel";
 import { TitlePosterRail } from "@/components/TitlePosterRail";
 import { TitleSaveCta } from "@/components/TitleSaveCta";
 import { TitleSynopsis } from "@/components/TitleSynopsis";
-import { TitleTagsPanel } from "@/components/TitleTagsPanel";
 import { WatchProvidersMx } from "@/components/WatchProvidersMx";
 import { TitleKind } from "@/db";
 import { WATCHLIST_SLUG } from "@/lib/lists";
 import { formatRuntime, TITLE_KIND_LABEL } from "@/lib/labels";
-import type { FilterTag } from "@/lib/queries";
 import { isTmdbConfigured, tmdbBackdropUrl, type TmdbTitleExtras } from "@/lib/tmdb";
 import type { WatchProvidersResult } from "@/lib/watch-providers-cache";
 import type { getAssignableLists, getRelatedTitles, getTitleById, getUserStreamingPlatforms } from "@/lib/queries";
@@ -91,13 +89,11 @@ export const TitleHeroBlock = async ({
 export const TitleActionsBlock = async ({
   title,
   listsPromise,
-  tagsPromise,
 }: {
   title: TitleDetail;
   listsPromise: Promise<AssignableLists>;
-  tagsPromise: Promise<FilterTag[]>;
 }) => {
-  const [assignableLists, tags] = await Promise.all([listsPromise, tagsPromise]);
+  const assignableLists = await listsPromise;
   const { memberLists, memberListIds, inWatchlist, inCustomList } = titleMembership(title);
   const listsPanel = (
     <TitleListsPanel
@@ -124,13 +120,6 @@ export const TitleActionsBlock = async ({
         rating={title.rating}
         review={title.review}
         listsPanel={listsPanel}
-        tagsPanel={
-          <TitleTagsPanel
-            titleId={title.id}
-            tags={tags}
-            selectedTagIds={title.tags.map((item) => item.tagId)}
-          />
-        }
       />
     </>
   );

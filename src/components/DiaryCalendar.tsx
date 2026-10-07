@@ -22,7 +22,7 @@ import { dayCellOpensSheet, extraDayBadge } from "@/lib/diary-day";
 import { staggerStyle, useLongPress } from "@/lib/motion";
 import type { CatalogKindFilter } from "@/lib/catalog-href";
 import type { SeriesStatusFilter } from "@/lib/series";
-import type { CatalogSort } from "@/lib/tags";
+import type { CatalogSort } from "@/lib/catalog-href";
 import { focusRing } from "@/lib/ui";
 import type { Platform } from "@/db";
 
@@ -32,7 +32,6 @@ type DiaryCalendarProps = {
   titles: DiaryCalendarTitle[];
   month: string;
   selectedDay: string | null;
-  tags?: string[];
   minePlatforms?: boolean;
   seriesStatus?: SeriesStatusFilter;
   kind?: CatalogKindFilter;

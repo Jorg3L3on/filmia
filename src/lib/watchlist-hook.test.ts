@@ -33,7 +33,6 @@ const title = (overrides: Partial<TonightTitle> = {}): TonightTitle => ({
   review: null,
   seriesStatus: null,
   seriesSeason: null,
-  tags: [],
   listSlugs: [],
   availableSince: null,
   createdAt: new Date(NOW.getTime() - 40 * DAY),

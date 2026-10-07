@@ -1,14 +1,13 @@
 import { CoverflowDeck } from "@/components/CoverflowDeck";
 import { DeckViewToggle, type DeckViewMode } from "@/components/DeckViewToggle";
 import { PosterTile } from "@/components/PosterTile";
-import type { Platform } from "@/db";
+import type { Platform, Title } from "@/db";
 import { toCoverflowTitle } from "@/lib/coverflow-title";
-import type { TitleWithTags } from "@/lib/queries";
 import { eyebrowClass } from "@/lib/ui";
 import { staggerStyle } from "@/lib/motion-style";
 
 type TitleDeckViewProps = {
-  titles: TitleWithTags[];
+  titles: Title[];
   mode?: DeckViewMode;
   modes?: DeckViewMode[];
   hrefFor?: (mode: DeckViewMode) => string;
@@ -16,7 +15,6 @@ type TitleDeckViewProps = {
   showToggle?: boolean;
   userPlatforms?: readonly Platform[];
   footer?: "full" | "watched";
-  tagId?: string;
 };
 
 export { toCoverflowTitle } from "@/lib/coverflow-title";
@@ -30,7 +28,6 @@ export const TitleDeckView = ({
   showToggle = true,
   userPlatforms = [],
   footer = "full",
-  tagId,
 }: TitleDeckViewProps) => {
   if (titles.length === 0) {
     return null;
@@ -62,7 +59,6 @@ export const TitleDeckView = ({
         <CoverflowDeck
           titles={titles.map((title) => toCoverflowTitle(title, userPlatforms))}
           footer={footer}
-          tagId={tagId}
           className={cinematic ? "min-h-0 flex-1" : undefined}
         />
       ) : mode === "calendar" ? null : (
@@ -82,7 +78,6 @@ export const TitleDeckView = ({
                   rating={title.rating}
                   review={title.review}
                   watchedAt={title.watchedAt}
-                  tags={title.tags.map((item) => item.tag)}
                   seriesStatus={title.kind === "SERIES" ? title.seriesStatus : null}
                   showMarkSeenEye={footer === "watched"}
                 />

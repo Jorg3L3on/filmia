@@ -160,12 +160,6 @@ export const parsePasswordChange = (formData: FormData) => {
   return { currentPassword, newPassword };
 };
 
-export const parseNewTags = (value: FormDataEntryValue | null) =>
-  asString(value)
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-
 export const parseSeriesStatus = (
   value: FormDataEntryValue | null,
 ): SeriesStatus | null => {

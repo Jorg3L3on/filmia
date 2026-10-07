@@ -5,7 +5,6 @@ import { AppShell } from "@/components/AppShell";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { ensureDefaultLists } from "@/lib/lists";
 import { auth } from "@/lib/session";
-import { ensureDefaultTags } from "@/lib/tags";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -59,7 +58,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   if (session?.user?.id) {
     const userId = session.user.id;
     scheduleAfterResponse(async () => {
-      await Promise.all([ensureDefaultLists(userId), ensureDefaultTags(userId)]);
+      await ensureDefaultLists(userId);
     });
   }
 

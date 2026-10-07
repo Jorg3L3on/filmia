@@ -7,7 +7,7 @@ Canonical tokens live in `src/app/globals.css` (`:root` + comment block).
 | Token | ms | Use |
 | --- | ---: | --- |
 | `--duration-press` | 160 | press-scale |
-| `--duration-tab` | 200 | `.tab-transition` (bottom nav, Listas\|Etiquetas, toggles) |
+| `--duration-tab` | 200 | `.tab-transition` (bottom nav, toggles) |
 | `--duration-hover` | 220 | `.card-physics` hover |
 | `--duration-enter` / `--duration-toast` | 280 | fade-up, toast in/out |
 | `--duration-morph` | 380 | SharedPoster ViewTransition `poster-{id}` |
@@ -57,7 +57,7 @@ Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` 
 
 ## SharedPoster
 
-React `<ViewTransition name={\`poster-${id}\`} share="morph">` via `SharedPoster` on tile → ficha paths (lists, tags results, buscar, deck, calendar, rail, ranking, watchlist).
+React `<ViewTransition name={\`poster-${id}\`} share="morph">` via `SharedPoster` on tile → ficha paths (lists, buscar, deck, calendar, rail, ranking, watchlist).
 
 `poster-{id}` must be mounted at most once per page. Where the same title can appear twice (PosterStack, the watchlist stage, the Perfil week strip next to «Últimas entradas»), pass `share={false}` to the secondary occurrence so only one tile owns the morph.
 

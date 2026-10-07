@@ -2,7 +2,6 @@ import Link from "next/link";
 import { MarkSeenEye } from "@/components/MarkSeenEye";
 import { PosterImage } from "@/components/PosterImage";
 import { SharedPoster } from "@/components/SharedPoster";
-import { TagPills } from "@/components/TagPills";
 import { WatchedBadge } from "@/components/WatchedBadge";
 import { SeriesStatusBadge } from "@/components/SeriesStatusBadge";
 import { cn } from "@/lib/cn";
@@ -24,7 +23,6 @@ type PosterTileProps = {
   caption?: string;
   className?: string;
   sizes?: string;
-  tags?: Array<{ id: string; name: string; slug: string }>;
   showMarkSeenEye?: boolean;
 };
 
@@ -41,7 +39,6 @@ export const PosterTile = ({
   caption,
   className,
   sizes,
-  tags = [],
   showMarkSeenEye = false,
 }: PosterTileProps) => {
   const watched = Boolean(watchedAt);
@@ -105,11 +102,6 @@ export const PosterTile = ({
           <p className="truncate text-[11px] text-mist">{caption ?? meta}</p>
         ) : null}
       </Link>
-      {tags.length > 0 ? (
-        <div className="mt-1.5">
-          <TagPills tags={tags} compact />
-        </div>
-      ) : null}
     </article>
   );
 };

@@ -7,15 +7,12 @@ import {
   db,
   listItems,
   lists,
-  tags,
-  titleTags,
   titles,
   type SeriesStatus,
   type TitleKind,
 } from "@/db";
 import {
   parseIdList,
-  parseNewTags,
   parseOptionalDate,
   parseOptionalReview,
   parsePlatform,
@@ -30,7 +27,7 @@ import {
   type AddTitleFromTmdbInput,
   type AddTitleFromTmdbResult,
 } from "@/lib/add-title-from-tmdb";
-import { slugify, SERIES_STATUSES } from "@/lib/labels";
+import { SERIES_STATUSES } from "@/lib/labels";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import {
   enrichMetadataOnSave,
@@ -56,51 +53,6 @@ const revalidateCatalog = (titleId?: string) => {
 
 const seriesProgressData = (kind: TitleKind) =>
   kind === "SERIES" ? {} : { seriesStatus: null, seriesSeason: null };
-
-const syncTags = async (userId: string, titleId: string, tagIds: string[], newTags: string[]) => {
-  const createdIds: string[] = [];
-
-  if (newTags.length > 0) {
-    const prepared = newTags.map((name) => ({
-      name,
-      slug: slugify(name) || `tag-${crypto.randomUUID().slice(0, 8)}`,
-    }));
-    const slugs = prepared.map((item) => item.slug);
-    const existingRows = await db.query.tags.findMany({
-      where: and(eq(tags.userId, userId), inArray(tags.slug, slugs)),
-    });
-    const bySlug = new Map(existingRows.map((row) => [row.slug, row]));
-
-    for (const item of prepared) {
-      const existing = bySlug.get(item.slug);
-      if (existing) {
-        if (existing.name !== item.name) {
-          await db.update(tags).set({ name: item.name }).where(eq(tags.id, existing.id));
-        }
-        createdIds.push(existing.id);
-        continue;
-      }
-
-      const tagId = createId();
-      await db.insert(tags).values({
-        id: tagId,
-        userId,
-        name: item.name,
-        slug: item.slug,
-      });
-      createdIds.push(tagId);
-    }
-  }
-
-  const nextIds = [...new Set([...tagIds, ...createdIds])];
-
-  await db.delete(titleTags).where(eq(titleTags.titleId, titleId));
-  if (nextIds.length === 0) {
-    return;
-  }
-
-  await db.insert(titleTags).values(nextIds.map((tagId) => ({ titleId, tagId })));
-};
 
 const syncLists = async (userId: string, titleId: string, listIds: string[]) => {
   const collectionLists = await db.query.lists.findMany({
@@ -149,8 +101,6 @@ const readTitleFields = (formData: FormData) => ({
   review: parseOptionalReview(formData.get("review")),
   platform: parsePlatform(formData.get("platform")),
   watchedAt: parseOptionalDate(formData.get("watchedAt")),
-  tagIds: parseIdList(formData, "tagIds"),
-  newTags: parseNewTags(formData.get("newTags")),
   listIds: parseIdList(formData, "listIds"),
 });
 
@@ -237,7 +187,6 @@ export const createTitle = async (formData: FormData) => {
     ...seriesProgressData(fields.kind),
   });
 
-  await syncTags(userId, titleId, fields.tagIds, fields.newTags);
   await syncLists(userId, titleId, fields.listIds);
   scheduleTitleEnrichment(titleId, snapshot, fields.kind);
   revalidateCatalog(titleId);
@@ -287,7 +236,6 @@ export const updateTitle = async (titleId: string, formData: FormData) => {
     })
     .where(eq(titles.id, titleId));
 
-  await syncTags(userId, titleId, fields.tagIds, fields.newTags);
   await syncLists(userId, titleId, fields.listIds);
   scheduleTitleEnrichment(
     titleId,

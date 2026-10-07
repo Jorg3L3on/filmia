@@ -16,9 +16,8 @@ type WhySheetProps = {
   onClose: () => void;
 };
 
-const ICON: Record<ReasonKind, "spark" | "clock" | "hourglass" | "note" | "star" | "tv" | "tag"> = {
+const ICON: Record<ReasonKind, "spark" | "clock" | "hourglass" | "note" | "star" | "tv"> = {
   taste_anchor: "spark",
-  taste_tag: "tag",
   taste_person: "spark",
   quality: "star",
   fit: "clock",
@@ -143,7 +142,7 @@ const SparkIcon = () => (
   </svg>
 );
 
-const ReasonIcon = ({ kind }: { kind: "spark" | "clock" | "hourglass" | "note" | "star" | "tv" | "tag" }) => {
+const ReasonIcon = ({ kind }: { kind: "spark" | "clock" | "hourglass" | "note" | "star" | "tv" }) => {
   const common = { viewBox: "0 0 24 24", width: 16, height: 16, fill: "none", stroke: "currentColor", strokeWidth: 1.75, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true } as const;
   switch (kind) {
     case "clock":
@@ -156,8 +155,6 @@ const ReasonIcon = ({ kind }: { kind: "spark" | "clock" | "hourglass" | "note" |
       return <svg {...common}><path d="m12 3.6 2.35 4.76 5.25.76-3.8 3.7.9 5.23L12 15.58 7.3 18.05l.9-5.23-3.8-3.7 5.25-.76Z" /></svg>;
     case "tv":
       return <svg {...common}><rect x="3.5" y="5.5" width="17" height="11" rx="2" /><path d="M8.5 20h7" /></svg>;
-    case "tag":
-      return <svg {...common}><path d="M3 11.2V5a2 2 0 0 1 2-2h6.2a2 2 0 0 1 1.4.6l7.8 7.8a2 2 0 0 1 0 2.8l-6.2 6.2a2 2 0 0 1-2.8 0L3.6 12.6a2 2 0 0 1-.6-1.4Z" /><circle cx="8" cy="8" r="1.2" /></svg>;
     default:
       return <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 2.5c.6 3.9 2.6 5.9 6.5 6.5-3.9.6-5.9 2.6-6.5 6.5-.6-3.9-2.6-5.9-6.5-6.5 3.9-.6 5.9-2.6 6.5-6.5Z" /><path d="M5 15.5c.3 1.8 1.2 2.7 3 3-1.8.3-2.7 1.2-3 3-.3-1.8-1.2-2.7-3-3 1.8-.3 2.7-1.2 3-3Z" /></svg>;
   }

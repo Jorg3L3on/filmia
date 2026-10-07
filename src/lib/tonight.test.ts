@@ -49,7 +49,6 @@ const title = (
   review: null,
   seriesStatus: null,
   seriesSeason: null,
-  tags: [],
   listSlugs: [],
   availableSince: null,
   createdAt: new Date(NOW.getTime() - 200 * DAY),

@@ -1,6 +1,6 @@
 import type { TonightTitle } from "@/lib/tonight/types";
 
-/** Sparse feature vector keyed by `g:18`, `k:4565`, `p:525`, `t:vibe-tron`… */
+/** Sparse feature vector keyed by `g:18`, `k:4565`, `p:525`, `d:1980`… */
 export type FeatureVector = Map<string, number>;
 
 export const FEATURE_WEIGHTS = {
@@ -11,7 +11,6 @@ export const FEATURE_WEIGHTS = {
   cast: 0.5,
   decade: 0.4,
   language: 0.3,
-  tag: 1.5,
   kind: 0.2,
 } as const;
 
@@ -61,10 +60,6 @@ export const itemVector = (title: TonightTitle): FeatureVector => {
 
   if (title.originalLanguage) {
     bump(vector, `l:${title.originalLanguage}`, FEATURE_WEIGHTS.language);
-  }
-
-  for (const tag of title.tags) {
-    bump(vector, `t:${tag.slug}`, FEATURE_WEIGHTS.tag);
   }
 
   bump(vector, `kind:${title.kind}`, FEATURE_WEIGHTS.kind);

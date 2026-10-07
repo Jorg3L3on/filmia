@@ -3,7 +3,7 @@ import { PosterStack, type PosterStackItem } from "@/components/PosterStack";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
 
-/** Wrapping 3-up grid for `layout="grid"` cards (Personalizadas, Etiquetas). */
+/** Wrapping 3-up grid for `layout="grid"` cards (Personalizadas). */
 export const listCardGridClass = "grid grid-cols-3 gap-x-3 gap-y-5 sm:gap-10 lg:grid-cols-4";
 
 type ListCardProps = {
@@ -15,8 +15,6 @@ type ListCardProps = {
   posters: PosterStackItem[];
   /** `rail`: fixed width for horizontal scroll; `grid`: fills its grid cell. */
   layout?: "rail" | "grid";
-  /** Singular/plural noun for the count line. */
-  countNoun?: [singular: string, plural: string];
 };
 
 export const ListCard = ({
@@ -25,9 +23,8 @@ export const ListCard = ({
   itemCount,
   posters,
   layout = "rail",
-  countNoun = ["película", "películas"],
 }: ListCardProps) => {
-  const countLabel = `${itemCount} ${itemCount === 1 ? countNoun[0] : countNoun[1]}`;
+  const countLabel = `${itemCount} ${itemCount === 1 ? "película" : "películas"}`;
 
   return (
     <Link

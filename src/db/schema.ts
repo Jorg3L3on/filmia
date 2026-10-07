@@ -142,38 +142,6 @@ export const titles = pgTable(
   ],
 );
 
-export const tags = pgTable(
-  "Tag",
-  {
-    id: text("id").primaryKey(),
-    userId: text("userId")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    name: text("name").notNull(),
-    slug: text("slug").notNull(),
-    createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    uniqueIndex("Tag_userId_slug_key").on(table.userId, table.slug),
-    index("Tag_userId_idx").on(table.userId),
-  ],
-);
-
-export const titleTags = pgTable(
-  "TitleTag",
-  {
-    titleId: text("titleId")
-      .notNull()
-      .references(() => titles.id, { onDelete: "cascade" }),
-    tagId: text("tagId")
-      .notNull()
-      .references(() => tags.id, { onDelete: "cascade" }),
-  },
-  (table) => [primaryKey({ columns: [table.titleId, table.tagId] })],
-);
-
 export const lists = pgTable(
   "List",
   {
@@ -275,23 +243,11 @@ export const pickEvents = pgTable(
 export const usersRelations = relations(users, ({ many }) => ({
   titles: many(titles),
   lists: many(lists),
-  tags: many(tags),
 }));
 
 export const titlesRelations = relations(titles, ({ one, many }) => ({
   user: one(users, { fields: [titles.userId], references: [users.id] }),
-  tags: many(titleTags),
   listItems: many(listItems),
-}));
-
-export const tagsRelations = relations(tags, ({ one, many }) => ({
-  user: one(users, { fields: [tags.userId], references: [users.id] }),
-  titles: many(titleTags),
-}));
-
-export const titleTagsRelations = relations(titleTags, ({ one }) => ({
-  title: one(titles, { fields: [titleTags.titleId], references: [titles.id] }),
-  tag: one(tags, { fields: [titleTags.tagId], references: [tags.id] }),
 }));
 
 export const listsRelations = relations(lists, ({ one, many }) => ({
@@ -306,24 +262,15 @@ export const listItemsRelations = relations(listItems, ({ one }) => ({
 
 export type User = typeof users.$inferSelect;
 export type Title = typeof titles.$inferSelect;
-export type Tag = typeof tags.$inferSelect;
 export type List = typeof lists.$inferSelect;
 export type ListItem = typeof listItems.$inferSelect;
 export type TonightPickRow = typeof tonightPicks.$inferSelect;
 export type PickEventRow = typeof pickEvents.$inferSelect;
 
-export type TitleTagWithTag = typeof titleTags.$inferSelect & {
-  tag: Tag;
-};
-
 export type ListItemWithTitleRelations = typeof listItems.$inferSelect & {
-  title: TitleWithTags;
+  title: Title;
 };
 
-export type TitleWithTags = Title & {
-  tags: TitleTagWithTag[];
-};
-
-export type TitleWithRelations = TitleWithTags & {
+export type TitleWithRelations = Title & {
   listItems: (typeof listItems.$inferSelect & { list: List })[];
 };

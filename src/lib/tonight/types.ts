@@ -28,7 +28,6 @@ export type TonightTitle = {
   review: string | null;
   seriesStatus: SeriesStatus | null;
   seriesSeason: number | null;
-  tags: Array<{ id: string; name: string; slug: string }>;
   /** Slugs of fixed lists the title belongs to (favoritas, por-rewatch) + custom list ids. */
   listSlugs: string[];
   availableSince: Date | null;
@@ -76,7 +75,6 @@ export type TonightInput = {
 
 export type ReasonKind =
   | "taste_anchor"
-  | "taste_tag"
   | "taste_person"
   | "quality"
   | "fit"

@@ -157,7 +157,7 @@ const run = () => {
   );
   assert(
     rendering.includes("Route surface → decision") &&
-      AUTH_DYNAMIC_PAGES.length === 14 &&
+      AUTH_DYNAMIC_PAGES.length === 12 &&
       PUBLIC_STATIC_ELIGIBLE_PAGES.length === 2,
     "Rendering audit table documents route → dynamic/cached decisions",
   );
@@ -224,14 +224,14 @@ const run = () => {
     queries.includes("countByIds") &&
       !queries.includes("rows.map(async") &&
       !queries.includes("withCounts = await Promise.all"),
-    "List/tag counts stay batched via countByIds (no per-row count N+1)",
+    "List counts stay batched via countByIds (no per-row count N+1)",
   );
   assert(
     queries.includes("getRelatedTitles") &&
-      queries.includes("inArray(titleTags.tagId, tagIds)") &&
-      queries.includes("desc(titles.watchedAt)") &&
-      !queries.includes("selectDistinct({ titleId: titleTags.titleId })"),
-    "Ficha related titles are one select with inArray + watchedAt order",
+      queries.includes("jsonb_array_elements(${titles.tmdbGenres})") &&
+      queries.includes("desc(sharedGenres), desc(titles.watchedAt)") &&
+      !queries.includes("titleTags"),
+    "Ficha related titles are one select ranked by shared genres, then watchedAt",
   );
   assert(
     queries.includes("getListMetaById") &&
@@ -245,11 +245,6 @@ const run = () => {
       titleActions.includes("ownedSelected") &&
       !titleActions.includes("for (const [index, listId] of listIds.entries())"),
     "Ficha syncLists batches ownership via collectionSet (no per-list findFirst)",
-  );
-  assert(
-    titleActions.includes("inArray(tags.slug, slugs)") &&
-      !titleActions.includes("newTags.map(async"),
-    "Ficha syncTags loads existing tags once with inArray(slugs)",
   );
 
   // JOR-213 — Vercel playbook (docs + blocked preview; migrate outside build)

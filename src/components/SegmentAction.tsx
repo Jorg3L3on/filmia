@@ -1,7 +1,7 @@
 import { cn } from "@/lib/cn";
 import { glassIconClass } from "@/lib/ui";
 
-/** Round glass companion to the Listas|Etiquetas segment — same 46px height as the capsule. */
+/** Round glass header action (46px), e.g. the Listas «+». */
 export const segmentActionClass = cn(
   glassIconClass,
   "group/action size-[2.875rem] text-accent hover:text-paper",

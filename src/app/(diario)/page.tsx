@@ -20,7 +20,6 @@ const HISTORIAL_PARAMS = [
   "view",
   "month",
   "day",
-  "tag",
   "kind",
   "platform",
   "sort",

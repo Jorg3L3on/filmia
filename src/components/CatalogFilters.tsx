@@ -8,22 +8,12 @@ import { CatalogMinePlatformsChip } from "@/components/catalog-filters/CatalogMi
 import { CatalogSortSheet } from "@/components/catalog-filters/CatalogSortSheet";
 import { useCatalogFiltersState } from "@/components/catalog-filters/useCatalogFiltersState";
 import { CATALOG_ORDER_OPTIONS, type CatalogOrderOption } from "@/lib/catalog-filters";
-import type { CatalogKindFilter, CatalogQuery } from "@/lib/catalog-href";
+import type { CatalogKindFilter, CatalogQuery, CatalogSort } from "@/lib/catalog-href";
 import type { Platform } from "@/db";
 import type { SeriesStatusFilter } from "@/lib/series";
-import type { CatalogSort } from "@/lib/tags";
 import type { ReactNode } from "react";
 
-type FilterTag = {
-  id: string;
-  name: string;
-  slug: string;
-  _count?: { titles: number };
-};
-
 type CatalogFiltersProps = {
-  tags: FilterTag[];
-  selectedSlugs: string[];
   pathname: string;
   view?: string;
   sort?: string;
@@ -31,7 +21,6 @@ type CatalogFiltersProps = {
   defaultSort?: CatalogSort | null;
   minePlatforms?: boolean;
   hasStreamingPlatforms?: boolean;
-  showTagFilters?: boolean;
   showKind?: boolean;
   /** `false` keeps Tipo only inside the Filtros sheet. */
   showKindChips?: boolean;
@@ -53,8 +42,6 @@ type CatalogFiltersProps = {
 };
 
 export const CatalogFilters = ({
-  tags,
-  selectedSlugs,
   pathname,
   view,
   sort,
@@ -62,7 +49,6 @@ export const CatalogFilters = ({
   defaultSort = null,
   minePlatforms = false,
   hasStreamingPlatforms = false,
-  showTagFilters = true,
   showKind = true,
   showKindChips = true,
   orderOptions = CATALOG_ORDER_OPTIONS,
@@ -97,7 +83,6 @@ export const CatalogFilters = ({
     defaultView,
     defaultSort,
     minePlatforms,
-    selectedSlugs,
     seriesStatus,
     month,
     day,
@@ -137,11 +122,9 @@ export const CatalogFilters = ({
           open={open}
           activeCount={activeCount}
           draft={draft}
-          tags={tags}
           hasStreamingPlatforms={hasStreamingPlatforms}
           showKind={showKind}
           showPlatforms={showPlatforms}
-          showTagFilters={showTagFilters}
           onOpen={handleOpen}
           onClose={handleClose}
           onClear={handleClear}

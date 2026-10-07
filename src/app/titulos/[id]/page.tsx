@@ -13,11 +13,11 @@ import { SeriesStatusPanel } from "@/components/SeriesStatusPanel";
 import {
   getAssignableLists,
   getRelatedTitles,
-  getTagFilters,
   getTitleById,
   getUserStreamingPlatforms,
 } from "@/lib/queries";
 import { FichaVisit } from "@/components/FichaVisit";
+import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { resolveTitleExtras, storedTitleExtras } from "@/lib/title-extras";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 import TitleLoading from "./loading";
@@ -100,12 +100,11 @@ const TitleDetail = async ({
 
   const extrasPromise = resolveTitleExtras(title);
   const listsPromise = getAssignableLists();
-  const tagsPromise = getTagFilters();
   const platformsPromise = getUserStreamingPlatforms();
   const providersPromise = getWatchProvidersForTitle(title);
   const relatedPromise = getRelatedTitles(
     title.id,
-    title.tags.map((item) => item.tagId),
+    parseStoredTmdbGenres(title.tmdbGenres).map((genre) => genre.id),
   );
 
   const deleteAction = deleteTitle.bind(null, title.id);
@@ -121,7 +120,6 @@ const TitleDetail = async ({
         <TitleActionsBlock
           title={title}
           listsPromise={listsPromise}
-          tagsPromise={tagsPromise}
         />
       </Suspense>
 

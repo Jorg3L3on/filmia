@@ -9,8 +9,6 @@ import {
   db,
   listItems,
   lists,
-  tags,
-  titleTags,
   titles,
   users,
   type Platform,
@@ -18,9 +16,7 @@ import {
   type TitleKind,
 } from "../src/db/index";
 import { hashPassword } from "../src/lib/auth/password";
-import { slugify } from "../src/lib/labels";
 import { DEFAULT_LISTS, WATCHLIST_SLUG } from "../src/lib/lists";
-import { DEFAULT_TAG_NAMES } from "../src/lib/tags";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL no está definida.");
@@ -38,7 +34,6 @@ type SeedTitle = {
   rating?: number;
   review?: string;
   platform?: Platform;
-  tags: string[];
   lists: string[];
   watched?: boolean;
   seriesStatus?: SeriesStatus;
@@ -112,7 +107,6 @@ const seedTitles: SeedTitle[] = [
     rating: 9,
     review: "Épica de arena y honor. Seed de gusto, no un diario personal.",
     platform: "PRIME",
-    tags: ["Épica / guerra", "Histórico"],
     lists: ["Épicas", "Favoritas"],
     watched: true,
     tmdbId: 98,
@@ -125,7 +119,6 @@ const seedTitles: SeedTitle[] = [
     rating: 7,
     review: "Homero con bloquebuster: bronce, playa y discurso.",
     platform: "MAX",
-    tags: ["Épica / guerra", "Histórico"],
     lists: ["Épicas"],
     watched: true,
     tmdbId: 652,
@@ -139,7 +132,6 @@ const seedTitles: SeedTitle[] = [
     rating: 8,
     review: "Romain Gavras. Tensión urbana en un solo aliento.",
     platform: "NETFLIX",
-    tags: ["Thriller", "francés"],
     lists: ["Visto recientemente"],
     watched: true,
     tmdbId: 852046,
@@ -152,7 +144,6 @@ const seedTitles: SeedTitle[] = [
     rating: 8,
     review: "Venganza nórdica, barro y mito.",
     platform: "PRIME",
-    tags: ["Épica / guerra", "Histórico"],
     lists: ["Épicas", "Favoritas"],
     watched: true,
     tmdbId: 639933,
@@ -165,7 +156,6 @@ const seedTitles: SeedTitle[] = [
     rating: 10,
     review: "Vibe desierto/cromo. Persecución absoluta.",
     platform: "MAX",
-    tags: ["Visual / espectáculo", "Vibe Mad Max"],
     lists: ["Vibe Mad Max / Tron", "Por rewatch"],
     watched: true,
     tmdbId: 76341,
@@ -178,7 +168,6 @@ const seedTitles: SeedTitle[] = [
     rating: 7,
     review: "Neón, grid y soundtrack. Vibe Tron.",
     platform: "DISNEY",
-    tags: ["Sci-fi", "Visual / espectáculo", "Vibe Tron"],
     lists: ["Vibe Mad Max / Tron", "Por rewatch"],
     watched: true,
     tmdbId: 20526,
@@ -192,7 +181,6 @@ const seedTitles: SeedTitle[] = [
     rating: 9,
     review: "Arena, política y mesías. Dummy seed.",
     platform: "MAX",
-    tags: ["Sci-fi", "Épica / guerra", "Visual / espectáculo"],
     lists: ["Épicas", "Visto recientemente", "Favoritas"],
     watched: true,
     tmdbId: 693134,
@@ -205,7 +193,6 @@ const seedTitles: SeedTitle[] = [
     rating: 10,
     review: "Canon. Terminada, sin checklist de episodios.",
     platform: "NETFLIX",
-    tags: ["Thriller"],
     lists: ["Favoritas"],
     watched: true,
     seriesStatus: "FINISHED",
@@ -219,7 +206,6 @@ const seedTitles: SeedTitle[] = [
     rating: 9,
     review: "Viendo. Temporada actual, sin progreso por capítulo.",
     platform: "MAX",
-    tags: ["Thriller"],
     lists: ["Visto recientemente"],
     watched: true,
     seriesStatus: "WATCHING",
@@ -419,27 +405,6 @@ const ensureDemoUser = async (userId: string) => {
   });
 };
 
-const upsertTag = async (userId: string, name: string) => {
-  const slug = slugify(name);
-  const existing = await db.query.tags.findFirst({
-    where: and(eq(tags.userId, userId), eq(tags.slug, slug)),
-  });
-
-  if (existing) {
-    await db.update(tags).set({ name }).where(eq(tags.id, existing.id));
-    return existing;
-  }
-
-  const tagId = createId();
-  await db.insert(tags).values({ id: tagId, userId, name, slug });
-  return db.query.tags.findFirst({ where: eq(tags.id, tagId) }).then((tag) => {
-    if (!tag) {
-      throw new Error("No se pudo crear la etiqueta.");
-    }
-    return tag;
-  });
-};
-
 const upsertCollection = async (userId: string, name: string) => {
   const existing = await db.query.lists.findFirst({
     where: and(eq(lists.userId, userId), eq(lists.name, name), eq(lists.kind, "COLLECTION")),
@@ -498,19 +463,11 @@ const seed = async () => {
   const demoUser = await ensureDemoUser(DEMO_USER_ID);
   const userId = demoUser.id;
 
-  const tagRecords = new Map<string, { id: string }>();
   const listRecords = new Map<string, { id: string }>();
 
-  const uniqueTags = [
-    ...new Set([...DEFAULT_TAG_NAMES, ...seedTitles.flatMap((title) => title.tags)]),
-  ];
   const uniqueLists = [...new Set(seedTitles.flatMap((title) => title.lists))];
 
   const watchlist = await ensureDefaultListsForSeed(userId);
-
-  for (const tagName of uniqueTags) {
-    tagRecords.set(tagName, await upsertTag(userId, tagName));
-  }
 
   for (const listName of uniqueLists) {
     listRecords.set(listName, await upsertCollection(userId, listName));
@@ -548,16 +505,6 @@ const seed = async () => {
     }
 
     const titleId = savedId!;
-
-    await db.delete(titleTags).where(eq(titleTags.titleId, titleId));
-    if (title.tags.length > 0) {
-      await db.insert(titleTags).values(
-        title.tags.map((tagName) => ({
-          titleId,
-          tagId: tagRecords.get(tagName)!.id,
-        })),
-      );
-    }
 
     for (const listName of title.lists) {
       await db

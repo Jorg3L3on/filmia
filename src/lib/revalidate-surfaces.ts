@@ -1,5 +1,4 @@
 import { revalidatePath } from "next/cache";
-import { tagHref } from "@/lib/tags";
 
 export const revalidateTitlePages = (titleId: string) => {
   revalidatePath(`/titulos/${titleId}`);
@@ -55,7 +54,6 @@ export const revalidateCatalogSurfaces = (titleId?: string) => {
   revalidatePath("/listas");
   revalidatePath("/watchlist");
   revalidatePath("/buscar");
-  revalidatePath("/tags");
   if (titleId) {
     revalidateTitlePages(titleId);
   }
@@ -66,18 +64,6 @@ export const revalidateSeriesSurfaces = (titleId: string) => {
   revalidatePath("/diario");
   revalidatePath("/listas");
   revalidateTitlePages(titleId);
-};
-
-export const revalidateTagSurfaces = (titleId?: string, slug?: string) => {
-  revalidatePath("/");
-  revalidatePath("/diario");
-  revalidatePath("/tags");
-  if (slug) {
-    revalidatePath(tagHref(slug));
-  }
-  if (titleId) {
-    revalidateTitlePages(titleId);
-  }
 };
 
 export const revalidateProfileSurfaces = () => {

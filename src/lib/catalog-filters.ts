@@ -1,7 +1,7 @@
 import { Platform, TitleKind } from "@/db";
 import type { CatalogKindFilter } from "@/lib/catalog-href";
 import { PLATFORMS } from "@/lib/labels";
-import type { CatalogSort } from "@/lib/tags";
+import type { CatalogSort } from "@/lib/catalog-href";
 
 export const KIND_CHIPS = [
   { value: "ALL" as const, label: "Todos" },
@@ -29,14 +29,6 @@ export const CATALOG_ORDER_OPTIONS = [
   { id: "recent" as const, label: "Recientes", icon: "clock" },
   { id: "rating" as const, label: "Nota", icon: "star" },
   { id: "name" as const, label: "Título", icon: "az" },
-] as const satisfies ReadonlyArray<CatalogOrderOption>;
-
-/** Tag detail also ranks by watch date. */
-export const TAG_ORDER_OPTIONS = [
-  { id: "rating", label: "Nota", icon: "star" },
-  { id: "watched", label: "Fecha vista", icon: "eye" },
-  { id: "name", label: "Título", icon: "az" },
-  { id: "recent", label: "Recientes", icon: "clock" },
 ] as const satisfies ReadonlyArray<CatalogOrderOption>;
 
 const FEATURED_MX: Platform[] = [
@@ -103,14 +95,12 @@ export const countSheetFilters = ({
   platforms = [],
   sort,
   defaultSort = null,
-  tags = [],
   seriesStatus,
   minePlatforms = false,
 }: {
   platforms?: Platform[];
   sort?: string | null;
   defaultSort?: string | null;
-  tags?: string[];
   seriesStatus?: string | null;
   minePlatforms?: boolean;
 }) => {
@@ -118,7 +108,6 @@ export const countSheetFilters = ({
   return (
     platforms.length +
     sortCounts +
-    tags.length +
     (seriesStatus ? 1 : 0) +
     (minePlatforms ? 1 : 0)
   );

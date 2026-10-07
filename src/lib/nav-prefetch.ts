@@ -6,16 +6,14 @@ export const NAV_PREFETCH_HREFS = [
   "/buscar",
   "/listas",
   "/perfil",
-  "/tags",
 ] as const;
 
-/** Soft-nav priority for neighbor warming (mobile-first, then tags). */
+/** Soft-nav priority for neighbor warming (mobile-first). */
 export const NAV_PREFETCH_PRIORITY = [
   "/",
   "/watchlist",
   "/buscar",
   "/listas",
-  "/tags",
   "/perfil",
 ] as const;
 
@@ -72,9 +70,6 @@ const navIndex = (pathname: string) => {
   }
   if (path.startsWith("/listas/")) {
     return NAV_PREFETCH_PRIORITY.indexOf("/listas");
-  }
-  if (path.startsWith("/tags/")) {
-    return NAV_PREFETCH_PRIORITY.indexOf("/tags");
   }
   return -1;
 };

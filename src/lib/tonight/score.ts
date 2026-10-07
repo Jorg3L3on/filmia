@@ -298,22 +298,6 @@ export const tasteReasons = (
     });
   }
 
-  let bestTag: { name: string; affinity: number } | null = null;
-  for (const tag of title.tags) {
-    const affinity = profile.tagAffinity.get(tag.slug) ?? 0;
-    if (affinity >= 0.5 && (!bestTag || affinity > bestTag.affinity)) {
-      bestTag = { name: tag.name, affinity };
-    }
-  }
-  if (bestTag) {
-    reasons.push({
-      kind: "taste_tag",
-      text: `Tiene tu etiqueta «${bestTag.name}»`,
-      weight: WEIGHTS.gusto * gusto * 0.8 + 0.03,
-      personal: true,
-    });
-  }
-
   for (const person of title.people) {
     if (person.role === "cast") {
       continue;
