@@ -391,7 +391,7 @@ export const getTitleOptionsOutsideList = cache(async (listId: string) => {
           .where(eq(listItems.listId, listId)),
       ),
     ),
-    columns: { id: true, name: true, year: true, posterPath: true },
+    columns: { id: true, name: true, year: true, posterPath: true, tmdbId: true, kind: true },
     orderBy: [asc(titles.name)],
   });
 });
@@ -508,3 +508,22 @@ export const getUserTmdbIndex = cache(async (): Promise<UserTmdbEntry[]> => {
     ];
   });
 });
+
+/** Buscar «Agregar a lista»: list ids per title, so the picker starts on what is saved. */
+export const getUserListMembershipIndex = cache(
+  async (): Promise<Record<string, string[]>> => {
+    const userId = await requireUserId();
+
+    const rows = await db
+      .select({ titleId: listItems.titleId, listId: listItems.listId })
+      .from(listItems)
+      .innerJoin(lists, eq(lists.id, listItems.listId))
+      .where(eq(lists.userId, userId));
+
+    const index: Record<string, string[]> = {};
+    for (const row of rows) {
+      (index[row.titleId] ??= []).push(row.listId);
+    }
+    return index;
+  },
+);

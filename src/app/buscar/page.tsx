@@ -5,7 +5,11 @@ import { SearchBodySkeleton } from "@/components/PageSkeletons";
 import { TmdbSearchAdd } from "@/components/TmdbSearchAdd";
 import { TmdbSearchUnavailable } from "@/components/TmdbSearchUnavailable";
 import { metadataServicesConfigured } from "@/lib/metadata";
-import { getUserTmdbIndex } from "@/lib/queries";
+import {
+  getAssignableLists,
+  getUserListMembershipIndex,
+  getUserTmdbIndex,
+} from "@/lib/queries";
 import { parseOptionalIsoDate } from "@/lib/dates";
 
 export const metadata: Metadata = {
@@ -29,7 +33,7 @@ export default function SearchPage({
     <div className="mx-auto max-w-2xl space-y-6">
       <PageHeader
         title="Buscar"
-        description="Añade a Quiero ver, márcala vista o ábrela en la ficha para listas."
+        description="Añade a Quiero ver, márcala vista o guárdala en una o varias listas."
       />
       <Suspense fallback={<SearchBodySkeleton />}>
         <SearchBody searchParams={searchParams} />
@@ -54,7 +58,11 @@ const SearchBody = async ({
   const markWatched =
     watchedDate != null ||
     (typeof params.destino === "string" && params.destino === "visto");
-  const existing = await getUserTmdbIndex();
+  const [existing, lists, memberships] = await Promise.all([
+    getUserTmdbIndex(),
+    getAssignableLists(),
+    getUserListMembershipIndex(),
+  ]);
 
   return (
     <TmdbSearchAdd
@@ -63,6 +71,8 @@ const SearchBody = async ({
       initialQuery={initialQuery}
       watchedDate={watchedDate}
       defaultDestination={markWatched ? "watched" : "watchlist"}
+      lists={lists.map(({ id, name, slug }) => ({ id, name, slug }))}
+      memberships={memberships}
     />
   );
 };

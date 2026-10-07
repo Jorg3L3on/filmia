@@ -1,10 +1,14 @@
 "use server";
 
 import { createId } from "@paralleldrive/cuid2";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, listItems, lists, titles } from "@/db";
+import {
+  upsertTitleFromTmdbForUser,
+  type AddTitleFromTmdbInput,
+} from "@/lib/add-title-from-tmdb";
 import { parseRequiredName } from "@/lib/form-data";
 import { slugify } from "@/lib/labels";
 import { isFixedListSlug, isReservedListSlug, listHref, WATCHLIST_SLUG } from "@/lib/lists";
@@ -14,6 +18,7 @@ import {
   swapAdjacentListItems,
   swapListItemPositions,
 } from "@/lib/list-order";
+import { revalidateSearchAddSurfaces } from "@/lib/revalidate-surfaces";
 import { requireUserId } from "@/lib/session";
 import { scheduleTonightRecompute } from "@/lib/tonight-store";
 
@@ -212,3 +217,106 @@ export const reorderList = async (listId: string, orderedTitleIds: string[]) => 
     revalidateLists(listId, undefined, list.slug);
   }
 };
+
+export type SaveTmdbTitleInListsResult =
+  | { ok: true; titleId: string; created: boolean }
+  | { ok: false; error: string };
+
+/**
+ * Upserts a TMDB title for the user (no Quiero ver / Visto side effects) and
+ * applies a list diff in one round trip. Idempotent: re-adding is a no-op
+ * (`onConflictDoNothing`), removing a missing row does nothing.
+ */
+export const saveTmdbTitleInLists = async ({
+  tmdb,
+  add,
+  remove = [],
+}: {
+  tmdb: AddTitleFromTmdbInput;
+  add: string[];
+  remove?: string[];
+}): Promise<SaveTmdbTitleInListsResult> => {
+  const userId = await requireUserId();
+  const addIds = [...new Set(add)];
+  const removeIds = [...new Set(remove)].filter((id) => !addIds.includes(id));
+  const touchedIds = [...addIds, ...removeIds];
+
+  try {
+    const owned =
+      touchedIds.length > 0
+        ? await db.query.lists.findMany({
+            where: and(eq(lists.userId, userId), inArray(lists.id, touchedIds)),
+            columns: { id: true, slug: true },
+          })
+        : [];
+
+    if (owned.length !== touchedIds.length) {
+      return { ok: false, error: "Lista no encontrada." };
+    }
+
+    const upserted = await upsertTitleFromTmdbForUser(userId, {
+      tmdbId: tmdb.tmdbId,
+      kind: tmdb.kind,
+      name: tmdb.name,
+      originalName: tmdb.originalName,
+      year: tmdb.year,
+      posterPath: tmdb.posterPath,
+    });
+
+    if (!upserted.ok) {
+      return upserted;
+    }
+
+    const { titleId } = upserted;
+
+    if (addIds.length > 0) {
+      const tails = await Promise.all(
+        addIds.map((listId) =>
+          db.query.listItems.findFirst({
+            where: eq(listItems.listId, listId),
+            orderBy: [desc(listItems.position)],
+            columns: { position: true },
+          }),
+        ),
+      );
+
+      await db
+        .insert(listItems)
+        .values(
+          addIds.map((listId, index) => ({
+            listId,
+            titleId,
+            position: (tails[index]?.position ?? -1) + 1,
+          })),
+        )
+        .onConflictDoNothing();
+    }
+
+    if (removeIds.length > 0) {
+      await db
+        .delete(listItems)
+        .where(and(eq(listItems.titleId, titleId), inArray(listItems.listId, removeIds)));
+    }
+
+    for (const list of owned) {
+      revalidateLists(list.id, titleId, list.slug);
+    }
+    revalidateSearchAddSurfaces(titleId, {
+      watchlist: owned.some((list) => list.slug === WATCHLIST_SLUG),
+    });
+    scheduleTonightRecompute(userId);
+
+    return { ok: true, titleId, created: upserted.created };
+  } catch (caught) {
+    return {
+      ok: false,
+      error: caught instanceof Error ? caught.message : "No se pudo guardar en la lista.",
+    };
+  }
+};
+
+/** «Agregar título» in a list: a TMDB hit becomes a Filmia title and lands on the list. */
+export const addTitleFromTmdbToList = async (
+  listId: string,
+  tmdb: AddTitleFromTmdbInput,
+) => saveTmdbTitleInLists({ tmdb, add: [listId] });
