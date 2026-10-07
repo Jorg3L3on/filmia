@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   hasDuplicateListName,
+  isRenameBlocked,
   LIST_NAME_TAKEN_MESSAGE,
   listNameKey,
 } from "@/lib/list-names";
@@ -53,5 +54,30 @@ describe("hasDuplicateListName", () => {
 
   it("uses the exact copy for the error", () => {
     assert.equal(LIST_NAME_TAKEN_MESSAGE, "Ya tienes una lista con ese nombre.");
+  });
+});
+
+describe("isRenameBlocked", () => {
+  const withTwins = [
+    ...userLists,
+    { id: "terror-bis", name: "Terror de los 80" },
+  ];
+  const terror = { id: "terror", name: "Terror de los 80" };
+
+  it("allows keeping the name even when an old twin exists", () => {
+    assert.equal(isRenameBlocked("Terror de los 80", withTwins, terror), false);
+  });
+
+  it("allows casing or accent tweaks even when an old twin exists", () => {
+    assert.equal(isRenameBlocked("TERROR de los 80 ", withTwins, terror), false);
+  });
+
+  it("blocks renaming onto another list's name", () => {
+    assert.equal(isRenameBlocked("noches de pelicula", withTwins, terror), true);
+    assert.equal(isRenameBlocked("Favoritas", withTwins, terror), true);
+  });
+
+  it("allows renaming to a free name", () => {
+    assert.equal(isRenameBlocked("Terror de los 90", withTwins, terror), false);
   });
 });

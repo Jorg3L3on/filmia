@@ -9,6 +9,7 @@ import { parseRequiredName } from "@/lib/form-data";
 import { slugify } from "@/lib/labels";
 import {
   hasDuplicateListName,
+  isRenameBlocked,
   LIST_NAME_TAKEN_MESSAGE,
   type ListFormState,
 } from "@/lib/list-names";
@@ -78,14 +79,17 @@ const parseListName = (
 const userListNameError = async (
   userId: string,
   name: string,
-  excludeListId?: string,
+  current?: { id: string; name: string },
 ) => {
   const existing = await db.query.lists.findMany({
     where: eq(lists.userId, userId),
     columns: { id: true, name: true },
   });
 
-  if (hasDuplicateListName(name, existing, excludeListId)) {
+  const taken = current
+    ? isRenameBlocked(name, existing, current)
+    : hasDuplicateListName(name, existing);
+  if (taken) {
     return LIST_NAME_TAKEN_MESSAGE;
   }
 
@@ -144,7 +148,7 @@ const saveListChanges = async (
     }
 
     name = parsed.name;
-    const nameError = await userListNameError(userId, name, listId);
+    const nameError = await userListNameError(userId, name, existing);
     if (nameError) {
       return { error: nameError };
     }
@@ -156,25 +160,7 @@ const saveListChanges = async (
   return { redirectTo: listHref(existing) };
 };
 
-export const createList = async (formData: FormData) => {
-  const outcome = await saveNewList(formData);
-  if ("error" in outcome) {
-    throw new Error(outcome.error);
-  }
-
-  redirect(outcome.redirectTo);
-};
-
-export const updateList = async (listId: string, formData: FormData) => {
-  const outcome = await saveListChanges(listId, formData);
-  if ("error" in outcome) {
-    throw new Error(outcome.error);
-  }
-
-  redirect(outcome.redirectTo);
-};
-
-/** `createList` para `useActionState`: los errores de nombre vuelven al formulario. */
+/** Crea una lista propia (`useActionState`): los errores de nombre vuelven al formulario. */
 export const createListWithFeedback = async (
   _prev: ListFormState,
   formData: FormData,
@@ -187,7 +173,7 @@ export const createListWithFeedback = async (
   redirect(outcome.redirectTo);
 };
 
-/** `updateList` para `useActionState`: los errores de nombre vuelven al formulario. */
+/** Edita una lista (`useActionState`): los errores de nombre vuelven al formulario. */
 export const updateListWithFeedback = async (
   listId: string,
   _prev: ListFormState,

@@ -38,3 +38,17 @@ export const hasDuplicateListName = (
     (list) => list.id !== excludeListId && listNameKey(list.name) === key,
   );
 };
+
+/**
+ * ¿Se rechaza renombrar `current` a `name`? Si la clave normalizada no cambia
+ * (misma lista, solo mayúsculas/acentos/espacios o solo la descripción), se
+ * permite aunque ya existan duplicados históricos; si cambia, no puede chocar
+ * con otra lista del usuario.
+ */
+export const isRenameBlocked = (
+  name: string,
+  existing: readonly ExistingListName[],
+  current: ExistingListName,
+) =>
+  listNameKey(name) !== listNameKey(current.name) &&
+  hasDuplicateListName(name, existing, current.id);
