@@ -1,3 +1,5 @@
+import { isSeriesStatusListSlug } from "@/lib/lists";
+
 export type SelectableList = { id: string; name: string; slug: string | null };
 
 export type ListSelectionDiff = {
@@ -46,6 +48,25 @@ export const initialListSelection = ({
     ids.unshift(watchlistId);
   }
   return [...new Set(ids)];
+};
+
+/**
+ * Separa las listas por estado de serie («Series en progreso», «Series
+ * abandonadas») de una selección: se muestran de solo lectura y no cuentan
+ * como elegidas, porque solo las cambia el estado de la serie.
+ */
+export const splitStatusListSelection = <T extends SelectableList>(
+  lists: readonly T[],
+  selectedIds: readonly string[],
+) => {
+  const statusLists = lists.filter(
+    (list) => isSeriesStatusListSlug(list.slug) && selectedIds.includes(list.id),
+  );
+  const statusIds = new Set(statusLists.map((list) => list.id));
+  return {
+    statusLists,
+    editableIds: selectedIds.filter((id) => !statusIds.has(id)),
+  };
 };
 
 /** Label for the confirm button of the picker. */

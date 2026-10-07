@@ -367,6 +367,10 @@ export const saveTmdbTitleInLists = async ({
       return { ok: false, error: "Lista no encontrada." };
     }
 
+    if (owned.some((list) => isSeriesStatusListSlug(list.slug))) {
+      return { ok: false, error: "Esta lista se actualiza sola con el estado de la serie." };
+    }
+
     const upserted = await upsertTitleFromTmdbForUser(userId, {
       tmdbId: tmdb.tmdbId,
       kind: tmdb.kind,

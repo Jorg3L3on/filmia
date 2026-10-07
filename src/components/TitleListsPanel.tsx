@@ -78,31 +78,7 @@ export const TitleListsPanel = ({
         onToggle={handleToggle}
       />
 
-      {byStatus.length > 0 ? (
-        <div className="space-y-2">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-mist">
-            Por estado
-          </p>
-          <ul className="flex flex-wrap gap-2">
-            {byStatus.map((list) => (
-              <li key={list.id}>
-                <Link
-                  href={listHref(list)}
-                  className={cn(
-                    "inline-flex rounded-full border border-dashed border-chrome px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-fog hover:border-line-hover hover:text-paper",
-                    focusRing,
-                  )}
-                >
-                  {list.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <p className="text-xs text-mist">
-            Se actualiza sola con el estado de la serie.
-          </p>
-        </div>
-      ) : null}
+      <StatusListGroup lists={byStatus} />
 
       {custom.length > 0 ? (
         <ListChipGroup
@@ -149,6 +125,55 @@ export const splitAssignableLists = <T extends AssignableList>(lists: readonly T
   ),
   custom: lists.filter((list) => !isFixedListSlug(list.slug)),
 });
+
+const statusChipClass =
+  "inline-flex rounded-full border border-dashed border-chrome px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-fog";
+
+/**
+ * «Series en progreso» / «Series abandonadas» en las que ya está el título:
+ * solo lectura, porque las gobierna el estado de la serie. `linked` las vuelve
+ * enlaces a la lista (off donde la selección aún no se guarda).
+ */
+export const StatusListGroup = ({
+  lists,
+  linked = true,
+}: {
+  lists: AssignableList[];
+  linked?: boolean;
+}) => {
+  if (lists.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-mist">
+        Por estado
+      </p>
+      <ul className="flex flex-wrap gap-2">
+        {lists.map((list) => (
+          <li key={list.id}>
+            {linked ? (
+              <Link
+                href={listHref(list)}
+                className={cn(
+                  statusChipClass,
+                  "hover:border-line-hover hover:text-paper",
+                  focusRing,
+                )}
+              >
+                {list.name}
+              </Link>
+            ) : (
+              <span className={statusChipClass}>{list.name}</span>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p className="text-xs text-mist">Se actualiza sola con el estado de la serie.</p>
+    </div>
+  );
+};
 
 /** Chip row shared by the ficha panel and Buscar's «Agregar a lista» picker. */
 export const ListChipGroup = ({

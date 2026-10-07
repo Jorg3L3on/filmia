@@ -3,10 +3,15 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/Button";
-import { ListChipGroup, splitAssignableLists } from "@/components/TitleListsPanel";
+import {
+  ListChipGroup,
+  splitAssignableLists,
+  StatusListGroup,
+} from "@/components/TitleListsPanel";
 import {
   diffListSelection,
   listSelectionConfirmLabel,
+  splitStatusListSelection,
   toggleListSelection,
   type SelectableList,
 } from "@/lib/list-selection";
@@ -37,6 +42,9 @@ export const SearchListPicker = ({
   const selectedSet = new Set(selected);
   const diff = diffListSelection(initialIds, selected);
   const { daily, custom } = splitAssignableLists(lists);
+  // Las listas por estado no son chips: se quedan en la selección sin tocarse,
+  // así el diff nunca las agrega ni las quita.
+  const { statusLists, editableIds } = splitStatusListSelection(lists, selected);
 
   const handleToggle = (listId: string) => {
     setSelected((current) => toggleListSelection(current, listId));
@@ -58,6 +66,8 @@ export const SearchListPicker = ({
         onToggle={handleToggle}
         showOpenLink={false}
       />
+
+      <StatusListGroup lists={statusLists} linked={false} />
 
       {custom.length > 0 ? (
         <ListChipGroup
@@ -101,7 +111,7 @@ export const SearchListPicker = ({
           pendingLabel="Guardando…"
           className="press-scale"
         >
-          {listSelectionConfirmLabel(diff, selected.length)}
+          {listSelectionConfirmLabel(diff, editableIds.length)}
         </Button>
       </div>
     </div>
