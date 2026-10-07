@@ -1,10 +1,9 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { addTitleToList, deleteList } from "@/app/actions/lists";
+import { addTitleToList } from "@/app/actions/lists";
 import { AddTitleToListCta } from "@/components/AddTitleToListCta";
 import { CatalogFilters } from "@/components/CatalogFilters";
-import { DeleteCollectionButton } from "@/components/DeleteCollectionButton";
 import { EmptyState } from "@/components/EmptyState";
 import { ListTitlesView } from "@/components/ListTitlesView";
 import {
@@ -212,22 +211,6 @@ const ListDetail = async ({
             platforms={platforms}
           />
         </div>
-      )}
-
-      {fixed ? null : (
-        <footer className="mt-16 flex justify-center border-t border-line/70 pt-8 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-          <DeleteCollectionButton
-            action={deleteList.bind(null, list.id)}
-            redirectHref="/listas"
-            label="Borrar lista"
-            name={list.name}
-            impact={
-              list.items.length === 0
-                ? "La lista está vacía."
-                : `Contiene ${list.items.length === 1 ? "1 título" : `${list.items.length} títulos`}.`
-            }
-          />
-        </footer>
       )}
     </div>
   );
