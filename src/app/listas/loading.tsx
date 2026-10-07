@@ -6,7 +6,7 @@ import { ListsBodySkeleton } from "@/components/PageSkeletons";
 export default function Loading() {
   return (
     <div className="space-y-8">
-      <PageHeader title="Listas" actions={<SegmentActionPlaceholder />} />
+      <PageHeader title="Listas" inlineActions actions={<SegmentActionPlaceholder />} />
       <ListsBodySkeleton />
     </div>
   );

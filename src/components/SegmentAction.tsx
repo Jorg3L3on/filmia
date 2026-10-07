@@ -1,13 +1,7 @@
 import { cn } from "@/lib/cn";
 import { glassIconClass } from "@/lib/ui";
 
-/** Round glass header action (46px), e.g. the Listas «+». */
-export const segmentActionClass = cn(
-  glassIconClass,
-  "group/action size-[2.875rem] text-accent hover:text-paper",
-);
-
-/** Same glass button at back-button size (40px), for headers that keep actions on the title row. */
+/** Round glass header action at back-button size (40px), e.g. the Listas «+». */
 export const segmentActionCompactClass = cn(
   glassIconClass,
   "group/action size-10 text-accent hover:text-paper",
@@ -31,7 +25,7 @@ export const SegmentPlusIcon = ({ className }: { className?: string }) => (
 export const SegmentActionTooltip = ({ label }: { label: string }) => (
   <span
     aria-hidden="true"
-    className="pointer-events-none absolute right-0 top-[calc(100%+0.5rem)] z-20 translate-y-1 whitespace-nowrap rounded-lg border border-white/10 bg-[var(--glass-fill-solid)] px-2.5 py-1.5 text-xs font-medium text-paper opacity-0 shadow-panel backdrop-blur-xl transition-[opacity,translate] duration-[var(--duration-hover)] group-hover/action:translate-y-0 group-hover/action:opacity-100 group-focus-visible/action:translate-y-0 group-focus-visible/action:opacity-100"
+    className="pointer-events-none absolute right-0 top-[calc(100%+0.5rem)] z-20 translate-y-1 whitespace-nowrap rounded-lg border border-white/10 bg-[var(--glass-fill-solid)] px-2.5 py-1.5 text-xs font-medium text-paper opacity-0 shadow-panel backdrop-blur-xl transition-[opacity,translate] duration-[var(--duration-hover)] group-hover/action:translate-y-0 group-hover/action:opacity-100 group-focus-visible/action:translate-y-0 group-focus-visible/action:opacity-100 group-active/action:translate-y-0 group-active/action:opacity-100"
   >
     {label}
   </span>
@@ -39,7 +33,7 @@ export const SegmentActionTooltip = ({ label }: { label: string }) => (
 
 /** Inert «+» so loading.tsx keeps the same row width as the page. */
 export const SegmentActionPlaceholder = () => (
-  <span aria-hidden="true" className={cn(segmentActionClass, "pointer-events-none opacity-60")}>
+  <span aria-hidden="true" className={cn(segmentActionCompactClass, "pointer-events-none opacity-60")}>
     <SegmentPlusIcon />
   </span>
 );
