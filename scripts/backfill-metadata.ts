@@ -11,8 +11,10 @@ import { isTmdbConfigured } from "../src/lib/tmdb";
 
 /**
  * Fill incomplete catalog rows (no poster, no IMDb id, no synopsis) from TMDB
- * + OMDb, exactly like the enrichment that runs after a title is saved. One
- * pass per film, shared by every user. Idempotent; `--force` redoes all rows.
+ * + OMDb, one pass per film, shared by every user. Only empty columns are
+ * filled: stored names, posters and ratings are never replaced (a failed
+ * OMDb lookup leaves ratings as they are). `--force` checks every row, still
+ * filling only what is missing.
  */
 
 if (!process.env.DATABASE_URL) {
@@ -31,7 +33,7 @@ const backfill = async () => {
     where: force
       ? undefined
       : or(isNull(catalog.posterPath), isNull(catalog.imdbId), isNull(catalog.overview)),
-    columns: { id: true, tmdbId: true, kind: true, name: true, year: true },
+    // Every column: enrichment compares against it to fill only what is empty.
     orderBy: [asc(catalog.name)],
   });
 
@@ -42,17 +44,18 @@ const backfill = async () => {
 
   console.log(`${rows.length} fichas por enriquecer.`);
   let updated = 0;
+  let unchanged = 0;
   let failed = 0;
 
   await runPool(rows, CONCURRENCY, async (film) => {
     try {
-      const wrote = await enrichCatalog(film);
+      const wrote = await enrichCatalog(film, { onlyMissing: film });
       if (wrote) {
         updated += 1;
         console.log(`✓ ${film.name}${film.year ? ` (${film.year})` : ""} · TMDB #${film.tmdbId}`);
       } else {
-        failed += 1;
-        console.log(`✗ Sin datos TMDB: ${film.name} (#${film.tmdbId})`);
+        unchanged += 1;
+        console.log(`· Sin nada nuevo que llenar: ${film.name} (#${film.tmdbId})`);
       }
     } catch (error) {
       failed += 1;
@@ -61,7 +64,7 @@ const backfill = async () => {
   });
 
   console.log(
-    `\nBackfill listo: ${updated} actualizadas, ${failed} fallidas (${rows.length} procesadas).`,
+    `\nBackfill listo: ${updated} actualizadas, ${unchanged} sin cambios, ${failed} fallidas (${rows.length} procesadas).`,
   );
 };
 

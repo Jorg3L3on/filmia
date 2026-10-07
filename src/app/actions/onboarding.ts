@@ -4,6 +4,7 @@ import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { catalog, db, listItems, lists, titles, users, type TitleKind } from "@/db";
 import { refreshSessionUser } from "@/lib/auth";
 import { upsertTitleFromTmdbForUser } from "@/lib/add-title-from-tmdb";
+import { catalogEnrichmentPatch } from "@/lib/catalog-enrich-core";
 import { ensureDefaultLists, FAVORITAS_SLUG, WATCHLIST_SLUG } from "@/lib/lists";
 import { resolveTitleMetadata } from "@/lib/metadata";
 import { isOnboardingStepId, type OnboardingStepId } from "@/lib/onboarding/steps";
@@ -277,25 +278,25 @@ const enrichQueueInline = async (userId: string) => {
       if (film.runtimeMinutes == null) {
         tasks.push(
           resolveTitleMetadata(film.tmdbId, film.kind)
-            .then((resolved) =>
-              db
+            .then((resolved) => {
+              // Shared row: only write what came back, and keep an existing poster.
+              const patch = catalogEnrichmentPatch(resolved);
+              delete patch.name;
+              delete patch.originalName;
+              delete patch.year;
+              if (Object.keys(patch).length === 0) {
+                return null;
+              }
+              return db
                 .update(catalog)
                 .set({
-                  runtimeMinutes: resolved.runtimeMinutes ?? null,
-                  imdbId: resolved.imdbId,
-                  imdbRating: resolved.imdbRating,
-                  imdbVotes: resolved.imdbVotes ?? null,
-                  awards: resolved.awards ?? null,
-                  overview: resolved.overview ?? null,
-                  tmdbGenres: resolved.tmdbGenres,
-                  tmdbKeywords: resolved.tmdbKeywords ?? [],
-                  tmdbPeople: resolved.tmdbPeople ?? [],
-                  originalLanguage: resolved.originalLanguage ?? null,
-                  posterPath: sql`COALESCE(${catalog.posterPath}, ${resolved.posterPath})`,
-                  backdropPath: resolved.backdropPath ?? null,
+                  ...patch,
+                  ...(patch.posterPath
+                    ? { posterPath: sql`COALESCE(${catalog.posterPath}, ${patch.posterPath})` }
+                    : {}),
                 })
-                .where(eq(catalog.id, film.id)),
-            )
+                .where(eq(catalog.id, film.id));
+            })
             .catch(() => null),
         );
       }
