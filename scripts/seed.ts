@@ -492,13 +492,6 @@ const seed = async () => {
     const data = {
       userId,
       catalogId: film.id,
-      // Snapshot columns until 0010 drops them; reads go through the catalog.
-      name: film.name,
-      originalName: film.originalName,
-      kind: film.kind,
-      year: film.year,
-      tmdbId: film.tmdbId,
-      posterPath: film.posterPath,
       rating: title.rating ?? null,
       review: title.review ?? null,
       platform: title.platform ?? null,
@@ -514,7 +507,8 @@ const seed = async () => {
       await db.update(titles).set(data).where(eq(titles.id, existing.id));
     } else {
       savedId = createId();
-      await db.insert(titles).values({ id: savedId, ...data });
+      // `Title.updatedAt` has no DB default (Prisma-era column): always set both stamps.
+      await db.insert(titles).values({ id: savedId, ...data, createdAt: new Date(), updatedAt: new Date() });
     }
 
     const titleId = savedId!;
@@ -559,10 +553,6 @@ const seed = async () => {
 
     const queueData = {
       catalogId: film.id,
-      kind: film.kind,
-      year: film.year,
-      tmdbId: film.tmdbId,
-      posterPath: film.posterPath,
       platform: item.platform ?? null,
       seriesStatus: item.kind === "SERIES" ? (item.seriesStatus ?? null) : null,
       seriesSeason: item.kind === "SERIES" ? (item.seriesSeason ?? null) : null,
@@ -583,8 +573,9 @@ const seed = async () => {
       await db.insert(titles).values({
         id: savedId,
         userId,
-        name: film.name,
         ...queueData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
     }
 

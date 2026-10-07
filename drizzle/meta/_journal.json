@@ -71,6 +71,13 @@
       "when": 1791353156481,
       "tag": "0009_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791355248544,
+      "tag": "0010_catalog_cutover",
+      "breakpoints": true
     }
   ]
 }

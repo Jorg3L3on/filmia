@@ -54,7 +54,7 @@ npm run db:backfill-tonight
 - **User**: cuenta con email, contraseña hasheada opcional (PBKDF2; hashes bcrypt legacy se verifican al entrar; `null` si solo entra con Google), `googleId` opcional, nombre opcional y `streamingPlatforms` (JSON: claves del enum `Platform`)
 - **Catalog**: una fila por película o serie, compartida por todos los usuarios y única por `(tmdbId, kind)`: nombre, año, poster (TMDB), sinopsis, rating IMDb + votos + premios (OMDb), keywords y personas (TMDB), disponibilidad MX, color ambiente. Se llena una sola vez al guardar el título por primera vez (`src/lib/catalog-enrich.ts`); los usuarios nunca la editan
 - **Title**: la entrada personal de un usuario para una ficha del catálogo (`catalogId`): nota 1–10, comentario, «Dónde la vi», fecha vista, estado de serie. No se borra; solo cambian sus campos personales. La app lee siempre el tipo plano `Title` (`flattenTitle` en `src/lib/catalog-core.ts`), que es la fila personal con el catálogo encima
-  - Hasta la migración 0010 `Title` conserva columnas de metadatos heredadas; no se leen ni se escriben
+  - Migraciones del split: 0009 (aditiva) crea `Catalog` y enlaza cada `Title`; 0010 (destructiva) borra de `Title` las columnas de metadatos heredadas y exige `catalogId` único por usuario. 0010 se aplica solo después de desplegar este código (ver la cabecera de `drizzle/0010_catalog_cutover.sql`)
 - **TonightPick** + **PickEvent**: mazos precalculados de «Esta noche» por usuario y su retroalimentación (ver [Hoy · Esta noche](#hoy--esta-noche))
 - **List** + **ListItem**: listas y membresía por usuario (Quiero ver, Favoritas, Por rewatch + personalizadas)
 - **Platform** (enum): Netflix, Prime, Max, Disney+, Claro, Apple, Mubi y otras de JustWatch MX

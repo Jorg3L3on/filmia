@@ -119,4 +119,10 @@ BEGIN
   IF EXISTS (SELECT 1 FROM "Title" WHERE "catalogId" IS NULL) THEN
     RAISE EXCEPTION '0009: some "Title" rows have no catalogId after the backfill';
   END IF;
-END $$;
+END $$;--> statement-breakpoint
+
+-- 5. The F3 code stops writing the old snapshot columns on "Title"; the two
+--    without a default must accept NULL until 0010 drops them. The code that
+--    is live today still fills them, so this is safe to apply under it.
+ALTER TABLE "Title" ALTER COLUMN "name" DROP NOT NULL;--> statement-breakpoint
+ALTER TABLE "Title" ALTER COLUMN "kind" DROP NOT NULL;

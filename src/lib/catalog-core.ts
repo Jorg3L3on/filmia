@@ -10,24 +10,17 @@ import type { CatalogFields, CatalogRow, TitleKind, UserTitle } from "@/db";
 export const catalogIdFor = (kind: TitleKind, tmdbId: number) =>
   createHash("md5").update(`${kind}:${tmdbId}`).digest("hex");
 
-export type RowWithCatalog<T> = T & { catalog: CatalogRow | null };
+export type RowWithCatalog<T> = T & { catalog: CatalogRow };
 
 export type FlattenedTitle<T> = Omit<T, "catalog"> & CatalogFields & { catalogId: string };
 
 /**
- * Spread the shared catalog over the personal row. Catalog fields win over the
- * (stale) metadata columns still on `Title` until 0010; `id`, `createdAt`,
- * `updatedAt` and every personal field stay the Title's.
- *
- * A row without a catalog can only exist before 0009 ran; it is returned as is
- * so the app degrades to the old per-user metadata instead of crashing.
+ * Spread the shared catalog over the personal row: the film's fields come from
+ * `Catalog`; `id`, `createdAt`, `updatedAt` and every personal field stay the
+ * Title's. Every Title has a catalog (`catalogId` is NOT NULL since 0010).
  */
 export const flattenTitle = <T extends UserTitle>(row: RowWithCatalog<T>): FlattenedTitle<T> => {
   const { catalog: shared, ...personal } = row;
-  if (!shared) {
-    return personal as unknown as FlattenedTitle<T>;
-  }
-
   const fields: Partial<CatalogRow> = { ...shared };
   delete fields.id;
   delete fields.createdAt;

@@ -56,12 +56,13 @@ export const relinkTitle = async (
 
   const title = await db.query.titles.findFirst({
     where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
-    columns: { id: true, catalogId: true, kind: true },
+    columns: { id: true, catalogId: true },
+    with: { catalog: { columns: { kind: true } } },
   });
   if (!title) {
     return { ok: false, error: "Título no encontrado." };
   }
-  if (title.kind !== pick.kind) {
+  if (title.catalog.kind !== pick.kind) {
     return { ok: false, error: "Elige un título del mismo tipo (película o serie)." };
   }
 
@@ -91,15 +92,7 @@ export const relinkTitle = async (
   const { row: film, created } = await findOrCreateCatalog(pick);
   await db
     .update(titles)
-    .set({
-      catalogId: film.id,
-      // Snapshot columns kept in sync until 0010 drops them; reads use the catalog.
-      tmdbId: film.tmdbId,
-      name: film.name,
-      originalName: film.originalName,
-      year: film.year,
-      posterPath: film.posterPath,
-    })
+    .set({ catalogId: film.id })
     .where(and(eq(titles.id, titleId), eq(titles.userId, userId)));
 
   if (created) {
@@ -133,18 +126,19 @@ const requireOwnedSeries = async (titleId: string) => {
   const userId = await requireUserId();
   const title = await db.query.titles.findFirst({
     where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
-    columns: { id: true, kind: true, seriesStatus: true },
+    columns: { id: true, seriesStatus: true },
+    with: { catalog: { columns: { kind: true } } },
   });
 
   if (!title) {
     throw new Error("Título no encontrado.");
   }
 
-  if (title.kind !== "SERIES") {
+  if (title.catalog.kind !== "SERIES") {
     throw new Error("El estado de seguimiento solo aplica a series.");
   }
 
-  return { ...title, userId };
+  return { id: title.id, seriesStatus: title.seriesStatus, userId };
 };
 
 export const setTitleRating = async (titleId: string, formData: FormData) => {

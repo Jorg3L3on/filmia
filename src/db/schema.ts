@@ -132,6 +132,12 @@ export const catalog = pgTable(
   ],
 );
 
+/**
+ * A user's entry for one catalog film: everything personal (rating, review,
+ * where they watched it, when, series progress). The film itself — name,
+ * poster, credits, availability… — lives on `Catalog`; reads flatten the two
+ * with `flattenTitle`. One entry per film per user.
+ */
 export const titles = pgTable(
   "Title",
   {
@@ -139,43 +145,15 @@ export const titles = pgTable(
     userId: text("userId")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    /** Shared film row. Nullable until migration 0010 makes it required. */
-    catalogId: text("catalogId").references(() => catalog.id),
-    name: text("name").notNull(),
-    originalName: text("originalName"),
-    kind: titleKindEnum("kind").notNull(),
-    year: integer("year"),
+    catalogId: text("catalogId")
+      .notNull()
+      .references(() => catalog.id),
     rating: integer("rating"),
     review: text("review"),
     platform: platformEnum("platform"),
     watchedAt: timestamp("watchedAt", { precision: 3, mode: "date" }),
     seriesStatus: seriesStatusEnum("seriesStatus"),
     seriesSeason: integer("seriesSeason"),
-    tmdbId: integer("tmdbId"),
-    posterPath: text("posterPath"),
-    backdropPath: text("backdropPath"),
-    runtimeMinutes: integer("runtimeMinutes"),
-    imdbId: text("imdbId"),
-    imdbRating: real("imdbRating"),
-    overview: text("overview"),
-    tmdbGenres: jsonb("tmdbGenres").notNull().default([]),
-    watchProvidersMx: jsonb("watchProvidersMx"),
-    watchProvidersFetchedAt: timestamp("watchProvidersFetchedAt", {
-      precision: 3,
-      mode: "date",
-    }),
-    /** Esta noche (Hoy): TMDB keywords `[{ id, name }]` for the taste vector. */
-    tmdbKeywords: jsonb("tmdbKeywords").notNull().default([]),
-    /** Esta noche: `[{ id, name, role: "director" | "creator" | "cast" }]`. */
-    tmdbPeople: jsonb("tmdbPeople").notNull().default([]),
-    originalLanguage: text("originalLanguage"),
-    imdbVotes: integer("imdbVotes"),
-    /** OMDb `Awards` text, e.g. "Won 2 Oscars. 23 wins & 12 nominations total." */
-    awards: text("awards"),
-    /** Space-separated RGB (`"122 146 172"`) sampled server-side for the sala glow. */
-    posterAmbient: text("posterAmbient"),
-    /** First time we saw a flatrate MX offer — drives «Acaba de llegar». */
-    availableSince: timestamp("availableSince", { precision: 3, mode: "date" }),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),
@@ -187,12 +165,9 @@ export const titles = pgTable(
   (table) => [
     index("Title_userId_idx").on(table.userId),
     index("Title_catalogId_idx").on(table.catalogId),
+    uniqueIndex("Title_userId_catalogId_key").on(table.userId, table.catalogId),
     index("Title_userId_watchedAt_idx").on(table.userId, table.watchedAt),
-    index("Title_kind_idx").on(table.kind),
     index("Title_rating_idx").on(table.rating),
-    index("Title_name_idx").on(table.name),
-    index("Title_tmdbId_idx").on(table.tmdbId),
-    index("Title_imdbId_idx").on(table.imdbId),
     index("Title_seriesStatus_idx").on(table.seriesStatus),
     index("Title_userId_seriesStatus_idx").on(table.userId, table.seriesStatus),
   ],
@@ -323,7 +298,7 @@ export const listItemsRelations = relations(listItems, ({ one }) => ({
 
 export type User = typeof users.$inferSelect;
 export type CatalogRow = typeof catalog.$inferSelect;
-/** The personal row as stored (until 0010 it still carries stale metadata columns). */
+/** The personal row as stored. */
 export type UserTitle = typeof titles.$inferSelect;
 /** What `Catalog` contributes to a flattened title. */
 export type CatalogFields = Omit<CatalogRow, "id" | "createdAt" | "updatedAt">;

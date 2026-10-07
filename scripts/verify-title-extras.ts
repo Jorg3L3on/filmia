@@ -48,14 +48,14 @@ const run = async () => {
   assert(created, "Test film should not pre-exist in Catalog");
 
   const titleId = createId();
+  // `Title.updatedAt` has no DB default (Prisma-era column): always set both stamps.
+  const now = new Date();
   await db.insert(titles).values({
     id: titleId,
     userId: demo!.id,
     catalogId: film.id,
-    name: film.name,
-    kind: "MOVIE",
-    year: 2007,
-    tmdbId: TEST_TMDB_ID,
+    createdAt: now,
+    updatedAt: now,
   });
 
   try {
@@ -89,8 +89,7 @@ const run = async () => {
       where: eq(titles.id, titleId),
       with: { catalog: true },
     });
-    assert(viaTitle?.catalog?.overview === fetched.overview, "Title sees extras via its catalog");
-    assert(viaTitle?.overview == null, "Nothing is written to the Title's own columns");
+    assert(viaTitle?.catalog.overview === fetched.overview, "Title sees extras via its catalog");
 
     const warmRow = {
       id: titleId,

@@ -7,33 +7,12 @@ const personal = (overrides: Partial<UserTitle> = {}): UserTitle => ({
   id: "t1",
   userId: "u1",
   catalogId: "c1",
-  name: "Stale name",
-  originalName: null,
-  kind: "MOVIE",
-  year: 1999,
   rating: 9,
   review: "mine",
   platform: "NETFLIX",
   watchedAt: new Date("2026-10-01T12:00:00.000Z"),
   seriesStatus: null,
   seriesSeason: null,
-  tmdbId: 603,
-  posterPath: "/stale.jpg",
-  backdropPath: null,
-  runtimeMinutes: null,
-  imdbId: null,
-  imdbRating: null,
-  overview: null,
-  tmdbGenres: [],
-  watchProvidersMx: null,
-  watchProvidersFetchedAt: null,
-  tmdbKeywords: [],
-  tmdbPeople: [],
-  originalLanguage: null,
-  imdbVotes: null,
-  awards: null,
-  posterAmbient: null,
-  availableSince: null,
   createdAt: new Date("2026-09-01T00:00:00.000Z"),
   updatedAt: new Date("2026-09-02T00:00:00.000Z"),
   ...overrides,
@@ -76,7 +55,7 @@ describe("catalog-core/catalogIdFor", () => {
 });
 
 describe("catalog-core/flattenTitle", () => {
-  it("lets the catalog win over stale per-user metadata and keeps personal fields", () => {
+  it("puts the film's data on the personal row and keeps personal fields", () => {
     const flat = flattenTitle({ ...personal(), catalog: shared });
     assert.equal(flat.name, "Matrix");
     assert.equal(flat.posterPath, "/fresh.jpg");
@@ -104,11 +83,5 @@ describe("catalog-core/flattenTitle", () => {
       listItems: [{ listId: "l1" }],
     });
     assert.deepEqual(flat.listItems, [{ listId: "l1" }]);
-  });
-
-  it("falls back to the row's own columns when the catalog is missing (pre-0009)", () => {
-    const flat = flattenTitle({ ...personal(), catalog: null });
-    assert.equal(flat.name, "Stale name");
-    assert.equal(flat.posterPath, "/stale.jpg");
   });
 });

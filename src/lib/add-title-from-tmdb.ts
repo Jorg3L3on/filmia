@@ -175,14 +175,6 @@ export const upsertTitleFromTmdbForUser = async (
     id: titleId,
     userId,
     catalogId: shared.id,
-    // Snapshot columns kept in sync for the pre-0010 schema (NOT NULL name/kind);
-    // reads go through the catalog, and 0010 drops them.
-    name: shared.name,
-    originalName: shared.originalName,
-    kind,
-    year: shared.year,
-    tmdbId,
-    posterPath: shared.posterPath,
     watchedAt: markWatched ? resolveWatchedAt(input.watchedAt) : null,
     createdAt: now,
     updatedAt: now,
