@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { catalog, db, type CatalogRow } from "@/db";
 import { scheduleAfterResponse } from "@/lib/after-response";
+import { catalogEnrichmentPatch, onlyMissingFields } from "@/lib/catalog-enrich-core";
 import { resolveTitleMetadata } from "@/lib/metadata";
 import { formatAmbientRgb } from "@/lib/poster-ambient";
 import { sampleAmbientFromPosterPath } from "@/lib/poster-ambient-server";
@@ -15,7 +16,13 @@ export type CatalogEnrichTarget = Pick<CatalogRow, "id" | "tmdbId" | "kind" | "n
  * awards), MX availability and the poster ambient. Runs once per film: every
  * user who saves it afterwards gets the finished row for free.
  */
-export const enrichCatalog = async (row: CatalogEnrichTarget) => {
+export const enrichCatalog = async (
+  row: CatalogEnrichTarget,
+  options: {
+    /** Backfills pass the stored row: only its empty columns get filled. */
+    onlyMissing?: Record<string, unknown>;
+  } = {},
+) => {
   const [resolved] = await Promise.all([
     resolveTitleMetadata(row.tmdbId, row.kind).catch(() => null),
     enrichWatchProvidersOnSave(row.id, row.tmdbId, row.kind),
@@ -29,27 +36,14 @@ export const enrichCatalog = async (row: CatalogEnrichTarget) => {
     ? formatAmbientRgb(await sampleAmbientFromPosterPath(resolved.posterPath))
     : null;
 
-  await db
-    .update(catalog)
-    .set({
-      name: resolved.name?.trim() || row.name,
-      originalName: resolved.originalName ?? null,
-      year: resolved.year ?? null,
-      posterPath: resolved.posterPath,
-      backdropPath: resolved.backdropPath ?? null,
-      runtimeMinutes: resolved.runtimeMinutes ?? null,
-      imdbId: resolved.imdbId,
-      imdbRating: resolved.imdbRating,
-      imdbVotes: resolved.imdbVotes ?? null,
-      awards: resolved.awards ?? null,
-      overview: resolved.overview ?? null,
-      tmdbGenres: resolved.tmdbGenres,
-      tmdbKeywords: resolved.tmdbKeywords ?? [],
-      tmdbPeople: resolved.tmdbPeople ?? [],
-      originalLanguage: resolved.originalLanguage ?? null,
-      posterAmbient: ambient,
-    })
-    .where(eq(catalog.id, row.id));
+  // Only fields that came back: a failed OMDb/TMDB lookup must not blank the shared row.
+  const fresh = catalogEnrichmentPatch(resolved, { posterAmbient: ambient });
+  const patch = options.onlyMissing ? onlyMissingFields(fresh, options.onlyMissing) : fresh;
+  if (Object.keys(patch).length === 0) {
+    return false;
+  }
+
+  await db.update(catalog).set(patch).where(eq(catalog.id, row.id));
 
   return true;
 };
