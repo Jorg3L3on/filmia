@@ -167,7 +167,7 @@ export const CoverflowDeck = ({
             ? "overflow-visible bg-transparent px-0 pb-2 pt-1 focus-visible:ring-2 focus-visible:ring-accent/60"
             : cinematic
               ? "coverflow-cinematic flex min-h-0 flex-1 flex-col overflow-visible border-0 bg-transparent px-0 py-0 outline-none ring-0"
-              : "overflow-hidden rounded-md border border-line bg-gradient-to-b from-canvas-deep via-canvas to-[#0a0d10] px-1 pb-9 pt-4 focus-visible:ring-2 focus-visible:ring-accent/60 sm:px-8 sm:pb-14 sm:pt-14",
+              : "overflow-hidden rounded-md border border-line bg-gradient-to-b from-canvas-deep via-canvas to-[#0a0d10] px-1 pb-[4.5rem] pt-4 focus-visible:ring-2 focus-visible:ring-accent/60 sm:px-8 sm:pb-24 sm:pt-14",
         )}
       >
         <div
