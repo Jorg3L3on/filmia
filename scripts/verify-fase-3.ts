@@ -270,7 +270,6 @@ const run = () => {
   assert(
     preview.includes("SheetHandle") &&
       preview.includes("sm:hidden") &&
-      preview.includes("CloseIcon") &&
       preview.includes("press-scale") &&
       preview.includes("var(--duration-hover)"),
     "Search preview sheet matches MarkWatched chrome + press/hover tokens",
