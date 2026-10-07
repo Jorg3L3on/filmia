@@ -134,6 +134,14 @@ assert(
 
 assert(listCard.includes("card-physics"), "ListCard uses card-physics");
 assert(
+  /@media \(hover: hover\)\s*\{\s*\.card-physics:hover/.test(css),
+  "card-physics hover lift only on hover-capable pointers (no sticky hover on touch)",
+);
+assert(
+  css.includes(".card-physics.press-scale {"),
+  "card-physics + press-scale share one transition (press owns transform)",
+);
+assert(
   posterStack.includes("SharedPoster"),
   "PosterStack wraps posters in SharedPoster for list morph",
 );

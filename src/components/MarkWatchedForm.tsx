@@ -87,7 +87,7 @@ export const MarkWatchedForm = ({
             defaultValue={defaultDate}
             required
             aria-label="Fecha en que la viste"
-            className={cn(fieldClass, "[color-scheme:dark]", isCompact && "px-2 py-1 text-xs")}
+            className={cn(fieldClass, "date-field", isCompact && "px-2 py-1 text-xs")}
           />
         </label>
 
