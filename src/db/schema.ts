@@ -79,6 +79,59 @@ export const users = pgTable(
   ],
 );
 
+/**
+ * One row per film/series, shared by every user and keyed by `(tmdbId, kind)`.
+ * Holds everything that comes from TMDB/OMDb or is derived from it; users never
+ * edit it. Personal data (rating, review, watchedAt…) lives on `Title`.
+ */
+export const catalog = pgTable(
+  "Catalog",
+  {
+    id: text("id").primaryKey(),
+    tmdbId: integer("tmdbId").notNull(),
+    kind: titleKindEnum("kind").notNull(),
+    name: text("name").notNull(),
+    originalName: text("originalName"),
+    year: integer("year"),
+    posterPath: text("posterPath"),
+    backdropPath: text("backdropPath"),
+    runtimeMinutes: integer("runtimeMinutes"),
+    imdbId: text("imdbId"),
+    imdbRating: real("imdbRating"),
+    imdbVotes: integer("imdbVotes"),
+    /** OMDb `Awards` text, e.g. "Won 2 Oscars. 23 wins & 12 nominations total." */
+    awards: text("awards"),
+    overview: text("overview"),
+    tmdbGenres: jsonb("tmdbGenres").notNull().default([]),
+    /** Esta noche (Hoy): TMDB keywords `[{ id, name }]` for the taste vector. */
+    tmdbKeywords: jsonb("tmdbKeywords").notNull().default([]),
+    /** Esta noche: `[{ id, name, role: "director" | "creator" | "cast" }]`. */
+    tmdbPeople: jsonb("tmdbPeople").notNull().default([]),
+    originalLanguage: text("originalLanguage"),
+    watchProvidersMx: jsonb("watchProvidersMx"),
+    watchProvidersFetchedAt: timestamp("watchProvidersFetchedAt", {
+      precision: 3,
+      mode: "date",
+    }),
+    /** First time we saw a flatrate MX offer — drives «Acaba de llegar». */
+    availableSince: timestamp("availableSince", { precision: 3, mode: "date" }),
+    /** Space-separated RGB (`"122 146 172"`) sampled server-side for the sala glow. */
+    posterAmbient: text("posterAmbient"),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("Catalog_tmdbId_kind_key").on(table.tmdbId, table.kind),
+    index("Catalog_imdbId_idx").on(table.imdbId),
+    index("Catalog_watchProvidersFetchedAt_idx").on(table.watchProvidersFetchedAt),
+  ],
+);
+
 export const titles = pgTable(
   "Title",
   {
@@ -86,6 +139,8 @@ export const titles = pgTable(
     userId: text("userId")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    /** Shared film row. Nullable until migration 0010 makes it required. */
+    catalogId: text("catalogId").references(() => catalog.id),
     name: text("name").notNull(),
     originalName: text("originalName"),
     kind: titleKindEnum("kind").notNull(),
@@ -131,6 +186,7 @@ export const titles = pgTable(
   },
   (table) => [
     index("Title_userId_idx").on(table.userId),
+    index("Title_catalogId_idx").on(table.catalogId),
     index("Title_userId_watchedAt_idx").on(table.userId, table.watchedAt),
     index("Title_kind_idx").on(table.kind),
     index("Title_rating_idx").on(table.rating),
@@ -245,8 +301,13 @@ export const usersRelations = relations(users, ({ many }) => ({
   lists: many(lists),
 }));
 
+export const catalogRelations = relations(catalog, ({ many }) => ({
+  titles: many(titles),
+}));
+
 export const titlesRelations = relations(titles, ({ one, many }) => ({
   user: one(users, { fields: [titles.userId], references: [users.id] }),
+  catalog: one(catalog, { fields: [titles.catalogId], references: [catalog.id] }),
   listItems: many(listItems),
 }));
 
@@ -261,6 +322,7 @@ export const listItemsRelations = relations(listItems, ({ one }) => ({
 }));
 
 export type User = typeof users.$inferSelect;
+export type CatalogRow = typeof catalog.$inferSelect;
 export type Title = typeof titles.$inferSelect;
 export type List = typeof lists.$inferSelect;
 export type ListItem = typeof listItems.$inferSelect;
