@@ -1,15 +1,15 @@
-import { TitleActionRow } from "@/components/TitleActionRow";
+import type { ReactNode } from "react";
+import { TitleFichaActions } from "@/components/TitleFichaActions";
 import { TitleHero } from "@/components/TitleHero";
 import { TitleListsPanel } from "@/components/TitleListsPanel";
 import { TitlePosterRail } from "@/components/TitlePosterRail";
-import { TitleSaveCta } from "@/components/TitleSaveCta";
 import { TitleSynopsis } from "@/components/TitleSynopsis";
-import { TitleTagsPanel } from "@/components/TitleTagsPanel";
 import { WatchProvidersMx } from "@/components/WatchProvidersMx";
 import { TitleKind } from "@/db";
-import { WATCHLIST_SLUG } from "@/lib/lists";
+import { titleListMemberships } from "@/lib/list-membership";
 import { formatRuntime, TITLE_KIND_LABEL } from "@/lib/labels";
-import type { FilterTag } from "@/lib/queries";
+import { parseStoredPeople } from "@/lib/tonight-store";
+import { formatCredits } from "@/lib/watchlist-credits";
 import { isTmdbConfigured, tmdbBackdropUrl, type TmdbTitleExtras } from "@/lib/tmdb";
 import type { WatchProvidersResult } from "@/lib/watch-providers-cache";
 import type { getAssignableLists, getRelatedTitles, getTitleById, getUserStreamingPlatforms } from "@/lib/queries";
@@ -23,14 +23,20 @@ const posterBackdrop = (posterPath: string | null | undefined) =>
   posterPath ? `https://image.tmdb.org/t/p/w780${posterPath}` : null;
 
 const titleMembership = (title: TitleDetail) => {
-  const memberLists = title.listItems?.map((item) => item.list) ?? [];
+  const memberLists =
+    title.listItems?.map(({ list }) => ({ id: list.id, name: list.name, slug: list.slug })) ?? [];
+  const memberships = titleListMemberships(memberLists);
   return {
     memberLists,
     memberListIds: title.listItems?.map((item) => item.listId) ?? [],
-    inWatchlist: memberLists.some((list) => list.slug === WATCHLIST_SLUG),
-    inCustomList: memberLists.some((list) => list.slug !== WATCHLIST_SLUG),
+    inWatchlist: memberships.inWatchlist,
+    listCount: memberships.lists.length,
   };
 };
+
+/** «Dirigida por … · Con …» (or «Creada por …» for series) from the enriched people; null when empty. */
+export const titleCredits = (title: Pick<TitleDetail, "tmdbPeople" | "kind">) =>
+  formatCredits(parseStoredPeople(title.tmdbPeople), title.kind);
 
 export const TitleHeroFallback = ({
   title,
@@ -91,14 +97,12 @@ export const TitleHeroBlock = async ({
 export const TitleActionsBlock = async ({
   title,
   listsPromise,
-  tagsPromise,
 }: {
   title: TitleDetail;
   listsPromise: Promise<AssignableLists>;
-  tagsPromise: Promise<FilterTag[]>;
 }) => {
-  const [assignableLists, tags] = await Promise.all([listsPromise, tagsPromise]);
-  const { memberLists, memberListIds, inWatchlist, inCustomList } = titleMembership(title);
+  const assignableLists = await listsPromise;
+  const { memberLists, memberListIds, inWatchlist, listCount } = titleMembership(title);
   const listsPanel = (
     <TitleListsPanel
       titleId={title.id}
@@ -108,31 +112,34 @@ export const TitleActionsBlock = async ({
   );
 
   return (
-    <>
-      <TitleSaveCta
-        titleId={title.id}
-        inWatchlist={inWatchlist}
-        memberLists={memberLists}
-        listsPanel={listsPanel}
-      />
-      <TitleActionRow
-        titleId={title.id}
-        titleName={title.name}
-        watched={Boolean(title.watchedAt)}
-        inWatchlist={inWatchlist}
-        inCustomList={inCustomList}
-        rating={title.rating}
-        review={title.review}
-        listsPanel={listsPanel}
-        tagsPanel={
-          <TitleTagsPanel
-            titleId={title.id}
-            tags={tags}
-            selectedTagIds={title.tags.map((item) => item.tagId)}
-          />
-        }
-      />
-    </>
+    <TitleFichaActions
+      titleId={title.id}
+      titleName={title.name}
+      watched={Boolean(title.watchedAt)}
+      inWatchlist={inWatchlist}
+      memberLists={memberLists}
+      listCount={listCount}
+      rating={title.rating}
+      review={title.review ?? null}
+      platform={title.platform ?? null}
+      listsPanel={listsPanel}
+    />
+  );
+};
+
+/** Ficha credits; renders nothing when TMDB people are missing or unusable. */
+export const TitleCredits = ({ credits }: { credits: string | null }) => {
+  if (!credits) {
+    return null;
+  }
+
+  return (
+    <section className="space-y-2" aria-label="Créditos">
+      <h2 className="text-[11px] font-medium uppercase tracking-[0.22em] text-mist">
+        Créditos
+      </h2>
+      <p className="max-w-2xl text-sm leading-7 text-fog">{credits}</p>
+    </section>
   );
 };
 
@@ -161,18 +168,45 @@ export const TitleProvidersBlock = async ({
 export const TitleSynopsisBlock = async ({
   storedOverview,
   extrasPromise,
+  credits = null,
 }: {
   storedOverview: string | null;
   extrasPromise: Promise<TmdbTitleExtras | null>;
+  credits?: string | null;
 }) => {
   const stored = storedOverview?.trim() || null;
   if (stored) {
-    return <TitleSynopsis text={stored} />;
+    return (
+      <SynopsisWithCredits credits={credits}>
+        <TitleSynopsis text={stored} />
+      </SynopsisWithCredits>
+    );
   }
 
   const extras = await extrasPromise;
-  return <TitleSynopsis text={extras?.overview ?? null} />;
+  return (
+    <SynopsisWithCredits credits={credits}>
+      <TitleSynopsis text={extras?.overview ?? null} />
+    </SynopsisWithCredits>
+  );
 };
+
+/** Credits ride with the synopsis so they stream in together (no shift under a late overview). */
+const SynopsisWithCredits = ({
+  credits,
+  children,
+}: {
+  credits: string | null;
+  children: ReactNode;
+}) =>
+  credits ? (
+    <div className="space-y-6">
+      {children}
+      <TitleCredits credits={credits} />
+    </div>
+  ) : (
+    children
+  );
 
 export const TitleRelatedBlock = async ({
   relatedPromise,

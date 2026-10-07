@@ -6,11 +6,10 @@ loadEnv({ path: ".env.local" });
 loadEnv();
 
 import {
+  catalog,
   db,
   listItems,
   lists,
-  tags,
-  titleTags,
   titles,
   users,
   type Platform,
@@ -18,9 +17,8 @@ import {
   type TitleKind,
 } from "../src/db/index";
 import { hashPassword } from "../src/lib/auth/password";
-import { slugify } from "../src/lib/labels";
+import { findOrCreateCatalog } from "../src/lib/catalog";
 import { DEFAULT_LISTS, WATCHLIST_SLUG } from "../src/lib/lists";
-import { DEFAULT_TAG_NAMES } from "../src/lib/tags";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL no está definida.");
@@ -38,7 +36,6 @@ type SeedTitle = {
   rating?: number;
   review?: string;
   platform?: Platform;
-  tags: string[];
   lists: string[];
   watched?: boolean;
   seriesStatus?: SeriesStatus;
@@ -112,7 +109,6 @@ const seedTitles: SeedTitle[] = [
     rating: 9,
     review: "Épica de arena y honor. Seed de gusto, no un diario personal.",
     platform: "PRIME",
-    tags: ["Épica / guerra", "Histórico"],
     lists: ["Épicas", "Favoritas"],
     watched: true,
     tmdbId: 98,
@@ -125,7 +121,6 @@ const seedTitles: SeedTitle[] = [
     rating: 7,
     review: "Homero con bloquebuster: bronce, playa y discurso.",
     platform: "MAX",
-    tags: ["Épica / guerra", "Histórico"],
     lists: ["Épicas"],
     watched: true,
     tmdbId: 652,
@@ -139,7 +134,6 @@ const seedTitles: SeedTitle[] = [
     rating: 8,
     review: "Romain Gavras. Tensión urbana en un solo aliento.",
     platform: "NETFLIX",
-    tags: ["Thriller", "francés"],
     lists: ["Visto recientemente"],
     watched: true,
     tmdbId: 852046,
@@ -152,7 +146,6 @@ const seedTitles: SeedTitle[] = [
     rating: 8,
     review: "Venganza nórdica, barro y mito.",
     platform: "PRIME",
-    tags: ["Épica / guerra", "Histórico"],
     lists: ["Épicas", "Favoritas"],
     watched: true,
     tmdbId: 639933,
@@ -165,7 +158,6 @@ const seedTitles: SeedTitle[] = [
     rating: 10,
     review: "Vibe desierto/cromo. Persecución absoluta.",
     platform: "MAX",
-    tags: ["Visual / espectáculo", "Vibe Mad Max"],
     lists: ["Vibe Mad Max / Tron", "Por rewatch"],
     watched: true,
     tmdbId: 76341,
@@ -178,7 +170,6 @@ const seedTitles: SeedTitle[] = [
     rating: 7,
     review: "Neón, grid y soundtrack. Vibe Tron.",
     platform: "DISNEY",
-    tags: ["Sci-fi", "Visual / espectáculo", "Vibe Tron"],
     lists: ["Vibe Mad Max / Tron", "Por rewatch"],
     watched: true,
     tmdbId: 20526,
@@ -192,7 +183,6 @@ const seedTitles: SeedTitle[] = [
     rating: 9,
     review: "Arena, política y mesías. Dummy seed.",
     platform: "MAX",
-    tags: ["Sci-fi", "Épica / guerra", "Visual / espectáculo"],
     lists: ["Épicas", "Visto recientemente", "Favoritas"],
     watched: true,
     tmdbId: 693134,
@@ -205,7 +195,6 @@ const seedTitles: SeedTitle[] = [
     rating: 10,
     review: "Canon. Terminada, sin checklist de episodios.",
     platform: "NETFLIX",
-    tags: ["Thriller"],
     lists: ["Favoritas"],
     watched: true,
     seriesStatus: "FINISHED",
@@ -219,7 +208,6 @@ const seedTitles: SeedTitle[] = [
     rating: 9,
     review: "Viendo. Temporada actual, sin progreso por capítulo.",
     platform: "MAX",
-    tags: ["Thriller"],
     lists: ["Visto recientemente"],
     watched: true,
     seriesStatus: "WATCHING",
@@ -419,27 +407,6 @@ const ensureDemoUser = async (userId: string) => {
   });
 };
 
-const upsertTag = async (userId: string, name: string) => {
-  const slug = slugify(name);
-  const existing = await db.query.tags.findFirst({
-    where: and(eq(tags.userId, userId), eq(tags.slug, slug)),
-  });
-
-  if (existing) {
-    await db.update(tags).set({ name }).where(eq(tags.id, existing.id));
-    return existing;
-  }
-
-  const tagId = createId();
-  await db.insert(tags).values({ id: tagId, userId, name, slug });
-  return db.query.tags.findFirst({ where: eq(tags.id, tagId) }).then((tag) => {
-    if (!tag) {
-      throw new Error("No se pudo crear la etiqueta.");
-    }
-    return tag;
-  });
-};
-
 const upsertCollection = async (userId: string, name: string) => {
   const existing = await db.query.lists.findFirst({
     where: and(eq(lists.userId, userId), eq(lists.name, name), eq(lists.kind, "COLLECTION")),
@@ -498,40 +465,36 @@ const seed = async () => {
   const demoUser = await ensureDemoUser(DEMO_USER_ID);
   const userId = demoUser.id;
 
-  const tagRecords = new Map<string, { id: string }>();
   const listRecords = new Map<string, { id: string }>();
 
-  const uniqueTags = [
-    ...new Set([...DEFAULT_TAG_NAMES, ...seedTitles.flatMap((title) => title.tags)]),
-  ];
   const uniqueLists = [...new Set(seedTitles.flatMap((title) => title.lists))];
 
   const watchlist = await ensureDefaultListsForSeed(userId);
-
-  for (const tagName of uniqueTags) {
-    tagRecords.set(tagName, await upsertTag(userId, tagName));
-  }
 
   for (const listName of uniqueLists) {
     listRecords.set(listName, await upsertCollection(userId, listName));
   }
 
   for (const [index, title] of seedTitles.entries()) {
+    // The film lives once in Catalog; the demo user's row only carries personal fields.
+    const { row: film } = await findOrCreateCatalog({
+      tmdbId: title.tmdbId,
+      kind: title.kind,
+      name: title.name,
+      originalName: title.originalName,
+      year: title.year,
+      posterPath: title.posterPath,
+    });
     const existing = await db.query.titles.findFirst({
-      where: and(eq(titles.userId, userId), eq(titles.name, title.name), eq(titles.year, title.year)),
+      where: and(eq(titles.userId, userId), eq(titles.catalogId, film.id)),
     });
 
     const data = {
       userId,
-      name: title.name,
-      originalName: title.originalName,
-      kind: title.kind,
-      year: title.year,
+      catalogId: film.id,
       rating: title.rating ?? null,
       review: title.review ?? null,
       platform: title.platform ?? null,
-      tmdbId: title.tmdbId,
-      posterPath: title.posterPath,
       watchedAt: title.watched
         ? new Date(`${title.year}-06-15T12:00:00.000Z`)
         : null,
@@ -544,20 +507,11 @@ const seed = async () => {
       await db.update(titles).set(data).where(eq(titles.id, existing.id));
     } else {
       savedId = createId();
-      await db.insert(titles).values({ id: savedId, ...data });
+      // `Title.updatedAt` has no DB default (Prisma-era column): always set both stamps.
+      await db.insert(titles).values({ id: savedId, ...data, createdAt: new Date(), updatedAt: new Date() });
     }
 
     const titleId = savedId!;
-
-    await db.delete(titleTags).where(eq(titleTags.titleId, titleId));
-    if (title.tags.length > 0) {
-      await db.insert(titleTags).values(
-        title.tags.map((tagName) => ({
-          titleId,
-          tagId: tagRecords.get(tagName)!.id,
-        })),
-      );
-    }
 
     for (const listName of title.lists) {
       await db
@@ -575,19 +529,31 @@ const seed = async () => {
   }
 
   for (const item of watchlistQueue) {
+    const { row: film } = await findOrCreateCatalog({
+      tmdbId: item.tmdbId,
+      kind: item.kind,
+      name: item.name,
+      year: item.year,
+      posterPath: item.posterPath,
+    });
+    // Demo metadata goes on the shared row (the seed is the source of truth for the demo).
+    await db
+      .update(catalog)
+      .set({
+        imdbRating: item.imdbRating ?? null,
+        overview: item.overview ?? null,
+        tmdbGenres: item.tmdbGenres ?? [],
+        watchProvidersMx: item.watchProvidersMx ?? null,
+        watchProvidersFetchedAt: item.watchProvidersMx ? new Date() : null,
+      })
+      .where(eq(catalog.id, film.id));
     const existing = await db.query.titles.findFirst({
-      where: and(eq(titles.userId, userId), eq(titles.name, item.name), eq(titles.year, item.year)),
+      where: and(eq(titles.userId, userId), eq(titles.catalogId, film.id)),
     });
 
     const queueData = {
-      kind: item.kind,
+      catalogId: film.id,
       platform: item.platform ?? null,
-      tmdbId: item.tmdbId,
-      posterPath: item.posterPath,
-      imdbRating: item.imdbRating ?? null,
-      overview: item.overview ?? null,
-      tmdbGenres: item.tmdbGenres ?? [],
-      watchProvidersMx: item.watchProvidersMx ?? null,
       seriesStatus: item.kind === "SERIES" ? (item.seriesStatus ?? null) : null,
       seriesSeason: item.kind === "SERIES" ? (item.seriesSeason ?? null) : null,
     };
@@ -607,9 +573,9 @@ const seed = async () => {
       await db.insert(titles).values({
         id: savedId,
         userId,
-        name: item.name,
-        year: item.year,
         ...queueData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
     }
 

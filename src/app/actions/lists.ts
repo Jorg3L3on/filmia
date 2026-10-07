@@ -1,19 +1,36 @@
 "use server";
 
 import { createId } from "@paralleldrive/cuid2";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, listItems, lists, titles } from "@/db";
+import {
+  upsertTitleFromTmdbForUser,
+  type AddTitleFromTmdbInput,
+} from "@/lib/add-title-from-tmdb";
 import { parseRequiredName } from "@/lib/form-data";
 import { slugify } from "@/lib/labels";
-import { isFixedListSlug, isReservedListSlug, listHref, WATCHLIST_SLUG } from "@/lib/lists";
+import {
+  hasDuplicateListName,
+  isRenameBlocked,
+  LIST_NAME_TAKEN_MESSAGE,
+  type ListFormState,
+} from "@/lib/list-names";
+import {
+  isFixedListSlug,
+  isReservedListSlug,
+  isSeriesStatusListSlug,
+  listHref,
+  WATCHLIST_SLUG,
+} from "@/lib/lists";
 import {
   type ListMoveDirection,
   reorderListItems,
   swapAdjacentListItems,
   swapListItemPositions,
 } from "@/lib/list-order";
+import { revalidateSearchAddSurfaces } from "@/lib/revalidate-surfaces";
 import { requireUserId } from "@/lib/session";
 import { scheduleTonightRecompute } from "@/lib/tonight-store";
 
@@ -32,7 +49,6 @@ const revalidateLists = (
   }
   if (titleId) {
     revalidatePath(`/titulos/${titleId}`);
-    revalidatePath(`/titulos/${titleId}/editar`);
   }
 };
 
@@ -49,13 +65,64 @@ const requireOwnedList = async (listId: string, userId: string) => {
   return list;
 };
 
-export const createList = async (formData: FormData) => {
-  const userId = await requireUserId();
-  const name = parseRequiredName(formData.get("name"));
-  const description = String(formData.get("description") ?? "").trim() || null;
+type ListSaveOutcome = { error: string } | { redirectTo: string };
+
+const readListFormValues = (formData: FormData) => ({
+  name: String(formData.get("name") ?? ""),
+  description: String(formData.get("description") ?? ""),
+});
+
+const parseListName = (
+  value: FormDataEntryValue | null,
+): { name: string } | { error: string } => {
+  try {
+    return { name: parseRequiredName(value) };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Datos no válidos." };
+  }
+};
+
+/**
+ * Error de nombre para una lista propia: choque con otra lista del usuario
+ * (diarias incluidas, comparando con `slugify`) o nombre reservado.
+ */
+const userListNameError = async (
+  userId: string,
+  name: string,
+  current?: { id: string; name: string },
+) => {
+  const existing = await db.query.lists.findMany({
+    where: eq(lists.userId, userId),
+    columns: { id: true, name: true },
+  });
+
+  const taken = current
+    ? isRenameBlocked(name, existing, current)
+    : hasDuplicateListName(name, existing);
+  if (taken) {
+    return LIST_NAME_TAKEN_MESSAGE;
+  }
 
   if (isReservedListSlug(slugify(name))) {
-    throw new Error("Ese nombre está reservado para una lista diaria.");
+    return "Ese nombre está reservado para una lista diaria.";
+  }
+
+  return null;
+};
+
+const saveNewList = async (formData: FormData): Promise<ListSaveOutcome> => {
+  const userId = await requireUserId();
+  const parsed = parseListName(formData.get("name"));
+  if ("error" in parsed) {
+    return parsed;
+  }
+
+  const { name } = parsed;
+  const description = String(formData.get("description") ?? "").trim() || null;
+
+  const nameError = await userListNameError(userId, name);
+  if (nameError) {
+    return { error: nameError };
   }
 
   const listId = createId();
@@ -71,25 +138,63 @@ export const createList = async (formData: FormData) => {
   });
 
   revalidateLists(listId);
-  redirect(`/listas/${listId}`);
+  return { redirectTo: `/listas/${listId}` };
 };
 
-export const updateList = async (listId: string, formData: FormData) => {
+const saveListChanges = async (
+  listId: string,
+  formData: FormData,
+): Promise<ListSaveOutcome> => {
   const userId = await requireUserId();
   const description = String(formData.get("description") ?? "").trim() || null;
   const existing = await requireOwnedList(listId, userId);
-  const name = isFixedListSlug(existing.slug)
-    ? existing.name
-    : parseRequiredName(formData.get("name"));
+  const fixed = isFixedListSlug(existing.slug);
 
-  if (!isFixedListSlug(existing.slug) && isReservedListSlug(slugify(name))) {
-    throw new Error("Ese nombre está reservado para una lista diaria.");
+  let name = existing.name;
+  if (!fixed) {
+    const parsed = parseListName(formData.get("name"));
+    if ("error" in parsed) {
+      return parsed;
+    }
+
+    name = parsed.name;
+    const nameError = await userListNameError(userId, name, existing);
+    if (nameError) {
+      return { error: nameError };
+    }
   }
 
   await db.update(lists).set({ name, description }).where(eq(lists.id, listId));
 
   revalidateLists(listId);
-  redirect(listHref(existing));
+  return { redirectTo: listHref(existing) };
+};
+
+/** Crea una lista propia (`useActionState`): los errores de nombre vuelven al formulario. */
+export const createListWithFeedback = async (
+  _prev: ListFormState,
+  formData: FormData,
+): Promise<ListFormState> => {
+  const outcome = await saveNewList(formData);
+  if ("error" in outcome) {
+    return { error: outcome.error, values: readListFormValues(formData) };
+  }
+
+  redirect(outcome.redirectTo);
+};
+
+/** Edita una lista (`useActionState`): los errores de nombre vuelven al formulario. */
+export const updateListWithFeedback = async (
+  listId: string,
+  _prev: ListFormState,
+  formData: FormData,
+): Promise<ListFormState> => {
+  const outcome = await saveListChanges(listId, formData);
+  if ("error" in outcome) {
+    return { error: outcome.error, values: readListFormValues(formData) };
+  }
+
+  redirect(outcome.redirectTo);
 };
 
 export const deleteList = async (listId: string) => {
@@ -111,6 +216,10 @@ export const addTitleToList = async (listId: string, titleId: string) => {
   }
 
   const list = await requireOwnedList(listId, userId);
+
+  if (isSeriesStatusListSlug(list.slug)) {
+    throw new Error("Esta lista se actualiza sola con el estado de la serie.");
+  }
 
   const title = await db.query.titles.findFirst({
     where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
@@ -143,6 +252,10 @@ export const removeTitleFromList = async (listId: string, titleId: string) => {
   const userId = await requireUserId();
   const list = await requireOwnedList(listId, userId);
 
+  if (isSeriesStatusListSlug(list.slug)) {
+    throw new Error("Esta lista se actualiza sola con el estado de la serie.");
+  }
+
   await db
     .delete(listItems)
     .where(and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)));
@@ -153,6 +266,10 @@ export const removeTitleFromList = async (listId: string, titleId: string) => {
 export const toggleTitleInList = async (listId: string, titleId: string) => {
   const userId = await requireUserId();
   const list = await requireOwnedList(listId, userId);
+
+  if (isSeriesStatusListSlug(list.slug)) {
+    throw new Error("Esta lista se actualiza sola con el estado de la serie.");
+  }
 
   const title = await db.query.titles.findFirst({
     where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
@@ -212,3 +329,110 @@ export const reorderList = async (listId: string, orderedTitleIds: string[]) => 
     revalidateLists(listId, undefined, list.slug);
   }
 };
+
+export type SaveTmdbTitleInListsResult =
+  | { ok: true; titleId: string; created: boolean }
+  | { ok: false; error: string };
+
+/**
+ * Upserts a TMDB title for the user (no Quiero ver / Visto side effects) and
+ * applies a list diff in one round trip. Idempotent: re-adding is a no-op
+ * (`onConflictDoNothing`), removing a missing row does nothing.
+ */
+export const saveTmdbTitleInLists = async ({
+  tmdb,
+  add,
+  remove = [],
+}: {
+  tmdb: AddTitleFromTmdbInput;
+  add: string[];
+  remove?: string[];
+}): Promise<SaveTmdbTitleInListsResult> => {
+  const userId = await requireUserId();
+  const addIds = [...new Set(add)];
+  const removeIds = [...new Set(remove)].filter((id) => !addIds.includes(id));
+  const touchedIds = [...addIds, ...removeIds];
+
+  try {
+    const owned =
+      touchedIds.length > 0
+        ? await db.query.lists.findMany({
+            where: and(eq(lists.userId, userId), inArray(lists.id, touchedIds)),
+            columns: { id: true, slug: true },
+          })
+        : [];
+
+    if (owned.length !== touchedIds.length) {
+      return { ok: false, error: "Lista no encontrada." };
+    }
+
+    if (owned.some((list) => isSeriesStatusListSlug(list.slug))) {
+      return { ok: false, error: "Esta lista se actualiza sola con el estado de la serie." };
+    }
+
+    const upserted = await upsertTitleFromTmdbForUser(userId, {
+      tmdbId: tmdb.tmdbId,
+      kind: tmdb.kind,
+      name: tmdb.name,
+      originalName: tmdb.originalName,
+      year: tmdb.year,
+      posterPath: tmdb.posterPath,
+    });
+
+    if (!upserted.ok) {
+      return upserted;
+    }
+
+    const { titleId } = upserted;
+
+    if (addIds.length > 0) {
+      const tails = await Promise.all(
+        addIds.map((listId) =>
+          db.query.listItems.findFirst({
+            where: eq(listItems.listId, listId),
+            orderBy: [desc(listItems.position)],
+            columns: { position: true },
+          }),
+        ),
+      );
+
+      await db
+        .insert(listItems)
+        .values(
+          addIds.map((listId, index) => ({
+            listId,
+            titleId,
+            position: (tails[index]?.position ?? -1) + 1,
+          })),
+        )
+        .onConflictDoNothing();
+    }
+
+    if (removeIds.length > 0) {
+      await db
+        .delete(listItems)
+        .where(and(eq(listItems.titleId, titleId), inArray(listItems.listId, removeIds)));
+    }
+
+    for (const list of owned) {
+      revalidateLists(list.id, titleId, list.slug);
+    }
+    revalidateSearchAddSurfaces(titleId, {
+      watchlist: owned.some((list) => list.slug === WATCHLIST_SLUG),
+    });
+    scheduleTonightRecompute(userId);
+
+    return { ok: true, titleId, created: upserted.created };
+  } catch (caught) {
+    return {
+      ok: false,
+      error: caught instanceof Error ? caught.message : "No se pudo guardar en la lista.",
+    };
+  }
+};
+
+/** «Agregar título» in a list: a TMDB hit becomes a Filmia title and lands on the list. */
+export const addTitleFromTmdbToList = async (
+  listId: string,
+  tmdb: AddTitleFromTmdbInput,
+) => saveTmdbTitleInLists({ tmdb, add: [listId] });

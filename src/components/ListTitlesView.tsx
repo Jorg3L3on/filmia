@@ -1,15 +1,15 @@
 import { CoverflowDeck, type CoverflowTitle } from "@/components/CoverflowDeck";
-import type { Platform, ListItem } from "@/db";
-import type { TitleWithTags } from "@/lib/queries";
+import type { Platform, ListItem, Title } from "@/db";
 import { currentAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
 
 type ListItemPayload = ListItem & {
-  title: TitleWithTags;
+  title: Title;
 };
 
 type ListTitlesViewProps = {
-  listId: string;
+  /** Sin `listId` el mazo no ofrece «Quitar de la lista» (listas automáticas). */
+  listId?: string;
   items: ListItemPayload[];
   platforms?: Platform[];
 };

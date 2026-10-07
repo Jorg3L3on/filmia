@@ -1,87 +1,112 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useId, useMemo, useState, useTransition } from "react";
+import { useId, useMemo, useState, useTransition } from "react";
+import { addTitleFromTmdbToList } from "@/app/actions/lists";
 import { Button } from "@/components/Button";
 import { PosterImage } from "@/components/PosterImage";
 import { Sheet, SheetHandle } from "@/components/Sheet";
+import { useTmdbDiscoverSearch } from "@/components/tmdb-search/useTmdbDiscoverSearch";
 import { cn } from "@/lib/cn";
+import { TITLE_KIND_LABEL } from "@/lib/labels";
+import {
+  mergeListAddCandidates,
+  type LocalListTitle,
+  type TmdbListCandidate,
+} from "@/lib/list-add-candidates";
 import { showToast } from "@/lib/toast";
 import { actionErrorMessage } from "@/lib/use-optimistic-action";
 import { fieldClass, focusRing, pillActionClass } from "@/lib/ui";
 import { SegmentPlusIcon } from "@/components/SegmentAction";
 
-export type AddableListTitle = {
-  id: string;
-  name: string;
-  year: number | null;
-  posterPath: string | null;
-};
-
-type AddTitleTarget = "lista" | "etiqueta";
+export type AddableListTitle = LocalListTitle;
 
 type AddTitleToListCtaProps = {
   /** Bound server action that adds one title to the collection. */
   action: (titleId: string) => Promise<void>;
-  target?: AddTitleTarget;
   titles: AddableListTitle[];
+  /** With a list id and TMDB configured, TMDB results show inline (same search as Buscar). */
+  listId?: string;
+  configuredTmdb?: boolean;
+  /** `kind:tmdbId` keys of titles already on the list. */
+  inListKeys?: string[];
   compact?: boolean;
 };
 
 export const AddTitleToListCta = ({
   action,
-  target = "lista",
   titles,
+  listId,
+  configuredTmdb = false,
+  inListKeys = [],
   compact = false,
 }: AddTitleToListCtaProps) => {
   const titleId = useId();
+  const tmdbEnabled = configuredTmdb && Boolean(listId);
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const [addedIds, setAddedIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [addedKeys, setAddedKeys] = useState<ReadonlySet<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const search = useTmdbDiscoverSearch({ enabled: tmdbEnabled });
+  const { query } = search;
+  const trimmedQuery = query.trim();
+
+  const inListSet = useMemo(() => new Set(inListKeys), [inListKeys]);
+  const candidates = useMemo(
+    () =>
+      mergeListAddCandidates({
+        local: titles,
+        query,
+        tmdbResults: tmdbEnabled ? search.results : [],
+        inListKeys: inListSet,
+        addedKeys,
+      }),
+    [addedKeys, inListSet, query, search.results, titles, tmdbEnabled],
+  );
+  const filtered = candidates.local;
+  const showTmdb = tmdbEnabled && Boolean(trimmedQuery);
+  const tmdbBusy = showTmdb && (search.isSearching || !search.hasSearched);
+  const tmdbError = showTmdb ? search.error : null;
+  const nothingFound =
+    filtered.length === 0 && candidates.tmdb.length === 0 && !tmdbBusy && !tmdbError;
 
   const handleOpen = () => {
     setOpen(true);
   };
 
-  const handleClose = useCallback(() => {
+  const handleClose = () => {
     setOpen(false);
-    setQuery("");
+    search.reset();
     setPendingId(null);
-  }, []);
+  };
 
-  const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) {
-      return titles;
-    }
-
-    return titles.filter((title) => {
-      if (addedIds.has(title.id)) {
-        return false;
+  const markAdded = (keys: string[], added: boolean) => {
+    setAddedKeys((current) => {
+      const next = new Set(current);
+      for (const key of keys) {
+        if (added) {
+          next.add(key);
+        } else {
+          next.delete(key);
+        }
       }
-      const haystack = `${title.name} ${title.year ?? ""}`.toLowerCase();
-      return haystack.includes(needle);
+      return next;
     });
-  }, [addedIds, query, titles]);
+  };
 
-  const handleAdd = (title: AddableListTitle) => {
+  /** Optimistic like before: close, toast, write; on failure roll back and reopen. */
+  const runAdd = (keys: string[], name: string, write: () => Promise<void>) => {
     setError(null);
-    setAddedIds((current) => new Set(current).add(title.id));
-    setPendingId(title.id);
+    markAdded(keys, true);
+    setPendingId(keys[0]);
     handleClose();
-    showToast({ title: `En la ${target}`, description: title.name });
+    showToast({ title: "En la lista", description: name });
     startTransition(async () => {
       try {
-        await action(title.id);
+        await write();
       } catch (caught) {
-        setAddedIds((current) => {
-          const next = new Set(current);
-          next.delete(title.id);
-          return next;
-        });
+        markAdded(keys, false);
         setPendingId(null);
         setOpen(true);
         const message = actionErrorMessage(caught, "No se pudo agregar el título.");
@@ -91,9 +116,55 @@ export const AddTitleToListCta = ({
     });
   };
 
-  const buscarHref = query.trim()
-    ? `/buscar?q=${encodeURIComponent(query.trim())}`
+  const handleAdd = (title: AddableListTitle) => {
+    runAdd([title.id], title.name, () => action(title.id));
+  };
+
+  const handleAddTmdb = ({ key, result, state, titleId: localId }: TmdbListCandidate) => {
+    if (state === "in-list") {
+      return;
+    }
+
+    if (state === "local" && localId) {
+      runAdd([key, localId], result.name, () => action(localId));
+      return;
+    }
+
+    if (!listId) {
+      return;
+    }
+
+    runAdd([key], result.name, async () => {
+      const outcome = await addTitleFromTmdbToList(listId, {
+        tmdbId: result.tmdbId,
+        kind: result.kind,
+        name: result.name,
+        originalName: result.originalName,
+        year: result.year,
+        posterPath: result.posterPath,
+      });
+      if (!outcome.ok) {
+        throw new Error(outcome.error);
+      }
+    });
+  };
+
+  const buscarHref = trimmedQuery
+    ? `/buscar?q=${encodeURIComponent(trimmedQuery)}`
     : "/buscar";
+
+  const buscarLink = (label: string) => (
+    <>
+      <Link
+        href={buscarHref}
+        className={`text-accent underline-offset-2 hover:underline ${focusRing}`}
+        onClick={handleClose}
+      >
+        {label}
+      </Link>
+      .
+    </>
+  );
 
   return (
     <div className={compact ? undefined : "flex justify-center"}>
@@ -103,7 +174,7 @@ export const AddTitleToListCta = ({
           onClick={handleOpen}
           aria-haspopup="dialog"
           aria-expanded={open}
-          aria-label={`Agregar título a la ${target}`}
+          aria-label="Agregar título a la lista"
           className={pillActionClass.primary}
         >
           <SegmentPlusIcon className="size-4 group-hover:rotate-90" />
@@ -116,7 +187,7 @@ export const AddTitleToListCta = ({
           onClick={handleOpen}
           aria-haspopup="dialog"
           aria-expanded={open}
-          aria-label={`Agregar título a la ${target}`}
+          aria-label="Agregar título a la lista"
           className="press-scale min-w-[min(100%,20rem)] transition-[filter,opacity] duration-[var(--duration-hover)] ease-[var(--ease-out)]"
         >
           + Agregar título
@@ -138,7 +209,7 @@ export const AddTitleToListCta = ({
         <div className="flex items-start justify-between gap-3 border-b border-line px-5 pb-4">
           <div className="min-w-0">
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">
-              {target === "lista" ? "Lista" : "Etiqueta"}
+              Lista
             </p>
             <h2 id={titleId} className="font-serif text-2xl text-paper">
               Agregar título
@@ -158,13 +229,22 @@ export const AddTitleToListCta = ({
 
         <div className="space-y-3 border-b border-line px-5 py-4" data-no-sheet-drag>
           <label className="block">
-            <span className="sr-only">Buscar en tu catálogo</span>
+            <span className="sr-only">
+              {tmdbEnabled ? "Buscar en Filmia y en TMDB" : "Buscar en tu catálogo"}
+            </span>
             <input
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => search.handleQueryChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && tmdbEnabled) {
+                  event.preventDefault();
+                  search.handleSearch();
+                }
+              }}
               placeholder="Interestelar, Dune, Severance…"
               className={fieldClass}
               autoComplete="off"
+              enterKeyHint="search"
               autoFocus
             />
           </label>
@@ -177,92 +257,170 @@ export const AddTitleToListCta = ({
             </p>
           ) : null}
           <p className="text-xs text-mist">
-            Elige un título que ya esté en Filmia, o{" "}
-            <Link
-              href={buscarHref}
-              className={`text-accent underline-offset-2 hover:underline ${focusRing}`}
-              onClick={handleClose}
-            >
-              búscalo en TMDB
-            </Link>
-            .
+            {tmdbEnabled ? (
+              "Primero lo que ya está en Filmia; debajo, resultados de TMDB."
+            ) : (
+              <>
+                Elige un título que ya esté en Filmia, o {buscarLink("búscalo en TMDB")}
+              </>
+            )}
           </p>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4" data-no-sheet-drag>
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-4" data-no-sheet-drag>
           {filtered.length > 0 ? (
-            <ul className="space-y-2">
-              {filtered.map((title) => {
-                const busy = isPending && pendingId === title.id;
-
-                return (
+            <section className="space-y-2" aria-label="En Filmia">
+              {showTmdb ? <SectionLabel>En Filmia</SectionLabel> : null}
+              <ul className="space-y-2">
+                {filtered.map((title) => (
                   <li key={title.id}>
-                    <button
-                      type="button"
-                      onClick={() => handleAdd(title)}
+                    <CandidateRow
+                      name={title.name}
+                      posterPath={title.posterPath}
+                      meta={title.year ? String(title.year) : null}
+                      actionLabel={isPending && pendingId === title.id ? "…" : "Agregar"}
                       disabled={isPending}
-                      aria-label={`Agregar ${title.name} a la ${target}`}
-                      className={cn(
-                        "card-physics press-scale flex w-full items-center gap-3 rounded-2xl border border-line bg-well px-3 py-2.5 text-left disabled:opacity-60",
-                        "transition-[border-color,background-color,opacity] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
-                        "hover:border-accent/40",
-                        focusRing,
-                      )}
-                    >
-                      <span className="w-12 shrink-0 overflow-hidden rounded-lg">
-                        <PosterImage
-                          name={title.name}
-                          posterPath={title.posterPath}
-                          sizes="48px"
-                          className="rounded-lg transition-[filter] duration-[var(--duration-hover)]"
-                        />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-medium text-paper">
-                          {title.name}
-                        </span>
-                        {title.year ? (
-                          <span className="block text-sm text-fog">{title.year}</span>
-                        ) : null}
-                      </span>
-                      <span className="text-xs font-medium uppercase tracking-[0.12em] text-accent">
-                        {busy ? "…" : "Agregar"}
-                      </span>
-                    </button>
+                      onClick={() => handleAdd(title)}
+                    />
                   </li>
-                );
-              })}
-            </ul>
-          ) : titles.length === 0 ? (
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {showTmdb && (candidates.tmdb.length > 0 || tmdbBusy || tmdbError) ? (
+            <section className="space-y-2" aria-label="De TMDB" aria-busy={tmdbBusy}>
+              <SectionLabel>De TMDB</SectionLabel>
+              {tmdbError ? (
+                <p
+                  role="alert"
+                  className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger"
+                >
+                  {tmdbError}{" "}
+                  <button
+                    type="button"
+                    onClick={search.handleSearch}
+                    className={`text-accent underline-offset-2 hover:underline ${focusRing}`}
+                  >
+                    Reintentar
+                  </button>
+                </p>
+              ) : null}
+              {candidates.tmdb.length > 0 ? (
+                <ul className="space-y-2">
+                  {candidates.tmdb.map((candidate) => {
+                    const { result } = candidate;
+                    const inList = candidate.state === "in-list";
+                    const meta = [result.year, TITLE_KIND_LABEL[result.kind]]
+                      .filter(Boolean)
+                      .join(" · ");
+
+                    return (
+                      <li key={candidate.key}>
+                        <CandidateRow
+                          name={result.name}
+                          posterPath={result.posterPath}
+                          meta={meta}
+                          actionLabel={
+                            inList
+                              ? "En la lista"
+                              : isPending && pendingId === candidate.key
+                                ? "…"
+                                : "Agregar"
+                          }
+                          disabled={isPending || inList}
+                          muted={inList}
+                          onClick={() => handleAddTmdb(candidate)}
+                        />
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+              {tmdbBusy ? (
+                <p className="text-sm text-mist" role="status">
+                  Buscando en TMDB…
+                </p>
+              ) : null}
+            </section>
+          ) : null}
+
+          {nothingFound && !trimmedQuery ? (
             <p className="text-sm text-fog">
-              No hay más títulos en Filmia para esta {target}.{" "}
-              <Link
-                href={buscarHref}
-                className={`text-accent underline-offset-2 hover:underline ${focusRing}`}
-                onClick={handleClose}
-              >
-                Buscar en TMDB
-              </Link>
-              .
+              No hay más títulos en Filmia para esta lista.{" "}
+              {tmdbEnabled
+                ? "Escribe un nombre para buscarlo en TMDB."
+                : buscarLink("Buscar en TMDB")}
             </p>
-          ) : (
+          ) : nothingFound ? (
             <p className="text-sm text-fog">
-              Nada coincide con “{query.trim()}”.{" "}
-              <Link
-                href={buscarHref}
-                className={`text-accent underline-offset-2 hover:underline ${focusRing}`}
-                onClick={handleClose}
-              >
-                Buscar en TMDB
-              </Link>
-              .
+              Nada coincide con “{trimmedQuery}”.{" "}
+              {tmdbEnabled
+                ? "Prueba con el título original o un año."
+                : buscarLink("Buscar en TMDB")}
             </p>
-          )}
+          ) : null}
         </div>
       </Sheet>
     </div>
   );
 };
+
+const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+  <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-mist">{children}</p>
+);
+
+const CandidateRow = ({
+  name,
+  posterPath,
+  meta,
+  actionLabel,
+  disabled,
+  muted = false,
+  onClick,
+}: {
+  name: string;
+  posterPath: string | null;
+  meta: string | null;
+  actionLabel: string;
+  disabled: boolean;
+  muted?: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    aria-label={muted ? `${name} ya está en la lista` : `Agregar ${name} a la lista`}
+    className={cn(
+      "card-physics press-scale flex w-full items-center gap-3 rounded-2xl border border-line bg-well px-3 py-2.5 text-left disabled:opacity-60",
+      "transition-[border-color,background-color,opacity] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
+      "hover:border-accent/40",
+      focusRing,
+    )}
+  >
+    <span className="w-12 shrink-0 overflow-hidden rounded-lg">
+      <PosterImage
+        name={name}
+        posterPath={posterPath}
+        sizes="48px"
+        className="rounded-lg transition-[filter] duration-[var(--duration-hover)]"
+      />
+    </span>
+    <span className="min-w-0 flex-1">
+      <span className="block truncate font-medium text-paper">{name}</span>
+      {meta ? <span className="block truncate text-sm text-fog">{meta}</span> : null}
+    </span>
+    <span
+      className={cn(
+        "shrink-0 text-xs font-medium uppercase tracking-[0.12em]",
+        muted ? "text-mist" : "text-accent",
+      )}
+    >
+      {actionLabel}
+    </span>
+  </button>
+);
 
 const CloseIcon = () => (
   <svg

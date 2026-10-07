@@ -1,195 +1,109 @@
 "use server";
 
-import { createId } from "@paralleldrive/cuid2";
-import { and, eq, inArray, notInArray } from "drizzle-orm";
-import { redirect } from "next/navigation";
+import { and, desc, eq, inArray } from "drizzle-orm";
+import { db, listItems, lists, titles, type SeriesStatus } from "@/db";
 import {
-  db,
-  listItems,
-  lists,
-  tags,
-  titleTags,
-  titles,
-  type SeriesStatus,
-  type TitleKind,
-} from "@/db";
-import {
-  parseIdList,
-  parseNewTags,
-  parseOptionalDate,
   parseOptionalReview,
-  parsePlatform,
   parseRating,
-  parseRequiredName,
   parseSeriesSeason,
-  parseTitleKind,
-  parseYear,
 } from "@/lib/form-data";
 import {
   upsertTitleFromTmdbForUser,
   type AddTitleFromTmdbInput,
   type AddTitleFromTmdbResult,
 } from "@/lib/add-title-from-tmdb";
-import { slugify, SERIES_STATUSES } from "@/lib/labels";
-import { scheduleAfterResponse } from "@/lib/after-response";
+import { catalogIdFor, findOrCreateCatalog } from "@/lib/catalog";
+import { scheduleCatalogEnrichment } from "@/lib/catalog-enrich";
+import { SERIES_STATUSES } from "@/lib/labels";
+import { ensureSeriesStatusList, SERIES_STATUS_LIST_SLUGS } from "@/lib/lists";
+import { parseRelinkPick, planRelink } from "@/lib/relink-core";
+import { seriesStatusListTransition } from "@/lib/series-status-lists";
 import {
-  enrichMetadataOnSave,
-  readMetadataFields,
-  type TitleMetadata,
-} from "@/lib/metadata";
-import {
-  revalidateCatalogSurfaces,
+  revalidateDiarySurfaces,
+  revalidateListMembership,
   revalidateRatingSurfaces,
   revalidateSearchAddSurfaces,
   revalidateSeriesSurfaces,
-  revalidateTitlePages,
 } from "@/lib/revalidate-surfaces";
 import { requireUserId } from "@/lib/session";
 import { scheduleTonightRecompute } from "@/lib/tonight-store";
-import { enrichWatchProvidersOnSave } from "@/lib/watch-providers-cache";
 
 export type { AddTitleFromTmdbInput, AddTitleFromTmdbResult };
 
-const revalidateCatalog = (titleId?: string) => {
-  revalidateCatalogSurfaces(titleId);
-};
+// Titles only enter Filmia from TMDB (`addTitleFromTmdb`); the catalog data is
+// never edited by users and a title is never deleted — only its personal
+// fields (rating, review, platform, watchedAt, series status) change, and the
+// entry can be pointed at a different TMDB match (`relinkTitle`).
 
-const seriesProgressData = (kind: TitleKind) =>
-  kind === "SERIES" ? {} : { seriesStatus: null, seriesSeason: null };
+export type RelinkTitleResult =
+  | { ok: true; changed: boolean }
+  | { ok: false; error: string; existingTitleId?: string };
 
-const syncTags = async (userId: string, titleId: string, tagIds: string[], newTags: string[]) => {
-  const createdIds: string[] = [];
-
-  if (newTags.length > 0) {
-    const prepared = newTags.map((name) => ({
-      name,
-      slug: slugify(name) || `tag-${crypto.randomUUID().slice(0, 8)}`,
-    }));
-    const slugs = prepared.map((item) => item.slug);
-    const existingRows = await db.query.tags.findMany({
-      where: and(eq(tags.userId, userId), inArray(tags.slug, slugs)),
-    });
-    const bySlug = new Map(existingRows.map((row) => [row.slug, row]));
-
-    for (const item of prepared) {
-      const existing = bySlug.get(item.slug);
-      if (existing) {
-        if (existing.name !== item.name) {
-          await db.update(tags).set({ name: item.name }).where(eq(tags.id, existing.id));
-        }
-        createdIds.push(existing.id);
-        continue;
-      }
-
-      const tagId = createId();
-      await db.insert(tags).values({
-        id: tagId,
-        userId,
-        name: item.name,
-        slug: item.slug,
-      });
-      createdIds.push(tagId);
-    }
+/**
+ * «¿No es esta?»: move the user's entry to another TMDB match. Only
+ * `Title.catalogId` changes — rating, review, platform, watched date, series
+ * progress and list membership stay put, and no catalog row is ever edited.
+ */
+export const relinkTitle = async (
+  titleId: string,
+  input: unknown,
+): Promise<RelinkTitleResult> => {
+  const userId = await requireUserId();
+  const pick = parseRelinkPick(input);
+  if (!pick) {
+    return { ok: false, error: "Ese resultado de TMDB no es válido." };
   }
 
-  const nextIds = [...new Set([...tagIds, ...createdIds])];
-
-  await db.delete(titleTags).where(eq(titleTags.titleId, titleId));
-  if (nextIds.length === 0) {
-    return;
+  const title = await db.query.titles.findFirst({
+    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
+    columns: { id: true, catalogId: true },
+    with: { catalog: { columns: { kind: true } } },
+  });
+  if (!title) {
+    return { ok: false, error: "Título no encontrado." };
+  }
+  if (title.catalog.kind !== pick.kind) {
+    return { ok: false, error: "Elige un título del mismo tipo (película o serie)." };
   }
 
-  await db.insert(titleTags).values(nextIds.map((tagId) => ({ titleId, tagId })));
-};
-
-const syncLists = async (userId: string, titleId: string, listIds: string[]) => {
-  const collectionLists = await db.query.lists.findMany({
-    where: and(eq(lists.userId, userId), eq(lists.kind, "COLLECTION")),
+  const targetCatalogId = catalogIdFor(pick.kind, pick.tmdbId);
+  const owned = await db.query.titles.findFirst({
+    where: and(eq(titles.userId, userId), eq(titles.catalogId, targetCatalogId)),
     columns: { id: true },
   });
-  const collectionIds = collectionLists.map((list) => list.id);
-  const collectionSet = new Set(collectionIds);
-
-  if (collectionIds.length > 0) {
-    await db
-      .delete(listItems)
-      .where(
-        and(
-          eq(listItems.titleId, titleId),
-          inArray(listItems.listId, collectionIds),
-          listIds.length > 0 ? notInArray(listItems.listId, listIds) : undefined,
-        ),
-      );
-  }
-
-  // Reuse the collection id set — no per-list findFirst (N+1 on ficha save).
-  const ownedSelected = listIds.filter((listId) => collectionSet.has(listId));
-  if (ownedSelected.length === 0) {
-    return;
-  }
-
-  await db
-    .insert(listItems)
-    .values(
-      ownedSelected.map((listId, index) => ({
-        listId,
-        titleId,
-        position: index,
-      })),
-    )
-    .onConflictDoNothing();
-};
-
-const readTitleFields = (formData: FormData) => ({
-  name: parseRequiredName(formData.get("name")),
-  originalName: String(formData.get("originalName") ?? "").trim() || null,
-  kind: parseTitleKind(formData.get("kind")),
-  year: parseYear(formData.get("year")),
-  rating: parseRating(formData.get("rating")),
-  review: parseOptionalReview(formData.get("review")),
-  platform: parsePlatform(formData.get("platform")),
-  watchedAt: parseOptionalDate(formData.get("watchedAt")),
-  tagIds: parseIdList(formData, "tagIds"),
-  newTags: parseNewTags(formData.get("newTags")),
-  listIds: parseIdList(formData, "listIds"),
-});
-
-const scheduleTitleEnrichment = (
-  titleId: string,
-  snapshot: TitleMetadata,
-  kind: TitleKind,
-) => {
-  if (!snapshot.tmdbId) {
-    return;
-  }
-
-  scheduleAfterResponse(async () => {
-    try {
-      const [resolved] = await Promise.all([
-        enrichMetadataOnSave(snapshot, kind),
-        enrichWatchProvidersOnSave(titleId, snapshot.tmdbId!, kind),
-      ]);
-
-      await db
-        .update(titles)
-        .set({
-          tmdbId: resolved.tmdbId ?? snapshot.tmdbId,
-          posterPath: resolved.posterPath ?? snapshot.posterPath,
-          backdropPath: resolved.backdropPath ?? snapshot.backdropPath,
-          runtimeMinutes: resolved.runtimeMinutes ?? snapshot.runtimeMinutes,
-          imdbId: resolved.imdbId ?? snapshot.imdbId,
-          imdbRating: resolved.imdbRating ?? snapshot.imdbRating,
-          awards: resolved.awards ?? undefined,
-          overview: resolved.overview ?? undefined,
-          tmdbGenres: resolved.tmdbGenres,
-        })
-        .where(eq(titles.id, titleId));
-
-      revalidateTitlePages(titleId);
-    } catch {
-      // Snapshot row already exists; enrichment is best-effort.
-    }
+  const plan = planRelink({
+    titleId,
+    currentCatalogId: title.catalogId,
+    targetCatalogId,
+    ownedTitleIdForTarget: owned?.id ?? null,
   });
+
+  if (plan.kind === "same") {
+    return { ok: true, changed: false };
+  }
+  if (plan.kind === "duplicate") {
+    return {
+      ok: false,
+      error: `Ya tienes «${pick.name}» en tu Filmia.`,
+      existingTitleId: plan.titleId,
+    };
+  }
+
+  const { row: film, created } = await findOrCreateCatalog(pick);
+  await db
+    .update(titles)
+    .set({ catalogId: film.id })
+    .where(and(eq(titles.id, titleId), eq(titles.userId, userId)));
+
+  if (created) {
+    scheduleCatalogEnrichment(film, { userId, titleId });
+  } else {
+    scheduleTonightRecompute(userId);
+  }
+  revalidateDiarySurfaces(titleId);
+  revalidateSeriesSurfaces(titleId);
+
+  return { ok: true, changed: true };
 };
 
 export const addTitleFromTmdb = async (
@@ -208,134 +122,23 @@ export const addTitleFromTmdb = async (
   return result;
 };
 
-export const createTitle = async (formData: FormData) => {
-  const userId = await requireUserId();
-  const fields = readTitleFields(formData);
-  const snapshot = readMetadataFields(formData);
-
-  const titleId = createId();
-  const now = new Date();
-  await db.insert(titles).values({
-    id: titleId,
-    userId,
-    name: fields.name,
-    originalName: fields.originalName,
-    kind: fields.kind,
-    year: fields.year,
-    rating: fields.rating,
-    review: fields.review,
-    platform: fields.platform,
-    watchedAt: fields.watchedAt,
-    tmdbId: snapshot.tmdbId,
-    posterPath: snapshot.posterPath,
-    imdbId: snapshot.imdbId,
-    imdbRating: snapshot.imdbRating,
-    overview: null,
-    tmdbGenres: snapshot.tmdbGenres,
-    createdAt: now,
-    updatedAt: now,
-    ...seriesProgressData(fields.kind),
-  });
-
-  await syncTags(userId, titleId, fields.tagIds, fields.newTags);
-  await syncLists(userId, titleId, fields.listIds);
-  scheduleTitleEnrichment(titleId, snapshot, fields.kind);
-  revalidateCatalog(titleId);
-  redirect(`/titulos/${titleId}`);
-};
-
-export const updateTitle = async (titleId: string, formData: FormData) => {
-  const userId = await requireUserId();
-  const fields = readTitleFields(formData);
-  const snapshot = readMetadataFields(formData);
-
-  const existing = await db.query.titles.findFirst({
-    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
-    columns: {
-      id: true,
-      overview: true,
-      tmdbGenres: true,
-      imdbId: true,
-      imdbRating: true,
-      posterPath: true,
-      tmdbId: true,
-    },
-  });
-
-  if (!existing) {
-    throw new Error("Título no encontrado.");
-  }
-
-  await db
-    .update(titles)
-    .set({
-      name: fields.name,
-      originalName: fields.originalName,
-      kind: fields.kind,
-      year: fields.year,
-      rating: fields.rating,
-      review: fields.review,
-      platform: fields.platform,
-      watchedAt: fields.watchedAt,
-      tmdbId: snapshot.tmdbId ?? existing.tmdbId,
-      posterPath: snapshot.posterPath ?? existing.posterPath,
-      imdbId: snapshot.imdbId ?? existing.imdbId,
-      imdbRating: snapshot.imdbRating ?? existing.imdbRating,
-      overview: existing.overview ?? undefined,
-      tmdbGenres: existing.tmdbGenres,
-      ...seriesProgressData(fields.kind),
-    })
-    .where(eq(titles.id, titleId));
-
-  await syncTags(userId, titleId, fields.tagIds, fields.newTags);
-  await syncLists(userId, titleId, fields.listIds);
-  scheduleTitleEnrichment(
-    titleId,
-    {
-      ...snapshot,
-      tmdbId: snapshot.tmdbId ?? existing.tmdbId,
-      posterPath: snapshot.posterPath ?? existing.posterPath,
-      imdbId: snapshot.imdbId ?? existing.imdbId,
-      imdbRating: snapshot.imdbRating ?? existing.imdbRating,
-    },
-    fields.kind,
-  );
-  revalidateCatalog(titleId);
-  redirect(`/titulos/${titleId}`);
-};
-
-export const deleteTitle = async (titleId: string) => {
-  const userId = await requireUserId();
-
-  const deleted = await db
-    .delete(titles)
-    .where(and(eq(titles.id, titleId), eq(titles.userId, userId)))
-    .returning({ id: titles.id });
-
-  if (deleted.length === 0) {
-    throw new Error("Título no encontrado.");
-  }
-
-  revalidateCatalog(titleId);
-  redirect("/");
-};
-
 const requireOwnedSeries = async (titleId: string) => {
   const userId = await requireUserId();
   const title = await db.query.titles.findFirst({
     where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
-    columns: { id: true, kind: true },
+    columns: { id: true, seriesStatus: true },
+    with: { catalog: { columns: { kind: true } } },
   });
 
   if (!title) {
     throw new Error("Título no encontrado.");
   }
 
-  if (title.kind !== "SERIES") {
+  if (title.catalog.kind !== "SERIES") {
     throw new Error("El estado de seguimiento solo aplica a series.");
   }
 
-  return title;
+  return { id: title.id, seriesStatus: title.seriesStatus, userId };
 };
 
 export const setTitleRating = async (titleId: string, formData: FormData) => {
@@ -364,7 +167,7 @@ export const setSeriesStatus = async (
   titleId: string,
   status: SeriesStatus | "NONE",
 ) => {
-  await requireOwnedSeries(titleId);
+  const { userId, seriesStatus: previousStatus } = await requireOwnedSeries(titleId);
 
   const nextStatus =
     status === "NONE"
@@ -377,15 +180,71 @@ export const setSeriesStatus = async (
     throw new Error("El estado de la serie no es válido.");
   }
 
-  await db
-    .update(titles)
-    .set({
-      seriesStatus: nextStatus,
-      ...(nextStatus == null ? { seriesSeason: null } : {}),
-    })
-    .where(eq(titles.id, titleId));
+  // Viendo → «Series en progreso», Abandonada → «Series abandonadas». Terminada
+  // o sin estado: fuera de ambas. La lista destino se crea la primera vez.
+  const transition = seriesStatusListTransition(previousStatus, nextStatus);
+  const statusLists = await db.query.lists.findMany({
+    where: and(
+      eq(lists.userId, userId),
+      inArray(lists.slug, [...SERIES_STATUS_LIST_SLUGS]),
+    ),
+    columns: { id: true, slug: true },
+  });
+  const joinListId = transition.join
+    ? (statusLists.find((list) => list.slug === transition.join)?.id ??
+      (await ensureSeriesStatusList(userId, transition.join)))
+    : null;
+  const leaveListIds = statusLists
+    .filter((list) => list.slug && transition.leave.some((slug) => slug === list.slug))
+    .map((list) => list.id);
+  const lastItem = joinListId
+    ? await db.query.listItems.findFirst({
+        where: eq(listItems.listId, joinListId),
+        orderBy: [desc(listItems.position)],
+        columns: { position: true },
+      })
+    : undefined;
+
+  await db.batch([
+    db
+      .update(titles)
+      .set({
+        seriesStatus: nextStatus,
+        ...(nextStatus == null ? { seriesSeason: null } : {}),
+      })
+      .where(eq(titles.id, titleId)),
+    ...(leaveListIds.length > 0
+      ? [
+          db
+            .delete(listItems)
+            .where(
+              and(
+                eq(listItems.titleId, titleId),
+                inArray(listItems.listId, leaveListIds),
+              ),
+            ),
+        ]
+      : []),
+    ...(joinListId
+      ? [
+          db
+            .insert(listItems)
+            .values({
+              listId: joinListId,
+              titleId,
+              position: (lastItem?.position ?? -1) + 1,
+            })
+            .onConflictDoNothing(),
+        ]
+      : []),
+  ]);
 
   revalidateSeriesSurfaces(titleId);
+  for (const listId of [joinListId, ...leaveListIds]) {
+    if (listId) {
+      revalidateListMembership(listId, titleId);
+    }
+  }
 };
 
 export const setSeriesSeason = async (titleId: string, formData: FormData) => {

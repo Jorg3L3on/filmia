@@ -3,7 +3,7 @@ import { PosterStack, type PosterStackItem } from "@/components/PosterStack";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
 
-/** Wrapping 3-up grid for `layout="grid"` cards (Personalizadas, Etiquetas). */
+/** Wrapping 3-up grid for `layout="grid"` cards (Personalizadas). */
 export const listCardGridClass = "grid grid-cols-3 gap-x-3 gap-y-5 sm:gap-10 lg:grid-cols-4";
 
 type ListCardProps = {
@@ -15,8 +15,6 @@ type ListCardProps = {
   posters: PosterStackItem[];
   /** `rail`: fixed width for horizontal scroll; `grid`: fills its grid cell. */
   layout?: "rail" | "grid";
-  /** Singular/plural noun for the count line. */
-  countNoun?: [singular: string, plural: string];
 };
 
 export const ListCard = ({
@@ -25,9 +23,8 @@ export const ListCard = ({
   itemCount,
   posters,
   layout = "rail",
-  countNoun = ["película", "películas"],
 }: ListCardProps) => {
-  const countLabel = `${itemCount} ${itemCount === 1 ? countNoun[0] : countNoun[1]}`;
+  const countLabel = `${itemCount} ${itemCount === 1 ? "película" : "películas"}`;
 
   return (
     <Link
@@ -38,7 +35,7 @@ export const ListCard = ({
         focusRing,
       )}
     >
-      <div className="group relative card-physics press-scale sm:max-w-[124px]">
+      <div className="group relative rounded-2xl card-physics press-scale sm:max-w-[124px]">
         <PosterStack posters={posters} />
         <div className="absolute inset-x-0 bottom-0 z-40 rounded-b-2xl bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-2.5 pb-2.5 pt-12 sm:hidden">
           <h2 className="truncate text-sm font-semibold text-paper">{name}</h2>

@@ -19,7 +19,7 @@ import {
   dateInputForPreset,
 } from "../src/lib/dates";
 import { dayCellOpensSheet, extraDayBadge } from "../src/lib/diary-day";
-import { catalogHref } from "../src/lib/tags";
+import { catalogHref } from "../src/lib/catalog-href";
 
 const assert = (condition: unknown, message: string) => {
   if (!condition) {
@@ -106,9 +106,8 @@ const run = () => {
       view: "calendar",
       month: "2026-09",
       day: "2026-09-03",
-      tags: ["sci-fi"],
       minePlatforms: true,
-    }) === "/?tag=sci-fi&view=calendar&minePlatforms=1&month=2026-09&day=2026-09-03",
+    }) === "/?view=calendar&minePlatforms=1&month=2026-09&day=2026-09-03",
     "Calendar href should keep filters, month and day",
   );
   assert(

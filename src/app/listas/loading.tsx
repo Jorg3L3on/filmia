@@ -1,12 +1,12 @@
-import { ListsEtiquetasSegment } from "@/components/ListsEtiquetasSegment";
+import { PageHeader } from "@/components/PageHeader";
 import { SegmentActionPlaceholder } from "@/components/SegmentAction";
 import { ListsBodySkeleton } from "@/components/PageSkeletons";
 
-/** Soft Listas↔Etiquetas nav keeps the segment; only the body shimmers. */
+/** The header is static, so it stays put; only the body shimmers. */
 export default function Loading() {
   return (
     <div className="space-y-8">
-      <ListsEtiquetasSegment action={<SegmentActionPlaceholder />} />
+      <PageHeader title="Listas" actions={<SegmentActionPlaceholder />} />
       <ListsBodySkeleton />
     </div>
   );

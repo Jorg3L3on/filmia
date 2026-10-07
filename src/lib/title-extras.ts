@@ -1,6 +1,6 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { cache } from "react";
-import { db, titles } from "@/db";
+import { catalog, db } from "@/db";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import {
   mergeTitleExtras,
@@ -26,15 +26,14 @@ export const persistTitleExtras = async (
   current: TitleExtrasRow,
   fetched: FetchedTitleExtras,
 ) => {
-  const patch = titleExtrasPatch(current, fetched);
+  // The catalog is keyed by tmdbId; everything else in the patch is a catalog column.
+  const patch = { ...titleExtrasPatch(current, fetched) };
+  delete patch.tmdbId;
   if (Object.keys(patch).length === 0) {
     return false;
   }
 
-  await db
-    .update(titles)
-    .set(patch)
-    .where(and(eq(titles.id, current.id), eq(titles.userId, current.userId)));
+  await db.update(catalog).set(patch).where(eq(catalog.id, current.catalogId));
 
   return true;
 };

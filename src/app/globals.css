@@ -288,7 +288,7 @@ body {
  *   --spring    press, spring-pop, spring-fill (chips / log / rating only)
  * Sheets open with `.sheet-rise` (translateY + ease-out). Never `.spring-pop`.
  * Shared-element poster → ficha: React <ViewTransition name={`poster-${id}`}>
- * with share="morph" on calendar/grid/deck/list/tag/search tiles + ficha hero.
+ * with share="morph" on calendar/grid/deck/list/search tiles + ficha hero.
  * Next 16 App Router treats navigations as transitions — no extra config.
  * Diary Deck/Grid/Calendar morph uses `diary-stage` plus `diary-month` slides.
  * `prefers-reduced-motion: reduce` zeroes movement (including view transitions).
@@ -304,10 +304,16 @@ body {
   will-change: transform;
 }
 
-.card-physics:hover {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 18px 36px rgb(0 0 0 / 0.5);
-  filter: brightness(1.06);
+/* Hover lift only where a real pointer hovers. On touch (iOS Safari) `:hover`
+ * sticks after a tap, so the lift + brightness stacked with `.press-scale`
+ * (1.02 → 0.96 → 1.02) and the brightness made the mobile ListCard gradient
+ * stop matching the canvas (flash at its edge). */
+@media (hover: hover) {
+  .card-physics:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 18px 36px rgb(0 0 0 / 0.5);
+    filter: brightness(1.06);
+  }
 }
 
 .press-scale {
@@ -316,6 +322,32 @@ body {
 
 .press-scale:active {
   transform: scale(0.96);
+}
+
+/* Both on one element: the press owns `transform` (spring, 160 ms) and the
+ * hover keeps easing shadow/filter instead of `.press-scale` dropping them. */
+.card-physics.press-scale {
+  transition:
+    transform var(--duration-press) var(--spring),
+    box-shadow var(--duration-hover) var(--ease-out),
+    filter var(--duration-hover) var(--ease-out);
+}
+
+/* Native `<input type="date">` and `<input type="time">`. iOS Safari draws it with a native appearance
+ * whose intrinsic min-width ignores `width: 100%`; inside a `<fieldset>`
+ * (min-inline-size: min-content) or a grid/flex item that pushed the field past
+ * the sheet edge, where the panel's overflow-hidden clipped it. */
+.date-field {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  color-scheme: dark;
+}
+
+.date-field::-webkit-date-and-time-value {
+  text-align: left;
 }
 
 .stagger-in {

@@ -11,6 +11,7 @@ import {
 const baseTitle = (): TitleExtrasRow => ({
   id: "title-1",
   userId: "user-1",
+  catalogId: "catalog-1",
   tmdbId: 8363,
   kind: "MOVIE",
   posterPath: null,

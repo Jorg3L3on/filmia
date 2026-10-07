@@ -7,7 +7,7 @@ Canonical tokens live in `src/app/globals.css` (`:root` + comment block).
 | Token | ms | Use |
 | --- | ---: | --- |
 | `--duration-press` | 160 | press-scale |
-| `--duration-tab` | 200 | `.tab-transition` (bottom nav, Listas\|Etiquetas, toggles) |
+| `--duration-tab` | 200 | `.tab-transition` (bottom nav, toggles) |
 | `--duration-hover` | 220 | `.card-physics` hover |
 | `--duration-enter` / `--duration-toast` | 280 | fade-up, toast in/out |
 | `--duration-morph` | 380 | SharedPoster ViewTransition `poster-{id}` |
@@ -20,6 +20,14 @@ Canonical tokens live in `src/app/globals.css` (`:root` + comment block).
 - **`--spring`** — **only** press / spring-pop / spring-fill (chips, log, rating feedback).
 
 Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` for sheet open.
+
+## Tarjetas: hover + press
+
+| Piece | Token | Notes |
+| --- | --- | --- |
+| Hover `.card-physics:hover` | `--duration-hover` · `--ease-out` | Lift −3 px, scale 1.02, brightness 1.06. **Only under `@media (hover: hover)`**: on touch `:hover` sticks after a tap and stacked with the press (1.02 → 0.96 → 1.02). |
+| Press `.press-scale:active` | `--duration-press` · `--spring` | Scale 0.96. The only transform feedback a tap gets on touch. |
+| Both `.card-physics.press-scale` | press for `transform`, hover for shadow/filter | One element owns the transform; never nest a second scaling wrapper (ListCard, PosterTile, rails). |
 
 ## Esta noche (Hoy)
 
@@ -57,7 +65,7 @@ Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` 
 
 ## SharedPoster
 
-React `<ViewTransition name={\`poster-${id}\`} share="morph">` via `SharedPoster` on tile → ficha paths (lists, tags results, buscar, deck, calendar, rail, ranking, watchlist).
+React `<ViewTransition name={\`poster-${id}\`} share="morph">` via `SharedPoster` on tile → ficha paths (lists, buscar, deck, calendar, rail, ranking, watchlist).
 
 `poster-{id}` must be mounted at most once per page. Where the same title can appear twice (PosterStack, the watchlist stage, the Perfil week strip next to «Últimas entradas»), pass `share={false}` to the secondary occurrence so only one tile owns the morph.
 

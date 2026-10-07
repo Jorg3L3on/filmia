@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useTransition } from "react";
 import { removeTitleFromList } from "@/app/actions/lists";
-import { removeTitleFromTag } from "@/app/actions/tags";
 import { Button } from "@/components/Button";
 import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PlatformLogo } from "@/components/PlatformLogo";
@@ -21,31 +20,13 @@ import {
 } from "@/lib/labels";
 import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { showToast } from "@/lib/toast";
-import { focusRing } from "@/lib/ui";
 import type { Platform } from "@/db";
-
-const TagRemoveIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.75}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-    className="size-4"
-  >
-    <path d="M3 11.2V5a2 2 0 0 1 2-2h6.2a2 2 0 0 1 1.4.6l7.8 7.8a2 2 0 0 1 0 2.8l-6.2 6.2a2 2 0 0 1-2.8 0L3.6 12.6a2 2 0 0 1-.6-1.4Z" />
-    <path d="M8.5 11.5h6" />
-  </svg>
-);
 
 type DeckFooterProps = {
   activeTitle: CoverflowTitle;
   isSheet: boolean;
   footer: "full" | "watched" | "tonight";
   listId?: string;
-  tagId?: string;
   focusClassName?: string;
   onHide: (titleId: string) => void;
   onRestore: (titleId: string) => void;
@@ -59,7 +40,6 @@ export const DeckFooter = ({
   isSheet,
   footer,
   listId,
-  tagId,
   focusClassName,
   onHide,
   onRestore,
@@ -153,32 +133,6 @@ export const DeckFooter = ({
             ))}
           </p>
         </div>
-      </div>
-    );
-  }
-
-  if (tagId) {
-    return (
-      <div className={cn("flex justify-center", focusClassName)}>
-        <button
-          type="button"
-          onClick={() =>
-            removeActive(
-              (titleId) => removeTitleFromTag(tagId, titleId),
-              "Fuera de la etiqueta",
-            )
-          }
-          aria-label={`Quitar «${activeTitle.name}» de esta etiqueta`}
-          className={cn(
-            "press-scale group inline-flex h-11 items-center gap-2.5 rounded-full border border-chrome bg-well pl-2 pr-5 text-sm font-medium text-paper transition-colors duration-[var(--duration-hover)] hover:border-danger/50 hover:text-danger",
-            focusRing,
-          )}
-        >
-          <span className="inline-flex size-7 items-center justify-center rounded-full bg-chrome text-fog transition-colors duration-[var(--duration-hover)] group-hover:bg-danger/15 group-hover:text-danger">
-            <TagRemoveIcon />
-          </span>
-          Quitar de esta etiqueta
-        </button>
       </div>
     );
   }

@@ -1,17 +1,12 @@
 import { createId } from "@paralleldrive/cuid2";
 import { and, desc, eq } from "drizzle-orm";
 import { db, listItems, lists, titles, type TitleKind } from "@/db";
-import { scheduleAfterResponse } from "@/lib/after-response";
+import { findCatalogByTmdb, findOrCreateCatalog } from "@/lib/catalog";
+import { scheduleCatalogEnrichment } from "@/lib/catalog-enrich";
 import { parseOptionalDate } from "@/lib/form-data";
 import { TITLE_KINDS } from "@/lib/labels";
 import { ensureDefaultLists, WATCHLIST_SLUG } from "@/lib/lists";
-import { resolveTitleMetadata } from "@/lib/metadata";
-import { revalidateTitlePages } from "@/lib/revalidate-surfaces";
-import type { TmdbGenre } from "@/lib/tmdb";
-import { sampleAmbientFromPosterPath } from "@/lib/poster-ambient-server";
-import { formatAmbientRgb } from "@/lib/poster-ambient";
 import { scheduleTonightRecompute } from "@/lib/tonight-store";
-import { enrichWatchProvidersOnSave } from "@/lib/watch-providers-cache";
 
 export type AddTitleDestination = "watchlist" | "watched";
 
@@ -81,56 +76,6 @@ const enqueueInWatchlist = async (userId: string, titleId: string) => {
 const resolveWatchedAt = (value?: string | null) =>
   parseOptionalDate(value ?? null) ?? new Date();
 
-const enrichCreatedTitleInBackground = (
-  userId: string,
-  titleId: string,
-  tmdbId: number,
-  kind: TitleKind,
-  snapshotName: string,
-) => {
-  scheduleAfterResponse(async () => {
-    try {
-      const [resolved] = await Promise.all([
-        resolveTitleMetadata(tmdbId, kind).catch(() => null),
-        enrichWatchProvidersOnSave(titleId, tmdbId, kind),
-      ]);
-
-      if (resolved) {
-        const ambient = resolved.posterPath
-          ? formatAmbientRgb(await sampleAmbientFromPosterPath(resolved.posterPath))
-          : null;
-        await db
-          .update(titles)
-          .set({
-            name: resolved.name?.trim() || snapshotName,
-            originalName: resolved.originalName,
-            year: resolved.year,
-            posterPath: resolved.posterPath,
-            backdropPath: resolved.backdropPath,
-            runtimeMinutes: resolved.runtimeMinutes,
-            imdbId: resolved.imdbId,
-            imdbRating: resolved.imdbRating,
-            imdbVotes: resolved.imdbVotes ?? null,
-            awards: resolved.awards ?? null,
-            overview: resolved.overview ?? null,
-            tmdbGenres: resolved.tmdbGenres,
-            tmdbKeywords: resolved.tmdbKeywords ?? [],
-            tmdbPeople: resolved.tmdbPeople ?? [],
-            originalLanguage: resolved.originalLanguage ?? null,
-            posterAmbient: ambient,
-            tmdbId: resolved.tmdbId ?? tmdbId,
-          })
-          .where(eq(titles.id, titleId));
-      }
-
-      revalidateTitlePages(titleId);
-      scheduleTonightRecompute(userId);
-    } catch {
-      // Snapshot row already exists; enrichment is best-effort.
-    }
-  });
-};
-
 const markExistingWatched = async (
   userId: string,
   titleId: string,
@@ -162,6 +107,12 @@ const markExistingWatched = async (
   }
 };
 
+/**
+ * Save a TMDB result for a user. The film lives once in `Catalog`; the user's
+ * `Title` only carries what is theirs. A film somebody already saved is
+ * complete on the spot — no TMDB/OMDb calls — and only a brand-new catalog
+ * row is enriched in the background.
+ */
 export const upsertTitleFromTmdbForUser = async (
   userId: string,
   input: AddTitleFromTmdbInput,
@@ -179,8 +130,26 @@ export const upsertTitleFromTmdbForUser = async (
     return { ok: false, error: "El tipo debe ser película o serie." };
   }
 
+  let shared = await findCatalogByTmdb(tmdbId, kind);
+  let catalogCreated = false;
+  if (!shared) {
+    if (!snapshotName) {
+      return { ok: false, error: "Falta el nombre del título." };
+    }
+    const result = await findOrCreateCatalog({
+      tmdbId,
+      kind,
+      name: snapshotName,
+      originalName: input.originalName,
+      year: input.year,
+      posterPath: input.posterPath,
+    });
+    shared = result.row;
+    catalogCreated = result.created;
+  }
+
   const existing = await db.query.titles.findFirst({
-    where: and(eq(titles.userId, userId), eq(titles.tmdbId, tmdbId)),
+    where: and(eq(titles.userId, userId), eq(titles.catalogId, shared.id)),
     columns: { id: true },
   });
 
@@ -200,25 +169,12 @@ export const upsertTitleFromTmdbForUser = async (
     };
   }
 
-  if (!snapshotName) {
-    return { ok: false, error: "Falta el nombre del título." };
-  }
-
   const titleId = createId();
   const now = new Date();
   await db.insert(titles).values({
     id: titleId,
     userId,
-    name: snapshotName,
-    originalName: input.originalName?.trim() || null,
-    kind,
-    year: input.year ?? null,
-    tmdbId,
-    posterPath: input.posterPath ?? null,
-    imdbId: null,
-    imdbRating: null,
-    overview: null,
-    tmdbGenres: [] as TmdbGenre[],
+    catalogId: shared.id,
     watchedAt: markWatched ? resolveWatchedAt(input.watchedAt) : null,
     createdAt: now,
     updatedAt: now,
@@ -228,7 +184,11 @@ export const upsertTitleFromTmdbForUser = async (
     await enqueueInWatchlist(userId, titleId);
   }
 
-  enrichCreatedTitleInBackground(userId, titleId, tmdbId, kind, snapshotName);
+  if (catalogCreated) {
+    scheduleCatalogEnrichment(shared, { userId, titleId });
+  } else {
+    scheduleTonightRecompute(userId);
+  }
 
   return {
     ok: true,

@@ -13,5 +13,4 @@ export type DiaryCalendarTitle = {
   imdbRating?: number | null;
   seriesStatus?: SeriesStatus | null;
   seriesSeason?: number | null;
-  tags?: Array<{ tag: { id: string; name: string; slug: string } }>;
 };

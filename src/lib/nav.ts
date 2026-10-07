@@ -13,18 +13,9 @@ export const isAuthChromePath = (pathname: string) => {
   );
 };
 
-export const isTagsPath = (pathname: string) => {
-  const path = pathOnly(pathname);
-  return path === "/tags" || path.startsWith("/tags/");
-};
-
 export const isListasHubPath = (pathname: string) => {
   const path = pathOnly(pathname);
-  return (
-    path === "/listas" ||
-    path.startsWith("/listas/") ||
-    isTagsPath(pathname)
-  );
+  return path === "/listas" || path.startsWith("/listas/");
 };
 
 export const isCurrentPath = (href: string, pathname: string) => {
@@ -33,7 +24,6 @@ export const isCurrentPath = (href: string, pathname: string) => {
     return path === "/" || path.startsWith("/titulos/");
   }
   if (href === "/listas") {
-    // Etiquetas lives under the Listas↔Etiquetas segment, not the top nav.
     return isListasHubPath(pathname);
   }
   return path === href || path.startsWith(`${href}/`);
@@ -45,7 +35,7 @@ export const isDiaryPath = (pathname: string) => {
   return path === "/diario" || path.startsWith("/diario/");
 };
 
-/** Bottom-nav active state: Listas stays lit on /tags/*, Perfil on /diario. */
+/** Bottom-nav active state: Listas stays lit on /listas/*, Perfil on /diario. */
 export const isMobileNavCurrent = (href: string, pathname: string) => {
   if (href === "/listas") {
     return isListasHubPath(pathname);
@@ -87,12 +77,6 @@ export const mobileCreateActions = [
     label: "Nueva lista",
     hint: "Agrupa títulos a tu modo",
     icon: "lists",
-  },
-  {
-    href: "/tags",
-    label: "Etiquetas",
-    hint: "Crea y organiza etiquetas",
-    icon: "tag",
   },
 ] as const;
 

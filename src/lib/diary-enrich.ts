@@ -1,5 +1,5 @@
-import { and, eq } from "drizzle-orm";
-import { db, titles, type TitleKind } from "@/db";
+import { eq } from "drizzle-orm";
+import { catalog, db, type TitleKind } from "@/db";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { runPool } from "@/lib/run-pool";
@@ -16,6 +16,7 @@ import { refreshWatchProvidersMx } from "@/lib/watch-providers-cache";
 type DiaryEnrichTitle = {
   id: string;
   userId?: string;
+  catalogId: string;
   name: string;
   originalName: string | null;
   year: number | null;
@@ -108,6 +109,7 @@ const enrichDiaryGenres = async <T extends DiaryEnrichTitle>(title: T): Promise<
       {
         id: title.id,
         userId: title.userId ?? "",
+        catalogId: title.catalogId,
         tmdbId,
         kind: title.kind,
         posterPath: title.posterPath ?? null,
@@ -128,20 +130,18 @@ const enrichDiaryGenres = async <T extends DiaryEnrichTitle>(title: T): Promise<
 
     // Always prefer live TMDB poster — stale/404 paths kill continuum cine.
     const freshPoster = details.posterPath?.trim() || extrasPatch.posterPath || null;
+    const catalogPatch = { ...extrasPatch };
+    delete catalogPatch.tmdbId;
 
+    // Shared row: every user who has this film sees the refresh.
     await db
-      .update(titles)
+      .update(catalog)
       .set({
-        tmdbId,
-        ...extrasPatch,
+        ...catalogPatch,
         ...(freshPoster ? { posterPath: freshPoster } : {}),
         ...(title.originalName ? {} : { originalName: details.originalName }),
       })
-      .where(
-        title.userId
-          ? and(eq(titles.id, title.id), eq(titles.userId, title.userId))
-          : eq(titles.id, title.id),
-      );
+      .where(eq(catalog.id, title.catalogId));
 
     return {
       ...title,
@@ -170,7 +170,7 @@ const enrichDiaryProviders = async <T extends DiaryEnrichTitle>(title: T): Promi
   }
 
   try {
-    const data = await refreshWatchProvidersMx(title.id, title.tmdbId, title.kind);
+    const data = await refreshWatchProvidersMx(title.catalogId, title.tmdbId, title.kind);
     return {
       ...title,
       watchProvidersMx: data,

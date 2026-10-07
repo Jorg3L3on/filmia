@@ -1,17 +1,10 @@
-import { Platform, SeriesStatus, TitleKind } from "@/db";
-import { PLATFORMS, SERIES_STATUSES, TITLE_KINDS } from "@/lib/labels";
+import { Platform, SeriesStatus } from "@/db";
+import { PLATFORMS, SERIES_STATUSES } from "@/lib/labels";
 
 const asString = (value: FormDataEntryValue | null) =>
   typeof value === "string" ? value.trim() : "";
 
-export const parseTitleKind = (value: FormDataEntryValue | null): TitleKind => {
-  const kind = asString(value);
-  if (TITLE_KINDS.includes(kind as TitleKind)) {
-    return kind as TitleKind;
-  }
-  throw new Error("El tipo debe ser película o serie.");
-};
-
+/** «Dónde la vi»: `""` (Ninguna) → null; anything outside the enum throws. */
 export const parsePlatform = (
   value: FormDataEntryValue | null,
 ): Platform | null => {
@@ -37,20 +30,6 @@ export const parseRating = (value: FormDataEntryValue | null) => {
   }
 
   return rating;
-};
-
-export const parseYear = (value: FormDataEntryValue | null) => {
-  const raw = asString(value);
-  if (!raw) {
-    return null;
-  }
-
-  const year = Number(raw);
-  if (!Number.isInteger(year) || year < 1888 || year > 2100) {
-    throw new Error("El año no es válido.");
-  }
-
-  return year;
 };
 
 export const parseOptionalDate = (value: FormDataEntryValue | null) => {
@@ -159,12 +138,6 @@ export const parsePasswordChange = (formData: FormData) => {
 
   return { currentPassword, newPassword };
 };
-
-export const parseNewTags = (value: FormDataEntryValue | null) =>
-  asString(value)
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
 
 export const parseSeriesStatus = (
   value: FormDataEntryValue | null,

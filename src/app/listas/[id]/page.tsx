@@ -21,10 +21,17 @@ import {
   sortCatalogByTitle,
   titleMatchesKind,
 } from "@/lib/catalog-filters";
-import { emptyStateForList, isFixedListSlug, WATCHLIST_SLUG } from "@/lib/lists";
-import { getListById, getTagFilters, getTitleOptionsOutsideList, getUserStreamingPlatforms } from "@/lib/queries";
+import {
+  emptyStateForList,
+  isFixedListSlug,
+  isSeriesStatusListSlug,
+  WATCHLIST_SLUG,
+} from "@/lib/lists";
+import { metadataServicesConfigured } from "@/lib/metadata";
+import { getListById, getTitleOptionsOutsideList, getUserStreamingPlatforms } from "@/lib/queries";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
-import { catalogHref, parseMinePlatforms, parseTagSlugs, titleMatchesAnyTag } from "@/lib/tags";
+import { tmdbCatalogKey } from "@/lib/tmdb-search-catalog";
+import { catalogHref, parseMinePlatforms } from "@/lib/catalog-href";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
 import { pillActionClass } from "@/lib/ui";
 import { PencilIcon } from "@/components/SegmentAction";
@@ -37,7 +44,6 @@ export default function ListDetailPage({
 }: {
   params: Promise<{ id: string }>;
   searchParams: Promise<{
-    tag?: string | string[];
     minePlatforms?: string | string[];
     seriesStatus?: string | string[];
     kind?: string | string[];
@@ -58,7 +64,6 @@ const ListDetail = async ({
 }: {
   params: Promise<{ id: string }>;
   searchParams: Promise<{
-    tag?: string | string[];
     minePlatforms?: string | string[];
     seriesStatus?: string | string[];
     kind?: string | string[];
@@ -68,16 +73,14 @@ const ListDetail = async ({
 }) => {
   const { id } = await params;
   const query = await searchParams;
-  const selectedTags = parseTagSlugs(query.tag);
   const minePlatforms = parseMinePlatforms(query.minePlatforms);
   const seriesStatus = parseSeriesStatusFilter(query.seriesStatus);
   const kindFilter = parseKindFilter(query.kind);
   const platforms = parsePlatformFilters(query.platform);
   const sort = parseCatalogOrder(query.sort);
-  const [list, availableTitles, tags, userPlatforms] = await Promise.all([
+  const [list, availableTitles, userPlatforms] = await Promise.all([
     getListById(id),
     getTitleOptionsOutsideList(id),
-    getTagFilters(),
     getUserStreamingPlatforms(),
   ]);
 
@@ -88,13 +91,10 @@ const ListDetail = async ({
   if (list.kind === "WATCHLIST" || list.slug === WATCHLIST_SLUG) {
     redirect("/watchlist");
   }
-  const taggedItems = list.items.filter(
+  const statusItems = list.items.filter(
     (item) =>
       titleMatchesKind(item.title.kind, kindFilter) &&
-      titleMatchesAnyTag(item.title.tags, selectedTags),
-  );
-  const statusItems = taggedItems.filter((item) =>
-    titleMatchesSeriesStatus(item.title, seriesStatus),
+      titleMatchesSeriesStatus(item.title, seriesStatus),
   );
   const catalog = resolveCatalogAvailability(
     statusItems.map((item) => item.title),
@@ -110,7 +110,13 @@ const ListDetail = async ({
     sort,
   );
   const addAction = addTitleToList.bind(null, list.id);
+  const configuredTmdb = metadataServicesConfigured().tmdb;
+  const inListKeys = list.items.flatMap((item) =>
+    item.title.tmdbId != null ? [tmdbCatalogKey(item.title.tmdbId, item.title.kind)] : [],
+  );
   const fixed = isFixedListSlug(list.slug);
+  // «Series en progreso» / «Series abandonadas» las llena el estado de la serie.
+  const automatic = isSeriesStatusListSlug(list.slug);
   const empty = emptyStateForList(list.slug);
   const filteredEmpty = list.items.length > 0 && visibleItems.length === 0;
   const clearHref = catalogHref(`/listas/${list.id}`, {});
@@ -124,7 +130,16 @@ const ListDetail = async ({
         backLabel="Todas las listas"
         actions={
           <>
-            <AddTitleToListCta action={addAction} titles={availableTitles} compact />
+            {automatic ? null : (
+              <AddTitleToListCta
+                action={addAction}
+                titles={availableTitles}
+                listId={list.id}
+                configuredTmdb={configuredTmdb}
+                inListKeys={inListKeys}
+                compact
+              />
+            )}
             <Link
               href={`/listas/${list.id}/editar`}
               aria-label={fixed ? "Editar descripción" : "Editar lista"}
@@ -138,8 +153,6 @@ const ListDetail = async ({
       />
 
       <CatalogFilters
-        tags={tags}
-        selectedSlugs={selectedTags}
         pathname={`/listas/${list.id}`}
         kind={kindFilter}
         platforms={platforms}
@@ -152,7 +165,15 @@ const ListDetail = async ({
 
       {list.items.length === 0 ? (
         <>
-          <AddTitleToListCta action={addAction} titles={availableTitles} />
+          {automatic ? null : (
+            <AddTitleToListCta
+              action={addAction}
+              titles={availableTitles}
+              listId={list.id}
+              configuredTmdb={configuredTmdb}
+              inListKeys={inListKeys}
+            />
+          )}
           <EmptyState
             variant={empty.variant}
             title={empty.title}
@@ -169,13 +190,13 @@ const ListDetail = async ({
           <MinePlatformsEmpty
             userPlatforms={userPlatforms}
             actionHref={clearHref}
-            hasTagFilters={selectedTags.length > 0 || Boolean(seriesStatus)}
+            hasFilters={Boolean(seriesStatus)}
           />
         </>
       ) : filteredEmpty ? (
         <EmptyState
           title="Nada con esos filtros"
-          description="Esta lista no tiene títulos con las etiquetas o el estado de serie elegidos. El estado ignora películas."
+          description="Esta lista no tiene títulos con los filtros elegidos. El estado de serie ignora películas."
           actionHref={clearHref}
           actionLabel="Quitar filtros"
         />
@@ -183,7 +204,7 @@ const ListDetail = async ({
         <div className="space-y-4">
           <MissingStreamingDataNote count={catalog.missingCache} />
           <ListTitlesView
-            listId={list.id}
+            listId={automatic ? undefined : list.id}
             items={visibleItems}
             platforms={platforms}
           />

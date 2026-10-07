@@ -5,6 +5,7 @@ import { setTitleRating } from "@/app/actions/titles";
 import { clearTitleWatched } from "@/app/actions/watchlist";
 import { MarkWatchedSheet } from "@/components/MarkWatchedSheet";
 import { RatingSheet } from "@/components/RatingSheet";
+import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
 import { formatStarScore } from "@/lib/labels";
 import { useSpringFeedback } from "@/lib/motion";
@@ -27,14 +28,22 @@ type TitleActionRowProps = {
   titleName: string;
   watched: boolean;
   inWatchlist: boolean;
+  /** @deprecated Prefer `listCount`; shown as a dot badge when no count is given. */
   inCustomList?: boolean;
+  /** Saved lists (watchlist excluded): drawn as a count badge, never as «pressed». */
+  listCount?: number;
   rating: number | null;
   review?: string | null;
+  /** Saved «Dónde la vi»; prefills the Marqué visto sheet. */
+  platform?: Platform | null;
   listsPanel: ReactNode;
-  tagsPanel: ReactNode;
+  /** Controlled lists panel, shared with TitleSaveCta's «Gestionar listas». */
+  listsOpen?: boolean;
+  onToggleLists?: () => void;
+  listsPanelId?: string;
 };
 
-type Panel = "lists" | "tags" | null;
+type Panel = "lists" | null;
 
 type ActionState = {
   watched: boolean;
@@ -55,12 +64,20 @@ export const TitleActionRow = ({
   watched,
   inWatchlist,
   inCustomList = false,
+  listCount,
   rating,
   review = null,
+  platform,
   listsPanel,
-  tagsPanel,
+  listsOpen,
+  onToggleLists,
+  listsPanelId,
 }: TitleActionRowProps) => {
-  const [panel, setPanel] = useState<Panel>(null);
+  const [ownPanel, setPanel] = useState<Panel>(null);
+  const listsControlled = onToggleLists != null;
+  const panel: Panel = listsControlled ? (listsOpen ? "lists" : null) : ownPanel;
+  const savedCount = listCount ?? (inCustomList ? 1 : 0);
+  const listsExpanded = panel === "lists";
   const [ratingOpen, setRatingOpen] = useState(false);
   const [seenOpen, setSeenOpen] = useState(false);
   const [seenOptimistic, setSeenOptimistic] = useState(false);
@@ -141,6 +158,10 @@ export const TitleActionRow = ({
   };
 
   const handleTogglePanel = (next: Panel) => {
+    if (listsControlled && next === "lists") {
+      onToggleLists();
+      return;
+    }
     setPanel((current) => (current === next ? null : next));
   };
 
@@ -149,7 +170,7 @@ export const TitleActionRow = ({
       <div
         role="group"
         aria-label="Acciones del título"
-        className="grid grid-cols-4 gap-2"
+        className="grid grid-cols-3 gap-2"
       >
         <button
           type="button"
@@ -189,28 +210,36 @@ export const TitleActionRow = ({
         <button
           type="button"
           onClick={() => handleTogglePanel("lists")}
-          aria-expanded={panel === "lists"}
+          aria-expanded={listsExpanded}
+          aria-controls={listsPanelId}
           className={cn(
-            actionChipClass(inCustomList || panel === "lists"),
-            (inCustomList || panel === "lists") &&
-              "border-accent bg-accent/10 text-accent",
+            actionChipClass(listsExpanded),
+            "relative",
+            listsExpanded && "border-accent bg-accent/10 text-accent",
           )}
         >
           <PlusListIcon />
-          {inCustomList ? "En lista" : "Lista"}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTogglePanel("tags")}
-          aria-expanded={panel === "tags"}
-          className={cn(
-            actionChipClass(panel === "tags"),
-            panel === "tags" && "border-accent bg-accent/10 text-accent",
-          )}
-        >
-          <TagIcon />
-          Etiquetas
+          Lista
+          {savedCount > 0 ? (
+            <>
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "absolute top-1.5 right-1.5 flex items-center justify-center rounded-full border border-white/15 bg-white/[0.12] font-semibold tracking-normal text-paper tabular-nums",
+                  listCount != null
+                    ? "h-[18px] min-w-[18px] px-1 text-[10px] leading-none"
+                    : "h-2 w-2",
+                )}
+              >
+                {listCount != null ? savedCount : null}
+              </span>
+              <span className="sr-only">
+                {listCount != null
+                  ? `, guardada en ${savedCount} ${savedCount === 1 ? "lista" : "listas"}`
+                  : ", guardada en listas"}
+              </span>
+            </>
+          ) : null}
         </button>
       </div>
 
@@ -226,6 +255,7 @@ export const TitleActionRow = ({
         titleName={titleName}
         rating={optimistic.rating}
         review={optimistic.review}
+        platform={platform}
         onClose={() => setSeenOpen(false)}
         onSaved={handleSeenSaved}
         onError={handleSeenError}
@@ -241,9 +271,7 @@ export const TitleActionRow = ({
         onSave={handleSaveRating}
       />
 
-      {panel === "lists" ? listsPanel : null}
-
-      {panel === "tags" ? tagsPanel : null}
+      {listsExpanded ? <div id={listsPanelId}>{listsPanel}</div> : null}
     </div>
   );
 };
@@ -294,22 +322,5 @@ const PlusListIcon = () => (
     strokeWidth={1.75}
   >
     <path strokeLinecap="round" d="M6 8h12M6 12h12M6 16h7M16.5 15.5v5M14 18h5" />
-  </svg>
-);
-
-const TagIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    className="h-5 w-5"
-    aria-hidden="true"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.75}
-  >
-    <path
-      strokeLinejoin="round"
-      d="M4.5 12.5 12 5h6.5V11.5L11.5 18.5 4.5 12.5Z"
-    />
-    <circle cx="16" cy="8" r="1" fill="currentColor" />
   </svg>
 );

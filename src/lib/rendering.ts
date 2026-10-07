@@ -27,10 +27,8 @@
  * - `/listas`, `/listas/[id]` → force-dynamic — user lists / membership
  * - `/listas/nueva`           → force-dynamic — auth-gated write surface
  * - `/listas/[id]/editar`     → force-dynamic — user list row
- * - `/tags`, `/tags/[slug]`   → force-dynamic — user tags / ranked titles
- * - `/titulos/[id]`           → force-dynamic — user ficha + lists/tags;
+ * - `/titulos/[id]`           → force-dynamic — user ficha + lists;
  *                               TMDB/OMDb extras via tagged unstable_cache
- * - `/titulos/[id]/editar`    → force-dynamic — user title edit
  * - `/titulos/nuevo`          → no force-dynamic — redirect-only to `/buscar`
  * - `/perfil`                 → force-dynamic — user profile / platforms
  * - `/bienvenida`             → force-dynamic — first-run flow: session claim,
@@ -65,10 +63,7 @@ export const AUTH_DYNAMIC_PAGES = [
   "src/app/listas/[id]/page.tsx",
   "src/app/listas/[id]/editar/page.tsx",
   "src/app/listas/nueva/page.tsx",
-  "src/app/tags/page.tsx",
-  "src/app/tags/[slug]/page.tsx",
   "src/app/titulos/[id]/page.tsx",
-  "src/app/titulos/[id]/editar/page.tsx",
   "src/app/perfil/page.tsx",
   "src/app/bienvenida/page.tsx",
 ] as const;

@@ -1,12 +1,12 @@
 import { config as loadEnv } from "dotenv";
 import { createId } from "@paralleldrive/cuid2";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 loadEnv({ path: ".env.local" });
 loadEnv();
 
-import { db, titles, users } from "../src/db";
-import { hashPassword } from "../src/lib/auth/password";
+import { catalog, db, titles, users } from "../src/db";
+import { findOrCreateCatalog } from "../src/lib/catalog";
 import {
   persistTitleExtras,
   storedTitleExtras,
@@ -14,7 +14,8 @@ import {
 } from "../src/lib/title-extras";
 
 const DEMO_EMAIL = "demo@filmia.local";
-const OTHER_EMAIL = "extras-isolation@filmia.local";
+/** Not a real TMDB id: the catalog row is created and removed by this script. */
+const TEST_TMDB_ID = 9000154;
 
 const fetched = {
   overview: "Dos amigos intentan comprar alcohol.",
@@ -22,7 +23,7 @@ const fetched = {
   backdropPath: "/superbad-back.jpg",
   posterPath: "/ek8e8txUyUwd2BNqj6lFEerJfbq.jpg",
   genres: [{ id: 35, name: "Comedia" }],
-  tmdbId: 8363,
+  tmdbId: TEST_TMDB_ID,
 };
 
 const assert = (condition: unknown, message: string) => {
@@ -33,105 +34,67 @@ const assert = (condition: unknown, message: string) => {
 
 const run = async () => {
   const demo = await db.query.users.findFirst({
-    where: (table, { eq: equals }) => equals(table.email, DEMO_EMAIL),
+    where: eq(users.email, DEMO_EMAIL),
     columns: { id: true },
   });
   assert(demo, `Missing demo user ${DEMO_EMAIL}`);
 
-  let other = await db.query.users.findFirst({
-    where: (table, { eq: equals }) => equals(table.email, OTHER_EMAIL),
-    columns: { id: true },
+  const { row: film, created } = await findOrCreateCatalog({
+    tmdbId: TEST_TMDB_ID,
+    kind: "MOVIE",
+    name: "Superbad extras gap",
+    year: 2007,
   });
-  if (!other) {
-    const otherId = createId();
-    await db.insert(users).values({
-      id: otherId,
-      email: OTHER_EMAIL,
-      passwordHash: await hashPassword("filmia-demo"),
-      name: "Isolation",
-    });
-    other = { id: otherId };
-  }
+  assert(created, "Test film should not pre-exist in Catalog");
 
   const titleId = createId();
+  // `Title.updatedAt` has no DB default (Prisma-era column): always set both stamps.
+  const now = new Date();
   await db.insert(titles).values({
     id: titleId,
     userId: demo!.id,
-    name: "Superbad extras gap",
-    kind: "MOVIE",
-    year: 2007,
-    tmdbId: 8363,
-    posterPath: null,
-    overview: null,
-    tmdbGenres: [],
-    runtimeMinutes: null,
-    backdropPath: null,
+    catalogId: film.id,
+    createdAt: now,
+    updatedAt: now,
   });
 
-  const gapRow = {
-    id: titleId,
-    userId: demo!.id,
-    tmdbId: 8363,
-    kind: "MOVIE" as const,
-    posterPath: null,
-    overview: null,
-    tmdbGenres: [],
-    runtimeMinutes: null,
-    backdropPath: null,
-  };
-
-  assert(titleNeedsTmdbExtras(gapRow), "Gap Superbad row should need TMDB extras");
-
-  const stolen = await persistTitleExtras({ ...gapRow, userId: other!.id }, fetched);
-  const afterSteal = await db.query.titles.findFirst({
-    where: and(eq(titles.id, titleId), eq(titles.userId, demo!.id)),
-  });
-  assert(stolen === false || afterSteal?.posterPath == null, "Wrong userId must not persist extras");
-  assert(afterSteal?.posterPath == null, "Isolation: poster stays empty after foreign persist");
-  assert(afterSteal?.overview == null, "Isolation: overview stays empty after foreign persist");
-
-  const wrote = await persistTitleExtras(gapRow, fetched);
-  assert(wrote, "Owner persist should write extras");
-
-  const warm = await db.query.titles.findFirst({
-    where: and(eq(titles.id, titleId), eq(titles.userId, demo!.id)),
-  });
-  assert(warm?.posterPath === fetched.posterPath, "Persisted poster");
-  assert(warm?.overview === fetched.overview, "Persisted overview");
-  assert(warm?.runtimeMinutes === fetched.runtimeMinutes, "Persisted runtime");
-  assert(warm?.backdropPath === fetched.backdropPath, "Persisted backdrop");
-
-  const stored = storedTitleExtras({
-    id: warm!.id,
-    userId: warm!.userId,
-    tmdbId: warm!.tmdbId,
-    kind: warm!.kind,
-    posterPath: warm!.posterPath,
-    overview: warm!.overview,
-    tmdbGenres: warm!.tmdbGenres,
-    runtimeMinutes: warm!.runtimeMinutes,
-    backdropPath: warm!.backdropPath,
-  });
-  assert(stored.posterPath === fetched.posterPath, "Stored extras expose poster");
-  assert(
-    !titleNeedsTmdbExtras({
-      id: warm!.id,
-      userId: warm!.userId,
-      tmdbId: warm!.tmdbId,
-      kind: warm!.kind,
-      posterPath: warm!.posterPath,
-      overview: warm!.overview,
-      tmdbGenres: warm!.tmdbGenres,
+  try {
+    const gapRow = {
+      id: titleId,
+      userId: demo!.id,
+      catalogId: film.id,
+      tmdbId: TEST_TMDB_ID,
+      kind: "MOVIE" as const,
+      posterPath: null,
+      overview: null,
+      tmdbGenres: [],
       runtimeMinutes: null,
-      backdropPath: warm!.backdropPath,
-    }),
-    "Warm row skips TMDB even without runtime",
-  );
+      backdropPath: null,
+    };
 
-  const overwrite = await persistTitleExtras(
-    {
-      id: warm!.id,
-      userId: warm!.userId,
+    assert(titleNeedsTmdbExtras(gapRow), "Gap row should need TMDB extras");
+
+    const wrote = await persistTitleExtras(gapRow, fetched);
+    assert(wrote, "Persist should write extras");
+
+    const warm = await db.query.catalog.findFirst({ where: eq(catalog.id, film.id) });
+    assert(warm?.posterPath === fetched.posterPath, "Persisted poster lands on the catalog");
+    assert(warm?.overview === fetched.overview, "Persisted overview lands on the catalog");
+    assert(warm?.runtimeMinutes === fetched.runtimeMinutes, "Persisted runtime");
+    assert(warm?.backdropPath === fetched.backdropPath, "Persisted backdrop");
+    assert(warm?.tmdbId === TEST_TMDB_ID, "tmdbId is the catalog key and never changes");
+
+    // Shared by design: the title reads the extras through its catalog, no copy of its own.
+    const viaTitle = await db.query.titles.findFirst({
+      where: eq(titles.id, titleId),
+      with: { catalog: true },
+    });
+    assert(viaTitle?.catalog.overview === fetched.overview, "Title sees extras via its catalog");
+
+    const warmRow = {
+      id: titleId,
+      userId: demo!.id,
+      catalogId: film.id,
       tmdbId: warm!.tmdbId,
       kind: warm!.kind,
       posterPath: warm!.posterPath,
@@ -139,29 +102,33 @@ const run = async () => {
       tmdbGenres: warm!.tmdbGenres,
       runtimeMinutes: warm!.runtimeMinutes,
       backdropPath: warm!.backdropPath,
-    },
-    {
+    };
+    assert(storedTitleExtras(warmRow).posterPath === fetched.posterPath, "Stored extras expose poster");
+    assert(
+      !titleNeedsTmdbExtras({ ...warmRow, runtimeMinutes: null }),
+      "Warm row skips TMDB even without runtime",
+    );
+
+    const overwrite = await persistTitleExtras(warmRow, {
       ...fetched,
       overview: "No pises la sinopsis guardada",
       posterPath: "/other.jpg",
       runtimeMinutes: 90,
-    },
-  );
-  assert(!overwrite, "Second persist must not overwrite stored extras");
+    });
+    assert(!overwrite, "Second persist must not overwrite stored extras");
 
-  const afterOverwrite = await db.query.titles.findFirst({
-    where: eq(titles.id, titleId),
-  });
-  assert(afterOverwrite?.overview === fetched.overview, "Overview stays the first persist");
-  assert(afterOverwrite?.posterPath === fetched.posterPath, "Poster stays the first persist");
+    const afterOverwrite = await db.query.catalog.findFirst({ where: eq(catalog.id, film.id) });
+    assert(afterOverwrite?.overview === fetched.overview, "Overview stays the first persist");
+    assert(afterOverwrite?.posterPath === fetched.posterPath, "Poster stays the first persist");
+  } finally {
+    await db.delete(titles).where(eq(titles.id, titleId));
+    await db.delete(catalog).where(eq(catalog.id, film.id));
+  }
 
-  await db.delete(titles).where(eq(titles.id, titleId));
-  await db.delete(users).where(eq(users.email, OTHER_EMAIL));
-
-  console.log("✓ Persist Superbad extras, skip warm TMDB, keep userId isolation");
+  console.log("✓ Title extras persist once on the shared catalog and never overwrite stored data");
 };
 
 run().catch((error) => {
   console.error(error);
-  process.exit(1);
+  process.exitCode = 1;
 });

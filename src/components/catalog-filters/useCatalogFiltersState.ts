@@ -4,11 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { CatalogFilterDraft } from "@/components/catalog-filters/CatalogFilterSheet";
 import { countSheetFilters } from "@/lib/catalog-filters";
-import type { CatalogKindFilter, CatalogQuery } from "@/lib/catalog-href";
-import { catalogHref } from "@/lib/catalog-href";
+import { catalogHref, type CatalogKindFilter, type CatalogQuery, type CatalogSort } from "@/lib/catalog-href";
 import type { Platform } from "@/db";
 import type { SeriesStatusFilter } from "@/lib/series";
-import type { CatalogSort } from "@/lib/tags";
 
 type UseCatalogFiltersStateArgs = {
   pathname: string;
@@ -17,7 +15,6 @@ type UseCatalogFiltersStateArgs = {
   defaultView?: string;
   defaultSort?: CatalogSort | null;
   minePlatforms?: boolean;
-  selectedSlugs: string[];
   seriesStatus?: SeriesStatusFilter;
   month?: string;
   day?: string | null;
@@ -35,7 +32,6 @@ export const useCatalogFiltersState = ({
   defaultView,
   defaultSort = null,
   minePlatforms = false,
-  selectedSlugs,
   seriesStatus,
   month,
   day,
@@ -49,7 +45,6 @@ export const useCatalogFiltersState = ({
     kind,
     platforms,
     sort: (sort as CatalogSort | undefined) ?? defaultSort,
-    tags: selectedSlugs,
     seriesStatus,
     minePlatforms,
   };
@@ -80,7 +75,6 @@ export const useCatalogFiltersState = ({
       kind: next.kind,
       platforms: next.platforms,
       sort: next.sort && next.sort !== defaultSort ? next.sort : null,
-      tags: next.tags,
       seriesStatus: next.seriesStatus,
       minePlatforms: next.minePlatforms,
     });
@@ -90,14 +84,12 @@ export const useCatalogFiltersState = ({
     kind: "ALL",
     platforms: [],
     sort: applied.sort,
-    tags: [],
     seriesStatus: undefined,
     minePlatforms: false,
   };
 
   const sheetActiveCount = countSheetFilters({
     platforms,
-    tags: selectedSlugs,
     seriesStatus,
     minePlatforms,
   });

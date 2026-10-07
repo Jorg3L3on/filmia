@@ -79,6 +79,65 @@ export const users = pgTable(
   ],
 );
 
+/**
+ * One row per film/series, shared by every user and keyed by `(tmdbId, kind)`.
+ * Holds everything that comes from TMDB/OMDb or is derived from it; users never
+ * edit it. Personal data (rating, review, watchedAt…) lives on `Title`.
+ */
+export const catalog = pgTable(
+  "Catalog",
+  {
+    id: text("id").primaryKey(),
+    tmdbId: integer("tmdbId").notNull(),
+    kind: titleKindEnum("kind").notNull(),
+    name: text("name").notNull(),
+    originalName: text("originalName"),
+    year: integer("year"),
+    posterPath: text("posterPath"),
+    backdropPath: text("backdropPath"),
+    runtimeMinutes: integer("runtimeMinutes"),
+    imdbId: text("imdbId"),
+    imdbRating: real("imdbRating"),
+    imdbVotes: integer("imdbVotes"),
+    /** OMDb `Awards` text, e.g. "Won 2 Oscars. 23 wins & 12 nominations total." */
+    awards: text("awards"),
+    overview: text("overview"),
+    tmdbGenres: jsonb("tmdbGenres").notNull().default([]),
+    /** Esta noche (Hoy): TMDB keywords `[{ id, name }]` for the taste vector. */
+    tmdbKeywords: jsonb("tmdbKeywords").notNull().default([]),
+    /** Esta noche: `[{ id, name, role: "director" | "creator" | "cast" }]`. */
+    tmdbPeople: jsonb("tmdbPeople").notNull().default([]),
+    originalLanguage: text("originalLanguage"),
+    watchProvidersMx: jsonb("watchProvidersMx"),
+    watchProvidersFetchedAt: timestamp("watchProvidersFetchedAt", {
+      precision: 3,
+      mode: "date",
+    }),
+    /** First time we saw a flatrate MX offer — drives «Acaba de llegar». */
+    availableSince: timestamp("availableSince", { precision: 3, mode: "date" }),
+    /** Space-separated RGB (`"122 146 172"`) sampled server-side for the sala glow. */
+    posterAmbient: text("posterAmbient"),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("Catalog_tmdbId_kind_key").on(table.tmdbId, table.kind),
+    index("Catalog_imdbId_idx").on(table.imdbId),
+    index("Catalog_watchProvidersFetchedAt_idx").on(table.watchProvidersFetchedAt),
+  ],
+);
+
+/**
+ * A user's entry for one catalog film: everything personal (rating, review,
+ * where they watched it, when, series progress). The film itself — name,
+ * poster, credits, availability… — lives on `Catalog`; reads flatten the two
+ * with `flattenTitle`. One entry per film per user.
+ */
 export const titles = pgTable(
   "Title",
   {
@@ -86,41 +145,15 @@ export const titles = pgTable(
     userId: text("userId")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    name: text("name").notNull(),
-    originalName: text("originalName"),
-    kind: titleKindEnum("kind").notNull(),
-    year: integer("year"),
+    catalogId: text("catalogId")
+      .notNull()
+      .references(() => catalog.id),
     rating: integer("rating"),
     review: text("review"),
     platform: platformEnum("platform"),
     watchedAt: timestamp("watchedAt", { precision: 3, mode: "date" }),
     seriesStatus: seriesStatusEnum("seriesStatus"),
     seriesSeason: integer("seriesSeason"),
-    tmdbId: integer("tmdbId"),
-    posterPath: text("posterPath"),
-    backdropPath: text("backdropPath"),
-    runtimeMinutes: integer("runtimeMinutes"),
-    imdbId: text("imdbId"),
-    imdbRating: real("imdbRating"),
-    overview: text("overview"),
-    tmdbGenres: jsonb("tmdbGenres").notNull().default([]),
-    watchProvidersMx: jsonb("watchProvidersMx"),
-    watchProvidersFetchedAt: timestamp("watchProvidersFetchedAt", {
-      precision: 3,
-      mode: "date",
-    }),
-    /** Esta noche (Hoy): TMDB keywords `[{ id, name }]` for the taste vector. */
-    tmdbKeywords: jsonb("tmdbKeywords").notNull().default([]),
-    /** Esta noche: `[{ id, name, role: "director" | "creator" | "cast" }]`. */
-    tmdbPeople: jsonb("tmdbPeople").notNull().default([]),
-    originalLanguage: text("originalLanguage"),
-    imdbVotes: integer("imdbVotes"),
-    /** OMDb `Awards` text, e.g. "Won 2 Oscars. 23 wins & 12 nominations total." */
-    awards: text("awards"),
-    /** Space-separated RGB (`"122 146 172"`) sampled server-side for the sala glow. */
-    posterAmbient: text("posterAmbient"),
-    /** First time we saw a flatrate MX offer — drives «Acaba de llegar». */
-    availableSince: timestamp("availableSince", { precision: 3, mode: "date" }),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),
@@ -131,47 +164,13 @@ export const titles = pgTable(
   },
   (table) => [
     index("Title_userId_idx").on(table.userId),
+    index("Title_catalogId_idx").on(table.catalogId),
+    uniqueIndex("Title_userId_catalogId_key").on(table.userId, table.catalogId),
     index("Title_userId_watchedAt_idx").on(table.userId, table.watchedAt),
-    index("Title_kind_idx").on(table.kind),
     index("Title_rating_idx").on(table.rating),
-    index("Title_name_idx").on(table.name),
-    index("Title_tmdbId_idx").on(table.tmdbId),
-    index("Title_imdbId_idx").on(table.imdbId),
     index("Title_seriesStatus_idx").on(table.seriesStatus),
     index("Title_userId_seriesStatus_idx").on(table.userId, table.seriesStatus),
   ],
-);
-
-export const tags = pgTable(
-  "Tag",
-  {
-    id: text("id").primaryKey(),
-    userId: text("userId")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    name: text("name").notNull(),
-    slug: text("slug").notNull(),
-    createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    uniqueIndex("Tag_userId_slug_key").on(table.userId, table.slug),
-    index("Tag_userId_idx").on(table.userId),
-  ],
-);
-
-export const titleTags = pgTable(
-  "TitleTag",
-  {
-    titleId: text("titleId")
-      .notNull()
-      .references(() => titles.id, { onDelete: "cascade" }),
-    tagId: text("tagId")
-      .notNull()
-      .references(() => tags.id, { onDelete: "cascade" }),
-  },
-  (table) => [primaryKey({ columns: [table.titleId, table.tagId] })],
 );
 
 export const lists = pgTable(
@@ -275,23 +274,16 @@ export const pickEvents = pgTable(
 export const usersRelations = relations(users, ({ many }) => ({
   titles: many(titles),
   lists: many(lists),
-  tags: many(tags),
+}));
+
+export const catalogRelations = relations(catalog, ({ many }) => ({
+  titles: many(titles),
 }));
 
 export const titlesRelations = relations(titles, ({ one, many }) => ({
   user: one(users, { fields: [titles.userId], references: [users.id] }),
-  tags: many(titleTags),
+  catalog: one(catalog, { fields: [titles.catalogId], references: [catalog.id] }),
   listItems: many(listItems),
-}));
-
-export const tagsRelations = relations(tags, ({ one, many }) => ({
-  user: one(users, { fields: [tags.userId], references: [users.id] }),
-  titles: many(titleTags),
-}));
-
-export const titleTagsRelations = relations(titleTags, ({ one }) => ({
-  title: one(titles, { fields: [titleTags.titleId], references: [titles.id] }),
-  tag: one(tags, { fields: [titleTags.tagId], references: [tags.id] }),
 }));
 
 export const listsRelations = relations(lists, ({ one, many }) => ({
@@ -305,25 +297,25 @@ export const listItemsRelations = relations(listItems, ({ one }) => ({
 }));
 
 export type User = typeof users.$inferSelect;
-export type Title = typeof titles.$inferSelect;
-export type Tag = typeof tags.$inferSelect;
+export type CatalogRow = typeof catalog.$inferSelect;
+/** The personal row as stored. */
+export type UserTitle = typeof titles.$inferSelect;
+/** What `Catalog` contributes to a flattened title. */
+export type CatalogFields = Omit<CatalogRow, "id" | "createdAt" | "updatedAt">;
+/**
+ * What the app works with: the personal row with its shared catalog spread on
+ * top (see `flattenTitle`). Components never see the two tables separately.
+ */
+export type Title = UserTitle & CatalogFields & { catalogId: string };
 export type List = typeof lists.$inferSelect;
 export type ListItem = typeof listItems.$inferSelect;
 export type TonightPickRow = typeof tonightPicks.$inferSelect;
 export type PickEventRow = typeof pickEvents.$inferSelect;
 
-export type TitleTagWithTag = typeof titleTags.$inferSelect & {
-  tag: Tag;
-};
-
 export type ListItemWithTitleRelations = typeof listItems.$inferSelect & {
-  title: TitleWithTags;
+  title: Title;
 };
 
-export type TitleWithTags = Title & {
-  tags: TitleTagWithTag[];
-};
-
-export type TitleWithRelations = TitleWithTags & {
+export type TitleWithRelations = Title & {
   listItems: (typeof listItems.$inferSelect & { list: List })[];
 };

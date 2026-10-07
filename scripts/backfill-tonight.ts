@@ -4,7 +4,7 @@ import { and, asc, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
 loadEnv({ path: ".env.local" });
 loadEnv();
 
-import { db, titles } from "../src/db/index";
+import { db, catalog } from "../src/db/index";
 import { fetchImdbScore, isOmdbConfigured } from "../src/lib/omdb";
 import { formatAmbientRgb } from "../src/lib/poster-ambient";
 import { sampleAmbientFromPosterPath } from "../src/lib/poster-ambient-server";
@@ -14,7 +14,7 @@ import { computeTonightForUser } from "../src/lib/tonight-store";
 
 /**
  * Esta noche backfill: keywords + people + language (TMDB), votes (OMDb) and
- * poster ambient (sharp) for titles that still lack them, then precompute
+ * poster ambient (sharp) for catalog that still lack them, then precompute
  * every user's decks. Idempotent; `--force` refetches everything.
  */
 
@@ -26,9 +26,9 @@ const force = process.argv.includes("--force");
 const CONCURRENCY = 4;
 
 const needsTaste = or(
-  sql`jsonb_array_length(${titles.tmdbKeywords}) = 0`,
-  sql`jsonb_array_length(${titles.tmdbPeople}) = 0`,
-  isNull(titles.originalLanguage),
+  sql`jsonb_array_length(${catalog.tmdbKeywords}) = 0`,
+  sql`jsonb_array_length(${catalog.tmdbPeople}) = 0`,
+  isNull(catalog.originalLanguage),
 );
 
 const backfill = async () => {
@@ -40,18 +40,18 @@ const backfill = async () => {
   }
 
   const rows = force
-    ? await db.query.titles.findMany({ where: isNotNull(titles.tmdbId), orderBy: [asc(titles.name)] })
-    : await db.query.titles.findMany({
+    ? await db.query.catalog.findMany({ where: isNotNull(catalog.tmdbId), orderBy: [asc(catalog.name)] })
+    : await db.query.catalog.findMany({
         where: and(
-          isNotNull(titles.tmdbId),
+          isNotNull(catalog.tmdbId),
           or(
             needsTaste,
-            and(isNotNull(titles.imdbId), isNull(titles.imdbVotes)),
-            and(isNotNull(titles.imdbId), isNull(titles.awards)),
-            and(isNotNull(titles.posterPath), isNull(titles.posterAmbient)),
+            and(isNotNull(catalog.imdbId), isNull(catalog.imdbVotes)),
+            and(isNotNull(catalog.imdbId), isNull(catalog.awards)),
+            and(isNotNull(catalog.posterPath), isNull(catalog.posterAmbient)),
           ),
         ),
-        orderBy: [asc(titles.name)],
+        orderBy: [asc(catalog.name)],
       });
 
   console.log(`${rows.length} títulos por enriquecer.`);
@@ -92,7 +92,7 @@ const backfill = async () => {
       if (Object.keys(patch).length === 0) {
         return;
       }
-      await db.update(titles).set(patch).where(eq(titles.id, title.id));
+      await db.update(catalog).set(patch).where(eq(catalog.id, title.id));
       updated += 1;
       console.log(`✓ ${title.name}${title.year ? ` (${title.year})` : ""} · ${Object.keys(patch).join(", ")}`);
     } catch (error) {

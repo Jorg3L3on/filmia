@@ -7,11 +7,11 @@ import { DIARY_VIEW_MODES, HISTORIAL_DEFAULT_VIEW } from "@/lib/diary-view";
 import { cn } from "@/lib/cn";
 import { formatMonthHeading, shiftMonthParam } from "@/lib/dates";
 import type { CatalogKindFilter } from "@/lib/catalog-href";
-import { catalogHref } from "@/lib/tags";
+import { catalogHref } from "@/lib/catalog-href";
 import { focusRing } from "@/lib/ui";
 import type { Platform } from "@/db";
 import type { SeriesStatusFilter } from "@/lib/series";
-import type { CatalogSort } from "@/lib/tags";
+import type { CatalogSort } from "@/lib/catalog-href";
 
 type DiaryViewHeaderProps = {
   /** Route that owns the month navigation (Tu diario lives at /diario). */
@@ -20,7 +20,6 @@ type DiaryViewHeaderProps = {
   view: DeckViewMode;
   hrefFor: (mode: DeckViewMode) => string;
   countLabel?: string;
-  tags?: string[];
   minePlatforms?: boolean;
   seriesStatus?: SeriesStatusFilter;
   kind?: CatalogKindFilter;
@@ -34,7 +33,6 @@ export const DiaryViewHeader = ({
   view,
   hrefFor,
   countLabel,
-  tags = [],
   minePlatforms = false,
   seriesStatus,
   kind,
@@ -42,7 +40,6 @@ export const DiaryViewHeader = ({
   sort,
 }: DiaryViewHeaderProps) => {
   const query = {
-    tags,
     minePlatforms,
     seriesStatus,
     defaultView: HISTORIAL_DEFAULT_VIEW,

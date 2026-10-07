@@ -36,9 +36,9 @@ git fetch --prune
 La pestaña de inicio es **Hoy**: un mazo («Esta noche») con lo que vale la pena ver de Quiero ver para la noche que queda, no la lista entera.
 
 - **Lentes**: «Para ti» (score personal) y después tus tres géneros con más afinidad. Cada título vive en una sola lente.
-- **Score** (`src/lib/tonight/`): filtro duro (incluida en tus plataformas, no vista, sin «Ahora no» reciente) → perfil de gusto (géneros, keywords, director, reparto, década, idioma y tus etiquetas, ponderados por tu nota menos tu media con decaimiento de 18 meses) → `0,30·gusto + 0,20·calidad (IMDb bayesiano con votos) + 0,20·encaje con la noche + 0,15·impulso (serie en curso, Por rewatch, tu nota, tu orden) + 0,10·novedad + 0,05·reposo`, × fatiga por impresiones → MMR (λ 0,65, máximo 2 por género) + comodín → dos razones en español por carta.
+- **Score** (`src/lib/tonight/`): filtro duro (incluida en tus plataformas, no vista, sin «Ahora no» reciente) → perfil de gusto (géneros, keywords, director, reparto, década e idioma, ponderados por tu nota menos tu media con decaimiento de 18 meses) → `0,30·gusto + 0,20·calidad (IMDb bayesiano con votos) + 0,20·encaje con la noche + 0,15·impulso (serie en curso, Por rewatch, tu nota, tu orden) + 0,10·novedad + 0,05·reposo`, × fatiga por impresiones → MMR (λ 0,65, máximo 2 por género) + comodín → dos razones en español por carta.
 - **Encaje con la hora** se calcula en el cliente con la hora local y tu «hora de dormir» (Perfil → Esta noche): «acaba 23:19» o «se pasa 14 min».
-- **Precálculo**: `TonightPick` se escribe en el cron `/api/cron/tonight-picks` (09:30 UTC) y con `after()` tras cada «Vi esto», alta/baja en Quiero ver, nota, etiqueta, lista o plataforma. La petición de `/` lee una consulta indexada; si no hay cálculo o tiene más de un día, calcula en línea y persiste después de responder.
+- **Precálculo**: `TonightPick` se escribe en el cron `/api/cron/tonight-picks` (09:30 UTC) y con `after()` tras cada «Vi esto», alta/baja en Quiero ver, nota, lista o plataforma. La petición de `/` lee una consulta indexada; si no hay cálculo o tiene más de un día, calcula en línea y persiste después de responder.
 - **Aprende**: `PickEvent` guarda impresiones, saltos, «Ahora no» (oculta 14 días), aperturas y «Más así / Menos así».
 - **Gestos**: arrastra (o toca) el **talón** bajo el póster para «Vi esto»; mantén pulsado el póster para Ver ficha · Ahora no · Mover · Quitar.
 - **Tu diario** (calendario, mazo, cuadrícula) vive en Perfil y en `/diario`; `/?mode=historial` redirige.
@@ -52,9 +52,10 @@ npm run db:backfill-tonight
 ## Modelo
 
 - **User**: cuenta con email, contraseña hasheada opcional (PBKDF2; hashes bcrypt legacy se verifican al entrar; `null` si solo entra con Google), `googleId` opcional, nombre opcional y `streamingPlatforms` (JSON: claves del enum `Platform`)
-- **Title**: película o serie del usuario, nota personal 1–10, poster (TMDB), rating IMDb + votos (OMDb), keywords y personas (TMDB), color ambiente, plataforma opcional, notas, fecha vista
+- **Catalog**: una fila por película o serie, compartida por todos los usuarios y única por `(tmdbId, kind)`: nombre, año, poster (TMDB), sinopsis, rating IMDb + votos + premios (OMDb), keywords y personas (TMDB), disponibilidad MX, color ambiente. Se llena una sola vez al guardar el título por primera vez (`src/lib/catalog-enrich.ts`); los usuarios nunca la editan
+- **Title**: la entrada personal de un usuario para una ficha del catálogo (`catalogId`): nota 1–10, comentario, «Dónde la vi», fecha vista, estado de serie. No se borra; solo cambian sus campos personales. La app lee siempre el tipo plano `Title` (`flattenTitle` en `src/lib/catalog-core.ts`), que es la fila personal con el catálogo encima
+  - Migraciones del split: 0009 (aditiva) crea `Catalog` y enlaza cada `Title`; 0010 (destructiva) borra de `Title` las columnas de metadatos heredadas y exige `catalogId` único por usuario. 0010 se aplica solo después de desplegar este código (ver la cabecera de `drizzle/0010_catalog_cutover.sql`)
 - **TonightPick** + **PickEvent**: mazos precalculados de «Esta noche» por usuario y su retroalimentación (ver [Hoy · Esta noche](#hoy--esta-noche))
-- **Tag** + **TitleTag**: categorías libres por usuario (épica/guerra, visual/espectáculo, etc.). El filtro de diario y listas combina varias etiquetas con **OR**. Ranking en `/tags/[slug]`.
 - **List** + **ListItem**: listas y membresía por usuario (Quiero ver, Favoritas, Por rewatch + personalizadas)
 - **Platform** (enum): Netflix, Prime, Max, Disney+, Claro, Apple, Mubi y otras de JustWatch MX
 
@@ -160,7 +161,7 @@ Columna `User.streamingPlatforms` (`JSONB NOT NULL DEFAULT '[]'`): array de clav
 
 En un checkout nuevo, `npm run db:migrate` deja el journal de Drizzle al día. No hace falta seed ni backfill: prefs vacías son válidas. `/perfil` y «dónde ver» muestran el CTA «Elige tus plataformas».
 
-El filtro de biblioteca (JOR-157) lee este JSON y `watchProvidersMx` con `titleAvailableOnUserPlatforms` / `applyMinePlatformsFilter`. Toggle `?minePlatforms=1` en diario, Quiero ver, listas y ranking de tags. Solo cuenta **flatrate** (incluido en suscripción); rent/buy no. Títulos sin cache de providers se excluyen y se anota «sin datos de streaming». Si no hay prefs, CTA a `/perfil`.
+El filtro de biblioteca (JOR-157) lee este JSON y `watchProvidersMx` con `titleAvailableOnUserPlatforms` / `applyMinePlatformsFilter`. Toggle `?minePlatforms=1` en diario, Quiero ver y listas. Solo cuenta **flatrate** (incluido en suscripción); rent/buy no. Títulos sin cache de providers se excluyen y se anota «sin datos de streaming». Si no hay prefs, CTA a `/perfil`.
 
 ### Seed
 
@@ -170,29 +171,21 @@ Datos dummy (no personales): Gladiator, Troy, Athena (2022), The Northman, Mad M
 npm run db:seed
 ```
 
-El seed es idempotente por nombre + año dentro de cada usuario. También crea etiquetas sugeridas (`Épica / guerra`, `Visual / espectáculo`, `Vibe Mad Max`, `Vibe Tron`, etc.).
-
-### Etiquetas (JOR-156)
-
-Cada usuario tiene tags propios (`userId` + `slug` únicos). Al entrar o registrarse, `ensureDefaultTags` siembra las sugeridas. Se pueden crear más desde `/tags` o desde la ficha de un título.
-
-- Filtro en diario (`/`) y listas: una o varias etiquetas, combinadas con **OR** (`?tag=epica-guerra&tag=sci-fi`), más `?minePlatforms=1` para lo incluido en tus suscripciones.
-- Ranking: `/tags` índice y `/tags/[slug]` ordenable por nota o fecha vista.
-- Pastillas rápidas en la ficha para asignar/quitar sin pasar por editar.
+El seed es idempotente por nombre + año dentro de cada usuario.
 
 ### Backfill de posters e IMDb
 
-Para títulos ya existentes sin metadata (p. ej. después del seed):
+Para fichas del catálogo incompletas (sin poster, sin IMDb id o sin sinopsis; p. ej. después del seed):
 
 ```bash
 # Requiere TMDB_API_KEY (+ OMDB_API_KEY recomendada) en .env
 npm run db:backfill-metadata
 
-# Re-enriquecer todos, aunque ya tengan poster
+# Re-enriquecer todas las fichas, aunque ya estén completas
 npm run db:backfill-metadata -- --force
 ```
 
-Busca en TMDB por nombre + año + tipo, guarda poster e IMDb rating vía OMDb.
+Corre el mismo enriquecimiento que ocurre al guardar un título (detalles, créditos, keywords, rating y premios, disponibilidad MX, color ambiente), una vez por película del catálogo compartido.
 
 ## Scripts
 
@@ -210,8 +203,7 @@ Busca en TMDB por nombre + año + tipo, guarda poster e IMDb rating vía OMDb.
 | `npm run db:migrate:deploy` | Alias explícito de `db:migrate` (mismo comando; no corre en Vercel build) |
 | `npm run db:push` | Empuja el schema a la DB sin archivo de migración (dev) |
 | `npm run db:seed` | Carga títulos dummy + usuario demo |
-| `npm run db:import-watchlist` | Importa `scripts/data/watchlist-queue.json` a Quiero ver |
-| `npm run db:backfill-metadata` | Posters TMDB + rating IMDb para títulos existentes |
+| `npm run db:backfill-metadata` | Enriquece fichas del catálogo incompletas (TMDB + OMDb), una vez por película |
 | `npm run db:backfill-tonight` | Keywords, créditos, votos IMDb y color ambiente + precálculo de «Esta noche» |
 | `npm run db:set-password` | Rehash PBKDF2 para un email: `-- <email> <password>` |
 | `npm run db:studio` | Drizzle Studio |

@@ -137,24 +137,6 @@ const run = () => {
     "List cards truncate names",
   );
 
-  const tags = read("src/app/tags/page.tsx");
-  assert(
-    tags.includes("Pulsa + arriba") &&
-      !tags.includes("Ir a Buscar") &&
-      tags.includes('variant="tags"') &&
-      tags.includes("TagsIndexHeader") &&
-      read("src/components/TagsIndexHeader.tsx").includes("prominent") &&
-      read("src/components/TagsIndexHeader.tsx").includes("ListsEtiquetasSegment"),
-    "Tags empty points at the «+» create toggle; tags well + segment kept",
-  );
-  assert(
-    tags.includes("--stagger-step") &&
-      tags.includes('"40ms"') &&
-      tags.includes("ListCard") &&
-      tags.includes('layout="grid"'),
-    "Tags grid tightens stagger (40ms) and reuses ListCard grid layout",
-  );
-
   const account = read("src/components/ProfileAccountForm.tsx");
   const password = read("src/components/ProfilePasswordForm.tsx");
   // The toggle grid moved to PlatformToggleGrid (shared with the Bienvenida); the picker keeps the header + error.
@@ -171,18 +153,9 @@ const run = () => {
   );
 
   assert(
-    !read("src/components/TitleForm.tsx").includes("btnPrimary"),
-    "Title form uses Button via PendingSubmit",
-  );
-  assert(
     !read("src/components/SeriesStatusPanel.tsx").includes("btnPrimary"),
     "Series status uses Button, not btnPrimary",
   );
-  assert(
-    !read("src/components/CreateTagForm.tsx").includes("btnPrimary"),
-    "Create tag uses Button, not btnPrimary",
-  );
-
   const skeletons = read("src/components/PageSkeletons.tsx");
   assert(
     skeletons.includes("DiaryCalendarSkeleton") &&
@@ -347,17 +320,16 @@ const run = () => {
   );
   assert(
     read("src/components/TitleListsPanel.tsx").includes("tab-transition") &&
-      read("src/components/TitleTagsPanel.tsx").includes("tab-transition") &&
       read("src/components/TitleListsPanel.tsx").includes("press-scale"),
-    "Ficha lists/tags panels polish chip tipografía + press",
+    "Ficha lists panel polishes chip tipografía + press",
   );
   const fichaPage = read("src/app/titulos/[id]/page.tsx");
   assert(
-    fichaPage.includes("mt-16") &&
-      fichaPage.includes("safe-area-inset-bottom") &&
-      fichaPage.includes("Borrar") &&
-      fichaPage.includes("ml-auto"),
-    "Ficha delete CTA is far from primary with safe-area footer",
+    !fichaPage.includes("Quitar de Filmia") &&
+      !fichaPage.includes("deleteTitle") &&
+      !fichaPage.includes("/editar") &&
+      !fichaPage.includes("Borrar"),
+    "Ficha has no edit/delete footer: catalog data is shared and titles are never deleted",
   );
   assert(
     read("src/components/TitleSynopsis.tsx").includes("N/A") &&
@@ -390,8 +362,8 @@ const run = () => {
     listsSkeletons.includes("ListsBodySkeleton") &&
       listsSkeletons.includes("cn(skeletonWellClass") &&
       read("src/app/listas/loading.tsx").includes("ListsBodySkeleton") &&
-      read("src/app/listas/loading.tsx").includes("ListsEtiquetasSegment"),
-    "Listas loading keeps segment + ListsBodySkeleton well",
+      read("src/app/listas/loading.tsx").includes("PageHeader"),
+    "Listas loading keeps the header + ListsBodySkeleton well",
   );
   const posterStack = read("src/components/PosterStack.tsx");
   assert(
@@ -422,8 +394,8 @@ const run = () => {
   assert(
     read("src/components/EmptyState.tsx").includes('variant === "listas"') &&
       read("src/app/listas/page.tsx").includes('variant="listas"') &&
-      read("src/app/listas/page.tsx").includes("ListsEtiquetasSegment"),
-    "Listas empty uses well; Listas|Etiquetas segment kept",
+      read("src/app/listas/page.tsx").includes("PageHeader"),
+    "Listas empty uses well; Listas has a PageHeader",
   );
   assert(
     read("src/app/listas/[id]/page.tsx").includes("ListTitlesView") &&
@@ -438,44 +410,6 @@ const run = () => {
   console.log("✓ Fase 3 Buscar lote: preview sheet, skeleton well, error well, client island split");
   console.log("✓ Fase 3 Ficha lote: LCP poster, action/panels type, delete far, skeleton/error wells");
   console.log("✓ Fase 3 Listas lote: SharedPoster stacks, CTA sheet, skeleton/error wells, PageHeader");
-
-  const tagsError = read("src/app/tags/error.tsx");
-  assert(
-    tagsError.includes("danger-well") &&
-      tagsError.includes('variant="secondary"') &&
-      tagsError.includes("Reintentar"),
-    "Tags error uses danger-well + secondary Reintentar",
-  );
-  assert(
-    read("src/app/tags/[slug]/error.tsx").includes("danger-well") &&
-      read("src/app/tags/[slug]/error.tsx").includes('variant="secondary"') &&
-      read("src/app/tags/[slug]/error.tsx").includes("Reintentar"),
-    "Tag detail error uses danger-well + secondary Reintentar",
-  );
-  const tagsSkeletons = read("src/components/PageSkeletons.tsx");
-  assert(
-    tagsSkeletons.includes("TagsBodySkeleton") &&
-      tagsSkeletons.includes("TagsCreateFormSkeleton") &&
-      tagsSkeletons.includes("TagDetailBodySkeleton") &&
-      tagsSkeletons.includes("cn(skeletonWellClass") &&
-      read("src/app/tags/loading.tsx").includes("TagsBodySkeleton") &&
-      read("src/app/tags/loading.tsx").includes("ListsEtiquetasSegment") &&
-      read("src/app/tags/[slug]/loading.tsx").includes("TagDetailBodySkeleton"),
-    "Tags loading keeps segment + skeleton wells (index + detail)",
-  );
-  assert(
-    read("src/app/tags/[slug]/page.tsx").includes("TAG_ORDER_OPTIONS") &&
-      read("src/app/tags/[slug]/page.tsx").includes("showKindChips={false}"),
-    "Tag detail keeps Tipo + Orden inside the Filtros sheet",
-  );
-  assert(
-    read("src/components/EmptyState.tsx").includes('variant === "tags"') &&
-      read("src/app/tags/[slug]/page.tsx").includes('variant="tags"') &&
-      read("src/app/tags/[slug]/page.tsx").includes("Ir a Buscar") &&
-      read("src/components/AppChrome.tsx").includes("safe-area-inset-bottom"),
-    "Tag detail empty uses tags well + Buscar CTA; chrome keeps safe-area",
-  );
-  console.log("✓ Fase 3 Tags lote: skeleton/error wells, empty CTA");
 
   const perfilError = read("src/app/perfil/error.tsx");
   assert(
@@ -523,13 +457,6 @@ const run = () => {
   );
   console.log("✓ Fase 3 Perfil lote: skeleton wells, error well, press/hover on logout/forms/chips");
 
-  const editTitleError = read("src/app/titulos/[id]/editar/error.tsx");
-  assert(
-    editTitleError.includes("danger-well") &&
-      editTitleError.includes('variant="secondary"') &&
-      editTitleError.includes("Reintentar"),
-    "Editar título error uses danger-well + secondary Reintentar",
-  );
   const editListError = read("src/app/listas/[id]/editar/error.tsx");
   assert(
     editListError.includes("danger-well") &&
@@ -539,27 +466,26 @@ const run = () => {
   );
   const editSkeletons = read("src/components/PageSkeletons.tsx");
   assert(
-    editSkeletons.includes("EditTitleBodySkeleton") &&
-      editSkeletons.includes("EditListBodySkeleton") &&
+    editSkeletons.includes("EditListBodySkeleton") &&
       editSkeletons.includes("cn(skeletonWellClass") &&
-      read("src/app/titulos/[id]/editar/loading.tsx").includes("EditTitleBodySkeleton") &&
       read("src/app/listas/[id]/editar/loading.tsx").includes("EditListBodySkeleton"),
-    "Editar loadings use EditTitle/EditList skeleton wells",
+    "Editar lista loading uses EditList skeleton well",
   );
   assert(
     editSkeletons.includes("FormPageSkeleton") &&
       editSkeletons.includes('skeletonWellClass, "space-y-3"'),
     "FormPageSkeleton uses skeleton wells (shared create/edit chrome)",
   );
-  const titleForm = read("src/components/TitleForm.tsx");
+  const platformChips = read("src/components/PlatformChips.tsx");
   assert(
-    titleForm.includes("press-scale") &&
-      titleForm.includes("var(--duration-hover)") &&
-      titleForm.includes("group flex flex-wrap gap-2") &&
-      titleForm.includes("PendingSubmit"),
-    "TitleForm submit + chips use press-scale / duration-hover",
+    platformChips.includes("press-scale") &&
+      platformChips.includes("var(--duration-hover)") &&
+      platformChips.includes("group flex flex-wrap gap-2") &&
+      read("src/components/MarkWatchedSheet.tsx").includes("PlatformChips"),
+    "«Dónde la vi» chips keep press-scale / duration-hover and live in MarkWatchedSheet",
   );
-  const listForm = read("src/components/ListForm.tsx");
+  const listForm =
+    read("src/components/ListForm.tsx") + read("src/components/ListFormFields.tsx");
   assert(
     listForm.includes("press-scale") &&
       listForm.includes("var(--duration-hover)") &&
@@ -568,12 +494,10 @@ const run = () => {
     "ListForm submit uses press/hover; fields in well; PageHeader kept",
   );
   assert(
-    read("src/app/titulos/[id]/editar/page.tsx").includes("PageHeader") &&
-      read("src/app/titulos/[id]/editar/page.tsx").includes("Editar título") &&
-      (read("src/components/PageHeader.tsx").includes("press-scale") ||
-        read("src/components/PageHeader.tsx").includes("glassIconClass")) &&
+    (read("src/components/PageHeader.tsx").includes("press-scale") ||
+      read("src/components/PageHeader.tsx").includes("glassIconClass")) &&
       read("src/components/AppChrome.tsx").includes("safe-area-inset-bottom"),
-    "Editar título keeps PageHeader + press back; chrome safe-area",
+    "PageHeader keeps press back; chrome safe-area",
   );
   console.log("✓ Fase 3 Editar lote: skeleton wells, error wells, press/hover on forms/chips");
 };

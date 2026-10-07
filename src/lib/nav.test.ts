@@ -6,7 +6,7 @@ import {
   isCurrentPath,
   isListasHubPath,
   isMobileNavCurrent,
-  isTagsPath,
+  mobileCreateActions,
 } from "./nav";
 
 describe("isCurrentPath nested routes", () => {
@@ -16,16 +16,15 @@ describe("isCurrentPath nested routes", () => {
     assert.equal(isCurrentPath("/", "/watchlist"), false);
   });
 
-  it("keeps Listas active on /listas/* and /tags/* (segment hub)", () => {
+  it("keeps Listas active on /listas/*", () => {
     assert.equal(isCurrentPath("/listas", "/listas"), true);
     assert.equal(isCurrentPath("/listas", "/listas/xyz"), true);
-    assert.equal(isCurrentPath("/listas", "/tags"), true);
-    assert.equal(isCurrentPath("/listas", "/tags/sci-fi"), true);
+    assert.equal(isCurrentPath("/listas", "/watchlist"), false);
   });
 
-  it("desktop nav has no separate Etiquetas item", () => {
-    const hrefs: string[] = desktopNavItems.map((item) => item.href);
-    const labels: string[] = desktopNavItems.map((item) => item.label);
+  it("has no Etiquetas entry anywhere in the nav", () => {
+    const hrefs: string[] = [...desktopNavItems, ...mobileCreateActions].map((item) => item.href);
+    const labels: string[] = [...desktopNavItems, ...mobileCreateActions].map((item) => item.label);
     assert.equal(hrefs.includes("/tags"), false);
     assert.equal(labels.includes("Etiquetas"), false);
   });
@@ -42,12 +41,10 @@ describe("isAuthChromePath", () => {
 });
 
 describe("mobile Listas hub", () => {
-  it("treats tags under Listas for bottom nav", () => {
-    assert.equal(isTagsPath("/tags/foo"), true);
-    assert.equal(isListasHubPath("/tags"), true);
+  it("lights Listas on /listas/* only", () => {
     assert.equal(isListasHubPath("/listas/abc"), true);
-    assert.equal(isMobileNavCurrent("/listas", "/tags"), true);
-    assert.equal(isMobileNavCurrent("/listas", "/tags/foo"), true);
-    assert.equal(isMobileNavCurrent("/buscar", "/tags"), false);
+    assert.equal(isListasHubPath("/tags"), false);
+    assert.equal(isMobileNavCurrent("/listas", "/listas/abc"), true);
+    assert.equal(isMobileNavCurrent("/buscar", "/listas"), false);
   });
 });

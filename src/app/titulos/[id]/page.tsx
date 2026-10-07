@@ -1,23 +1,22 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { deleteTitle } from "@/app/actions/titles";
-import { Button } from "@/components/Button";
-import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { FichaWatchedSection } from "@/components/FichaWatchedSection";
 import {
   TitleActionsSkeleton,
   TitleProvidersSkeleton,
 } from "@/components/PageSkeletons";
+import { RelinkTitleSheet } from "@/components/RelinkTitleSheet";
 import { SeriesStatusPanel } from "@/components/SeriesStatusPanel";
+import { metadataServicesConfigured } from "@/lib/metadata";
 import {
   getAssignableLists,
   getRelatedTitles,
-  getTagFilters,
   getTitleById,
   getUserStreamingPlatforms,
 } from "@/lib/queries";
 import { FichaVisit } from "@/components/FichaVisit";
+import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { resolveTitleExtras, storedTitleExtras } from "@/lib/title-extras";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 import TitleLoading from "./loading";
@@ -29,6 +28,7 @@ import {
   TitleRelatedBlock,
   TitleSynopsisBlock,
   isSeriesTitle,
+  titleCredits,
 } from "./title-sections";
 
 export const dynamic = "force-dynamic";
@@ -100,15 +100,12 @@ const TitleDetail = async ({
 
   const extrasPromise = resolveTitleExtras(title);
   const listsPromise = getAssignableLists();
-  const tagsPromise = getTagFilters();
   const platformsPromise = getUserStreamingPlatforms();
   const providersPromise = getWatchProvidersForTitle(title);
   const relatedPromise = getRelatedTitles(
     title.id,
-    title.tags.map((item) => item.tagId),
+    parseStoredTmdbGenres(title.tmdbGenres).map((genre) => genre.id),
   );
-
-  const deleteAction = deleteTitle.bind(null, title.id);
 
   return (
     <article className="space-y-8">
@@ -121,7 +118,6 @@ const TitleDetail = async ({
         <TitleActionsBlock
           title={title}
           listsPromise={listsPromise}
-          tagsPromise={tagsPromise}
         />
       </Suspense>
 
@@ -136,6 +132,7 @@ const TitleDetail = async ({
         <TitleSynopsisBlock
           storedOverview={title.overview}
           extrasPromise={extrasPromise}
+          credits={titleCredits(title)}
         />
       </Suspense>
 
@@ -154,6 +151,7 @@ const TitleDetail = async ({
           watchedAt={title.watchedAt}
           rating={title.rating}
           review={title.review}
+          platform={title.platform}
         />
       ) : null}
 
@@ -161,19 +159,14 @@ const TitleDetail = async ({
         <TitleRelatedBlock relatedPromise={relatedPromise} />
       </Suspense>
 
-      <footer className="mt-16 flex flex-wrap items-center justify-between gap-4 border-t border-line/70 pt-8 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-        <Button href={`/titulos/${title.id}/editar`} variant="ghost">
-          Editar ficha
-        </Button>
-        <ConfirmSubmit
-          label="Borrar"
-          confirmMessage={`¿Borrar “${title.name}”?`}
-          href="/"
-          action={deleteAction}
-          variant="danger"
-          className="ml-auto"
-        />
-      </footer>
+      <RelinkTitleSheet
+        titleId={title.id}
+        titleName={title.year ? `${title.name} (${title.year})` : title.name}
+        searchName={title.name}
+        kind={title.kind}
+        tmdbId={title.tmdbId}
+        configuredTmdb={metadataServicesConfigured().tmdb}
+      />
     </article>
   );
 };

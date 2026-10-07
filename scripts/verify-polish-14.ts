@@ -1,5 +1,5 @@
 import { Platform, TitleKind } from "../src/db";
-import { catalogHref } from "../src/lib/catalog-href";
+import { catalogHref, parseMinePlatforms } from "../src/lib/catalog-href";
 import {
   countSheetFilters,
   parseCatalogOrder,
@@ -40,10 +40,10 @@ assert(
     platforms: [Platform.NETFLIX, Platform.MAX],
     sort: "rating",
     defaultSort: null,
-    tags: ["sci-fi"],
+    seriesStatus: "WATCHING",
     minePlatforms: false,
   }) === 4,
-  "badge counts platforms + sort + tags",
+  "badge counts platforms + sort + series status",
 );
 
 assert(
@@ -119,5 +119,25 @@ const catalog = resolveCatalogAvailability(
   { platforms: [Platform.NETFLIX] },
 );
 assert(catalog.titles.length === 1 && catalog.titles[0]?.id === "1", "MX platform filter");
+
+// Moved from the retired verify-tags script: catalog hrefs + minePlatforms parsing.
+assert(
+  catalogHref("/listas/abc", { view: "deck" }) === "/listas/abc",
+  "Default deck view should omit the query string",
+);
+assert(
+  catalogHref("/", { view: "grid", minePlatforms: true }) === "/?view=grid&minePlatforms=1",
+  "Catalog href should keep minePlatforms=1 with view",
+);
+assert(
+  catalogHref("/watchlist", { minePlatforms: true }) === "/watchlist?minePlatforms=1",
+  "Watchlist href should emit minePlatforms",
+);
+assert(parseMinePlatforms("1"), "minePlatforms=1 should be on");
+assert(parseMinePlatforms("true"), "minePlatforms=true should be on");
+assert(parseMinePlatforms("on"), "minePlatforms=on should be on");
+assert(!parseMinePlatforms("0"), "minePlatforms=0 should be off");
+assert(!parseMinePlatforms(undefined), "Missing minePlatforms should be off");
+assert(parseMinePlatforms(["0", "1"]), "Repeated minePlatforms should turn on if any is 1");
 
 console.log("✓ Polish 14: chips, membership copy, stars, empty helpers");
