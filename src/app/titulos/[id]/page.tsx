@@ -1,9 +1,6 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { deleteTitle } from "@/app/actions/titles";
-import { Button } from "@/components/Button";
-import { DeleteCollectionButton } from "@/components/DeleteCollectionButton";
 import { FichaWatchedSection } from "@/components/FichaWatchedSection";
 import {
   TitleActionsSkeleton,
@@ -108,8 +105,6 @@ const TitleDetail = async ({
     parseStoredTmdbGenres(title.tmdbGenres).map((genre) => genre.id),
   );
 
-  const deleteAction = deleteTitle.bind(null, title.id);
-
   return (
     <article className="space-y-8">
       <FichaVisit titleId={title.id} />
@@ -154,29 +149,13 @@ const TitleDetail = async ({
           watchedAt={title.watchedAt}
           rating={title.rating}
           review={title.review}
+          platform={title.platform}
         />
       ) : null}
 
       <Suspense fallback={null}>
         <TitleRelatedBlock relatedPromise={relatedPromise} />
       </Suspense>
-
-      <footer className="mt-16 flex flex-wrap items-center justify-between gap-4 border-t border-line/70 pt-8 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-        <Button href={`/titulos/${title.id}/editar`} variant="ghost">
-          Editar ficha
-        </Button>
-        <DeleteCollectionButton
-          action={deleteAction}
-          redirectHref="/"
-          label="Quitar de Filmia"
-          name={title.name}
-          heading={`¿Quitar «${title.name}» de tu Filmia?`}
-          impact="Se pierden tu fecha en el diario, tu nota, tu comentario y su lugar en tus listas. No se puede deshacer."
-          note="Solo afecta a tu Filmia; nadie más pierde este título."
-          pendingLabel="Quitando…"
-          successToast="Quitado de tu Filmia"
-        />
-      </footer>
     </article>
   );
 };

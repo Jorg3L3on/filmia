@@ -320,7 +320,7 @@ export const AddTitleToListCta = ({
                         <CandidateRow
                           name={result.name}
                           posterPath={result.posterPath}
-                          meta={candidate.state === "local" ? `${meta} · Ya en Filmia` : meta}
+                          meta={meta}
                           actionLabel={
                             inList
                               ? "En la lista"

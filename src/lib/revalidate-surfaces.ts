@@ -2,7 +2,6 @@ import { revalidatePath } from "next/cache";
 
 export const revalidateTitlePages = (titleId: string) => {
   revalidatePath(`/titulos/${titleId}`);
-  revalidatePath(`/titulos/${titleId}/editar`);
 };
 
 export const revalidateWatchlistSurfaces = (titleId?: string) => {
@@ -46,17 +45,6 @@ export const revalidateListMembership = (listId: string, titleId: string) => {
   revalidatePath(`/listas/${listId}`);
   revalidatePath(`/listas/${listId}/editar`);
   revalidateTitlePages(titleId);
-};
-
-export const revalidateCatalogSurfaces = (titleId?: string) => {
-  revalidatePath("/");
-  revalidatePath("/diario");
-  revalidatePath("/listas");
-  revalidatePath("/watchlist");
-  revalidatePath("/buscar");
-  if (titleId) {
-    revalidateTitlePages(titleId);
-  }
 };
 
 export const revalidateSeriesSurfaces = (titleId: string) => {

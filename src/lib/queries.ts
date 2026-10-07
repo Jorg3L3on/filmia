@@ -319,17 +319,6 @@ export const isTitleInWatchlist = cache(async (titleId: string) => {
   return Boolean(item);
 });
 
-export const getCollectionLists = cache(async () => {
-  const userId = await requireUserId();
-
-  const rows = await db.query.lists.findMany({
-    where: and(eq(lists.userId, userId), eq(lists.kind, "COLLECTION")),
-    columns: { id: true, name: true, slug: true },
-  });
-
-  return sortUserLists(rows);
-});
-
 export const getAssignableLists = cache(async () => {
   const userId = await requireUserId();
 

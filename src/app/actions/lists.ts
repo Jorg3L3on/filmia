@@ -49,7 +49,6 @@ const revalidateLists = (
   }
   if (titleId) {
     revalidatePath(`/titulos/${titleId}`);
-    revalidatePath(`/titulos/${titleId}/editar`);
   }
 };
 

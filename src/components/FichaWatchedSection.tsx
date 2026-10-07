@@ -6,6 +6,7 @@ import { Button } from "@/components/Button";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { MarkWatchedSheet } from "@/components/MarkWatchedSheet";
 import { WatchedBadge } from "@/components/WatchedBadge";
+import type { Platform } from "@/db";
 import { formatWatchedDate, toDateInput } from "@/lib/dates";
 import { showToast } from "@/lib/toast";
 import { wellClass } from "@/lib/ui";
@@ -16,6 +17,7 @@ type FichaWatchedSectionProps = {
   watchedAt: Date | string;
   rating: number | null;
   review: string | null;
+  platform: Platform | null;
 };
 
 export const FichaWatchedSection = ({
@@ -24,6 +26,7 @@ export const FichaWatchedSection = ({
   watchedAt,
   rating,
   review,
+  platform,
 }: FichaWatchedSectionProps) => {
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -79,6 +82,7 @@ export const FichaWatchedSection = ({
         initialWatchedAt={toDateInput(watchedAt)}
         rating={rating}
         review={review}
+        platform={platform}
         saveLabel="Guardar en el diario"
         onClose={() => setOpen(false)}
         onSaved={() => setOpen(false)}
