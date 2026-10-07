@@ -1,7 +1,7 @@
 "use server";
 
 import { createId } from "@paralleldrive/cuid2";
-import { and, eq, inArray, notInArray } from "drizzle-orm";
+import { and, desc, eq, inArray, notInArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import {
   db,
@@ -28,6 +28,12 @@ import {
   type AddTitleFromTmdbResult,
 } from "@/lib/add-title-from-tmdb";
 import { SERIES_STATUSES } from "@/lib/labels";
+import {
+  ensureSeriesStatusList,
+  isSeriesStatusListSlug,
+  SERIES_STATUS_LIST_SLUGS,
+} from "@/lib/lists";
+import { seriesStatusListTransition } from "@/lib/series-status-lists";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import {
   enrichMetadataOnSave,
@@ -36,6 +42,7 @@ import {
 } from "@/lib/metadata";
 import {
   revalidateCatalogSurfaces,
+  revalidateListMembership,
   revalidateRatingSurfaces,
   revalidateSearchAddSurfaces,
   revalidateSeriesSurfaces,
@@ -54,13 +61,37 @@ const revalidateCatalog = (titleId?: string) => {
 const seriesProgressData = (kind: TitleKind) =>
   kind === "SERIES" ? {} : { seriesStatus: null, seriesSeason: null };
 
-const syncLists = async (userId: string, titleId: string, listIds: string[]) => {
-  const collectionLists = await db.query.lists.findMany({
+const syncLists = async (
+  userId: string,
+  titleId: string,
+  listIds: string[],
+  kind: TitleKind,
+) => {
+  const allCollectionLists = await db.query.lists.findMany({
     where: and(eq(lists.userId, userId), eq(lists.kind, "COLLECTION")),
-    columns: { id: true },
+    columns: { id: true, slug: true },
   });
+  // Las listas por estado de serie las gobierna el estado, no el formulario.
+  const collectionLists = allCollectionLists.filter(
+    (list) => !isSeriesStatusListSlug(list.slug),
+  );
   const collectionIds = collectionLists.map((list) => list.id);
   const collectionSet = new Set(collectionIds);
+  const seriesStatusListIds = allCollectionLists
+    .filter((list) => isSeriesStatusListSlug(list.slug))
+    .map((list) => list.id);
+
+  if (kind !== "SERIES" && seriesStatusListIds.length > 0) {
+    // Dejó de ser serie: pierde el estado y, con él, las listas por estado.
+    await db
+      .delete(listItems)
+      .where(
+        and(
+          eq(listItems.titleId, titleId),
+          inArray(listItems.listId, seriesStatusListIds),
+        ),
+      );
+  }
 
   if (collectionIds.length > 0) {
     await db
@@ -187,7 +218,7 @@ export const createTitle = async (formData: FormData) => {
     ...seriesProgressData(fields.kind),
   });
 
-  await syncLists(userId, titleId, fields.listIds);
+  await syncLists(userId, titleId, fields.listIds, fields.kind);
   scheduleTitleEnrichment(titleId, snapshot, fields.kind);
   revalidateCatalog(titleId);
   redirect(`/titulos/${titleId}`);
@@ -236,7 +267,7 @@ export const updateTitle = async (titleId: string, formData: FormData) => {
     })
     .where(eq(titles.id, titleId));
 
-  await syncLists(userId, titleId, fields.listIds);
+  await syncLists(userId, titleId, fields.listIds, fields.kind);
   scheduleTitleEnrichment(
     titleId,
     {
@@ -272,7 +303,7 @@ const requireOwnedSeries = async (titleId: string) => {
   const userId = await requireUserId();
   const title = await db.query.titles.findFirst({
     where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
-    columns: { id: true, kind: true },
+    columns: { id: true, kind: true, seriesStatus: true },
   });
 
   if (!title) {
@@ -283,7 +314,7 @@ const requireOwnedSeries = async (titleId: string) => {
     throw new Error("El estado de seguimiento solo aplica a series.");
   }
 
-  return title;
+  return { ...title, userId };
 };
 
 export const setTitleRating = async (titleId: string, formData: FormData) => {
@@ -312,7 +343,7 @@ export const setSeriesStatus = async (
   titleId: string,
   status: SeriesStatus | "NONE",
 ) => {
-  await requireOwnedSeries(titleId);
+  const { userId, seriesStatus: previousStatus } = await requireOwnedSeries(titleId);
 
   const nextStatus =
     status === "NONE"
@@ -325,15 +356,71 @@ export const setSeriesStatus = async (
     throw new Error("El estado de la serie no es válido.");
   }
 
-  await db
-    .update(titles)
-    .set({
-      seriesStatus: nextStatus,
-      ...(nextStatus == null ? { seriesSeason: null } : {}),
-    })
-    .where(eq(titles.id, titleId));
+  // Viendo → «Series en progreso», Abandonada → «Series abandonadas». Terminada
+  // o sin estado: fuera de ambas. La lista destino se crea la primera vez.
+  const transition = seriesStatusListTransition(previousStatus, nextStatus);
+  const statusLists = await db.query.lists.findMany({
+    where: and(
+      eq(lists.userId, userId),
+      inArray(lists.slug, [...SERIES_STATUS_LIST_SLUGS]),
+    ),
+    columns: { id: true, slug: true },
+  });
+  const joinListId = transition.join
+    ? (statusLists.find((list) => list.slug === transition.join)?.id ??
+      (await ensureSeriesStatusList(userId, transition.join)))
+    : null;
+  const leaveListIds = statusLists
+    .filter((list) => list.slug && transition.leave.some((slug) => slug === list.slug))
+    .map((list) => list.id);
+  const lastItem = joinListId
+    ? await db.query.listItems.findFirst({
+        where: eq(listItems.listId, joinListId),
+        orderBy: [desc(listItems.position)],
+        columns: { position: true },
+      })
+    : undefined;
+
+  await db.batch([
+    db
+      .update(titles)
+      .set({
+        seriesStatus: nextStatus,
+        ...(nextStatus == null ? { seriesSeason: null } : {}),
+      })
+      .where(eq(titles.id, titleId)),
+    ...(leaveListIds.length > 0
+      ? [
+          db
+            .delete(listItems)
+            .where(
+              and(
+                eq(listItems.titleId, titleId),
+                inArray(listItems.listId, leaveListIds),
+              ),
+            ),
+        ]
+      : []),
+    ...(joinListId
+      ? [
+          db
+            .insert(listItems)
+            .values({
+              listId: joinListId,
+              titleId,
+              position: (lastItem?.position ?? -1) + 1,
+            })
+            .onConflictDoNothing(),
+        ]
+      : []),
+  ]);
 
   revalidateSeriesSurfaces(titleId);
+  for (const listId of [joinListId, ...leaveListIds]) {
+    if (listId) {
+      revalidateListMembership(listId, titleId);
+    }
+  }
 };
 
 export const setSeriesSeason = async (titleId: string, formData: FormData) => {

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { toggleTitleInList } from "@/app/actions/lists";
 import { Button } from "@/components/Button";
 import { cn } from "@/lib/cn";
-import { isFixedListSlug, listHref } from "@/lib/lists";
+import { isFixedListSlug, isSeriesStatusListSlug, listHref } from "@/lib/lists";
 import { sameIdList, useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { showToast } from "@/lib/toast";
 import { eyebrowClass, focusRing, wellClass } from "@/lib/ui";
@@ -33,7 +33,13 @@ export const TitleListsPanel = ({
     sameIdList,
   );
   const memberIds = new Set(optimisticIds);
-  const daily = lists.filter((list) => isFixedListSlug(list.slug));
+  // Las listas por estado de serie se llenan solas: se muestran, no se tocan.
+  const byStatus = lists.filter(
+    (list) => isSeriesStatusListSlug(list.slug) && memberListIds.includes(list.id),
+  );
+  const daily = lists.filter(
+    (list) => isFixedListSlug(list.slug) && !isSeriesStatusListSlug(list.slug),
+  );
   const custom = lists.filter((list) => !isFixedListSlug(list.slug));
 
   const handleToggle = (listId: string) => {
@@ -74,6 +80,32 @@ export const TitleListsPanel = ({
         pendingId={pendingId}
         onToggle={handleToggle}
       />
+
+      {byStatus.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-mist">
+            Por estado
+          </p>
+          <ul className="flex flex-wrap gap-2">
+            {byStatus.map((list) => (
+              <li key={list.id}>
+                <Link
+                  href={listHref(list)}
+                  className={cn(
+                    "inline-flex rounded-full border border-dashed border-chrome px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-fog hover:border-line-hover hover:text-paper",
+                    focusRing,
+                  )}
+                >
+                  {list.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-mist">
+            Se actualiza sola con el estado de la serie.
+          </p>
+        </div>
+      ) : null}
 
       {custom.length > 0 ? (
         <ListChipGroup

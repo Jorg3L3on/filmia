@@ -8,7 +8,8 @@ type ListItemPayload = ListItem & {
 };
 
 type ListTitlesViewProps = {
-  listId: string;
+  /** Sin `listId` el mazo no ofrece «Quitar de la lista» (listas automáticas). */
+  listId?: string;
   items: ListItemPayload[];
   platforms?: Platform[];
 };

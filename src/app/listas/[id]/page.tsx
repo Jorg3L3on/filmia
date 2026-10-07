@@ -21,7 +21,12 @@ import {
   sortCatalogByTitle,
   titleMatchesKind,
 } from "@/lib/catalog-filters";
-import { emptyStateForList, isFixedListSlug, WATCHLIST_SLUG } from "@/lib/lists";
+import {
+  emptyStateForList,
+  isFixedListSlug,
+  isSeriesStatusListSlug,
+  WATCHLIST_SLUG,
+} from "@/lib/lists";
 import { getListById, getTitleOptionsOutsideList, getUserStreamingPlatforms } from "@/lib/queries";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { catalogHref, parseMinePlatforms } from "@/lib/catalog-href";
@@ -104,6 +109,8 @@ const ListDetail = async ({
   );
   const addAction = addTitleToList.bind(null, list.id);
   const fixed = isFixedListSlug(list.slug);
+  // «Series en progreso» / «Series abandonadas» las llena el estado de la serie.
+  const automatic = isSeriesStatusListSlug(list.slug);
   const empty = emptyStateForList(list.slug);
   const filteredEmpty = list.items.length > 0 && visibleItems.length === 0;
   const clearHref = catalogHref(`/listas/${list.id}`, {});
@@ -117,7 +124,9 @@ const ListDetail = async ({
         backLabel="Todas las listas"
         actions={
           <>
-            <AddTitleToListCta action={addAction} titles={availableTitles} compact />
+            {automatic ? null : (
+              <AddTitleToListCta action={addAction} titles={availableTitles} compact />
+            )}
             <Link
               href={`/listas/${list.id}/editar`}
               aria-label={fixed ? "Editar descripción" : "Editar lista"}
@@ -143,7 +152,9 @@ const ListDetail = async ({
 
       {list.items.length === 0 ? (
         <>
-          <AddTitleToListCta action={addAction} titles={availableTitles} />
+          {automatic ? null : (
+            <AddTitleToListCta action={addAction} titles={availableTitles} />
+          )}
           <EmptyState
             variant={empty.variant}
             title={empty.title}
@@ -174,7 +185,7 @@ const ListDetail = async ({
         <div className="space-y-4">
           <MissingStreamingDataNote count={catalog.missingCache} />
           <ListTitlesView
-            listId={list.id}
+            listId={automatic ? undefined : list.id}
             items={visibleItems}
             platforms={platforms}
           />
