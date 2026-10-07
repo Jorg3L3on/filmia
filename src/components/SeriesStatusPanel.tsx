@@ -10,6 +10,8 @@ import {
   SERIES_STATUSES,
   formatSeriesSeason,
 } from "@/lib/labels";
+import { SERIES_STATUS_LISTS } from "@/lib/lists";
+import { seriesStatusListSlug } from "@/lib/series-status-lists";
 import { showToast } from "@/lib/toast";
 import { useStickyOptimistic } from "@/lib/use-optimistic-action";
 import {
@@ -28,6 +30,12 @@ type SeriesStatusPanelProps = {
 type SeriesState = {
   status: SeriesStatus | null;
   season: number | null;
+};
+
+/** Lista automática a la que entra la serie con ese estado (Terminada: ninguna). */
+const statusListName = (status: SeriesStatus | null) => {
+  const slug = seriesStatusListSlug(status);
+  return SERIES_STATUS_LISTS.find((list) => list.slug === slug)?.name;
 };
 
 const fieldLabel = "text-[11px] font-medium uppercase tracking-[0.18em] text-fog";
@@ -54,8 +62,10 @@ export const SeriesStatusPanel = ({
   const handleStatus = (status: SeriesStatus) => {
     const nextStatus = value.status === status ? null : status;
     setPendingKind("status");
+    const listName = statusListName(nextStatus);
     showToast({
       title: nextStatus ? "Estado de serie actualizado" : "Estado de serie quitado",
+      description: listName ? `También en ${listName}` : undefined,
     });
     run(
       {

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { TitleForm } from "@/components/TitleForm";
+import { isSeriesStatusListSlug } from "@/lib/lists";
 import { metadataServicesConfigured } from "@/lib/metadata";
 import { getCollectionLists, getTitleById } from "@/lib/queries";
 
@@ -32,7 +33,7 @@ export default async function EditTitlePage({
       />
       <TitleForm
         title={title}
-        lists={lists}
+        lists={lists.filter((list) => !isSeriesStatusListSlug(list.slug))}
         metadataConfig={metadataConfig}
       />
     </div>

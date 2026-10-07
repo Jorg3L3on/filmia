@@ -5,6 +5,7 @@ import {
   initialListSelection,
   listSelectionConfirmLabel,
   listSelectionToast,
+  splitStatusListSelection,
   toggleListSelection,
 } from "./list-selection";
 
@@ -81,5 +82,38 @@ describe("list selection copy", () => {
       listSelectionToast(lists, diffListSelection(["f"], ["n"]), "Dune").title,
       "Listas actualizadas",
     );
+  });
+});
+
+describe("splitStatusListSelection", () => {
+  const withStatus = [
+    ...lists,
+    { id: "p", name: "Series en progreso", slug: "series-en-progreso" },
+    { id: "a", name: "Series abandonadas", slug: "series-abandonadas" },
+  ];
+
+  it("pulls status lists out of the editable selection", () => {
+    const { statusLists, editableIds } = splitStatusListSelection(withStatus, ["f", "p", "n"]);
+    assert.deepEqual(
+      statusLists.map((list) => list.id),
+      ["p"],
+    );
+    assert.deepEqual(editableIds, ["f", "n"]);
+  });
+
+  it("ignores status lists the title is not in", () => {
+    const { statusLists, editableIds } = splitStatusListSelection(withStatus, ["w"]);
+    assert.deepEqual(statusLists, []);
+    assert.deepEqual(editableIds, ["w"]);
+  });
+
+  it("keeps a status membership out of the picker diff", () => {
+    const initial = ["p", "n"];
+    const selected = toggleListSelection(initial, "f");
+    assert.deepEqual(diffListSelection(initial, selected), {
+      add: ["f"],
+      remove: [],
+      changed: true,
+    });
   });
 });
