@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { Button } from "@/components/Button";
 import { PosterImage } from "@/components/PosterImage";
 import { Sheet, SheetHandle } from "@/components/Sheet";
 import { SearchListPicker } from "@/components/tmdb-search/SearchListPicker";
@@ -118,16 +117,6 @@ export const SearchPreviewSheet = ({
           />
         ) : null}
         <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/55 to-canvas/20" />
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onClose}
-          className="absolute top-3 right-3 z-10 h-9 w-9 border-0 bg-canvas/70 px-0 text-paper hover:bg-canvas/90"
-          aria-label="Cerrar"
-        >
-          <CloseIcon />
-        </Button>
         <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 px-5 pb-4">
           {poster ? (
             <span className="w-[4.5rem] shrink-0 overflow-hidden rounded-xl shadow-[0_12px_24px_rgba(0,0,0,0.45)] ring-1 ring-white/10 sm:w-20">
@@ -282,19 +271,6 @@ const SheetAction = ({
     </span>
     {label}
   </button>
-);
-
-const CloseIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    className="h-4 w-4"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.75}
-    aria-hidden="true"
-  >
-    <path strokeLinecap="round" d="M7 7l10 10M17 7 7 17" />
-  </svg>
 );
 
 const WatchlistIcon = () => (
