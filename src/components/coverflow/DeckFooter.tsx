@@ -199,6 +199,7 @@ export const DeckFooter = ({
           type="button"
           variant="ghost"
           size="sm"
+          className="!text-fog hover:!bg-transparent hover:!text-danger"
           onClick={() =>
             removeActive(
               (titleId) => removeTitleFromList(listId, titleId),

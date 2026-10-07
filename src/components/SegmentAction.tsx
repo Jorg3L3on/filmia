@@ -38,7 +38,7 @@ export const SegmentActionPlaceholder = () => (
   </span>
 );
 
-export const PencilIcon = () => (
+export const PencilIcon = ({ className }: { className?: string }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -47,7 +47,7 @@ export const PencilIcon = () => (
     strokeLinecap="round"
     strokeLinejoin="round"
     aria-hidden="true"
-    className="size-4 transition-transform duration-[var(--duration-hover)] group-hover:-rotate-12"
+    className={cn("size-4 transition-transform duration-[var(--duration-hover)]", className)}
   >
     <path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-4-4L4 16v4Z" />
     <path d="m13.5 6.5 4 4" />

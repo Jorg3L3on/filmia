@@ -129,8 +129,8 @@ const run = () => {
 
   const listDetail = read("src/app/listas/[id]/page.tsx");
   assert(
-    listDetail.includes("compact") && listDetail.includes("pillActionClass"),
-    "List detail has a header add CTA and pill edit chrome",
+    listDetail.includes("compact") && listDetail.includes("segmentActionClass"),
+    "List detail has a header add CTA and round glass edit chrome (same as Listas)",
   );
   assert(
     read("src/components/ListCard.tsx").includes("truncate"),

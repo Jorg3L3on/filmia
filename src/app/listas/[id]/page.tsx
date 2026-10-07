@@ -33,8 +33,11 @@ import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { tmdbCatalogKey } from "@/lib/tmdb-search-catalog";
 import { catalogHref, parseMinePlatforms } from "@/lib/catalog-href";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
-import { pillActionClass } from "@/lib/ui";
-import { PencilIcon } from "@/components/SegmentAction";
+import {
+  PencilIcon,
+  SegmentActionTooltip,
+  segmentActionClass,
+} from "@/components/SegmentAction";
 
 export const dynamic = "force-dynamic";
 
@@ -143,10 +146,10 @@ const ListDetail = async ({
             <Link
               href={`/listas/${list.id}/editar`}
               aria-label={fixed ? "Editar descripción" : "Editar lista"}
-              className={pillActionClass.neutral}
+              className={segmentActionClass}
             >
-              <PencilIcon />
-              Editar
+              <PencilIcon className="size-5 group-hover/action:-rotate-12" />
+              <SegmentActionTooltip label={fixed ? "Editar descripción" : "Editar lista"} />
             </Link>
           </>
         }
