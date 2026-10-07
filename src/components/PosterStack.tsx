@@ -77,39 +77,3 @@ export const PosterStack = ({
     </div>
   );
 };
-
-export const EmptyListPreview = () => (
-  <div className="space-y-3" aria-hidden="true">
-    <div className="relative mx-auto h-28 w-40">
-      {[0, 1, 2, 3].map((index) => (
-        <div
-          key={index}
-          className="absolute top-0 flex h-full w-[52%] items-center justify-center rounded-xl border border-chrome bg-well"
-          style={{
-            left: `${index * 14}%`,
-            zIndex: 10 - index,
-            transform: `rotate(${index * 3 - 4}deg)`,
-          }}
-        >
-          {index === 0 ? <ClapperIcon /> : null}
-        </div>
-      ))}
-    </div>
-    <p className="text-center text-xs text-mist">
-      El póster de tu lista se generará cuando agregues películas
-    </p>
-  </div>
-);
-
-const ClapperIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    className="h-7 w-7 text-fog"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-  >
-    <path strokeLinejoin="round" d="M4 9.5h16V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5Z" />
-    <path strokeLinejoin="round" d="m4 9.5 2.2-5h3.1L7 9.5m4.2-5h3.2L12 9.5m4.3-5H19l-2.1 5" />
-  </svg>
-);

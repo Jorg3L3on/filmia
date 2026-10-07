@@ -12,7 +12,6 @@ type ListFormFieldsProps = {
   defaultName: string;
   defaultDescription: string;
   header: ReactNode;
-  preview: ReactNode;
 };
 
 export const ListFormFields = ({
@@ -22,7 +21,6 @@ export const ListFormFields = ({
   defaultName,
   defaultDescription,
   header,
-  preview,
 }: ListFormFieldsProps) => {
   const [state, formAction] = useActionState<ListFormState, FormData>(action, null);
   // React reinicia el formulario tras la acción: si hubo error, se conserva lo escrito.
@@ -75,11 +73,6 @@ export const ListFormFields = ({
             placeholder="Cuenta de qué trata tu lista (opcional)"
           />
         </label>
-
-        <div className="space-y-3">
-          <h2 className="text-sm font-medium text-paper">Vista previa</h2>
-          {preview}
-        </div>
       </section>
 
       <PendingSubmit
