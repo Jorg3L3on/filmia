@@ -21,6 +21,14 @@ Canonical tokens live in `src/app/globals.css` (`:root` + comment block).
 
 Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` for sheet open.
 
+## Tarjetas: hover + press
+
+| Piece | Token | Notes |
+| --- | --- | --- |
+| Hover `.card-physics:hover` | `--duration-hover` · `--ease-out` | Lift −3 px, scale 1.02, brightness 1.06. **Only under `@media (hover: hover)`**: on touch `:hover` sticks after a tap and stacked with the press (1.02 → 0.96 → 1.02). |
+| Press `.press-scale:active` | `--duration-press` · `--spring` | Scale 0.96. The only transform feedback a tap gets on touch. |
+| Both `.card-physics.press-scale` | press for `transform`, hover for shadow/filter | One element owns the transform; never nest a second scaling wrapper (ListCard, PosterTile, rails). |
+
 ## Esta noche (Hoy)
 
 | Piece | Token | Notes |

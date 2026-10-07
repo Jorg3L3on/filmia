@@ -179,7 +179,7 @@ const MarkWatchedSheetFields = ({
       </div>
 
       <div className="space-y-5 px-5 py-6" data-no-sheet-drag>
-        <fieldset className="space-y-2">
+        <fieldset className="min-w-0 space-y-2">
           <legend className="text-[11px] font-medium uppercase tracking-[0.18em] text-fog">
             Fecha
           </legend>
@@ -209,7 +209,7 @@ const MarkWatchedSheetFields = ({
             })}
           </div>
           {datePreset === "custom" ? (
-            <label className="block space-y-1">
+            <label className="block min-w-0 space-y-1">
               <span className="sr-only">Elegir fecha</span>
               <input
                 type="date"
@@ -217,7 +217,7 @@ const MarkWatchedSheetFields = ({
                 onChange={(event) => handleCustomDate(event.target.value)}
                 required
                 aria-label="Fecha en que la viste"
-                className={cn(fieldClass, "bg-canvas [color-scheme:dark]")}
+                className={cn(fieldClass, "date-field bg-canvas")}
               />
             </label>
           ) : null}
