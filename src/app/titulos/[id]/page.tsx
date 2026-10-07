@@ -162,7 +162,7 @@ const TitleDetail = async ({
       <RelinkTitleSheet
         titleId={title.id}
         titleName={title.year ? `${title.name} (${title.year})` : title.name}
-        searchName={title.originalName ?? title.name}
+        searchName={title.name}
         kind={title.kind}
         tmdbId={title.tmdbId}
         configuredTmdb={metadataServicesConfigured().tmdb}

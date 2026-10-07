@@ -19,7 +19,7 @@ import { fieldClass, focusRing } from "@/lib/ui";
 type RelinkTitleSheetProps = {
   titleId: string;
   titleName: string;
-  /** Prefills the search: the original title usually finds the right match first. */
+  /** Prefills the search. The localized title, as people search in Buscar (originals can be non-Latin). */
   searchName: string;
   kind: TitleKind;
   tmdbId: number | null;
@@ -101,6 +101,9 @@ const RelinkSheetBody = ({
     [search.results, kind, tmdbId],
   );
   const kindLabel = TITLE_KIND_LABEL[kind].toLowerCase();
+  // Same-name films are common («Stalker» 1979 / 2014): the year tells them apart.
+  const labelFor = (result: TmdbCatalogResult) =>
+    result.year ? `${result.name} (${result.year})` : result.name;
 
   const handleConfirm = () => {
     if (!selected) {
@@ -122,7 +125,7 @@ const RelinkSheetBody = ({
       }
       showToast({
         title: result.changed ? "Ficha cambiada" : "Ya era esta",
-        description: selected.year ? `${selected.name} (${selected.year})` : selected.name,
+        description: labelFor(selected),
       });
       onDone();
     });
@@ -211,6 +214,7 @@ const RelinkSheetBody = ({
                     type="button"
                     role="option"
                     aria-selected={isSelected}
+                    aria-label={labelFor(result)}
                     onClick={() => {
                       setError(null);
                       setSelected(result);
@@ -271,7 +275,7 @@ const RelinkSheetBody = ({
           pendingLabel="Cambiando…"
           className="w-full py-3"
         >
-          {selected ? `Cambiar a «${selected.name}»` : "Elige un resultado"}
+          {selected ? `Cambiar a «${labelFor(selected)}»` : "Elige un resultado"}
         </Button>
       </div>
     </Sheet>
