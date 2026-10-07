@@ -7,6 +7,12 @@ export const segmentActionClass = cn(
   "group/action size-[2.875rem] text-accent hover:text-paper",
 );
 
+/** Same glass button at back-button size (40px), for headers that keep actions on the title row. */
+export const segmentActionCompactClass = cn(
+  glassIconClass,
+  "group/action size-10 text-accent hover:text-paper",
+);
+
 export const SegmentPlusIcon = ({ className }: { className?: string }) => (
   <svg
     viewBox="0 0 24 24"

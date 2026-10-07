@@ -20,7 +20,7 @@ import { fieldClass, focusRing } from "@/lib/ui";
 import {
   SegmentActionTooltip,
   SegmentPlusIcon,
-  segmentActionClass,
+  segmentActionCompactClass,
 } from "@/components/SegmentAction";
 
 export type AddableListTitle = LocalListTitle;
@@ -179,7 +179,7 @@ export const AddTitleToListCta = ({
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-label="Agregar título a la lista"
-          className={segmentActionClass}
+          className={segmentActionCompactClass}
         >
           <SegmentPlusIcon className="group-hover/action:rotate-90" />
           <SegmentActionTooltip label="Agregar títulos" />

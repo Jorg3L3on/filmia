@@ -35,7 +35,7 @@ import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series"
 import {
   PencilIcon,
   SegmentActionTooltip,
-  segmentActionClass,
+  segmentActionCompactClass,
 } from "@/components/SegmentAction";
 
 export const dynamic = "force-dynamic";
@@ -130,6 +130,7 @@ const ListDetail = async ({
         description={list.description ?? undefined}
         backHref="/listas"
         backLabel="Todas las listas"
+        inlineActions
         actions={
           <>
             {automatic ? null : (
@@ -145,7 +146,7 @@ const ListDetail = async ({
             <Link
               href={`/listas/${list.id}/editar`}
               aria-label={fixed ? "Editar descripción" : "Editar lista"}
-              className={segmentActionClass}
+              className={segmentActionCompactClass}
             >
               <PencilIcon className="size-5 group-hover/action:-rotate-12" />
               <SegmentActionTooltip label={fixed ? "Editar descripción" : "Editar lista"} />
