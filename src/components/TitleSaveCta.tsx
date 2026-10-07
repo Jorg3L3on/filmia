@@ -6,7 +6,11 @@ import {
   removeFromWatchlistById,
 } from "@/app/actions/watchlist";
 import { cn } from "@/lib/cn";
-import { membershipCopy, titleListMembership } from "@/lib/list-membership";
+import {
+  membershipCopy,
+  membershipStatusCopy,
+  titleListMemberships,
+} from "@/lib/list-membership";
 import { showToast } from "@/lib/toast";
 import { useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { focusRing } from "@/lib/ui";
@@ -20,60 +24,73 @@ type AssignableList = {
 /**
  * Primary ficha save control. Quiero ver lives here only — the chip row
  * does not duplicate it. Optimistic toggle uses `useStickyOptimistic`.
+ *
+ * List membership is a status line («Guardada en …» / «En N listas»), never
+ * a filled button: the only action next to it is the idle «Gestionar listas».
+ * Pass `listsOpen` + `onToggleLists` to share one panel with the chip row;
+ * without them the CTA keeps its own state and renders `listsPanel` itself.
  */
 type TitleSaveCtaProps = {
   titleId: string;
   inWatchlist: boolean;
   memberLists: AssignableList[];
-  listsPanel: ReactNode;
+  listsPanel?: ReactNode;
+  listsOpen?: boolean;
+  onToggleLists?: () => void;
+  listsPanelId?: string;
 };
 
 export const TitleSaveCta = ({
   titleId,
   inWatchlist,
   memberLists,
-  listsPanel,
+  listsPanel = null,
+  listsOpen,
+  onToggleLists,
+  listsPanelId,
 }: TitleSaveCtaProps) => {
-  const [open, setOpen] = useState(false);
-  const membership = titleListMembership(memberLists);
-  const copy = membershipCopy(membership);
-  const isInList = membership.state === "in-list";
+  const [ownOpen, setOwnOpen] = useState(false);
+  const controlled = onToggleLists != null;
+  const open = controlled ? Boolean(listsOpen) : ownOpen;
+  const status = membershipStatusCopy(titleListMemberships(memberLists).lists);
 
   const handleToggleLists = () => {
-    setOpen((current) => !current);
+    if (controlled) {
+      onToggleLists();
+      return;
+    }
+    setOwnOpen((current) => !current);
   };
 
   return (
     <div className="space-y-3">
-      {isInList ? (
-        <button
-          type="button"
-          onClick={handleToggleLists}
-          aria-expanded={open}
-          aria-haspopup="true"
-          className={cn(
-            "press-scale flex w-full items-center justify-between gap-3 rounded-2xl bg-accent px-5 py-3.5 text-left text-ink transition-[transform,filter] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
-            focusRing,
-          )}
-        >
-          <CheckIcon />
-          <span className="min-w-0 flex-1 text-center">
-            <span className="block font-semibold">En lista</span>
-            <span className="block text-sm font-medium text-ink/80">
-              {copy.detail}
-            </span>
-          </span>
-          <ChevronIcon />
-        </button>
-      ) : (
-        <WatchlistButton titleId={titleId} inWatchlist={inWatchlist} />
-      )}
+      <WatchlistButton titleId={titleId} inWatchlist={inWatchlist} />
 
-      {isInList ? (
-        <p className="text-center text-sm text-accent">{copy.hint}</p>
+      {status ? (
+        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+          <SavedIcon />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-paper">{status.label}</p>
+            {status.detail ? (
+              <p className="text-xs leading-5 text-mist">{status.detail}</p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={handleToggleLists}
+            aria-expanded={open}
+            aria-controls={listsPanelId}
+            className={cn(
+              "press-scale shrink-0 rounded-full border border-chrome px-3 py-1.5 text-xs font-medium text-fog transition-[transform,color,border-color] duration-[var(--duration-hover)] ease-[var(--ease-out)] hover:border-line-hover hover:text-paper",
+              focusRing,
+            )}
+          >
+            Gestionar listas
+          </button>
+        </div>
       ) : null}
 
-      {open && isInList ? listsPanel : null}
+      {!controlled && open ? listsPanel : null}
     </div>
   );
 };
@@ -161,14 +178,17 @@ const BookmarkIcon = ({ filled }: { filled: boolean }) => (
   </svg>
 );
 
-const CheckIcon = () => (
-  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" d="m6.5 12 3.5 3.5 7.5-7.5" />
-  </svg>
-);
-
-const ChevronIcon = () => (
-  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" d="m7 10 5 5 5-5" />
+/** Stacked-lists glyph in muted ink: reads as «saved», not as a pressed control. */
+const SavedIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    className="h-5 w-5 shrink-0 text-mist"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.75}
+    aria-hidden="true"
+  >
+    <path strokeLinecap="round" d="M6 8h12M6 12h12M6 16h6" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="m14.5 16.5 1.75 1.75L19.5 15" />
   </svg>
 );

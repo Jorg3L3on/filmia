@@ -27,10 +27,17 @@ type TitleActionRowProps = {
   titleName: string;
   watched: boolean;
   inWatchlist: boolean;
+  /** @deprecated Prefer `listCount`; shown as a dot badge when no count is given. */
   inCustomList?: boolean;
+  /** Saved lists (watchlist excluded): drawn as a count badge, never as «pressed». */
+  listCount?: number;
   rating: number | null;
   review?: string | null;
   listsPanel: ReactNode;
+  /** Controlled lists panel, shared with TitleSaveCta's «Gestionar listas». */
+  listsOpen?: boolean;
+  onToggleLists?: () => void;
+  listsPanelId?: string;
 };
 
 type Panel = "lists" | null;
@@ -54,11 +61,19 @@ export const TitleActionRow = ({
   watched,
   inWatchlist,
   inCustomList = false,
+  listCount,
   rating,
   review = null,
   listsPanel,
+  listsOpen,
+  onToggleLists,
+  listsPanelId,
 }: TitleActionRowProps) => {
-  const [panel, setPanel] = useState<Panel>(null);
+  const [ownPanel, setPanel] = useState<Panel>(null);
+  const listsControlled = onToggleLists != null;
+  const panel: Panel = listsControlled ? (listsOpen ? "lists" : null) : ownPanel;
+  const savedCount = listCount ?? (inCustomList ? 1 : 0);
+  const listsExpanded = panel === "lists";
   const [ratingOpen, setRatingOpen] = useState(false);
   const [seenOpen, setSeenOpen] = useState(false);
   const [seenOptimistic, setSeenOptimistic] = useState(false);
@@ -139,6 +154,10 @@ export const TitleActionRow = ({
   };
 
   const handleTogglePanel = (next: Panel) => {
+    if (listsControlled && next === "lists") {
+      onToggleLists();
+      return;
+    }
     setPanel((current) => (current === next ? null : next));
   };
 
@@ -187,15 +206,36 @@ export const TitleActionRow = ({
         <button
           type="button"
           onClick={() => handleTogglePanel("lists")}
-          aria-expanded={panel === "lists"}
+          aria-expanded={listsExpanded}
+          aria-controls={listsPanelId}
           className={cn(
-            actionChipClass(inCustomList || panel === "lists"),
-            (inCustomList || panel === "lists") &&
-              "border-accent bg-accent/10 text-accent",
+            actionChipClass(listsExpanded),
+            "relative",
+            listsExpanded && "border-accent bg-accent/10 text-accent",
           )}
         >
           <PlusListIcon />
-          {inCustomList ? "En lista" : "Lista"}
+          Lista
+          {savedCount > 0 ? (
+            <>
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "absolute top-1.5 right-1.5 flex items-center justify-center rounded-full border border-white/15 bg-white/[0.12] font-semibold tracking-normal text-paper tabular-nums",
+                  listCount != null
+                    ? "h-[18px] min-w-[18px] px-1 text-[10px] leading-none"
+                    : "h-2 w-2",
+                )}
+              >
+                {listCount != null ? savedCount : null}
+              </span>
+              <span className="sr-only">
+                {listCount != null
+                  ? `, guardada en ${savedCount} ${savedCount === 1 ? "lista" : "listas"}`
+                  : ", guardada en listas"}
+              </span>
+            </>
+          ) : null}
         </button>
       </div>
 
@@ -226,7 +266,7 @@ export const TitleActionRow = ({
         onSave={handleSaveRating}
       />
 
-      {panel === "lists" ? listsPanel : null}
+      {listsExpanded ? <div id={listsPanelId}>{listsPanel}</div> : null}
     </div>
   );
 };

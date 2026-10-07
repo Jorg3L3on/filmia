@@ -29,6 +29,7 @@ import {
   TitleRelatedBlock,
   TitleSynopsisBlock,
   isSeriesTitle,
+  titleCredits,
 } from "./title-sections";
 
 export const dynamic = "force-dynamic";
@@ -134,6 +135,7 @@ const TitleDetail = async ({
         <TitleSynopsisBlock
           storedOverview={title.overview}
           extrasPromise={extrasPromise}
+          credits={titleCredits(title)}
         />
       </Suspense>
 
