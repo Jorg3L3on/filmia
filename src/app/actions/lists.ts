@@ -7,6 +7,11 @@ import { redirect } from "next/navigation";
 import { db, listItems, lists, titles } from "@/db";
 import { parseRequiredName } from "@/lib/form-data";
 import { slugify } from "@/lib/labels";
+import {
+  hasDuplicateListName,
+  LIST_NAME_TAKEN_MESSAGE,
+  type ListFormState,
+} from "@/lib/list-names";
 import { isFixedListSlug, isReservedListSlug, listHref, WATCHLIST_SLUG } from "@/lib/lists";
 import {
   type ListMoveDirection,
@@ -49,13 +54,61 @@ const requireOwnedList = async (listId: string, userId: string) => {
   return list;
 };
 
-export const createList = async (formData: FormData) => {
-  const userId = await requireUserId();
-  const name = parseRequiredName(formData.get("name"));
-  const description = String(formData.get("description") ?? "").trim() || null;
+type ListSaveOutcome = { error: string } | { redirectTo: string };
+
+const readListFormValues = (formData: FormData) => ({
+  name: String(formData.get("name") ?? ""),
+  description: String(formData.get("description") ?? ""),
+});
+
+const parseListName = (
+  value: FormDataEntryValue | null,
+): { name: string } | { error: string } => {
+  try {
+    return { name: parseRequiredName(value) };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Datos no válidos." };
+  }
+};
+
+/**
+ * Error de nombre para una lista propia: choque con otra lista del usuario
+ * (diarias incluidas, comparando con `slugify`) o nombre reservado.
+ */
+const userListNameError = async (
+  userId: string,
+  name: string,
+  excludeListId?: string,
+) => {
+  const existing = await db.query.lists.findMany({
+    where: eq(lists.userId, userId),
+    columns: { id: true, name: true },
+  });
+
+  if (hasDuplicateListName(name, existing, excludeListId)) {
+    return LIST_NAME_TAKEN_MESSAGE;
+  }
 
   if (isReservedListSlug(slugify(name))) {
-    throw new Error("Ese nombre está reservado para una lista diaria.");
+    return "Ese nombre está reservado para una lista diaria.";
+  }
+
+  return null;
+};
+
+const saveNewList = async (formData: FormData): Promise<ListSaveOutcome> => {
+  const userId = await requireUserId();
+  const parsed = parseListName(formData.get("name"));
+  if ("error" in parsed) {
+    return parsed;
+  }
+
+  const { name } = parsed;
+  const description = String(formData.get("description") ?? "").trim() || null;
+
+  const nameError = await userListNameError(userId, name);
+  if (nameError) {
+    return { error: nameError };
   }
 
   const listId = createId();
@@ -71,25 +124,81 @@ export const createList = async (formData: FormData) => {
   });
 
   revalidateLists(listId);
-  redirect(`/listas/${listId}`);
+  return { redirectTo: `/listas/${listId}` };
 };
 
-export const updateList = async (listId: string, formData: FormData) => {
+const saveListChanges = async (
+  listId: string,
+  formData: FormData,
+): Promise<ListSaveOutcome> => {
   const userId = await requireUserId();
   const description = String(formData.get("description") ?? "").trim() || null;
   const existing = await requireOwnedList(listId, userId);
-  const name = isFixedListSlug(existing.slug)
-    ? existing.name
-    : parseRequiredName(formData.get("name"));
+  const fixed = isFixedListSlug(existing.slug);
 
-  if (!isFixedListSlug(existing.slug) && isReservedListSlug(slugify(name))) {
-    throw new Error("Ese nombre está reservado para una lista diaria.");
+  let name = existing.name;
+  if (!fixed) {
+    const parsed = parseListName(formData.get("name"));
+    if ("error" in parsed) {
+      return parsed;
+    }
+
+    name = parsed.name;
+    const nameError = await userListNameError(userId, name, listId);
+    if (nameError) {
+      return { error: nameError };
+    }
   }
 
   await db.update(lists).set({ name, description }).where(eq(lists.id, listId));
 
   revalidateLists(listId);
-  redirect(listHref(existing));
+  return { redirectTo: listHref(existing) };
+};
+
+export const createList = async (formData: FormData) => {
+  const outcome = await saveNewList(formData);
+  if ("error" in outcome) {
+    throw new Error(outcome.error);
+  }
+
+  redirect(outcome.redirectTo);
+};
+
+export const updateList = async (listId: string, formData: FormData) => {
+  const outcome = await saveListChanges(listId, formData);
+  if ("error" in outcome) {
+    throw new Error(outcome.error);
+  }
+
+  redirect(outcome.redirectTo);
+};
+
+/** `createList` para `useActionState`: los errores de nombre vuelven al formulario. */
+export const createListWithFeedback = async (
+  _prev: ListFormState,
+  formData: FormData,
+): Promise<ListFormState> => {
+  const outcome = await saveNewList(formData);
+  if ("error" in outcome) {
+    return { error: outcome.error, values: readListFormValues(formData) };
+  }
+
+  redirect(outcome.redirectTo);
+};
+
+/** `updateList` para `useActionState`: los errores de nombre vuelven al formulario. */
+export const updateListWithFeedback = async (
+  listId: string,
+  _prev: ListFormState,
+  formData: FormData,
+): Promise<ListFormState> => {
+  const outcome = await saveListChanges(listId, formData);
+  if ("error" in outcome) {
+    return { error: outcome.error, values: readListFormValues(formData) };
+  }
+
+  redirect(outcome.redirectTo);
 };
 
 export const deleteList = async (listId: string) => {
