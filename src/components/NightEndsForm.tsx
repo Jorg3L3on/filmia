@@ -45,7 +45,7 @@ export const NightEndsForm = ({ value }: NightEndsFormProps) => {
         </p>
       </header>
       <div className="grid grid-cols-2 gap-3">
-        <label className="space-y-1.5">
+        <label className="min-w-0 space-y-1.5">
           <span className="block text-[11px] font-medium uppercase tracking-[0.18em] text-fog">
             Entre semana
           </span>
@@ -59,11 +59,11 @@ export const NightEndsForm = ({ value }: NightEndsFormProps) => {
                 save({ weekday: event.target.value, weekend });
               }
             }}
-            className={cn(fieldClass, "[color-scheme:dark]")}
+            className={cn(fieldClass, "date-field")}
             aria-label="Hora a la que terminas de ver entre semana"
           />
         </label>
-        <label className="space-y-1.5">
+        <label className="min-w-0 space-y-1.5">
           <span className="block text-[11px] font-medium uppercase tracking-[0.18em] text-fog">
             Viernes y sábado
           </span>
@@ -77,7 +77,7 @@ export const NightEndsForm = ({ value }: NightEndsFormProps) => {
                 save({ weekday, weekend: event.target.value });
               }
             }}
-            className={cn(fieldClass, "[color-scheme:dark]")}
+            className={cn(fieldClass, "date-field")}
             aria-label="Hora a la que terminas de ver viernes y sábado"
           />
         </label>

@@ -333,7 +333,7 @@ body {
     filter var(--duration-hover) var(--ease-out);
 }
 
-/* Native `<input type="date">`. iOS Safari draws it with a native appearance
+/* Native `<input type="date">` and `<input type="time">`. iOS Safari draws it with a native appearance
  * whose intrinsic min-width ignores `width: 100%`; inside a `<fieldset>`
  * (min-inline-size: min-content) or a grid/flex item that pushed the field past
  * the sheet edge, where the panel's overflow-hidden clipped it. */
