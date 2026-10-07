@@ -12,10 +12,14 @@ import {
   type AddTitleFromTmdbInput,
   type AddTitleFromTmdbResult,
 } from "@/lib/add-title-from-tmdb";
+import { catalogIdFor, findOrCreateCatalog } from "@/lib/catalog";
+import { scheduleCatalogEnrichment } from "@/lib/catalog-enrich";
 import { SERIES_STATUSES } from "@/lib/labels";
 import { ensureSeriesStatusList, SERIES_STATUS_LIST_SLUGS } from "@/lib/lists";
+import { parseRelinkPick, planRelink } from "@/lib/relink-core";
 import { seriesStatusListTransition } from "@/lib/series-status-lists";
 import {
+  revalidateDiarySurfaces,
   revalidateListMembership,
   revalidateRatingSurfaces,
   revalidateSearchAddSurfaces,
@@ -28,7 +32,86 @@ export type { AddTitleFromTmdbInput, AddTitleFromTmdbResult };
 
 // Titles only enter Filmia from TMDB (`addTitleFromTmdb`); the catalog data is
 // never edited by users and a title is never deleted — only its personal
-// fields (rating, review, platform, watchedAt, series status) change.
+// fields (rating, review, platform, watchedAt, series status) change, and the
+// entry can be pointed at a different TMDB match (`relinkTitle`).
+
+export type RelinkTitleResult =
+  | { ok: true; changed: boolean }
+  | { ok: false; error: string; existingTitleId?: string };
+
+/**
+ * «¿No es esta?»: move the user's entry to another TMDB match. Only
+ * `Title.catalogId` changes — rating, review, platform, watched date, series
+ * progress and list membership stay put, and no catalog row is ever edited.
+ */
+export const relinkTitle = async (
+  titleId: string,
+  input: unknown,
+): Promise<RelinkTitleResult> => {
+  const userId = await requireUserId();
+  const pick = parseRelinkPick(input);
+  if (!pick) {
+    return { ok: false, error: "Ese resultado de TMDB no es válido." };
+  }
+
+  const title = await db.query.titles.findFirst({
+    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
+    columns: { id: true, catalogId: true, kind: true },
+  });
+  if (!title) {
+    return { ok: false, error: "Título no encontrado." };
+  }
+  if (title.kind !== pick.kind) {
+    return { ok: false, error: "Elige un título del mismo tipo (película o serie)." };
+  }
+
+  const targetCatalogId = catalogIdFor(pick.kind, pick.tmdbId);
+  const owned = await db.query.titles.findFirst({
+    where: and(eq(titles.userId, userId), eq(titles.catalogId, targetCatalogId)),
+    columns: { id: true },
+  });
+  const plan = planRelink({
+    titleId,
+    currentCatalogId: title.catalogId,
+    targetCatalogId,
+    ownedTitleIdForTarget: owned?.id ?? null,
+  });
+
+  if (plan.kind === "same") {
+    return { ok: true, changed: false };
+  }
+  if (plan.kind === "duplicate") {
+    return {
+      ok: false,
+      error: `Ya tienes «${pick.name}» en tu Filmia.`,
+      existingTitleId: plan.titleId,
+    };
+  }
+
+  const { row: film, created } = await findOrCreateCatalog(pick);
+  await db
+    .update(titles)
+    .set({
+      catalogId: film.id,
+      // Snapshot columns kept in sync until 0010 drops them; reads use the catalog.
+      tmdbId: film.tmdbId,
+      name: film.name,
+      originalName: film.originalName,
+      year: film.year,
+      posterPath: film.posterPath,
+    })
+    .where(and(eq(titles.id, titleId), eq(titles.userId, userId)));
+
+  if (created) {
+    scheduleCatalogEnrichment(film, { userId, titleId });
+  } else {
+    scheduleTonightRecompute(userId);
+  }
+  revalidateDiarySurfaces(titleId);
+  revalidateSeriesSurfaces(titleId);
+
+  return { ok: true, changed: true };
+};
 
 export const addTitleFromTmdb = async (
   input: AddTitleFromTmdbInput,
