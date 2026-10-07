@@ -6,7 +6,9 @@ import {
   TitleActionsSkeleton,
   TitleProvidersSkeleton,
 } from "@/components/PageSkeletons";
+import { RelinkTitleSheet } from "@/components/RelinkTitleSheet";
 import { SeriesStatusPanel } from "@/components/SeriesStatusPanel";
+import { metadataServicesConfigured } from "@/lib/metadata";
 import {
   getAssignableLists,
   getRelatedTitles,
@@ -156,6 +158,15 @@ const TitleDetail = async ({
       <Suspense fallback={null}>
         <TitleRelatedBlock relatedPromise={relatedPromise} />
       </Suspense>
+
+      <RelinkTitleSheet
+        titleId={title.id}
+        titleName={title.year ? `${title.name} (${title.year})` : title.name}
+        searchName={title.name}
+        kind={title.kind}
+        tmdbId={title.tmdbId}
+        configuredTmdb={metadataServicesConfigured().tmdb}
+      />
     </article>
   );
 };

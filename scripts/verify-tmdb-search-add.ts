@@ -5,8 +5,9 @@ import { and, eq } from "drizzle-orm";
 loadEnv({ path: ".env.local" });
 loadEnv();
 
-import { db, listItems, lists, titles, users, TitleKind } from "../src/db";
+import { catalog, db, listItems, lists, titles, users, TitleKind } from "../src/db";
 import { upsertTitleFromTmdbForUser } from "../src/lib/add-title-from-tmdb";
+import { findCatalogByTmdb, flattenTitle } from "../src/lib/catalog";
 import { hashPassword } from "../src/lib/auth/password";
 import {
   getTmdbDetails,
@@ -216,10 +217,20 @@ const ensureTestUser = async () => {
   return created;
 };
 
+/** TEST_TMDB_ID is not a real film: its catalog row only exists while this runs. */
+const removeTestFilm = async (userId: string) => {
+  const film = await findCatalogByTmdb(TEST_TMDB_ID, TitleKind.MOVIE);
+  if (!film) {
+    return;
+  }
+  await db.delete(titles).where(and(eq(titles.userId, userId), eq(titles.catalogId, film.id)));
+  await db.delete(catalog).where(eq(catalog.id, film.id));
+};
+
 const verifyUpsert = async () => {
   const user = await ensureTestUser();
 
-  await db.delete(titles).where(and(eq(titles.userId, user.id), eq(titles.tmdbId, TEST_TMDB_ID)));
+  await removeTestFilm(user.id);
 
   const first = await upsertTitleFromTmdbForUser(user.id, {
     tmdbId: TEST_TMDB_ID,
@@ -245,15 +256,22 @@ const verifyUpsert = async () => {
   assert(second.ok && !second.created, "Second add should reuse the title");
   assert(first.ok && second.ok && first.titleId === second.titleId, "Same title id");
 
+  const film = await findCatalogByTmdb(TEST_TMDB_ID, TitleKind.MOVIE);
+  assert(film, "Catalog row created for the film");
   const copies = await db.query.titles.findMany({
-    where: and(eq(titles.userId, user.id), eq(titles.tmdbId, TEST_TMDB_ID)),
+    where: and(eq(titles.userId, user.id), eq(titles.catalogId, film!.id)),
   });
   assert(copies.length === 1, `Expected 1 title, found ${copies.length}`);
 
-  const stored = first.ok
-    ? await db.query.titles.findFirst({ where: eq(titles.id, first.titleId) })
+  const storedRow = first.ok
+    ? await db.query.titles.findFirst({
+        where: eq(titles.id, first.titleId),
+        with: { catalog: true },
+      })
     : null;
+  const stored = storedRow ? flattenTitle(storedRow) : null;
 
+  assert(stored?.catalogId === film!.id, "Title points at the shared catalog row");
   assert(stored?.name === "Dune", "Persisted name");
   assert(stored?.year === 2021, "Persisted year");
   assert(stored?.posterPath === "/dune.jpg", "Persisted poster");
@@ -273,10 +291,10 @@ const verifyUpsert = async () => {
     : [];
   assert(watchlistItems.length === 1, "Should be in Quiero ver once");
 
-  await db.delete(titles).where(and(eq(titles.userId, user.id), eq(titles.tmdbId, TEST_TMDB_ID)));
+  await removeTestFilm(user.id);
   await db.delete(users).where(eq(users.id, user.id));
 
-  console.log("✓ Upsert by userId+tmdbId keeps a single title and can enqueue Quiero ver");
+  console.log("✓ Upsert by userId+catalog keeps a single title and can enqueue Quiero ver");
 };
 
 const run = async () => {

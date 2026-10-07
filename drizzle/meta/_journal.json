@@ -64,6 +64,20 @@
       "when": 1791327251089,
       "tag": "0008_drop_etiquetas",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791353156481,
+      "tag": "0009_catalog",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791355248544,
+      "tag": "0010_catalog_cutover",
+      "breakpoints": true
     }
   ]
 }

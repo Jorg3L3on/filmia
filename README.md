@@ -52,8 +52,9 @@ npm run db:backfill-tonight
 ## Modelo
 
 - **User**: cuenta con email, contraseña hasheada opcional (PBKDF2; hashes bcrypt legacy se verifican al entrar; `null` si solo entra con Google), `googleId` opcional, nombre opcional y `streamingPlatforms` (JSON: claves del enum `Platform`)
-- **Title**: película o serie del usuario, nota personal 1–10, poster (TMDB), rating IMDb + votos (OMDb), keywords y personas (TMDB), color ambiente, plataforma opcional, notas, fecha vista
-  - El catálogo es por usuario (`Title.userId` obligatorio): la misma película de TMDB es una fila por cada usuario que la agrega. Los usuarios no editan la información de la película ni borran títulos: solo cambian sus campos personales (nota, comentario, «Dónde la vi» desde Marqué visto, fecha vista, estado de serie, listas)
+- **Catalog**: una fila por película o serie, compartida por todos los usuarios y única por `(tmdbId, kind)`: nombre, año, poster (TMDB), sinopsis, rating IMDb + votos + premios (OMDb), keywords y personas (TMDB), disponibilidad MX, color ambiente. Se llena una sola vez al guardar el título por primera vez (`src/lib/catalog-enrich.ts`); los usuarios nunca la editan
+- **Title**: la entrada personal de un usuario para una ficha del catálogo (`catalogId`): nota 1–10, comentario, «Dónde la vi», fecha vista, estado de serie. No se borra; solo cambian sus campos personales. La app lee siempre el tipo plano `Title` (`flattenTitle` en `src/lib/catalog-core.ts`), que es la fila personal con el catálogo encima
+  - Migraciones del split: 0009 (aditiva) crea `Catalog` y enlaza cada `Title`; 0010 (destructiva) borra de `Title` las columnas de metadatos heredadas y exige `catalogId` único por usuario. 0010 se aplica solo después de desplegar este código (ver la cabecera de `drizzle/0010_catalog_cutover.sql`)
 - **TonightPick** + **PickEvent**: mazos precalculados de «Esta noche» por usuario y su retroalimentación (ver [Hoy · Esta noche](#hoy--esta-noche))
 - **List** + **ListItem**: listas y membresía por usuario (Quiero ver, Favoritas, Por rewatch + personalizadas)
 - **Platform** (enum): Netflix, Prime, Max, Disney+, Claro, Apple, Mubi y otras de JustWatch MX
@@ -174,17 +175,17 @@ El seed es idempotente por nombre + año dentro de cada usuario.
 
 ### Backfill de posters e IMDb
 
-Para títulos ya existentes sin metadata (p. ej. después del seed):
+Para fichas del catálogo incompletas (sin poster, sin IMDb id o sin sinopsis; p. ej. después del seed):
 
 ```bash
 # Requiere TMDB_API_KEY (+ OMDB_API_KEY recomendada) en .env
 npm run db:backfill-metadata
 
-# Re-enriquecer todos, aunque ya tengan poster
+# Re-enriquecer todas las fichas, aunque ya estén completas
 npm run db:backfill-metadata -- --force
 ```
 
-Busca en TMDB por nombre + año + tipo, guarda poster e IMDb rating vía OMDb.
+Corre el mismo enriquecimiento que ocurre al guardar un título (detalles, créditos, keywords, rating y premios, disponibilidad MX, color ambiente), una vez por película del catálogo compartido.
 
 ## Scripts
 
@@ -202,8 +203,7 @@ Busca en TMDB por nombre + año + tipo, guarda poster e IMDb rating vía OMDb.
 | `npm run db:migrate:deploy` | Alias explícito de `db:migrate` (mismo comando; no corre en Vercel build) |
 | `npm run db:push` | Empuja el schema a la DB sin archivo de migración (dev) |
 | `npm run db:seed` | Carga títulos dummy + usuario demo |
-| `npm run db:import-watchlist` | Importa `scripts/data/watchlist-queue.json` a Quiero ver |
-| `npm run db:backfill-metadata` | Posters TMDB + rating IMDb para títulos existentes |
+| `npm run db:backfill-metadata` | Enriquece fichas del catálogo incompletas (TMDB + OMDb), una vez por película |
 | `npm run db:backfill-tonight` | Keywords, créditos, votos IMDb y color ambiente + precálculo de «Esta noche» |
 | `npm run db:set-password` | Rehash PBKDF2 para un email: `-- <email> <password>` |
 | `npm run db:studio` | Drizzle Studio |

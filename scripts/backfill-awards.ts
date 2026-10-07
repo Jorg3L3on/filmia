@@ -4,7 +4,7 @@ import { and, asc, eq, isNotNull, isNull } from "drizzle-orm";
 loadEnv({ path: ".env.local" });
 loadEnv();
 
-import { db, titles } from "../src/db/index";
+import { db, catalog } from "../src/db/index";
 import { awardChipLabel } from "../src/lib/awards";
 import { fetchImdbScore, isOmdbConfigured } from "../src/lib/omdb";
 import { runPool } from "../src/lib/run-pool";
@@ -29,10 +29,10 @@ const backfill = async () => {
     throw new Error("OMDB_API_KEY no está configurada.");
   }
 
-  const rows = await db.query.titles.findMany({
+  const rows = await db.query.catalog.findMany({
     where: force
-      ? isNotNull(titles.imdbId)
-      : and(isNotNull(titles.imdbId), isNull(titles.awards)),
+      ? isNotNull(catalog.imdbId)
+      : and(isNotNull(catalog.imdbId), isNull(catalog.awards)),
     columns: {
       id: true,
       name: true,
@@ -42,7 +42,7 @@ const backfill = async () => {
       imdbVotes: true,
       awards: true,
     },
-    orderBy: [asc(titles.name)],
+    orderBy: [asc(catalog.name)],
   });
 
   console.log(`${rows.length} títulos por consultar en OMDb${dryRun ? " (simulación)" : ""}.`);
@@ -63,7 +63,7 @@ const backfill = async () => {
         return;
       }
       if (!dryRun) {
-        await db.update(titles).set(patch).where(eq(titles.id, title.id));
+        await db.update(catalog).set(patch).where(eq(catalog.id, title.id));
       }
       updated += 1;
       const chip = awardChipLabel(score.awards);

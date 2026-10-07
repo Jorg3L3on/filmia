@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { and, asc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, sql, type SQL } from "drizzle-orm";
 import {
   db,
   listItems,
@@ -13,6 +13,7 @@ import {
 } from "@/db";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { scheduleAfterResponse } from "@/lib/after-response";
+import { flattenTitle } from "@/lib/catalog-core";
 import { toCoverflowTitle } from "@/lib/coverflow-title";
 import { scheduleDiaryWatchlistEnrichment } from "@/lib/diary-enrich";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
@@ -99,10 +100,17 @@ type TitleRowWithLists = Title & {
 };
 
 const TITLE_WITH_LISTS = {
+  catalog: true,
   listItems: {
     with: { list: { columns: { id: true, slug: true } } },
   },
 } as const;
+
+/** Rows come with their catalog; the sala works on the flat `Title` shape. */
+const loadTitleRows = async (where: SQL | undefined): Promise<TitleRowWithLists[]> => {
+  const rows = await db.query.titles.findMany({ where, with: TITLE_WITH_LISTS });
+  return rows.map((row) => flattenTitle(row));
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object";
@@ -228,10 +236,7 @@ export const loadTonightInput = async (
   now = new Date(),
 ): Promise<TonightInput & { rows: TitleRowWithLists[]; nightEnds: NightEnds }> => {
   const [rows, prefs, events] = await Promise.all([
-    db.query.titles.findMany({
-      where: eq(titles.userId, userId),
-      with: TITLE_WITH_LISTS,
-    }) as Promise<TitleRowWithLists[]>,
+    loadTitleRows(eq(titles.userId, userId)),
     loadUserPrefs(userId),
     loadEvents(userId, now),
   ]);
@@ -480,14 +485,10 @@ export const getTonightDecks = async (
   ]);
   const pinnedId = findPinnedTitleId(events, now);
   const titleIds = [...new Set([...picks.map((pick) => pick.titleId), ...(pinnedId ? [pinnedId] : [])])];
-  const rows = (
+  const rows =
     titleIds.length > 0
-      ? await db.query.titles.findMany({
-          where: and(eq(titles.userId, userId), inArray(titles.id, titleIds)),
-          with: TITLE_WITH_LISTS,
-        })
-      : []
-  ) as TitleRowWithLists[];
+      ? await loadTitleRows(and(eq(titles.userId, userId), inArray(titles.id, titleIds)))
+      : [];
 
   const rowsById = new Map(rows.map((row) => [row.id, row]));
   const excluded = new Set(

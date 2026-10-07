@@ -227,7 +227,7 @@ const run = () => {
   );
   assert(
     queries.includes("getRelatedTitles") &&
-      queries.includes("jsonb_array_elements(${titles.tmdbGenres})") &&
+      queries.includes("jsonb_array_elements(${catalog.tmdbGenres})") &&
       queries.includes("desc(sharedGenres), desc(titles.watchedAt)") &&
       !queries.includes("titleTags"),
     "Ficha related titles are one select ranked by shared genres, then watchedAt",

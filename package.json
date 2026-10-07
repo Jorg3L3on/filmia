@@ -17,7 +17,6 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
-    "db:import-watchlist": "tsx scripts/import-watchlist.ts",
     "db:backfill-metadata": "tsx scripts/backfill-metadata.ts",
     "db:set-password": "tsx scripts/set-password.ts",
     "db:clone-account": "tsx scripts/clone-account.ts",
