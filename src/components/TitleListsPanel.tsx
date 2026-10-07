@@ -10,7 +10,7 @@ import { sameIdList, useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { showToast } from "@/lib/toast";
 import { eyebrowClass, focusRing, wellClass } from "@/lib/ui";
 
-type AssignableList = {
+export type AssignableList = {
   id: string;
   name: string;
   slug: string | null;
@@ -33,8 +33,7 @@ export const TitleListsPanel = ({
     sameIdList,
   );
   const memberIds = new Set(optimisticIds);
-  const daily = lists.filter((list) => isFixedListSlug(list.slug));
-  const custom = lists.filter((list) => !isFixedListSlug(list.slug));
+  const { daily, custom } = splitAssignableLists(lists);
 
   const handleToggle = (listId: string) => {
     const next = memberIds.has(listId)
@@ -110,18 +109,28 @@ export const TitleListsPanel = ({
   );
 };
 
-const ListChipGroup = ({
+/** Diarias (Quiero ver, Favoritas, Por rewatch) vs. the user's own collections. */
+export const splitAssignableLists = <T extends AssignableList>(lists: readonly T[]) => ({
+  daily: lists.filter((list) => isFixedListSlug(list.slug)),
+  custom: lists.filter((list) => !isFixedListSlug(list.slug)),
+});
+
+/** Chip row shared by the ficha panel and Buscar's «Agregar a lista» picker. */
+export const ListChipGroup = ({
   title,
   lists,
   memberIds,
   pendingId,
   onToggle,
+  showOpenLink = true,
 }: {
   title: string;
   lists: AssignableList[];
-  memberIds: Set<string>;
+  memberIds: ReadonlySet<string>;
   pendingId: string | null;
   onToggle: (listId: string) => void;
+  /** «ver» next to included chips; off where the selection is not saved yet. */
+  showOpenLink?: boolean;
 }) => {
   return (
     <div className="space-y-2">
@@ -155,7 +164,7 @@ const ListChipGroup = ({
               >
                 {list.name}
               </button>
-              {included ? (
+              {included && showOpenLink ? (
                 <Link
                   href={href}
                   className={`rounded-full px-1 text-[10px] text-mist hover:text-paper ${focusRing}`}

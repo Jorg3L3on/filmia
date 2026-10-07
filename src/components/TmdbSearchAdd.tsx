@@ -8,6 +8,7 @@ import { TmdbSearchResults } from "@/components/TmdbSearchResults";
 import { TmdbKindFilterChips } from "@/components/tmdb-search/TmdbKindFilterChips";
 import { TmdbSearchForm } from "@/components/tmdb-search/TmdbSearchForm";
 import { useTmdbSearchAdd } from "@/components/tmdb-search/useTmdbSearchAdd";
+import type { SelectableList } from "@/lib/list-selection";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import type { UserTmdbEntry } from "@/lib/queries";
 import { tmdbCatalogKey } from "@/lib/tmdb-search-catalog";
@@ -20,6 +21,8 @@ type TmdbSearchAddProps = {
   initialError?: string | null;
   watchedDate?: string | null;
   defaultDestination?: "watchlist" | "watched";
+  lists?: SelectableList[];
+  memberships?: Record<string, string[]>;
 };
 
 export const TmdbSearchAdd = ({
@@ -30,6 +33,8 @@ export const TmdbSearchAdd = ({
   initialError = null,
   watchedDate = null,
   defaultDestination = "watchlist",
+  lists,
+  memberships,
 }: TmdbSearchAddProps) => {
   const {
     query,
@@ -46,10 +51,13 @@ export const TmdbSearchAdd = ({
     isAdding,
     visibleResults,
     previewLocal,
+    previewListIds,
+    listsError,
     handleSearch,
     handleQueryChange,
     handleAdd,
     handleOpen,
+    handleSaveLists,
   } = useTmdbSearchAdd({
     configuredTmdb: configured.tmdb,
     existing,
@@ -58,6 +66,8 @@ export const TmdbSearchAdd = ({
     initialError,
     watchedDate,
     defaultDestination,
+    lists,
+    memberships,
   });
 
   // Keep the last preview mounted while the sheet plays its exit animation.
@@ -117,6 +127,12 @@ export const TmdbSearchAdd = ({
           onClose={() => setPreview(null)}
           onAdd={(destination) => handleAdd(sheetResult, destination)}
           onOpen={() => handleOpen(sheetResult)}
+          lists={lists}
+          memberListIds={previewListIds}
+          error={listsError}
+          onSaveLists={(initialIds, selectedIds) =>
+            handleSaveLists(sheetResult, initialIds, selectedIds)
+          }
         />
       ) : null}
 
