@@ -152,11 +152,6 @@ export const SearchPreviewSheet = ({
               <span className="rounded-full bg-canvas/70 px-2 py-0.5 text-[11px] font-medium text-paper">
                 {kindLabel}
               </span>
-              {local ? (
-                <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">
-                  Ya en Filmia
-                </span>
-              ) : null}
             </p>
           </div>
         </div>

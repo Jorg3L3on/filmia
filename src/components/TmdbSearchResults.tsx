@@ -80,11 +80,6 @@ export const TmdbSearchResults = ({
                       {result.year ? `${result.year} · ` : ""}
                       {TITLE_KIND_LABEL[result.kind]}
                     </span>
-                    {local ? (
-                      <span className="mt-1 inline-flex rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
-                        Ya en Filmia
-                      </span>
-                    ) : null}
                   </span>
                   <span className="text-mist" aria-hidden="true">
                     ›

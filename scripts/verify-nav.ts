@@ -20,7 +20,6 @@ const cases: Array<{ href: string; pathname: string; expected: boolean }> = [
   { href: "/", pathname: "/listas/abc", expected: false },
   { href: "/", pathname: "/watchlist", expected: false },
   { href: "/", pathname: "/titulos/abc", expected: true },
-  { href: "/", pathname: "/titulos/abc/editar", expected: true },
   { href: "/", pathname: "/titulos/nuevo", expected: true },
   { href: "/listas", pathname: "/listas", expected: true },
   { href: "/listas", pathname: "/listas/abc", expected: true },

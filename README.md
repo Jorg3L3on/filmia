@@ -53,7 +53,7 @@ npm run db:backfill-tonight
 
 - **User**: cuenta con email, contraseña hasheada opcional (PBKDF2; hashes bcrypt legacy se verifican al entrar; `null` si solo entra con Google), `googleId` opcional, nombre opcional y `streamingPlatforms` (JSON: claves del enum `Platform`)
 - **Title**: película o serie del usuario, nota personal 1–10, poster (TMDB), rating IMDb + votos (OMDb), keywords y personas (TMDB), color ambiente, plataforma opcional, notas, fecha vista
-  - El catálogo es por usuario (`Title.userId` obligatorio): la misma película de TMDB es una fila por cada usuario que la agrega, y «Quitar de Filmia» (`deleteTitle`) solo borra la fila de ese usuario (con sus membresías de listas en cascada)
+  - El catálogo es por usuario (`Title.userId` obligatorio): la misma película de TMDB es una fila por cada usuario que la agrega. Los usuarios no editan la información de la película ni borran títulos: solo cambian sus campos personales (nota, comentario, «Dónde la vi» desde Marqué visto, fecha vista, estado de serie, listas)
 - **TonightPick** + **PickEvent**: mazos precalculados de «Esta noche» por usuario y su retroalimentación (ver [Hoy · Esta noche](#hoy--esta-noche))
 - **List** + **ListItem**: listas y membresía por usuario (Quiero ver, Favoritas, Por rewatch + personalizadas)
 - **Platform** (enum): Netflix, Prime, Max, Disney+, Claro, Apple, Mubi y otras de JustWatch MX

@@ -5,6 +5,7 @@ import { setTitleRating } from "@/app/actions/titles";
 import { clearTitleWatched } from "@/app/actions/watchlist";
 import { MarkWatchedSheet } from "@/components/MarkWatchedSheet";
 import { RatingSheet } from "@/components/RatingSheet";
+import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
 import { formatStarScore } from "@/lib/labels";
 import { useSpringFeedback } from "@/lib/motion";
@@ -33,6 +34,8 @@ type TitleActionRowProps = {
   listCount?: number;
   rating: number | null;
   review?: string | null;
+  /** Saved «Dónde la vi»; prefills the Marqué visto sheet. */
+  platform?: Platform | null;
   listsPanel: ReactNode;
   /** Controlled lists panel, shared with TitleSaveCta's «Gestionar listas». */
   listsOpen?: boolean;
@@ -64,6 +67,7 @@ export const TitleActionRow = ({
   listCount,
   rating,
   review = null,
+  platform,
   listsPanel,
   listsOpen,
   onToggleLists,
@@ -251,6 +255,7 @@ export const TitleActionRow = ({
         titleName={titleName}
         rating={optimistic.rating}
         review={optimistic.review}
+        platform={platform}
         onClose={() => setSeenOpen(false)}
         onSaved={handleSeenSaved}
         onError={handleSeenError}

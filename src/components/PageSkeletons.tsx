@@ -334,30 +334,6 @@ export const ProfileBodySkeleton = ({ label = "Cargando perfil" }: SkeletonProps
   </div>
 );
 
-
-export const EditTitleBodySkeleton = ({
-  label = "Cargando título",
-}: SkeletonProps) => (
-  <div className="mx-auto max-w-3xl space-y-8" aria-busy="true" aria-label={label}>
-    <PageHeaderSkeleton />
-    <div className="grid items-start gap-8 lg:grid-cols-[200px_minmax(0,1fr)]">
-      <ShimmerBlock className="mx-auto aspect-[2/3] w-40 rounded-poster lg:mx-0 lg:w-full" />
-      <div className="space-y-6">
-        <div className={cn(skeletonWellClass, "space-y-3")}>
-          <ShimmerBlock className="h-4 w-24 rounded-full" />
-          <ShimmerBlock className="h-10 w-full rounded-xl" />
-          <ShimmerBlock className="h-28 rounded-2xl" />
-        </div>
-        <div className={cn(skeletonWellClass, "space-y-3")}>
-          <ShimmerBlock className="h-4 w-32 rounded-full" />
-          <ShimmerBlock className="h-12 w-full rounded-xl" />
-          <ShimmerBlock className="h-24 rounded-xl" />
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
 export const EditListBodySkeleton = ({
   label = "Cargando lista",
 }: SkeletonProps) => (

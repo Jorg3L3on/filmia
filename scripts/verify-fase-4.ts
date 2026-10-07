@@ -157,7 +157,7 @@ const run = () => {
   );
   assert(
     rendering.includes("Route surface → decision") &&
-      AUTH_DYNAMIC_PAGES.length === 12 &&
+      AUTH_DYNAMIC_PAGES.length === 11 &&
       PUBLIC_STATIC_ELIGIBLE_PAGES.length === 2,
     "Rendering audit table documents route → dynamic/cached decisions",
   );
@@ -219,7 +219,6 @@ const run = () => {
   );
 
   const queries = read("src/lib/queries.ts");
-  const titleActions = read("src/app/actions/titles.ts");
   assert(
     queries.includes("countByIds") &&
       !queries.includes("rows.map(async") &&
@@ -240,13 +239,6 @@ const run = () => {
       read("src/app/listas/[id]/page.tsx").includes("getTitleOptionsOutsideList"),
     "Listas editar skips item graph; detail excludes members in SQL",
   );
-  assert(
-    titleActions.includes("collectionSet") &&
-      titleActions.includes("ownedSelected") &&
-      !titleActions.includes("for (const [index, listId] of listIds.entries())"),
-    "Ficha syncLists batches ownership via collectionSet (no per-list findFirst)",
-  );
-
   // JOR-213 — Vercel playbook (docs + blocked preview; migrate outside build)
   const playbook = read("docs/vercel-playbook.md");
   assert(

@@ -4,7 +4,6 @@ import {
   getTmdbDetails,
   getTmdbExternalIds,
   isTmdbConfigured,
-  searchTmdb,
   searchTmdbMulti,
   type TmdbGenre,
   type TmdbKeyword,
@@ -69,68 +68,4 @@ export const resolveTitleMetadata = async (
   };
 };
 
-export const searchTmdbTitles = searchTmdb;
 export const searchTmdbCatalog = searchTmdbMulti;
-
-export const parseOptionalTmdbId = (value: FormDataEntryValue | null) => {
-  const raw = typeof value === "string" ? value.trim() : "";
-  if (!raw) {
-    return null;
-  }
-
-  const id = Number(raw);
-  if (!Number.isInteger(id) || id <= 0) {
-    return null;
-  }
-
-  return id;
-};
-
-export const parseOptionalImdbRating = (value: FormDataEntryValue | null) => {
-  const raw = typeof value === "string" ? value.trim() : "";
-  if (!raw) {
-    return null;
-  }
-
-  const rating = Number(raw);
-  return Number.isFinite(rating) ? rating : null;
-};
-
-export const readMetadataFields = (formData: FormData): TitleMetadata => ({
-  tmdbId: parseOptionalTmdbId(formData.get("tmdbId")),
-  posterPath: String(formData.get("posterPath") ?? "").trim() || null,
-  imdbId: String(formData.get("imdbId") ?? "").trim() || null,
-  imdbRating: parseOptionalImdbRating(formData.get("imdbRating")),
-  tmdbGenres: [],
-});
-
-export const enrichMetadataOnSave = async (
-  metadata: TitleMetadata,
-  kind: TitleKind,
-): Promise<TitleMetadata> => {
-  if (!metadata.tmdbId) {
-    return metadata;
-  }
-
-  if (!isTmdbConfigured()) {
-    return metadata;
-  }
-
-  try {
-    const resolved = await resolveTitleMetadata(metadata.tmdbId, kind);
-    return {
-      ...resolved,
-      posterPath: resolved.posterPath ?? metadata.posterPath,
-      backdropPath: resolved.backdropPath ?? metadata.backdropPath,
-      runtimeMinutes: resolved.runtimeMinutes ?? metadata.runtimeMinutes,
-      imdbId: resolved.imdbId ?? metadata.imdbId,
-      imdbRating: resolved.imdbRating ?? metadata.imdbRating,
-      imdbVotes: resolved.imdbVotes ?? metadata.imdbVotes ?? null,
-      awards: resolved.awards ?? metadata.awards ?? null,
-      tmdbGenres:
-        resolved.tmdbGenres.length > 0 ? resolved.tmdbGenres : metadata.tmdbGenres,
-    };
-  } catch {
-    return metadata;
-  }
-};

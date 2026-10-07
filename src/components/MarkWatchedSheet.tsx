@@ -3,8 +3,10 @@
 import { useId, useState, useTransition } from "react";
 import { markTitleWatched } from "@/app/actions/watchlist";
 import { Button } from "@/components/Button";
+import { PlatformChips } from "@/components/PlatformChips";
 import { RatingStars } from "@/components/RatingStars";
 import { Sheet, SheetHandle, useOpenGeneration } from "@/components/Sheet";
+import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
 import {
   dateInputForPreset,
@@ -31,6 +33,12 @@ type MarkWatchedSheetProps = {
   initialWatchedAt?: string | null;
   rating?: number | null;
   review?: string | null;
+  /**
+   * Saved «Dónde la vi». `undefined` = the caller doesn't know it (deck, sala,
+   * Quiero ver): the field is only sent when the user taps a chip, so a saved
+   * platform is never wiped by a caller that couldn't prefill it.
+   */
+  platform?: Platform | null;
   saveLabel?: string;
   /** Skip the generic «Marcada como vista» toast (the caller shows its own). */
   silent?: boolean;
@@ -46,6 +54,7 @@ export const MarkWatchedSheet = ({
   initialWatchedAt = null,
   rating = null,
   review = "",
+  platform,
   saveLabel = WATCHLIST_SAVE_LABEL,
   silent = false,
   onClose,
@@ -56,13 +65,14 @@ export const MarkWatchedSheet = ({
 
   return (
     <MarkWatchedSheetFields
-      key={`${generation}:${titleId}:${initialWatchedAt}:${rating}:${review}`}
+      key={`${generation}:${titleId}:${initialWatchedAt}:${rating}:${review}:${platform ?? "?"}`}
       open={open}
       titleId={titleId}
       titleName={titleName}
       initialWatchedAt={initialWatchedAt}
       rating={rating}
       review={review}
+      platform={platform}
       saveLabel={saveLabel}
       silent={silent}
       onClose={onClose}
@@ -79,6 +89,7 @@ const MarkWatchedSheetFields = ({
   initialWatchedAt = null,
   rating = null,
   review = "",
+  platform,
   saveLabel = WATCHLIST_SAVE_LABEL,
   silent = false,
   onClose,
@@ -95,6 +106,8 @@ const MarkWatchedSheetFields = ({
   );
   const [value, setValue] = useState<number | null>(rating);
   const [note, setNote] = useState((review ?? "").slice(0, NOTE_MAX));
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform | "">(platform ?? "");
+  const [platformDirty, setPlatformDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -134,6 +147,10 @@ const MarkWatchedSheetFields = ({
           formData.set("rating", String(value));
         }
         formData.set("review", note.trim());
+        if (platform !== undefined || platformDirty) {
+          // "" = Ninguna → null server-side (parsePlatform).
+          formData.set("platform", selectedPlatform);
+        }
         await markTitleWatched(titleId, formData);
       } catch (caught) {
         const message =
@@ -229,6 +246,15 @@ const MarkWatchedSheetFields = ({
           </p>
           <RatingStars value={value} onChange={setValue} />
         </div>
+
+        <PlatformChips
+          value={selectedPlatform}
+          onChange={(next) => {
+            setSelectedPlatform(next);
+            setPlatformDirty(true);
+          }}
+          hint="Solo para tu registro. Dónde verla hoy se actualiza sola."
+        />
 
         <label className="block space-y-2">
           <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-fog">

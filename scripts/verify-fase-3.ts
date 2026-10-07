@@ -153,10 +153,6 @@ const run = () => {
   );
 
   assert(
-    !read("src/components/TitleForm.tsx").includes("btnPrimary"),
-    "Title form uses Button via PendingSubmit",
-  );
-  assert(
     !read("src/components/SeriesStatusPanel.tsx").includes("btnPrimary"),
     "Series status uses Button, not btnPrimary",
   );
@@ -329,18 +325,11 @@ const run = () => {
   );
   const fichaPage = read("src/app/titulos/[id]/page.tsx");
   assert(
-    fichaPage.includes("mt-16") &&
-      fichaPage.includes("safe-area-inset-bottom") &&
-      fichaPage.includes("Quitar de Filmia") &&
-      fichaPage.includes("justify-between"),
-    "Ficha «Quitar de Filmia» CTA is far from primary with safe-area footer",
-  );
-  assert(
-    !fichaPage.includes("Borrar") &&
-      !/base de datos/i.test(fichaPage) &&
-      fichaPage.includes("Solo afecta a tu Filmia") &&
-      fichaPage.includes("Quitado de tu Filmia"),
-    "Ficha «Quitar de Filmia» copy explains it only affects your Filmia",
+    !fichaPage.includes("Quitar de Filmia") &&
+      !fichaPage.includes("deleteTitle") &&
+      !fichaPage.includes("/editar") &&
+      !fichaPage.includes("Borrar"),
+    "Ficha has no edit/delete footer: catalog data is shared and titles are never deleted",
   );
   assert(
     read("src/components/TitleSynopsis.tsx").includes("N/A") &&
@@ -468,13 +457,6 @@ const run = () => {
   );
   console.log("✓ Fase 3 Perfil lote: skeleton wells, error well, press/hover on logout/forms/chips");
 
-  const editTitleError = read("src/app/titulos/[id]/editar/error.tsx");
-  assert(
-    editTitleError.includes("danger-well") &&
-      editTitleError.includes('variant="secondary"') &&
-      editTitleError.includes("Reintentar"),
-    "Editar título error uses danger-well + secondary Reintentar",
-  );
   const editListError = read("src/app/listas/[id]/editar/error.tsx");
   assert(
     editListError.includes("danger-well") &&
@@ -484,25 +466,23 @@ const run = () => {
   );
   const editSkeletons = read("src/components/PageSkeletons.tsx");
   assert(
-    editSkeletons.includes("EditTitleBodySkeleton") &&
-      editSkeletons.includes("EditListBodySkeleton") &&
+    editSkeletons.includes("EditListBodySkeleton") &&
       editSkeletons.includes("cn(skeletonWellClass") &&
-      read("src/app/titulos/[id]/editar/loading.tsx").includes("EditTitleBodySkeleton") &&
       read("src/app/listas/[id]/editar/loading.tsx").includes("EditListBodySkeleton"),
-    "Editar loadings use EditTitle/EditList skeleton wells",
+    "Editar lista loading uses EditList skeleton well",
   );
   assert(
     editSkeletons.includes("FormPageSkeleton") &&
       editSkeletons.includes('skeletonWellClass, "space-y-3"'),
     "FormPageSkeleton uses skeleton wells (shared create/edit chrome)",
   );
-  const titleForm = read("src/components/TitleForm.tsx");
+  const platformChips = read("src/components/PlatformChips.tsx");
   assert(
-    titleForm.includes("press-scale") &&
-      titleForm.includes("var(--duration-hover)") &&
-      titleForm.includes("group flex flex-wrap gap-2") &&
-      titleForm.includes("PendingSubmit"),
-    "TitleForm submit + chips use press-scale / duration-hover",
+    platformChips.includes("press-scale") &&
+      platformChips.includes("var(--duration-hover)") &&
+      platformChips.includes("group flex flex-wrap gap-2") &&
+      read("src/components/MarkWatchedSheet.tsx").includes("PlatformChips"),
+    "«Dónde la vi» chips keep press-scale / duration-hover and live in MarkWatchedSheet",
   );
   const listForm =
     read("src/components/ListForm.tsx") + read("src/components/ListFormFields.tsx");
@@ -514,12 +494,10 @@ const run = () => {
     "ListForm submit uses press/hover; fields in well; PageHeader kept",
   );
   assert(
-    read("src/app/titulos/[id]/editar/page.tsx").includes("PageHeader") &&
-      read("src/app/titulos/[id]/editar/page.tsx").includes("Editar título") &&
-      (read("src/components/PageHeader.tsx").includes("press-scale") ||
-        read("src/components/PageHeader.tsx").includes("glassIconClass")) &&
+    (read("src/components/PageHeader.tsx").includes("press-scale") ||
+      read("src/components/PageHeader.tsx").includes("glassIconClass")) &&
       read("src/components/AppChrome.tsx").includes("safe-area-inset-bottom"),
-    "Editar título keeps PageHeader + press back; chrome safe-area",
+    "PageHeader keeps press back; chrome safe-area",
   );
   console.log("✓ Fase 3 Editar lote: skeleton wells, error wells, press/hover on forms/chips");
 };

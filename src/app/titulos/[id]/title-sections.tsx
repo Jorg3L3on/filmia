@@ -121,6 +121,7 @@ export const TitleActionsBlock = async ({
       listCount={listCount}
       rating={title.rating}
       review={title.review ?? null}
+      platform={title.platform ?? null}
       listsPanel={listsPanel}
     />
   );

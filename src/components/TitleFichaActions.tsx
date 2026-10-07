@@ -3,6 +3,7 @@
 import { useId, useState, type ReactNode } from "react";
 import { TitleActionRow } from "@/components/TitleActionRow";
 import { TitleSaveCta } from "@/components/TitleSaveCta";
+import type { Platform } from "@/db";
 
 type MemberList = { id: string; name: string; slug: string | null };
 
@@ -15,6 +16,7 @@ type TitleFichaActionsProps = {
   listCount: number;
   rating: number | null;
   review: string | null;
+  platform: Platform | null;
   listsPanel: ReactNode;
 };
 
@@ -31,6 +33,7 @@ export const TitleFichaActions = ({
   listCount,
   rating,
   review,
+  platform,
   listsPanel,
 }: TitleFichaActionsProps) => {
   const [listsOpen, setListsOpen] = useState(false);
@@ -55,6 +58,7 @@ export const TitleFichaActions = ({
         listCount={listCount}
         rating={rating}
         review={review}
+        platform={platform}
         listsPanel={listsPanel}
         listsOpen={listsOpen}
         onToggleLists={handleToggleLists}

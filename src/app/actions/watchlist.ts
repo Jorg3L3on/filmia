@@ -3,7 +3,12 @@
 import { and, asc, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { todayDateInput } from "@/lib/dates";
-import { parseOptionalDate, parseOptionalReview, parseRating } from "@/lib/form-data";
+import {
+  parseOptionalDate,
+  parseOptionalReview,
+  parsePlatform,
+  parseRating,
+} from "@/lib/form-data";
 import { ensureDefaultLists, WATCHLIST_SLUG } from "@/lib/lists";
 import { reorderListItems } from "@/lib/list-order";
 import {
@@ -144,6 +149,10 @@ export const markTitleWatched = async (
   const userId = await requireUserId();
   const rating = formData ? parseRating(formData.get("rating")) : undefined;
   const review = formData ? parseOptionalReview(formData.get("review")) : undefined;
+  // Only touch «Dónde la vi» when the field was sent; "" (Ninguna) → null.
+  const platform = formData?.has("platform")
+    ? parsePlatform(formData.get("platform"))
+    : undefined;
   const watchedAt =
     parseOptionalDate(formData?.get("watchedAt") ?? null) ??
     parseOptionalDate(todayDateInput());
@@ -172,6 +181,7 @@ export const markTitleWatched = async (
       watchedAt,
       ...(rating !== undefined ? { rating } : {}),
       ...(review !== undefined ? { review } : {}),
+      ...(platform !== undefined ? { platform } : {}),
     })
     .where(eq(titles.id, titleId));
 
