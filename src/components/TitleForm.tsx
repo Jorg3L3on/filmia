@@ -258,13 +258,13 @@ export const TitleForm = ({ title, lists, metadataConfig }: TitleFormProps) => {
               <input type="hidden" name="platform" value={platform} />
             </div>
 
-            <label className="block max-w-xs space-y-1.5">
+            <label className="block min-w-0 max-w-xs space-y-1.5">
               <span className={fieldLabel}>Vista el</span>
               <input
                 name="watchedAt"
                 type="date"
                 defaultValue={toDateInput(title?.watchedAt ?? null)}
-                className={`${fieldClass} [color-scheme:dark]`}
+                className={`${fieldClass} date-field`}
               />
             </label>
 

@@ -331,9 +331,16 @@ const run = () => {
   assert(
     fichaPage.includes("mt-16") &&
       fichaPage.includes("safe-area-inset-bottom") &&
-      fichaPage.includes("Borrar") &&
-      fichaPage.includes("ml-auto"),
-    "Ficha delete CTA is far from primary with safe-area footer",
+      fichaPage.includes("Quitar de Filmia") &&
+      fichaPage.includes("justify-between"),
+    "Ficha «Quitar de Filmia» CTA is far from primary with safe-area footer",
+  );
+  assert(
+    !fichaPage.includes("Borrar") &&
+      !/base de datos/i.test(fichaPage) &&
+      fichaPage.includes("Solo afecta a tu Filmia") &&
+      fichaPage.includes("Quitado de tu Filmia"),
+    "Ficha «Quitar de Filmia» copy explains it only affects your Filmia",
   );
   assert(
     read("src/components/TitleSynopsis.tsx").includes("N/A") &&
@@ -497,7 +504,8 @@ const run = () => {
       titleForm.includes("PendingSubmit"),
     "TitleForm submit + chips use press-scale / duration-hover",
   );
-  const listForm = read("src/components/ListForm.tsx");
+  const listForm =
+    read("src/components/ListForm.tsx") + read("src/components/ListFormFields.tsx");
   assert(
     listForm.includes("press-scale") &&
       listForm.includes("var(--duration-hover)") &&

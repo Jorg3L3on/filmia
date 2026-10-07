@@ -22,7 +22,7 @@ export const metadata = {
 type ListCollectionLayout = "rail" | "grid";
 
 const listCollectionClassName: Record<ListCollectionLayout, string> = {
-  rail: "rail -mx-4 flex gap-8 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4",
+  rail: "rail -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-8 overflow-x-auto overscroll-x-contain px-4 pb-3 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-3 sm:gap-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4",
   grid: listCardGridClass,
 };
 

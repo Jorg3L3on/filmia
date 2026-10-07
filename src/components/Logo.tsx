@@ -9,7 +9,7 @@ type LogoProps = {
 };
 
 const sizeMap = {
-  sm: { image: 28, wordmark: "text-lg" },
+  sm: { image: 28, wordmark: "text-xl" },
   md: { image: 36, wordmark: "text-2xl" },
   lg: { image: 48, wordmark: "text-3xl" },
 } as const;

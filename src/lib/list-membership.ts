@@ -69,3 +69,70 @@ export const membershipCopy = (membership: TitleListMembership) => {
     hint: "Guárdala para ver más tarde.",
   };
 };
+
+export type MemberList = { id: string; name: string; slug: string | null };
+
+export type TitleListMemberships = {
+  /** Quiero ver lives on its own toggle; it never counts as a «lista guardada». */
+  inWatchlist: boolean;
+  /** Every other list the title belongs to, ranked Favoritas › Por rewatch › A–Z. */
+  lists: MemberList[];
+};
+
+/**
+ * Full membership for the ficha. Unlike `titleListMembership` (which picks one
+ * list for a compact label), nothing is dropped: every collection is returned.
+ */
+export const titleListMemberships = (
+  lists: readonly MemberList[],
+): TitleListMemberships => {
+  const seen = new Set<string>();
+  const unique = lists.filter((list) => {
+    if (seen.has(list.id)) {
+      return false;
+    }
+    seen.add(list.id);
+    return true;
+  });
+  const ordered = sortMemberLists(unique);
+
+  return {
+    inWatchlist: ordered.some((list) => list.slug === WATCHLIST_MEMBERSHIP_SLUG),
+    lists: ordered.filter((list) => list.slug !== WATCHLIST_MEMBERSHIP_SLUG),
+  };
+};
+
+const joinListNames = (names: readonly string[]) =>
+  names.length <= 1
+    ? names.join("")
+    : `${names.slice(0, -1).join(", ")} y ${names.at(-1)}`;
+
+/** Up to this many lists are named inline («Guardada en A y B»); more collapse to «En N listas». */
+export const MEMBERSHIP_INLINE_LIMIT = 2;
+
+/**
+ * Status copy (not an action): «Guardada en Favoritas», «Guardada en Favoritas
+ * y Noir», or «En 3 listas» with every name in `detail`. Null with no lists.
+ */
+export const membershipStatusCopy = (lists: readonly MemberList[]) => {
+  if (lists.length === 0) {
+    return null;
+  }
+
+  const names = lists.map((list) => list.name);
+  if (names.length <= MEMBERSHIP_INLINE_LIMIT) {
+    return {
+      label: `Guardada en ${joinListNames(names)}`,
+      detail: null,
+      names,
+      count: names.length,
+    };
+  }
+
+  return {
+    label: `En ${names.length} listas`,
+    detail: names.join(" · "),
+    names,
+    count: names.length,
+  };
+};

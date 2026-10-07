@@ -27,8 +27,10 @@ import {
   isSeriesStatusListSlug,
   WATCHLIST_SLUG,
 } from "@/lib/lists";
+import { metadataServicesConfigured } from "@/lib/metadata";
 import { getListById, getTitleOptionsOutsideList, getUserStreamingPlatforms } from "@/lib/queries";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
+import { tmdbCatalogKey } from "@/lib/tmdb-search-catalog";
 import { catalogHref, parseMinePlatforms } from "@/lib/catalog-href";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
 import { pillActionClass } from "@/lib/ui";
@@ -108,6 +110,10 @@ const ListDetail = async ({
     sort,
   );
   const addAction = addTitleToList.bind(null, list.id);
+  const configuredTmdb = metadataServicesConfigured().tmdb;
+  const inListKeys = list.items.flatMap((item) =>
+    item.title.tmdbId != null ? [tmdbCatalogKey(item.title.tmdbId, item.title.kind)] : [],
+  );
   const fixed = isFixedListSlug(list.slug);
   // «Series en progreso» / «Series abandonadas» las llena el estado de la serie.
   const automatic = isSeriesStatusListSlug(list.slug);
@@ -125,7 +131,14 @@ const ListDetail = async ({
         actions={
           <>
             {automatic ? null : (
-              <AddTitleToListCta action={addAction} titles={availableTitles} compact />
+              <AddTitleToListCta
+                action={addAction}
+                titles={availableTitles}
+                listId={list.id}
+                configuredTmdb={configuredTmdb}
+                inListKeys={inListKeys}
+                compact
+              />
             )}
             <Link
               href={`/listas/${list.id}/editar`}
@@ -153,7 +166,13 @@ const ListDetail = async ({
       {list.items.length === 0 ? (
         <>
           {automatic ? null : (
-            <AddTitleToListCta action={addAction} titles={availableTitles} />
+            <AddTitleToListCta
+              action={addAction}
+              titles={availableTitles}
+              listId={list.id}
+              configuredTmdb={configuredTmdb}
+              inListKeys={inListKeys}
+            />
           )}
           <EmptyState
             variant={empty.variant}

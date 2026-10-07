@@ -16,7 +16,7 @@ type SiteHeaderProps = {
 
 export const SiteHeader = ({ user }: SiteHeaderProps) => (
   <header className="site-header sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
-    <div className={`mx-auto flex h-12 max-w-6xl items-center justify-between gap-3 sm:h-14 sm:gap-4 ${safeAreaInsetXPadClass}`}>
+    <div className={`mx-auto flex h-12 max-w-6xl items-center justify-between gap-4 sm:h-14 ${safeAreaInsetXPadClass}`}>
       <Link
         href="/"
         className={focusRing}
