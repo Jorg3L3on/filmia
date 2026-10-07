@@ -311,7 +311,7 @@ export const DeckCard = memo(function DeckCard({
           </div>
         ) : null}
       </Link>
-      {isTonight && !title.watched ? (
+      {!compact && !title.watched ? (
         <TicketStub
           titleId={title.id}
           titleName={title.name}

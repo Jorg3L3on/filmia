@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useTransition } from "react";
 import { removeTitleFromList } from "@/app/actions/lists";
 import { Button } from "@/components/Button";
-import { MarkWatchedForm } from "@/components/MarkWatchedForm";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { TonightFooter } from "@/components/tonight/TonightFooter";
 import { WatchProviderChips } from "@/components/WatchProvidersMx";
@@ -30,7 +29,6 @@ type DeckFooterProps = {
   focusClassName?: string;
   onHide: (titleId: string) => void;
   onRestore: (titleId: string) => void;
-  onMarkedSeen: (titleId: string) => void;
   /** Kept for the cinematic «watched» footer; Esta noche fires the leak from the stub. */
   onSlideCommit?: () => void;
 };
@@ -43,7 +41,6 @@ export const DeckFooter = ({
   focusClassName,
   onHide,
   onRestore,
-  onMarkedSeen,
   onSlideCommit,
 }: DeckFooterProps) => {
   const [, startTransition] = useTransition();
@@ -196,18 +193,6 @@ export const DeckFooter = ({
           max={5}
           className="pt-1"
         />
-      ) : null}
-      {!activeTitle.watched ? (
-        <div className="mx-auto max-w-md text-left">
-          <MarkWatchedForm
-            titleId={activeTitle.id}
-            variant="queue"
-            rating={activeTitle.rating}
-            review={activeTitle.review}
-            collapsed
-            onSaved={() => onMarkedSeen(activeTitle.id)}
-          />
-        </div>
       ) : null}
       {listId ? (
         <Button

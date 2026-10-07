@@ -268,7 +268,6 @@ export const CoverflowDeck = ({
             focusClassName={focusSpring.className}
             onHide={handleHide}
             onRestore={handleRestore}
-            onMarkedSeen={handleMarkedSeen}
             onSlideCommit={cinematic ? handleSlideCommit : undefined}
           />
         </div>
