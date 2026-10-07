@@ -497,7 +497,8 @@ const run = () => {
       titleForm.includes("PendingSubmit"),
     "TitleForm submit + chips use press-scale / duration-hover",
   );
-  const listForm = read("src/components/ListForm.tsx");
+  const listForm =
+    read("src/components/ListForm.tsx") + read("src/components/ListFormFields.tsx");
   assert(
     listForm.includes("press-scale") &&
       listForm.includes("var(--duration-hover)") &&
