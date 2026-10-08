@@ -89,7 +89,7 @@ const run = () => {
     assert(isFixedListSlug(list.slug), `${list.name} is a fixed list`);
     assert(isReservedListSlug(list.slug), `${list.name} name is reserved`);
     assert(
-      !DEFAULT_LISTS.some((defaults) => defaults.slug === list.slug),
+      !DEFAULT_LISTS.some((defaults) => (defaults.slug as string) === list.slug),
       `${list.name} is provisioned lazily, not with the default lists`,
     );
     assert(
