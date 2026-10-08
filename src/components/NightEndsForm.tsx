@@ -41,7 +41,7 @@ export const NightEndsForm = ({ value }: NightEndsFormProps) => {
           </h2>
         </div>
         <p className="text-sm text-fog">
-          Con esto Hoy sabe cuánto te cabe: «acaba a las 23:19» o «se pasa 14 min». Se guarda al instante.
+          Con esto Hoy te dice si termina a tiempo: «acaba a las 23:19» o «se pasa 14 min». Se guarda al instante.
         </p>
       </header>
       <div className="grid grid-cols-2 gap-3">

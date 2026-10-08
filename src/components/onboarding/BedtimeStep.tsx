@@ -86,7 +86,7 @@ export const BedtimeStep = ({ value, onChange, headingRef }: BedtimeStepProps) =
             ¿Hasta qué hora <span className="text-accent">ves</span>?
           </>
         }
-        lede="Con esto Hoy sabe cuánto te cabe: «acaba a las 23:19» o «se pasa 14 min»."
+        lede="Con esto Hoy te dice si termina a tiempo: «acaba a las 23:19» o «se pasa 14 min»."
       />
 
       <div role="tablist" aria-label="Qué noches" className="mx-auto flex w-fit items-center gap-1 rounded-full border border-white/10 bg-white/[0.05] p-1 backdrop-blur-xl">

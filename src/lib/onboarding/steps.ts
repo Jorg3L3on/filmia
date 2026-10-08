@@ -35,18 +35,28 @@ export const prevStep = (step: OnboardingStepId): OnboardingStepId | null =>
 export const stepDirection = (from: OnboardingStepId, to: OnboardingStepId): OnboardingDirection =>
   stepIndex(to) >= stepIndex(from) ? "forward" : "back";
 
-export type OnboardingMode = "gated" | "rerun";
+export type BienvenidaEntry = "flow" | "resync" | "home";
 
-/** Where to open the flow: gated users resume where they left off; a rerun always starts at the intro. */
-export const resolveInitialStep = (profile: {
+/**
+ * The Bienvenida runs once. A finished account goes to Hoy; if this device's cookie still says
+ * «not onboarded» (DB already does), it re-mints the cookie first so the proxy stops sending it back.
+ */
+export const resolveBienvenidaEntry = ({
+  onboardedAt,
+  cookieOnboarded,
+}: {
   onboardedAt: Date | null;
-  onboardingStep: string | null;
-}): OnboardingStepId => {
-  if (profile.onboardedAt) {
-    return FIRST_STEP;
+  cookieOnboarded: boolean | undefined;
+}): BienvenidaEntry => {
+  if (!onboardedAt) {
+    return "flow";
   }
-  return isOnboardingStepId(profile.onboardingStep) ? profile.onboardingStep : FIRST_STEP;
+  return cookieOnboarded === false ? "resync" : "home";
 };
+
+/** Where to open the flow: the Bienvenida runs once, so it resumes where the person left off. */
+export const resolveInitialStep = (profile: { onboardingStep: string | null }): OnboardingStepId =>
+  isOnboardingStepId(profile.onboardingStep) ? profile.onboardingStep : FIRST_STEP;
 
 export const STEP_COPY: Record<OnboardingStepId, { eyebrow: string; title: string }> = {
   intro: { eyebrow: "Bienvenida", title: "Bienvenido a Filmia" },

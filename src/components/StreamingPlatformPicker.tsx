@@ -30,7 +30,7 @@ export const StreamingPlatformPicker = ({
   };
 
   return (
-    <div className={`${wellClass} space-y-4 p-5`}>
+    <div id="plataformas" className={`${wellClass} scroll-mt-20 space-y-4 p-5`}>
       <header className="space-y-1">
         <div className="flex items-center gap-2">
           <TvIcon />

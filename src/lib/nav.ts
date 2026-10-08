@@ -51,7 +51,11 @@ export const desktopNavItems = [
   { href: "/watchlist", label: "Quiero ver" },
   { href: "/listas", label: "Listas" },
   { href: "/buscar", label: "Buscar" },
+  { href: "/perfil", label: "Perfil" },
 ] as const;
+
+/** Desktop header tabs light up like the dock: Listas on /listas/*, Perfil on Tu diario too. */
+export const isDesktopNavCurrent = (href: string, pathname: string) => isMobileNavCurrent(href, pathname);
 
 /** Bottom tab bar: four tabs around the center «+» create action. */
 export const mobileNavItems = [

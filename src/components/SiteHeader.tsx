@@ -5,16 +5,7 @@ import { NavIcon } from "@/components/NavIcon";
 import { cn } from "@/lib/cn";
 import { focusRing, glassIconClass, safeAreaInsetXPadClass } from "@/lib/ui";
 
-export type HeaderUser = {
-  name?: string | null;
-  email?: string | null;
-} | null;
-
-type SiteHeaderProps = {
-  user: HeaderUser;
-};
-
-export const SiteHeader = ({ user }: SiteHeaderProps) => (
+export const SiteHeader = () => (
   <header className="site-header sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
     <div className={`mx-auto flex h-12 max-w-6xl items-center justify-between gap-4 sm:h-14 ${safeAreaInsetXPadClass}`}>
       <Link
@@ -39,7 +30,7 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
         >
           <NavIcon name="search" />
         </Link>
-        <SiteHeaderNav user={user} />
+        <SiteHeaderNav />
       </div>
     </div>
   </header>
