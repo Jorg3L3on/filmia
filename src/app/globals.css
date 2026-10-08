@@ -2746,6 +2746,92 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-n
   border-radius: inherit;
 }
 
+/* ── Perfil (FIL-I5-3): marquee light behind the name, sheet fields ─────────────────────── */
+
+.perfil-light {
+  position: absolute;
+  inset: -4.5rem 0 auto;
+  height: 19rem;
+  z-index: -1;
+  pointer-events: none;
+  /* Fade the blurred layers out inside the box so no edge shows at the column boundary. */
+  -webkit-mask-image: radial-gradient(ellipse 46% 72% at 40% 42%, #000 22%, transparent 76%);
+  mask-image: radial-gradient(ellipse 46% 72% at 40% 42%, #000 22%, transparent 76%);
+}
+
+.perfil-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 70% 60% at 30% 35%,
+    rgb(var(--accent-rgb) / 0.2),
+    rgb(var(--accent-rgb) / 0.06) 45%,
+    transparent 75%
+  );
+  filter: blur(40px);
+  animation: bienvenida-glow-breath 9s ease-in-out infinite alternate;
+}
+
+/* The last Diario poster, blurred: same recipe as the Bienvenida wash, quieter. */
+.perfil-poster-wash {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 30%;
+  opacity: 0.2;
+  filter: blur(56px) saturate(1.3);
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 35% 40%, #000 20%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 70% at 35% 40%, #000 20%, transparent 75%);
+  animation: perfil-wash-in 1200ms var(--ease-out) both;
+}
+
+@keyframes perfil-wash-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.2;
+  }
+}
+
+/* Name enters like Hoy's title (magicui Blur Fade). */
+.perfil-name-in {
+  animation: genre-coverflow-title-in var(--duration-enter) var(--ease-out) backwards;
+}
+
+/* Sheet fields «lock» into focus: the ring grows out from the border (easyui LockInput). */
+.profile-sheet input {
+  box-shadow: 0 0 0 0 rgb(var(--accent-rgb) / 0);
+  transition:
+    border-color var(--duration-tab) var(--ease-out),
+    box-shadow var(--duration-tab) var(--ease-out);
+}
+
+.profile-sheet input:focus {
+  box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.22);
+}
+
+.profile-sheet input[aria-invalid="true"] {
+  background-color: var(--danger-well);
+}
+
+.profile-sheet input[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px rgb(255 107 122 / 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .perfil-glow,
+  .perfil-poster-wash,
+  .perfil-name-in {
+    animation: none;
+  }
+
+  .perfil-poster-wash {
+    opacity: 0.2;
+  }
+}
+
+
 @media (prefers-reduced-motion: reduce) {
   .bienvenida-glow,
   .bienvenida-poster-wash,

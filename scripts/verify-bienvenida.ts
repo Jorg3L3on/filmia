@@ -52,7 +52,11 @@ const run = () => {
   assert(flow.includes("startTransition(") && flow.includes("addTransitionType(`bienvenida-${direction}`)"), "Steps change inside a Transition with a direction type");
   assert(flow.includes("<ViewTransition key={step}"), "Steps are wrapped in a keyed ViewTransition");
   assert(flow.includes("updateStreamingPlatforms"), "Platforms step saves through updateStreamingPlatforms");
-  assert(read("src/components/onboarding/BedtimeStep.tsx").includes("updateNightEnds"), "Bedtime step saves through updateNightEnds");
+  assert(
+    read("src/components/onboarding/BedtimeDial.tsx").includes("updateNightEnds") &&
+      read("src/components/onboarding/BedtimeStep.tsx").includes("useNightEndsSave"),
+    "Bedtime step saves through updateNightEnds (shared dial + save hook)",
+  );
   assert(read("src/components/onboarding/FavoriteStep.tsx").includes("pickAllTimeFavorite"), "Favorite step saves watched + 5★ + Favoritas");
   const payoff = read("src/components/onboarding/PayoffStep.tsx");
   assert(payoff.includes("acaba a las") && flow.includes("Entrar a Filmia"), "Payoff shows the fit and the final CTA");

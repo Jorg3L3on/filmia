@@ -63,6 +63,22 @@ Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` 
 | Tambor `.hour-tick` / luna `.bedtime-moon` | `--duration-tab` / `--duration-morph` · `--ease-out` | Scroll-snap drum; moon rises with `--elev`. |
 | Payoff `.payoff-card-in` | `--duration-stagger` · `--ease-out` | Same blur-in as `genre-coverflow-title-in`. |
 
+## Perfil
+
+Direction A «Marquesina» (FIL-I5-3, canvas https://claude.ai/artifact/2rSJnRDQ5tNQbNaZp396u8).
+
+| Piece | Token | Notes |
+| --- | --- | --- |
+| Nombre `.perfil-name-in` | `--duration-enter` · `--ease-out` | Reuses `genre-coverflow-title-in` (blur-in, magicui Blur Fade). |
+| Luz `.perfil-glow` / `.perfil-poster-wash` | 9 s breath · 1.2 s wash-in · `--ease-out` | Accent glow + the last Diario poster blurred behind the name; `.perfil-light` masks the edges. |
+| Filas → hoja (hora, Nombre, Correo, Contraseña) | `.sheet-rise` · `--duration-sheet` | beui Bottom Sheet; designspells «Smooth sheet transitions in Sudoku a Day». Hover/press tint on rows: `--duration-hover` · `--ease-out`. |
+| Hora de dormir (hoja) | `.hour-tick` / `.bedtime-moon` | `BedtimeDial`, the Bienvenida drum (beui Wheel Picker); `data-no-sheet-drag` so the drum scrolls instead of closing the sheet. |
+| Campo con foco `.profile-sheet input` | `--duration-tab` · `--ease-out` | Ring grows out from the border (easyui LockInput); invalid fields turn `danger-well`. |
+| Error | 320 ms · `--spring` (WAAPI) | One shake per failed attempt (beui Input). Typed values survive (fields are controlled). Skipped with reduced motion. |
+| Guardar → toast | `press-scale` · `--duration-toast` | «Nombre guardado» / «Correo guardado» / «Contraseña actualizada»; the sheet closes on success. |
+| Plataformas | `press-scale` · `--duration-hover` | Yours first (order fixed at mount), folded to 6; «Ver las 14» unfolds. |
+| Salir | `press-scale` · `--duration-hover` | Danger tokens, exit icon nudges 2 px on hover (beui Animated CTA «slide»); «Saliendo…» with a spinner. |
+
 ## SharedPoster
 
 React `<ViewTransition name={\`poster-${id}\`} share="morph">` via `SharedPoster` on tile → ficha paths (lists, buscar, deck, calendar, rail, ranking, watchlist).

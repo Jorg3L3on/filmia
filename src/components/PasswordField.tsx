@@ -12,6 +12,8 @@ type PasswordFieldProps = {
   required?: boolean;
   minLength?: number;
   ariaLabel?: string;
+  /** Controlled value; keeps what was typed when a form action resets uncontrolled fields. */
+  value?: string;
   onChange?: ChangeEventHandler<HTMLInputElement>;
   onBlur?: FocusEventHandler<HTMLInputElement>;
   inputRef?: Ref<HTMLInputElement>;
@@ -29,6 +31,7 @@ export const PasswordField = ({
   required = true,
   minLength,
   ariaLabel,
+  value,
   onChange,
   onBlur,
   inputRef,
@@ -57,6 +60,7 @@ export const PasswordField = ({
           aria-label={ariaLabel ?? label}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
+          value={value}
           onChange={onChange}
           onBlur={onBlur}
           ref={inputRef}
