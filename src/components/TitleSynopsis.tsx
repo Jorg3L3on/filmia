@@ -16,6 +16,7 @@ type TitleSynopsisProps = {
 export const TitleSynopsis = ({ text }: TitleSynopsisProps) => {
   const body = text?.trim() || "";
   const ref = useRef<HTMLParagraphElement>(null);
+  const innerRef = useRef<HTMLSpanElement>(null);
   const [overflows, setOverflows] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [fullHeight, setFullHeight] = useState<number | null>(null);
@@ -23,16 +24,21 @@ export const TitleSynopsis = ({ text }: TitleSynopsisProps) => {
 
   useEffect(() => {
     const node = ref.current;
-    if (!node || typeof ResizeObserver === "undefined") {
+    const inner = innerRef.current;
+    if (!node || !inner || typeof ResizeObserver === "undefined") {
       return;
     }
+    // Watch the text, not the clamped box: a late web font or a new width
+    // changes the text's height while the box stays at three lines.
     const measure = () => {
-      setFullHeight(node.scrollHeight);
+      const textHeight = inner.getBoundingClientRect().height;
+      setFullHeight(Math.ceil(textHeight));
       if (!node.classList.contains("is-open")) {
-        setOverflows(node.scrollHeight > node.clientHeight + 1);
+        setOverflows(textHeight > node.clientHeight + 1);
       }
     };
     const observer = new ResizeObserver(measure);
+    observer.observe(inner);
     observer.observe(node);
     return () => observer.disconnect();
   }, [body]);
@@ -49,7 +55,9 @@ export const TitleSynopsis = ({ text }: TitleSynopsisProps) => {
         className={cn("ficha-synopsis-text", expanded && "is-open", overflows && !expanded && "is-clamped")}
         style={expanded && fullHeight ? { maxHeight: fullHeight } : undefined}
       >
-        {body}
+        <span ref={innerRef} className="block">
+          {body}
+        </span>
       </p>
       {overflows ? (
         <button
