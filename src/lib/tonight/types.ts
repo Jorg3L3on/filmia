@@ -97,6 +97,8 @@ export type TonightReason = {
   weight: number;
   /** Personal (about you) vs objective (about the title). */
   personal: boolean;
+  /** `taste_person`: TMDB id of that director / creator (links to their filmography). */
+  personId?: number;
 };
 
 export type TonightComponents = {

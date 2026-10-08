@@ -160,7 +160,6 @@ assert(
 );
 
 // iOS PWA audit, step 1 — sheets, menus and the tab bar.
-const createMenu = read("src/components/BottomNavCreate.tsx");
 const zIndex = (name: string) => Number(new RegExp(`--z-index-${name}:\\s*(\\d+)`).exec(css)?.[1] ?? NaN);
 assert(
   zIndex("sheet-preview") > 50 && zIndex("sheet") > 50 && zIndex("sheet-top") > zIndex("sheet"),
@@ -170,7 +169,7 @@ assert(
   /portal = true/.test(sheet) && !/default: "z-50"/.test(ui),
   "Sheets portal to <body> by default and the default layer is not z-50",
 );
-const enterAnimations = ["sheet-rise", "stagger-enter", "fade-up", "toast-in", "dock-menu-pop", "deck-deal"];
+const enterAnimations = ["sheet-rise", "stagger-enter", "fade-up", "toast-in", "deck-deal"];
 for (const name of enterAnimations) {
   assert(
     !new RegExp(`animation: ${name} [^;]* both;`).test(css),
@@ -178,9 +177,72 @@ for (const name of enterAnimations) {
   );
 }
 assert(
-  !/@keyframes dock-menu-pop \{[^@]*translate\(-50%/.test(css) && createMenu.includes("-translate-x-1/2"),
-  "«+» menu: centre with the translate utility only; keyframes must not add a second -50%",
+  !css.includes("dock-menu-pop") &&
+    /\.dock-search\.press-scale \{[^}]*--duration-press\) var\(--spring\)[^}]*--duration-tab\) var\(--ease-out\)/.test(css) &&
+    css.includes('.dock-search[aria-current="page"]'),
+  "Dock Buscar disc: lights on /buscar with --duration-tab · --ease-out; the «+» menu pop is gone",
 );
+assert(
+  /\.tonight-pin\.press-scale \{[^}]*--duration-press\) var\(--spring\)[^}]*--duration-tab\) var\(--ease-out\)/.test(css) &&
+    searchSheet.includes("celebrate && \"spring-pop\"") &&
+    motionDoc.includes(".tonight-pin"),
+  "«Ver esta noche»: press spring + ease-out light; the moon pops only right after the tap; documented",
+);
+assert(
+  /\.person-card-in \{[^}]*genre-coverflow-title-in var\(--duration-stagger\) var\(--ease-out\)/.test(css) &&
+    /prefers-reduced-motion[\s\S]*\.person-card-in,/.test(css) &&
+    motionDoc.includes(".person-card-in"),
+  "Buscar person card blurs in with ease-out, off under reduced motion, documented",
+);
+{
+  const sharedChips = read("src/lib/catalog-filters.ts");
+  const buscarChips = read("src/components/tmdb-search/TmdbKindFilterChips.tsx");
+  assert(
+    !/Director/.test(sharedChips.slice(sharedChips.indexOf("KIND_CHIPS"), sharedChips.indexOf("] as const"))) &&
+      buscarChips.includes('value: "DIRECTOR"'),
+    "«Director» chip lives only in Buscar; the shared KIND_CHIPS (Quiero ver) stay Todos/Películas/Series",
+  );
+}
+{
+  const dock = read("src/components/BottomNav.tsx");
+  const field = read("src/components/DockSearchField.tsx");
+  const topForm = read("src/components/tmdb-search/TmdbSearchForm.tsx");
+  assert(
+    dock.includes('name="dock-shell"') &&
+      dock.includes('name="dock-search"') &&
+      /\[DOCK_SEARCH_TRANSITION\]: "morph", default: "none"/.test(dock) &&
+      dock.includes("transitionTypes={[DOCK_SEARCH_TRANSITION]}"),
+    "Buscar dock morph: shared ViewTransitions (dock-shell / dock-search) only on the dock's own taps",
+  );
+  assert(
+    /prefers-reduced-motion[^@]*::view-transition-old\(dock-shell\)[^}]*dock-crossfade-out/.test(css) &&
+      motionDoc.includes("Dock → campo"),
+    "Reduced motion: the dock crossfades into the field (no travel or scale); documented",
+  );
+  assert(
+    field.includes("text-base") && field.includes('enterKeyHint="search"') && field.includes("visualViewport"),
+    "Dock field: 16 px input (no iOS zoom), search key, rides the keyboard via visualViewport",
+  );
+  assert(topForm.includes("hidden") && topForm.includes("sm:block"), "One field on mobile: the top form is desktop only");
+}
+{
+  const footer = read("src/components/tonight/TonightFooter.tsx");
+  const credits = read("src/components/watchlist/CreditsLine.tsx");
+  assert(
+    footer.includes("tonight-reason-split") &&
+      footer.includes("reasonPerson(") &&
+      footer.includes("buildPersonSearchHref") &&
+      (() => {
+        const split = footer.indexOf("tonight-reason-split");
+        return footer.indexOf("</button>", split) < footer.indexOf("<Link", split);
+      })(),
+    "Hoy «Dirigida por X»: X is a sibling link to Buscar (never a link inside the «Por qué» button)",
+  );
+  assert(
+    credits.includes("buildPersonSearchHref") && credits.includes("stopPropagation") && motionDoc.includes("«Dirigida por»"),
+    "Quiero ver credits: each director links to the filmography without reaching the ficha's handlers; documented",
+  );
+}
 assert(
   css.includes("@keyframes sheet-fall") && css.includes(".sheet-overlay-out") && sheet.includes("sheet-fall"),
   "Sheets need an exit animation (sheet-fall + overlay fade) before unmounting",
@@ -202,5 +264,5 @@ console.log(
   "✓ Fase 2 Artist lock: tokens, sheet-rise, SharedPoster, stagger, tabs, toast, docs",
 );
 console.log(
-  "✓ iOS audit step 1: sheet layers above tab bar, exit + drag tracking, focus, keyboard lift, menu centring",
+  "✓ iOS audit step 1: sheet layers above tab bar, exit + drag tracking, focus, keyboard lift, dock Buscar disc",
 );

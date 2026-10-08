@@ -102,6 +102,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
             queueNote: card.queueNote,
             lens: lens.slug,
             posterAmbient: card.posterAmbient,
+            leads: card.leads,
           },
         })),
       );

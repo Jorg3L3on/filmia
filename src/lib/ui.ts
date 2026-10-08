@@ -98,7 +98,7 @@ export const glassRowClass =
 /** Frosted container: segmented frames, list rows, cards, sheets. Caller sets radius. */
 export const glassPanelClass = "glass-panel liquid-glass relative border";
 
-/** Round glass button: header back / actions, tab-bar «+». Caller sets size (size-10 / size-12). */
+/** Round glass button: header back / actions, dock Buscar disc. Caller sets size (size-10 / size-12). */
 export const glassIconClass = cn(
   "press-scale relative inline-flex shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-paper/95 shadow-panel backdrop-blur-xl backdrop-saturate-150 transition-[background-color,border-color,opacity] duration-[var(--duration-hover)] hover:border-white/30 hover:bg-white/15 active:opacity-90 [&_svg:not([class*='size-'])]:size-5",
   focusRing,
@@ -114,18 +114,6 @@ export const glassGroupItemClass = cn(
 );
 
 export const glassGroupDividerClass = "mx-0.5 h-4 w-px bg-white/25";
-
-/** Dropdown / popover panel (⋯ menu, tab-bar + menu). */
-export const glassMenuPanelClass =
-  "overflow-hidden rounded-2xl border border-white/10 bg-[var(--glass-fill-solid)] p-1.5 shadow-panel backdrop-blur-2xl backdrop-saturate-150";
-
-export const glassMenuItemClass = cn(
-  "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-paper hover:bg-white/5",
-  focusRing,
-);
-
-export const glassMenuIconPillClass =
-  "flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent ring-1 ring-accent/25";
 
 /** Active indicator behind the selected tab (tab bar, segmented tabs). */
 export const glassPillClass = "liquid-glass liquid-glass-pill rounded-full";
@@ -185,3 +173,9 @@ export const sheetPanelClass = (className?: string) =>
     "glass-panel glass-sheet liquid-glass relative z-10 mx-1.5 mb-1.5 flex w-[calc(100%-0.75rem)] max-w-lg max-h-[min(92dvh,calc(100dvh-env(safe-area-inset-top)-0.75rem-var(--keyboard-inset,0px)))] flex-col overflow-hidden rounded-sheet border pb-[max(1rem,env(safe-area-inset-bottom))] sheet-rise sm:mx-0 sm:w-full",
     className,
   );
+
+/** «Dirigida por X»: X links to their filmography in Buscar (Hoy, Quiero ver). */
+export const personLinkClass = cn(
+  "rounded-sm underline decoration-current/25 decoration-1 underline-offset-[3px] transition-[color,text-decoration-color] duration-[var(--duration-hover)] ease-[var(--ease-out)] hover:text-paper hover:decoration-accent focus-visible:decoration-accent",
+  focusRing,
+);

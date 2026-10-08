@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { computeTonight, PARA_TI_SLUG } from "./tonight";
 import { itemVector, cosine } from "./tonight/features";
-import { findPinnedTitleId } from "./tonight/pin";
+import { canOfferTonightPin, findPinnedTitleId, searchPinBlocker } from "./tonight/pin";
 import { rankForNow } from "./tonight/serve";
 import {
   bedtimeFor,
@@ -318,6 +318,51 @@ describe("tonight/pin", () => {
   it("is cancelled by a later «Ahora no» on the same title", () => {
     assert.equal(findPinnedTitleId([event("a", "pinned", 30), event("a", "not_tonight", 5)], NOW), null);
     assert.equal(findPinnedTitleId([event("a", "not_tonight", 30), event("a", "pinned", 5)], NOW), "a");
+  });
+
+  it("lets a pin from Buscar replace the one from Quiero ver (newest wins)", () => {
+    const fromQueue = event("queue-pick", "pinned", 90);
+    const fromSearch = event("search-pick", "pinned", 1);
+    assert.equal(findPinnedTitleId([fromQueue, fromSearch], NOW), "search-pick");
+    assert.equal(findPinnedTitleId([fromSearch, fromQueue], NOW), "search-pick");
+  });
+
+  it("offers «Ver esta noche» in Buscar only for unwatched titles outside log mode", () => {
+    assert.equal(canOfferTonightPin({ watched: false, logMode: false }), true);
+    assert.equal(canOfferTonightPin({ watched: true, logMode: false }), false);
+    assert.equal(canOfferTonightPin({ watched: false, logMode: true }), false);
+  });
+
+  it("refuses to pin a watched title from Buscar", () => {
+    assert.equal(searchPinBlocker(null), null);
+    assert.equal(searchPinBlocker({ watchedAt: null }), null);
+    assert.match(searchPinBlocker({ watchedAt: NOW }) ?? "", /Ya la viste/);
+  });
+});
+
+describe("taste_person reason", () => {
+  it("carries the director's TMDB id so Hoy can link «Dirigida por» to the filmography", () => {
+    const villeneuve = { id: 525, name: "Denis Villeneuve", role: "director" as const };
+    const titles = [
+      title("arrival", { genres: [SCIFI], people: [villeneuve], watchedAt: new Date(NOW.getTime() - 20 * DAY), rating: 9 }),
+      title("sicario", { genres: [DRAMA], people: [villeneuve], watchedAt: new Date(NOW.getTime() - 40 * DAY), rating: 8 }),
+      title("comedy", { genres: [COMEDY], watchedAt: new Date(NOW.getTime() - 10 * DAY), rating: 3 }),
+      title("bladerunner", { genres: [SCIFI, DRAMA], people: [villeneuve], runtimeMinutes: 160, imdbRating: 8 }),
+    ];
+    const result = computeTonight({
+      titles,
+      queue: [queued("bladerunner", 0)],
+      events: [],
+      userPlatforms: ["NETFLIX"],
+      nightEnds: NIGHT,
+      now: NOW,
+    });
+    const reason = result.lenses
+      .flatMap((lens) => lens.picks)
+      .find((pick) => pick.titleId === "bladerunner")
+      ?.reasons.find((item) => item.kind === "taste_person");
+    assert.equal(reason?.text, "Dirigida por Denis Villeneuve");
+    assert.equal(reason?.personId, 525);
   });
 });
 

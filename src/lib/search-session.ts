@@ -1,4 +1,8 @@
+import type { DirectorHit } from "@/lib/person-filmography";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
+
+/** Buscar searches titles (Todos / Películas / Series) or directors (`?tipo=director`). */
+export type SearchMode = "titles" | "director";
 
 export const SEARCH_DEBOUNCE_MS = 280;
 export const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -7,6 +11,10 @@ export const SEARCH_CACHE_LIMIT = 30;
 export type CachedSearch = {
   results: TmdbCatalogResult[];
   error: string | null;
+  /** Titles mode: the director whose name is what was typed («Ver filmografía»). */
+  director?: DirectorHit | null;
+  /** Director mode: the people found. */
+  directors?: DirectorHit[];
   at: number;
 };
 
@@ -15,14 +23,17 @@ const searchCache = new Map<string, CachedSearch>();
 export const normalizeSearchQuery = (value: string) =>
   value.trim().replace(/\s+/g, " ");
 
-export const searchCacheKey = (value: string) =>
-  normalizeSearchQuery(value).toLowerCase();
+export const searchCacheKey = (value: string, mode: SearchMode = "titles") => {
+  const key = normalizeSearchQuery(value).toLowerCase();
+  return key && mode === "director" ? `director:${key}` : key;
+};
 
 export const readSearchCache = (
   query: string,
   now = Date.now(),
+  mode: SearchMode = "titles",
 ): CachedSearch | null => {
-  const key = searchCacheKey(query);
+  const key = searchCacheKey(query, mode);
   if (!key) {
     return null;
   }
@@ -42,10 +53,11 @@ export const readSearchCache = (
 
 export const writeSearchCache = (
   query: string,
-  value: { results: TmdbCatalogResult[]; error: string | null },
+  value: Omit<CachedSearch, "at">,
   now = Date.now(),
+  mode: SearchMode = "titles",
 ) => {
-  const key = searchCacheKey(query);
+  const key = searchCacheKey(query, mode);
   if (!key) {
     return;
   }
@@ -90,12 +102,19 @@ export const createDebounced = <T extends unknown[]>(
 
 export const buildSearchHref = (
   query: string,
-  extras: { watchedDate?: string | null; watchedDestination?: boolean } = {},
+  extras: {
+    watchedDate?: string | null;
+    watchedDestination?: boolean;
+    mode?: SearchMode;
+  } = {},
 ) => {
   const next = new URLSearchParams();
   const trimmed = normalizeSearchQuery(query);
   if (trimmed) {
     next.set("q", trimmed);
+  }
+  if (extras.mode === "director") {
+    next.set("tipo", "director");
   }
   if (extras.watchedDate) {
     next.set("fecha", extras.watchedDate);

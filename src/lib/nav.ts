@@ -53,7 +53,7 @@ export const desktopNavItems = [
   { href: "/buscar", label: "Buscar" },
 ] as const;
 
-/** Bottom tab bar: four tabs around the center «+» create action. */
+/** Bottom tab bar: four tabs around the center Buscar disc. */
 export const mobileNavItems = [
   { href: "/", label: "Hoy", icon: "today" },
   { href: "/watchlist", label: "Quiero ver", icon: "queue" },
@@ -61,25 +61,15 @@ export const mobileNavItems = [
   { href: "/perfil", label: "Perfil", icon: "profile" },
 ] as const;
 
-/** Grid column the «+» occupies (between Quiero ver and Listas). */
-export const mobileNavCreateSlot = 2;
+/** Center glass disc of the dock: Buscar is how titles get into Filmia. */
+export const mobileNavSearch = { href: "/buscar", label: "Buscar", icon: "search" } as const;
 
-/** Quick actions behind the tab bar «+». Buscar lives here and in the header. */
-export const mobileCreateActions = [
-  {
-    href: "/buscar",
-    label: "Buscar y agregar",
-    hint: "Películas y series de TMDB",
-    icon: "search",
-  },
-  {
-    href: "/listas/nueva",
-    label: "Nueva lista",
-    hint: "Agrupa títulos a tu modo",
-    icon: "lists",
-  },
-] as const;
+/** React transition type of the dock's own taps: the dock ⇄ Buscar field morph. */
+export const DOCK_SEARCH_TRANSITION = "dock-search";
+
+/** Grid column the Buscar disc occupies (between Quiero ver and Listas). */
+export const mobileNavSearchSlot = 2;
 
 export type MobileNavIcon =
   | (typeof mobileNavItems)[number]["icon"]
-  | (typeof mobileCreateActions)[number]["icon"];
+  | typeof mobileNavSearch.icon;

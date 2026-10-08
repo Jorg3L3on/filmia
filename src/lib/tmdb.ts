@@ -2,6 +2,14 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { TitleKind } from "@/db";
 import {
+  parseFilmography,
+  summarizeFilmography,
+  type DirectorHit,
+  type PersonFilmography,
+  type PersonRole,
+  type TmdbCombinedCredits,
+} from "@/lib/person-filmography";
+import {
   METADATA_REVALIDATE_SECONDS,
   TMDB_CACHE_TAG,
 } from "@/lib/rendering";
@@ -732,3 +740,83 @@ export const getTmdbTitleExtras = cache(async (
     return null;
   }
 });
+
+// ---------------------------------------------------------------------------
+// People (FIL-I3-5): Buscar's Director chip, the «Ver filmografía» suggestion
+// and the person view (/buscar?persona=<id>&rol=…). Parsing lives in
+// person-filmography.ts; this block only fetches (same 24 h cache).
+// ---------------------------------------------------------------------------
+
+export const tmdbProfileUrl = (profilePath: string | null | undefined, size: "w185" | "h632" = "w185") =>
+  profilePath ? `https://image.tmdb.org/t/p/${size}${profilePath}` : null;
+
+type TmdbPersonHit = {
+  id: number;
+  media_type?: string;
+  name?: string;
+  known_for_department?: string;
+  profile_path?: string | null;
+  popularity?: number;
+};
+
+const DIRECTING_DEPARTMENT = "Directing";
+
+const toDirectorHits = (people: readonly TmdbPersonHit[]): DirectorHit[] =>
+  people.flatMap((person) =>
+    person.known_for_department === DIRECTING_DEPARTMENT && person.name?.trim()
+      ? [
+          {
+            id: person.id,
+            name: person.name.trim(),
+            profilePath: person.profile_path ?? null,
+            popularity: person.popularity ?? 0,
+          },
+        ]
+      : [],
+  );
+
+/** Directors among the people of `/search/multi` (same request as searchTmdbMulti, cached). */
+export const searchTmdbMultiDirectors = async (query: string): Promise<DirectorHit[]> => {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return [];
+  }
+  const data = await tmdbFetch<{ results: TmdbPersonHit[] }>("/search/multi", { query: trimmed });
+  return toDirectorHits(data.results.filter((item) => item.media_type === "person"));
+};
+
+/** Director chip: `/search/person`, keeping people known for Directing. */
+export const searchTmdbDirectors = async (query: string): Promise<DirectorHit[]> => {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return [];
+  }
+  const data = await tmdbFetch<{ results: TmdbPersonHit[] }>("/search/person", { query: trimmed });
+  return toDirectorHits(data.results).slice(0, 8);
+};
+
+/** One filmography per person and role (director | reparto | fotografia). */
+export const getTmdbPersonFilmography = async (
+  personId: number,
+  role: PersonRole,
+): Promise<PersonFilmography> => {
+  const [person, credits] = await Promise.all([
+    tmdbFetch<{
+      id: number;
+      name?: string;
+      profile_path?: string | null;
+      known_for_department?: string;
+    }>(`/person/${personId}`),
+    tmdbFetch<TmdbCombinedCredits>(`/person/${personId}/combined_credits`),
+  ]);
+  return summarizeFilmography(
+    {
+      id: person.id,
+      name: person.name?.trim() || "",
+      profilePath: person.profile_path ?? null,
+      department: person.known_for_department ?? null,
+    },
+    role,
+    parseFilmography(credits, role),
+  );
+};
