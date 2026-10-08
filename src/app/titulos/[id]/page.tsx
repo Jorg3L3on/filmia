@@ -18,6 +18,7 @@ import {
 import { FichaVisit } from "@/components/FichaVisit";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { resolveTitleExtras, storedTitleExtras } from "@/lib/title-extras";
+import { resolveTitlePeople } from "@/lib/title-people";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 import TitleLoading from "./loading";
 import {
@@ -28,7 +29,6 @@ import {
   TitleRelatedBlock,
   TitleSynopsisBlock,
   isSeriesTitle,
-  titleCredits,
 } from "./title-sections";
 
 export const dynamic = "force-dynamic";
@@ -99,6 +99,7 @@ const TitleDetail = async ({
   }
 
   const extrasPromise = resolveTitleExtras(title);
+  const peoplePromise = resolveTitlePeople(title);
   const listsPromise = getAssignableLists();
   const platformsPromise = getUserStreamingPlatforms();
   const providersPromise = getWatchProvidersForTitle(title);
@@ -132,7 +133,8 @@ const TitleDetail = async ({
         <TitleSynopsisBlock
           storedOverview={title.overview}
           extrasPromise={extrasPromise}
-          credits={titleCredits(title)}
+          peoplePromise={peoplePromise}
+          kind={title.kind}
         />
       </Suspense>
 

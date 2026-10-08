@@ -11,6 +11,7 @@ import { formatRuntime, TITLE_KIND_LABEL } from "@/lib/labels";
 import { parseStoredPeople } from "@/lib/tonight-store";
 import { formatCredits } from "@/lib/watchlist-credits";
 import { isTmdbConfigured, tmdbBackdropUrl, type TmdbTitleExtras } from "@/lib/tmdb";
+import type { TmdbPerson } from "@/lib/tmdb-people";
 import type { WatchProvidersResult } from "@/lib/watch-providers-cache";
 import type { getAssignableLists, getRelatedTitles, getTitleById, getUserStreamingPlatforms } from "@/lib/queries";
 
@@ -33,10 +34,6 @@ const titleMembership = (title: TitleDetail) => {
     listCount: memberships.lists.length,
   };
 };
-
-/** «Dirigida por … · Con …» (or «Creada por …» for series) from the enriched people; null when empty. */
-export const titleCredits = (title: Pick<TitleDetail, "tmdbPeople" | "kind">) =>
-  formatCredits(parseStoredPeople(title.tmdbPeople), title.kind);
 
 export const TitleHeroFallback = ({
   title,
@@ -168,12 +165,15 @@ export const TitleProvidersBlock = async ({
 export const TitleSynopsisBlock = async ({
   storedOverview,
   extrasPromise,
-  credits = null,
+  peoplePromise,
+  kind,
 }: {
   storedOverview: string | null;
   extrasPromise: Promise<TmdbTitleExtras | null>;
-  credits?: string | null;
+  peoplePromise: Promise<TmdbPerson[]>;
+  kind: TitleDetail["kind"];
 }) => {
+  const credits = formatCredits(parseStoredPeople(await peoplePromise), kind);
   const stored = storedOverview?.trim() || null;
   if (stored) {
     return (

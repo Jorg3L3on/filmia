@@ -5,6 +5,12 @@ import {
   METADATA_REVALIDATE_SECONDS,
   TMDB_CACHE_TAG,
 } from "@/lib/rendering";
+import {
+  parseTmdbPeople,
+  type TmdbCreatedBy,
+  type TmdbCreditsPayload,
+  type TmdbPerson,
+} from "@/lib/tmdb-people";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
@@ -594,15 +600,12 @@ const overviewWithFallback = async (
 };
 
 export type TmdbKeyword = { id: number; name: string };
-export type TmdbPersonRole = "director" | "creator" | "cast";
-export type TmdbPerson = { id: number; name: string; role: TmdbPersonRole };
-
-const TMDB_CAST_LIMIT = 5;
-
-type TmdbCreditsPayload = {
-  cast?: Array<{ id?: number; name?: string; order?: number; total_episode_count?: number }>;
-  crew?: Array<{ id?: number; name?: string; job?: string; jobs?: Array<{ job?: string }> }>;
-};
+export {
+  parseTmdbPeople,
+  type TmdbCreditsPayload,
+  type TmdbPerson,
+  type TmdbPersonRole,
+} from "@/lib/tmdb-people";
 
 type TmdbKeywordsPayload = {
   keywords?: Array<{ id?: number; name?: string }>;
@@ -623,54 +626,6 @@ export const parseTmdbKeywords = (payload: TmdbKeywordsPayload | null | undefine
     keywords.push({ id, name });
   }
   return keywords;
-};
-
-const isDirectorJob = (job: string | undefined) => job === "Director";
-
-export const parseTmdbPeople = (
-  credits: TmdbCreditsPayload | null | undefined,
-  createdBy: Array<{ id?: number; name?: string }> | undefined,
-): TmdbPerson[] => {
-  const people: TmdbPerson[] = [];
-  const seen = new Set<number>();
-  const push = (id: unknown, name: string | undefined, role: TmdbPersonRole) => {
-    const numeric = Number(id);
-    const label = name?.trim();
-    if (!Number.isInteger(numeric) || numeric <= 0 || !label || seen.has(numeric)) {
-      return;
-    }
-    seen.add(numeric);
-    people.push({ id: numeric, name: label, role });
-  };
-
-  for (const person of createdBy ?? []) {
-    push(person.id, person.name, "creator");
-  }
-  for (const member of credits?.crew ?? []) {
-    const jobs = member.jobs?.map((item) => item.job) ?? [member.job];
-    if (jobs.some(isDirectorJob)) {
-      push(member.id, member.name, "director");
-    }
-  }
-  const cast = [...(credits?.cast ?? [])].sort((a, b) => {
-    const episodes = (b.total_episode_count ?? 0) - (a.total_episode_count ?? 0);
-    if (episodes !== 0) {
-      return episodes;
-    }
-    return (a.order ?? 999) - (b.order ?? 999);
-  });
-  let castCount = 0;
-  for (const member of cast) {
-    if (castCount >= TMDB_CAST_LIMIT) {
-      break;
-    }
-    const before = people.length;
-    push(member.id, member.name, "cast");
-    if (people.length > before) {
-      castCount += 1;
-    }
-  }
-  return people;
 };
 
 export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
@@ -702,7 +657,7 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
     genres?: Array<{ id?: number; name?: string }>;
     keywords?: TmdbKeywordsPayload;
     aggregate_credits?: TmdbCreditsPayload;
-    created_by?: Array<{ id?: number; name?: string }>;
+    created_by?: TmdbCreatedBy;
   };
 
   // One call: details + keywords + credits (Esta noche taste vector). TV keywords
