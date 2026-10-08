@@ -83,7 +83,7 @@ type DeckCardProps = {
   onStubCommit?: () => void;
   /** Hold (or right-click) the hero card to open the card menu (lists). Esta noche uses its sala. */
   onOpenMenu?: (title: CoverflowTitle) => void;
-  /** IMDb/rating live in the footer chips (Esta noche, lists): keep the poster face clean. */
+  /** IMDb, rating and platform live in the footer chips (Esta noche, lists): keep the poster face clean. */
   chipsInFooter?: boolean;
 };
 
@@ -286,7 +286,7 @@ export const DeckCard = memo(function DeckCard({
             </span>
           </span>
         ) : null}
-        {cinematic && availabilityPlatform ? (
+        {cinematic && !chipsInFooter && availabilityPlatform ? (
           <span
             data-deck-platform-badge
             aria-hidden
