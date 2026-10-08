@@ -2309,6 +2309,8 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   height: 1em;
   overflow: hidden;
   line-height: 1;
+  /* Equal-width digits: each column is as wide as its widest digit, so «11» would gap otherwise. */
+  font-variant-numeric: tabular-nums;
 }
 
 .num-ticker-col {
@@ -2936,6 +2938,53 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   }
 }
 
+
+/* ── Buscar polish (FIL-I5-4) ───────────────────────────────────────────────────────── */
+
+/* One pill slides under the current chip (beui Tabs). Placed before paint; moves animate once ready. */
+.buscar-chip-pill[data-ready] {
+  transition:
+    transform var(--duration-tab) var(--ease-out),
+    width var(--duration-tab) var(--ease-out);
+}
+
+/* «Buscando…»: a light sweeps across the words (magicui Animated Shiny Text). */
+.buscar-shiny {
+  background: linear-gradient(
+      100deg,
+      var(--mist) 0%,
+      var(--mist) 40%,
+      var(--paper) 50%,
+      var(--mist) 60%,
+      var(--mist) 100%
+    )
+    0 0 / 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: buscar-shiny-sweep 1.6s linear infinite;
+}
+
+@keyframes buscar-shiny-sweep {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buscar-chip-pill[data-ready] {
+    transition: none;
+  }
+
+  .buscar-shiny {
+    animation: none;
+    color: var(--mist);
+    background: none;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .bienvenida-glow,

@@ -277,14 +277,15 @@ export const SearchKindChipsSkeleton = () => (
   </div>
 );
 
+/** Buscar «Fichas» rows: 56 px poster, serif title, meta, chevron (two columns on desktop). */
 export const SearchResultsSkeleton = ({ count = 6 }: { count?: number }) => (
-  <div className={cn(skeletonWellClass, "space-y-2")} aria-hidden="true">
+  <div className={cn(skeletonWellClass, "grid grid-cols-[minmax(0,1fr)] gap-2 lg:grid-cols-2 lg:gap-3")} aria-hidden="true">
     {Array.from({ length: count }, (_, index) => (
       <div
         key={index}
-        className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-3 py-2.5"
+        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-2.5"
       >
-        <ShimmerBlock className="h-12 w-12 shrink-0 rounded-lg" />
+        <ShimmerBlock className="h-[84px] w-14 shrink-0 rounded-poster" />
         <div className="min-w-0 flex-1 space-y-2">
           <ShimmerBlock className="h-4 w-40 rounded-full sm:w-52" />
           <ShimmerBlock className="h-3 w-24 rounded-full" />

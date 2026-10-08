@@ -840,6 +840,12 @@ export const searchTmdbDirectors = async (query: string): Promise<DirectorHit[]>
   return toDirectorHits(data.results).slice(0, 8);
 };
 
+/** Just the photo; shares the cached `/person/:id` response with the filmography. */
+export const getTmdbPersonProfilePath = async (personId: number): Promise<string | null> => {
+  const person = await tmdbFetch<{ profile_path?: string | null }>(`/person/${personId}`);
+  return person.profile_path ?? null;
+};
+
 /** One filmography per person and role (director | reparto | fotografia). */
 export const getTmdbPersonFilmography = async (
   personId: number,

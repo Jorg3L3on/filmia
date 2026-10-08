@@ -7,6 +7,7 @@ import { SearchResultsSkeleton } from "@/components/PageSkeletons";
 import { SearchPreviewSheet } from "@/components/SearchPreviewSheet";
 import { TmdbSearchUnavailable } from "@/components/TmdbSearchUnavailable";
 import { TmdbSearchResults } from "@/components/TmdbSearchResults";
+import { BuscarStart } from "@/components/tmdb-search/BuscarStart";
 import {
   DirectorPicker,
   DirectorSuggestion,
@@ -20,7 +21,9 @@ import {
 } from "@/components/tmdb-search/TmdbKindFilterChips";
 import { usePersonFilmography } from "@/components/tmdb-search/usePersonFilmography";
 import { TmdbSearchForm } from "@/components/tmdb-search/TmdbSearchForm";
+import { useSearchRecents } from "@/components/tmdb-search/useSearchRecents";
 import { useTmdbSearchAdd } from "@/components/tmdb-search/useTmdbSearchAdd";
+import type { StartDirector } from "@/lib/buscar-start";
 import { dockSearch } from "@/lib/dock-search";
 import type { SelectableList } from "@/lib/list-selection";
 import { resolveDirectorQuery } from "@/lib/person-filmography";
@@ -45,6 +48,8 @@ type TmdbSearchAddProps = {
   initialMode?: SearchMode;
   /** `?persona=…&rol=…`: the person view, loaded on the server. */
   person?: PersonViewState | null;
+  /** Start screen: directors of your Favoritas and 4★+ titles. */
+  startDirectors?: StartDirector[];
 };
 
 export const TmdbSearchAdd = ({
@@ -60,6 +65,7 @@ export const TmdbSearchAdd = ({
   pinnedTitleId: initialPinnedTitleId = null,
   initialMode = "titles",
   person = null,
+  startDirectors = [],
 }: TmdbSearchAddProps) => {
   const router = useRouter();
   const {
@@ -110,6 +116,18 @@ export const TmdbSearchAdd = ({
     initialMode,
   });
   const logMode = defaultDestination === "watched";
+  const { recents, remember, clear: clearRecents } = useSearchRecents();
+
+  // A search earns a spot in «Recientes» once it led somewhere: a result or a person was opened.
+  const rememberQuery = () => remember(settledQuery || query);
+  const previewResult = (result: TmdbCatalogResult) => {
+    rememberQuery();
+    setPreview(result);
+  };
+  const openDirector: typeof openPerson = (hit) => {
+    rememberQuery();
+    openPerson(hit);
+  };
 
   // Director chip: one clear match shows the person right here (URL stays
   // ?q=…&tipo=director, so «atrás» never bounces back into it).
@@ -193,7 +211,7 @@ export const TmdbSearchAdd = ({
           state={person}
           pending={pendingPerson}
           statusOf={statusOf}
-          onPreview={setPreview}
+          onPreview={previewResult}
           onRetry={() => router.refresh()}
           backLabel={query.trim() ? `Resultados de «${query.trim()}»` : null}
           onBack={closePerson}
@@ -221,13 +239,13 @@ export const TmdbSearchAdd = ({
                 state={inline.state}
                 pending={null}
                 statusOf={statusOf}
-                onPreview={setPreview}
+                onPreview={previewResult}
                 onRetry={inline.retry}
                 backLabel={null}
                 onBack={() => undefined}
               />
             ) : directorResolution?.kind === "choose" ? (
-              <DirectorPicker directors={directorResolution.hits} onOpen={(hit) => openPerson(hit)} />
+              <DirectorPicker directors={directorResolution.hits} onOpen={(hit) => openDirector(hit)} />
             ) : directorResolution?.kind === "none" && !error ? (
               <EmptyState
                 variant="buscar"
@@ -241,14 +259,14 @@ export const TmdbSearchAdd = ({
                 isSearching={false}
                 hasSearched
                 error={error}
-                onPreview={setPreview}
+                onPreview={previewResult}
                 onRetry={handleSearch}
               />
             ) : null
           ) : (
             <>
               {director && !isSearching ? (
-                <DirectorSuggestion director={director} onOpen={(hit) => openPerson(hit)} />
+                <DirectorSuggestion director={director} onOpen={(hit) => openDirector(hit)} />
               ) : null}
               <TmdbSearchResults
                 results={visibleResults}
@@ -256,22 +274,27 @@ export const TmdbSearchAdd = ({
                 isSearching={isSearching}
                 hasSearched={hasSearched}
                 error={error}
-                onPreview={setPreview}
+                onPreview={previewResult}
                 onRetry={handleSearch}
               />
             </>
           )}
 
           {!hasSearched ? (
-            <EmptyState
-              variant="buscar"
-              title={mode === "director" ? "Busca un director" : "Busca un título"}
-              description={
-                mode === "director"
-                  ? "Escribe su nombre y verás su filmografía, de lo más reciente a lo primero."
-                  : "Escribe el nombre y pulsa Enter. Luego agrégalo a Quiero ver o a una lista."
-              }
-            />
+            mode === "director" ? (
+              <EmptyState
+                variant="buscar"
+                title="Busca un director"
+                description="Escribe su nombre y verás su filmografía, de lo más reciente a lo primero."
+              />
+            ) : (
+              <BuscarStart
+                recents={recents}
+                onPickRecent={onQueryChange}
+                onClearRecents={clearRecents}
+                directors={startDirectors}
+              />
+            )
           ) : null}
         </>
       )}
@@ -307,7 +330,7 @@ export const TmdbSearchAdd = ({
       ) : null}
 
       <p className="sr-only">{isSearching ? "Buscando" : isAdding ? "Guardando" : ""}</p>
-      {!personPage && mode === "titles" ? (
+      {!personPage && mode === "titles" && hasSearched ? (
         <p className="text-center text-xs text-mist">
           Si no aparece, prueba con el título original o un año.
         </p>

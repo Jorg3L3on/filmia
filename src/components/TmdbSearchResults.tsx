@@ -4,6 +4,7 @@ import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { SearchResultsSkeleton } from "@/components/PageSkeletons";
 import { SearchResultRow } from "@/components/tmdb-search/SearchResultRow";
+import { WatchlistCountTicker } from "@/components/watchlist/WatchlistCountTicker";
 import { staggerStyle } from "@/lib/motion";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import type { TmdbCatalogEntry } from "@/lib/tmdb-search-catalog";
@@ -30,14 +31,18 @@ export const TmdbSearchResults = ({
 }: TmdbSearchResultsProps) => {
   if (results.length > 0) {
     return (
-      <section className="space-y-3">
-        <header className="flex items-end justify-between">
-          <h2 className="text-lg font-semibold text-paper">Resultados</h2>
-          <p className="text-sm text-mist">
-            {isSearching ? "Buscando…" : results.length}
+      <section className="space-y-3" aria-labelledby="buscar-resultados">
+        <header className="flex items-baseline justify-between gap-3">
+          <h2 id="buscar-resultados" className="text-[11px] font-medium uppercase tracking-[0.2em] text-mist">
+            Resultados
+          </h2>
+          {/* Stays mounted while a new search runs so the digits roll to the new count. */}
+          <p className="flex items-baseline gap-1.5 text-xs text-mist">
+            {isSearching ? <span className="buscar-shiny">Buscando…</span> : null}
+            <WatchlistCountTicker count={results.length} singular="resultado" plural="resultados" />
           </p>
         </header>
-        <ul className="space-y-2">
+        <ul className="grid grid-cols-[minmax(0,1fr)] gap-2 lg:grid-cols-2 lg:gap-3">
           {results.map((result, index) => {
             const key = tmdbCatalogKey(result.tmdbId, result.kind);
             const local = catalog.get(key) ?? catalog.get(String(result.tmdbId));

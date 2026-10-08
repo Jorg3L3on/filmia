@@ -91,6 +91,11 @@ Direction A «Marquesina» (FIL-I5-3, canvas https://claude.ai/artifact/2rSJnRDQ
 | Insignia de biblioteca | — | `SearchResultRow` shows a small glass disc: bookmark (En Quiero ver) or check (Vista). Static. |
 | «Dirigida por» → filmografía | `--duration-hover` · `--ease-out` (subrayado) · `--duration-press` · `--spring` (pill) | Hoy's reason pill splits into «Por qué» (spark) + the name as its own link (taller hit area, `.tonight-reason-person::after`); Quiero ver's expanded ficha links each director / creator. Subtle underline that lights on hover / focus (`personLinkClass`). Both open `/buscar?persona=<id>&rol=director`. |
 | «Ver esta noche» `.tonight-pin` | `--duration-press` · `--spring` (press) · `--duration-pop` · `--spring` (luna) | The sheet's one primary action. Pending «Reservando…»; done, the crescent fills with `.spring-pop` only right after the tap (reopening the sheet shows it full, no pop) and the toast «Ver en Hoy» stays 6 s. The sheet never closes on its own. |
+| Fila «Fichas» `SearchResultRow` | `--duration-hover` · `--ease-out` (borde, chevron +2 px) · `press-scale` | FIL-I5-4, direction A: La cartelera's glass row, 56 px poster, serif title, original title in italics, pill «En Quiero ver» / «La viste». |
+| Chips `.buscar-chip-pill` | `--duration-tab` · `--ease-out` | One aura pill slides under the current chip (beui Tabs); placed before paint, animates only after the first placement. Reduced motion: jumps. |
+| Conteo `.num-ticker-col` | `--duration-morph` · `--ease-out` | «11 resultados» rolls like La cartelera's count (magicui Number Ticker); stays mounted while searching. Tabular digits. |
+| «Buscando…» `.buscar-shiny` | 1.6 s linear loop | Light sweeps across the words (magicui Animated Shiny Text). Reduced motion: static mist. |
+| Inicio: Recientes `.stagger-in` · Directores `.person-card-in` | `--duration-stagger` · 50 ms/item | Before typing: this device's recent searches (localStorage) and directors of your Favoritas / 4★+ (magicui Avatar Circles idea, as a rail). Photo ring lights accent on hover. |
 
 ## SharedPoster
 
