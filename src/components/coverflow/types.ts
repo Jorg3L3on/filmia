@@ -1,5 +1,5 @@
 import type { Platform, SeriesStatus, TitleKind } from "@/db";
-import type { TonightFit, TonightReason } from "@/lib/tonight/types";
+import type { TonightFit, TonightPerson, TonightReason } from "@/lib/tonight/types";
 import type { WatchProviderOffer } from "@/lib/watch-providers";
 
 /** Esta noche extras on a card: why it is here, how it fits the night. */
@@ -14,6 +14,8 @@ export type CoverflowTonightMeta = {
   queueNote: string | null;
   lens: string;
   posterAmbient: string | null;
+  /** Directors / creators with TMDB ids, for the «Dirigida por» link. */
+  leads?: TonightPerson[];
 };
 
 export type CoverflowGenre = {

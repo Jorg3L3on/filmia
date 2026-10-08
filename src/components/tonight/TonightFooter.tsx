@@ -8,7 +8,9 @@ import { cn } from "@/lib/cn";
 import { PLATFORM_SERVICE_LABEL, TITLE_KIND_LABEL } from "@/lib/labels";
 import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { formatRuntimeShort } from "@/lib/tonight/time";
-import { focusRing } from "@/lib/ui";
+import { reasonPerson } from "@/lib/watchlist-credits";
+import { buildPersonSearchHref } from "@/lib/person-filmography";
+import { focusRing, personLinkClass } from "@/lib/ui";
 
 type TonightFooterProps = {
   title: CoverflowTitle;
@@ -35,6 +37,7 @@ export const TonightFooter = ({ title, className }: TonightFooterProps) => {
     : (title.flatrateProviders?.[0]?.name ?? null);
   const runtime = formatRuntimeShort(tonight?.runtimeMinutes ?? null);
   const headline = tonight?.headline[0] ?? null;
+  const headlinePerson = reasonPerson(headline, tonight?.leads ?? []);
   // By day the chip is just the runtime: «acaba 15:31» only means something at night.
   const night = (sala?.dayPart ?? "noche") === "noche";
   const fit = night ? (tonight?.fit ?? null) : null;
@@ -68,7 +71,32 @@ export const TonightFooter = ({ title, className }: TonightFooterProps) => {
         </p>
       </div>
 
-      {headline ? (
+      {headline && headlinePerson ? (
+        // «Dirigida por X»: the spark half still opens «Por qué», the name opens
+        // X's filmography in Buscar. Two siblings, so no link inside a button.
+        <span className="tonight-reason tonight-reason-split">
+          <button
+            type="button"
+            onClick={() => sala?.onWhy(title)}
+            aria-label={`Por qué te proponemos ${title.name}: ${headline.text}`}
+            className={cn("press-scale inline-flex shrink-0 items-center gap-1.5", focusRing)}
+          >
+            <SparkIcon />
+            <span aria-hidden="true">{title.kind === "SERIES" ? "Creada" : "Dirigida"} por</span>
+          </button>
+          <Link
+            href={buildPersonSearchHref({
+              personId: headlinePerson.id,
+              role: "director",
+              name: headlinePerson.name,
+            })}
+            aria-label={`Ver la filmografía de ${headlinePerson.name}`}
+            className={cn("tonight-reason-person press-scale truncate", personLinkClass)}
+          >
+            {headlinePerson.name}
+          </Link>
+        </span>
+      ) : headline ? (
         <button
           type="button"
           onClick={() => sala?.onWhy(title)}

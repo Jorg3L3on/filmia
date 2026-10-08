@@ -13,6 +13,8 @@ type ActiveNavLinkProps = {
   title?: string;
   "aria-label"?: string;
   "data-nav"?: string;
+  /** React transition types for the navigation (e.g. the dock's Buscar morph). */
+  transitionTypes?: string[];
 };
 
 export const ActiveNavLink = ({
@@ -23,6 +25,7 @@ export const ActiveNavLink = ({
   title,
   "aria-label": ariaLabel,
   "data-nav": dataNav,
+  transitionTypes,
 }: ActiveNavLinkProps) => {
   const pathname = usePathname();
   const active = match(href, pathname);
@@ -30,6 +33,7 @@ export const ActiveNavLink = ({
   return (
     <Link
       href={href}
+      transitionTypes={transitionTypes}
       title={title}
       aria-label={ariaLabel}
       aria-current={active ? "page" : undefined}
