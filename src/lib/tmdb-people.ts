@@ -204,3 +204,65 @@ export const tmdbPeopleUpgrade = (stored: unknown, fetched: readonly TmdbPerson[
   }
   return [...fetched];
 };
+
+export type PeopleRailRole = "director" | "fotografia" | "reparto";
+
+export type PeopleRailItem = {
+  id: number;
+  name: string;
+  /** Under the name: «Dirección», «Creación», «Fotografía» or «como Ellie» (null when TMDB has no character). */
+  detail: string | null;
+  /** Crew lines are tinted; a character reads as plain text. */
+  crew: boolean;
+  /** Filmography in Buscar (FIL-I3-5): creators share the director view. */
+  role: PeopleRailRole;
+  profilePath: string | null;
+};
+
+/** TMDB sends some names in their native script; the ficha drops them, like the credits line. */
+const isLatinName = (name: string) => /^[\p{Script=Latin}\p{M}\p{N}\s.'’\-]+$/u.test(name.trim());
+
+/**
+ * The ficha's people rail (FIL-I4-5): Dirección (series: Creación), then
+ * Fotografía, then up to eight cast in billing order. One card per director.
+ */
+export const peopleRailItems = (people: readonly TmdbPerson[], kind: "MOVIE" | "SERIES"): PeopleRailItem[] => {
+  const usable = people.filter((person) => isLatinName(person.name));
+  const leads = usable.filter((person) =>
+    kind === "SERIES" && usable.some((item) => item.role === "creator")
+      ? person.role === "creator"
+      : person.role === "director" || person.role === "creator",
+  );
+  const dps = usable.filter((person) => person.role === "dp");
+  const cast = usable
+    .filter((person) => person.role === "cast")
+    .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+    .slice(0, TMDB_CAST_LIMIT);
+
+  return [
+    ...leads.map((person) => ({
+      id: person.id,
+      name: person.name,
+      detail: person.role === "creator" ? "Creación" : "Dirección",
+      crew: true,
+      role: "director" as const,
+      profilePath: person.profilePath ?? null,
+    })),
+    ...dps.map((person) => ({
+      id: person.id,
+      name: person.name,
+      detail: "Fotografía",
+      crew: true,
+      role: "fotografia" as const,
+      profilePath: person.profilePath ?? null,
+    })),
+    ...cast.map((person) => ({
+      id: person.id,
+      name: person.name,
+      detail: person.character ? `como ${person.character}` : null,
+      crew: false,
+      role: "reparto" as const,
+      profilePath: person.profilePath ?? null,
+    })),
+  ];
+};

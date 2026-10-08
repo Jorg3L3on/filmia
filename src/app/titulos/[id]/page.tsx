@@ -30,7 +30,7 @@ import {
   TitleHeroFallback,
   TitleProvidersBlock,
   TitleRelatedBlock,
-  TitleCreditsBlock,
+  TitlePeopleBlock,
   TitleSynopsisBlock,
   isSeriesTitle,
 } from "./title-sections";
@@ -134,15 +134,15 @@ const TitleDetail = async ({
         </div>
       </section>
 
+      <Suspense fallback={null}>
+        <TitlePeopleBlock peoplePromise={peoplePromise} kind={title.kind} />
+      </Suspense>
+
       <Suspense fallback={<TitleProvidersSkeleton />}>
         <TitleProvidersBlock
           providersPromise={providersPromise}
           platformsPromise={platformsPromise}
         />
-      </Suspense>
-
-      <Suspense fallback={null}>
-        <TitleCreditsBlock peoplePromise={peoplePromise} kind={title.kind} />
       </Suspense>
 
       {isSeriesTitle(title) ? (

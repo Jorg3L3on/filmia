@@ -1,3 +1,4 @@
+import { PeopleRail } from "@/components/ficha/PeopleRail";
 import { TitleFichaActions } from "@/components/TitleFichaActions";
 import { TitleHero } from "@/components/TitleHero";
 import { TitleListsPanel } from "@/components/TitleListsPanel";
@@ -9,10 +10,8 @@ import { awardChipLabel } from "@/lib/awards";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { titleListMemberships } from "@/lib/list-membership";
 import { formatRuntime, TITLE_KIND_LABEL } from "@/lib/labels";
-import { parseStoredPeople } from "@/lib/tonight-store";
-import { formatCredits } from "@/lib/watchlist-credits";
 import { isTmdbConfigured, tmdbBackdropUrl, type TmdbTitleExtras } from "@/lib/tmdb";
-import type { TmdbPerson } from "@/lib/tmdb-people";
+import { peopleRailItems, type TmdbPerson } from "@/lib/tmdb-people";
 import type { WatchProvidersResult } from "@/lib/watch-providers-cache";
 import type { getAssignableLists, getRelatedTitles, getTitleById, getUserStreamingPlatforms } from "@/lib/queries";
 
@@ -121,25 +120,14 @@ export const TitleSynopsisBlock = async ({
   return <TitleSynopsis text={extras?.overview ?? null} />;
 };
 
-/** «Dirigida por … · Con …» until the people rail (FIL-I4-5); nothing when TMDB has no usable names. */
-export const TitleCreditsBlock = async ({
+/** Dirección · Fotografía · reparto with photos (FIL-I4-5); nothing when TMDB has no usable names. */
+export const TitlePeopleBlock = async ({
   peoplePromise,
   kind,
 }: {
   peoplePromise: Promise<TmdbPerson[]>;
   kind: TitleDetail["kind"];
-}) => {
-  const credits = formatCredits(parseStoredPeople(await peoplePromise), kind);
-  if (!credits) {
-    return null;
-  }
-  return (
-    <section className="space-y-2" aria-label="Créditos">
-      <h2 className="text-[11px] font-medium uppercase tracking-[0.22em] text-mist">Créditos</h2>
-      <p className="max-w-2xl text-sm leading-7 text-fog">{credits}</p>
-    </section>
-  );
-};
+}) => <PeopleRail items={peopleRailItems(await peoplePromise, kind)} />;
 
 export const TitleProvidersBlock = async ({
   providersPromise,

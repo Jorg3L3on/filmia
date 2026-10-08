@@ -3033,6 +3033,38 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   }
 }
 
+/* People rail (FIL-I4-5): glass cards; photos fade in over --duration-enter. */
+.person-card {
+  border: 1px solid var(--glass-border);
+  background-color: rgb(255 255 255 / 0.04);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    inset 0 0 6px -3px rgb(255 255 255 / 0.3),
+    var(--glass-shadow-card);
+  transition:
+    transform var(--duration-press) var(--spring),
+    background-color var(--duration-hover) var(--ease-out),
+    border-color var(--duration-hover) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .person-card:hover {
+    border-color: rgb(255 255 255 / 0.22);
+    background-color: rgb(255 255 255 / 0.07);
+  }
+}
+
+.person-photo {
+  animation: person-photo-in var(--duration-enter) var(--ease-out) backwards;
+}
+
+@keyframes person-photo-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
 /* «Ver esta noche»: a slow sheen twice after it lands (Shimmer Button), never a loop. */
 .ficha-tonight:not(.is-done)::after {
   content: "";
@@ -3233,7 +3265,8 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
 
 @media (prefers-reduced-motion: reduce) {
   .ficha-enter,
-  .ficha-backdrop-a-img {
+  .ficha-backdrop-a-img,
+  .person-photo {
     animation: none;
   }
 

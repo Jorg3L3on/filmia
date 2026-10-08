@@ -7,6 +7,7 @@ import {
   TMDB_CAST_LIMIT,
   parseStoredTmdbPeople,
   parseTmdbPeople,
+  peopleRailItems,
   tmdbPeopleNeedUpgrade,
   tmdbPeopleUpgrade,
   type TmdbCreditsPayload,
@@ -193,5 +194,48 @@ describe("tmdb-people/Esta noche no cambia", () => {
     const castKeys = [...vector.keys()].filter((key) => key.startsWith("p:10"));
     assert.equal(castKeys.length, CAST_CAP);
     assert.deepEqual(castKeys.sort(), ["p:100", "p:101", "p:102", "p:103", "p:104"]);
+  });
+});
+
+describe("tmdb-people/peopleRailItems", () => {
+  it("movie: Dirección, Fotografía, then cast in billing order with «como …»", () => {
+    const items = peopleRailItems(parseTmdbPeople(movieCredits, undefined), "MOVIE");
+    assert.deepEqual(items.slice(0, 3).map((item) => [item.name, item.detail, item.role, item.crew]), [
+      ["Curry Barker", "Dirección", "director", true],
+      ["Taylor Clemons", "Fotografía", "fotografia", true],
+      ["Actor 0", "como Papel 0", "reparto", false],
+    ]);
+    assert.equal(items.filter((item) => item.role === "reparto").length, 8);
+    assert.equal(items.find((item) => item.name === "Actor 3")?.profilePath, null, "no photo stays null");
+  });
+
+  it("series: Creación instead of Dirección (creators open the director view)", () => {
+    const items = peopleRailItems(
+      parseTmdbPeople(seriesCredits, [{ id: 400, name: "Greg Daniels", profile_path: "/greg.jpg" }]),
+      "SERIES",
+    );
+    assert.deepEqual(items[0], {
+      id: 400,
+      name: "Greg Daniels",
+      detail: "Creación",
+      crew: true,
+      role: "director",
+      profilePath: "/greg.jpg",
+    });
+    assert.equal(items.some((item) => item.detail === "Dirección"), false);
+  });
+
+  it("drops non-Latin names and works with old rows (no photo, no character)", () => {
+    const items = peopleRailItems(
+      [
+        { id: 1, name: "黒澤明", role: "director" },
+        { id: 2, name: "Toshiro Mifune", role: "cast" },
+      ],
+      "MOVIE",
+    );
+    assert.deepEqual(items, [
+      { id: 2, name: "Toshiro Mifune", detail: null, crew: false, role: "reparto", profilePath: null },
+    ]);
+    assert.deepEqual(peopleRailItems([], "MOVIE"), []);
   });
 });
