@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore, type MouseEvent } from "react";
 import { useNavOrigin } from "@/components/NavOriginTracker";
 import { cn } from "@/lib/cn";
-import { HOME_ENTRY } from "@/lib/nav-origin";
+import { HOME_ENTRY, pathOf } from "@/lib/nav-origin";
 import { glassIconClass } from "@/lib/ui";
 
 type BackButtonProps = {
@@ -16,6 +16,8 @@ type BackButtonProps = {
   hideWithoutOrigin?: boolean;
   /** Folded to the disc while scrolling down (ficha); the label slides back on the way up. */
   collapsed?: boolean;
+  /** Also hidden when the origin is this page family (Buscar's person view opened from Buscar's own search). */
+  hideWhenOriginPath?: string;
 };
 
 /** Notifies once on subscribe, so React re-renders after hydration (see useMountedNow). */
@@ -50,12 +52,16 @@ export const BackButton = ({
   compact = false,
   hideWithoutOrigin = false,
   collapsed = false,
+  hideWhenOriginPath,
 }: BackButtonProps) => {
   const router = useRouter();
   const hydrated = useHydrated();
   const { origin, label, action } = useNavOrigin();
 
   if (hideWithoutOrigin && (!hydrated || !origin)) {
+    return null;
+  }
+  if (hideWhenOriginPath && origin && pathOf(origin.href) === hideWhenOriginPath) {
     return null;
   }
   // Until the origin is known the button is a disc; it grows into «‹ origen» (never a wrong «Hoy»).

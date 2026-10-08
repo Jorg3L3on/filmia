@@ -35,6 +35,21 @@ const SKIPPED_PREFIXES = ["/login", "/registro", "/bienvenida", "/api"];
 
 export const pathOf = (href: string) => href.split(/[?#]/)[0] || "/";
 
+/**
+ * Which "page" an href is for the stack: the pathname, except that a person's
+ * filmography in Buscar (`/buscar?persona=…&rol=…`) is a page of its own — a
+ * ficha opened from it comes back to it, and it can say «‹ Obsesión».
+ */
+export const pageKeyOf = (href: string) => {
+  const path = pathOf(href);
+  if (path !== "/buscar") {
+    return path;
+  }
+  const params = new URLSearchParams(href.split("?")[1]?.split("#")[0] ?? "");
+  const person = params.get("persona");
+  return person ? `/buscar?persona=${person}&rol=${params.get("rol") ?? ""}` : path;
+};
+
 const STATIC_LABELS: Array<[RegExp, string]> = [
   [/^\/$/, "Hoy"],
   [/^\/watchlist(\/|$)/, "Quiero ver"],
@@ -95,11 +110,11 @@ export const recordVisit = (stack: readonly NavEntry[], href: string): VisitResu
   if (top.href === href) {
     return { stack: [...stack], restored: null, kind: "none" };
   }
-  if (pathOf(top.href) === pathOf(href)) {
+  if (pageKeyOf(top.href) === pageKeyOf(href)) {
     return { stack: [...stack.slice(0, -1), { ...top, href }], restored: null, kind: "replace" };
   }
   const below = stack.at(-2);
-  if (below && pathOf(below.href) === pathOf(href)) {
+  if (below && pageKeyOf(below.href) === pageKeyOf(href)) {
     const back = { ...below, href };
     return { stack: [...stack.slice(0, -2), back], restored: back, kind: "pop" };
   }
@@ -114,7 +129,7 @@ export const recordVisit = (stack: readonly NavEntry[], href: string): VisitResu
 export const labelCurrent = (stack: readonly NavEntry[], href: string, label: string): NavEntry[] => {
   const top = stack.at(-1);
   const clean = label.replace(/\s+/g, " ").trim();
-  if (!top || !clean || pathOf(top.href) !== pathOf(href) || top.label === clean) {
+  if (!top || !clean || pageKeyOf(top.href) !== pageKeyOf(href) || top.label === clean) {
     return [...stack];
   }
   return [...stack.slice(0, -1), { ...top, label: clean }];
@@ -133,7 +148,7 @@ export const saveCurrentScroll = (
   anchor?: NavAnchor | null,
 ): NavEntry[] => {
   const top = stack.at(-1);
-  if (!top || pathOf(top.href) !== pathOf(href) || !Number.isFinite(scrollY) || !isTrackedHref(href)) {
+  if (!top || pageKeyOf(top.href) !== pageKeyOf(href) || !Number.isFinite(scrollY) || !isTrackedHref(href)) {
     return [...stack];
   }
   const rounded = Math.max(0, Math.round(scrollY));

@@ -229,8 +229,10 @@ export const NavLabel = ({ label }: { label: string }) => {
  */
 export const useNavOrigin = () => {
   const pathname = usePathname();
+  const query = useSearchParams().toString();
   const current = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const settled = recordVisit(current, pathname).stack;
+  // The query matters: Buscar's person view is a page of its own (pageKeyOf).
+  const settled = recordVisit(current, query ? `${pathname}?${query}` : pathname).stack;
   return {
     origin: navOrigin(settled),
     label: backLabel(settled),

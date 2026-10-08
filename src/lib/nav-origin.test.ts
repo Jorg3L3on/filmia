@@ -11,7 +11,9 @@ import {
   labelCurrent,
   labelFromDocumentTitle,
   navOrigin,
+  pageKeyOf,
   parseDeckCard,
+  pathOf,
   readNavStack,
   recordVisit,
   saveCurrentScroll,
@@ -102,6 +104,44 @@ describe("nav-origin/recordVisit", () => {
     const stack = visitAll(Array.from({ length: 30 }, (_, index) => `/titulos/${index}`));
     assert.equal(stack.length, NAV_STACK_LIMIT);
     assert.equal(stack.at(-1)?.href, "/titulos/29");
+  });
+});
+
+describe("nav-origin/Buscar person view (FIL-I4-6)", () => {
+  const person = "/buscar?persona=1216630&rol=director&nombre=Greg+Daniels";
+
+  it("the person view is a page of its own; the search is another", () => {
+    assert.equal(pageKeyOf(person), "/buscar?persona=1216630&rol=director");
+    assert.equal(pageKeyOf("/buscar?q=fincher&tipo=director"), "/buscar");
+    assert.equal(pageKeyOf("/titulos/a?x=1"), "/titulos/a");
+  });
+
+  it("ficha → persona: the person view's origin is the ficha («‹ La Oficina»)", () => {
+    let stack = visitAll(["/titulos/oficina"]);
+    stack = labelCurrent(stack, "/titulos/oficina", "La Oficina");
+    stack = recordVisit(stack, person).stack;
+    assert.equal(backLabel(stack), "La Oficina");
+  });
+
+  it("Hoy «Dirigida por» → persona: «‹ Hoy · Terror» back to the same card", () => {
+    let stack = visitAll(["/?lente=terror&carta=t7"]);
+    stack = labelCurrent(stack, "/", "Hoy · Terror");
+    stack = recordVisit(stack, person).stack;
+    assert.equal(backLabel(stack), "Hoy · Terror");
+    assert.equal(navOrigin(stack)?.href, "/?lente=terror&carta=t7");
+  });
+
+  it("Director chip in Buscar → persona: the origin is Buscar itself (BackButton hides; «Resultados» rules)", () => {
+    const stack = visitAll(["/buscar?q=greg&tipo=director", person]);
+    assert.equal(pathOf(navOrigin(stack)?.href ?? ""), "/buscar");
+  });
+
+  it("ficha → persona → otra ficha → atrás → atrás undoes the path in order", () => {
+    let stack = visitAll(["/titulos/oficina", person, "/titulos/paper"]);
+    stack = recordVisit(stack, person).stack;
+    assert.equal(navOrigin(stack)?.href, "/titulos/oficina");
+    stack = recordVisit(stack, "/titulos/oficina").stack;
+    assert.equal(stack.at(-1)?.href, "/titulos/oficina");
   });
 });
 
