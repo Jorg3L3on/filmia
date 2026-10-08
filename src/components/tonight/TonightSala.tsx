@@ -128,11 +128,11 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
     }
   };
 
+  // Edge swipe into the next lens: glide only. Re-dealing the cards here felt like a reload;
+  // the deal stays for the first paint of the sala.
   const playTransition = (direction: "prev" | "next") => {
     setTransitionClass(direction === "next" ? "que-ver-deck-slide-next" : "que-ver-deck-slide-prev");
-    setDealing(true);
-    later(() => setTransitionClass(null), 320);
-    later(() => setDealing(false), DEAL_MS);
+    later(() => setTransitionClass(null), 240);
   };
 
   const goToLens = useCallback(

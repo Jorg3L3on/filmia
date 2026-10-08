@@ -1145,100 +1145,9 @@ html[data-que-ver-grade="live"] body {
   box-shadow: 0 0 10px rgb(var(--que-ver-glow, 124 156 255) / 0.7);
 }
 
-/* Destination "peek": the poster you land on, softened and dimmed, with the genre label on a
- * bottom scrim. Specificity must beat .coverflow-card.is-cinematic .coverflow-card-face { border:0 }. */
-.coverflow-card.coverflow-destination.is-cinematic .coverflow-destination-face,
-.coverflow-card.coverflow-destination.is-cinematic.is-focused .coverflow-destination-face {
-  border-width: 1px;
-  border-style: solid;
-  border-color: rgb(255 255 255 / 0.14);
+/* Destination side slot: the landing poster of the neighbouring genre, painted like a side poster. */
+.coverflow-card.coverflow-destination.is-cinematic .coverflow-destination-face {
   background: rgb(14 17 22);
-  box-shadow:
-    0 1px 0 rgb(255 255 255 / 0.08) inset,
-    0 18px 40px rgb(0 0 0 / 0.5);
-  transition: border-color var(--duration-hover) var(--ease-out);
-  /* Destination face stays sharp — labels must read at arm's length. */
-  filter: none !important;
-}
-
-.coverflow-destination-peek {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  /* Blur on the image layer only (static), never on the animated face. */
-  filter: blur(6px) saturate(0.85) brightness(0.62);
-  transform: scale(1.08);
-}
-
-.coverflow-destination-scrim {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(
-      ellipse 120% 60% at var(--dest-glow-x, 0%) 100%,
-      rgb(var(--que-ver-glow, 124 156 255) / 0.3),
-      transparent 70%
-    ),
-    linear-gradient(180deg, rgb(8 10 13 / 0.1) 30%, rgb(8 10 13 / 0.88));
-}
-
-.coverflow-card.coverflow-destination[data-coverflow-destination="next"] {
-  --dest-glow-x: 100%;
-}
-
-.coverflow-card.coverflow-destination.is-cinematic .coverflow-destination-face:hover {
-  border-color: rgb(255 255 255 / 0.22);
-}
-
-.coverflow-destination-kicker {
-  color: var(--fog);
-  font-size: 0.5625rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.coverflow-destination-name {
-  max-width: 100%;
-  overflow-wrap: normal;
-  color: var(--paper);
-  font-size: 1.05rem;
-  font-style: italic;
-  font-weight: 500;
-  line-height: 1.1;
-  letter-spacing: -0.01em;
-  text-shadow:
-    0 0 14px rgb(var(--que-ver-glow, 124 156 255) / 0.45),
-    0 1px 2px rgb(0 0 0 / 0.6);
-}
-
-.coverflow-destination-name.is-long {
-  font-size: 0.85rem;
-}
-
-.coverflow-destination-arrow {
-  display: inline-flex;
-  width: 1.75rem;
-  height: 1.75rem;
-  align-items: center;
-  justify-content: center;
-  margin-top: 0.15rem;
-  border: 1px solid rgb(var(--accent-rgb) / 0.35);
-  border-radius: 9999px;
-  background: rgb(var(--accent-rgb) / 0.12);
-  color: var(--accent);
-  box-shadow: 0 0 12px rgb(var(--que-ver-glow, 124 156 255) / 0.35);
-  transition: transform var(--duration-hover) var(--ease-out);
-}
-
-[data-coverflow-destination="prev"] .coverflow-destination-face:hover .coverflow-destination-arrow {
-  transform: translateX(-2px);
-}
-
-[data-coverflow-destination="next"] .coverflow-destination-face:hover .coverflow-destination-arrow {
-  transform: translateX(2px);
 }
 
 /* Mode toggle — chrome soft but readable (Qué ver / Historial at arm's length). */
@@ -1411,35 +1320,28 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-n
 }
 
 .que-ver-deck-slide-next {
-  animation: que-ver-deck-in-right 300ms var(--ease-out) both;
+  animation: que-ver-deck-in-right 220ms var(--ease-out) both;
 }
 
 .que-ver-deck-slide-prev {
-  animation: que-ver-deck-in-left 300ms var(--ease-out) both;
+  animation: que-ver-deck-in-left 220ms var(--ease-out) both;
 }
 
+/* Genre switch from the edge: a short glide only — a blur/fade-in read as "loading". */
 @keyframes que-ver-deck-in-right {
   from {
-    opacity: 0.35;
-    filter: blur(4px);
-    transform: translateX(4%);
+    transform: translateX(3%);
   }
   to {
-    opacity: 1;
-    filter: blur(0);
     transform: translateX(0);
   }
 }
 
 @keyframes que-ver-deck-in-left {
   from {
-    opacity: 0.35;
-    filter: blur(4px);
-    transform: translateX(-4%);
+    transform: translateX(-3%);
   }
   to {
-    opacity: 1;
-    filter: blur(0);
     transform: translateX(0);
   }
 }
