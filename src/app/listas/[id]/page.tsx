@@ -124,7 +124,8 @@ const ListDetail = async ({
   const clearHref = catalogHref(`/listas/${list.id}`, {});
 
   return (
-    <div className="space-y-6">
+    // Shell = Hoy's room: the deck tints the page with the hero poster's colour.
+    <div className="diario-que-ver-shell space-y-6">
       <PageHeader
         title={list.name}
         description={list.description ?? undefined}

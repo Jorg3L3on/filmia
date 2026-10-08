@@ -47,8 +47,11 @@ export type CoverflowDeckProps = {
   listId?: string;
   variant?: "page" | "sheet";
   onActiveChange?: (index: number, title: CoverflowTitle) => void;
-  /** `watched` = cinematic meta only; `tonight` = Esta noche (stub, reasons, chips). */
-  footer?: "full" | "watched" | "tonight";
+  /**
+   * `watched` = cinematic meta only; `tonight` = Esta noche (stub, reasons, chips);
+   * `list` = cinematic list deck (stub, chips, hold menu with «Quitar de la lista»).
+   */
+  footer?: "full" | "watched" | "tonight" | "list";
   /** Focused card on mount / remount (category continuum). */
   initialIndex?: number;
   /** Swipe/wheel past first/last card → neighboring category (Qué ver). */

@@ -8,7 +8,8 @@ import { CoverflowIndicators } from "@/components/coverflow/CoverflowIndicators"
 import { QueVerAtmosphere } from "@/components/coverflow/QueVerAtmosphere";
 import { useCoverflowEngine } from "@/components/coverflow/useCoverflowEngine";
 import { useCoverflowLocalTitles } from "@/components/coverflow/useCoverflowLocalTitles";
-import { usePosterAmbientColor } from "@/components/coverflow/usePosterAmbientColor";
+import { useListCardMenu } from "@/components/coverflow/useListCardMenu";
+import { useAmbientGrade, usePosterAmbientColor } from "@/components/coverflow/usePosterAmbientColor";
 import type { CoverflowDeckProps, CoverflowTitle } from "@/components/coverflow/types";
 import { cn } from "@/lib/cn";
 import { COVERFLOW_VISIBLE_SPAN } from "@/lib/coverflow-metrics";
@@ -34,11 +35,19 @@ export const CoverflowDeck = ({
     handleMarkSeenError,
   } = useCoverflowLocalTitles(incomingTitles);
   const isSheet = variant === "sheet";
-  const cinematic = (footer === "watched" || footer === "tonight") && !isSheet;
+  const cinematic =
+    (footer === "watched" || footer === "tonight" || footer === "list") && !isSheet;
+  const chipsInFooter = footer === "tonight" || footer === "list";
   const focusSpring = useSpringFeedback();
   const notifiedIndex = useRef<number | null>(null);
   const deckRootRef = useRef<HTMLDivElement>(null);
   const [lightLeakKey, setLightLeakKey] = useState(0);
+  const cardMenu = useListCardMenu({
+    listId,
+    enabled: footer === "list" && !isSheet,
+    onHide: handleHide,
+    onRestore: handleRestore,
+  });
   const engine = useCoverflowEngine(titles.length, isSheet, cinematic, {
     initialIndex,
     onEdgeNavigate: cinematic ? onEdgeNavigate : undefined,
@@ -83,29 +92,7 @@ export const CoverflowDeck = ({
     setLightLeakKey((value) => value + 1);
   }, [cinematic]);
 
-  // Propagate grade to sala shell + <html> so full-bleed wash can sit behind SiteHeader.
-  useEffect(() => {
-    if (!cinematic) {
-      return;
-    }
-    const shell = deckRootRef.current?.closest(
-      ".diario-que-ver-shell",
-    ) as HTMLElement | null;
-    if (!shell) {
-      return;
-    }
-    const root = document.documentElement;
-    shell.style.setProperty("--que-ver-glow", ambient.cssRgb);
-    shell.dataset.queVerGrade = "live";
-    root.style.setProperty("--que-ver-glow", ambient.cssRgb);
-    root.dataset.queVerGrade = "live";
-    return () => {
-      shell.style.removeProperty("--que-ver-glow");
-      delete shell.dataset.queVerGrade;
-      root.style.removeProperty("--que-ver-glow");
-      delete root.dataset.queVerGrade;
-    };
-  }, [ambient.cssRgb, cinematic]);
+  useAmbientGrade(deckRootRef, ambient.cssRgb, cinematic);
 
   useEffect(() => {
     if (titles.length === 0) {
@@ -220,7 +207,9 @@ export const CoverflowDeck = ({
                   registerNode={registerNode}
                   onMarkedSeen={handleMarkedSeen}
                   onMarkSeenError={handleMarkSeenError}
-                  onStubCommit={footer === "tonight" ? handleSlideCommit : undefined}
+                  onStubCommit={chipsInFooter ? handleSlideCommit : undefined}
+                  onOpenMenu={cardMenu.openMenu}
+                  chipsInFooter={chipsInFooter}
                 />
               );
             })}
@@ -264,14 +253,14 @@ export const CoverflowDeck = ({
             activeTitle={activeTitle}
             isSheet={isSheet}
             footer={footer}
-            listId={listId}
             focusClassName={focusSpring.className}
-            onHide={handleHide}
-            onRestore={handleRestore}
+            onOpenMenu={cardMenu.openMenu}
             onSlideCommit={cinematic ? handleSlideCommit : undefined}
           />
         </div>
       ) : null}
+
+      {cardMenu.menu}
     </div>
   );
 };

@@ -1692,12 +1692,14 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-n
   }
 }
 
-.coverflow-card.is-tonight.is-focused {
+.coverflow-card.is-tonight.is-focused,
+.coverflow-card.has-stub.is-focused {
   /* The stub hangs below the card; the focused face has no blur to clip. */
   overflow: visible;
 }
 
-.coverflow-card.is-tonight .coverflow-card-face {
+.coverflow-card.is-tonight .coverflow-card-face,
+.coverflow-card.is-holdable .coverflow-card-face {
   -webkit-touch-callout: none;
 }
 

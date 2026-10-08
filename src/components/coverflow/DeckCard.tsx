@@ -81,6 +81,10 @@ type DeckCardProps = {
   onMarkSeenError?: (titleId: string) => void;
   /** Esta noche: the stub tore — fire the sala light leak. */
   onStubCommit?: () => void;
+  /** Hold (or right-click) the hero card to open the card menu (lists). Esta noche uses its sala. */
+  onOpenMenu?: (title: CoverflowTitle) => void;
+  /** IMDb/rating live in the footer chips (Esta noche, lists): keep the poster face clean. */
+  chipsInFooter?: boolean;
 };
 
 const STAMP_MS = 520;
@@ -98,18 +102,27 @@ export const DeckCard = memo(function DeckCard({
   onMarkedSeen,
   onMarkSeenError,
   onStubCommit,
+  onOpenMenu,
+  chipsInFooter = false,
 }: DeckCardProps) {
   const sala = useTonight();
   const tonight = title.tonight;
   const isTonight = Boolean(tonight && sala && cinematic && !compact);
+  const holdable = isTonight || Boolean(onOpenMenu && cinematic && !compact);
+  const showStub = !compact && !title.watched;
   const [stamped, setStamped] = useState(false);
   const rootRef = useRef<HTMLElement | null>(null);
   const [pressing, setPressing] = useState(false);
   const longPress = useLongPress(
     () => {
+      if (!holdable) {
+        return;
+      }
+      navigator.vibrate?.(12);
       if (isTonight && sala) {
-        navigator.vibrate?.(12);
         sala.onOpenMenu(title);
+      } else {
+        onOpenMenu?.(title);
       }
     },
     { onPressChange: setPressing },
@@ -182,24 +195,30 @@ export const DeckCard = memo(function DeckCard({
         compact && "is-compact",
         cinematic && "is-cinematic",
         isTonight && "is-tonight",
+        holdable && "is-holdable",
+        showStub && "has-stub",
         stamped && "is-stamped",
         pressing && "is-pressing",
       )}
       onPointerDown={(event) => {
         onPointerDown(event);
-        if (isTonight) {
+        if (holdable) {
           longPress.onPointerDown(event);
         }
       }}
-      onPointerMove={isTonight ? longPress.onPointerMove : undefined}
-      onPointerUp={isTonight ? longPress.onPointerUp : undefined}
-      onPointerCancel={isTonight ? longPress.onPointerCancel : undefined}
-      onPointerLeave={isTonight ? longPress.onPointerLeave : undefined}
+      onPointerMove={holdable ? longPress.onPointerMove : undefined}
+      onPointerUp={holdable ? longPress.onPointerUp : undefined}
+      onPointerCancel={holdable ? longPress.onPointerCancel : undefined}
+      onPointerLeave={holdable ? longPress.onPointerLeave : undefined}
       onContextMenu={
-        isTonight
+        holdable
           ? (event) => {
               event.preventDefault();
-              sala?.onOpenMenu(title);
+              if (isTonight && sala) {
+                sala.onOpenMenu(title);
+              } else {
+                onOpenMenu?.(title);
+              }
             }
           : undefined
       }
@@ -236,13 +255,13 @@ export const DeckCard = memo(function DeckCard({
         )}
         <span data-coverflow-dim className="coverflow-card-dim" aria-hidden />
         <span className="coverflow-card-specular" aria-hidden />
-        {isTonight ? <span className="coverflow-card-hold" aria-hidden /> : null}
+        {holdable ? <span className="coverflow-card-hold" aria-hidden /> : null}
         {!compact && title.watched && !isTonight ? (
           <WatchedBadge
             compact
             className={cn(
               "absolute z-10",
-              cinematic && imdbLabel
+              cinematic && imdbLabel && !chipsInFooter
                 ? "bottom-2.5 left-2.5"
                 : "left-2 top-2",
             )}
@@ -253,7 +272,7 @@ export const DeckCard = memo(function DeckCard({
             Visto
           </span>
         ) : null}
-        {cinematic && !isTonight && imdbLabel && title.imdbRating != null ? (
+        {cinematic && !chipsInFooter && imdbLabel && title.imdbRating != null ? (
           <span
             data-deck-imdb-badge
             aria-label={imdbLabel}
@@ -311,7 +330,7 @@ export const DeckCard = memo(function DeckCard({
           </div>
         ) : null}
       </Link>
-      {!compact && !title.watched ? (
+      {showStub ? (
         <TicketStub
           titleId={title.id}
           titleName={title.name}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type RefObject } from "react";
 import {
   AMBIENT_FALLBACK_RGB,
   formatAmbientRgb,
@@ -194,4 +194,35 @@ export const usePosterAmbientColor = (
     cssRgb: formatAmbientRgb(rgb),
     style: { "--que-ver-glow": formatAmbientRgb(rgb) } as CSSProperties,
   };
+};
+
+/**
+ * Propagate the deck's grade to the enclosing `.diario-que-ver-shell` and <html>, so the
+ * full-bleed wash can sit behind SiteHeader. No-op outside a shell or when not cinematic.
+ */
+export const useAmbientGrade = (
+  deckRootRef: RefObject<HTMLElement | null>,
+  cssRgb: string,
+  cinematic: boolean,
+) => {
+  useEffect(() => {
+    if (!cinematic) {
+      return;
+    }
+    const shell = deckRootRef.current?.closest(".diario-que-ver-shell") as HTMLElement | null;
+    if (!shell) {
+      return;
+    }
+    const root = document.documentElement;
+    shell.style.setProperty("--que-ver-glow", cssRgb);
+    shell.dataset.queVerGrade = "live";
+    root.style.setProperty("--que-ver-glow", cssRgb);
+    root.dataset.queVerGrade = "live";
+    return () => {
+      shell.style.removeProperty("--que-ver-glow");
+      delete shell.dataset.queVerGrade;
+      root.style.removeProperty("--que-ver-glow");
+      delete root.dataset.queVerGrade;
+    };
+  }, [cinematic, cssRgb, deckRootRef]);
 };
