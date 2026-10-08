@@ -15,16 +15,11 @@ import { WhySheet } from "@/components/tonight/WhySheet";
 import { useImpressions } from "@/components/tonight/useImpressions";
 import { useTonightClock } from "@/components/tonight/useTonightClock";
 import { cn } from "@/lib/cn";
-import {
-  coverflowStartIndex,
-  resolveCategoryNeighbor,
-} from "@/lib/diary-category-continuum";
 import { showToast } from "@/lib/toast";
-import { rankForNow } from "@/lib/tonight/serve";
+import { rankForNow, TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import { dayPartOf } from "@/lib/tonight/time";
 import type { TonightDecks } from "@/lib/tonight-store";
 
-export const TONIGHT_LENS_PARAM = "lente";
 const DEAL_MS = 700;
 const STAMP_TO_FLIGHT_MS = 0;
 
@@ -40,8 +35,8 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
   const [activeSlug, setActiveSlug] = useState(
     () => decks.lenses.find((lens) => lens.slug === initialSlug)?.slug ?? decks.lenses[0]?.slug ?? "",
   );
-  const [startIndex, setStartIndex] = useState(0);
-  const [transitionClass, setTransitionClass] = useState<string | null>(null);
+  const activeSlugRef = useRef(activeSlug);
+  const [focusRequest, setFocusRequest] = useState<{ index: number; seq: number }>();
   const [dealing, setDealing] = useState(true);
   const [whyTitle, setWhyTitle] = useState<CoverflowTitle | null>(null);
   const [menuTitle, setMenuTitle] = useState<CoverflowTitle | null>(null);
@@ -119,71 +114,30 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
     [decks.lenses, lensCards],
   );
 
+  /**
+   * One continuous deck. The selector builds the lenses as disjoint chapters of a single ranked
+   * queue, so crossing Para ti → Drama is just the next card: same physics, no wall, no remount.
+   * The rail follows the hero's lens; tapping a lens jumps the deck to that chapter.
+   */
+  const { cards, lensStarts } = useMemo(() => {
+    const starts = new Map<string, number>();
+    const all: CoverflowTitle[] = [];
+    for (const lens of lenses) {
+      starts.set(lens.slug, all.length);
+      all.push(...(lensCards.get(lens.slug) ?? []));
+    }
+    return { cards: all, lensStarts: starts };
+  }, [lensCards, lenses]);
+
   const activeLens = lenses.find((lens) => lens.slug === activeSlug) ?? lenses[0] ?? null;
-  const cards = activeLens ? (lensCards.get(activeLens.slug) ?? []) : [];
 
-  const announce = (name: string) => {
-    if (liveRef.current) {
-      liveRef.current.textContent = `Lente ${name}`;
+  const goToLens = (slug: string) => {
+    const index = lensStarts.get(slug);
+    if (index == null) {
+      return;
     }
+    setFocusRequest((current) => ({ index, seq: (current?.seq ?? 0) + 1 }));
   };
-
-  // Edge swipe into the next lens: glide only. Re-dealing the cards here felt like a reload;
-  // the deal stays for the first paint of the sala.
-  const playTransition = (direction: "prev" | "next") => {
-    setTransitionClass(direction === "next" ? "que-ver-deck-slide-next" : "que-ver-deck-slide-prev");
-    later(() => setTransitionClass(null), 240);
-  };
-
-  const goToLens = useCallback(
-    (slug: string, start: "first" | "last", direction?: "prev" | "next") => {
-      const lens = lenses.find((item) => item.slug === slug);
-      if (!lens) {
-        return;
-      }
-      if (direction) {
-        playTransition(direction);
-      }
-      setActiveSlug(slug);
-      setStartIndex(coverflowStartIndex(lens.count, start));
-      announce(lens.name);
-      // Shallow URL sync: router.replace would refetch the server page before the deck feels settled.
-      window.history.replaceState(null, "", `/?${TONIGHT_LENS_PARAM}=${encodeURIComponent(slug)}`);
-    },
-    // playTransition only touches state setters + timers.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [lenses],
-  );
-
-  const edgeNeighbors = useMemo(() => {
-    if (!activeLens) {
-      return { prev: null, next: null };
-    }
-    // The destination peeks the poster the visitor will land on (first of next, last of prev).
-    const withPoster = (direction: "prev" | "next") => {
-      const neighbor = resolveCategoryNeighbor(lenses, activeLens.slug, direction);
-      if (!neighbor) {
-        return null;
-      }
-      const titles = lensCards.get(neighbor.slug) ?? [];
-      const landing = neighbor.startIndex === "first" ? titles[0] : titles[titles.length - 1];
-      return { ...neighbor, posterPath: landing?.posterPath ?? null };
-    };
-    return { prev: withPoster("prev"), next: withPoster("next") };
-  }, [activeLens, lensCards, lenses]);
-
-  const handleEdgeNavigate = useCallback(
-    (direction: "prev" | "next") => {
-      if (!activeLens) {
-        return;
-      }
-      const neighbor = resolveCategoryNeighbor(lenses, activeLens.slug, direction);
-      if (neighbor) {
-        goToLens(neighbor.slug, neighbor.startIndex, direction);
-      }
-    },
-    [activeLens, goToLens, lenses],
-  );
 
   const hide = (titleId: string) => setHidden((current) => new Set(current).add(titleId));
   const unhide = (titleId: string) =>
@@ -227,7 +181,7 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
     setMenuTitle(null);
     hide(title.id);
     showToast({ title: "Ahora no", description: `${title.name} vuelve en dos semanas.` });
-    void markNotTonight(title.id, activeLens?.slug).catch(() => {
+    void markNotTonight(title.id, title.tonight?.lens ?? activeLens?.slug).catch(() => {
       unhide(title.id);
       showToast({ title: "No se pudo guardar", variant: "error" });
     });
@@ -243,11 +197,24 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
     });
   };
 
+  // The hero's own lens drives the rail and the URL (impressions settle the previous hero first).
   const handleActiveChange = useCallback(
     (_index: number, title: CoverflowTitle) => {
       impressions.onHeroChange(title.id);
+      const slug = title.tonight?.lens;
+      if (!slug || slug === activeSlugRef.current) {
+        return;
+      }
+      activeSlugRef.current = slug;
+      setActiveSlug(slug);
+      const lens = lenses.find((item) => item.slug === slug);
+      if (lens && liveRef.current) {
+        liveRef.current.textContent = `Lente ${lens.name}`;
+      }
+      // Shallow URL sync: router.replace would refetch the server page mid-swipe.
+      window.history.replaceState(null, "", `/?${TONIGHT_LENS_PARAM}=${encodeURIComponent(slug)}`);
     },
-    [impressions],
+    [impressions, lenses],
   );
 
   void STAMP_TO_FLIGHT_MS;
@@ -273,26 +240,29 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
               <GenreCoverflow
                 categories={lenses}
                 activeSlug={activeLens.slug}
-                onSelect={(slug) => goToLens(slug, "first")}
+                onSelect={goToLens}
                 label="Lentes de hoy"
               />
             </div>
             <div ref={liveRef} className="sr-only" aria-live="polite" aria-atomic="true" />
-            <div className={cn("flex min-h-0 flex-1 flex-col", transitionClass, dealing && "deck-deal")}>
+            <div className={cn("flex min-h-0 flex-1 flex-col", dealing && "deck-deal")}>
               <CoverflowDeck
-                key={`${activeLens.slug}-${startIndex}-${cards[0]?.id ?? "empty"}`}
                 titles={cards}
                 footer="tonight"
                 className="min-h-0 flex-1"
-                initialIndex={startIndex}
-                onEdgeNavigate={handleEdgeNavigate}
-                edgeNeighbors={edgeNeighbors}
+                // Read on mount only: a ?lente= deep link opens on that chapter.
+                initialIndex={lensStarts.get(activeSlug) ?? 0}
+                focusRequest={focusRequest}
                 onActiveChange={handleActiveChange}
               />
             </div>
           </div>
         )}
-        <WhySheet title={whyTitle} lens={activeLens?.slug ?? ""} onClose={() => setWhyTitle(null)} />
+        <WhySheet
+          title={whyTitle}
+          lens={whyTitle?.tonight?.lens ?? activeLens?.slug ?? ""}
+          onClose={() => setWhyTitle(null)}
+        />
         <TonightCardMenu
           title={menuTitle}
           onClose={() => setMenuTitle(null)}

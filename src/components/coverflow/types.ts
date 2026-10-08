@@ -52,13 +52,8 @@ export type CoverflowDeckProps = {
    * `list` = cinematic list deck (stub, chips, hold menu with «Quitar de la lista»).
    */
   footer?: "full" | "watched" | "tonight" | "list";
-  /** Focused card on mount / remount (category continuum). */
+  /** Focused card on mount / remount. */
   initialIndex?: number;
-  /** Swipe/wheel past first/last card → neighboring category (Qué ver). */
-  onEdgeNavigate?: (direction: "prev" | "next") => void;
-  /** Category continuum labels for frosted destination side slots. */
-  edgeNeighbors?: {
-    prev: { name: string; posterPath?: string | null } | null;
-    next: { name: string; posterPath?: string | null } | null;
-  };
+  /** Parent-driven move (Hoy's lens rail). Each new `seq` jumps once to `index`. */
+  focusRequest?: { index: number; seq: number };
 };

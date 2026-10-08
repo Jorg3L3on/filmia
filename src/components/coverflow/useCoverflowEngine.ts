@@ -40,12 +40,16 @@ type CoverflowEngine = {
   stageHeight: number;
   registerNode: (index: number, node: HTMLElement | null) => void;
   handleSelectCard: (index: number) => void;
+  /** Parent-driven move (Hoy's lens rail): glide when close, cut straight there when far. */
+  jumpTo: (index: number) => void;
   handlePointerDown: (event: React.PointerEvent<HTMLElement>) => void;
   handleKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void;
   handleClickCapture: (event: React.MouseEvent<HTMLDivElement>) => void;
 };
 
 const EDGE_NAVIGATE_THRESHOLD = 0.42;
+/** `jumpTo` glides up to this many cards; beyond, it cuts. */
+const JUMP_GLIDE_MAX = 3;
 
 /** Which edges a gesture may cross — only those it started resting on. */
 type EdgeArming = { prev: boolean; next: boolean };
@@ -249,6 +253,24 @@ export const useCoverflowEngine = (
       ensureTick();
     },
     [ensureTick, titlesLength],
+  );
+
+  const jumpTo = useCallback(
+    (index: number) => {
+      const target = clampCoverflowIndex(index, titlesLengthRef.current - 1);
+      // Gliding across a whole chapter strobes through posters; a far jump is a tab-like cut.
+      if (Math.abs(target - displayIndexRef.current) <= JUMP_GLIDE_MAX) {
+        snapTo(target);
+        return;
+      }
+      motionModeRef.current = "idle";
+      velocityRef.current = 0;
+      displayIndexRef.current = target;
+      targetIndexRef.current = target;
+      activeIndexRef.current = target;
+      setActiveIndex(target);
+    },
+    [snapTo],
   );
 
   const handleSelectCard = useCallback(
@@ -577,6 +599,7 @@ export const useCoverflowEngine = (
     stageHeight,
     registerNode,
     handleSelectCard,
+    jumpTo,
     handlePointerDown,
     handleKeyDown,
     handleClickCapture,

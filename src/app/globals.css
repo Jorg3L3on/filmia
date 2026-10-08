@@ -1145,11 +1145,6 @@ html[data-que-ver-grade="live"] body {
   box-shadow: 0 0 10px rgb(var(--que-ver-glow, 124 156 255) / 0.7);
 }
 
-/* Destination side slot: the landing poster of the neighbouring genre, painted like a side poster. */
-.coverflow-card.coverflow-destination.is-cinematic .coverflow-destination-face {
-  background: rgb(14 17 22);
-}
-
 /* Mode toggle — chrome soft but readable (Qué ver / Historial at arm's length). */
 .diario-que-ver-shell .diario-mode-toggle {
   border-color: rgb(255 255 255 / 0.1);

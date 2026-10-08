@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DeckCard } from "@/components/coverflow/DeckCard";
-import { DestinationCard } from "@/components/coverflow/DestinationCard";
 import { DeckFooter } from "@/components/coverflow/DeckFooter";
 import { CoverflowIndicators } from "@/components/coverflow/CoverflowIndicators";
 import { QueVerAtmosphere } from "@/components/coverflow/QueVerAtmosphere";
@@ -24,8 +23,7 @@ export const CoverflowDeck = ({
   onActiveChange,
   footer = "full",
   initialIndex = 0,
-  onEdgeNavigate,
-  edgeNeighbors,
+  focusRequest,
 }: CoverflowDeckProps) => {
   const {
     titles,
@@ -39,7 +37,8 @@ export const CoverflowDeck = ({
     (footer === "watched" || footer === "tonight" || footer === "list") && !isSheet;
   const chipsInFooter = footer === "tonight" || footer === "list";
   const focusSpring = useSpringFeedback();
-  const notifiedIndex = useRef<number | null>(null);
+  // By title, not index: removing the hero slides the next card into the same index.
+  const notifiedId = useRef<string | null>(null);
   const deckRootRef = useRef<HTMLDivElement>(null);
   const [lightLeakKey, setLightLeakKey] = useState(0);
   const cardMenu = useListCardMenu({
@@ -48,10 +47,7 @@ export const CoverflowDeck = ({
     onHide: handleHide,
     onRestore: handleRestore,
   });
-  const engine = useCoverflowEngine(titles.length, isSheet, cinematic, {
-    initialIndex,
-    onEdgeNavigate: cinematic ? onEdgeNavigate : undefined,
-  });
+  const engine = useCoverflowEngine(titles.length, isSheet, cinematic, { initialIndex });
   const {
     containerRef,
     stageRef,
@@ -60,10 +56,21 @@ export const CoverflowDeck = ({
     stageWidth,
     registerNode,
     handleSelectCard,
+    jumpTo,
     handlePointerDown,
     handleKeyDown,
     handleClickCapture,
   } = engine;
+
+  // Each new `seq` moves the deck once (identity changes alone must not re-jump).
+  const appliedFocusSeq = useRef(focusRequest?.seq);
+  useEffect(() => {
+    if (!focusRequest || focusRequest.seq === appliedFocusSeq.current) {
+      return;
+    }
+    appliedFocusSeq.current = focusRequest.seq;
+    jumpTo(focusRequest.index);
+  }, [focusRequest, jumpTo]);
 
   const activeTitle = titles[activeIndex] ?? titles[0];
   const ambient = usePosterAmbientColor(
@@ -96,17 +103,17 @@ export const CoverflowDeck = ({
 
   useEffect(() => {
     if (titles.length === 0) {
-      notifiedIndex.current = null;
+      notifiedId.current = null;
       return;
     }
 
     const title = titles[activeIndex];
-    if (!title || notifiedIndex.current === activeIndex) {
+    if (!title || notifiedId.current === title.id) {
       return;
     }
 
-    const isFirst = notifiedIndex.current == null;
-    notifiedIndex.current = activeIndex;
+    const isFirst = notifiedId.current == null;
+    notifiedId.current = title.id;
     onActiveChange?.(activeIndex, title);
     if (isSheet && !isFirst) {
       focusSpring.trigger();
@@ -213,32 +220,6 @@ export const CoverflowDeck = ({
                 />
               );
             })}
-            {cinematic && edgeNeighbors?.prev && activeIndex <= 0 ? (
-              <DestinationCard
-                key="destination-prev"
-                index={-1}
-                name={edgeNeighbors.prev.name}
-                posterPath={edgeNeighbors.prev.posterPath}
-                direction="prev"
-                onSelect={() => onEdgeNavigate?.("prev")}
-                onPointerDown={handlePointerDown}
-                registerNode={registerNode}
-              />
-            ) : null}
-            {cinematic &&
-            edgeNeighbors?.next &&
-            activeIndex >= titles.length - 1 ? (
-              <DestinationCard
-                key="destination-next"
-                index={titles.length}
-                name={edgeNeighbors.next.name}
-                posterPath={edgeNeighbors.next.posterPath}
-                direction="next"
-                onSelect={() => onEdgeNavigate?.("next")}
-                onPointerDown={handlePointerDown}
-                registerNode={registerNode}
-              />
-            ) : null}
           </div>
         </div>
 
