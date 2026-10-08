@@ -1,15 +1,12 @@
 "use client";
 
 import { Button } from "@/components/Button";
-import { SharedPoster } from "@/components/SharedPoster";
-import { PosterImage } from "@/components/PosterImage";
 import { EmptyState } from "@/components/EmptyState";
 import { SearchResultsSkeleton } from "@/components/PageSkeletons";
-import { cn } from "@/lib/cn";
-import { TITLE_KIND_LABEL } from "@/lib/labels";
+import { SearchResultRow } from "@/components/tmdb-search/SearchResultRow";
+import { WatchlistCountTicker } from "@/components/watchlist/WatchlistCountTicker";
 import { staggerStyle } from "@/lib/motion";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
-import { focusRing } from "@/lib/ui";
 import type { TmdbCatalogEntry } from "@/lib/tmdb-search-catalog";
 import { tmdbCatalogKey } from "@/lib/tmdb-search-catalog";
 
@@ -34,57 +31,29 @@ export const TmdbSearchResults = ({
 }: TmdbSearchResultsProps) => {
   if (results.length > 0) {
     return (
-      <section className="space-y-3">
-        <header className="flex items-end justify-between">
-          <h2 className="text-lg font-semibold text-paper">Resultados</h2>
-          <p className="text-sm text-mist">
-            {isSearching ? "Buscando…" : results.length}
+      <section className="space-y-3" aria-labelledby="buscar-resultados">
+        <header className="flex items-baseline justify-between gap-3">
+          <h2 id="buscar-resultados" className="text-[11px] font-medium uppercase tracking-[0.2em] text-mist">
+            Resultados
+          </h2>
+          {/* Stays mounted while a new search runs so the digits roll to the new count. */}
+          <p className="flex items-baseline gap-1.5 text-xs text-mist">
+            {isSearching ? <span className="buscar-shiny">Buscando…</span> : null}
+            <WatchlistCountTicker count={results.length} singular="resultado" plural="resultados" />
           </p>
         </header>
-        <ul className="space-y-2">
+        <ul className="grid grid-cols-[minmax(0,1fr)] gap-2 lg:grid-cols-2 lg:gap-3">
           {results.map((result, index) => {
             const key = tmdbCatalogKey(result.tmdbId, result.kind);
             const local = catalog.get(key) ?? catalog.get(String(result.tmdbId));
             return (
               <li key={key} className="stagger-in" style={staggerStyle(index)}>
-                <button
-                  type="button"
-                  onClick={() => onPreview(result)}
-                  className={cn(
-                    "group card-physics press-scale flex w-full items-center gap-3 rounded-2xl border border-line bg-surface px-3 py-2.5 text-left hover:border-accent/40",
-                    focusRing,
-                  )}
-                >
-                  <span className="w-12 shrink-0 overflow-hidden rounded-lg transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110">
-                    {local?.titleId ? (
-                      <SharedPoster titleId={local.titleId}>
-                        <PosterImage
-                          name={result.name}
-                          posterPath={result.posterPath}
-                          sizes="48px"
-                          className="rounded-lg"
-                        />
-                      </SharedPoster>
-                    ) : (
-                      <PosterImage
-                        name={result.name}
-                        posterPath={result.posterPath}
-                        sizes="48px"
-                        className="rounded-lg"
-                      />
-                    )}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium text-paper">{result.name}</span>
-                    <span className="block text-sm text-fog">
-                      {result.year ? `${result.year} · ` : ""}
-                      {TITLE_KIND_LABEL[result.kind]}
-                    </span>
-                  </span>
-                  <span className="text-mist" aria-hidden="true">
-                    ›
-                  </span>
-                </button>
+                <SearchResultRow
+                  result={result}
+                  titleId={local?.titleId}
+                  status={local?.watched ? "watched" : local?.inWatchlist ? "watchlist" : null}
+                  onPreview={onPreview}
+                />
               </li>
             );
           })}

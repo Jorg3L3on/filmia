@@ -3,6 +3,7 @@ import { DotsIcon, EyeIcon, FichaIcon, MoonIcon } from "@/components/watchlist/i
 import type { FichaView } from "@/components/watchlist/types";
 import { cn } from "@/lib/cn";
 import { focusRing, pillActionClass } from "@/lib/ui";
+import { CreditsLine } from "@/components/watchlist/CreditsLine";
 
 type WatchlistFichaDetailProps = {
   ficha: FichaView;
@@ -37,7 +38,9 @@ export const WatchlistFichaDetail = ({
         {ficha.overview}
       </p>
     ) : null}
-    {ficha.credits ? <p className="text-xs leading-relaxed text-fog">{ficha.credits}</p> : null}
+    {ficha.creditParts ? (
+      <CreditsLine parts={ficha.creditParts} className="text-xs leading-relaxed text-fog" />
+    ) : null}
     <div className="flex items-center gap-1.5">
       <button
         type="button"

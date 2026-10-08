@@ -1,5 +1,5 @@
 import type { Platform, SeriesStatus, TitleKind } from "@/db";
-import type { TonightFit, TonightReason } from "@/lib/tonight/types";
+import type { TonightFit, TonightPerson, TonightReason } from "@/lib/tonight/types";
 import type { WatchProviderOffer } from "@/lib/watch-providers";
 
 /** Esta noche extras on a card: why it is here, how it fits the night. */
@@ -14,6 +14,8 @@ export type CoverflowTonightMeta = {
   queueNote: string | null;
   lens: string;
   posterAmbient: string | null;
+  /** Directors / creators with TMDB ids, for the «Dirigida por» link. */
+  leads?: TonightPerson[];
 };
 
 export type CoverflowGenre = {
@@ -56,4 +58,8 @@ export type CoverflowDeckProps = {
   initialIndex?: number;
   /** Parent-driven move (Hoy's lens rail). Each new `seq` jumps once to `index`. */
   focusRequest?: { index: number; seq: number };
+  /** Keep the hero in `?carta=` and start there on the way back (list decks; Hoy does its own). */
+  syncCardParam?: boolean;
+  /** Server-side `?carta=` so the first paint matches the client. */
+  initialCardId?: string | null;
 };

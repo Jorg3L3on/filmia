@@ -2,9 +2,23 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { TitleKind } from "@/db";
 import {
+  parseFilmography,
+  summarizeFilmography,
+  type DirectorHit,
+  type PersonFilmography,
+  type PersonRole,
+  type TmdbCombinedCredits,
+} from "@/lib/person-filmography";
+import {
   METADATA_REVALIDATE_SECONDS,
   TMDB_CACHE_TAG,
 } from "@/lib/rendering";
+import {
+  parseTmdbPeople,
+  type TmdbCreatedBy,
+  type TmdbCreditsPayload,
+  type TmdbPerson,
+} from "@/lib/tmdb-people";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
@@ -594,15 +608,12 @@ const overviewWithFallback = async (
 };
 
 export type TmdbKeyword = { id: number; name: string };
-export type TmdbPersonRole = "director" | "creator" | "cast";
-export type TmdbPerson = { id: number; name: string; role: TmdbPersonRole };
-
-const TMDB_CAST_LIMIT = 5;
-
-type TmdbCreditsPayload = {
-  cast?: Array<{ id?: number; name?: string; order?: number; total_episode_count?: number }>;
-  crew?: Array<{ id?: number; name?: string; job?: string; jobs?: Array<{ job?: string }> }>;
-};
+export {
+  parseTmdbPeople,
+  type TmdbCreditsPayload,
+  type TmdbPerson,
+  type TmdbPersonRole,
+} from "@/lib/tmdb-people";
 
 type TmdbKeywordsPayload = {
   keywords?: Array<{ id?: number; name?: string }>;
@@ -623,54 +634,6 @@ export const parseTmdbKeywords = (payload: TmdbKeywordsPayload | null | undefine
     keywords.push({ id, name });
   }
   return keywords;
-};
-
-const isDirectorJob = (job: string | undefined) => job === "Director";
-
-export const parseTmdbPeople = (
-  credits: TmdbCreditsPayload | null | undefined,
-  createdBy: Array<{ id?: number; name?: string }> | undefined,
-): TmdbPerson[] => {
-  const people: TmdbPerson[] = [];
-  const seen = new Set<number>();
-  const push = (id: unknown, name: string | undefined, role: TmdbPersonRole) => {
-    const numeric = Number(id);
-    const label = name?.trim();
-    if (!Number.isInteger(numeric) || numeric <= 0 || !label || seen.has(numeric)) {
-      return;
-    }
-    seen.add(numeric);
-    people.push({ id: numeric, name: label, role });
-  };
-
-  for (const person of createdBy ?? []) {
-    push(person.id, person.name, "creator");
-  }
-  for (const member of credits?.crew ?? []) {
-    const jobs = member.jobs?.map((item) => item.job) ?? [member.job];
-    if (jobs.some(isDirectorJob)) {
-      push(member.id, member.name, "director");
-    }
-  }
-  const cast = [...(credits?.cast ?? [])].sort((a, b) => {
-    const episodes = (b.total_episode_count ?? 0) - (a.total_episode_count ?? 0);
-    if (episodes !== 0) {
-      return episodes;
-    }
-    return (a.order ?? 999) - (b.order ?? 999);
-  });
-  let castCount = 0;
-  for (const member of cast) {
-    if (castCount >= TMDB_CAST_LIMIT) {
-      break;
-    }
-    const before = people.length;
-    push(member.id, member.name, "cast");
-    if (people.length > before) {
-      castCount += 1;
-    }
-  }
-  return people;
 };
 
 export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
@@ -702,7 +665,7 @@ export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
     genres?: Array<{ id?: number; name?: string }>;
     keywords?: TmdbKeywordsPayload;
     aggregate_credits?: TmdbCreditsPayload;
-    created_by?: Array<{ id?: number; name?: string }>;
+    created_by?: TmdbCreatedBy;
   };
 
   // One call: details + keywords + credits (Esta noche taste vector). TV keywords
@@ -777,3 +740,89 @@ export const getTmdbTitleExtras = cache(async (
     return null;
   }
 });
+
+// ---------------------------------------------------------------------------
+// People (FIL-I3-5): Buscar's Director chip, the «Ver filmografía» suggestion
+// and the person view (/buscar?persona=<id>&rol=…). Parsing lives in
+// person-filmography.ts; this block only fetches (same 24 h cache).
+// ---------------------------------------------------------------------------
+
+export const tmdbProfileUrl = (profilePath: string | null | undefined, size: "w185" | "h632" = "w185") =>
+  profilePath ? `https://image.tmdb.org/t/p/${size}${profilePath}` : null;
+
+type TmdbPersonHit = {
+  id: number;
+  media_type?: string;
+  name?: string;
+  known_for_department?: string;
+  profile_path?: string | null;
+  popularity?: number;
+};
+
+const DIRECTING_DEPARTMENT = "Directing";
+
+const toDirectorHits = (people: readonly TmdbPersonHit[]): DirectorHit[] =>
+  people.flatMap((person) =>
+    person.known_for_department === DIRECTING_DEPARTMENT && person.name?.trim()
+      ? [
+          {
+            id: person.id,
+            name: person.name.trim(),
+            profilePath: person.profile_path ?? null,
+            popularity: person.popularity ?? 0,
+          },
+        ]
+      : [],
+  );
+
+/** Directors among the people of `/search/multi` (same request as searchTmdbMulti, cached). */
+export const searchTmdbMultiDirectors = async (query: string): Promise<DirectorHit[]> => {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return [];
+  }
+  const data = await tmdbFetch<{ results: TmdbPersonHit[] }>("/search/multi", { query: trimmed });
+  return toDirectorHits(data.results.filter((item) => item.media_type === "person"));
+};
+
+/** Director chip: `/search/person`, keeping people known for Directing. */
+export const searchTmdbDirectors = async (query: string): Promise<DirectorHit[]> => {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return [];
+  }
+  const data = await tmdbFetch<{ results: TmdbPersonHit[] }>("/search/person", { query: trimmed });
+  return toDirectorHits(data.results).slice(0, 8);
+};
+
+/** Just the photo; shares the cached `/person/:id` response with the filmography. */
+export const getTmdbPersonProfilePath = async (personId: number): Promise<string | null> => {
+  const person = await tmdbFetch<{ profile_path?: string | null }>(`/person/${personId}`);
+  return person.profile_path ?? null;
+};
+
+/** One filmography per person and role (director | reparto | fotografia). */
+export const getTmdbPersonFilmography = async (
+  personId: number,
+  role: PersonRole,
+): Promise<PersonFilmography> => {
+  const [person, credits] = await Promise.all([
+    tmdbFetch<{
+      id: number;
+      name?: string;
+      profile_path?: string | null;
+      known_for_department?: string;
+    }>(`/person/${personId}`),
+    tmdbFetch<TmdbCombinedCredits>(`/person/${personId}/combined_credits`),
+  ]);
+  return summarizeFilmography(
+    {
+      id: person.id,
+      name: person.name?.trim() || "",
+      profilePath: person.profile_path ?? null,
+      department: person.known_for_department ?? null,
+    },
+    role,
+    parseFilmography(credits, role),
+  );
+};

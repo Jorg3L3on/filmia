@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { computeTonight, PARA_TI_SLUG } from "./tonight";
 import { itemVector, cosine } from "./tonight/features";
-import { findPinnedTitleId } from "./tonight/pin";
-import { rankForNow } from "./tonight/serve";
+import { canOfferTonightPin, findPinnedTitleId, searchPinBlocker } from "./tonight/pin";
+import { fitReason, rankForNow } from "./tonight/serve";
 import {
   bedtimeFor,
   dayPartOf,
@@ -267,7 +267,7 @@ describe("computeTonight", () => {
     assert.ok(interstellarLate?.headline.some((reason) => reason.kind === "fit_over"));
   });
 
-  it("says nothing about the night by day: no «le caben a tu noche» at 13:35", () => {
+  it("says nothing about the night by day: no «termina a tiempo» at 13:35", () => {
     const cards = (paraTi?.picks ?? []).map((pick) => ({
       id: pick.titleId,
       runtimeMinutes: titles.find((item) => item.id === pick.titleId)?.runtimeMinutes ?? null,
@@ -319,6 +319,51 @@ describe("tonight/pin", () => {
     assert.equal(findPinnedTitleId([event("a", "pinned", 30), event("a", "not_tonight", 5)], NOW), null);
     assert.equal(findPinnedTitleId([event("a", "not_tonight", 30), event("a", "pinned", 5)], NOW), "a");
   });
+
+  it("lets a pin from Buscar replace the one from Quiero ver (newest wins)", () => {
+    const fromQueue = event("queue-pick", "pinned", 90);
+    const fromSearch = event("search-pick", "pinned", 1);
+    assert.equal(findPinnedTitleId([fromQueue, fromSearch], NOW), "search-pick");
+    assert.equal(findPinnedTitleId([fromSearch, fromQueue], NOW), "search-pick");
+  });
+
+  it("offers «Ver esta noche» in Buscar only for unwatched titles outside log mode", () => {
+    assert.equal(canOfferTonightPin({ watched: false, logMode: false }), true);
+    assert.equal(canOfferTonightPin({ watched: true, logMode: false }), false);
+    assert.equal(canOfferTonightPin({ watched: false, logMode: true }), false);
+  });
+
+  it("refuses to pin a watched title from Buscar", () => {
+    assert.equal(searchPinBlocker(null), null);
+    assert.equal(searchPinBlocker({ watchedAt: null }), null);
+    assert.match(searchPinBlocker({ watchedAt: NOW }) ?? "", /Ya la viste/);
+  });
+});
+
+describe("taste_person reason", () => {
+  it("carries the director's TMDB id so Hoy can link «Dirigida por» to the filmography", () => {
+    const villeneuve = { id: 525, name: "Denis Villeneuve", role: "director" as const };
+    const titles = [
+      title("arrival", { genres: [SCIFI], people: [villeneuve], watchedAt: new Date(NOW.getTime() - 20 * DAY), rating: 9 }),
+      title("sicario", { genres: [DRAMA], people: [villeneuve], watchedAt: new Date(NOW.getTime() - 40 * DAY), rating: 8 }),
+      title("comedy", { genres: [COMEDY], watchedAt: new Date(NOW.getTime() - 10 * DAY), rating: 3 }),
+      title("bladerunner", { genres: [SCIFI, DRAMA], people: [villeneuve], runtimeMinutes: 160, imdbRating: 8 }),
+    ];
+    const result = computeTonight({
+      titles,
+      queue: [queued("bladerunner", 0)],
+      events: [],
+      userPlatforms: ["NETFLIX"],
+      nightEnds: NIGHT,
+      now: NOW,
+    });
+    const reason = result.lenses
+      .flatMap((lens) => lens.picks)
+      .find((pick) => pick.titleId === "bladerunner")
+      ?.reasons.find((item) => item.kind === "taste_person");
+    assert.equal(reason?.text, "Dirigida por Denis Villeneuve");
+    assert.equal(reason?.personId, 525);
+  });
 });
 
 describe("mmrSelect", () => {
@@ -338,5 +383,16 @@ describe("mmrSelect", () => {
     const ids = picked.map((item) => item.title.id);
     assert.equal(ids.filter((id) => id.startsWith("d")).length, 2);
     assert.ok(ids.includes("c1") && ids.includes("a1"));
+  });
+});
+
+describe("fit reason copy", () => {
+  it("says the film ends in time, without the «cabe» idiom", () => {
+    const fits = { fit: 1, endsAt: "23:19", overflowMinutes: 0, remainingMinutes: 180 };
+    const reason = fitReason(fits, 101);
+    assert.equal(reason?.kind, "fit");
+    assert.match(reason?.text ?? "", /· termina a tiempo$/);
+    assert.doesNotMatch(reason?.text ?? "", /cabe/);
+    assert.equal(reason?.detail, "Si empiezas ahora acaba a las 23:19");
   });
 });

@@ -115,10 +115,10 @@ export const parseAccountEmail = (value: FormDataEntryValue | null) => {
   return email;
 };
 
+/** Current + new only: the sheet shows the new one with the eye, so a «confirm» field adds nothing. */
 export const parsePasswordChange = (formData: FormData) => {
   const currentPassword = String(formData.get("currentPassword") ?? "");
   const newPassword = String(formData.get("newPassword") ?? "");
-  const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
   if (!currentPassword) {
     throw new Error("Escribe tu contraseña actual.");
@@ -126,10 +126,6 @@ export const parsePasswordChange = (formData: FormData) => {
 
   if (newPassword.length < 8) {
     throw new Error("La nueva contraseña debe tener al menos 8 caracteres.");
-  }
-
-  if (newPassword !== confirmPassword) {
-    throw new Error("Las contraseñas nuevas no coinciden.");
   }
 
   if (currentPassword === newPassword) {

@@ -9,7 +9,7 @@ import { titleSynopsis } from "@/lib/title-overview";
 import { PINNED_REASON } from "@/lib/tonight/pin";
 import type { TonightReason } from "@/lib/tonight/types";
 import { toTonightTitle } from "@/lib/tonight-store";
-import { formatCredits } from "@/lib/watchlist-credits";
+import { creditParts, formatCredits, type CreditParts } from "@/lib/watchlist-credits";
 import { fallbackReasons } from "@/lib/watchlist-hook";
 
 /** Signals the page reads once per request (see `watchlist-hook-store.ts`). */
@@ -46,6 +46,8 @@ export type WatchlistFicha = {
   reasons: TonightReason[];
   overview: string | null;
   credits: string | null;
+  /** The same credits, structured: each director / creator links to their filmography. */
+  creditParts: CreditParts | null;
   queueNote: string | null;
   addedAt: string;
   availableSince: string | null;
@@ -161,6 +163,7 @@ export const buildWatchlistFichas = (
       reasons,
       overview: titleSynopsis(title.overview),
       credits: formatCredits(tonightTitle.people, title.kind),
+      creditParts: creditParts(tonightTitle.people, title.kind),
       queueNote: item.queueNote,
       addedAt: new Date(item.addedAt).toISOString(),
       availableSince: iso(title.availableSince),

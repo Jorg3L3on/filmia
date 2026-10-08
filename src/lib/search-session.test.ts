@@ -3,6 +3,7 @@ import { afterEach, describe, it } from "node:test";
 import {
   SEARCH_CACHE_TTL_MS,
   buildSearchHref,
+  parseSearchKind,
   clearSearchCache,
   createDebounced,
   normalizeSearchQuery,
@@ -33,6 +34,16 @@ describe("search cache", () => {
     writeSearchCache("   ", { results: [], error: "x" }, 1);
     assert.equal(readSearchCache("   ", 1), null);
   });
+
+  it("keeps titles and director searches of the same words apart", () => {
+    const fincher = { id: 7467, name: "David Fincher", profilePath: null, popularity: 4 };
+    writeSearchCache("fincher", { results: [], error: null, director: fincher }, 1_000);
+    writeSearchCache("fincher", { results: [], error: null, directors: [fincher] }, 1_000, "director");
+    assert.equal(searchCacheKey("Fincher", "director"), "director:fincher");
+    assert.equal(readSearchCache("fincher", 1_000)?.director?.id, 7467);
+    assert.equal(readSearchCache("fincher", 1_000)?.directors, undefined);
+    assert.equal(readSearchCache("fincher", 1_000, "director")?.directors?.length, 1);
+  });
 });
 
 describe("buildSearchHref", () => {
@@ -45,6 +56,11 @@ describe("buildSearchHref", () => {
       buildSearchHref("Dune", { watchedDate: "2026-01-02", watchedDestination: true }),
       "/buscar?q=Dune&fecha=2026-01-02&destino=visto",
     );
+  });
+
+  it("marks the director mode with tipo=director", () => {
+    assert.equal(buildSearchHref("fincher", { mode: "director" }), "/buscar?q=fincher&tipo=director");
+    assert.equal(buildSearchHref("fincher", { mode: "titles" }), "/buscar?q=fincher");
   });
 });
 
@@ -72,5 +88,21 @@ describe("createDebounced", () => {
     debounce.cancel();
     await new Promise((resolve) => setTimeout(resolve, 40));
     assert.deepEqual(seen, []);
+  });
+});
+
+describe("search-session/kind chip in the URL", () => {
+  it("keeps Películas / Series in ?tipo= so Back restores the chip", () => {
+    assert.equal(buildSearchHref("Dune", { kind: "MOVIE" }), "/buscar?q=Dune&tipo=pelicula");
+    assert.equal(buildSearchHref("Dune", { kind: "SERIES" }), "/buscar?q=Dune&tipo=serie");
+    assert.equal(buildSearchHref("Dune", { kind: "ALL" }), "/buscar?q=Dune");
+    assert.equal(buildSearchHref("fincher", { mode: "director", kind: "MOVIE" }), "/buscar?q=fincher&tipo=director");
+  });
+
+  it("parses ?tipo= back into the chip", () => {
+    assert.equal(parseSearchKind("pelicula"), "MOVIE");
+    assert.equal(parseSearchKind(["serie"]), "SERIES");
+    assert.equal(parseSearchKind("director"), "ALL");
+    assert.equal(parseSearchKind(undefined), "ALL");
   });
 });

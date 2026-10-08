@@ -1,9 +1,10 @@
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { OnboardingSkeleton } from "@/components/onboarding/OnboardingSkeleton";
+import { SessionResync } from "@/components/onboarding/SessionResync";
 import { getOnboardingLibrary, getOnboardingYearGrid } from "@/lib/onboarding/load";
-import { resolveInitialStep } from "@/lib/onboarding/steps";
+import { resolveBienvenidaEntry, resolveInitialStep } from "@/lib/onboarding/steps";
 import { resolveOnboardingYear } from "@/lib/onboarding/year";
 import { getCurrentUserProfile } from "@/lib/queries";
 import { auth } from "@/lib/session";
@@ -30,9 +31,20 @@ const BienvenidaBody = async () => {
     notFound();
   }
 
+  const entry = resolveBienvenidaEntry({ onboardedAt: profile.onboardedAt, cookieOnboarded: session?.onboarded });
+  if (entry === "resync") {
+    return (
+      <>
+        <OnboardingSkeleton />
+        <SessionResync />
+      </>
+    );
+  }
+  if (entry === "home") {
+    redirect("/");
+  }
+
   const library = await getOnboardingLibrary(profile.id);
-  const mode = profile.onboardedAt ? "rerun" : "gated";
-  const resync = mode === "rerun" && session?.onboarded === false;
   const tmdbConfigured = isTmdbConfigured();
   const year = resolveOnboardingYear(new Date());
   // Streams to the client and resolves while the person is still on the first steps.
@@ -40,7 +52,6 @@ const BienvenidaBody = async () => {
 
   return (
     <OnboardingFlow
-      mode={mode}
       initialStep={resolveInitialStep(profile)}
       userName={profile.name}
       yearGridPromise={yearGridPromise}
@@ -48,7 +59,6 @@ const BienvenidaBody = async () => {
       nightEnds={profile.nightEnds}
       library={library}
       tmdbConfigured={tmdbConfigured}
-      resync={resync}
     />
   );
 };

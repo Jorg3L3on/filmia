@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { ONBOARDING_PATH, ONBOARDING_STEPS, resolveInitialStep } from "../src/lib/onboarding/steps";
+import { ONBOARDING_PATH, ONBOARDING_STEPS, resolveBienvenidaEntry, resolveInitialStep } from "../src/lib/onboarding/steps";
 import { cycleYearPick, EMPTY_YEAR_SELECTION } from "../src/lib/onboarding/year-grid";
 import { hhmmToSlot, slotToHHMM } from "../src/lib/onboarding/bedtime";
 
@@ -39,14 +39,24 @@ const run = () => {
   assert(read("src/lib/rendering.ts").includes("src/app/bienvenida/page.tsx"), "Bienvenida page is in the force-dynamic audit");
   assert(read("src/app/bienvenida/page.tsx").includes('export const dynamic = "force-dynamic"'), "Bienvenida page is force-dynamic");
   assert(ONBOARDING_PATH === "/bienvenida" && ONBOARDING_STEPS.length === 7, "Seven steps under /bienvenida");
-  assert(resolveInitialStep({ onboardedAt: new Date(), onboardingStep: "noche" }) === "intro", "Rerun starts at the intro");
+  assert(resolveInitialStep({ onboardingStep: "noche" }) === "noche", "A gated account resumes where it left off");
+  assert(
+    resolveBienvenidaEntry({ onboardedAt: new Date(), cookieOnboarded: true }) === "home" &&
+      resolveBienvenidaEntry({ onboardedAt: new Date(), cookieOnboarded: false }) === "resync",
+    "The Bienvenida never repeats: finished accounts go to Hoy (re-minting a stale cookie first)",
+  );
+  assert(!read("src/app/perfil/page.tsx").includes("/bienvenida"), "Perfil has no way back into the Bienvenida");
 
   // Flow wiring: transitions, saves through the existing actions, payoff copy.
   const flow = read("src/components/onboarding/OnboardingFlow.tsx");
   assert(flow.includes("startTransition(") && flow.includes("addTransitionType(`bienvenida-${direction}`)"), "Steps change inside a Transition with a direction type");
   assert(flow.includes("<ViewTransition key={step}"), "Steps are wrapped in a keyed ViewTransition");
   assert(flow.includes("updateStreamingPlatforms"), "Platforms step saves through updateStreamingPlatforms");
-  assert(read("src/components/onboarding/BedtimeStep.tsx").includes("updateNightEnds"), "Bedtime step saves through updateNightEnds");
+  assert(
+    read("src/components/onboarding/BedtimeDial.tsx").includes("updateNightEnds") &&
+      read("src/components/onboarding/BedtimeStep.tsx").includes("useNightEndsSave"),
+    "Bedtime step saves through updateNightEnds (shared dial + save hook)",
+  );
   assert(read("src/components/onboarding/FavoriteStep.tsx").includes("pickAllTimeFavorite"), "Favorite step saves watched + 5★ + Favoritas");
   const payoff = read("src/components/onboarding/PayoffStep.tsx");
   assert(payoff.includes("acaba a las") && flow.includes("Entrar a Filmia"), "Payoff shows the fit and the final CTA");
@@ -78,9 +88,10 @@ const run = () => {
   assert(crowned.selection.favoriteTmdbId === 7, "Second tap crowns the favorite");
   assert(slotToHHMM(hhmmToSlot("00:15")) === "00:15", "Drum round-trips past midnight");
 
-  // Entry points for existing users.
-  assert(read("src/app/perfil/page.tsx").includes("Volver a la bienvenida"), "Perfil links back to the Bienvenida");
-  assert(read("src/app/(diario)/page.tsx").includes('actionHref="/bienvenida"'), "Hoy's platforms empty state sends to the Bienvenida");
+  // The Bienvenida runs once: nothing sends a finished account back into it.
+  assert(!read("src/app/perfil/page.tsx").includes("Volver a la bienvenida"), "Perfil has no «Volver a la bienvenida»");
+  assert(!read("src/app/(diario)/page.tsx").includes("/bienvenida"), "Hoy's empty states do not link to the Bienvenida");
+  assert(read("src/app/(diario)/page.tsx").includes('actionHref="/perfil#plataformas"'), "Hoy's platforms empty state sends to Perfil");
 
   console.log("verify-bienvenida: ok");
 };

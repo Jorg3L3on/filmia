@@ -34,7 +34,7 @@ const run = () => {
   assert(read("src/lib/tonight/serve.ts").includes("keepPinnedFirst") && read("src/components/tonight/TonightSala.tsx").includes("keepPinnedFirst"), "rankForNow keeps the pinned card first");
   assert(exists("src/lib/use-mounted-now.ts") && !read("src/components/tonight/TonightSala.tsx").includes("createMountedNowStore"), "useMountedNow is shared");
   assert(read("src/lib/fly-to-nav.ts").includes("pulseNav") && read("src/lib/fly-to-nav.ts").includes("flyPosterToProfile"), "Nav pulse generalised, flight kept");
-  // Time of day: the «Esta noche» chip, filter and «te cabe» line only at night (same rule as Hoy).
+  // Time of day: the «Esta noche» chip, filter and «termina a tiempo» line only at night (same rule as Hoy).
   assert(read("src/components/watchlist/WatchlistFilterRail.tsx").includes("isNight(now, nightEnds)"), "Rail hides «Esta noche» by day");
   assert(read("src/components/watchlist/WatchlistCartelera.tsx").includes("isNight(now, nightEnds)"), "Cartelera ignores «Esta noche» by day");
   assert(read("src/components/watchlist/useFichaViews.ts").includes("isNight(now, nightEnds)"), "Ficha fit only computed at night");

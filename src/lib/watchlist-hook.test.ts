@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { TonightQueueEntry, TonightReason, TonightTitle } from "@/lib/tonight/types";
-import { formatCredits, isLatinName } from "@/lib/watchlist-credits";
+import { creditParts, formatCredits, isLatinName, reasonPerson } from "@/lib/watchlist-credits";
 import { chooseHook, fallbackReasons, fitHook } from "@/lib/watchlist-hook";
 
 const NOW = new Date(2026, 9, 5, 21, 40, 0);
@@ -73,8 +73,8 @@ describe("watchlist-hook/chooseHook", () => {
 
   it("puts the clock between «acaba de llegar» and the user's note", () => {
     const reasons = [reason("taste_person", "Dirigida por X")];
-    assert.equal(chooseHook({ ...base, reasons, fit: fits })?.text, "Te cabe esta noche · acaba 23:37");
-    assert.equal(chooseHook({ ...base, reasons, fit: fits, kind: "SERIES", runtimeMinutes: 50 })?.text, "Un capítulo te cabe · acaba 23:37");
+    assert.equal(chooseHook({ ...base, reasons, fit: fits })?.text, "Termina a tiempo · acaba 23:37");
+    assert.equal(chooseHook({ ...base, reasons, fit: fits, kind: "SERIES", runtimeMinutes: 50 })?.text, "Un capítulo termina a tiempo · acaba 23:37");
     assert.equal(chooseHook({ ...base, reasons, queueNote: "Para un domingo largo." })?.kind, "note");
     assert.equal(chooseHook({ ...base, reasons: [reason("fresh_platform", "Acaba de llegar a MUBI")], fit: fits })?.kind, "fresh_platform");
   });
@@ -139,5 +139,41 @@ describe("watchlist-credits", () => {
     assert.equal(formatCredits([{ id: 1, name: "Виктор Косаковский", role: "director" }], "MOVIE"), null);
     assert.equal(isLatinName("Céline Sciamma"), true);
     assert.equal(isLatinName("손예진"), false);
+  });
+
+  it("names every director (or a series' creators) with their TMDB ids for the links", () => {
+    const coens = [
+      { id: 1223, name: "Joel Coen", role: "director" as const },
+      { id: 1224, name: "Ethan Coen", role: "director" as const },
+      { id: 1223, name: "Joel Coen", role: "director" as const },
+      { id: 9, name: "Frances McDormand", role: "cast" as const },
+    ];
+    assert.deepEqual(creditParts(coens, "MOVIE"), {
+      verb: "Dirigida",
+      leads: [
+        { id: 1223, name: "Joel Coen" },
+        { id: 1224, name: "Ethan Coen" },
+      ],
+      cast: ["Frances McDormand"],
+    });
+    assert.equal(formatCredits(coens, "MOVIE"), "Dirigida por Joel Coen y Ethan Coen · Con Frances McDormand");
+    const series = [
+      { id: 5, name: "Some Episode Director", role: "director" as const },
+      { id: 6, name: "Dan Erickson", role: "creator" as const },
+    ];
+    assert.deepEqual(creditParts(series, "SERIES")?.leads, [{ id: 6, name: "Dan Erickson" }]);
+    assert.equal(creditParts(series, "SERIES")?.verb, "Creada");
+  });
+
+  it("resolves Hoy's «Dirigida por» person from the reason's id, not its text", () => {
+    const scorsese = { id: 1032, name: "Martin Scorsese", role: "director" as const };
+    const schoonmaker = { id: 1033, name: "Someone Else", role: "director" as const };
+    const reason = (personId?: number) => ({ kind: "taste_person" as const, personId });
+    assert.deepEqual(reasonPerson(reason(1032), [schoonmaker, scorsese]), scorsese);
+    assert.equal(reasonPerson(reason(999), [scorsese]), null, "an id the card does not have is no link");
+    assert.deepEqual(reasonPerson(reason(), [scorsese]), scorsese, "old cached reason: the only lead");
+    assert.equal(reasonPerson(reason(), [scorsese, schoonmaker]), null, "old cached reason, two leads: no guess");
+    assert.equal(reasonPerson({ kind: "quality" }, [scorsese]), null);
+    assert.equal(reasonPerson(null, [scorsese]), null);
   });
 });

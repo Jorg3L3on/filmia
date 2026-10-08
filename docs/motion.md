@@ -63,6 +63,57 @@ Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` 
 | Tambor `.hour-tick` / luna `.bedtime-moon` | `--duration-tab` / `--duration-morph` · `--ease-out` | Scroll-snap drum; moon rises with `--elev`. |
 | Payoff `.payoff-card-in` | `--duration-stagger` · `--ease-out` | Same blur-in as `genre-coverflow-title-in`. |
 
+## Perfil
+
+Direction A «Marquesina» (FIL-I5-3, canvas https://claude.ai/artifact/2rSJnRDQ5tNQbNaZp396u8).
+
+| Piece | Token | Notes |
+| --- | --- | --- |
+| Nombre `.perfil-name-in` | `--duration-enter` · `--ease-out` | Reuses `genre-coverflow-title-in` (blur-in, magicui Blur Fade). |
+| Luz `.perfil-glow` / `.perfil-poster-wash` | 9 s breath · 1.2 s wash-in · `--ease-out` | Accent glow + the last Diario poster blurred behind the name; `.perfil-light` masks the edges. |
+| Filas → hoja (hora, Nombre, Correo, Contraseña) | `.sheet-rise` · `--duration-sheet` | beui Bottom Sheet; designspells «Smooth sheet transitions in Sudoku a Day». Hover/press tint on rows: `--duration-hover` · `--ease-out`. |
+| Hora de dormir (hoja) | `.hour-tick` / `.bedtime-moon` | `BedtimeDial`, the Bienvenida drum (beui Wheel Picker); `data-no-sheet-drag` so the drum scrolls instead of closing the sheet. |
+| Campo con foco `.profile-sheet input` | `--duration-tab` · `--ease-out` | Ring grows out from the border (easyui LockInput); invalid fields turn `danger-well`. |
+| Error | 320 ms · `--spring` (WAAPI) | One shake per failed attempt (beui Input). Typed values survive (fields are controlled). Skipped with reduced motion. |
+| Guardar → toast | `press-scale` · `--duration-toast` | «Nombre guardado» / «Correo guardado» / «Contraseña actualizada»; the sheet closes on success. |
+| Plataformas | `press-scale` · `--duration-hover` | Yours first (order fixed at mount), folded to 6; «Ver las 14» unfolds. |
+| Salir | `press-scale` · `--duration-hover` | Danger tokens, exit icon nudges 2 px on hover (beui Animated CTA «slide»); «Saliendo…» with a spinner. |
+
+## Buscar
+
+| Piece | Token | Notes |
+| --- | --- | --- |
+| Dock → campo (móvil, /buscar) | `--duration-morph` (380 ms) · `--ease-out` | React `<ViewTransition name="dock-shell" \| "dock-search" share="morph">`: the four tabs fold into the left disc (the tab you came from) and the center disc stretches into the glass field; the left disc does the reverse. Only the dock's own taps carry the `dock-search` transition type (`<Link transitionTypes>`), so tab-to-tab, browser back and other routes into Buscar swap without a morph and the sliding pill keeps its own motion. Reduced motion: 200 ms crossfade, no travel or scale. |
+| Campo `.dock-field` | `--duration-tab` · `--ease-out` | Focus ring grows (accent border + 3 px halo). 16 px input (no iOS zoom); ✕ clears and keeps focus; with the keyboard open the dock rides `visualViewport` (bottom = keyboard height). |
+| Disco del dock `.dock-search` | `--duration-tab` · `--ease-out` (luz) · `--duration-press` · `--spring` (press) | Center glass disc → /buscar (replaced the «+» menu). On /buscar it lights with the accent aura (`aria-current="page"`) while `.dock-indicator` fades out; elsewhere it is plain glass. Reduced motion: color/opacity only, no scale. |
+| Filas `.stagger-in` | `--duration-stagger` · 50 ms/row | `SearchResultRow`: title up to 2 lines, poster and chevron never shrink. |
+| Persona `.person-card-in` | `--duration-stagger` · `--ease-out` | Person card (photo, name, role line) and the «Ver filmografía» suggestion blur in with `genre-coverflow-title-in`; the filmography rows use `.stagger-in`. Reduced motion: no animation. |
+| Insignia de biblioteca | — | `SearchResultRow` shows a small glass disc: bookmark (En Quiero ver) or check (Vista). Static. |
+| «Dirigida por» → filmografía | `--duration-hover` · `--ease-out` (subrayado) · `--duration-press` · `--spring` (pill) | Hoy's reason pill splits into «Por qué» (spark) + the name as its own link (taller hit area, `.tonight-reason-person::after`); Quiero ver's expanded ficha links each director / creator. Subtle underline that lights on hover / focus (`personLinkClass`). Both open `/buscar?persona=<id>&rol=director`. |
+| «Ver esta noche» `.tonight-pin` | `--duration-press` · `--spring` (press) · `--duration-pop` · `--spring` (luna) | The sheet's one primary action. Pending «Reservando…»; done, the crescent fills with `.spring-pop` only right after the tap (reopening the sheet shows it full, no pop) and the toast «Ver en Hoy» stays 6 s. The sheet never closes on its own. |
+| Fila «Fichas» `SearchResultRow` | `--duration-hover` · `--ease-out` (borde, chevron +2 px) · `press-scale` | FIL-I5-4, direction A: La cartelera's glass row, 56 px poster, serif title, original title in italics, pill «En Quiero ver» / «La viste». |
+| Chips `.buscar-chip-pill` | `--duration-tab` · `--ease-out` | One aura pill slides under the current chip (beui Tabs); placed before paint, animates only after the first placement. Reduced motion: jumps. |
+| Conteo `.num-ticker-col` | `--duration-morph` · `--ease-out` | «11 resultados» rolls like La cartelera's count (magicui Number Ticker); stays mounted while searching. Tabular digits. |
+| «Buscando…» `.buscar-shiny` | 1.6 s linear loop | Light sweeps across the words (magicui Animated Shiny Text). Reduced motion: static mist. |
+| Inicio: Recientes `.stagger-in` · Directores `.person-card-in` | `--duration-stagger` · 50 ms/item | Before typing: this device's recent searches (localStorage) and directors of your Favoritas / 4★+ (magicui Avatar Circles idea, as a rail). Photo ring lights accent on hover. |
+
+## Ficha (dirección A «Cartel», FIL-I4)
+
+| Piece | Token | Notes |
+| --- | --- | --- |
+| Póster `poster-{id}` | `--duration-morph` · `--ease-out` | The SharedPoster morph from the tile **is** its entrance: the poster gets no `.ficha-enter` of its own. |
+| Backdrop `.ficha-backdrop-a-img` | 1.2 s · `--ease-out` | Fade + scale 1.06 → 1, like La cartelera's `.ficha-backdrop`. |
+| Entrada `.ficha-enter` | `--duration-stagger` · `--ease-out` · 60 ms per `--i` | Blur Fade: meta → título → chips → sinopsis → acciones; opacity + 8 px rise + blur(6px), fill `backwards`. |
+| Sinopsis «Más» `.ficha-synopsis-text` | `--duration-morph` · `--ease-out` | `max-height` 3 lines → measured `scrollHeight`; «Menos» folds back. Bottom mask only while clamped. No «Más» when it fits. |
+| «Ver esta noche» `.ficha-tonight` | `--duration-press` · `--spring` (press) · sheen 1.6 s × 2 | Shimmer twice, 1.2 s after landing; never a loop. Pinned = aura pill, moon `spring-pop` only right after the tap. |
+| Grupo de acciones `.ficha-action` | `--duration-press` · `--spring` · `--duration-hover` colours | `press-scale` per button; Visto / Nota keep their `spring-fill` feedback. |
+| Atrás `.back-pill` | `--duration-morph` · `--ease-out` | Disc on first paint, label blurs in (`.back-pill-in`, `--duration-enter`); folds to the disc while scrolling down, back on the way up. |
+| Personas `.person-card` | `.stagger-in` (50 ms/card) · `--duration-press` · `--spring` | Glass cards enter with the shared stagger; tap = `press-scale`; hover (pointer only) lifts the rim. |
+| Foto `.person-photo` | `--duration-enter` · `--ease-out` | Fade + scale 0.96 → 1. No photo, no circle: the name centres in the same card height. |
+| Hojas (Visto, Nota) | `.sheet-rise` | Same sheets as before; never spring. |
+
+Reduced motion: no entrance, no backdrop scale, no sheen; «Más» and the back pill change instantly (global rule).
+
 ## SharedPoster
 
 React `<ViewTransition name={\`poster-${id}\`} share="morph">` via `SharedPoster` on tile → ficha paths (lists, buscar, deck, calendar, rail, ranking, watchlist).

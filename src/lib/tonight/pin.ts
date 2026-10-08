@@ -25,3 +25,25 @@ export const findPinnedTitleId = (events: readonly TonightEvent[], now: Date): s
   );
   return cancelled ? null : pin.titleId;
 };
+
+/** `PickEvent.lens` for a pin made from a ficha. */
+export const FICHA_PIN_LENS = "ficha";
+
+/** `PickEvent.lens` for a pin made from Buscar's preview sheet. */
+export const SEARCH_PIN_LENS = "buscar";
+
+/**
+ * «Ver esta noche» in Buscar: only for titles still to watch, and never while
+ * Buscar is logging a viewing (`?fecha=` / `?destino=visto`).
+ */
+export const canOfferTonightPin = ({
+  watched,
+  logMode,
+}: {
+  watched: boolean;
+  logMode: boolean;
+}) => !watched && !logMode;
+
+/** Why the server refuses to pin a title from Buscar, or null when it can. */
+export const searchPinBlocker = (owned: { watchedAt: Date | null } | null): string | null =>
+  owned?.watchedAt ? "Ya la viste: «Ver esta noche» es para lo que tienes pendiente." : null;

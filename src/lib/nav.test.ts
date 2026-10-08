@@ -3,10 +3,13 @@ import { describe, it } from "node:test";
 import {
   desktopNavItems,
   isAuthChromePath,
+  isDesktopNavCurrent,
+  isImmersiveFichaPath,
   isCurrentPath,
   isListasHubPath,
   isMobileNavCurrent,
-  mobileCreateActions,
+  mobileNavItems,
+  mobileNavSearch,
 } from "./nav";
 
 describe("isCurrentPath nested routes", () => {
@@ -23,8 +26,8 @@ describe("isCurrentPath nested routes", () => {
   });
 
   it("has no Etiquetas entry anywhere in the nav", () => {
-    const hrefs: string[] = [...desktopNavItems, ...mobileCreateActions].map((item) => item.href);
-    const labels: string[] = [...desktopNavItems, ...mobileCreateActions].map((item) => item.label);
+    const hrefs: string[] = [...desktopNavItems, ...mobileNavItems, mobileNavSearch].map((item) => item.href);
+    const labels: string[] = [...desktopNavItems, ...mobileNavItems, mobileNavSearch].map((item) => item.label);
     assert.equal(hrefs.includes("/tags"), false);
     assert.equal(labels.includes("Etiquetas"), false);
   });
@@ -46,5 +49,46 @@ describe("mobile Listas hub", () => {
     assert.equal(isListasHubPath("/tags"), false);
     assert.equal(isMobileNavCurrent("/listas", "/listas/abc"), true);
     assert.equal(isMobileNavCurrent("/buscar", "/listas"), false);
+  });
+});
+
+describe("desktop header nav", () => {
+  it("ends with a Perfil tab", () => {
+    assert.deepEqual(
+      desktopNavItems.map((item) => item.label),
+      ["Hoy", "Quiero ver", "Listas", "Buscar", "Perfil"],
+    );
+  });
+
+  it("lights Perfil on /perfil and on Tu diario", () => {
+    assert.equal(isDesktopNavCurrent("/perfil", "/perfil"), true);
+    assert.equal(isDesktopNavCurrent("/perfil", "/diario"), true);
+    assert.equal(isDesktopNavCurrent("/perfil", "/diario?view=grid"), true);
+    assert.equal(isDesktopNavCurrent("/perfil", "/"), false);
+    assert.equal(isDesktopNavCurrent("/", "/diario"), false);
+    assert.equal(isDesktopNavCurrent("/listas", "/listas/abc"), true);
+  });
+});
+
+describe("mobile Buscar disc", () => {
+  it("lights only on /buscar, where no tab is current", () => {
+    assert.equal(mobileNavSearch.href, "/buscar");
+    assert.equal(isMobileNavCurrent(mobileNavSearch.href, "/buscar"), true);
+    assert.equal(isMobileNavCurrent(mobileNavSearch.href, "/buscar?q=dune"), true);
+    assert.equal(isMobileNavCurrent(mobileNavSearch.href, "/"), false);
+    assert.equal(
+      mobileNavItems.some((item) => isMobileNavCurrent(item.href, "/buscar")),
+      false,
+    );
+  });
+});
+
+describe("isImmersiveFichaPath", () => {
+  it("only the ficha itself drops the mobile header", () => {
+    assert.equal(isImmersiveFichaPath("/titulos/abc"), true);
+    assert.equal(isImmersiveFichaPath("/titulos/abc?x=1"), true);
+    assert.equal(isImmersiveFichaPath("/titulos/abc/editar"), false);
+    assert.equal(isImmersiveFichaPath("/titulos"), false);
+    assert.equal(isImmersiveFichaPath("/watchlist"), false);
   });
 });

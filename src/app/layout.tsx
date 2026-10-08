@@ -68,7 +68,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="flex min-h-full min-h-[100dvh] flex-col bg-canvas text-paper">
-        <AppShell user={session?.user ?? null}>{children}</AppShell>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

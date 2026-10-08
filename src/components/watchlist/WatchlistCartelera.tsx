@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import { createHistoryEntryStore, readHistoryEntry, writeHistoryEntry } from "@/lib/history-entry";
 import { WatchlistFicha } from "@/components/watchlist/WatchlistFicha";
 import { WatchlistHeroCompact } from "@/components/watchlist/WatchlistHeroCompact";
 import { WatchlistReorderList } from "@/components/watchlist/WatchlistReorderList";
@@ -36,6 +37,9 @@ const STAGGER_CAP = 12;
  * Quiero ver «La cartelera»: compact hero for #1, dense fichas that unfold in
  * place, swipe / long-press actions, Reordenar, and a stage on desktop.
  */
+const EXPANDED_ENTRY = "watchlistExpanded";
+const readExpandedEntry = () => readHistoryEntry(EXPANDED_ENTRY);
+
 export const WatchlistCartelera = ({
   fichas,
   listId,
@@ -53,7 +57,20 @@ export const WatchlistCartelera = ({
 
   const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(() => new Set());
   const [isEditing, setIsEditing] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  // Back from a ficha reopens the row that was open (read after hydration; this history entry only).
+  const [expandedStore] = useState(() => createHistoryEntryStore(EXPANDED_ENTRY));
+  const restoredExpandedId = useSyncExternalStore(
+    expandedStore.subscribe,
+    expandedStore.getSnapshot,
+    expandedStore.getServerSnapshot,
+  );
+  const [touchedExpandedId, setExpandedId] = useState<string | null | undefined>(undefined);
+  const expandedId = touchedExpandedId === undefined ? restoredExpandedId : touchedExpandedId;
+  useEffect(() => {
+    if (touchedExpandedId !== undefined) {
+      writeHistoryEntry(EXPANDED_ENTRY, touchedExpandedId);
+    }
+  }, [touchedExpandedId]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [stampedId, setStampedId] = useState<string | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(pinnedTitleId);
@@ -140,7 +157,11 @@ export const WatchlistCartelera = ({
     setMarkTarget(ficha);
   }, []);
   const toggle = useCallback(
-    (ficha: FichaView) => setExpandedId((current) => (current === ficha.id ? null : ficha.id)),
+    (ficha: FichaView) =>
+      setExpandedId((current) => {
+        const open = current === undefined ? readExpandedEntry() : current;
+        return open === ficha.id ? null : ficha.id;
+      }),
     [],
   );
   const select = useCallback((ficha: FichaView) => setSelectedId(ficha.id), []);
@@ -163,7 +184,7 @@ export const WatchlistCartelera = ({
     return (
       <p className="rounded-2xl border border-line bg-surface/40 px-4 py-8 text-center text-sm text-fog" role="status">
         {tonightOnly
-          ? "Nada te cabe antes de tu hora de dormir. Quita «Esta noche» para ver toda la lista."
+          ? "Nada termina antes de tu hora de dormir. Quita «Esta noche» para ver toda la lista."
           : "Nada en Quiero ver por ahora."}
       </p>
     );

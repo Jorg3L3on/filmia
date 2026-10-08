@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { PeopleRail } from "@/components/ficha/PeopleRail";
 import { TitleFichaActions } from "@/components/TitleFichaActions";
 import { TitleHero } from "@/components/TitleHero";
 import { TitleListsPanel } from "@/components/TitleListsPanel";
@@ -6,11 +6,12 @@ import { TitlePosterRail } from "@/components/TitlePosterRail";
 import { TitleSynopsis } from "@/components/TitleSynopsis";
 import { WatchProvidersMx } from "@/components/WatchProvidersMx";
 import { TitleKind } from "@/db";
+import { awardChipLabel } from "@/lib/awards";
+import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { titleListMemberships } from "@/lib/list-membership";
 import { formatRuntime, TITLE_KIND_LABEL } from "@/lib/labels";
-import { parseStoredPeople } from "@/lib/tonight-store";
-import { formatCredits } from "@/lib/watchlist-credits";
 import { isTmdbConfigured, tmdbBackdropUrl, type TmdbTitleExtras } from "@/lib/tmdb";
+import { peopleRailItems, type TmdbPerson } from "@/lib/tmdb-people";
 import type { WatchProvidersResult } from "@/lib/watch-providers-cache";
 import type { getAssignableLists, getRelatedTitles, getTitleById, getUserStreamingPlatforms } from "@/lib/queries";
 
@@ -27,16 +28,35 @@ const titleMembership = (title: TitleDetail) => {
     title.listItems?.map(({ list }) => ({ id: list.id, name: list.name, slug: list.slug })) ?? [];
   const memberships = titleListMemberships(memberLists);
   return {
-    memberLists,
     memberListIds: title.listItems?.map((item) => item.listId) ?? [],
     inWatchlist: memberships.inWatchlist,
     listCount: memberships.lists.length,
   };
 };
 
-/** «Dirigida por … · Con …» (or «Creada por …» for series) from the enriched people; null when empty. */
-export const titleCredits = (title: Pick<TitleDetail, "tmdbPeople" | "kind">) =>
-  formatCredits(parseStoredPeople(title.tmdbPeople), title.kind);
+const heroProps = (title: TitleDetail, extras: TmdbTitleExtras | null | undefined) => {
+  const posterPath = title.posterPath ?? extras?.posterPath ?? null;
+  return {
+    titleId: title.id,
+    name: title.name,
+    originalName: title.originalName,
+    posterPath,
+    backdropSrc: extras?.backdropPath
+      ? tmdbBackdropUrl(extras.backdropPath, "w1280")
+      : title.backdropPath
+        ? tmdbBackdropUrl(title.backdropPath, "w1280")
+        : posterBackdrop(posterPath),
+    year: title.year,
+    runtimeLabel: formatRuntime(title.runtimeMinutes ?? extras?.runtimeMinutes),
+    kindLabel: TITLE_KIND_LABEL[title.kind],
+    genreLabel: parseStoredTmdbGenres(title.tmdbGenres)[0]?.name ?? extras?.genres[0]?.name ?? null,
+    imdbRating: title.imdbRating,
+    awardLabel: awardChipLabel(title.awards),
+    rating: title.rating,
+    watched: Boolean(title.watchedAt),
+    posterAmbient: title.posterAmbient,
+  };
+};
 
 export const TitleHeroFallback = ({
   title,
@@ -44,25 +64,7 @@ export const TitleHeroFallback = ({
 }: {
   title: TitleDetail;
   extras?: TmdbTitleExtras | null;
-}) => (
-  <TitleHero
-    titleId={title.id}
-    name={title.name}
-    originalName={title.originalName}
-    posterPath={title.posterPath ?? extras?.posterPath}
-    backdropSrc={
-      extras?.backdropPath
-        ? tmdbBackdropUrl(extras.backdropPath, "w1280")
-        : posterBackdrop(title.posterPath ?? extras?.posterPath)
-    }
-    year={title.year}
-    runtimeLabel={formatRuntime(title.runtimeMinutes ?? extras?.runtimeMinutes)}
-    kindLabel={TITLE_KIND_LABEL[title.kind]}
-    imdbRating={title.imdbRating}
-    rating={title.rating}
-    watched={Boolean(title.watchedAt)}
-  />
-);
+}) => <TitleHero {...heroProps(title, extras)} />;
 
 export const TitleHeroBlock = async ({
   title,
@@ -70,46 +72,19 @@ export const TitleHeroBlock = async ({
 }: {
   title: TitleDetail;
   extrasPromise: Promise<TmdbTitleExtras | null>;
-}) => {
-  const extras = await extrasPromise;
-  const posterPath = title.posterPath ?? extras?.posterPath ?? null;
-  const backdropSrc = extras?.backdropPath
-    ? tmdbBackdropUrl(extras.backdropPath, "w1280")
-    : posterBackdrop(posterPath);
-
-  return (
-    <TitleHero
-      titleId={title.id}
-      name={title.name}
-      originalName={title.originalName}
-      posterPath={posterPath}
-      backdropSrc={backdropSrc}
-      year={title.year}
-      runtimeLabel={formatRuntime(title.runtimeMinutes ?? extras?.runtimeMinutes)}
-      kindLabel={TITLE_KIND_LABEL[title.kind]}
-      imdbRating={title.imdbRating}
-      rating={title.rating}
-      watched={Boolean(title.watchedAt)}
-    />
-  );
-};
+}) => <TitleHero {...heroProps(title, await extrasPromise)} />;
 
 export const TitleActionsBlock = async ({
   title,
   listsPromise,
+  pinnedPromise,
 }: {
   title: TitleDetail;
   listsPromise: Promise<AssignableLists>;
+  pinnedPromise: Promise<string | null>;
 }) => {
-  const assignableLists = await listsPromise;
-  const { memberLists, memberListIds, inWatchlist, listCount } = titleMembership(title);
-  const listsPanel = (
-    <TitleListsPanel
-      titleId={title.id}
-      lists={assignableLists}
-      memberListIds={memberListIds}
-    />
-  );
+  const [assignableLists, pinnedTitleId] = await Promise.all([listsPromise, pinnedPromise]);
+  const { memberListIds, inWatchlist, listCount } = titleMembership(title);
 
   return (
     <TitleFichaActions
@@ -117,31 +92,42 @@ export const TitleActionsBlock = async ({
       titleName={title.name}
       watched={Boolean(title.watchedAt)}
       inWatchlist={inWatchlist}
-      memberLists={memberLists}
       listCount={listCount}
       rating={title.rating}
       review={title.review ?? null}
       platform={title.platform ?? null}
-      listsPanel={listsPanel}
+      pinnedTonight={pinnedTitleId === title.id}
+      listsPanel={
+        <TitleListsPanel titleId={title.id} lists={assignableLists} memberListIds={memberListIds} />
+      }
     />
   );
 };
 
-/** Ficha credits; renders nothing when TMDB people are missing or unusable. */
-export const TitleCredits = ({ credits }: { credits: string | null }) => {
-  if (!credits) {
-    return null;
+/** Under the title (dirección A): the stored overview first, TMDB's when the row has none. */
+export const TitleSynopsisBlock = async ({
+  storedOverview,
+  extrasPromise,
+}: {
+  storedOverview: string | null;
+  extrasPromise: Promise<TmdbTitleExtras | null>;
+}) => {
+  const stored = storedOverview?.trim() || null;
+  if (stored) {
+    return <TitleSynopsis text={stored} />;
   }
-
-  return (
-    <section className="space-y-2" aria-label="Créditos">
-      <h2 className="text-[11px] font-medium uppercase tracking-[0.22em] text-mist">
-        Créditos
-      </h2>
-      <p className="max-w-2xl text-sm leading-7 text-fog">{credits}</p>
-    </section>
-  );
+  const extras = await extrasPromise;
+  return <TitleSynopsis text={extras?.overview ?? null} />;
 };
+
+/** Dirección · Fotografía · reparto with photos (FIL-I4-5); nothing when TMDB has no usable names. */
+export const TitlePeopleBlock = async ({
+  peoplePromise,
+  kind,
+}: {
+  peoplePromise: Promise<TmdbPerson[]>;
+  kind: TitleDetail["kind"];
+}) => <PeopleRail items={peopleRailItems(await peoplePromise, kind)} />;
 
 export const TitleProvidersBlock = async ({
   providersPromise,
@@ -164,49 +150,6 @@ export const TitleProvidersBlock = async ({
     />
   );
 };
-
-export const TitleSynopsisBlock = async ({
-  storedOverview,
-  extrasPromise,
-  credits = null,
-}: {
-  storedOverview: string | null;
-  extrasPromise: Promise<TmdbTitleExtras | null>;
-  credits?: string | null;
-}) => {
-  const stored = storedOverview?.trim() || null;
-  if (stored) {
-    return (
-      <SynopsisWithCredits credits={credits}>
-        <TitleSynopsis text={stored} />
-      </SynopsisWithCredits>
-    );
-  }
-
-  const extras = await extrasPromise;
-  return (
-    <SynopsisWithCredits credits={credits}>
-      <TitleSynopsis text={extras?.overview ?? null} />
-    </SynopsisWithCredits>
-  );
-};
-
-/** Credits ride with the synopsis so they stream in together (no shift under a late overview). */
-const SynopsisWithCredits = ({
-  credits,
-  children,
-}: {
-  credits: string | null;
-  children: ReactNode;
-}) =>
-  credits ? (
-    <div className="space-y-6">
-      {children}
-      <TitleCredits credits={credits} />
-    </div>
-  ) : (
-    children
-  );
 
 export const TitleRelatedBlock = async ({
   relatedPromise,

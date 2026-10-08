@@ -110,9 +110,9 @@ const run = () => {
     "401 maps to the same friendly copy",
   );
 
-  const actionRow = read("src/components/TitleActionRow.tsx");
+  const fichaActions = read("src/components/TitleFichaActions.tsx");
   assert(
-    actionRow.includes("MarkWatchedSheet") && actionRow.includes("titleName"),
+    fichaActions.includes("MarkWatchedSheet") && fichaActions.includes("titleName"),
     "Ficha Visto opens the same mark-seen sheet as the deck eye",
   );
   assert(
@@ -137,16 +137,16 @@ const run = () => {
     "List cards truncate names",
   );
 
-  const account = read("src/components/ProfileAccountForm.tsx");
-  const password = read("src/components/ProfilePasswordForm.tsx");
+  // Cuenta + contraseña live in one card; every edit happens in a sheet (FIL-I5-3).
+  const account = read("src/components/profile/ProfileAccountCard.tsx");
   // The toggle grid moved to PlatformToggleGrid (shared with the Bienvenida); the picker keeps the header + error.
   const platforms =
     read("src/components/StreamingPlatformPicker.tsx") + read("src/components/PlatformToggleGrid.tsx");
-  assert(account.includes("Guardar cuenta"), "Account save is labeled Guardar cuenta");
   assert(
-    password.includes("Actualizar contraseña"),
-    "Password save is labeled Actualizar contraseña",
+    account.includes("updateAccount") && account.includes("updatePassword") && account.includes("<Sheet"),
+    "Cuenta card edits name, email and password in sheets",
   );
+  assert(!account.includes("confirmPassword"), "Password change is current + new (no confirm field)");
   assert(
     !platforms.includes("Guardar cambios"),
     "Platforms auto-save without a third Guardar cambios",
@@ -258,9 +258,12 @@ const run = () => {
     "Buscar skeleton uses results well + route loading",
   );
   const searchResults = read("src/components/TmdbSearchResults.tsx");
+  const searchRow = read("src/components/tmdb-search/SearchResultRow.tsx");
   assert(
-    searchResults.includes("card-physics") &&
-      searchResults.includes("press-scale") &&
+    searchResults.includes("SearchResultRow") &&
+      searchRow.includes("card-physics") &&
+      searchRow.includes("press-scale") &&
+      searchRow.includes("line-clamp-2") &&
       searchResults.includes("staggerStyle") &&
       searchResults.includes("danger-well") &&
       searchResults.includes("Reintentar") &&
@@ -300,22 +303,16 @@ const run = () => {
   assert(
     titleHero.includes('fetchPriority="high"') &&
       titleHero.includes('fetchPriority="low"') &&
-      titleHero.includes("(max-width: 640px) 40vw, 224px") &&
+      titleHero.includes("(max-width: 640px) 42vw, 280px") &&
       read("src/components/PosterImage.tsx").includes("fetchPriority"),
     "Ficha LCP poster uses priority/fetchPriority/sizes; backdrop is low",
   );
-  const fichaActionRow = read("src/components/TitleActionRow.tsx");
   assert(
-    fichaActionRow.includes("press-scale") &&
-      fichaActionRow.includes("var(--duration-hover)") &&
-      fichaActionRow.includes("actionChipClass") &&
-      fichaActionRow.includes("tracking-[0.14em]"),
-    "Ficha action row uses press/hover tokens + tipografía polish",
-  );
-  assert(
-    read("src/components/TitleSaveCta.tsx").includes("press-scale") &&
-      read("src/components/TitleSaveCta.tsx").includes("var(--duration-hover)"),
-    "Ficha primary save CTA uses press-scale + duration-hover",
+    fichaActions.includes("press-scale") &&
+      fichaActions.includes("var(--duration-hover)") &&
+      fichaActions.includes("groupItemClass") &&
+      fichaActions.includes("ficha-action-group"),
+    "Ficha action group uses press/hover tokens on one glass group (dirección A)",
   );
   assert(
     read("src/components/TitleListsPanel.tsx").includes("tab-transition") &&
@@ -331,11 +328,11 @@ const run = () => {
     "Ficha has no edit/delete footer: catalog data is shared and titles are never deleted",
   );
   assert(
-    read("src/components/TitleSynopsis.tsx").includes("N/A") &&
+    read("src/components/TitleSynopsis.tsx").includes("if (!body) {") &&
       read("src/app/titulos/[id]/title-sections.tsx").includes(
         "TitleSynopsis text={extras?.overview ?? null}",
       ),
-    "Ficha empty synopsis shows N/A",
+    "Ficha without synopsis renders no block under the title (dirección A)",
   );
   assert(
     read("src/components/AppChrome.tsx").includes("safe-area-inset-bottom"),
@@ -422,22 +419,20 @@ const run = () => {
     perfilSkeletons.includes("ProfileBodySkeleton") &&
       perfilSkeletons.includes("cn(skeletonWellClass") &&
       read("src/app/perfil/loading.tsx").includes("ProfileBodySkeleton") &&
-      read("src/app/perfil/loading.tsx").includes("PageHeaderSkeleton"),
-    "Perfil loading uses PageHeaderSkeleton + ProfileBodySkeleton wells",
+      read("src/app/perfil/loading.tsx").includes("ProfileHeaderSkeleton"),
+    "Perfil loading uses ProfileHeaderSkeleton + ProfileBodySkeleton wells",
   );
   assert(
-    read("src/app/perfil/page.tsx").includes("PageHeaderSkeleton") &&
+    read("src/app/perfil/page.tsx").includes("ProfileHeaderSkeleton") &&
       read("src/app/perfil/page.tsx").includes("ProfileBodySkeleton") &&
-      read("src/app/perfil/page.tsx").includes("border-line"),
-    "Perfil Suspense fallback mirrors loading; avatar uses line well",
+      !read("src/app/perfil/page.tsx").includes("initial"),
+    "Perfil Suspense fallback mirrors loading; no letter avatar",
   );
   assert(
     read("src/components/LogoutButton.tsx").includes("press-scale") &&
       read("src/components/LogoutButton.tsx").includes("var(--duration-hover)") &&
       account.includes("press-scale") &&
-      account.includes("var(--duration-hover)") &&
-      password.includes("press-scale") &&
-      password.includes("var(--duration-hover)"),
+      read("src/components/profile/ProfileRows.tsx").includes("var(--duration-hover)"),
     "Perfil Logout + form submits use press-scale / duration-hover",
   );
   assert(
@@ -449,10 +444,10 @@ const run = () => {
     "Platform chips use press/hover + group; danger-well errors; auto-save",
   );
   assert(
-    account.includes("danger-well") &&
-      password.includes("danger-well") &&
+    account.includes('role="alert"') &&
+      /\.profile-sheet input\[aria-invalid="true"\] \{\s*background-color: var\(--danger-well\)/.test(read("src/app/globals.css")) &&
       read("src/components/AppChrome.tsx").includes("safe-area-inset-bottom"),
-    "Perfil form errors use danger-well; chrome keeps safe-area",
+    "Perfil sheet errors: alert text + danger-well field; chrome keeps safe-area",
   );
   console.log("✓ Fase 3 Perfil lote: skeleton wells, error well, press/hover on logout/forms/chips");
 

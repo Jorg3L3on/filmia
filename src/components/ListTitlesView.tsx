@@ -11,12 +11,16 @@ type ListTitlesViewProps = {
   listId?: string;
   items: ListItemPayload[];
   platforms?: Platform[];
+  /** `?carta=` from the page: the deck reopens on the card the user left. */
+  initialCardId?: string | null;
 };
 
-export const ListTitlesView = ({ listId, items, platforms }: ListTitlesViewProps) => (
+export const ListTitlesView = ({ listId, items, platforms, initialCardId = null }: ListTitlesViewProps) => (
   <CoverflowDeck
     titles={items.map((item) => toCoverflowTitle(item.title, platforms))}
     listId={listId}
     footer="list"
+    syncCardParam
+    initialCardId={initialCardId}
   />
 );

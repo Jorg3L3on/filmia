@@ -312,6 +312,7 @@ export const tasteReasons = (
         detail: `Has visto ${known.count} suyas${avg}`,
         weight: WEIGHTS.gusto * gusto * 0.6 + 0.02,
         personal: true,
+        personId: person.id,
       });
       break;
     }

@@ -97,7 +97,7 @@ const run = () => {
   assert(!appShell.startsWith('"use client"'), "AppShell stays a server shell");
   assert(!siteHeader.startsWith('"use client"'), "SiteHeader chrome stays server");
   assert(!appChrome.startsWith('"use client"'), "AppChrome frame stays server");
-  assert(siteHeaderNav.startsWith('"use client"'), "SiteHeaderNav is a client nav leaf (active profile chip)");
+  assert(siteHeaderNav.startsWith('"use client"'), "SiteHeaderNav is a client nav leaf (active tab match)");
   assert(bottomNav.startsWith('"use client"'), "BottomNav is a client leaf for Listas hub active state");
   assert(appShell.includes("AppChrome"), "AppShell slots chrome through AppChrome");
   assert(siteHeader.includes("SiteHeaderNav"), "SiteHeader composes SiteHeaderNav");
@@ -106,7 +106,7 @@ const run = () => {
   assert(authGate.startsWith('"use client"') && authGate.includes("isAuthChromePath"), "AuthChromeGate is the auth-path client leaf");
   assert(activeNav.startsWith('"use client"') && activeNav.includes("usePathname"), "ActiveNavLink is the active-state client leaf");
   assert(bottomShell.startsWith('"use client"') && bottomShell.includes("usePathname"), "BottomNavShell is the mobile-nav client leaf");
-  assert(siteHeaderNav.includes("ActiveNavLink") && siteHeaderNav.includes("LogoutButton"), "Header interactive bits stay small client leaves");
+  assert(siteHeaderNav.includes("ActiveNavLink") && !siteHeaderNav.includes("LogoutButton"), "Header nav is a small client leaf; Salir lives on Perfil");
   assert(bottomNav.includes("ActiveNavLink") && bottomNav.includes("BottomNavShell") && bottomNav.includes("NavIcon"), "Bottom nav composes shell + active links + server icons");
   assert(
     !read("src/app/layout.tsx").startsWith('"use client"'),

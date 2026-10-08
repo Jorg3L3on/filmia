@@ -33,7 +33,8 @@ export const TmdbSearchForm = ({
       event.preventDefault();
       onSearch();
     }}
-    className="sticky top-[calc(3rem+env(safe-area-inset-top))] z-30 bg-canvas/95 py-2 backdrop-blur sm:top-[calc(3.5rem+env(safe-area-inset-top))]"
+    // Mobile searches from the dock (DockSearchField); this field is desktop only.
+    className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-30 hidden bg-canvas/95 py-2 backdrop-blur sm:block"
   >
     <label className="relative block">
       <span className="sr-only">Buscar títulos en TMDB</span>

@@ -19,7 +19,17 @@ type LocalTitle = {
 };
 
 export type SearchAddDestination = "watchlist" | "watched";
-export type SearchPendingAction = SearchAddDestination | "open" | "lists";
+export type SearchPendingAction = SearchAddDestination | "open" | "lists" | "tonight";
+
+/** «Ver esta noche» in the sheet; omitted for watched titles and while logging. */
+export type SearchTonightAction = {
+  /** This title is tonight's pin. */
+  done: boolean;
+  /** Pinned during this visit: the moon pops once (a direct answer to the tap). */
+  celebrate: boolean;
+  error: string | null;
+  onPin: () => void;
+};
 
 type SearchPreviewSheetProps = {
   open: boolean;
@@ -37,7 +47,10 @@ type SearchPreviewSheetProps = {
   error?: string | null;
   /** Resolves `true` once the title is in every picked list. */
   onSaveLists?: (initialIds: string[], selectedIds: string[]) => Promise<boolean>;
+  tonight?: SearchTonightAction | null;
 };
+
+const LONG_TITLE_CHARS = 42;
 
 export const SearchPreviewSheet = ({
   open,
@@ -52,6 +65,7 @@ export const SearchPreviewSheet = ({
   memberListIds = [],
   error = null,
   onSaveLists,
+  tonight = null,
 }: SearchPreviewSheetProps) => {
   const resultKey = `${result.kind}:${result.tmdbId}`;
   // Picker belongs to one result and one opening of the sheet.
@@ -91,6 +105,8 @@ export const SearchPreviewSheet = ({
   const poster = tmdbPosterUrl(result.posterPath, "w185");
   const yearLabel = result.year ? String(result.year) : null;
   const kindLabel = TITLE_KIND_LABEL[result.kind];
+  // Very long names step down one size so three lines still read as a title.
+  const longTitle = result.name.length > LONG_TITLE_CHARS;
 
   return (
     <Sheet
@@ -129,16 +145,21 @@ export const SearchPreviewSheet = ({
             </span>
           ) : null}
           <div className="min-w-0 flex-1 space-y-1.5 pb-0.5">
-            <h2 className="font-serif text-2xl leading-tight text-paper sm:text-3xl">
+            <h2
+              className={cn(
+                "line-clamp-3 font-serif leading-tight text-pretty break-words text-paper",
+                longTitle ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl",
+              )}
+            >
               {result.name}
             </h2>
             <p className="flex flex-wrap items-center gap-1.5 text-sm text-fog">
               {yearLabel ? (
-                <span className="rounded-full bg-canvas/70 px-2 py-0.5 text-[11px] font-medium text-paper">
+                <span className="shrink-0 rounded-full bg-canvas/70 px-2 py-0.5 text-[11px] font-medium text-paper">
                   {yearLabel}
                 </span>
               ) : null}
-              <span className="rounded-full bg-canvas/70 px-2 py-0.5 text-[11px] font-medium text-paper">
+              <span className="shrink-0 rounded-full bg-canvas/70 px-2 py-0.5 text-[11px] font-medium text-paper">
                 {kindLabel}
               </span>
             </p>
@@ -164,6 +185,14 @@ export const SearchPreviewSheet = ({
             ) : (
               <p className="text-sm text-mist">Sin sinopsis en TMDB.</p>
             )}
+
+            {tonight ? (
+              <TonightPinAction
+                tonight={tonight}
+                pending={pending && pendingAction === "tonight"}
+                disabled={pending}
+              />
+            ) : null}
 
             <div className="grid grid-cols-3 gap-3">
               <SheetAction
@@ -194,7 +223,7 @@ export const SearchPreviewSheet = ({
               </SheetAction>
               <SheetAction
                 label={pending && pendingAction === "open" ? "Abriendo…" : "Ficha"}
-                primary
+                primary={!tonight}
                 disabled={pending || Boolean(local?.titleId.startsWith("pending:"))}
                 onClick={onOpen}
               >
@@ -235,6 +264,85 @@ export const SearchPreviewSheet = ({
     </Sheet>
   );
 };
+
+/**
+ * The sheet's one primary action: pin for tonight. Pending «Reservando…»;
+ * done, the moon fills (spring-pop only right after the tap) and it says
+ * «Para esta noche». The sheet never closes on its own.
+ */
+const TonightPinAction = ({
+  tonight,
+  pending,
+  disabled,
+}: {
+  tonight: SearchTonightAction;
+  pending: boolean;
+  disabled: boolean;
+}) => {
+  const { done, celebrate, error, onPin } = tonight;
+  const label = pending ? "Reservando…" : done ? "Para esta noche" : "Ver esta noche";
+  const hint = done ? "La elegiste para esta noche" : "Primera en Para ti, hoy";
+
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={onPin}
+        disabled={disabled || done}
+        aria-pressed={done}
+        aria-busy={pending || undefined}
+        className={cn(
+          "tonight-pin press-scale flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left",
+          focusRing,
+          done
+            ? "is-done border border-accent/45 bg-accent/12 text-paper"
+            : "bg-accent text-ink disabled:opacity-60",
+        )}
+      >
+        <span
+          className={cn(
+            "flex size-11 shrink-0 items-center justify-center rounded-full",
+            done ? "bg-accent/20 text-accent" : "bg-ink/10",
+          )}
+        >
+          <span key={done ? "full" : "empty"} className={cn("inline-flex", done && celebrate && "spring-pop")}>
+            <TonightMoonIcon filled={done} />
+          </span>
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">{label}</span>
+          <span className={cn("block truncate text-xs", done ? "text-fog" : "text-ink/70")}>
+            {hint}
+          </span>
+        </span>
+      </button>
+      {error ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger"
+        >
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+};
+
+/** Same crescent as the «Hasta las 23:00» chip on Hoy; filled once pinned. */
+const TonightMoonIcon = ({ filled }: { filled: boolean }) => (
+  <svg
+    viewBox="0 0 24 24"
+    className="h-6 w-6"
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth={1.75}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5Z" />
+  </svg>
+);
 
 const SheetAction = ({
   label,

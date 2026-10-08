@@ -20,6 +20,7 @@ const offlineScripts = [
   "verify-fase-5.ts",
   "verify-quiero-ver.ts",
   "verify-bienvenida.ts",
+  "verify-buscar-polish.ts",
 ];
 
 const tsx = path.join(process.cwd(), "node_modules", ".bin", "tsx");

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { EmptyState } from "@/components/EmptyState";
 import { HoySkeleton } from "@/components/PageSkeletons";
 import { TonightSala } from "@/components/tonight/TonightSala";
+import { parseDeckCard } from "@/lib/nav-origin";
 import { TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import {
   DIARY_HISTORIAL_PATH,
@@ -68,9 +69,9 @@ const HoyShell = async ({
     return (
       <EmptyState
         title="Elige tus plataformas"
-        description="Hoy solo muestra lo incluido en tus suscripciones de México. La bienvenida te ayuda a elegirlas y a llenar Quiero ver."
-        actionHref="/bienvenida"
-        actionLabel="Configurar en la bienvenida"
+        description="Hoy solo muestra lo incluido en tus suscripciones de México. Elígelas en Perfil."
+        actionHref="/perfil#plataformas"
+        actionLabel="Elegir plataformas"
       />
     );
   }
@@ -99,5 +100,7 @@ const HoyShell = async ({
 
   const initialSlug = parseCategorySlug(params[TONIGHT_LENS_PARAM] ?? params.categoria);
 
-  return <TonightSala decks={decks} initialSlug={initialSlug} />;
+  return (
+    <TonightSala decks={decks} initialSlug={initialSlug} initialCardId={parseDeckCard(params.carta)} />
+  );
 };
