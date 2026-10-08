@@ -30,7 +30,7 @@ export default function SearchPage({
   searchParams: Promise<SearchParams>;
 }) {
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto w-full max-w-2xl space-y-6">
       <PageHeader
         title="Buscar"
         description="Lo que añades se guarda en tu Filmia: en Quiero ver, como vista o en tus listas."

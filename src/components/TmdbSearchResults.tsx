@@ -1,15 +1,11 @@
 "use client";
 
 import { Button } from "@/components/Button";
-import { SharedPoster } from "@/components/SharedPoster";
-import { PosterImage } from "@/components/PosterImage";
 import { EmptyState } from "@/components/EmptyState";
 import { SearchResultsSkeleton } from "@/components/PageSkeletons";
-import { cn } from "@/lib/cn";
-import { TITLE_KIND_LABEL } from "@/lib/labels";
+import { SearchResultRow } from "@/components/tmdb-search/SearchResultRow";
 import { staggerStyle } from "@/lib/motion";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
-import { focusRing } from "@/lib/ui";
 import type { TmdbCatalogEntry } from "@/lib/tmdb-search-catalog";
 import { tmdbCatalogKey } from "@/lib/tmdb-search-catalog";
 
@@ -47,44 +43,11 @@ export const TmdbSearchResults = ({
             const local = catalog.get(key) ?? catalog.get(String(result.tmdbId));
             return (
               <li key={key} className="stagger-in" style={staggerStyle(index)}>
-                <button
-                  type="button"
-                  onClick={() => onPreview(result)}
-                  className={cn(
-                    "group card-physics press-scale flex w-full items-center gap-3 rounded-2xl border border-line bg-surface px-3 py-2.5 text-left hover:border-accent/40",
-                    focusRing,
-                  )}
-                >
-                  <span className="w-12 shrink-0 overflow-hidden rounded-lg transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110">
-                    {local?.titleId ? (
-                      <SharedPoster titleId={local.titleId}>
-                        <PosterImage
-                          name={result.name}
-                          posterPath={result.posterPath}
-                          sizes="48px"
-                          className="rounded-lg"
-                        />
-                      </SharedPoster>
-                    ) : (
-                      <PosterImage
-                        name={result.name}
-                        posterPath={result.posterPath}
-                        sizes="48px"
-                        className="rounded-lg"
-                      />
-                    )}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium text-paper">{result.name}</span>
-                    <span className="block text-sm text-fog">
-                      {result.year ? `${result.year} · ` : ""}
-                      {TITLE_KIND_LABEL[result.kind]}
-                    </span>
-                  </span>
-                  <span className="text-mist" aria-hidden="true">
-                    ›
-                  </span>
-                </button>
+                <SearchResultRow
+                  result={result}
+                  titleId={local?.titleId}
+                  onPreview={onPreview}
+                />
               </li>
             );
           })}

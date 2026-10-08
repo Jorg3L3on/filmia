@@ -39,6 +39,8 @@ type SearchPreviewSheetProps = {
   onSaveLists?: (initialIds: string[], selectedIds: string[]) => Promise<boolean>;
 };
 
+const LONG_TITLE_CHARS = 42;
+
 export const SearchPreviewSheet = ({
   open,
   result,
@@ -91,6 +93,8 @@ export const SearchPreviewSheet = ({
   const poster = tmdbPosterUrl(result.posterPath, "w185");
   const yearLabel = result.year ? String(result.year) : null;
   const kindLabel = TITLE_KIND_LABEL[result.kind];
+  // Very long names step down one size so three lines still read as a title.
+  const longTitle = result.name.length > LONG_TITLE_CHARS;
 
   return (
     <Sheet
@@ -129,16 +133,21 @@ export const SearchPreviewSheet = ({
             </span>
           ) : null}
           <div className="min-w-0 flex-1 space-y-1.5 pb-0.5">
-            <h2 className="font-serif text-2xl leading-tight text-paper sm:text-3xl">
+            <h2
+              className={cn(
+                "line-clamp-3 font-serif leading-tight text-pretty break-words text-paper",
+                longTitle ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl",
+              )}
+            >
               {result.name}
             </h2>
             <p className="flex flex-wrap items-center gap-1.5 text-sm text-fog">
               {yearLabel ? (
-                <span className="rounded-full bg-canvas/70 px-2 py-0.5 text-[11px] font-medium text-paper">
+                <span className="shrink-0 rounded-full bg-canvas/70 px-2 py-0.5 text-[11px] font-medium text-paper">
                   {yearLabel}
                 </span>
               ) : null}
-              <span className="rounded-full bg-canvas/70 px-2 py-0.5 text-[11px] font-medium text-paper">
+              <span className="shrink-0 rounded-full bg-canvas/70 px-2 py-0.5 text-[11px] font-medium text-paper">
                 {kindLabel}
               </span>
             </p>
