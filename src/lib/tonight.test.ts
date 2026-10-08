@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { computeTonight, PARA_TI_SLUG } from "./tonight";
 import { itemVector, cosine } from "./tonight/features";
-import { findPinnedTitleId } from "./tonight/pin";
+import { canOfferTonightPin, findPinnedTitleId, searchPinBlocker } from "./tonight/pin";
 import { rankForNow } from "./tonight/serve";
 import {
   bedtimeFor,
@@ -318,6 +318,25 @@ describe("tonight/pin", () => {
   it("is cancelled by a later «Ahora no» on the same title", () => {
     assert.equal(findPinnedTitleId([event("a", "pinned", 30), event("a", "not_tonight", 5)], NOW), null);
     assert.equal(findPinnedTitleId([event("a", "not_tonight", 30), event("a", "pinned", 5)], NOW), "a");
+  });
+
+  it("lets a pin from Buscar replace the one from Quiero ver (newest wins)", () => {
+    const fromQueue = event("queue-pick", "pinned", 90);
+    const fromSearch = event("search-pick", "pinned", 1);
+    assert.equal(findPinnedTitleId([fromQueue, fromSearch], NOW), "search-pick");
+    assert.equal(findPinnedTitleId([fromSearch, fromQueue], NOW), "search-pick");
+  });
+
+  it("offers «Ver esta noche» in Buscar only for unwatched titles outside log mode", () => {
+    assert.equal(canOfferTonightPin({ watched: false, logMode: false }), true);
+    assert.equal(canOfferTonightPin({ watched: true, logMode: false }), false);
+    assert.equal(canOfferTonightPin({ watched: false, logMode: true }), false);
+  });
+
+  it("refuses to pin a watched title from Buscar", () => {
+    assert.equal(searchPinBlocker(null), null);
+    assert.equal(searchPinBlocker({ watchedAt: null }), null);
+    assert.match(searchPinBlocker({ watchedAt: NOW }) ?? "", /Ya la viste/);
   });
 });
 

@@ -19,7 +19,7 @@ import { scheduleDiaryWatchlistEnrichment } from "@/lib/diary-enrich";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { WATCHLIST_SLUG } from "@/lib/lists";
 import { PARA_TI_NAME, PARA_TI_SLUG } from "@/lib/tonight/select";
-import { findPinnedTitleId, PINNED_REASON } from "@/lib/tonight/pin";
+import { findPinnedTitleId, PIN_WINDOW_MS, PINNED_REASON } from "@/lib/tonight/pin";
 import {
   parseStoredStreamingPlatforms,
   titleAvailableOnUserPlatforms,
@@ -216,6 +216,28 @@ const loadEvents = async (userId: string, now: Date): Promise<TonightEvent[]> =>
     isPickEventKind(row.kind)
       ? [{ titleId: row.titleId, kind: row.kind, createdAt: row.createdAt }]
       : [],
+  );
+};
+
+/** The title pinned for tonight right now (Buscar opens its sheet in the done state). */
+export const getPinnedTonightTitleId = async (
+  userId: string,
+  now = new Date(),
+): Promise<string | null> => {
+  const since = new Date(now.getTime() - PIN_WINDOW_MS);
+  const rows = await db.query.pickEvents.findMany({
+    where: and(
+      eq(pickEvents.userId, userId),
+      gte(pickEvents.createdAt, since),
+      inArray(pickEvents.kind, ["pinned", "not_tonight"]),
+    ),
+    columns: { titleId: true, kind: true, createdAt: true },
+  });
+  return findPinnedTitleId(
+    rows.flatMap((row) =>
+      isPickEventKind(row.kind) ? [{ titleId: row.titleId, kind: row.kind, createdAt: row.createdAt }] : [],
+    ),
+    now,
   );
 };
 

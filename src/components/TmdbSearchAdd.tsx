@@ -12,6 +12,7 @@ import type { SelectableList } from "@/lib/list-selection";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import type { UserTmdbEntry } from "@/lib/queries";
 import { tmdbCatalogKey } from "@/lib/tmdb-search-catalog";
+import { canOfferTonightPin } from "@/lib/tonight/pin";
 
 type TmdbSearchAddProps = {
   configured: { tmdb: boolean; omdb: boolean };
@@ -23,6 +24,7 @@ type TmdbSearchAddProps = {
   defaultDestination?: "watchlist" | "watched";
   lists?: SelectableList[];
   memberships?: Record<string, string[]>;
+  pinnedTitleId?: string | null;
 };
 
 export const TmdbSearchAdd = ({
@@ -35,6 +37,7 @@ export const TmdbSearchAdd = ({
   defaultDestination = "watchlist",
   lists,
   memberships,
+  pinnedTitleId: initialPinnedTitleId = null,
 }: TmdbSearchAddProps) => {
   const {
     query,
@@ -53,11 +56,15 @@ export const TmdbSearchAdd = ({
     previewLocal,
     previewListIds,
     listsError,
+    pinnedTitleId,
+    justPinnedKey,
+    tonightError,
     handleSearch,
     handleQueryChange,
     handleAdd,
     handleOpen,
     handleSaveLists,
+    handlePinTonight,
   } = useTmdbSearchAdd({
     configuredTmdb: configured.tmdb,
     existing,
@@ -68,7 +75,9 @@ export const TmdbSearchAdd = ({
     defaultDestination,
     lists,
     memberships,
+    pinnedTitleId: initialPinnedTitleId,
   });
+  const logMode = defaultDestination === "watched";
 
   // Keep the last preview mounted while the sheet plays its exit animation.
   const [sheetResult, setSheetResult] = useState(preview);
@@ -132,6 +141,17 @@ export const TmdbSearchAdd = ({
           error={listsError}
           onSaveLists={(initialIds, selectedIds) =>
             handleSaveLists(sheetResult, initialIds, selectedIds)
+          }
+          tonight={
+            canOfferTonightPin({ watched: Boolean(previewLocal?.watched), logMode })
+              ? {
+                  done: Boolean(previewLocal && previewLocal.titleId === pinnedTitleId),
+                  celebrate:
+                    justPinnedKey === tmdbCatalogKey(sheetResult.tmdbId, sheetResult.kind),
+                  error: tonightError,
+                  onPin: () => handlePinTonight(sheetResult),
+                }
+              : null
           }
         />
       ) : null}

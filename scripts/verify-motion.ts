@@ -183,6 +183,12 @@ assert(
   "Dock Buscar disc: lights on /buscar with --duration-tab · --ease-out; the «+» menu pop is gone",
 );
 assert(
+  /\.tonight-pin\.press-scale \{[^}]*--duration-press\) var\(--spring\)[^}]*--duration-tab\) var\(--ease-out\)/.test(css) &&
+    searchSheet.includes("celebrate && \"spring-pop\"") &&
+    motionDoc.includes(".tonight-pin"),
+  "«Ver esta noche»: press spring + ease-out light; the moon pops only right after the tap; documented",
+);
+assert(
   css.includes("@keyframes sheet-fall") && css.includes(".sheet-overlay-out") && sheet.includes("sheet-fall"),
   "Sheets need an exit animation (sheet-fall + overlay fade) before unmounting",
 );

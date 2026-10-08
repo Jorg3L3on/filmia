@@ -69,6 +69,7 @@ Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` 
 | --- | --- | --- |
 | Disco del dock `.dock-search` | `--duration-tab` · `--ease-out` (luz) · `--duration-press` · `--spring` (press) | Center glass disc → /buscar (replaced the «+» menu). On /buscar it lights with the accent aura (`aria-current="page"`) while `.dock-indicator` fades out; elsewhere it is plain glass. Reduced motion: color/opacity only, no scale. |
 | Filas `.stagger-in` | `--duration-stagger` · 50 ms/row | `SearchResultRow`: title up to 2 lines, poster and chevron never shrink. |
+| «Ver esta noche» `.tonight-pin` | `--duration-press` · `--spring` (press) · `--duration-pop` · `--spring` (luna) | The sheet's one primary action. Pending «Reservando…»; done, the crescent fills with `.spring-pop` only right after the tap (reopening the sheet shows it full, no pop) and the toast «Ver en Hoy» stays 6 s. The sheet never closes on its own. |
 
 ## SharedPoster
 

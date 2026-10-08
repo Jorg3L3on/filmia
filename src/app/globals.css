@@ -257,6 +257,30 @@ body {
     var(--glass-shadow-panel);
 }
 
+/*
+ * «Ver esta noche» in Buscar's preview sheet: the one accent action, with a
+ * soft glow under it. Done, it settles into lit glass; press keeps its spring.
+ */
+.tonight-pin,
+.tonight-pin.press-scale {
+  transition:
+    transform var(--duration-press) var(--spring),
+    background-color var(--duration-tab) var(--ease-out),
+    border-color var(--duration-tab) var(--ease-out),
+    box-shadow var(--duration-tab) var(--ease-out),
+    color var(--duration-tab) var(--ease-out),
+    opacity var(--duration-tab) var(--ease-out);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.28),
+    0 14px 30px -16px rgb(var(--accent-rgb) / 0.95);
+}
+
+.tonight-pin.is-done {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 0 24px -10px rgb(var(--accent-rgb) / 0.8);
+}
+
 .rail {
   scrollbar-width: none;
   -ms-overflow-style: none;

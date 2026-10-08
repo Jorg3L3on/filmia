@@ -11,6 +11,8 @@ import {
   getUserTmdbIndex,
 } from "@/lib/queries";
 import { parseOptionalIsoDate } from "@/lib/dates";
+import { requireUserId } from "@/lib/session";
+import { getPinnedTonightTitleId } from "@/lib/tonight-store";
 
 export const metadata: Metadata = {
   title: "Buscar",
@@ -58,10 +60,12 @@ const SearchBody = async ({
   const markWatched =
     watchedDate != null ||
     (typeof params.destino === "string" && params.destino === "visto");
-  const [existing, lists, memberships] = await Promise.all([
+  const userId = await requireUserId();
+  const [existing, lists, memberships, pinnedTitleId] = await Promise.all([
     getUserTmdbIndex(),
     getAssignableLists(),
     getUserListMembershipIndex(),
+    markWatched ? null : getPinnedTonightTitleId(userId),
   ]);
 
   return (
@@ -73,6 +77,7 @@ const SearchBody = async ({
       defaultDestination={markWatched ? "watched" : "watchlist"}
       lists={lists.map(({ id, name, slug }) => ({ id, name, slug }))}
       memberships={memberships}
+      pinnedTitleId={pinnedTitleId}
     />
   );
 };
