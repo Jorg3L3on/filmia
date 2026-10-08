@@ -84,9 +84,6 @@ export const WhySheet = ({ title, lens, onClose }: WhySheetProps) => {
                   {title.name}
                 </h2>
               </div>
-              <Button type="button" variant="ghost" size="sm" onClick={onClose} aria-label="Cerrar" className="h-9 w-9 shrink-0 px-0">
-                <CloseIcon />
-              </Button>
             </div>
           </div>
 
@@ -163,11 +160,5 @@ const ReasonIcon = ({ kind }: { kind: "spark" | "clock" | "hourglass" | "note" |
 const ThumbIcon = ({ up = false }: { up?: boolean }) => (
   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={up ? undefined : "rotate-180"}>
     <path d="M7 10.5 12 5.5l5 5M12 5.5v13" />
-  </svg>
-);
-
-const CloseIcon = () => (
-  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
-    <path strokeLinecap="round" d="M7 7l10 10M17 7 7 17" />
   </svg>
 );

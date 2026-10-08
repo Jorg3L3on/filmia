@@ -1,6 +1,5 @@
 import { createListWithFeedback, updateListWithFeedback } from "@/app/actions/lists";
 import { ListFormFields } from "@/components/ListFormFields";
-import { EmptyListPreview } from "@/components/PosterStack";
 import { PageHeader } from "@/components/PageHeader";
 import type { List } from "@/db";
 import { isFixedListSlug } from "@/lib/lists";
@@ -29,7 +28,6 @@ export const ListForm = ({ list }: ListFormProps) => {
           backLabel="Volver"
         />
       }
-      preview={<EmptyListPreview />}
     />
   );
 };

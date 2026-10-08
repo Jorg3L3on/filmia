@@ -105,13 +105,11 @@ export const DeleteCollectionButton = ({
         type="button"
         onClick={handleOpen}
         className={cn(
-          "press-scale group inline-flex h-11 items-center gap-2.5 rounded-full border border-danger-line bg-danger-well/50 pl-2 pr-5 text-sm font-medium text-danger transition-colors duration-[var(--duration-hover)] hover:border-danger/50 hover:bg-danger-well",
+          "press-scale group inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm font-medium text-fog transition-colors duration-[var(--duration-hover)] hover:text-danger",
           focusRing,
         )}
       >
-        <span className="inline-flex size-7 items-center justify-center rounded-full bg-danger/15 transition-colors duration-[var(--duration-hover)] group-hover:bg-danger/25">
-          <TrashIcon className="size-4" />
-        </span>
+        <TrashIcon className="size-4" />
         {label}
       </button>
 

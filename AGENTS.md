@@ -11,9 +11,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## Plan
 
 The plan for this product lives in Plania (MCP server `plania`, project `filmia`), not in this repo.
-- Start: `get_next` or `get_resume` + `get_project` + `get_memory`, then `get_task`.
-- Claim: `set_task` status "In progress", note "claimed by <agent>".
-- Finish a phase: `set_task` status "In review" with branch, pr_url and a note
-  `Result: <✓|⚠|✗> <unit|integration|test|live|grep|subagent> — <cite>`; then `update_resume`.
-- Never mark Done. Jorge does that after merging.
-- Decisions: `add_decision` with one line; the full ADR stays in `docs/adr/`.
+Follow the protocol in the Plania server's instructions (sent on connect, versioned) and the project's rules and settings (`get_project`). Do not copy the protocol here: it changes in Plania.
+- Start: `get_context` with your branch and worktree when you are on a branch; otherwise `get_resume`, then `get_task`.
+- Never mark Done or Won't do: `request_approval`, then pass the `approval_id` Jorge grants.
+- Put "Plania: <KEY>" in every PR body.

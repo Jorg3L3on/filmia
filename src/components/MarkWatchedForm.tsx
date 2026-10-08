@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useId, useState, useTransition, type FormEvent } from "react";
 import { clearTitleWatched, markTitleWatched } from "@/app/actions/watchlist";
 import { Button } from "@/components/Button";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { RatingStars } from "@/components/RatingStars";
+import { Sheet, SheetHandle } from "@/components/Sheet";
 import { todayDateInput, toDateInput } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { showToast } from "@/lib/toast";
@@ -33,17 +34,21 @@ export const MarkWatchedForm = ({
   collapsed = false,
   onSaved,
 }: MarkWatchedFormProps) => {
-  const isCompact = variant === "queue";
+  // Collapsed lives in a sheet, which has room for the full-size fields.
+  const isCompact = variant === "queue" && !collapsed;
   const isEdit = Boolean(watchedAt);
   const defaultDate = toDateInput(watchedAt) || todayDateInput();
   const [noteValue, setNoteValue] = useState<number | null>(rating);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const headingId = useId();
 
   const handleSave = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     setError(null);
+    setSheetOpen(false);
     onSaved?.();
     showToast({ title: isEdit ? "Diario actualizado" : "Marcada como vista" });
     startTransition(async () => {
@@ -150,16 +155,39 @@ export const MarkWatchedForm = ({
     return form;
   }
 
+  const triggerLabel = isEdit ? "Editar diario" : "Vi esto";
+
   return (
-    <details className="group rounded-md border border-line bg-well p-2">
-      <summary
-        className="cursor-pointer list-none text-xs font-medium text-accent [&::-webkit-details-marker]:hidden"
+    <>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        onClick={() => setSheetOpen(true)}
         aria-label={isEdit ? "Editar entrada del diario" : "Marcar como vista"}
-        tabIndex={0}
+        aria-haspopup="dialog"
       >
-        {isEdit ? "Editar diario" : "Vi esto"}
-      </summary>
-      <div className="pt-2">{form}</div>
-    </details>
+        {triggerLabel}
+      </Button>
+      <Sheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        labelledBy={headingId}
+        overlayLabel="Cerrar"
+        align="bottom"
+        dragDismiss
+        portal
+      >
+        <div className="flex flex-col items-center px-5 pt-3">
+          <SheetHandle />
+          <h2 id={headingId} className="w-full font-serif text-xl text-paper">
+            {isEdit ? "Editar diario" : "Vi esto"}
+          </h2>
+        </div>
+        <div className="px-5 pb-5 pt-4 text-left" data-no-sheet-drag>
+          {form}
+        </div>
+      </Sheet>
+    </>
   );
 };

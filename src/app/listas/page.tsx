@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/PageHeader";
 import {
   SegmentActionTooltip,
   SegmentPlusIcon,
-  segmentActionClass,
+  segmentActionCompactClass,
 } from "@/components/SegmentAction";
 import { ListsBodySkeleton } from "@/components/PageSkeletons";
 import { listHref, partitionUserLists } from "@/lib/lists";
@@ -39,11 +39,12 @@ export default function ListsPage() {
     <div className="space-y-8">
       <PageHeader
         title="Listas"
+        inlineActions
         actions={
           <Link
             href="/listas/nueva"
             aria-label="Nueva lista"
-            className={segmentActionClass}
+            className={segmentActionCompactClass}
           >
             <SegmentPlusIcon />
             <SegmentActionTooltip label="Crear lista" />

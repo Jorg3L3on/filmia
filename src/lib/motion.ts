@@ -61,7 +61,16 @@ export const useSpringFeedback = () => {
 
 export const useLongPress = (
   onLongPress: () => void,
-  { delayMs = 420, moveThreshold = 8 } = {},
+  {
+    delayMs = 420,
+    moveThreshold = 8,
+    onPressChange,
+  }: {
+    delayMs?: number;
+    moveThreshold?: number;
+    /** True while a press is armed and not yet fired/cancelled, for visual feedback. */
+    onPressChange?: (pressing: boolean) => void;
+  } = {},
 ) => {
   const pointer = useRef<{ id: number; x: number; y: number; timer: number } | null>(
     null,
@@ -74,6 +83,7 @@ export const useLongPress = (
 
     window.clearTimeout(pointer.current.timer);
     pointer.current = null;
+    onPressChange?.(false);
   };
 
   const onPointerDown = (event: ReactPointerEvent) => {
@@ -89,9 +99,11 @@ export const useLongPress = (
       y: clientY,
       timer: window.setTimeout(() => {
         pointer.current = null;
+        onPressChange?.(false);
         onLongPress();
       }, delayMs),
     };
+    onPressChange?.(true);
   };
 
   const onPointerMove = (event: ReactPointerEvent) => {

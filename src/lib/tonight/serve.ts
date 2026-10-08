@@ -13,6 +13,10 @@ import type {
   TonightReason,
 } from "@/lib/tonight/types";
 
+/** `?lente=` on Hoy. Shared with the server page: importing it from the "use client" sala
+ * hands the server a client reference instead of the string, so deep links never matched. */
+export const TONIGHT_LENS_PARAM = "lente";
+
 /** What a card needs at read time (server or client) to be ranked for right now. */
 export type RankableCard = {
   id: string;
