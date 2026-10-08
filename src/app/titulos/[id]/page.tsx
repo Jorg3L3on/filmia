@@ -110,7 +110,7 @@ const TitleDetail = async ({
 
   return (
     <article className="space-y-8">
-      <FichaVisit titleId={title.id} />
+      <FichaVisit titleId={title.id} name={title.name} />
       <Suspense fallback={<TitleHeroFallback title={title} extras={storedTitleExtras(title)} />}>
         <TitleHeroBlock title={title} extrasPromise={extrasPromise} />
       </Suspense>

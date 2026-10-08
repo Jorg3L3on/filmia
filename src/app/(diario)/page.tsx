@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { EmptyState } from "@/components/EmptyState";
 import { HoySkeleton } from "@/components/PageSkeletons";
 import { TonightSala } from "@/components/tonight/TonightSala";
+import { parseDeckCard } from "@/lib/nav-origin";
 import { TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import {
   DIARY_HISTORIAL_PATH,
@@ -99,5 +100,7 @@ const HoyShell = async ({
 
   const initialSlug = parseCategorySlug(params[TONIGHT_LENS_PARAM] ?? params.categoria);
 
-  return <TonightSala decks={decks} initialSlug={initialSlug} />;
+  return (
+    <TonightSala decks={decks} initialSlug={initialSlug} initialCardId={parseDeckCard(params.carta)} />
+  );
 };

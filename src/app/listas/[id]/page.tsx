@@ -6,6 +6,7 @@ import { AddTitleToListCta } from "@/components/AddTitleToListCta";
 import { CatalogFilters } from "@/components/CatalogFilters";
 import { EmptyState } from "@/components/EmptyState";
 import { ListTitlesView } from "@/components/ListTitlesView";
+import { NavLabel } from "@/components/NavOriginTracker";
 import {
   MinePlatformsEmpty,
   MinePlatformsSetupCta,
@@ -27,6 +28,7 @@ import {
   WATCHLIST_SLUG,
 } from "@/lib/lists";
 import { metadataServicesConfigured } from "@/lib/metadata";
+import { parseDeckCard } from "@/lib/nav-origin";
 import { getListById, getTitleOptionsOutsideList, getUserStreamingPlatforms } from "@/lib/queries";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { tmdbCatalogKey } from "@/lib/tmdb-search-catalog";
@@ -51,6 +53,7 @@ export default function ListDetailPage({
     kind?: string | string[];
     platform?: string | string[];
     sort?: string | string[];
+    carta?: string | string[];
   }>;
 }) {
   return (
@@ -71,6 +74,7 @@ const ListDetail = async ({
     kind?: string | string[];
     platform?: string | string[];
     sort?: string | string[];
+    carta?: string | string[];
   }>;
 }) => {
   const { id } = await params;
@@ -126,6 +130,7 @@ const ListDetail = async ({
   return (
     // Shell = Hoy's room: the deck tints the page with the hero poster's colour.
     <div className="diario-que-ver-shell space-y-6">
+      <NavLabel label={`Listas · ${list.name}`} />
       <PageHeader
         title={list.name}
         description={list.description ?? undefined}
@@ -211,6 +216,7 @@ const ListDetail = async ({
             listId={automatic ? undefined : list.id}
             items={visibleItems}
             platforms={platforms}
+            initialCardId={parseDeckCard(query.carta)}
           />
         </div>
       )}

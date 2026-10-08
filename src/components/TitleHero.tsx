@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { BackButton } from "@/components/BackButton";
 import { ImdbBadge } from "@/components/ImdbBadge";
 import { PersonalRating } from "@/components/PersonalRating";
 import { PosterImage } from "@/components/PosterImage";
@@ -37,6 +38,9 @@ export const TitleHero = ({
 
   return (
     <header className="relative -mx-4 -mt-6 sm:-mt-8">
+      <div className="absolute left-4 top-3 z-20 sm:left-8 sm:top-4">
+        <BackButton />
+      </div>
       <div className="relative h-[min(62vw,360px)] min-h-[260px] overflow-hidden sm:h-[400px] sm:rounded-b-3xl">
         {backdropSrc ? (
           <div className="absolute inset-0" aria-hidden="true">
