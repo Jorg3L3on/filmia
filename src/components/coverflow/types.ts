@@ -58,4 +58,8 @@ export type CoverflowDeckProps = {
   initialIndex?: number;
   /** Parent-driven move (Hoy's lens rail). Each new `seq` jumps once to `index`. */
   focusRequest?: { index: number; seq: number };
+  /** Keep the hero in `?carta=` and start there on the way back (list decks; Hoy does its own). */
+  syncCardParam?: boolean;
+  /** Server-side `?carta=` so the first paint matches the client. */
+  initialCardId?: string | null;
 };

@@ -14,7 +14,9 @@ import { TonightEyebrow } from "@/components/tonight/TonightEyebrow";
 import { WhySheet } from "@/components/tonight/WhySheet";
 import { useImpressions } from "@/components/tonight/useImpressions";
 import { useTonightClock } from "@/components/tonight/useTonightClock";
+import { useNavLabel } from "@/components/NavOriginTracker";
 import { cn } from "@/lib/cn";
+import { DECK_CARD_PARAM, deckCardFrom, deckIndexOf } from "@/lib/nav-origin";
 import { showToast } from "@/lib/toast";
 import { rankForNow, TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import { dayPartOf } from "@/lib/tonight/time";
@@ -26,9 +28,11 @@ const STAMP_TO_FLIGHT_MS = 0;
 type TonightSalaProps = {
   decks: TonightDecks;
   initialSlug?: string | null;
+  /** `?carta=`: the card the user left for a ficha; the deck reopens on it. */
+  initialCardId?: string | null;
 };
 
-export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => {
+export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }: TonightSalaProps) => {
   const now = useTonightClock(decks.nightEnds);
   const dayPart = now ? dayPartOf(now, decks.nightEnds) : "noche";
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
@@ -37,7 +41,12 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
   );
   const activeSlugRef = useRef(activeSlug);
   const [focusRequest, setFocusRequest] = useState<{ index: number; seq: number }>();
-  const [dealing, setDealing] = useState(true);
+  // On Back the client mounts fresh: the URL (kept by replaceState) beats the cached server props.
+  const [rememberedCard] = useState(() =>
+    typeof window === "undefined" ? initialCardId : (deckCardFrom(window.location.search) ?? initialCardId),
+  );
+  // Coming back to a card is not a new deal: no `.deck-deal` replay.
+  const [dealing, setDealing] = useState(() => !rememberedCard);
   const [whyTitle, setWhyTitle] = useState<CoverflowTitle | null>(null);
   const [menuTitle, setMenuTitle] = useState<CoverflowTitle | null>(null);
   const liveRef = useRef<HTMLDivElement>(null);
@@ -131,6 +140,7 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
   }, [lensCards, lenses]);
 
   const activeLens = lenses.find((lens) => lens.slug === activeSlug) ?? lenses[0] ?? null;
+  useNavLabel(activeLens ? `Hoy · ${activeLens.name}` : "Hoy");
 
   const goToLens = (slug: string) => {
     const index = lensStarts.get(slug);
@@ -198,12 +208,21 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
     });
   };
 
-  // The hero's own lens drives the rail and the URL (impressions settle the previous hero first).
+  // The hero's own lens drives the rail; lens + card live in the URL (impressions settle the previous hero first).
   const handleActiveChange = useCallback(
     (_index: number, title: CoverflowTitle) => {
       impressions.onHeroChange(title.id);
       const slug = title.tonight?.lens;
-      if (!slug || slug === activeSlugRef.current) {
+      if (!slug) {
+        return;
+      }
+      // Shallow URL sync: router.replace would refetch the server page mid-swipe.
+      window.history.replaceState(
+        null,
+        "",
+        `/?${TONIGHT_LENS_PARAM}=${encodeURIComponent(slug)}&${DECK_CARD_PARAM}=${encodeURIComponent(title.id)}`,
+      );
+      if (slug === activeSlugRef.current) {
         return;
       }
       activeSlugRef.current = slug;
@@ -212,8 +231,6 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
       if (lens && liveRef.current) {
         liveRef.current.textContent = `Lente ${lens.name}`;
       }
-      // Shallow URL sync: router.replace would refetch the server page mid-swipe.
-      window.history.replaceState(null, "", `/?${TONIGHT_LENS_PARAM}=${encodeURIComponent(slug)}`);
     },
     [impressions, lenses],
   );
@@ -251,8 +268,8 @@ export const TonightSala = ({ decks, initialSlug = null }: TonightSalaProps) => 
                 titles={cards}
                 footer="tonight"
                 className="min-h-0 flex-1"
-                // Read on mount only: a ?lente= deep link opens on that chapter.
-                initialIndex={lensStarts.get(activeSlug) ?? 0}
+                // Read on mount only: the remembered card, else the ?lente= chapter, else the top.
+                initialIndex={deckIndexOf(cards, rememberedCard) ?? lensStarts.get(activeSlug) ?? 0}
                 focusRequest={focusRequest}
                 onActiveChange={handleActiveChange}
               />

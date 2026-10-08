@@ -110,9 +110,9 @@ const run = () => {
     "401 maps to the same friendly copy",
   );
 
-  const actionRow = read("src/components/TitleActionRow.tsx");
+  const fichaActions = read("src/components/TitleFichaActions.tsx");
   assert(
-    actionRow.includes("MarkWatchedSheet") && actionRow.includes("titleName"),
+    fichaActions.includes("MarkWatchedSheet") && fichaActions.includes("titleName"),
     "Ficha Visto opens the same mark-seen sheet as the deck eye",
   );
   assert(
@@ -303,22 +303,16 @@ const run = () => {
   assert(
     titleHero.includes('fetchPriority="high"') &&
       titleHero.includes('fetchPriority="low"') &&
-      titleHero.includes("(max-width: 640px) 40vw, 224px") &&
+      titleHero.includes("(max-width: 640px) 42vw, 280px") &&
       read("src/components/PosterImage.tsx").includes("fetchPriority"),
     "Ficha LCP poster uses priority/fetchPriority/sizes; backdrop is low",
   );
-  const fichaActionRow = read("src/components/TitleActionRow.tsx");
   assert(
-    fichaActionRow.includes("press-scale") &&
-      fichaActionRow.includes("var(--duration-hover)") &&
-      fichaActionRow.includes("actionChipClass") &&
-      fichaActionRow.includes("tracking-[0.14em]"),
-    "Ficha action row uses press/hover tokens + tipografía polish",
-  );
-  assert(
-    read("src/components/TitleSaveCta.tsx").includes("press-scale") &&
-      read("src/components/TitleSaveCta.tsx").includes("var(--duration-hover)"),
-    "Ficha primary save CTA uses press-scale + duration-hover",
+    fichaActions.includes("press-scale") &&
+      fichaActions.includes("var(--duration-hover)") &&
+      fichaActions.includes("groupItemClass") &&
+      fichaActions.includes("ficha-action-group"),
+    "Ficha action group uses press/hover tokens on one glass group (dirección A)",
   );
   assert(
     read("src/components/TitleListsPanel.tsx").includes("tab-transition") &&
@@ -334,11 +328,11 @@ const run = () => {
     "Ficha has no edit/delete footer: catalog data is shared and titles are never deleted",
   );
   assert(
-    read("src/components/TitleSynopsis.tsx").includes("N/A") &&
+    read("src/components/TitleSynopsis.tsx").includes("if (!body) {") &&
       read("src/app/titulos/[id]/title-sections.tsx").includes(
         "TitleSynopsis text={extras?.overview ?? null}",
       ),
-    "Ficha empty synopsis shows N/A",
+    "Ficha without synopsis renders no block under the title (dirección A)",
   );
   assert(
     read("src/components/AppChrome.tsx").includes("safe-area-inset-bottom"),

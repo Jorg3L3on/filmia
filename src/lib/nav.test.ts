@@ -4,6 +4,7 @@ import {
   desktopNavItems,
   isAuthChromePath,
   isDesktopNavCurrent,
+  isImmersiveFichaPath,
   isCurrentPath,
   isListasHubPath,
   isMobileNavCurrent,
@@ -79,5 +80,15 @@ describe("mobile Buscar disc", () => {
       mobileNavItems.some((item) => isMobileNavCurrent(item.href, "/buscar")),
       false,
     );
+  });
+});
+
+describe("isImmersiveFichaPath", () => {
+  it("only the ficha itself drops the mobile header", () => {
+    assert.equal(isImmersiveFichaPath("/titulos/abc"), true);
+    assert.equal(isImmersiveFichaPath("/titulos/abc?x=1"), true);
+    assert.equal(isImmersiveFichaPath("/titulos/abc/editar"), false);
+    assert.equal(isImmersiveFichaPath("/titulos"), false);
+    assert.equal(isImmersiveFichaPath("/watchlist"), false);
   });
 });

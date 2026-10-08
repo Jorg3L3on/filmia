@@ -1,6 +1,8 @@
 "use client";
 
 import Image from "next/image";
+import type { ReactNode } from "react";
+import { useNavLabel } from "@/components/NavOriginTracker";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { SearchResultsSkeleton } from "@/components/PageSkeletons";
@@ -141,6 +143,8 @@ type PersonViewProps = {
   /** «‹ Resultados»: only when there is a search to go back to. */
   backLabel: string | null;
   onBack: () => void;
+  /** Without a search behind: «‹ Obsesión» back to the page that opened this view (FIL-I4-6). */
+  originBack?: ReactNode;
 };
 
 /**
@@ -155,15 +159,19 @@ export const PersonView = ({
   onRetry,
   backLabel,
   onBack,
+  originBack = null,
 }: PersonViewProps) => {
   const data = !pending && state?.kind === "ready" ? state.data : null;
   const name = pending?.name ?? data?.person.name ?? (state?.kind === "error" ? state.name : null) ?? "";
   const profilePath = pending?.profilePath ?? data?.person.profilePath ?? null;
   const role = pending?.role ?? data?.role ?? (state?.kind === "error" ? state.role : "director");
   const years = data ? personYearsLabel(data.years) : null;
+  // A ficha opened from this filmography says «‹ Greg Daniels».
+  useNavLabel(name || null);
 
   return (
     <div className="space-y-5">
+      {!backLabel ? originBack : null}
       {backLabel ? (
         <button
           type="button"

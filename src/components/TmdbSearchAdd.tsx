@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { BackButton } from "@/components/BackButton";
 import { EmptyState } from "@/components/EmptyState";
 import { SearchResultsSkeleton } from "@/components/PageSkeletons";
 import { SearchPreviewSheet } from "@/components/SearchPreviewSheet";
@@ -27,7 +28,7 @@ import type { StartDirector } from "@/lib/buscar-start";
 import { dockSearch } from "@/lib/dock-search";
 import type { SelectableList } from "@/lib/list-selection";
 import { resolveDirectorQuery } from "@/lib/person-filmography";
-import { buildSearchHref, type SearchMode } from "@/lib/search-session";
+import { buildSearchHref, liveSearchState, type SearchKind, type SearchMode } from "@/lib/search-session";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import type { UserTmdbEntry } from "@/lib/queries";
 import { lookupTmdbCatalogEntry, tmdbCatalogKey } from "@/lib/tmdb-search-catalog";
@@ -46,6 +47,7 @@ type TmdbSearchAddProps = {
   pinnedTitleId?: string | null;
   /** `?tipo=director`. */
   initialMode?: SearchMode;
+  initialKind?: SearchKind;
   /** `?persona=…&rol=…`: the person view, loaded on the server. */
   person?: PersonViewState | null;
   /** Start screen: directors of your Favoritas and 4★+ titles. */
@@ -64,10 +66,18 @@ export const TmdbSearchAdd = ({
   memberships,
   pinnedTitleId: initialPinnedTitleId = null,
   initialMode = "titles",
+  initialKind = "ALL",
   person = null,
   startDirectors = [],
 }: TmdbSearchAddProps) => {
   const router = useRouter();
+  const [start] = useState(() =>
+    liveSearchState(typeof window === "undefined" ? null : window.location.search, {
+      query: initialQuery,
+      mode: initialMode,
+      kind: initialKind,
+    }),
+  );
   const {
     query,
     mode,
@@ -105,7 +115,7 @@ export const TmdbSearchAdd = ({
   } = useTmdbSearchAdd({
     configuredTmdb: configured.tmdb,
     existing,
-    initialQuery,
+    initialQuery: start.query,
     initialResults,
     initialError,
     watchedDate,
@@ -113,7 +123,8 @@ export const TmdbSearchAdd = ({
     lists,
     memberships,
     pinnedTitleId: initialPinnedTitleId,
-    initialMode,
+    initialMode: start.mode,
+    initialKind: start.kind,
   });
   const logMode = defaultDestination === "watched";
   const { recents, remember, clear: clearRecents } = useSearchRecents();
@@ -179,11 +190,11 @@ export const TmdbSearchAdd = ({
       change: (value) => dockHandlers.current.change(value),
       submit: () => dockHandlers.current.submit(),
     });
-    if (pending && pending !== initialQuery) {
+    if (pending && pending !== start.query) {
       dockHandlers.current.change(pending);
     }
     return unregister;
-  }, [initialQuery]);
+  }, [start.query]);
   useEffect(() => {
     dockSearch.syncFromPage(query);
   }, [query]);
@@ -215,6 +226,7 @@ export const TmdbSearchAdd = ({
           onRetry={() => router.refresh()}
           backLabel={query.trim() ? `Resultados de «${query.trim()}»` : null}
           onBack={closePerson}
+          originBack={<BackButton hideWithoutOrigin hideWhenOriginPath="/buscar" className="-mb-1" />}
         />
       ) : (
         <>

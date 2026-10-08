@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { ToastHost } from "@/components/ToastHost";
-import { isAuthChromePath } from "@/lib/nav";
+import { isAuthChromePath, isImmersiveFichaPath } from "@/lib/nav";
 
 type AuthChromeGateProps = {
   header: ReactNode;
@@ -36,7 +36,12 @@ export const AuthChromeGate = ({
 
   return (
     <>
-      {header}
+      {isImmersiveFichaPath(pathname) ? (
+        // `contents` keeps the header sticky on desktop; on a phone the ficha owns the top.
+        <div className="max-sm:hidden sm:contents">{header}</div>
+      ) : (
+        header
+      )}
       {prefetch}
       <main className={mainClassName}>{children}</main>
       {footer}

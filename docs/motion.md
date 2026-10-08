@@ -97,6 +97,23 @@ Direction A «Marquesina» (FIL-I5-3, canvas https://claude.ai/artifact/2rSJnRDQ
 | «Buscando…» `.buscar-shiny` | 1.6 s linear loop | Light sweeps across the words (magicui Animated Shiny Text). Reduced motion: static mist. |
 | Inicio: Recientes `.stagger-in` · Directores `.person-card-in` | `--duration-stagger` · 50 ms/item | Before typing: this device's recent searches (localStorage) and directors of your Favoritas / 4★+ (magicui Avatar Circles idea, as a rail). Photo ring lights accent on hover. |
 
+## Ficha (dirección A «Cartel», FIL-I4)
+
+| Piece | Token | Notes |
+| --- | --- | --- |
+| Póster `poster-{id}` | `--duration-morph` · `--ease-out` | The SharedPoster morph from the tile **is** its entrance: the poster gets no `.ficha-enter` of its own. |
+| Backdrop `.ficha-backdrop-a-img` | 1.2 s · `--ease-out` | Fade + scale 1.06 → 1, like La cartelera's `.ficha-backdrop`. |
+| Entrada `.ficha-enter` | `--duration-stagger` · `--ease-out` · 60 ms per `--i` | Blur Fade: meta → título → chips → sinopsis → acciones; opacity + 8 px rise + blur(6px), fill `backwards`. |
+| Sinopsis «Más» `.ficha-synopsis-text` | `--duration-morph` · `--ease-out` | `max-height` 3 lines → measured `scrollHeight`; «Menos» folds back. Bottom mask only while clamped. No «Más» when it fits. |
+| «Ver esta noche» `.ficha-tonight` | `--duration-press` · `--spring` (press) · sheen 1.6 s × 2 | Shimmer twice, 1.2 s after landing; never a loop. Pinned = aura pill, moon `spring-pop` only right after the tap. |
+| Grupo de acciones `.ficha-action` | `--duration-press` · `--spring` · `--duration-hover` colours | `press-scale` per button; Visto / Nota keep their `spring-fill` feedback. |
+| Atrás `.back-pill` | `--duration-morph` · `--ease-out` | Disc on first paint, label blurs in (`.back-pill-in`, `--duration-enter`); folds to the disc while scrolling down, back on the way up. |
+| Personas `.person-card` | `.stagger-in` (50 ms/card) · `--duration-press` · `--spring` | Glass cards enter with the shared stagger; tap = `press-scale`; hover (pointer only) lifts the rim. |
+| Foto `.person-photo` | `--duration-enter` · `--ease-out` | Fade + scale 0.96 → 1. No photo, no circle: the name centres in the same card height. |
+| Hojas (Visto, Nota) | `.sheet-rise` | Same sheets as before; never spring. |
+
+Reduced motion: no entrance, no backdrop scale, no sheen; «Más» and the back pill change instantly (global rule).
+
 ## SharedPoster
 
 React `<ViewTransition name={\`poster-${id}\`} share="morph">` via `SharedPoster` on tile → ficha paths (lists, buscar, deck, calendar, rail, ranking, watchlist).

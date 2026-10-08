@@ -12,6 +12,7 @@ import { useAmbientGrade, usePosterAmbientColor } from "@/components/coverflow/u
 import type { CoverflowDeckProps, CoverflowTitle } from "@/components/coverflow/types";
 import { cn } from "@/lib/cn";
 import { COVERFLOW_VISIBLE_SPAN } from "@/lib/coverflow-metrics";
+import { deckCardFrom, deckIndexOf, withDeckCard } from "@/lib/nav-origin";
 import { useSpringFeedback } from "@/lib/motion";
 export type { CoverflowTitle };
 
@@ -24,6 +25,8 @@ export const CoverflowDeck = ({
   footer = "full",
   initialIndex = 0,
   focusRequest,
+  syncCardParam = false,
+  initialCardId = null,
 }: CoverflowDeckProps) => {
   const {
     titles,
@@ -47,7 +50,16 @@ export const CoverflowDeck = ({
     onHide: handleHide,
     onRestore: handleRestore,
   });
-  const engine = useCoverflowEngine(titles.length, isSheet, cinematic, { initialIndex });
+  // On a client mount (Back) the URL is the truth; on hydration it equals the server's `carta`.
+  const [startIndex] = useState(() => {
+    if (!syncCardParam) {
+      return initialIndex;
+    }
+    const cardId =
+      typeof window === "undefined" ? initialCardId : (deckCardFrom(window.location.search) ?? initialCardId);
+    return deckIndexOf(incomingTitles, cardId) ?? initialIndex;
+  });
+  const engine = useCoverflowEngine(titles.length, isSheet, cinematic, { initialIndex: startIndex });
   const {
     containerRef,
     stageRef,
@@ -115,10 +127,18 @@ export const CoverflowDeck = ({
     const isFirst = notifiedId.current == null;
     notifiedId.current = title.id;
     onActiveChange?.(activeIndex, title);
+    if (syncCardParam) {
+      // Shallow, like Hoy's lens: the exact card survives a trip to the ficha and back.
+      window.history.replaceState(
+        null,
+        "",
+        withDeckCard(`${window.location.pathname}${window.location.search}`, title.id),
+      );
+    }
     if (isSheet && !isFirst) {
       focusSpring.trigger();
     }
-  }, [activeIndex, focusSpring, isSheet, onActiveChange, titles]);
+  }, [activeIndex, focusSpring, isSheet, onActiveChange, syncCardParam, titles]);
 
   if (!activeTitle) {
     return null;

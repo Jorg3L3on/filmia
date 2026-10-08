@@ -1,13 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useMemo, useRef, useState, useTransition } from "react";
 import { saveTmdbTitleInLists } from "@/app/actions/lists";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { pinTonightFromSearch } from "@/app/actions/tonight";
 import type { SearchAddDestination, SearchPendingAction } from "@/components/SearchPreviewSheet";
 import { useTmdbDiscoverSearch } from "@/components/tmdb-search/useTmdbDiscoverSearch";
-import type { TitleKind } from "@/db";
 import { titleMatchesKind } from "@/lib/catalog-filters";
 import { pulseNav } from "@/lib/fly-to-nav";
 import {
@@ -19,7 +18,7 @@ import type { TmdbCatalogResult } from "@/lib/tmdb";
 import { showToast } from "@/lib/toast";
 import type { UserTmdbEntry } from "@/lib/queries";
 import { buildPersonSearchHref, type DirectorHit, type PersonRole } from "@/lib/person-filmography";
-import { buildSearchHref, type SearchMode } from "@/lib/search-session";
+import { buildSearchHref, type SearchKind, type SearchMode } from "@/lib/search-session";
 import { PARA_TI_SLUG } from "@/lib/tonight/select";
 import { TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import {
@@ -44,6 +43,8 @@ type UseTmdbSearchAddArgs = {
   pinnedTitleId?: string | null;
   /** `?tipo=director`: the «Director» chip is on. */
   initialMode?: SearchMode;
+  /** `?tipo=pelicula|serie`: the chip survives a trip to a ficha and back. */
+  initialKind?: SearchKind;
 };
 
 /** A person being opened: painted from the tap while the server loads the filmography. */
@@ -73,6 +74,7 @@ export const useTmdbSearchAdd = ({
   memberships = {},
   pinnedTitleId: initialPinnedTitleId = null,
   initialMode = "titles",
+  initialKind = "ALL",
 }: UseTmdbSearchAddArgs) => {
   const router = useRouter();
   const [catalog, setCatalog] = useState(() => toTmdbCatalogMap(existing));
@@ -85,7 +87,8 @@ export const useTmdbSearchAdd = ({
   /** Result key pinned during this visit: only a fresh pin gets the moon pop. */
   const [justPinnedKey, setJustPinnedKey] = useState<string | null>(null);
   const [tonightError, setTonightError] = useState<string | null>(null);
-  const [kindFilter, setKindFilter] = useState<"ALL" | TitleKind>("ALL");
+  const [kindFilter, setKindFilterState] = useState<SearchKind>(initialKind);
+  const kindRef = useRef(kindFilter);
   const [isAdding, startAdd] = useTransition();
 
   const syncSearchUrl = useCallback(
@@ -102,6 +105,7 @@ export const useTmdbSearchAdd = ({
         watchedDate,
         watchedDestination: defaultDestination === "watched",
         mode,
+        kind: kindRef.current,
       });
       window.history.replaceState(window.history.state, "", href);
     },
@@ -130,6 +134,13 @@ export const useTmdbSearchAdd = ({
     initialMode,
     onSettled: syncSearchUrl,
   });
+
+  /** The chip goes in the URL too, so «atrás» from a ficha lands on the same filtered results. */
+  const setKindFilter = (kind: SearchKind) => {
+    kindRef.current = kind;
+    setKindFilterState(kind);
+    syncSearchUrl(query, mode);
+  };
 
   const [pendingPerson, setPendingPerson] = useState<PendingPerson | null>(null);
   const [isOpeningPerson, startOpenPerson] = useTransition();

@@ -22,6 +22,7 @@
     "db:clone-account": "tsx scripts/clone-account.ts",
     "db:backfill-tonight": "tsx scripts/backfill-tonight.ts",
     "db:backfill-awards": "tsx scripts/backfill-awards.ts",
+    "db:backfill-people": "tsx scripts/backfill-people.ts",
     "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs"
   },
   "dependencies": {

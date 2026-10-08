@@ -16,8 +16,12 @@ import {
   getUserStreamingPlatforms,
 } from "@/lib/queries";
 import { FichaVisit } from "@/components/FichaVisit";
+import { FichaTopBar } from "@/components/ficha/FichaTopBar";
+import { requireUserId } from "@/lib/session";
+import { getPinnedTonightTitleId } from "@/lib/tonight-store";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { resolveTitleExtras, storedTitleExtras } from "@/lib/title-extras";
+import { resolveTitlePeople } from "@/lib/title-people";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 import TitleLoading from "./loading";
 import {
@@ -26,9 +30,9 @@ import {
   TitleHeroFallback,
   TitleProvidersBlock,
   TitleRelatedBlock,
+  TitlePeopleBlock,
   TitleSynopsisBlock,
   isSeriesTitle,
-  titleCredits,
 } from "./title-sections";
 
 export const dynamic = "force-dynamic";
@@ -99,9 +103,13 @@ const TitleDetail = async ({
   }
 
   const extrasPromise = resolveTitleExtras(title);
+  const peoplePromise = resolveTitlePeople(title);
   const listsPromise = getAssignableLists();
   const platformsPromise = getUserStreamingPlatforms();
   const providersPromise = getWatchProvidersForTitle(title);
+  const pinnedPromise = title.watchedAt
+    ? Promise.resolve(null)
+    : requireUserId().then((userId) => getPinnedTonightTitleId(userId));
   const relatedPromise = getRelatedTitles(
     title.id,
     parseStoredTmdbGenres(title.tmdbGenres).map((genre) => genre.id),
@@ -109,30 +117,31 @@ const TitleDetail = async ({
 
   return (
     <article className="space-y-8">
-      <FichaVisit titleId={title.id} />
-      <Suspense fallback={<TitleHeroFallback title={title} extras={storedTitleExtras(title)} />}>
-        <TitleHeroBlock title={title} extrasPromise={extrasPromise} />
-      </Suspense>
+      <FichaVisit titleId={title.id} name={title.name} />
+      {/* Dirección A «Cartel»: hero, synopsis and actions share one grid (poster left on desktop). */}
+      <section className="ficha-head" aria-label={title.name}>
+        <FichaTopBar />
+        <Suspense fallback={<TitleHeroFallback title={title} extras={storedTitleExtras(title)} />}>
+          <TitleHeroBlock title={title} extrasPromise={extrasPromise} />
+        </Suspense>
+        <div className="ficha-body-a space-y-4">
+          <Suspense fallback={null}>
+            <TitleSynopsisBlock storedOverview={title.overview} extrasPromise={extrasPromise} />
+          </Suspense>
+          <Suspense fallback={<TitleActionsSkeleton />}>
+            <TitleActionsBlock title={title} listsPromise={listsPromise} pinnedPromise={pinnedPromise} />
+          </Suspense>
+        </div>
+      </section>
 
-      <Suspense fallback={<TitleActionsSkeleton />}>
-        <TitleActionsBlock
-          title={title}
-          listsPromise={listsPromise}
-        />
+      <Suspense fallback={null}>
+        <TitlePeopleBlock peoplePromise={peoplePromise} kind={title.kind} />
       </Suspense>
 
       <Suspense fallback={<TitleProvidersSkeleton />}>
         <TitleProvidersBlock
           providersPromise={providersPromise}
           platformsPromise={platformsPromise}
-        />
-      </Suspense>
-
-      <Suspense fallback={null}>
-        <TitleSynopsisBlock
-          storedOverview={title.overview}
-          extrasPromise={extrasPromise}
-          credits={titleCredits(title)}
         />
       </Suspense>
 

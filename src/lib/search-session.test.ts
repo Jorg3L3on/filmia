@@ -3,6 +3,7 @@ import { afterEach, describe, it } from "node:test";
 import {
   SEARCH_CACHE_TTL_MS,
   buildSearchHref,
+  parseSearchKind,
   clearSearchCache,
   createDebounced,
   normalizeSearchQuery,
@@ -87,5 +88,21 @@ describe("createDebounced", () => {
     debounce.cancel();
     await new Promise((resolve) => setTimeout(resolve, 40));
     assert.deepEqual(seen, []);
+  });
+});
+
+describe("search-session/kind chip in the URL", () => {
+  it("keeps Películas / Series in ?tipo= so Back restores the chip", () => {
+    assert.equal(buildSearchHref("Dune", { kind: "MOVIE" }), "/buscar?q=Dune&tipo=pelicula");
+    assert.equal(buildSearchHref("Dune", { kind: "SERIES" }), "/buscar?q=Dune&tipo=serie");
+    assert.equal(buildSearchHref("Dune", { kind: "ALL" }), "/buscar?q=Dune");
+    assert.equal(buildSearchHref("fincher", { mode: "director", kind: "MOVIE" }), "/buscar?q=fincher&tipo=director");
+  });
+
+  it("parses ?tipo= back into the chip", () => {
+    assert.equal(parseSearchKind("pelicula"), "MOVIE");
+    assert.equal(parseSearchKind(["serie"]), "SERIES");
+    assert.equal(parseSearchKind("director"), "ALL");
+    assert.equal(parseSearchKind(undefined), "ALL");
   });
 });

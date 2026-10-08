@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { AppChrome } from "@/components/AppChrome";
 import { BottomNav } from "@/components/BottomNav";
+import { NavOriginTracker } from "@/components/NavOriginTracker";
 import { NavPrefetch } from "@/components/NavPrefetch";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -15,6 +16,9 @@ export const AppShell = ({ children }: AppShellProps) => (
     prefetch={
       <>
         <NavPrefetch />
+        <Suspense fallback={null}>
+          <NavOriginTracker />
+        </Suspense>
         <ServiceWorkerRegister />
       </>
     }
