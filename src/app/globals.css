@@ -1580,17 +1580,24 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-n
  * Tokens: --spring para talón/sello, --ease-out para el resto (docs/motion.md).
  * ---------------------------------------------------------------------- */
 /* Esta noche: the footer gained a reason pill + chips, so the stage gives back ~2rem. */
+/*
+ * The «Vi esto» stub hangs ~30px under the hero. Carve its room out of the stage (shorter
+ * stage + equal bottom margin) so a height-bound card on short screens never drops the stub
+ * onto the title — and the sala's total height, tuned to clear the tab bar, stays the same.
+ */
 .tonight-sala .coverflow-cinematic-stage {
-  height: min(46dvh, calc(100dvh - 24.5rem));
-  min-height: 300px;
-  max-height: 520px;
+  --stub-room: 1.75rem;
+  height: calc(min(46dvh, calc(100dvh - 24.5rem)) - var(--stub-room));
+  min-height: calc(300px - var(--stub-room));
+  max-height: calc(520px - var(--stub-room));
+  margin-bottom: var(--stub-room);
 }
 
 @media (min-width: 768px) {
   .tonight-sala .coverflow-cinematic-stage {
-    height: min(54dvh, calc(100dvh - 20rem));
-    min-height: 340px;
-    max-height: 580px;
+    height: calc(min(54dvh, calc(100dvh - 20rem)) - var(--stub-room));
+    min-height: calc(340px - var(--stub-room));
+    max-height: calc(580px - var(--stub-room));
   }
 }
 
