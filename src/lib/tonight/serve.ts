@@ -55,7 +55,7 @@ export const fitReason = (fit: TonightFit, runtimeMinutes: number | null): Tonig
   }
   return {
     kind: "fit",
-    text: `${runtime} le caben a tu noche`,
+    text: `${runtime} · termina a tiempo`,
     detail: `Si empiezas ahora acaba a las ${fit.endsAt}`,
     weight: 0.12,
     personal: false,
@@ -77,8 +77,8 @@ export const pickHeadline = (reasons: readonly TonightReason[]) => {
 /**
  * Apply the clock (and fresh feedback) to precomputed cards: fit for the
  * remaining night, fatigue from the latest events, final score, headline.
- * By day the fit still scores (everything fits) but says nothing: «le caben
- * a tu noche» only makes sense once it is night.
+ * By day the fit still scores (everything fits) but says nothing: «termina a
+ * tiempo» only makes sense once it is night.
  */
 export const rankForNow = <T extends RankableCard>(
   cards: readonly T[],
