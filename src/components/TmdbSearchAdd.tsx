@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { SearchResultsSkeleton } from "@/components/PageSkeletons";
 import { SearchPreviewSheet } from "@/components/SearchPreviewSheet";
@@ -21,6 +21,7 @@ import {
 import { usePersonFilmography } from "@/components/tmdb-search/usePersonFilmography";
 import { TmdbSearchForm } from "@/components/tmdb-search/TmdbSearchForm";
 import { useTmdbSearchAdd } from "@/components/tmdb-search/useTmdbSearchAdd";
+import { dockSearch } from "@/lib/dock-search";
 import type { SelectableList } from "@/lib/list-selection";
 import { resolveDirectorQuery } from "@/lib/person-filmography";
 import { buildSearchHref, type SearchMode } from "@/lib/search-session";
@@ -148,6 +149,27 @@ export const TmdbSearchAdd = ({
     }
   };
 
+  // Mobile: the field lives in the dock (DockSearchField). Mirror the query to
+  // it and take its edits; words typed before this mounted are picked up here.
+  const dockHandlers = useRef({ change: onQueryChange, submit: handleSearch });
+  useEffect(() => {
+    dockHandlers.current = { change: onQueryChange, submit: handleSearch };
+  });
+  useEffect(() => {
+    const pending = dockSearch.pendingQuery();
+    const unregister = dockSearch.register({
+      change: (value) => dockHandlers.current.change(value),
+      submit: () => dockHandlers.current.submit(),
+    });
+    if (pending && pending !== initialQuery) {
+      dockHandlers.current.change(pending);
+    }
+    return unregister;
+  }, [initialQuery]);
+  useEffect(() => {
+    dockSearch.syncFromPage(query);
+  }, [query]);
+
   // Keep the last preview mounted while the sheet plays its exit animation.
   const [sheetResult, setSheetResult] = useState(preview);
   if (preview && preview !== sheetResult) {
@@ -178,10 +200,12 @@ export const TmdbSearchAdd = ({
         />
       ) : (
         <>
-          <TmdbKindFilterChips
-            value={mode === "director" ? "DIRECTOR" : kindFilter}
-            onChange={onChip}
-          />
+          <div className="sticky top-[calc(3rem+env(safe-area-inset-top))] z-30 -mx-4 bg-canvas/90 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+            <TmdbKindFilterChips
+              value={mode === "director" ? "DIRECTOR" : kindFilter}
+              onChange={onChip}
+            />
+          </div>
 
           {error && (mode === "director" ? directors.length > 0 : visibleResults.length > 0) ? (
             <p role="alert" className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger">

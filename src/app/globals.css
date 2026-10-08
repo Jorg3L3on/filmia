@@ -261,6 +261,25 @@ body {
  * «Ver esta noche» in Buscar's preview sheet: the one accent action, with a
  * soft glow under it. Done, it settles into lit glass; press keeps its spring.
  */
+/*
+ * Buscar's dock morph (FIL-I3-3): React <ViewTransition name="dock-shell" /
+ * "dock-search" share="morph"> on the dock's own taps only (transition type
+ * "dock-search"); `.morph` already gives --duration-morph · --ease-out. The
+ * Buscar field focus ring grows like the other fields.
+ */
+.dock-field {
+  transition:
+    border-color var(--duration-tab) var(--ease-out),
+    box-shadow var(--duration-tab) var(--ease-out);
+}
+
+.dock-field:focus-within {
+  border-color: rgb(var(--accent-rgb) / 0.6);
+  box-shadow:
+    0 0 0 3px rgb(var(--accent-rgb) / 0.18),
+    var(--glass-shadow-panel);
+}
+
 .tonight-pin,
 .tonight-pin.press-scale {
   transition:
@@ -2068,6 +2087,31 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   ::view-transition-new(*),
   ::view-transition-image-pair(*) {
     animation: none !important;
+  }
+}
+
+/* Reduced motion: the dock does not travel or scale; it crossfades into the field. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(dock-shell),
+  ::view-transition-old(dock-search) {
+    animation: dock-crossfade-out var(--duration-tab) var(--ease-out) both !important;
+  }
+
+  ::view-transition-new(dock-shell),
+  ::view-transition-new(dock-search) {
+    animation: dock-crossfade-in var(--duration-tab) var(--ease-out) both !important;
+  }
+}
+
+@keyframes dock-crossfade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes dock-crossfade-in {
+  from {
+    opacity: 0;
   }
 }
 

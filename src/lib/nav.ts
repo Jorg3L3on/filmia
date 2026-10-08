@@ -64,6 +64,9 @@ export const mobileNavItems = [
 /** Center glass disc of the dock: Buscar is how titles get into Filmia. */
 export const mobileNavSearch = { href: "/buscar", label: "Buscar", icon: "search" } as const;
 
+/** React transition type of the dock's own taps: the dock ⇄ Buscar field morph. */
+export const DOCK_SEARCH_TRANSITION = "dock-search";
+
 /** Grid column the Buscar disc occupies (between Quiero ver and Listas). */
 export const mobileNavSearchSlot = 2;
 

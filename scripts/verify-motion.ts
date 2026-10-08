@@ -203,6 +203,28 @@ assert(
     "«Director» chip lives only in Buscar; the shared KIND_CHIPS (Quiero ver) stay Todos/Películas/Series",
   );
 }
+{
+  const dock = read("src/components/BottomNav.tsx");
+  const field = read("src/components/DockSearchField.tsx");
+  const topForm = read("src/components/tmdb-search/TmdbSearchForm.tsx");
+  assert(
+    dock.includes('name="dock-shell"') &&
+      dock.includes('name="dock-search"') &&
+      /\[DOCK_SEARCH_TRANSITION\]: "morph", default: "none"/.test(dock) &&
+      dock.includes("transitionTypes={[DOCK_SEARCH_TRANSITION]}"),
+    "Buscar dock morph: shared ViewTransitions (dock-shell / dock-search) only on the dock's own taps",
+  );
+  assert(
+    /prefers-reduced-motion[^@]*::view-transition-old\(dock-shell\)[^}]*dock-crossfade-out/.test(css) &&
+      motionDoc.includes("Dock → campo"),
+    "Reduced motion: the dock crossfades into the field (no travel or scale); documented",
+  );
+  assert(
+    field.includes("text-base") && field.includes('enterKeyHint="search"') && field.includes("visualViewport"),
+    "Dock field: 16 px input (no iOS zoom), search key, rides the keyboard via visualViewport",
+  );
+  assert(topForm.includes("hidden") && topForm.includes("sm:block"), "One field on mobile: the top form is desktop only");
+}
 assert(
   css.includes("@keyframes sheet-fall") && css.includes(".sheet-overlay-out") && sheet.includes("sheet-fall"),
   "Sheets need an exit animation (sheet-fall + overlay fade) before unmounting",
