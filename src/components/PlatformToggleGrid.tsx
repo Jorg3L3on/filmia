@@ -14,6 +14,8 @@ type PlatformToggleGridProps = {
   /** Bienvenida: tiles deal in with a stagger and read larger. */
   variant?: "compact" | "roomy";
   legend?: string;
+  /** Which platforms to show, in order (Perfil shows yours first and folds the rest). */
+  items?: readonly Platform[];
 };
 
 /** Presentational toggle grid shared by Perfil («Plataformas MX») and the Bienvenida. */
@@ -23,11 +25,12 @@ export const PlatformToggleGrid = ({
   disabled = false,
   variant = "compact",
   legend = "Plataformas de streaming en México",
+  items = PLATFORMS,
 }: PlatformToggleGridProps) => (
   <fieldset>
     <legend className="sr-only">{legend}</legend>
     <ul className={cn("grid gap-1.5", variant === "roomy" ? "grid-cols-2 gap-2 sm:grid-cols-3" : "grid-cols-2 sm:grid-cols-3")}>
-      {PLATFORMS.map((platform, index) => {
+      {items.map((platform, index) => {
         const isSelected = value.includes(platform);
         return (
           <li

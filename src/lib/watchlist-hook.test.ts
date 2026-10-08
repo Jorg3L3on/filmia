@@ -73,8 +73,8 @@ describe("watchlist-hook/chooseHook", () => {
 
   it("puts the clock between «acaba de llegar» and the user's note", () => {
     const reasons = [reason("taste_person", "Dirigida por X")];
-    assert.equal(chooseHook({ ...base, reasons, fit: fits })?.text, "Te cabe esta noche · acaba 23:37");
-    assert.equal(chooseHook({ ...base, reasons, fit: fits, kind: "SERIES", runtimeMinutes: 50 })?.text, "Un capítulo te cabe · acaba 23:37");
+    assert.equal(chooseHook({ ...base, reasons, fit: fits })?.text, "Termina a tiempo · acaba 23:37");
+    assert.equal(chooseHook({ ...base, reasons, fit: fits, kind: "SERIES", runtimeMinutes: 50 })?.text, "Un capítulo termina a tiempo · acaba 23:37");
     assert.equal(chooseHook({ ...base, reasons, queueNote: "Para un domingo largo." })?.kind, "note");
     assert.equal(chooseHook({ ...base, reasons: [reason("fresh_platform", "Acaba de llegar a MUBI")], fit: fits })?.kind, "fresh_platform");
   });

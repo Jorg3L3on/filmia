@@ -69,9 +69,9 @@ const HoyShell = async ({
     return (
       <EmptyState
         title="Elige tus plataformas"
-        description="Hoy solo muestra lo incluido en tus suscripciones de México. La bienvenida te ayuda a elegirlas y a llenar Quiero ver."
-        actionHref="/bienvenida"
-        actionLabel="Configurar en la bienvenida"
+        description="Hoy solo muestra lo incluido en tus suscripciones de México. Elígelas en Perfil."
+        actionHref="/perfil#plataformas"
+        actionLabel="Elegir plataformas"
       />
     );
   }

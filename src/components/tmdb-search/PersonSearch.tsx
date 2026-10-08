@@ -239,11 +239,13 @@ const FilmographyList = ({
   onPreview: (result: TmdbCatalogResult) => void;
 }) => (
   <section className="space-y-3">
-    <header className="flex items-end justify-between">
-      <h3 className="text-lg font-semibold text-paper">Filmografía</h3>
-      <p className="text-sm text-mist">{entries.length}</p>
+    <header className="flex items-baseline justify-between gap-3">
+      <h3 className="text-[11px] font-medium uppercase tracking-[0.2em] text-mist">Filmografía</h3>
+      <p className="text-xs text-mist">
+        {entries.length === 1 ? "1 título" : `${entries.length} títulos`}
+      </p>
     </header>
-    <ul className="space-y-2">
+    <ul className="grid grid-cols-[minmax(0,1fr)] gap-2 lg:grid-cols-2 lg:gap-3">
       {entries.map((entry, index) => {
         const { titleId, status } = statusOf(entry);
         return (

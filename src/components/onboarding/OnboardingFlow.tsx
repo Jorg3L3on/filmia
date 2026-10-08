@@ -21,7 +21,6 @@ import { FilmStripProgress } from "@/components/onboarding/FilmStripProgress";
 import { IntroStep } from "@/components/onboarding/IntroStep";
 import { PayoffStep } from "@/components/onboarding/PayoffStep";
 import { PlatformsStep } from "@/components/onboarding/PlatformsStep";
-import { SessionResync } from "@/components/onboarding/SessionResync";
 import { WatchlistStep } from "@/components/onboarding/WatchlistStep";
 import { YearStep, type YearTitleRef } from "@/components/onboarding/YearStep";
 import type { FlowTitle } from "@/components/onboarding/types";
@@ -34,7 +33,6 @@ import {
   prevStep,
   stepAnnouncement,
   stepDirection,
-  type OnboardingMode,
   type OnboardingStepId,
 } from "@/lib/onboarding/steps";
 import type { YearGridSelection } from "@/lib/onboarding/year-grid";
@@ -44,7 +42,6 @@ import { useKeyboardInset } from "@/lib/use-keyboard-inset";
 import { sameIdList, useStickyOptimistic } from "@/lib/use-optimistic-action";
 
 type OnboardingFlowProps = {
-  mode: OnboardingMode;
   initialStep: OnboardingStepId;
   userName: string | null;
   yearGridPromise: Promise<YearGrid>;
@@ -52,8 +49,6 @@ type OnboardingFlowProps = {
   nightEnds: NightEnds;
   library: LibraryEntry[];
   tmdbConfigured: boolean;
-  /** DB says onboarded, cookie says not: re-mint and leave. */
-  resync: boolean;
 };
 
 const TRANSITION_TYPES = {
@@ -99,7 +94,6 @@ const queueFromLibrary = (library: LibraryEntry[]): FlowTitle[] =>
     }));
 
 export const OnboardingFlow = ({
-  mode,
   initialStep,
   userName,
   yearGridPromise,
@@ -107,7 +101,6 @@ export const OnboardingFlow = ({
   nightEnds: initialNightEnds,
   library,
   tmdbConfigured,
-  resync,
 }: OnboardingFlowProps) => {
   const router = useRouter();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -148,9 +141,7 @@ export const OnboardingFlow = ({
       addTransitionType(`bienvenida-${direction}`);
       setStep(to);
     });
-    if (mode === "gated") {
-      void saveOnboardingStep(to).catch(() => null);
-    }
+    void saveOnboardingStep(to).catch(() => null);
   };
 
   const finish = () => {
@@ -163,14 +154,6 @@ export const OnboardingFlow = ({
       router.push("/");
       router.refresh();
     });
-  };
-
-  const skipAll = () => {
-    if (mode === "rerun") {
-      router.push("/perfil");
-      return;
-    }
-    finish();
   };
 
   const setPlatforms = (next: Platform[]) => {
@@ -299,15 +282,14 @@ export const OnboardingFlow = ({
 
   return (
     <div className="bienvenida-shell relative isolate flex min-h-[100dvh] flex-col">
-      {resync ? <SessionResync /> : null}
       <AmbientBackdrop ambient={ambient} posterPath={ambientPoster} />
 
       <header className="bienvenida-chrome-top sticky top-0 z-20 px-5 pt-[calc(0.9rem+env(safe-area-inset-top))] pb-3">
         <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-4">
           <FilmStripProgress step={step} />
           {step !== "intro" && step !== "primera-noche" ? (
-            <button type="button" onClick={skipAll} className={cn(btnLink, "text-mist")}>
-              {mode === "rerun" ? "Volver a Perfil" : "Saltar por ahora"}
+            <button type="button" onClick={finish} className={cn(btnLink, "text-mist")}>
+              Saltar por ahora
             </button>
           ) : null}
         </div>
@@ -343,19 +325,15 @@ export const OnboardingFlow = ({
         </div>
         {step === "intro" ? (
           <div className="mx-auto mt-3 flex w-full max-w-xl items-center justify-center gap-4 text-xs">
-            <button type="button" onClick={skipAll} className={cn(btnLink, "text-mist")}>
-              {mode === "rerun" ? "Volver a Perfil" : "Saltar por ahora"}
+            <button type="button" onClick={finish} className={cn(btnLink, "text-mist")}>
+              Saltar por ahora
             </button>
-            {mode === "gated" ? (
-              <>
-                <span className="text-faint" aria-hidden="true">
-                  ·
-                </span>
-                <button type="button" onClick={() => void logoutUser()} className={cn("text-xs text-faint hover:text-paper", focusRing)}>
-                  Salir
-                </button>
-              </>
-            ) : null}
+            <span className="text-faint" aria-hidden="true">
+              ·
+            </span>
+            <button type="button" onClick={() => void logoutUser()} className={cn("text-xs text-faint hover:text-paper", focusRing)}>
+              Salir
+            </button>
           </div>
         ) : null}
       </footer>

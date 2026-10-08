@@ -12,7 +12,7 @@ type UseFichaViewsArgs = {
   order: readonly string[];
   byId: ReadonlyMap<string, WatchlistFicha>;
   hiddenIds: ReadonlySet<string>;
-  /** `null` until hydration: no fit, no «te cabe» line. By day the clock stays quiet too. */
+  /** `null` until hydration: no fit, no «termina a tiempo» line. By day the clock stays quiet too. */
   now: Date | null;
   nightEnds: NightEnds;
   /** Optimistic overrides from this session. */

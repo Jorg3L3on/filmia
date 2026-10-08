@@ -3,16 +3,7 @@ import { Logo } from "@/components/Logo";
 import { SiteHeaderNav } from "@/components/SiteHeaderNav";
 import { focusRing, safeAreaInsetXPadClass } from "@/lib/ui";
 
-export type HeaderUser = {
-  name?: string | null;
-  email?: string | null;
-} | null;
-
-type SiteHeaderProps = {
-  user: HeaderUser;
-};
-
-export const SiteHeader = ({ user }: SiteHeaderProps) => (
+export const SiteHeader = () => (
   <header className="site-header sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
     <div className={`mx-auto flex h-12 max-w-6xl items-center justify-between gap-4 sm:h-14 ${safeAreaInsetXPadClass}`}>
       <Link
@@ -29,7 +20,7 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
         </span>
       </Link>
       <div className="flex min-w-0 items-center gap-2">
-        <SiteHeaderNav user={user} />
+        <SiteHeaderNav />
       </div>
     </div>
   </header>

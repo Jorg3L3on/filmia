@@ -43,7 +43,7 @@ export type PickResult =
 const FAVORITE_RATING = 10;
 const PAYOFF_ENRICH_TIMEOUT_MS = 4000;
 
-/** Resume pointer. Only while gated: a rerun from Perfil never rewrites it. */
+/** Resume pointer. Only while gated: once onboardedAt is set the Bienvenida never runs again. */
 export const saveOnboardingStep = async (step: OnboardingStepId) => {
   if (!isOnboardingStepId(step)) {
     return;

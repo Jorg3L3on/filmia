@@ -38,7 +38,7 @@ export const HOOK_PRIORITY: readonly ReasonKind[] = [
   "fresh_added",
 ];
 
-/** Beyond this the night is too far away for «te cabe» to mean anything. */
+/** Beyond this the night is too far away for «termina a tiempo» to mean anything. */
 export const FIT_HOOK_MAX_REMAINING = 300;
 
 export const fitHook = (
@@ -60,8 +60,8 @@ export const fitHook = (
     kind: "fit",
     text:
       kind === "SERIES"
-        ? `Un capítulo te cabe · acaba ${fit.endsAt}`
-        : `Te cabe esta noche · acaba ${fit.endsAt}`,
+        ? `Un capítulo termina a tiempo · acaba ${fit.endsAt}`
+        : `Termina a tiempo · acaba ${fit.endsAt}`,
   };
 };
 

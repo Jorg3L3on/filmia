@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   desktopNavItems,
   isAuthChromePath,
+  isDesktopNavCurrent,
   isImmersiveFichaPath,
   isCurrentPath,
   isListasHubPath,
@@ -48,6 +49,24 @@ describe("mobile Listas hub", () => {
     assert.equal(isListasHubPath("/tags"), false);
     assert.equal(isMobileNavCurrent("/listas", "/listas/abc"), true);
     assert.equal(isMobileNavCurrent("/buscar", "/listas"), false);
+  });
+});
+
+describe("desktop header nav", () => {
+  it("ends with a Perfil tab", () => {
+    assert.deepEqual(
+      desktopNavItems.map((item) => item.label),
+      ["Hoy", "Quiero ver", "Listas", "Buscar", "Perfil"],
+    );
+  });
+
+  it("lights Perfil on /perfil and on Tu diario", () => {
+    assert.equal(isDesktopNavCurrent("/perfil", "/perfil"), true);
+    assert.equal(isDesktopNavCurrent("/perfil", "/diario"), true);
+    assert.equal(isDesktopNavCurrent("/perfil", "/diario?view=grid"), true);
+    assert.equal(isDesktopNavCurrent("/perfil", "/"), false);
+    assert.equal(isDesktopNavCurrent("/", "/diario"), false);
+    assert.equal(isDesktopNavCurrent("/listas", "/listas/abc"), true);
   });
 });
 

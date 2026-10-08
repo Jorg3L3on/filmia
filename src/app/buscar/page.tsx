@@ -5,6 +5,7 @@ import { SearchBodySkeleton } from "@/components/PageSkeletons";
 import { TmdbSearchAdd } from "@/components/TmdbSearchAdd";
 import type { PersonViewState } from "@/components/tmdb-search/PersonSearch";
 import { loadPersonFilmography } from "@/app/actions/metadata";
+import { getFavoriteDirectors } from "@/lib/buscar-start";
 import { isPersonRole } from "@/lib/person-filmography";
 import { TmdbSearchUnavailable } from "@/components/TmdbSearchUnavailable";
 import { metadataServicesConfigured } from "@/lib/metadata";
@@ -62,11 +63,8 @@ export default function SearchPage({
   searchParams: Promise<SearchParams>;
 }) {
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6">
-      <PageHeader
-        title="Buscar"
-        description="Lo que añades se guarda en tu Filmia: en Quiero ver, como vista o en tus listas."
-      />
+    <div className="mx-auto w-full max-w-2xl space-y-6 lg:max-w-4xl">
+      <PageHeader title="Buscar" />
       <Suspense fallback={<SearchBodySkeleton />}>
         <SearchBody searchParams={searchParams} />
       </Suspense>
@@ -91,12 +89,14 @@ const SearchBody = async ({
     watchedDate != null ||
     (typeof params.destino === "string" && params.destino === "visto");
   const userId = await requireUserId();
-  const [existing, lists, memberships, pinnedTitleId, person] = await Promise.all([
+  const [existing, lists, memberships, pinnedTitleId, person, startDirectors] = await Promise.all([
     getUserTmdbIndex(),
     getAssignableLists(),
     getUserListMembershipIndex(),
     markWatched ? null : getPinnedTonightTitleId(userId),
     loadPersonView(params),
+    // The start screen can come back after clearing a search, so load it unless a person is open.
+    single(params.persona) ? [] : getFavoriteDirectors(userId).catch(() => []),
   ]);
 
   return (
@@ -112,6 +112,7 @@ const SearchBody = async ({
       initialMode={single(params.tipo) === "director" ? "director" : "titles"}
       initialKind={parseSearchKind(params.tipo)}
       person={person}
+      startDirectors={startDirectors}
     />
   );
 };

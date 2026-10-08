@@ -35,20 +35,21 @@ const run = () => {
   const form = new FormData();
   form.set("currentPassword", "filmia-demo");
   form.set("newPassword", "filmia-nueva");
-  form.set("confirmPassword", "filmia-nueva");
   const parsed = parsePasswordChange(form);
   assert(parsed.newPassword === "filmia-nueva", "Password change should parse");
 
-  const mismatch = new FormData();
-  mismatch.set("currentPassword", "old-pass-1");
-  mismatch.set("newPassword", "new-pass-1");
-  mismatch.set("confirmPassword", "new-pass-2");
-  throws(() => parsePasswordChange(mismatch), "Las contraseñas nuevas no coinciden.");
+  const noConfirm = new FormData();
+  noConfirm.set("currentPassword", "old-pass-1");
+  noConfirm.set("newPassword", "new-pass-1");
+  assert(parsePasswordChange(noConfirm).newPassword === "new-pass-1", "No confirm field needed (current + new with the eye)");
+
+  const noCurrent = new FormData();
+  noCurrent.set("newPassword", "new-pass-1");
+  throws(() => parsePasswordChange(noCurrent), "Escribe tu contraseña actual.");
 
   const tooShort = new FormData();
   tooShort.set("currentPassword", "old-pass-1");
   tooShort.set("newPassword", "short");
-  tooShort.set("confirmPassword", "short");
   throws(
     () => parsePasswordChange(tooShort),
     "La nueva contraseña debe tener al menos 8 caracteres.",
@@ -57,7 +58,6 @@ const run = () => {
   const same = new FormData();
   same.set("currentPassword", "same-pass");
   same.set("newPassword", "same-pass");
-  same.set("confirmPassword", "same-pass");
   throws(
     () => parsePasswordChange(same),
     "La nueva contraseña debe ser distinta a la actual.",

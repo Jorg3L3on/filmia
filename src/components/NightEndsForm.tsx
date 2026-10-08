@@ -1,96 +1,85 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { updateNightEnds } from "@/app/actions/tonight";
-import { cn } from "@/lib/cn";
+import { useId, useState } from "react";
+import { Button } from "@/components/Button";
+import { BedtimeDial, nightEndsStatusCopy, useNightEndsSave } from "@/components/onboarding/BedtimeDial";
+import { MoonIcon, ProfileGroup, ProfileRow, ProfileSection, WeekendMoonIcon } from "@/components/profile/ProfileRows";
+import { Sheet, SheetHandle, useOpenGeneration } from "@/components/Sheet";
+import type { BedtimeTarget } from "@/lib/onboarding/bedtime";
 import type { NightEnds } from "@/lib/tonight";
-import { fieldClass, wellClass } from "@/lib/ui";
 
 type NightEndsFormProps = {
   value: NightEnds;
 };
 
-/** «Termino de ver a las»: the clock Hoy uses to say «acaba 23:19» or «se pasa 14 min». */
+/**
+ * Perfil «Hora de dormir»: the clock Hoy uses to say «acaba 23:19» or «se pasa 14 min».
+ * Each row opens the Bienvenida's moon + hour drum in a sheet; changes save as you scroll.
+ */
 export const NightEndsForm = ({ value }: NightEndsFormProps) => {
-  const [weekday, setWeekday] = useState(value.weekday);
-  const [weekend, setWeekend] = useState(value.weekend);
-  const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
-  const [isPending, startTransition] = useTransition();
+  const [nightEnds, setNightEnds] = useState(value);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [target, setTarget] = useState<BedtimeTarget>("weekday");
+  const generation = useOpenGeneration(sheetOpen);
+  const { status, persist } = useNightEndsSave();
 
-  const save = (next: NightEnds) => {
-    const formData = new FormData();
-    formData.set("weekday", next.weekday);
-    formData.set("weekend", next.weekend);
-    startTransition(async () => {
-      try {
-        await updateNightEnds(formData);
-        setStatus("saved");
-      } catch {
-        setStatus("error");
-      }
-    });
+  const titleId = useId();
+
+  const open = (next: BedtimeTarget) => {
+    setTarget(next);
+    setSheetOpen(true);
   };
 
   return (
-    <section id="esta-noche" className={cn(wellClass, "space-y-4 p-5")} aria-labelledby="esta-noche-h">
-      <header className="space-y-1">
-        <div className="flex items-center gap-2">
-          <MoonIcon />
-          <h2 id="esta-noche-h" className="text-lg font-semibold text-paper">
-            Esta noche
-          </h2>
-        </div>
-        <p className="text-sm text-fog">
-          Con esto Hoy sabe cuánto te cabe: «acaba a las 23:19» o «se pasa 14 min». Se guarda al instante.
-        </p>
-      </header>
-      <div className="grid grid-cols-2 gap-3">
-        <label className="min-w-0 space-y-1.5">
-          <span className="block text-[11px] font-medium uppercase tracking-[0.18em] text-fog">
-            Entre semana
-          </span>
-          <input
-            type="time"
-            value={weekday}
-            onChange={(event) => {
-              setWeekday(event.target.value);
-              setStatus("idle");
-              if (event.target.value) {
-                save({ weekday: event.target.value, weekend });
-              }
-            }}
-            className={cn(fieldClass, "date-field")}
-            aria-label="Hora a la que terminas de ver entre semana"
-          />
-        </label>
-        <label className="min-w-0 space-y-1.5">
-          <span className="block text-[11px] font-medium uppercase tracking-[0.18em] text-fog">
-            Viernes y sábado
-          </span>
-          <input
-            type="time"
-            value={weekend}
-            onChange={(event) => {
-              setWeekend(event.target.value);
-              setStatus("idle");
-              if (event.target.value) {
-                save({ weekday, weekend: event.target.value });
-              }
-            }}
-            className={cn(fieldClass, "date-field")}
-            aria-label="Hora a la que terminas de ver viernes y sábado"
-          />
-        </label>
-      </div>
-      <p className="text-xs text-mist" aria-live="polite">
-        {isPending ? "Guardando…" : status === "saved" ? "Guardado." : status === "error" ? "No se pudo guardar." : "Las madrugadas (antes de las 06:00) cuentan como la noche anterior."}
+    <ProfileSection id="hora-de-dormir" title="Hora de dormir">
+      <ProfileGroup>
+        <ProfileRow
+          icon={<MoonIcon />}
+          label="Entre semana"
+          value={<span className="font-serif text-xl text-paper tabular-nums">{nightEnds.weekday}</span>}
+          onClick={() => open("weekday")}
+          ariaLabel={`Entre semana: terminas de ver a las ${nightEnds.weekday}. Cambiar`}
+        />
+        <ProfileRow
+          icon={<WeekendMoonIcon />}
+          iconClassName="bg-accent/15 text-accent"
+          label="Viernes y sábado"
+          value={<span className="font-serif text-xl text-paper tabular-nums">{nightEnds.weekend}</span>}
+          onClick={() => open("weekend")}
+          ariaLabel={`Viernes y sábado: terminas de ver a las ${nightEnds.weekend}. Cambiar`}
+        />
+      </ProfileGroup>
+      <p className="text-sm leading-relaxed text-fog">
+        Con esto Hoy te dice si termina a tiempo: «acaba a las 23:19» o «se pasa 14 min». Se guarda al instante.
       </p>
-    </section>
+      <p className="text-xs text-mist">Las madrugadas (antes de las 06:00) cuentan como la noche anterior.</p>
+
+      <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} labelledBy={titleId} align="bottom">
+        <div className="flex flex-col px-5 pt-3">
+          <SheetHandle className="self-center" />
+          <h2 id={titleId} className="pb-4 font-serif text-2xl text-paper">
+            Hora de dormir
+          </h2>
+          {/* Remount per open so the dial starts on the row that was tapped; the drum scrolls, so no drag-dismiss on it. */}
+          <div data-no-sheet-drag>
+            <BedtimeDial
+              key={generation}
+              value={nightEnds}
+              initialTarget={target}
+              onChange={(next) => {
+                setNightEnds(next);
+                persist(next);
+              }}
+            />
+          </div>
+          <p className="min-h-5 pt-3 text-center text-xs text-mist" aria-live="polite">
+            {nightEndsStatusCopy(status)}
+          </p>
+          <Button size="lg" className="mt-3 w-full press-scale" onClick={() => setSheetOpen(false)}>
+            Listo
+          </Button>
+        </div>
+      </Sheet>
+    </ProfileSection>
   );
 };
-
-const MoonIcon = () => (
-  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="text-accent">
-    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5Z" />
-  </svg>
-);
