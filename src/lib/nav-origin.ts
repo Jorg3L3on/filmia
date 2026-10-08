@@ -101,13 +101,21 @@ export const labelCurrent = (stack: readonly NavEntry[], href: string, label: st
   return [...stack.slice(0, -1), { ...top, label: clean }];
 };
 
+/**
+ * Before leaving (tap, scroll, pagehide): the top entry takes the live URL and
+ * scroll. Some pages rewrite their query with `replaceState(history.state)`,
+ * which Next does not report to `useSearchParams` (Buscar's chip), so the
+ * location is read here rather than trusted from the last route change.
+ */
 export const saveCurrentScroll = (stack: readonly NavEntry[], href: string, scrollY: number): NavEntry[] => {
   const top = stack.at(-1);
-  if (!top || pathOf(top.href) !== pathOf(href) || !Number.isFinite(scrollY)) {
+  if (!top || pathOf(top.href) !== pathOf(href) || !Number.isFinite(scrollY) || !isTrackedHref(href)) {
     return [...stack];
   }
   const rounded = Math.max(0, Math.round(scrollY));
-  return top.scrollY === rounded ? [...stack] : [...stack.slice(0, -1), { ...top, scrollY: rounded }];
+  return top.scrollY === rounded && top.href === href
+    ? [...stack]
+    : [...stack.slice(0, -1), { ...top, href, scrollY: rounded }];
 };
 
 /** The page the current one was opened from; null on a direct link or a fresh tab. */

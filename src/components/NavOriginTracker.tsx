@@ -117,7 +117,10 @@ export const NavOriginTracker = () => {
     let timer: number | null = null;
     const save = () => {
       timer = null;
-      commit(saveCurrentScroll(load(), currentHref(), window.scrollY), false);
+      // A sheet locks the page (overflow hidden on <html>) and scrollY reads 0: keep the last real value.
+      const locked = document.documentElement.style.overflow === "hidden";
+      const scrollY = locked ? (load().at(-1)?.scrollY ?? window.scrollY) : window.scrollY;
+      commit(saveCurrentScroll(load(), currentHref(), scrollY), false);
     };
     const onScroll = () => {
       timer ??= window.setTimeout(save, SCROLL_SAVE_MS);

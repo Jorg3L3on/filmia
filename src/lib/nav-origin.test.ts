@@ -56,6 +56,13 @@ describe("nav-origin/recordVisit", () => {
     assert.equal(back.kind, "pop");
   });
 
+  it("saving the scroll also takes the live query (replaceState Next did not report)", () => {
+    const stack = visitAll(["/buscar?q=noche"]);
+    const saved = saveCurrentScroll(stack, "/buscar?q=noche&tipo=pelicula", 229);
+    assert.deepEqual(saved, [{ href: "/buscar?q=noche&tipo=pelicula", label: "Buscar", scrollY: 229 }]);
+    assert.deepEqual(saveCurrentScroll(stack, "/titulos/a", 10), stack, "another page never overwrites the top");
+  });
+
   it("reports the kind of visit (push starts a page at the top)", () => {
     const stack = visitAll(["/watchlist"]);
     assert.equal(recordVisit(stack, "/titulos/a").kind, "push");

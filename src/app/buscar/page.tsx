@@ -14,6 +14,7 @@ import {
   getUserTmdbIndex,
 } from "@/lib/queries";
 import { parseOptionalIsoDate } from "@/lib/dates";
+import { parseSearchKind } from "@/lib/search-session";
 import { requireUserId } from "@/lib/session";
 import { getPinnedTonightTitleId } from "@/lib/tonight-store";
 
@@ -109,6 +110,7 @@ const SearchBody = async ({
       memberships={memberships}
       pinnedTitleId={pinnedTitleId}
       initialMode={single(params.tipo) === "director" ? "director" : "titles"}
+      initialKind={parseSearchKind(params.tipo)}
       person={person}
     />
   );
