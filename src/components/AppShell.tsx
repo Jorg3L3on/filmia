@@ -3,18 +3,15 @@ import { AppChrome } from "@/components/AppChrome";
 import { BottomNav } from "@/components/BottomNav";
 import { NavPrefetch } from "@/components/NavPrefetch";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
-import { SiteHeader, type HeaderUser } from "@/components/SiteHeader";
-
-export type { HeaderUser };
+import { SiteHeader } from "@/components/SiteHeader";
 
 type AppShellProps = {
   children: ReactNode;
-  user: HeaderUser;
 };
 
-export const AppShell = ({ children, user }: AppShellProps) => (
+export const AppShell = ({ children }: AppShellProps) => (
   <AppChrome
-    header={<SiteHeader user={user} />}
+    header={<SiteHeader />}
     prefetch={
       <>
         <NavPrefetch />

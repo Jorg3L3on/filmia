@@ -137,16 +137,16 @@ const run = () => {
     "List cards truncate names",
   );
 
-  const account = read("src/components/ProfileAccountForm.tsx");
-  const password = read("src/components/ProfilePasswordForm.tsx");
+  // Cuenta + contraseña live in one card; every edit happens in a sheet (FIL-I5-3).
+  const account = read("src/components/profile/ProfileAccountCard.tsx");
   // The toggle grid moved to PlatformToggleGrid (shared with the Bienvenida); the picker keeps the header + error.
   const platforms =
     read("src/components/StreamingPlatformPicker.tsx") + read("src/components/PlatformToggleGrid.tsx");
-  assert(account.includes("Guardar cuenta"), "Account save is labeled Guardar cuenta");
   assert(
-    password.includes("Actualizar contraseña"),
-    "Password save is labeled Actualizar contraseña",
+    account.includes("updateAccount") && account.includes("updatePassword") && account.includes("<Sheet"),
+    "Cuenta card edits name, email and password in sheets",
   );
+  assert(!account.includes("confirmPassword"), "Password change is current + new (no confirm field)");
   assert(
     !platforms.includes("Guardar cambios"),
     "Platforms auto-save without a third Guardar cambios",
@@ -425,22 +425,20 @@ const run = () => {
     perfilSkeletons.includes("ProfileBodySkeleton") &&
       perfilSkeletons.includes("cn(skeletonWellClass") &&
       read("src/app/perfil/loading.tsx").includes("ProfileBodySkeleton") &&
-      read("src/app/perfil/loading.tsx").includes("PageHeaderSkeleton"),
-    "Perfil loading uses PageHeaderSkeleton + ProfileBodySkeleton wells",
+      read("src/app/perfil/loading.tsx").includes("ProfileHeaderSkeleton"),
+    "Perfil loading uses ProfileHeaderSkeleton + ProfileBodySkeleton wells",
   );
   assert(
-    read("src/app/perfil/page.tsx").includes("PageHeaderSkeleton") &&
+    read("src/app/perfil/page.tsx").includes("ProfileHeaderSkeleton") &&
       read("src/app/perfil/page.tsx").includes("ProfileBodySkeleton") &&
-      read("src/app/perfil/page.tsx").includes("border-line"),
-    "Perfil Suspense fallback mirrors loading; avatar uses line well",
+      !read("src/app/perfil/page.tsx").includes("initial"),
+    "Perfil Suspense fallback mirrors loading; no letter avatar",
   );
   assert(
     read("src/components/LogoutButton.tsx").includes("press-scale") &&
       read("src/components/LogoutButton.tsx").includes("var(--duration-hover)") &&
       account.includes("press-scale") &&
-      account.includes("var(--duration-hover)") &&
-      password.includes("press-scale") &&
-      password.includes("var(--duration-hover)"),
+      read("src/components/profile/ProfileRows.tsx").includes("var(--duration-hover)"),
     "Perfil Logout + form submits use press-scale / duration-hover",
   );
   assert(
@@ -452,10 +450,10 @@ const run = () => {
     "Platform chips use press/hover + group; danger-well errors; auto-save",
   );
   assert(
-    account.includes("danger-well") &&
-      password.includes("danger-well") &&
+    account.includes('role="alert"') &&
+      /\.profile-sheet input\[aria-invalid="true"\] \{\s*background-color: var\(--danger-well\)/.test(read("src/app/globals.css")) &&
       read("src/components/AppChrome.tsx").includes("safe-area-inset-bottom"),
-    "Perfil form errors use danger-well; chrome keeps safe-area",
+    "Perfil sheet errors: alert text + danger-well field; chrome keeps safe-area",
   );
   console.log("✓ Fase 3 Perfil lote: skeleton wells, error well, press/hover on logout/forms/chips");
 

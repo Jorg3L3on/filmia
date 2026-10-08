@@ -1,8 +1,10 @@
 import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 import {
   desktopNavItems,
   isAuthChromePath,
   isCurrentPath,
+  isDesktopNavCurrent,
   isMobileNavCurrent,
   mobileNavSearch,
   mobileNavSearchSlot,
@@ -91,6 +93,15 @@ assert(
 }
 
 assert(desktopNavItems[0]?.label === "Hoy", "Desktop nav leads with Hoy");
+assert(
+  desktopNavItems.map((item) => item.label).join("|") === "Hoy|Quiero ver|Listas|Buscar|Perfil",
+  "Desktop nav is Hoy · Quiero ver · Listas · Buscar · Perfil",
+);
+assert(isDesktopNavCurrent("/perfil", "/diario"), "Desktop Perfil tab lights up on /diario");
+{
+  const headerNav = readFileSync(path.join(process.cwd(), "src/components/SiteHeaderNav.tsx"), "utf8");
+  assert(!headerNav.includes("LogoutButton") && !headerNav.includes("initial"), "Header has no avatar letter and no Salir");
+}
 assert(mobileNavItems[0]?.icon === "today", "Hoy tab uses the dated calendar glyph");
 assert(!isCurrentPath("/", "/diario"), "Hoy stays inactive on Tu diario");
 assert(isMobileNavCurrent("/perfil", "/diario"), "Perfil lights up on /diario (Tu diario lives there)");

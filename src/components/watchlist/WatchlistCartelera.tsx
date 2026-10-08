@@ -163,7 +163,7 @@ export const WatchlistCartelera = ({
     return (
       <p className="rounded-2xl border border-line bg-surface/40 px-4 py-8 text-center text-sm text-fog" role="status">
         {tonightOnly
-          ? "Nada te cabe antes de tu hora de dormir. Quita «Esta noche» para ver toda la lista."
+          ? "Nada termina antes de tu hora de dormir. Quita «Esta noche» para ver toda la lista."
           : "Nada en Quiero ver por ahora."}
       </p>
     );

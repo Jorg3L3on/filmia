@@ -12,6 +12,7 @@ import {
   nextStep,
   pickYearGrid,
   prevStep,
+  resolveBienvenidaEntry,
   resolveInitialStep,
   resolveOnboardingYear,
   selectionFromLibrary,
@@ -37,11 +38,19 @@ describe("bienvenida steps", () => {
     assert.match(stepAnnouncement("favorita"), /Paso 2 de 7/);
   });
 
-  it("resumes a gated account where it left off and reruns from the intro", () => {
-    assert.equal(resolveInitialStep({ onboardedAt: null, onboardingStep: "plataformas" }), "plataformas");
-    assert.equal(resolveInitialStep({ onboardedAt: null, onboardingStep: "nope" }), FIRST_STEP);
-    assert.equal(resolveInitialStep({ onboardedAt: null, onboardingStep: null }), FIRST_STEP);
-    assert.equal(resolveInitialStep({ onboardedAt: new Date(), onboardingStep: "noche" }), FIRST_STEP);
+  it("resumes a gated account where it left off", () => {
+    assert.equal(resolveInitialStep({ onboardingStep: "plataformas" }), "plataformas");
+    assert.equal(resolveInitialStep({ onboardingStep: "nope" }), FIRST_STEP);
+    assert.equal(resolveInitialStep({ onboardingStep: null }), FIRST_STEP);
+  });
+
+  it("never repeats the Bienvenida once it is finished", () => {
+    assert.equal(resolveBienvenidaEntry({ onboardedAt: null, cookieOnboarded: false }), "flow");
+    assert.equal(resolveBienvenidaEntry({ onboardedAt: null, cookieOnboarded: true }), "flow");
+    assert.equal(resolveBienvenidaEntry({ onboardedAt: new Date(), cookieOnboarded: true }), "home");
+    assert.equal(resolveBienvenidaEntry({ onboardedAt: new Date(), cookieOnboarded: undefined }), "home");
+    // DB says finished, this device's cookie still says no: re-mint it on the way to Hoy.
+    assert.equal(resolveBienvenidaEntry({ onboardedAt: new Date(), cookieOnboarded: false }), "resync");
   });
 });
 

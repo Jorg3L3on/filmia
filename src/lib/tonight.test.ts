@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { computeTonight, PARA_TI_SLUG } from "./tonight";
 import { itemVector, cosine } from "./tonight/features";
 import { canOfferTonightPin, findPinnedTitleId, searchPinBlocker } from "./tonight/pin";
-import { rankForNow } from "./tonight/serve";
+import { fitReason, rankForNow } from "./tonight/serve";
 import {
   bedtimeFor,
   dayPartOf,
@@ -267,7 +267,7 @@ describe("computeTonight", () => {
     assert.ok(interstellarLate?.headline.some((reason) => reason.kind === "fit_over"));
   });
 
-  it("says nothing about the night by day: no «le caben a tu noche» at 13:35", () => {
+  it("says nothing about the night by day: no «termina a tiempo» at 13:35", () => {
     const cards = (paraTi?.picks ?? []).map((pick) => ({
       id: pick.titleId,
       runtimeMinutes: titles.find((item) => item.id === pick.titleId)?.runtimeMinutes ?? null,
@@ -383,5 +383,16 @@ describe("mmrSelect", () => {
     const ids = picked.map((item) => item.title.id);
     assert.equal(ids.filter((id) => id.startsWith("d")).length, 2);
     assert.ok(ids.includes("c1") && ids.includes("a1"));
+  });
+});
+
+describe("fit reason copy", () => {
+  it("says the film ends in time, without the «cabe» idiom", () => {
+    const fits = { fit: 1, endsAt: "23:19", overflowMinutes: 0, remainingMinutes: 180 };
+    const reason = fitReason(fits, 101);
+    assert.equal(reason?.kind, "fit");
+    assert.match(reason?.text ?? "", /· termina a tiempo$/);
+    assert.doesNotMatch(reason?.text ?? "", /cabe/);
+    assert.equal(reason?.detail, "Si empiezas ahora acaba a las 23:19");
   });
 });
