@@ -46,6 +46,7 @@ export const TmdbSearchResults = ({
                 <SearchResultRow
                   result={result}
                   titleId={local?.titleId}
+                  status={local?.watched ? "watched" : local?.inWatchlist ? "watchlist" : null}
                   onPreview={onPreview}
                 />
               </li>

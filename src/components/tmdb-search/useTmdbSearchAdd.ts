@@ -18,7 +18,8 @@ import {
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import { showToast } from "@/lib/toast";
 import type { UserTmdbEntry } from "@/lib/queries";
-import { buildSearchHref } from "@/lib/search-session";
+import { buildPersonSearchHref, type DirectorHit, type PersonRole } from "@/lib/person-filmography";
+import { buildSearchHref, type SearchMode } from "@/lib/search-session";
 import { PARA_TI_SLUG } from "@/lib/tonight/select";
 import { TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import {
@@ -41,6 +42,16 @@ type UseTmdbSearchAddArgs = {
   memberships?: Record<string, string[]>;
   /** Title pinned for tonight when the page loaded («Ver esta noche»). */
   pinnedTitleId?: string | null;
+  /** `?tipo=director`: the «Director» chip is on. */
+  initialMode?: SearchMode;
+};
+
+/** A person being opened: painted from the tap while the server loads the filmography. */
+export type PendingPerson = {
+  id: number;
+  name: string;
+  profilePath: string | null;
+  role: PersonRole;
 };
 
 /** «Ver en Hoy»: Para ti, where the pinned card leads. */
@@ -61,6 +72,7 @@ export const useTmdbSearchAdd = ({
   lists = [],
   memberships = {},
   pinnedTitleId: initialPinnedTitleId = null,
+  initialMode = "titles",
 }: UseTmdbSearchAddArgs) => {
   const router = useRouter();
   const [catalog, setCatalog] = useState(() => toTmdbCatalogMap(existing));
@@ -77,14 +89,19 @@ export const useTmdbSearchAdd = ({
   const [isAdding, startAdd] = useTransition();
 
   const syncSearchUrl = useCallback(
-    (trimmed: string) => {
+    (trimmed: string, mode: SearchMode) => {
       if (typeof window === "undefined") {
+        return;
+      }
+      // The person view owns its URL (`?persona=`); typing leaves it via navigation.
+      if (new URLSearchParams(window.location.search).has("persona")) {
         return;
       }
 
       const href = buildSearchHref(trimmed, {
         watchedDate,
         watchedDestination: defaultDestination === "watched",
+        mode,
       });
       window.history.replaceState(window.history.state, "", href);
     },
@@ -93,7 +110,12 @@ export const useTmdbSearchAdd = ({
 
   const {
     query,
+    mode,
+    changeMode,
+    settledQuery,
     results,
+    director,
+    directors,
     error,
     setError,
     hasSearched,
@@ -105,8 +127,42 @@ export const useTmdbSearchAdd = ({
     initialQuery,
     initialResults,
     initialError,
+    initialMode,
     onSettled: syncSearchUrl,
   });
+
+  const [pendingPerson, setPendingPerson] = useState<PendingPerson | null>(null);
+  const [isOpeningPerson, startOpenPerson] = useTransition();
+
+  /** Director card, «Ver filmografía» or a filmography link → the person view (a real history entry). */
+  const openPerson = (hit: Pick<DirectorHit, "id" | "name" | "profilePath">, role: PersonRole = "director") => {
+    setPendingPerson({ ...hit, role });
+    startOpenPerson(() => {
+      router.push(
+        buildPersonSearchHref({
+          personId: hit.id,
+          role,
+          name: hit.name,
+          query,
+          mode: mode === "director" ? "director" : null,
+        }),
+      );
+    });
+  };
+
+  /** Leave the person view for the search results of what is typed. */
+  const closePerson = () => {
+    setPendingPerson(null);
+    startOpenPerson(() => {
+      router.push(
+        buildSearchHref(query, {
+          watchedDate,
+          watchedDestination: defaultDestination === "watched",
+          mode,
+        }),
+      );
+    });
+  };
 
   const visibleResults = results.filter((result) =>
     titleMatchesKind(result.kind, kindFilter),
@@ -338,6 +394,14 @@ export const useTmdbSearchAdd = ({
 
   return {
     query,
+    mode,
+    changeMode,
+    settledQuery,
+    director,
+    directors,
+    pendingPerson: isOpeningPerson ? pendingPerson : null,
+    openPerson,
+    closePerson,
     catalog,
     error,
     pendingKey,

@@ -189,6 +189,21 @@ assert(
   "«Ver esta noche»: press spring + ease-out light; the moon pops only right after the tap; documented",
 );
 assert(
+  /\.person-card-in \{[^}]*genre-coverflow-title-in var\(--duration-stagger\) var\(--ease-out\)/.test(css) &&
+    /prefers-reduced-motion[\s\S]*\.person-card-in,/.test(css) &&
+    motionDoc.includes(".person-card-in"),
+  "Buscar person card blurs in with ease-out, off under reduced motion, documented",
+);
+{
+  const sharedChips = read("src/lib/catalog-filters.ts");
+  const buscarChips = read("src/components/tmdb-search/TmdbKindFilterChips.tsx");
+  assert(
+    !/Director/.test(sharedChips.slice(sharedChips.indexOf("KIND_CHIPS"), sharedChips.indexOf("] as const"))) &&
+      buscarChips.includes('value: "DIRECTOR"'),
+    "«Director» chip lives only in Buscar; the shared KIND_CHIPS (Quiero ver) stay Todos/Películas/Series",
+  );
+}
+assert(
   css.includes("@keyframes sheet-fall") && css.includes(".sheet-overlay-out") && sheet.includes("sheet-fall"),
   "Sheets need an exit animation (sheet-fall + overlay fade) before unmounting",
 );

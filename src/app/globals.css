@@ -1868,6 +1868,11 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   text-shadow: 0 1px 10px rgb(0 0 0 / 0.75);
 }
 
+/* Buscar: the person card and the «Ver filmografía» suggestion blur in like Hoy's title. */
+.person-card-in {
+  animation: genre-coverflow-title-in var(--duration-stagger) var(--ease-out) backwards;
+}
+
 .tonight-title-in {
   animation: genre-coverflow-title-in var(--duration-enter) var(--ease-out) backwards;
 }
@@ -2047,6 +2052,7 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   .visto-stamp,
   .deck-deal .coverflow-card-face,
   .tonight-title-in,
+  .person-card-in,
   .nav-receive > :first-child {
     animation: none !important;
     transition: none;

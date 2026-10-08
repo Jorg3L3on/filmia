@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/PageHeader";
 import { SearchBodySkeleton } from "@/components/PageSkeletons";
 import { TmdbSearchAdd } from "@/components/TmdbSearchAdd";
+import type { PersonViewState } from "@/components/tmdb-search/PersonSearch";
+import { loadPersonFilmography } from "@/app/actions/metadata";
+import { isPersonRole } from "@/lib/person-filmography";
 import { TmdbSearchUnavailable } from "@/components/TmdbSearchUnavailable";
 import { metadataServicesConfigured } from "@/lib/metadata";
 import {
@@ -24,6 +27,32 @@ type SearchParams = {
   q?: string | string[];
   fecha?: string | string[];
   destino?: string | string[];
+  tipo?: string | string[];
+  persona?: string | string[];
+  rol?: string | string[];
+  nombre?: string | string[];
+};
+
+const single = (value: string | string[] | undefined) =>
+  typeof value === "string" ? value : undefined;
+
+/** `?persona=<tmdbPersonId>&rol=director|reparto|fotografia` → the person view. */
+const loadPersonView = async (params: SearchParams): Promise<PersonViewState | null> => {
+  const personId = Number(single(params.persona));
+  if (!Number.isInteger(personId) || personId <= 0) {
+    return null;
+  }
+  const rawRole = single(params.rol);
+  const role = isPersonRole(rawRole) ? rawRole : "director";
+  const name = single(params.nombre)?.trim() || null;
+  const outcome = await loadPersonFilmography(personId, role);
+  if (!outcome.ok) {
+    return { kind: "error", error: outcome.error, personId, role, name };
+  }
+  const data = outcome.data.person.name
+    ? outcome.data
+    : { ...outcome.data, person: { ...outcome.data.person, name: name ?? "" } };
+  return { kind: "ready", data };
 };
 
 export default function SearchPage({
@@ -61,11 +90,12 @@ const SearchBody = async ({
     watchedDate != null ||
     (typeof params.destino === "string" && params.destino === "visto");
   const userId = await requireUserId();
-  const [existing, lists, memberships, pinnedTitleId] = await Promise.all([
+  const [existing, lists, memberships, pinnedTitleId, person] = await Promise.all([
     getUserTmdbIndex(),
     getAssignableLists(),
     getUserListMembershipIndex(),
     markWatched ? null : getPinnedTonightTitleId(userId),
+    loadPersonView(params),
   ]);
 
   return (
@@ -78,6 +108,8 @@ const SearchBody = async ({
       lists={lists.map(({ id, name, slug }) => ({ id, name, slug }))}
       memberships={memberships}
       pinnedTitleId={pinnedTitleId}
+      initialMode={single(params.tipo) === "director" ? "director" : "titles"}
+      person={person}
     />
   );
 };
