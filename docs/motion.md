@@ -108,6 +108,8 @@ Direction A «Marquesina» (FIL-I5-3, canvas https://claude.ai/artifact/2rSJnRDQ
 | «Ver esta noche» `.ficha-tonight` | `--duration-press` · `--spring` (press) · sheen 1.6 s × 2 | Shimmer twice, 1.2 s after landing; never a loop. Pinned = aura pill, moon `spring-pop` only right after the tap. |
 | Grupo de acciones `.ficha-action` | `--duration-press` · `--spring` · `--duration-hover` colours | `press-scale` per button; Visto / Nota keep their `spring-fill` feedback. |
 | Atrás `.back-pill` | `--duration-morph` · `--ease-out` | Disc on first paint, label blurs in (`.back-pill-in`, `--duration-enter`); folds to the disc while scrolling down, back on the way up. |
+| Personas `.person-card` | `.stagger-in` (50 ms/card) · `--duration-press` · `--spring` | Glass cards enter with the shared stagger; tap = `press-scale`; hover (pointer only) lifts the rim. |
+| Foto `.person-photo` | `--duration-enter` · `--ease-out` | Fade + scale 0.96 → 1. No photo, no circle: the name centres in the same card height. |
 | Hojas (Visto, Nota) | `.sheet-rise` | Same sheets as before; never spring. |
 
 Reduced motion: no entrance, no backdrop scale, no sheen; «Más» and the back pill change instantly (global rule).
