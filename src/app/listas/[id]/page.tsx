@@ -1,10 +1,9 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { addTitleToList, deleteList } from "@/app/actions/lists";
+import { addTitleToList } from "@/app/actions/lists";
 import { AddTitleToListCta } from "@/components/AddTitleToListCta";
 import { CatalogFilters } from "@/components/CatalogFilters";
-import { DeleteCollectionButton } from "@/components/DeleteCollectionButton";
 import { EmptyState } from "@/components/EmptyState";
 import { ListTitlesView } from "@/components/ListTitlesView";
 import {
@@ -33,8 +32,11 @@ import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { tmdbCatalogKey } from "@/lib/tmdb-search-catalog";
 import { catalogHref, parseMinePlatforms } from "@/lib/catalog-href";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
-import { pillActionClass } from "@/lib/ui";
-import { PencilIcon } from "@/components/SegmentAction";
+import {
+  PencilIcon,
+  SegmentActionTooltip,
+  segmentActionCompactClass,
+} from "@/components/SegmentAction";
 
 export const dynamic = "force-dynamic";
 
@@ -122,12 +124,14 @@ const ListDetail = async ({
   const clearHref = catalogHref(`/listas/${list.id}`, {});
 
   return (
-    <div className="space-y-6">
+    // Shell = Hoy's room: the deck tints the page with the hero poster's colour.
+    <div className="diario-que-ver-shell space-y-6">
       <PageHeader
         title={list.name}
         description={list.description ?? undefined}
         backHref="/listas"
         backLabel="Todas las listas"
+        inlineActions
         actions={
           <>
             {automatic ? null : (
@@ -143,10 +147,10 @@ const ListDetail = async ({
             <Link
               href={`/listas/${list.id}/editar`}
               aria-label={fixed ? "Editar descripción" : "Editar lista"}
-              className={pillActionClass.neutral}
+              className={segmentActionCompactClass}
             >
-              <PencilIcon />
-              Editar
+              <PencilIcon className="size-5 group-hover/action:-rotate-12" />
+              <SegmentActionTooltip label={fixed ? "Editar descripción" : "Editar lista"} />
             </Link>
           </>
         }
@@ -209,22 +213,6 @@ const ListDetail = async ({
             platforms={platforms}
           />
         </div>
-      )}
-
-      {fixed ? null : (
-        <footer className="mt-16 flex justify-center border-t border-line/70 pt-8 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-          <DeleteCollectionButton
-            action={deleteList.bind(null, list.id)}
-            redirectHref="/listas"
-            label="Borrar lista"
-            name={list.name}
-            impact={
-              list.items.length === 0
-                ? "La lista está vacía."
-                : `Contiene ${list.items.length === 1 ? "1 título" : `${list.items.length} títulos`}.`
-            }
-          />
-        </footer>
       )}
     </div>
   );

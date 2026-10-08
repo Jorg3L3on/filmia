@@ -35,11 +35,20 @@ const persistWatchProviders = async (
     .set({
       watchProvidersMx: data,
       watchProvidersFetchedAt: now,
-      // Esta noche «Acaba de llegar»: remember the first time a flatrate offer showed up.
+      // «Acaba de llegar» = a flatrate offer appeared since our previous look. A first look is
+      // only a baseline (we can't know when it reached the platform), and leaving clears the
+      // stamp so a return counts again. SET expressions read the row's old values.
       availableSince:
-        data.flatrate.length > 0
-          ? sql`COALESCE(${catalog.availableSince}, ${now})`
-          : sql`${catalog.availableSince}`,
+        data.flatrate.length === 0
+          ? null
+          : sql`CASE
+              WHEN ${catalog.availableSince} IS NOT NULL THEN ${catalog.availableSince}
+              WHEN ${catalog.watchProvidersFetchedAt} IS NOT NULL
+                AND (CASE WHEN jsonb_typeof(${catalog.watchProvidersMx} -> 'flatrate') = 'array'
+                     THEN jsonb_array_length(${catalog.watchProvidersMx} -> 'flatrate') ELSE 0 END) = 0
+              THEN ${now}
+              ELSE NULL
+            END`,
     })
     .where(eq(catalog.id, catalogId));
 };

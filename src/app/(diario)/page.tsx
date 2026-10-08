@@ -2,7 +2,8 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { EmptyState } from "@/components/EmptyState";
 import { HoySkeleton } from "@/components/PageSkeletons";
-import { TonightSala, TONIGHT_LENS_PARAM } from "@/components/tonight/TonightSala";
+import { TonightSala } from "@/components/tonight/TonightSala";
+import { TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import {
   DIARY_HISTORIAL_PATH,
   parseCategorySlug,

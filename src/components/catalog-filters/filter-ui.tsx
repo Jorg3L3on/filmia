@@ -17,7 +17,7 @@ export const catalogBarChipClass = (selected: boolean) =>
 
 /** Neutral glass pill for bar buttons (Filtros, Orden). */
 export const catalogBarButtonClass = cn(
-  "press-scale inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-paper backdrop-blur-xl transition-colors hover:bg-white/10",
+  "press-scale inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 text-sm font-medium text-paper/95 shadow-panel backdrop-blur-xl backdrop-saturate-150 transition-[background-color,border-color] duration-[var(--duration-hover)] hover:border-white/30 hover:bg-white/15",
   focusRing,
 );
 

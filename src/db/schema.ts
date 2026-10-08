@@ -113,7 +113,7 @@ export const catalog = pgTable(
       precision: 3,
       mode: "date",
     }),
-    /** First time we saw a flatrate MX offer — drives «Acaba de llegar». */
+    /** When a flatrate MX offer appeared after a look without one — drives «Acaba de llegar». */
     availableSince: timestamp("availableSince", { precision: 3, mode: "date" }),
     /** Space-separated RGB (`"122 146 172"`) sampled server-side for the sala glow. */
     posterAmbient: text("posterAmbient"),

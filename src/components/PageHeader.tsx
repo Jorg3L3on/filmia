@@ -9,6 +9,8 @@ type PageHeaderProps = {
   actions?: React.ReactNode;
   backHref?: string;
   backLabel?: string;
+  /** Keep actions on the title row (compact round buttons) instead of wrapping below on mobile. */
+  inlineActions?: boolean;
 };
 
 export const PageHeader = ({
@@ -18,9 +20,15 @@ export const PageHeader = ({
   actions,
   backHref,
   backLabel = "Volver",
+  inlineActions = false,
 }: PageHeaderProps) => {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3 sm:gap-4">
+    <div
+      className={cn(
+        "flex justify-between gap-3 sm:gap-4",
+        inlineActions ? "items-start" : "flex-wrap items-end",
+      )}
+    >
       <div className="flex min-w-0 max-w-2xl flex-1 items-start gap-3">
         {backHref ? (
           <Link
@@ -58,7 +66,14 @@ export const PageHeader = ({
         </div>
       </div>
       {actions ? (
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end sm:gap-3">
+        <div
+          className={cn(
+            "flex items-center gap-2 sm:gap-3",
+            inlineActions
+              ? "mt-0.5 shrink-0 md:mt-1.5"
+              : "w-full flex-wrap sm:w-auto sm:justify-end",
+          )}
+        >
           {actions}
         </div>
       ) : null}

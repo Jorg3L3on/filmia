@@ -174,7 +174,7 @@ const MarkWatchedSheetFields = ({
     >
       <div className="flex flex-col items-center px-5 pt-3">
         <SheetHandle className="sm:hidden" />
-        <div className="flex w-full items-start justify-between gap-3">
+        <div className="flex w-full items-start gap-3">
           <h2
             id={titleDomId}
             className="min-w-0 line-clamp-2 text-balance pt-1 font-serif text-[1.75rem] leading-[1.1] tracking-tight text-paper"
@@ -182,20 +182,13 @@ const MarkWatchedSheetFields = ({
             <span className="sr-only">Marqué visto: </span>
             {titleName}
           </h2>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="h-9 w-9 shrink-0 px-0"
-            aria-label="Cerrar"
-          >
-            <CloseIcon />
-          </Button>
         </div>
       </div>
 
-      <div className="space-y-5 px-5 py-6" data-no-sheet-drag>
+      <div
+        className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-6"
+        data-no-sheet-drag
+      >
         <fieldset className="min-w-0 space-y-2">
           <legend className="text-[11px] font-medium uppercase tracking-[0.18em] text-fog">
             Fecha
@@ -303,15 +296,3 @@ const MarkWatchedSheetFields = ({
   );
 };
 
-const CloseIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    className="h-4 w-4"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.75}
-    aria-hidden="true"
-  >
-    <path strokeLinecap="round" d="M7 7l10 10M17 7 7 17" />
-  </svg>
-);

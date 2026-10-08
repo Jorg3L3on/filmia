@@ -1145,101 +1145,6 @@ html[data-que-ver-grade="live"] body {
   box-shadow: 0 0 10px rgb(var(--que-ver-glow, 124 156 255) / 0.7);
 }
 
-/* Compact destination footprint — fits genre+arrow+Desliza in the side gutter. */
-.coverflow-card.coverflow-destination {
-  inset: auto;
-  top: 50%;
-  left: 50%;
-  width: 7.75rem;
-  height: 11.75rem;
-  margin-left: -3.875rem;
-  margin-top: -5.875rem;
-}
-
-/* Tinted-glass destination side slot — same chrome family as the mode toggle / slider.
- * Specificity must beat .coverflow-card.is-cinematic .coverflow-card-face { border:0 }. */
-.coverflow-card.coverflow-destination.is-cinematic .coverflow-destination-face,
-.coverflow-card.coverflow-destination.is-cinematic.is-focused .coverflow-destination-face {
-  border-width: 1px;
-  border-style: solid;
-  border-color: rgb(255 255 255 / 0.12);
-  background:
-    radial-gradient(
-      ellipse 120% 80% at var(--dest-glow-x, 0%) 0%,
-      rgb(var(--que-ver-glow, 124 156 255) / 0.26),
-      transparent 70%
-    ),
-    linear-gradient(180deg, rgb(18 22 28 / 0.62), rgb(8 10 13 / 0.78));
-  box-shadow:
-    0 1px 0 rgb(255 255 255 / 0.08) inset,
-    0 18px 40px rgb(0 0 0 / 0.5);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-  backdrop-filter: blur(16px) saturate(1.2);
-  transition:
-    border-color var(--duration-hover) var(--ease-out),
-    background-color var(--duration-hover) var(--ease-out);
-  /* Destination face stays sharp — labels must read at arm's length. */
-  filter: none !important;
-}
-
-.coverflow-card.coverflow-destination[data-coverflow-destination="next"] {
-  --dest-glow-x: 100%;
-}
-
-.coverflow-card.coverflow-destination.is-cinematic .coverflow-destination-face:hover {
-  border-color: rgb(255 255 255 / 0.22);
-}
-
-.coverflow-destination-kicker {
-  color: var(--fog);
-  font-size: 0.5625rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.coverflow-destination-name {
-  max-width: 100%;
-  overflow-wrap: normal;
-  color: var(--paper);
-  font-size: 1.15rem;
-  font-style: italic;
-  font-weight: 500;
-  line-height: 1.1;
-  letter-spacing: -0.01em;
-  text-shadow:
-    0 0 14px rgb(var(--que-ver-glow, 124 156 255) / 0.45),
-    0 1px 2px rgb(0 0 0 / 0.6);
-}
-
-.coverflow-destination-name.is-long {
-  font-size: 0.85rem;
-}
-
-.coverflow-destination-arrow {
-  display: inline-flex;
-  width: 1.75rem;
-  height: 1.75rem;
-  align-items: center;
-  justify-content: center;
-  margin-top: 0.15rem;
-  border: 1px solid rgb(var(--accent-rgb) / 0.35);
-  border-radius: 9999px;
-  background: rgb(var(--accent-rgb) / 0.12);
-  color: var(--accent);
-  box-shadow: 0 0 12px rgb(var(--que-ver-glow, 124 156 255) / 0.35);
-  transition: transform var(--duration-hover) var(--ease-out);
-}
-
-[data-coverflow-destination="prev"] .coverflow-destination-face:hover .coverflow-destination-arrow {
-  transform: translateX(-2px);
-}
-
-[data-coverflow-destination="next"] .coverflow-destination-face:hover .coverflow-destination-arrow {
-  transform: translateX(2px);
-}
-
 /* Mode toggle — chrome soft but readable (Qué ver / Historial at arm's length). */
 .diario-que-ver-shell .diario-mode-toggle {
   border-color: rgb(255 255 255 / 0.1);
@@ -1410,35 +1315,28 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-n
 }
 
 .que-ver-deck-slide-next {
-  animation: que-ver-deck-in-right 300ms var(--ease-out) both;
+  animation: que-ver-deck-in-right 220ms var(--ease-out) both;
 }
 
 .que-ver-deck-slide-prev {
-  animation: que-ver-deck-in-left 300ms var(--ease-out) both;
+  animation: que-ver-deck-in-left 220ms var(--ease-out) both;
 }
 
+/* Genre switch from the edge: a short glide only — a blur/fade-in read as "loading". */
 @keyframes que-ver-deck-in-right {
   from {
-    opacity: 0.35;
-    filter: blur(4px);
-    transform: translateX(4%);
+    transform: translateX(3%);
   }
   to {
-    opacity: 1;
-    filter: blur(0);
     transform: translateX(0);
   }
 }
 
 @keyframes que-ver-deck-in-left {
   from {
-    opacity: 0.35;
-    filter: blur(4px);
-    transform: translateX(-4%);
+    transform: translateX(-3%);
   }
   to {
-    opacity: 1;
-    filter: blur(0);
     transform: translateX(0);
   }
 }
@@ -1677,27 +1575,75 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-n
  * Tokens: --spring para talón/sello, --ease-out para el resto (docs/motion.md).
  * ---------------------------------------------------------------------- */
 /* Esta noche: the footer gained a reason pill + chips, so the stage gives back ~2rem. */
+/*
+ * The «Vi esto» stub hangs ~30px under the hero. Carve its room out of the stage (shorter
+ * stage + equal bottom margin) so a height-bound card on short screens never drops the stub
+ * onto the title — and the sala's total height, tuned to clear the tab bar, stays the same.
+ */
 .tonight-sala .coverflow-cinematic-stage {
-  height: min(46dvh, calc(100dvh - 24.5rem));
-  min-height: 300px;
-  max-height: 520px;
+  --stub-room: 1.75rem;
+  height: calc(min(46dvh, calc(100dvh - 24.5rem)) - var(--stub-room));
+  min-height: calc(300px - var(--stub-room));
+  max-height: calc(520px - var(--stub-room));
+  margin-bottom: var(--stub-room);
 }
 
 @media (min-width: 768px) {
   .tonight-sala .coverflow-cinematic-stage {
-    height: min(54dvh, calc(100dvh - 20rem));
-    min-height: 340px;
-    max-height: 580px;
+    height: calc(min(54dvh, calc(100dvh - 20rem)) - var(--stub-room));
+    min-height: calc(340px - var(--stub-room));
+    max-height: calc(580px - var(--stub-room));
   }
 }
 
-.coverflow-card.is-tonight.is-focused {
+.coverflow-card.is-tonight.is-focused,
+.coverflow-card.has-stub.is-focused {
   /* The stub hangs below the card; the focused face has no blur to clip. */
   overflow: visible;
 }
 
-.coverflow-card.is-tonight .coverflow-card-face {
+.coverflow-card.is-tonight .coverflow-card-face,
+.coverflow-card.is-holdable .coverflow-card-face {
   -webkit-touch-callout: none;
+}
+
+/* Press-and-hold cue: the card sinks and a ring glows over the long-press delay
+ * (420ms). Only transform/opacity animate so iOS Safari composites it on the GPU
+ * (animating filter/box-shadow over the poster repaints and starts late). */
+.coverflow-card-hold {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  box-shadow:
+    inset 0 0 0 2px rgb(var(--accent-rgb) / 0.85),
+    inset 0 0 36px rgb(var(--accent-rgb) / 0.45);
+  background: rgb(0 0 0 / 0.12);
+}
+
+.coverflow-card.is-pressing .coverflow-card-face {
+  will-change: transform;
+}
+
+.coverflow-card.is-cinematic.is-focused.is-pressing .coverflow-card-face {
+  animation: card-hold 420ms cubic-bezier(0.3, 0, 0.6, 1) forwards;
+}
+
+.coverflow-card.is-pressing .coverflow-card-hold {
+  animation: card-hold-glow 420ms ease-out forwards;
+}
+
+@keyframes card-hold {
+  to {
+    transform: scale(0.94);
+  }
+}
+
+@keyframes card-hold-glow {
+  to {
+    opacity: 1;
+  }
 }
 
 .ticket-stub {

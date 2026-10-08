@@ -405,6 +405,15 @@ export const getListMetaById = cache(async (id: string) => {
   });
 });
 
+export const getListItemCount = cache(async (listId: string) => {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(listItems)
+    .where(eq(listItems.listId, listId));
+
+  return row?.count ?? 0;
+});
+
 export const getTitleOptions = cache(async () => {
   const userId = await requireUserId();
 

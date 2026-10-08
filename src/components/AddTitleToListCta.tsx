@@ -16,8 +16,12 @@ import {
 } from "@/lib/list-add-candidates";
 import { showToast } from "@/lib/toast";
 import { actionErrorMessage } from "@/lib/use-optimistic-action";
-import { fieldClass, focusRing, pillActionClass } from "@/lib/ui";
-import { SegmentPlusIcon } from "@/components/SegmentAction";
+import { fieldClass, focusRing } from "@/lib/ui";
+import {
+  SegmentActionTooltip,
+  SegmentPlusIcon,
+  segmentActionCompactClass,
+} from "@/components/SegmentAction";
 
 export type AddableListTitle = LocalListTitle;
 
@@ -175,10 +179,10 @@ export const AddTitleToListCta = ({
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-label="Agregar título a la lista"
-          className={pillActionClass.primary}
+          className={segmentActionCompactClass}
         >
-          <SegmentPlusIcon className="size-4 group-hover:rotate-90" />
-          Agregar
+          <SegmentPlusIcon className="group-hover/action:rotate-90" />
+          <SegmentActionTooltip label="Agregar títulos" />
         </button>
       ) : (
         <Button

@@ -104,29 +104,8 @@ export const paintCoverflowCard = (
 ) => {
   const metrics = getCoverflowCardMetrics(offset, sideRoom, compact, cinematic);
   const { root, face, dim, caption, link } = node;
-  const isDestination = root.hasAttribute("data-coverflow-destination");
-  // Continuum destination must clear the hero on phone — sit in the outer
-  // side slot so genre + arrow + Desliza/Anterior read at arm's length.
-  const room = Math.max(10, sideRoom);
-  const destSign =
-    Math.sign(offset) || Math.sign(metrics.translateX) || 1;
-  // Compact dest card (~7.75rem): park it in the side gutter, not past the
-  // viewport edge — otherwise only a sliver remains on-screen.
-  const translateX = isDestination
-    ? destSign *
-      Math.max(Math.abs(metrics.translateX) * 1.7, room + 64)
-    : metrics.translateX;
-  const translateZ = isDestination
-    ? Math.max(metrics.translateZ, -64)
-    : metrics.translateZ;
-  const rotateY = isDestination ? metrics.rotateY * 0.28 : metrics.rotateY;
-  // Compact destination footprint is set in CSS; keep near-1 scale.
-  const scale = isDestination ? Math.min(1, metrics.scale + 0.08) : metrics.scale;
-  const zIndex = isDestination
-    ? Math.max(metrics.zIndex, 860)
-    : metrics.isActive
-      ? Math.max(metrics.zIndex, 920)
-      : metrics.zIndex;
+  const { translateX, translateZ, rotateY, scale } = metrics;
+  const zIndex = metrics.isActive ? Math.max(metrics.zIndex, 920) : metrics.zIndex;
 
   root.style.transform = `translate3d(${translateX}px, ${metrics.translateY}px, ${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`;
   root.style.opacity = String(metrics.opacity);
@@ -139,9 +118,8 @@ export const paintCoverflowCard = (
 
   if (face) {
     // Blur on the face (not the transformed root) so preserve-3d stays intact.
-    // Focused hero + destination labels stay unblurred (overflow clips sides).
-    const rawBlur =
-      metrics.isActive || isDestination ? 0 : metrics.blur;
+    // Focused hero stays unblurred (overflow clips sides).
+    const rawBlur = metrics.isActive ? 0 : metrics.blur;
     const blurPx = prefersCoverflowReducedMotion()
       ? Math.min(rawBlur, 2.5) * 0.45
       : rawBlur;
