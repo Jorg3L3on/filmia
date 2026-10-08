@@ -82,12 +82,16 @@ const restoreScroll = (y: number) => {
 /** Record the current location once (tracker and page labels can race; first one wins). */
 const visitCurrent = () => {
   const href = currentHref();
-  const { stack: next, restored } = recordVisit(load(), href);
-  if (next !== stack && JSON.stringify(next) !== JSON.stringify(stack)) {
+  const { stack: next, restored, kind } = recordVisit(load(), href);
+  if (JSON.stringify(next) !== JSON.stringify(stack)) {
     commit(next);
   }
   if (restored?.scrollY) {
     restoreScroll(restored.scrollY);
+  } else if (kind === "push") {
+    // A new page starts at the top. Next skips its own scroll when the
+    // loading skeleton of a short page already sits in the clamped viewport.
+    window.scrollTo(0, 0);
   }
   return href;
 };

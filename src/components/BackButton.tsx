@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { MouseEvent } from "react";
+import { useSyncExternalStore, type MouseEvent } from "react";
 import { useNavOrigin } from "@/components/NavOriginTracker";
 import { cn } from "@/lib/cn";
 import { HOME_ENTRY } from "@/lib/nav-origin";
@@ -16,6 +16,16 @@ type BackButtonProps = {
   hideWithoutOrigin?: boolean;
 };
 
+const subscribeNever = () => () => {};
+
+/** False in the server render and during hydration: the origin lives in sessionStorage. */
+const useHydrated = () =>
+  useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false,
+  );
+
 /**
  * «‹ Hoy · Terror»: back to the exact page this one was opened from. Same
  * result as the browser / iOS edge-swipe back when the origin is the previous
@@ -23,11 +33,14 @@ type BackButtonProps = {
  */
 export const BackButton = ({ className, compact = false, hideWithoutOrigin = false }: BackButtonProps) => {
   const router = useRouter();
+  const hydrated = useHydrated();
   const { origin, label, action } = useNavOrigin();
 
-  if (hideWithoutOrigin && !origin) {
+  if (hideWithoutOrigin && (!hydrated || !origin)) {
     return null;
   }
+  // Until the origin is known the button is a disc; it grows into «‹ origen» (never a wrong «Hoy»).
+  const showLabel = hydrated && !compact;
 
   const href = origin?.href ?? HOME_ENTRY.href;
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
@@ -48,10 +61,10 @@ export const BackButton = ({ className, compact = false, hideWithoutOrigin = fal
       href={href}
       prefetch={false}
       onClick={handleClick}
-      aria-label={`Volver a ${label}`}
+      aria-label={hydrated ? `Volver a ${label}` : "Volver"}
       className={cn(
         glassIconClass,
-        compact ? "size-10" : "h-10 max-w-[min(15rem,60vw)] gap-0.5 pl-1.5 pr-4 text-sm font-semibold",
+        showLabel ? "back-pill-in h-10 max-w-[min(15rem,60vw)] gap-0.5 pl-1.5 pr-4 text-sm font-semibold" : "size-10",
         className,
       )}
     >
@@ -67,7 +80,7 @@ export const BackButton = ({ className, compact = false, hideWithoutOrigin = fal
       >
         <path d="M15 18l-6-6 6-6" />
       </svg>
-      {compact ? null : <span className="truncate">{label}</span>}
+      {showLabel ? <span className="truncate">{label}</span> : null}
     </Link>
   );
 };

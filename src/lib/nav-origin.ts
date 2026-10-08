@@ -61,30 +61,33 @@ export type VisitResult = {
   stack: NavEntry[];
   /** Set when the visit went back to an entry already on the stack (scroll to restore). */
   restored: NavEntry | null;
+  /** push = a new page (starts at the top); replace = same page, new query; pop = back. */
+  kind: "push" | "replace" | "pop" | "none";
 };
 
 export const recordVisit = (stack: readonly NavEntry[], href: string): VisitResult => {
   if (!isTrackedHref(href)) {
-    return { stack: [...stack], restored: null };
+    return { stack: [...stack], restored: null, kind: "none" };
   }
   const top = stack.at(-1);
   if (!top) {
-    return { stack: [{ href, label: defaultNavLabel(href) }], restored: null };
+    return { stack: [{ href, label: defaultNavLabel(href) }], restored: null, kind: "none" };
   }
   if (top.href === href) {
-    return { stack: [...stack], restored: null };
+    return { stack: [...stack], restored: null, kind: "none" };
   }
   if (pathOf(top.href) === pathOf(href)) {
-    return { stack: [...stack.slice(0, -1), { ...top, href }], restored: null };
+    return { stack: [...stack.slice(0, -1), { ...top, href }], restored: null, kind: "replace" };
   }
   const below = stack.at(-2);
   if (below && pathOf(below.href) === pathOf(href)) {
     const back = { ...below, href };
-    return { stack: [...stack.slice(0, -2), back], restored: back };
+    return { stack: [...stack.slice(0, -2), back], restored: back, kind: "pop" };
   }
   return {
     stack: [...stack, { href, label: defaultNavLabel(href) }].slice(-NAV_STACK_LIMIT),
     restored: null,
+    kind: "push",
   };
 };
 

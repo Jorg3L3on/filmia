@@ -324,6 +324,19 @@ body {
   transform: scale(0.96);
 }
 
+/* BackButton: the disc of the first paint grows into «‹ origen» once the tab's origin is read. */
+.back-pill-in > span {
+  animation: back-pill-label-in var(--duration-enter) var(--ease-out) backwards;
+}
+
+@keyframes back-pill-label-in {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateX(-4px);
+  }
+}
+
 /* Both on one element: the press owns `transform` (spring, 160 ms) and the
  * hover keeps easing shadow/filter instead of `.press-scale` dropping them. */
 .card-physics.press-scale {

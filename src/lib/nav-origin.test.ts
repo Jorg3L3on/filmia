@@ -53,6 +53,15 @@ describe("nav-origin/recordVisit", () => {
     const back = recordVisit(stack, "/watchlist");
     assert.deepEqual(back.stack, [{ href: "/watchlist", label: "Quiero ver", scrollY: 1840 }]);
     assert.equal(back.restored?.scrollY, 1840);
+    assert.equal(back.kind, "pop");
+  });
+
+  it("reports the kind of visit (push starts a page at the top)", () => {
+    const stack = visitAll(["/watchlist"]);
+    assert.equal(recordVisit(stack, "/titulos/a").kind, "push");
+    assert.equal(recordVisit(stack, "/watchlist?sort=year").kind, "replace");
+    assert.equal(recordVisit(stack, "/watchlist").kind, "none");
+    assert.equal(recordVisit([], "/watchlist").kind, "none", "first page of the tab keeps the browser's scroll");
   });
 
   it("ficha → relacionada → atrás vuelve a la primera ficha, luego al origen", () => {
