@@ -11,6 +11,7 @@ import {
   recordVisit,
   saveCurrentScroll,
   writeNavStack,
+  type NavAnchor,
   type NavEntry,
 } from "@/lib/nav-origin";
 
@@ -18,9 +19,13 @@ import {
 
 const EMPTY: NavEntry[] = [];
 const SCROLL_SAVE_MS = 150;
-const RESTORE_MAX_MS = 2500;
+const RESTORE_MAX_MS = 6000;
+/** Hold the position past the ficha unfold (420 ms) so scroll anchoring cannot drift it. */
+const RESTORE_HOLD_MS = 700;
 
 let stack: NavEntry[] | null = null;
+/** While a restore runs, clamped scroll events (content still streaming) must not overwrite the target. */
+let restoring = false;
 const listeners = new Set<() => void>();
 
 const storage = () => {
@@ -48,15 +53,41 @@ const commit = (next: NavEntry[], notify = true) => {
 
 const currentHref = () => `${window.location.pathname}${window.location.search}`;
 
+const ANCHOR_ATTRS = ["data-nav-anchor", "data-ficha"] as const;
+const HEADER_CLEARANCE = 64;
+
+/** First row under the sticky header that names itself (Quiero ver rows: `data-ficha`). */
+const findAnchor = (): NavAnchor | null => {
+  const nodes = document.querySelectorAll<HTMLElement>(ANCHOR_ATTRS.map((attr) => `[${attr}]`).join(","));
+  for (const node of nodes) {
+    const rect = node.getBoundingClientRect();
+    if (rect.bottom <= HEADER_CLEARANCE || rect.height === 0) {
+      continue;
+    }
+    const attr = ANCHOR_ATTRS.find((name) => node.hasAttribute(name))!;
+    return { selector: `[${attr}="${CSS.escape(node.getAttribute(attr) ?? "")}"]`, offset: rect.top };
+  }
+  return null;
+};
+
 /** Keeps forcing the saved scroll while streamed content grows; any user input wins. */
-const restoreScroll = (y: number) => {
-  if (y <= 0) {
+const restoreScroll = (entry: NavEntry) => {
+  const y = entry.scrollY ?? 0;
+  const anchor = entry.anchor;
+  if (y <= 0 && !anchor) {
     return;
   }
+  // The remembered row back at its old distance from the top; the raw scroll when it is gone.
+  const target = () => {
+    const node = anchor ? document.querySelector(anchor.selector) : null;
+    return node ? window.scrollY + node.getBoundingClientRect().top - anchor!.offset : y;
+  };
   let stopped = false;
+  restoring = true;
   const events = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
   const stop = () => {
     stopped = true;
+    restoring = false;
     for (const event of events) {
       window.removeEventListener(event, stop);
     }
@@ -69,14 +100,27 @@ const restoreScroll = (y: number) => {
     if (stopped) {
       return;
     }
-    window.scrollTo(0, y);
-    if (Math.abs(window.scrollY - y) < 2 || performance.now() - started > RESTORE_MAX_MS) {
+    const goal = Math.max(0, target());
+    window.scrollTo(0, goal);
+    const elapsed = performance.now() - started;
+    if ((Math.abs(window.scrollY - goal) < 2 && elapsed > RESTORE_HOLD_MS) || elapsed > RESTORE_MAX_MS) {
       stop();
       return;
     }
     window.requestAnimationFrame(tick);
   };
   window.requestAnimationFrame(tick);
+};
+
+let reloadChecked = false;
+/** True only for the first visit of a page load that was a reload. */
+const isReload = () => {
+  if (reloadChecked) {
+    return false;
+  }
+  reloadChecked = true;
+  const entry = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+  return entry?.type === "reload";
 };
 
 /** Record the current location once (tracker and page labels can race; first one wins). */
@@ -86,8 +130,13 @@ const visitCurrent = () => {
   if (JSON.stringify(next) !== JSON.stringify(stack)) {
     commit(next);
   }
-  if (restored?.scrollY) {
-    restoreScroll(restored.scrollY);
+  const reloaded = kind === "none" && isReload();
+  const current = next.at(-1);
+  if (restored) {
+    restoreScroll(restored);
+  } else if (reloaded && current) {
+    // A reload keeps the entry; the browser alone cannot restore a list that streams in later.
+    restoreScroll(current);
   } else if (kind === "push") {
     // A new page starts at the top. Next skips its own scroll when the
     // loading skeleton of a short page already sits in the clamped viewport.
@@ -117,10 +166,15 @@ export const NavOriginTracker = () => {
     let timer: number | null = null;
     const save = () => {
       timer = null;
+      if (restoring) {
+        return;
+      }
       // A sheet locks the page (overflow hidden on <html>) and scrollY reads 0: keep the last real value.
       const locked = document.documentElement.style.overflow === "hidden";
-      const scrollY = locked ? (load().at(-1)?.scrollY ?? window.scrollY) : window.scrollY;
-      commit(saveCurrentScroll(load(), currentHref(), scrollY), false);
+      const top = load().at(-1);
+      const scrollY = locked ? (top?.scrollY ?? window.scrollY) : window.scrollY;
+      const anchor = locked ? top?.anchor : findAnchor();
+      commit(saveCurrentScroll(load(), currentHref(), scrollY, anchor), false);
     };
     const onScroll = () => {
       timer ??= window.setTimeout(save, SCROLL_SAVE_MS);

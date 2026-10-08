@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useSyncExternalStore, type MouseEvent } from "react";
+import { useState, useSyncExternalStore, type MouseEvent } from "react";
 import { useNavOrigin } from "@/components/NavOriginTracker";
 import { cn } from "@/lib/cn";
 import { HOME_ENTRY } from "@/lib/nav-origin";
@@ -16,15 +16,27 @@ type BackButtonProps = {
   hideWithoutOrigin?: boolean;
 };
 
-const subscribeNever = () => () => {};
+/** Notifies once on subscribe, so React re-renders after hydration (see useMountedNow). */
+const createHydratedStore = () => {
+  let hydrated = false;
+  return {
+    subscribe(listener: () => void) {
+      if (!hydrated) {
+        hydrated = true;
+        listener();
+      }
+      return () => {};
+    },
+    getSnapshot: () => hydrated,
+    getServerSnapshot: () => false,
+  };
+};
 
 /** False in the server render and during hydration: the origin lives in sessionStorage. */
-const useHydrated = () =>
-  useSyncExternalStore(
-    subscribeNever,
-    () => true,
-    () => false,
-  );
+const useHydrated = () => {
+  const [store] = useState(createHydratedStore);
+  return useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
+};
 
 /**
  * «‹ Hoy · Terror»: back to the exact page this one was opened from. Same

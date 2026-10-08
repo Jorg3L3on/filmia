@@ -9,11 +9,16 @@
  * - anything else → push.
  */
 
+/** The first visible row when the user left (`[data-ficha="…"]`) and its distance from the top. */
+export type NavAnchor = { selector: string; offset: number };
+
 export type NavEntry = {
   href: string;
   label: string;
   /** Window scroll when the user left the page; restored on the way back. */
   scrollY?: number;
+  /** Preferred over scrollY: rows above may grow after mount (hooks, expanded rows). */
+  anchor?: NavAnchor;
 };
 
 export const NAV_STACK_KEY = "filmia.nav-origin";
@@ -107,15 +112,24 @@ export const labelCurrent = (stack: readonly NavEntry[], href: string, label: st
  * which Next does not report to `useSearchParams` (Buscar's chip), so the
  * location is read here rather than trusted from the last route change.
  */
-export const saveCurrentScroll = (stack: readonly NavEntry[], href: string, scrollY: number): NavEntry[] => {
+export const saveCurrentScroll = (
+  stack: readonly NavEntry[],
+  href: string,
+  scrollY: number,
+  anchor?: NavAnchor | null,
+): NavEntry[] => {
   const top = stack.at(-1);
   if (!top || pathOf(top.href) !== pathOf(href) || !Number.isFinite(scrollY) || !isTrackedHref(href)) {
     return [...stack];
   }
   const rounded = Math.max(0, Math.round(scrollY));
-  return top.scrollY === rounded && top.href === href
-    ? [...stack]
-    : [...stack.slice(0, -1), { ...top, href, scrollY: rounded }];
+  const next: NavEntry = { ...top, href, scrollY: rounded };
+  if (anchor) {
+    next.anchor = { selector: anchor.selector, offset: Math.round(anchor.offset) };
+  } else {
+    delete next.anchor;
+  }
+  return JSON.stringify(next) === JSON.stringify(top) ? [...stack] : [...stack.slice(0, -1), next];
 };
 
 /** The page the current one was opened from; null on a direct link or a fresh tab. */
@@ -139,6 +153,12 @@ export const backAction = (stack: readonly NavEntry[], historyLength: number): B
 export const backLabel = (stack: readonly NavEntry[]) =>
   truncateNavLabel(navOrigin(stack)?.label ?? HOME_ENTRY.label);
 
+const isAnchor = (value: unknown): value is NavAnchor =>
+  typeof value === "object" &&
+  value !== null &&
+  typeof (value as NavAnchor).selector === "string" &&
+  typeof (value as NavAnchor).offset === "number";
+
 const isEntry = (value: unknown): value is NavEntry => {
   if (typeof value !== "object" || value === null) {
     return false;
@@ -148,7 +168,8 @@ const isEntry = (value: unknown): value is NavEntry => {
     typeof entry.href === "string" &&
     entry.href.startsWith("/") &&
     typeof entry.label === "string" &&
-    (entry.scrollY === undefined || typeof entry.scrollY === "number")
+    (entry.scrollY === undefined || typeof entry.scrollY === "number") &&
+    (entry.anchor === undefined || isAnchor(entry.anchor))
   );
 };
 
