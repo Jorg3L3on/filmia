@@ -79,6 +79,19 @@ Direction A «Marquesina» (FIL-I5-3, canvas https://claude.ai/artifact/2rSJnRDQ
 | Plataformas | `press-scale` · `--duration-hover` | Yours first (order fixed at mount), folded to 6; «Ver las 14» unfolds. |
 | Salir | `press-scale` · `--duration-hover` | Danger tokens, exit icon nudges 2 px on hover (beui Animated CTA «slide»); «Saliendo…» with a spinner. |
 
+## Buscar
+
+| Piece | Token | Notes |
+| --- | --- | --- |
+| Dock → campo (móvil, /buscar) | `--duration-morph` (380 ms) · `--ease-out` | React `<ViewTransition name="dock-shell" \| "dock-search" share="morph">`: the four tabs fold into the left disc (the tab you came from) and the center disc stretches into the glass field; the left disc does the reverse. Only the dock's own taps carry the `dock-search` transition type (`<Link transitionTypes>`), so tab-to-tab, browser back and other routes into Buscar swap without a morph and the sliding pill keeps its own motion. Reduced motion: 200 ms crossfade, no travel or scale. |
+| Campo `.dock-field` | `--duration-tab` · `--ease-out` | Focus ring grows (accent border + 3 px halo). 16 px input (no iOS zoom); ✕ clears and keeps focus; with the keyboard open the dock rides `visualViewport` (bottom = keyboard height). |
+| Disco del dock `.dock-search` | `--duration-tab` · `--ease-out` (luz) · `--duration-press` · `--spring` (press) | Center glass disc → /buscar (replaced the «+» menu). On /buscar it lights with the accent aura (`aria-current="page"`) while `.dock-indicator` fades out; elsewhere it is plain glass. Reduced motion: color/opacity only, no scale. |
+| Filas `.stagger-in` | `--duration-stagger` · 50 ms/row | `SearchResultRow`: title up to 2 lines, poster and chevron never shrink. |
+| Persona `.person-card-in` | `--duration-stagger` · `--ease-out` | Person card (photo, name, role line) and the «Ver filmografía» suggestion blur in with `genre-coverflow-title-in`; the filmography rows use `.stagger-in`. Reduced motion: no animation. |
+| Insignia de biblioteca | — | `SearchResultRow` shows a small glass disc: bookmark (En Quiero ver) or check (Vista). Static. |
+| «Dirigida por» → filmografía | `--duration-hover` · `--ease-out` (subrayado) · `--duration-press` · `--spring` (pill) | Hoy's reason pill splits into «Por qué» (spark) + the name as its own link (taller hit area, `.tonight-reason-person::after`); Quiero ver's expanded ficha links each director / creator. Subtle underline that lights on hover / focus (`personLinkClass`). Both open `/buscar?persona=<id>&rol=director`. |
+| «Ver esta noche» `.tonight-pin` | `--duration-press` · `--spring` (press) · `--duration-pop` · `--spring` (luna) | The sheet's one primary action. Pending «Reservando…»; done, the crescent fills with `.spring-pop` only right after the tap (reopening the sheet shows it full, no pop) and the toast «Ver en Hoy» stays 6 s. The sheet never closes on its own. |
+
 ## SharedPoster
 
 React `<ViewTransition name={\`poster-${id}\`} share="morph">` via `SharedPoster` on tile → ficha paths (lists, buscar, deck, calendar, rail, ranking, watchlist).

@@ -203,7 +203,7 @@ export const ListChipGroup = ({
           const href = listHref(list);
 
           return (
-            <li key={list.id} className="flex items-center gap-1">
+            <li key={list.id} className="flex min-w-0 max-w-full items-center gap-1">
               <button
                 type="button"
                 onClick={() => onToggle(list.id)}
@@ -215,7 +215,7 @@ export const ListChipGroup = ({
                     : `Añadir a ${list.name}`
                 }
                 className={cn(
-                  "press-scale tab-transition rounded-full border px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em]",
+                  "press-scale tab-transition min-w-0 max-w-full rounded-full border px-3 py-1.5 text-left text-[11px] font-medium uppercase tracking-[0.14em] [overflow-wrap:anywhere]",
                   focusRing,
                   included
                     ? "border-accent bg-accent text-ink"

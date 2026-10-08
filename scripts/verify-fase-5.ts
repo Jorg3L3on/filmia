@@ -215,9 +215,12 @@ const run = () => {
     "fieldClass must use text-base on mobile to avoid iOS zoom (JOR-218)",
   );
 
+  // Mobile searches from the dock (FIL-I3-3): the sticky row there is the chips (h-12 header);
+  // the top form is desktop only (h-14 header).
+  const buscarAdd = read("src/components/TmdbSearchAdd.tsx");
   assert(
-    buscarForm.includes("3rem") &&
-      buscarForm.includes("3.5rem") &&
+    buscarForm.includes("3.5rem") &&
+      buscarAdd.includes("top-[calc(3rem+env(safe-area-inset-top))]") &&
       !buscarForm.includes("4rem+env(safe-area-inset-top)"),
     "Buscar sticky must sit flush under SiteHeader h-12/h-14 (JOR-218)",
   );

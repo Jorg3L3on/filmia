@@ -218,7 +218,7 @@ body {
     0 0 18px -6px rgb(var(--accent-rgb) / 0.75);
 }
 
-/* Dock + segmented tabs: sliding glass pill; «+» menu pop. */
+/* Dock + segmented tabs: sliding glass pill. */
 .segment-indicator,
 .dock-indicator {
   transition:
@@ -226,20 +226,78 @@ body {
     opacity var(--duration-tab) var(--ease-out);
 }
 
-.dock-menu-pop {
-  transform-origin: 50% 100%;
-  animation: dock-menu-pop var(--duration-enter) var(--ease-out) backwards;
+/*
+ * Center Buscar disc of the dock. On /buscar it lights up (accent aura, same
+ * recipe as .liquid-glass-pill-aura) while the tab pill fades out. The press
+ * keeps its spring on `transform`; the light eases like the tabs.
+ */
+.dock-search,
+.dock-search.press-scale {
+  transition:
+    transform var(--duration-press) var(--spring),
+    background-color var(--duration-tab) var(--ease-out),
+    border-color var(--duration-tab) var(--ease-out),
+    box-shadow var(--duration-tab) var(--ease-out),
+    color var(--duration-tab) var(--ease-out),
+    opacity var(--duration-tab) var(--ease-out);
 }
 
-@keyframes dock-menu-pop {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+.dock-search[aria-current="page"] {
+  border-color: rgb(var(--accent-rgb) / 0.55);
+  background-color: rgb(var(--accent-rgb) / 0.16);
+  background-image: radial-gradient(
+    120% 140% at 50% 0%,
+    rgb(var(--accent-rgb) / 0.32),
+    transparent 70%
+  );
+  color: var(--paper);
+  box-shadow:
+    0 0 0 1px rgb(var(--accent-rgb) / 0.35),
+    0 0 22px -6px rgb(var(--accent-rgb) / 0.8),
+    var(--glass-shadow-panel);
+}
+
+/*
+ * «Ver esta noche» in Buscar's preview sheet: the one accent action, with a
+ * soft glow under it. Done, it settles into lit glass; press keeps its spring.
+ */
+/*
+ * Buscar's dock morph (FIL-I3-3): React <ViewTransition name="dock-shell" /
+ * "dock-search" share="morph"> on the dock's own taps only (transition type
+ * "dock-search"); `.morph` already gives --duration-morph · --ease-out. The
+ * Buscar field focus ring grows like the other fields.
+ */
+.dock-field {
+  transition:
+    border-color var(--duration-tab) var(--ease-out),
+    box-shadow var(--duration-tab) var(--ease-out);
+}
+
+.dock-field:focus-within {
+  border-color: rgb(var(--accent-rgb) / 0.6);
+  box-shadow:
+    0 0 0 3px rgb(var(--accent-rgb) / 0.18),
+    var(--glass-shadow-panel);
+}
+
+.tonight-pin,
+.tonight-pin.press-scale {
+  transition:
+    transform var(--duration-press) var(--spring),
+    background-color var(--duration-tab) var(--ease-out),
+    border-color var(--duration-tab) var(--ease-out),
+    box-shadow var(--duration-tab) var(--ease-out),
+    color var(--duration-tab) var(--ease-out),
+    opacity var(--duration-tab) var(--ease-out);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.28),
+    0 14px 30px -16px rgb(var(--accent-rgb) / 0.95);
+}
+
+.tonight-pin.is-done {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 0 24px -10px rgb(var(--accent-rgb) / 0.8);
 }
 
 .rail {
@@ -1275,7 +1333,7 @@ body:has(.diario-que-ver-shell) header.site-header {
   text-shadow: 0 1px 14px rgb(0 0 0 / 0.75);
 }
 
-/* Tab bar quieter while Qué ver sala is up — «+» especially ghost. */
+/* Tab bar quieter while Qué ver sala is up; the Buscar disc a touch less ghost. */
 body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] [data-dock-shell] {
   border-color: rgb(255 255 255 / 0.05);
   background-color: rgb(8 10 12 / 0.5);
@@ -1293,7 +1351,7 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] [data-dock-in
   background-color: rgb(var(--que-ver-glow, 124 156 255) / 0.16);
 }
 
-body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-nav="create"][aria-expanded="false"] {
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="search"] {
   opacity: 0.72;
 }
 
@@ -1829,6 +1887,11 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-n
   text-shadow: 0 1px 10px rgb(0 0 0 / 0.75);
 }
 
+/* Buscar: the person card and the «Ver filmografía» suggestion blur in like Hoy's title. */
+.person-card-in {
+  animation: genre-coverflow-title-in var(--duration-stagger) var(--ease-out) backwards;
+}
+
 .tonight-title-in {
   animation: genre-coverflow-title-in var(--duration-enter) var(--ease-out) backwards;
 }
@@ -1856,6 +1919,22 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-n
 .tonight-reason:hover {
   border-color: rgb(124 156 255 / 0.55);
   background: rgb(124 156 255 / 0.18);
+}
+
+/* «Dirigida por X» (FIL-I3-6): same pill, the name is its own link (with a taller hit area). */
+.tonight-reason.tonight-reason-split {
+  cursor: default;
+}
+
+.tonight-reason-person {
+  position: relative;
+  min-width: 0;
+}
+
+.tonight-reason-person::after {
+  content: "";
+  position: absolute;
+  inset: -10px -6px;
 }
 
 .tonight-chip {
@@ -2008,6 +2087,7 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-n
   .visto-stamp,
   .deck-deal .coverflow-card-face,
   .tonight-title-in,
+  .person-card-in,
   .nav-receive > :first-child {
     animation: none !important;
     transition: none;
@@ -2023,6 +2103,31 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] button[data-n
   ::view-transition-new(*),
   ::view-transition-image-pair(*) {
     animation: none !important;
+  }
+}
+
+/* Reduced motion: the dock does not travel or scale; it crossfades into the field. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(dock-shell),
+  ::view-transition-old(dock-search) {
+    animation: dock-crossfade-out var(--duration-tab) var(--ease-out) both !important;
+  }
+
+  ::view-transition-new(dock-shell),
+  ::view-transition-new(dock-search) {
+    animation: dock-crossfade-in var(--duration-tab) var(--ease-out) both !important;
+  }
+}
+
+@keyframes dock-crossfade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes dock-crossfade-in {
+  from {
+    opacity: 0;
   }
 }
 

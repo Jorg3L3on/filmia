@@ -258,9 +258,12 @@ const run = () => {
     "Buscar skeleton uses results well + route loading",
   );
   const searchResults = read("src/components/TmdbSearchResults.tsx");
+  const searchRow = read("src/components/tmdb-search/SearchResultRow.tsx");
   assert(
-    searchResults.includes("card-physics") &&
-      searchResults.includes("press-scale") &&
+    searchResults.includes("SearchResultRow") &&
+      searchRow.includes("card-physics") &&
+      searchRow.includes("press-scale") &&
+      searchRow.includes("line-clamp-2") &&
       searchResults.includes("staggerStyle") &&
       searchResults.includes("danger-well") &&
       searchResults.includes("Reintentar") &&

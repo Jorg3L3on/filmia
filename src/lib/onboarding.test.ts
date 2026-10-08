@@ -152,6 +152,7 @@ describe("tu primera noche", () => {
     posterAmbient: null,
     queueNote: null,
     overview: null,
+    leads: [],
   });
   const decks = (titles: ReturnType<typeof card>[]): TonightDecks => ({
     lenses: titles.length > 0 ? [{ slug: "para-ti", name: "Para ti", kind: "para-ti", titles }] : [],
