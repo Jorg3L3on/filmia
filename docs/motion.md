@@ -76,6 +76,21 @@ Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` 
 | «Dirigida por» → filmografía | `--duration-hover` · `--ease-out` (subrayado) · `--duration-press` · `--spring` (pill) | Hoy's reason pill splits into «Por qué» (spark) + the name as its own link (taller hit area, `.tonight-reason-person::after`); Quiero ver's expanded ficha links each director / creator. Subtle underline that lights on hover / focus (`personLinkClass`). Both open `/buscar?persona=<id>&rol=director`. |
 | «Ver esta noche» `.tonight-pin` | `--duration-press` · `--spring` (press) · `--duration-pop` · `--spring` (luna) | The sheet's one primary action. Pending «Reservando…»; done, the crescent fills with `.spring-pop` only right after the tap (reopening the sheet shows it full, no pop) and the toast «Ver en Hoy» stays 6 s. The sheet never closes on its own. |
 
+## Ficha (dirección A «Cartel», FIL-I4)
+
+| Piece | Token | Notes |
+| --- | --- | --- |
+| Póster `poster-{id}` | `--duration-morph` · `--ease-out` | The SharedPoster morph from the tile **is** its entrance: the poster gets no `.ficha-enter` of its own. |
+| Backdrop `.ficha-backdrop-a-img` | 1.2 s · `--ease-out` | Fade + scale 1.06 → 1, like La cartelera's `.ficha-backdrop`. |
+| Entrada `.ficha-enter` | `--duration-stagger` · `--ease-out` · 60 ms per `--i` | Blur Fade: meta → título → chips → sinopsis → acciones; opacity + 8 px rise + blur(6px), fill `backwards`. |
+| Sinopsis «Más» `.ficha-synopsis-text` | `--duration-morph` · `--ease-out` | `max-height` 3 lines → measured `scrollHeight`; «Menos» folds back. Bottom mask only while clamped. No «Más» when it fits. |
+| «Ver esta noche» `.ficha-tonight` | `--duration-press` · `--spring` (press) · sheen 1.6 s × 2 | Shimmer twice, 1.2 s after landing; never a loop. Pinned = aura pill, moon `spring-pop` only right after the tap. |
+| Grupo de acciones `.ficha-action` | `--duration-press` · `--spring` · `--duration-hover` colours | `press-scale` per button; Visto / Nota keep their `spring-fill` feedback. |
+| Atrás `.back-pill` | `--duration-morph` · `--ease-out` | Disc on first paint, label blurs in (`.back-pill-in`, `--duration-enter`); folds to the disc while scrolling down, back on the way up. |
+| Hojas (Visto, Nota) | `.sheet-rise` | Same sheets as before; never spring. |
+
+Reduced motion: no entrance, no backdrop scale, no sheen; «Más» and the back pill change instantly (global rule).
+
 ## SharedPoster
 
 React `<ViewTransition name={\`poster-${id}\`} share="morph">` via `SharedPoster` on tile → ficha paths (lists, buscar, deck, calendar, rail, ranking, watchlist).

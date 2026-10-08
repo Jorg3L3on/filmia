@@ -1,52 +1,70 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/Button";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { cn } from "@/lib/cn";
+import { focusRing } from "@/lib/ui";
 
 type TitleSynopsisProps = {
   text?: string | null;
 };
 
+/**
+ * Synopsis under the title (dirección A): three lines, «Más» only when it does
+ * not fit. The height opens with --duration-morph · --ease-out (Animated
+ * Collapsible) and «Menos» folds it back. No synopsis, no block.
+ */
 export const TitleSynopsis = ({ text }: TitleSynopsisProps) => {
-  const [expanded, setExpanded] = useState(false);
   const body = text?.trim() || "";
-  const empty = body.length === 0;
-  const long = body.length > 220;
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [overflows, setOverflows] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [fullHeight, setFullHeight] = useState<number | null>(null);
+  const id = useId();
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || typeof ResizeObserver === "undefined") {
+      return;
+    }
+    const measure = () => {
+      setFullHeight(node.scrollHeight);
+      if (!node.classList.contains("is-open")) {
+        setOverflows(node.scrollHeight > node.clientHeight + 1);
+      }
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [body]);
+
+  if (!body) {
+    return null;
+  }
 
   return (
-    <section className="space-y-2">
-      <h2 className="text-[11px] font-medium uppercase tracking-[0.22em] text-mist">
-        Sinopsis
-      </h2>
-      {empty ? (
-        <p className="text-sm text-mist" aria-label="Sinopsis no disponible">
-          N/A
-        </p>
-      ) : (
-        <>
-          <p
-            className={cn(
-              "max-w-2xl text-sm leading-7 text-fog",
-              !expanded && "line-clamp-5",
-            )}
-          >
-            {body}
-          </p>
-          {long ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setExpanded((current) => !current)}
-              aria-expanded={expanded}
-              className="h-auto min-h-0 px-0 text-accent hover:text-accent-hover"
-            >
-              {expanded ? "Menos" : "Más"}
-            </Button>
-          ) : null}
-        </>
-      )}
+    <section className="ficha-synopsis-a ficha-enter" aria-label="Sinopsis" style={{ "--i": 4 } as CSSProperties}>
+      <p
+        ref={ref}
+        id={id}
+        className={cn("ficha-synopsis-text", expanded && "is-open", overflows && !expanded && "is-clamped")}
+        style={expanded && fullHeight ? { maxHeight: fullHeight } : undefined}
+      >
+        {body}
+      </p>
+      {overflows ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((current) => !current)}
+          aria-expanded={expanded}
+          aria-controls={id}
+          className={cn(
+            "press-scale mt-1 inline-flex min-h-9 items-center rounded-full px-3 text-[13px] font-semibold text-accent transition-colors duration-[var(--duration-hover)] hover:text-accent-hover",
+            focusRing,
+          )}
+        >
+          {expanded ? "Menos" : "Más"}
+        </button>
+      ) : null}
     </section>
   );
 };

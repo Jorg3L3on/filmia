@@ -57,6 +57,20 @@ export const isTrackedHref = (href: string) => {
   return path.startsWith("/") && !SKIPPED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 };
 
+const TITLE_SUFFIX = " · Filmia";
+
+/**
+ * A ficha left before it hydrated still has the default «Ficha»: its
+ * document title («Obsesión · Filmia») names it just as well.
+ */
+export const labelFromDocumentTitle = (href: string, documentTitle: string) => {
+  if (!/^\/titulos\//.test(pathOf(href)) || !documentTitle.endsWith(TITLE_SUFFIX)) {
+    return null;
+  }
+  const name = documentTitle.slice(0, -TITLE_SUFFIX.length).trim();
+  return name ? name : null;
+};
+
 export const truncateNavLabel = (label: string, max = NAV_LABEL_MAX) => {
   const clean = label.replace(/\s+/g, " ").trim();
   return clean.length > max ? `${clean.slice(0, max - 1).trimEnd()}…` : clean;

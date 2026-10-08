@@ -376,10 +376,10 @@ export const AuthScreenSkeleton = ({
 
 export const TitleActionsSkeleton = () => (
   <div className="space-y-3" aria-hidden="true">
-    <ShimmerBlock className="h-14 w-full rounded-2xl" />
-    <div className="grid grid-cols-3 gap-2">
-      {Array.from({ length: 3 }, (_, index) => (
-        <ShimmerBlock key={index} className="h-16 rounded-2xl" />
+    <ShimmerBlock className="h-[3.25rem] w-full rounded-full" />
+    <div className="grid grid-cols-4 gap-1 rounded-[1.375rem] border border-white/10 p-1.5">
+      {Array.from({ length: 4 }, (_, index) => (
+        <ShimmerBlock key={index} className="h-[3.625rem] rounded-2xl" />
       ))}
     </div>
   </div>
@@ -393,20 +393,24 @@ export const FichaBodySkeleton = ({
   label = "Cargando ficha",
 }: SkeletonProps) => (
   <div className="space-y-8" aria-busy="true" aria-label={label}>
-    <div className="relative -mx-4 -mt-6 sm:-mt-8">
-      <ShimmerBlock className="h-[min(62vw,360px)] min-h-[260px] sm:h-[400px] sm:rounded-b-3xl" />
-      <div className="relative z-10 -mt-28 flex items-end gap-4 px-4 sm:-mt-32 sm:gap-6 sm:px-8">
-        <ShimmerBlock className="aspect-[2/3] w-[40vw] max-w-[188px] rounded-poster sm:w-56 sm:max-w-none" />
-        <div className="min-w-0 flex-1 space-y-3 pb-1">
-          <ShimmerBlock className="h-3 w-24 rounded-full" />
-          <ShimmerBlock className="h-10 w-64 max-w-full rounded-xl" />
-          <ShimmerBlock className="h-4 w-40 rounded-full" />
+    <div className="ficha-head">
+      <div className="ficha-poster-a">
+        <ShimmerBlock className="aspect-[2/3] w-[42vw] max-w-[168px] rounded-poster sm:w-[280px] sm:max-w-none" />
+      </div>
+      <div className="ficha-info-a">
+        <ShimmerBlock className="mx-auto h-3 w-40 rounded-full sm:mx-0" />
+        <ShimmerBlock className="mx-auto h-11 w-56 max-w-full rounded-xl sm:mx-0 sm:h-16 sm:w-96" />
+        <ShimmerBlock className="mx-auto h-7 w-44 rounded-full sm:mx-0" />
+      </div>
+      <div className="ficha-body-a space-y-4">
+        <div className="space-y-2">
+          <ShimmerBlock className="h-3.5 w-full rounded-full" />
+          <ShimmerBlock className="h-3.5 w-11/12 rounded-full" />
+          <ShimmerBlock className="h-3.5 w-3/4 rounded-full" />
         </div>
+        <TitleActionsSkeleton />
       </div>
     </div>
-    <div className={cn(skeletonWellClass, "space-y-3")}>
-      <TitleActionsSkeleton />
-      <TitleProvidersSkeleton />
-    </div>
+    <TitleProvidersSkeleton />
   </div>
 );

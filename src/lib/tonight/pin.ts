@@ -26,6 +26,9 @@ export const findPinnedTitleId = (events: readonly TonightEvent[], now: Date): s
   return cancelled ? null : pin.titleId;
 };
 
+/** `PickEvent.lens` for a pin made from a ficha. */
+export const FICHA_PIN_LENS = "ficha";
+
 /** `PickEvent.lens` for a pin made from Buscar's preview sheet. */
 export const SEARCH_PIN_LENS = "buscar";
 

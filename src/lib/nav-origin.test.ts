@@ -9,6 +9,7 @@ import {
   deckIndexOf,
   defaultNavLabel,
   labelCurrent,
+  labelFromDocumentTitle,
   navOrigin,
   parseDeckCard,
   readNavStack,
@@ -119,6 +120,12 @@ describe("nav-origin/labels", () => {
     assert.equal(labelCurrent(stack, "/?lente=terror&carta=x", "Hoy · Terror")[0].label, "Hoy · Terror");
     assert.deepEqual(labelCurrent(stack, "/titulos/a", "Obsesión"), stack);
     assert.deepEqual(labelCurrent(stack, "/", "  "), stack);
+  });
+
+  it("a ficha left before hydrating is named from its document title", () => {
+    assert.equal(labelFromDocumentTitle("/titulos/a", "Devastación · Filmia"), "Devastación");
+    assert.equal(labelFromDocumentTitle("/titulos/a", "Filmia"), null);
+    assert.equal(labelFromDocumentTitle("/listas/x", "comedia · Filmia"), null, "lists name themselves «Listas · …»");
   });
 
   it("truncates long labels", () => {

@@ -13,6 +13,9 @@ export const isAuthChromePath = (pathname: string) => {
   );
 };
 
+/** The ficha is immersive on mobile (FIL-I4, dirección A): no global header, the back pill floats on the backdrop. */
+export const isImmersiveFichaPath = (pathname: string) => /^\/titulos\/[^/]+\/?$/.test(pathOnly(pathname));
+
 export const isListasHubPath = (pathname: string) => {
   const path = pathOnly(pathname);
   return path === "/listas" || path.startsWith("/listas/");

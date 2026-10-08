@@ -16,6 +16,9 @@ import {
   getUserStreamingPlatforms,
 } from "@/lib/queries";
 import { FichaVisit } from "@/components/FichaVisit";
+import { FichaTopBar } from "@/components/ficha/FichaTopBar";
+import { requireUserId } from "@/lib/session";
+import { getPinnedTonightTitleId } from "@/lib/tonight-store";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { resolveTitleExtras, storedTitleExtras } from "@/lib/title-extras";
 import { resolveTitlePeople } from "@/lib/title-people";
@@ -27,6 +30,7 @@ import {
   TitleHeroFallback,
   TitleProvidersBlock,
   TitleRelatedBlock,
+  TitleCreditsBlock,
   TitleSynopsisBlock,
   isSeriesTitle,
 } from "./title-sections";
@@ -103,6 +107,9 @@ const TitleDetail = async ({
   const listsPromise = getAssignableLists();
   const platformsPromise = getUserStreamingPlatforms();
   const providersPromise = getWatchProvidersForTitle(title);
+  const pinnedPromise = title.watchedAt
+    ? Promise.resolve(null)
+    : requireUserId().then((userId) => getPinnedTonightTitleId(userId));
   const relatedPromise = getRelatedTitles(
     title.id,
     parseStoredTmdbGenres(title.tmdbGenres).map((genre) => genre.id),
@@ -111,16 +118,21 @@ const TitleDetail = async ({
   return (
     <article className="space-y-8">
       <FichaVisit titleId={title.id} name={title.name} />
-      <Suspense fallback={<TitleHeroFallback title={title} extras={storedTitleExtras(title)} />}>
-        <TitleHeroBlock title={title} extrasPromise={extrasPromise} />
-      </Suspense>
-
-      <Suspense fallback={<TitleActionsSkeleton />}>
-        <TitleActionsBlock
-          title={title}
-          listsPromise={listsPromise}
-        />
-      </Suspense>
+      {/* Dirección A «Cartel»: hero, synopsis and actions share one grid (poster left on desktop). */}
+      <section className="ficha-head" aria-label={title.name}>
+        <FichaTopBar />
+        <Suspense fallback={<TitleHeroFallback title={title} extras={storedTitleExtras(title)} />}>
+          <TitleHeroBlock title={title} extrasPromise={extrasPromise} />
+        </Suspense>
+        <div className="ficha-body-a space-y-4">
+          <Suspense fallback={null}>
+            <TitleSynopsisBlock storedOverview={title.overview} extrasPromise={extrasPromise} />
+          </Suspense>
+          <Suspense fallback={<TitleActionsSkeleton />}>
+            <TitleActionsBlock title={title} listsPromise={listsPromise} pinnedPromise={pinnedPromise} />
+          </Suspense>
+        </div>
+      </section>
 
       <Suspense fallback={<TitleProvidersSkeleton />}>
         <TitleProvidersBlock
@@ -130,12 +142,7 @@ const TitleDetail = async ({
       </Suspense>
 
       <Suspense fallback={null}>
-        <TitleSynopsisBlock
-          storedOverview={title.overview}
-          extrasPromise={extrasPromise}
-          peoplePromise={peoplePromise}
-          kind={title.kind}
-        />
+        <TitleCreditsBlock peoplePromise={peoplePromise} kind={title.kind} />
       </Suspense>
 
       {isSeriesTitle(title) ? (

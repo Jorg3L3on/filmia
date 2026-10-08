@@ -5,6 +5,8 @@ import { useEffect, useSyncExternalStore } from "react";
 import {
   backAction,
   backLabel,
+  defaultNavLabel,
+  labelFromDocumentTitle,
   labelCurrent,
   navOrigin,
   readNavStack,
@@ -174,7 +176,13 @@ export const NavOriginTracker = () => {
       const top = load().at(-1);
       const scrollY = locked ? (top?.scrollY ?? window.scrollY) : window.scrollY;
       const anchor = locked ? top?.anchor : findAnchor();
-      commit(saveCurrentScroll(load(), currentHref(), scrollY, anchor), false);
+      const href = currentHref();
+      let next = saveCurrentScroll(load(), href, scrollY, anchor);
+      const titled = top && top.label === defaultNavLabel(top.href) ? labelFromDocumentTitle(href, document.title) : null;
+      if (titled) {
+        next = labelCurrent(next, href, titled);
+      }
+      commit(next, false);
     };
     const onScroll = () => {
       timer ??= window.setTimeout(save, SCROLL_SAVE_MS);

@@ -14,6 +14,8 @@ type BackButtonProps = {
   compact?: boolean;
   /** Hide entirely when the page was not opened from another Filmia page (Buscar, F6). */
   hideWithoutOrigin?: boolean;
+  /** Folded to the disc while scrolling down (ficha); the label slides back on the way up. */
+  collapsed?: boolean;
 };
 
 /** Notifies once on subscribe, so React re-renders after hydration (see useMountedNow). */
@@ -43,7 +45,12 @@ const useHydrated = () => {
  * result as the browser / iOS edge-swipe back when the origin is the previous
  * history entry; a direct link or a cold PWA start pushes the origin, or Hoy.
  */
-export const BackButton = ({ className, compact = false, hideWithoutOrigin = false }: BackButtonProps) => {
+export const BackButton = ({
+  className,
+  compact = false,
+  hideWithoutOrigin = false,
+  collapsed = false,
+}: BackButtonProps) => {
   const router = useRouter();
   const hydrated = useHydrated();
   const { origin, label, action } = useNavOrigin();
@@ -76,7 +83,9 @@ export const BackButton = ({ className, compact = false, hideWithoutOrigin = fal
       aria-label={hydrated ? `Volver a ${label}` : "Volver"}
       className={cn(
         glassIconClass,
-        showLabel ? "back-pill-in h-10 max-w-[min(15rem,60vw)] gap-0.5 pl-1.5 pr-4 text-sm font-semibold" : "size-10",
+        showLabel
+          ? cn("back-pill back-pill-in h-10 max-w-[min(15rem,60vw)] text-sm font-semibold", collapsed && "is-collapsed")
+          : "size-10",
         className,
       )}
     >
@@ -92,7 +101,11 @@ export const BackButton = ({ className, compact = false, hideWithoutOrigin = fal
       >
         <path d="M15 18l-6-6 6-6" />
       </svg>
-      {showLabel ? <span className="truncate">{label}</span> : null}
+      {showLabel ? (
+        <span className="back-pill-label truncate" aria-hidden={collapsed || undefined}>
+          {label}
+        </span>
+      ) : null}
     </Link>
   );
 };

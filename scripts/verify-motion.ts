@@ -10,8 +10,7 @@ const assert = (condition: unknown, message: string) => {
 const root = process.cwd();
 const read = (file: string) => readFileSync(path.join(root, file), "utf8");
 
-const actionRow = read("src/components/TitleActionRow.tsx");
-const saveCta = read("src/components/TitleSaveCta.tsx");
+const fichaActions = read("src/components/TitleFichaActions.tsx");
 const sheet = read("src/components/Sheet.tsx");
 const css = read("src/app/globals.css");
 const ui = read("src/lib/ui.ts");
@@ -34,24 +33,21 @@ const posterStack = read("src/components/PosterStack.tsx");
 const listasPage = read("src/app/listas/page.tsx");
 
 assert(
-  actionRow.includes("MarkWatchedSheet"),
+  fichaActions.includes("MarkWatchedSheet"),
   "Ficha mark-seen uses the deck eye sheet",
 );
 assert(
-  !actionRow.includes("Quiero ver"),
-  "TitleActionRow must not duplicate Quiero ver (primary lives on TitleSaveCta)",
+  fichaActions.includes("grid-cols-4") &&
+    ["Quiero ver", "Vi esto", "Nota", "Lista"].every((label) => fichaActions.includes(label)),
+  "Ficha action group is four actions (Quiero ver · Vi esto · Nota · Lista), dirección A",
 );
 assert(
-  actionRow.includes("grid-cols-3"),
-  "TitleActionRow chip row is three actions (Visto · Nota · Lista)",
+  fichaActions.includes("useStickyOptimistic") && fichaActions.includes("addToWatchlistById"),
+  "Ficha keeps the optimistic Quiero ver toggle",
 );
 assert(
-  saveCta.includes("useStickyOptimistic"),
-  "TitleSaveCta keeps the optimistic watchlist toggle",
-);
-assert(
-  saveCta.includes("En Quiero ver") && saveCta.includes("addToWatchlistById"),
-  "TitleSaveCta remains the unique Quiero ver control",
+  fichaActions.includes("pinTonightFromFicha") && fichaActions.includes("tonight-pin"),
+  "«Ver esta noche» is the ficha's one primary and pins through pinTonightFromFicha",
 );
 
 assert(
