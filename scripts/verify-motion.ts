@@ -225,6 +225,24 @@ assert(
   );
   assert(topForm.includes("hidden") && topForm.includes("sm:block"), "One field on mobile: the top form is desktop only");
 }
+{
+  const footer = read("src/components/tonight/TonightFooter.tsx");
+  const credits = read("src/components/watchlist/CreditsLine.tsx");
+  assert(
+    footer.includes("tonight-reason-split") &&
+      footer.includes("reasonPerson(") &&
+      footer.includes("buildPersonSearchHref") &&
+      (() => {
+        const split = footer.indexOf("tonight-reason-split");
+        return footer.indexOf("</button>", split) < footer.indexOf("<Link", split);
+      })(),
+    "Hoy «Dirigida por X»: X is a sibling link to Buscar (never a link inside the «Por qué» button)",
+  );
+  assert(
+    credits.includes("buildPersonSearchHref") && credits.includes("stopPropagation") && motionDoc.includes("«Dirigida por»"),
+    "Quiero ver credits: each director links to the filmography without reaching the ficha's handlers; documented",
+  );
+}
 assert(
   css.includes("@keyframes sheet-fall") && css.includes(".sheet-overlay-out") && sheet.includes("sheet-fall"),
   "Sheets need an exit animation (sheet-fall + overlay fade) before unmounting",

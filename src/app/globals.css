@@ -1921,6 +1921,22 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   background: rgb(124 156 255 / 0.18);
 }
 
+/* «Dirigida por X» (FIL-I3-6): same pill, the name is its own link (with a taller hit area). */
+.tonight-reason.tonight-reason-split {
+  cursor: default;
+}
+
+.tonight-reason-person {
+  position: relative;
+  min-width: 0;
+}
+
+.tonight-reason-person::after {
+  content: "";
+  position: absolute;
+  inset: -10px -6px;
+}
+
 .tonight-chip {
   display: inline-flex;
   align-items: center;

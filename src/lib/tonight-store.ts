@@ -71,6 +71,8 @@ export type TonightCard = CoverflowTitle & {
   posterAmbient: string | null;
   queueNote: string | null;
   overview: string | null;
+  /** Directors / creators with their TMDB ids («Dirigida por» links to Buscar). */
+  leads: TonightPerson[];
 };
 
 export type TonightLensView = {
@@ -358,6 +360,7 @@ const toCard = (
   posterAmbient: row.posterAmbient,
   queueNote: queueEntryOf(row)?.queueNote ?? null,
   overview: row.overview,
+  leads: parseStoredPeople(row.tmdbPeople).filter((person) => person.role !== "cast"),
 });
 
 /**
@@ -441,6 +444,7 @@ export const parseReasons = (value: unknown): TonightReason[] =>
                 detail: typeof item.detail === "string" ? item.detail : undefined,
                 weight: Number(item.weight) || 0,
                 personal: Boolean(item.personal),
+                ...(Number.isInteger(item.personId) ? { personId: Number(item.personId) } : {}),
               },
             ]
           : [],

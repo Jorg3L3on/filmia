@@ -173,3 +173,9 @@ export const sheetPanelClass = (className?: string) =>
     "glass-panel glass-sheet liquid-glass relative z-10 mx-1.5 mb-1.5 flex w-[calc(100%-0.75rem)] max-w-lg max-h-[min(92dvh,calc(100dvh-env(safe-area-inset-top)-0.75rem-var(--keyboard-inset,0px)))] flex-col overflow-hidden rounded-sheet border pb-[max(1rem,env(safe-area-inset-bottom))] sheet-rise sm:mx-0 sm:w-full",
     className,
   );
+
+/** «Dirigida por X»: X links to their filmography in Buscar (Hoy, Quiero ver). */
+export const personLinkClass = cn(
+  "rounded-sm underline decoration-current/25 decoration-1 underline-offset-[3px] transition-[color,text-decoration-color] duration-[var(--duration-hover)] ease-[var(--ease-out)] hover:text-paper hover:decoration-accent focus-visible:decoration-accent",
+  focusRing,
+);

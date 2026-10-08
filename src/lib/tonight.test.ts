@@ -340,6 +340,32 @@ describe("tonight/pin", () => {
   });
 });
 
+describe("taste_person reason", () => {
+  it("carries the director's TMDB id so Hoy can link «Dirigida por» to the filmography", () => {
+    const villeneuve = { id: 525, name: "Denis Villeneuve", role: "director" as const };
+    const titles = [
+      title("arrival", { genres: [SCIFI], people: [villeneuve], watchedAt: new Date(NOW.getTime() - 20 * DAY), rating: 9 }),
+      title("sicario", { genres: [DRAMA], people: [villeneuve], watchedAt: new Date(NOW.getTime() - 40 * DAY), rating: 8 }),
+      title("comedy", { genres: [COMEDY], watchedAt: new Date(NOW.getTime() - 10 * DAY), rating: 3 }),
+      title("bladerunner", { genres: [SCIFI, DRAMA], people: [villeneuve], runtimeMinutes: 160, imdbRating: 8 }),
+    ];
+    const result = computeTonight({
+      titles,
+      queue: [queued("bladerunner", 0)],
+      events: [],
+      userPlatforms: ["NETFLIX"],
+      nightEnds: NIGHT,
+      now: NOW,
+    });
+    const reason = result.lenses
+      .flatMap((lens) => lens.picks)
+      .find((pick) => pick.titleId === "bladerunner")
+      ?.reasons.find((item) => item.kind === "taste_person");
+    assert.equal(reason?.text, "Dirigida por Denis Villeneuve");
+    assert.equal(reason?.personId, 525);
+  });
+});
+
 describe("mmrSelect", () => {
   it("caps a primary genre at two cards while there are alternatives", () => {
     const make = (id: string, g: { id: number; name: string }, score: number) => {

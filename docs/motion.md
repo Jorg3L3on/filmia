@@ -73,6 +73,7 @@ Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` 
 | Filas `.stagger-in` | `--duration-stagger` · 50 ms/row | `SearchResultRow`: title up to 2 lines, poster and chevron never shrink. |
 | Persona `.person-card-in` | `--duration-stagger` · `--ease-out` | Person card (photo, name, role line) and the «Ver filmografía» suggestion blur in with `genre-coverflow-title-in`; the filmography rows use `.stagger-in`. Reduced motion: no animation. |
 | Insignia de biblioteca | — | `SearchResultRow` shows a small glass disc: bookmark (En Quiero ver) or check (Vista). Static. |
+| «Dirigida por» → filmografía | `--duration-hover` · `--ease-out` (subrayado) · `--duration-press` · `--spring` (pill) | Hoy's reason pill splits into «Por qué» (spark) + the name as its own link (taller hit area, `.tonight-reason-person::after`); Quiero ver's expanded ficha links each director / creator. Subtle underline that lights on hover / focus (`personLinkClass`). Both open `/buscar?persona=<id>&rol=director`. |
 | «Ver esta noche» `.tonight-pin` | `--duration-press` · `--spring` (press) · `--duration-pop` · `--spring` (luna) | The sheet's one primary action. Pending «Reservando…»; done, the crescent fills with `.spring-pop` only right after the tap (reopening the sheet shows it full, no pop) and the toast «Ver en Hoy» stays 6 s. The sheet never closes on its own. |
 
 ## SharedPoster
