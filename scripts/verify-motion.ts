@@ -160,7 +160,6 @@ assert(
 );
 
 // iOS PWA audit, step 1 — sheets, menus and the tab bar.
-const createMenu = read("src/components/BottomNavCreate.tsx");
 const zIndex = (name: string) => Number(new RegExp(`--z-index-${name}:\\s*(\\d+)`).exec(css)?.[1] ?? NaN);
 assert(
   zIndex("sheet-preview") > 50 && zIndex("sheet") > 50 && zIndex("sheet-top") > zIndex("sheet"),
@@ -170,7 +169,7 @@ assert(
   /portal = true/.test(sheet) && !/default: "z-50"/.test(ui),
   "Sheets portal to <body> by default and the default layer is not z-50",
 );
-const enterAnimations = ["sheet-rise", "stagger-enter", "fade-up", "toast-in", "dock-menu-pop", "deck-deal"];
+const enterAnimations = ["sheet-rise", "stagger-enter", "fade-up", "toast-in", "deck-deal"];
 for (const name of enterAnimations) {
   assert(
     !new RegExp(`animation: ${name} [^;]* both;`).test(css),
@@ -178,8 +177,10 @@ for (const name of enterAnimations) {
   );
 }
 assert(
-  !/@keyframes dock-menu-pop \{[^@]*translate\(-50%/.test(css) && createMenu.includes("-translate-x-1/2"),
-  "«+» menu: centre with the translate utility only; keyframes must not add a second -50%",
+  !css.includes("dock-menu-pop") &&
+    /\.dock-search\.press-scale \{[^}]*--duration-press\) var\(--spring\)[^}]*--duration-tab\) var\(--ease-out\)/.test(css) &&
+    css.includes('.dock-search[aria-current="page"]'),
+  "Dock Buscar disc: lights on /buscar with --duration-tab · --ease-out; the «+» menu pop is gone",
 );
 assert(
   css.includes("@keyframes sheet-fall") && css.includes(".sheet-overlay-out") && sheet.includes("sheet-fall"),
@@ -202,5 +203,5 @@ console.log(
   "✓ Fase 2 Artist lock: tokens, sheet-rise, SharedPoster, stagger, tabs, toast, docs",
 );
 console.log(
-  "✓ iOS audit step 1: sheet layers above tab bar, exit + drag tracking, focus, keyboard lift, menu centring",
+  "✓ iOS audit step 1: sheet layers above tab bar, exit + drag tracking, focus, keyboard lift, dock Buscar disc",
 );

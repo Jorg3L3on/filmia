@@ -3,16 +3,20 @@
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import { ActiveNavLink } from "@/components/ActiveNavLink";
-import { BottomNavCreate } from "@/components/BottomNavCreate";
 import { BottomNavShell } from "@/components/BottomNavShell";
 import { NavIcon } from "@/components/NavIcon";
 import { cn } from "@/lib/cn";
-import { isMobileNavCurrent, mobileNavCreateSlot, mobileNavItems } from "@/lib/nav";
-import { focusRing, glassPillClass } from "@/lib/ui";
+import {
+  isMobileNavCurrent,
+  mobileNavItems,
+  mobileNavSearch,
+  mobileNavSearchSlot,
+} from "@/lib/nav";
+import { focusRing, glassIconClass, glassPillClass } from "@/lib/ui";
 
-/** Grid column for a tab: tabs flow around the center «+» slot. */
+/** Grid column for a tab: tabs flow around the center Buscar disc. */
 const columnFor = (index: number) =>
-  index < mobileNavCreateSlot ? index : index + 1;
+  index < mobileNavSearchSlot ? index : index + 1;
 
 const subscribeNoop = () => () => {};
 const todayDay = () => new Date().getDate();
@@ -21,7 +25,10 @@ const noDay = () => null;
 /** Day number for the Hoy glyph; null during SSR/hydration so markup matches. */
 const useTodayDay = () => useSyncExternalStore(subscribeNoop, todayDay, noDay);
 
-/** Floating glass dock: four tabs + center «+», sliding glass pill on the active tab. */
+/**
+ * Floating glass dock: four tabs + center Buscar disc, sliding glass pill on
+ * the active tab. On /buscar no tab matches, so the pill fades and the disc lights.
+ */
 export const BottomNav = () => {
   const pathname = usePathname();
   const day = useTodayDay();
@@ -78,13 +85,21 @@ export const BottomNav = () => {
             </ActiveNavLink>
           );
 
-          if (index !== mobileNavCreateSlot) {
+          if (index !== mobileNavSearchSlot) {
             return tab;
           }
 
           return [
-            <div key="create" className="relative z-10 flex justify-center">
-              <BottomNavCreate />
+            <div key="search" className="relative z-10 flex justify-center">
+              <ActiveNavLink
+                href={mobileNavSearch.href}
+                match={isMobileNavCurrent}
+                aria-label={mobileNavSearch.label}
+                data-nav={mobileNavSearch.icon}
+                className={cn(glassIconClass, "dock-search size-12")}
+              >
+                <NavIcon name={mobileNavSearch.icon} />
+              </ActiveNavLink>
             </div>,
             tab,
           ];

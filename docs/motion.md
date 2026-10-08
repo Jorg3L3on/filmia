@@ -63,6 +63,13 @@ Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` 
 | Tambor `.hour-tick` / luna `.bedtime-moon` | `--duration-tab` / `--duration-morph` · `--ease-out` | Scroll-snap drum; moon rises with `--elev`. |
 | Payoff `.payoff-card-in` | `--duration-stagger` · `--ease-out` | Same blur-in as `genre-coverflow-title-in`. |
 
+## Buscar
+
+| Piece | Token | Notes |
+| --- | --- | --- |
+| Disco del dock `.dock-search` | `--duration-tab` · `--ease-out` (luz) · `--duration-press` · `--spring` (press) | Center glass disc → /buscar (replaced the «+» menu). On /buscar it lights with the accent aura (`aria-current="page"`) while `.dock-indicator` fades out; elsewhere it is plain glass. Reduced motion: color/opacity only, no scale. |
+| Filas `.stagger-in` | `--duration-stagger` · 50 ms/row | `SearchResultRow`: title up to 2 lines, poster and chevron never shrink. |
+
 ## SharedPoster
 
 React `<ViewTransition name={\`poster-${id}\`} share="morph">` via `SharedPoster` on tile → ficha paths (lists, buscar, deck, calendar, rail, ranking, watchlist).
