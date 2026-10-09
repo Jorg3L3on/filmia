@@ -1385,6 +1385,18 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   animation: coverflow-idle-breath 5.6s ease-in-out infinite;
 }
 
+/* Stillness: ~12 s after the last touch the sala holds its frame (useDeckStillness).
+   The breaths run on blurred, blended, full-viewport layers, so every frame is a full
+   re-composite — a phone left on Hoy heats up. Paused in place, nothing jumps; any
+   touch, key or hero change resumes. */
+.diario-que-ver-deck[data-still] .que-ver-atmosphere-grade,
+.diario-que-ver-deck[data-still] .que-ver-atmosphere-haze,
+.diario-que-ver-deck[data-still] .que-ver-atmosphere-grain,
+.diario-que-ver-deck[data-still] .que-ver-atmosphere-flicker,
+.diario-que-ver-deck[data-still] .coverflow-card.is-cinematic.is-focused .coverflow-card-face {
+  animation-play-state: paused;
+}
+
 .que-ver-deck-slide-next {
   animation: que-ver-deck-in-right 220ms var(--ease-out) both;
 }
