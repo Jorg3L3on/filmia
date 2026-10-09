@@ -38,6 +38,7 @@ Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` 
 | Vuelo `.fly-poster` → `.nav-receive` | 620 ms ease-out · 900 ms spring pulse | Poster clone flies into the Perfil tab (Web Animations); reduced motion = pulse only. |
 | Reparto `.deck-deal` | `--duration-stagger` · `--spring` · 50 ms/card | On mount and on lens change (`--deal-i` per card). |
 | Razón / título `.tonight-title-in` | `--duration-enter` · `--ease-out` | Reuses `genre-coverflow-title-in` (blur-in). |
+| Sala quieta `.diario-que-ver-deck[data-still]` | 12 s after the last touch (`useDeckStillness`) | Pauses the atmosphere breaths (grade, haze, grain, flicker) and the hero `coverflow-idle-breath` in place. They run on blurred, blended, full-viewport layers; left breathing they keep the GPU busy and heat the phone. Touch, key or hero change resumes. |
 
 ## Quiero ver (La cartelera)
 
