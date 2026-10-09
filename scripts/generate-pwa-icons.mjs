@@ -1,78 +1,82 @@
 /**
- * Build the Apple touch icon and PWA icons from public/filmia-mark.png.
- * Same treatment as MiCasa / ZigZag: the mark is the supplied artwork, this
- * script only trims, scales and plates it on a near-black square.
+ * Build the favicons, Apple touch icon and PWA icons from the two brand SVGs:
+ *   public/filmia-icon.svg  full-bleed gradient tile with the white F (home screen)
+ *   public/filmia-mark.svg  the gradient F on transparent (browser tab, in-app logo)
+ * The SVGs are the supplied artwork; this script only rasterises them.
  *
  *   npm run generate:pwa-icons
  */
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import sharp from "sharp";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const source = path.join(root, "public", "filmia-mark.png");
+const ICON = path.join(root, "public", "filmia-icon.svg");
+const MARK = path.join(root, "public", "filmia-mark.svg");
 
-/** globals.css --canvas-deep. Near-black like the sibling apps' icon plates. */
-const PLATE = { r: 0x09, g: 0x0b, b: 0x0d, alpha: 1 };
-
-/** Mark height as a fraction of the tile. Matches the optical size of the M / Z marks. */
-const MARK_RATIO = 0.58;
-/** Android maskable: keep the mark inside the 80% safe-zone circle. */
-const MASKABLE_RATIO = 0.48;
-
+/**
+ * The tile is full bleed, so iOS and Android apply their own corner mask. The F
+ * already sits inside the maskable 80% safe-zone circle, so the maskable icon is
+ * the same render.
+ */
 const OUTPUTS = [
-  { file: "public/apple-touch-icon.png", size: 180 },
-  { file: "public/icon-192.png", size: 192 },
-  { file: "public/icon-512.png", size: 512 },
-  { file: "public/icon-512-maskable.png", size: 512, maskable: true },
+  { file: "public/apple-touch-icon.png", source: ICON, size: 180 },
+  { file: "public/icon-192.png", source: ICON, size: 192 },
+  { file: "public/icon-512.png", source: ICON, size: 512 },
+  { file: "public/icon-512-maskable.png", source: ICON, size: 512 },
+  { file: "public/filmia-mark.png", source: MARK, size: 512 },
+  { file: "src/app/icon.png", source: MARK, size: 512 },
 ];
 
-/** Bounding box of visible pixels, so the scale is set by the F itself, not the PNG's padding. */
-const contentBox = async (file) => {
-  const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-  let left = info.width, top = info.height, right = -1, bottom = -1;
-  for (let y = 0; y < info.height; y++) {
-    for (let x = 0; x < info.width; x++) {
-      if (data[(y * info.width + x) * 4 + 3] > 8) {
-        if (x < left) left = x;
-        if (x > right) right = x;
-        if (y < top) top = y;
-        if (y > bottom) bottom = y;
-      }
-    }
-  }
-  return { left, top, width: right - left + 1, height: bottom - top + 1 };
+/** Sizes packed into src/app/favicon.ico. */
+const FAVICON_SIZES = [16, 32, 48];
+
+const render = async (source, size, { opaque = false } = {}) => {
+  const svg = await readFile(source);
+  // Rasterise at a density that lands exactly on `size`, so resize never upscales.
+  const { width } = await sharp(svg).metadata();
+  let image = sharp(svg, { density: (72 * size) / width }).resize(size, size);
+  if (opaque) image = image.removeAlpha();
+  return image.png({ compressionLevel: 9 }).toBuffer();
 };
 
-const renderIcon = async (box, size, { maskable = false } = {}) => {
-  const target = Math.round(size * (maskable ? MASKABLE_RATIO : MARK_RATIO));
-  const mark = await sharp(source)
-    .extract(box)
-    .resize({ width: target, height: target, fit: "inside", kernel: "lanczos3" })
-    .png()
-    .toBuffer();
-  const meta = await sharp(mark).metadata();
+/** ICO container holding PNG entries (supported by every current browser). */
+const toIco = (pngs) => {
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(0, 0);
+  header.writeUInt16LE(1, 2);
+  header.writeUInt16LE(pngs.length, 4);
 
-  return sharp({ create: { width: size, height: size, channels: 4, background: PLATE } })
-    .composite([
-      {
-        input: mark,
-        left: Math.round((size - meta.width) / 2),
-        top: Math.round((size - meta.height) / 2),
-      },
-    ])
-    .removeAlpha()
-    .png({ compressionLevel: 9 })
-    .toBuffer();
+  let offset = 6 + 16 * pngs.length;
+  const entries = pngs.map(({ size, data }) => {
+    const entry = Buffer.alloc(16);
+    entry.writeUInt8(size >= 256 ? 0 : size, 0);
+    entry.writeUInt8(size >= 256 ? 0 : size, 1);
+    entry.writeUInt16LE(1, 4);
+    entry.writeUInt16LE(32, 6);
+    entry.writeUInt32LE(data.length, 8);
+    entry.writeUInt32LE(offset, 12);
+    offset += data.length;
+    return entry;
+  });
+
+  return Buffer.concat([header, ...entries, ...pngs.map(({ data }) => data)]);
 };
 
-const box = await contentBox(source);
-for (const output of OUTPUTS) {
-  const png = await renderIcon(box, output.size, output);
-  const destination = path.join(root, output.file);
+const write = async (file, data) => {
+  const destination = path.join(root, file);
   await mkdir(path.dirname(destination), { recursive: true });
-  await writeFile(destination, png);
-  console.log(`wrote ${output.file}`);
+  await writeFile(destination, data);
+  console.log(`wrote ${file}`);
+};
+
+for (const output of OUTPUTS) {
+  await write(output.file, await render(output.source, output.size, { opaque: output.source === ICON }));
 }
+
+const favicons = await Promise.all(
+  FAVICON_SIZES.map(async (size) => ({ size, data: await render(MARK, size) })),
+);
+await write("src/app/favicon.ico", toIco(favicons));
