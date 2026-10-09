@@ -395,7 +395,7 @@ export const AuthScreenSkeleton = ({
   label = "Cargando",
 }: SkeletonProps) => (
   <div
-    className="min-h-[80vh] bg-[radial-gradient(ellipse_at_top,_rgba(124,156,255,0.22)_0%,_transparent_58%)]"
+    className="min-h-[80vh] bg-[radial-gradient(ellipse_at_top,_rgb(var(--accent-rgb)/0.22)_0%,_transparent_58%)]"
     aria-busy="true"
     aria-label={label}
   >

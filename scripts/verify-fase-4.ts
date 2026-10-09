@@ -210,8 +210,8 @@ const run = () => {
     assert(!source.includes("manifest.webmanifest"), `${file} must not add a PWA manifest`);
   }
   assert(
-    read("src/app/globals.css").includes("#7c9cff"),
-    "Accent stays #7c9cff",
+    read("src/app/globals.css").includes("--accent: #ff7a45;"),
+    "Accent stays #ff7a45 (logo orange)",
   );
   assert(
     read("src/lib/use-optimistic-action.ts").includes("useStickyOptimistic"),

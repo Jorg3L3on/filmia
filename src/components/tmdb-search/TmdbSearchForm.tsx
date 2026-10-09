@@ -42,7 +42,7 @@ export const TmdbSearchForm = ({
         value={query}
         onChange={(event) => onQueryChange(event.target.value)}
         placeholder="Interestelar, Dune, Severance…"
-        className={`${fieldClass} border-accent/40 py-3 pr-12 text-base shadow-[0_0_0_3px_rgba(124,156,255,0.18)]`}
+        className={`${fieldClass} border-accent/40 py-3 pr-12 text-base shadow-[0_0_0_3px_rgb(var(--accent-rgb)/0.18)]`}
         autoComplete="off"
         autoFocus
       />

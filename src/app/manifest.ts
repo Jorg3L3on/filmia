@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 /** Filmia canvas from globals.css --canvas (JOR-217). */
 const CANVAS = "#0e1114";
-/** globals.css --canvas-deep; same plate as the PWA icons so the splash blends into the maskable icon. */
+/** globals.css --canvas-deep. Splash background behind the gradient tile icon. */
 const PLATE = "#090b0d";
 
 export default function manifest(): MetadataRoute.Manifest {
