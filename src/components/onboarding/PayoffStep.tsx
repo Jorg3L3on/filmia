@@ -96,7 +96,7 @@ const PayoffCardView = ({ payload }: { payload: Extract<PayoffPayload, { kind: "
   const { card } = payload;
   const meta = [card.year, card.kind === "SERIES" ? TITLE_KIND_LABEL.SERIES : null, ...card.genres].filter(Boolean).join(" · ");
   const runtime = formatRuntimeShort(card.runtimeMinutes);
-  const style = { "--que-ver-glow": card.posterAmbient ?? "124 156 255" } as CSSProperties;
+  const style = { "--que-ver-glow": card.posterAmbient ?? "var(--accent-rgb)" } as CSSProperties;
   return (
     <section className="payoff-card payoff-card-in mx-auto max-w-sm space-y-4 rounded-3xl border border-white/10 bg-white/[0.05] p-4 backdrop-blur-xl" style={style} aria-label="Tu elección de esta noche">
       <div className="flex items-end gap-4">

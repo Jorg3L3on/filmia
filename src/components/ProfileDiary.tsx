@@ -95,7 +95,7 @@ export const ProfileDiary = async () => {
                     primary
                       ? "bg-well shadow-[0_8px_18px_rgba(0,0,0,0.45)]"
                       : isToday
-                        ? "border-[1.5px] border-dashed border-accent/70 bg-accent/8 text-accent shadow-[0_0_0_4px_rgba(124,156,255,0.12)]"
+                        ? "border-[1.5px] border-dashed border-accent/70 bg-accent/8 text-accent shadow-[0_0_0_4px_rgb(var(--accent-rgb)/0.12)]"
                         : "border border-line bg-well",
                   )}
                 >
