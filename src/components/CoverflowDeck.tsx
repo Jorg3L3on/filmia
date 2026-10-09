@@ -7,6 +7,7 @@ import { CoverflowIndicators } from "@/components/coverflow/CoverflowIndicators"
 import { QueVerAtmosphere } from "@/components/coverflow/QueVerAtmosphere";
 import { useCoverflowEngine } from "@/components/coverflow/useCoverflowEngine";
 import { useCoverflowLocalTitles } from "@/components/coverflow/useCoverflowLocalTitles";
+import { useDeckStillness } from "@/components/coverflow/useDeckStillness";
 import { useListCardMenu } from "@/components/coverflow/useListCardMenu";
 import { useAmbientGrade, usePosterAmbientColor } from "@/components/coverflow/usePosterAmbientColor";
 import type { CoverflowDeckProps, CoverflowTitle } from "@/components/coverflow/types";
@@ -112,6 +113,7 @@ export const CoverflowDeck = ({
   }, [cinematic]);
 
   useAmbientGrade(deckRootRef, ambient.cssRgb, cinematic);
+  const still = useDeckStillness(deckRootRef, activeTitle?.id ?? null, cinematic);
 
   useEffect(() => {
     if (titles.length === 0) {
@@ -164,6 +166,7 @@ export const CoverflowDeck = ({
         className,
       )}
       style={cinematic ? ambient.style : undefined}
+      data-still={still ? "" : undefined}
     >
       <div
         ref={containerRef}
