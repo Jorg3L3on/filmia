@@ -13,6 +13,8 @@ import {
   COVERFLOW_COAST_FRICTION,
   COVERFLOW_COAST_MIN_VELOCITY,
   COVERFLOW_DRAG_THRESHOLD,
+  COVERFLOW_SPRING_REST_OFFSET,
+  COVERFLOW_SPRING_REST_VELOCITY,
   COVERFLOW_WHEEL_SENSITIVITY,
   COVERFLOW_WHEEL_SNAP_MS,
   clampCoverflowIndex,
@@ -25,6 +27,10 @@ import {
 
 type CoverflowEngineOptions = {
   initialIndex?: number;
+  /** Lite sala: no side-card blur, far jumps cut without the fade. */
+  lite?: boolean;
+  /** Each settle / coast frame's duration (ms), for the lite pace monitor. */
+  onMotionFrame?: (frameMs: number) => void;
 };
 
 type CoverflowEngine = {
@@ -67,7 +73,9 @@ export const useCoverflowEngine = (
   cinematic = false,
   options: CoverflowEngineOptions = {},
 ): CoverflowEngine => {
-  const { initialIndex = 0 } = options;
+  const { initialIndex = 0, lite = false, onMotionFrame } = options;
+  const liteRef = useRef(lite);
+  const onMotionFrameRef = useRef(onMotionFrame);
   const startIndex = clampCoverflowIndex(
     initialIndex,
     Math.max(titlesLength - 1, 0),
@@ -149,6 +157,7 @@ export const useCoverflowEngine = (
         compact,
         moving,
         cinematicRef.current,
+        liteRef.current,
       );
     });
   };
@@ -187,12 +196,16 @@ export const useCoverflowEngine = (
       compactRef.current,
       motionModeRef.current !== "idle" || isDraggingRef.current,
       cinematicRef.current,
+      liteRef.current,
     );
   }, []);
 
   const runTick = (now: number) => {
     const ceiling = maxIndex();
     const mode = motionModeRef.current;
+    if (lastFrameRef.current != null && mode !== "drag") {
+      onMotionFrameRef.current?.(now - lastFrameRef.current);
+    }
     const dt =
       lastFrameRef.current == null
         ? 1 / 60
@@ -236,7 +249,8 @@ export const useCoverflowEngine = (
     if (motionModeRef.current === "idle") {
       const gap = displayIndexRef.current - targetIndexRef.current;
       const settled =
-        Math.abs(gap) < 0.001 && Math.abs(springVelocityRef.current) < 0.01;
+        Math.abs(gap) < COVERFLOW_SPRING_REST_OFFSET &&
+        Math.abs(springVelocityRef.current) < COVERFLOW_SPRING_REST_VELOCITY;
       if (settled || prefersCoverflowReducedMotion()) {
         displayIndexRef.current = targetIndexRef.current;
         springVelocityRef.current = 0;
@@ -325,7 +339,12 @@ export const useCoverflowEngine = (
       setRestingIndex(target);
 
       const cards = cardsRef.current;
-      if (!cards || prefersCoverflowReducedMotion() || typeof cards.animate !== "function") {
+      if (
+        !cards ||
+        liteRef.current ||
+        prefersCoverflowReducedMotion() ||
+        typeof cards.animate !== "function"
+      ) {
         cut(false);
         return;
       }
@@ -595,17 +614,19 @@ export const useCoverflowEngine = (
     cardWidthRef.current = cardWidth;
     compactRef.current = isSheet;
     cinematicRef.current = cinematic;
+    liteRef.current = lite;
     // Extra lateral room for soft L+R fan (cinematic); historial/sheet keep prior inset.
     sideRoomRef.current = Math.max(
       8,
       (stageWidth - cardWidth) / 2 - (isSheet ? 4 : cinematic ? 2 : 12),
     );
     tickRef.current = runTick;
+    onMotionFrameRef.current = onMotionFrame;
   });
 
   useLayoutEffect(() => {
     paintCards(motionModeRef.current !== "idle" || isDraggingRef.current);
-  }, [activeIndex, cardWidth, cinematic, stageWidth, titlesLength]);
+  }, [activeIndex, cardWidth, cinematic, lite, stageWidth, titlesLength]);
 
   return {
     containerRef,

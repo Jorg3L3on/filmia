@@ -12,7 +12,34 @@ type QueVerAtmosphereProps = {
   ghostOpacity?: number;
   /** Bumps to retrigger the warm light-leak streak after «Vi esto». */
   lightLeakKey?: number;
+  /** Lite sala: no ghost (see useDeckLite). */
+  lite?: boolean;
 };
+
+type GradeBlend = "soft-light" | "screen";
+
+/**
+ * A color-graded layer in both grade slots (see useAmbientGrade): the browser crossfades
+ * the slots' opacity. The blend mode sits on the slot, so a slot is exactly the old layer.
+ */
+const GradeSlots = ({ layer, blend }: { layer: string; blend: GradeBlend }) => (
+  <>
+    <div className={`que-ver-slot que-ver-slot-a is-${blend}`}>
+      <div className={layer} />
+    </div>
+    <div className={`que-ver-slot que-ver-slot-b is-${blend}`}>
+      <div className={layer} />
+    </div>
+  </>
+);
+
+/** The poster glow behind the hero, in both grade slots. */
+export const SoftGlowSlots = () => (
+  <>
+    <div className="coverflow-soft-glow que-ver-slot que-ver-slot-a" aria-hidden />
+    <div className="coverflow-soft-glow que-ver-slot que-ver-slot-b" aria-hidden />
+  </>
+);
 
 type GhostLayer = { id: number; src: string; ready: boolean; leaving: boolean };
 
@@ -70,10 +97,11 @@ export const QueVerAtmosphere = ({
   ghostPosterPath = null,
   ghostOpacity = 0,
   lightLeakKey = 0,
+  lite = false,
 }: QueVerAtmosphereProps) => {
   const reducedMotion = usePrefersReducedMotion();
   const ghostSrc = tmdbPosterUrl(ghostPosterPath, "w185");
-  const showGhost = Boolean(ghostSrc) && ghostOpacity > 0.02;
+  const showGhost = !lite && Boolean(ghostSrc) && ghostOpacity > 0.02;
   const ghost = useGhostLayers(showGhost ? ghostSrc : null);
   const ghostStrength = Math.min(0.72, Math.max(0, ghostOpacity));
 
@@ -86,10 +114,10 @@ export const QueVerAtmosphere = ({
       }
       aria-hidden
     >
-      <div className="que-ver-atmosphere-grade" />
+      <GradeSlots layer="que-ver-atmosphere-grade" blend="soft-light" />
       <div className="que-ver-atmosphere-vignette" />
-      <div className="que-ver-atmosphere-haze" />
-      <div className="que-ver-atmosphere-floor" />
+      <GradeSlots layer="que-ver-atmosphere-haze" blend="screen" />
+      <GradeSlots layer="que-ver-atmosphere-floor" blend="screen" />
       {ghost.layers.map((layer) => (
         <div
           key={layer.id}

@@ -3,9 +3,7 @@ import { describe, it } from "node:test";
 import {
   AMBIENT_FALLBACK_RGB,
   clampByte,
-  easeOutAmbient,
   formatAmbientRgb,
-  mixAmbientRgb,
   normalizePosterAmbientPath,
   parseAmbientRgb,
   sampleAmbientFromImageData,
@@ -100,25 +98,11 @@ describe("poster ambient", () => {
   });
 });
 
-describe("ambient blend", () => {
+describe("ambient rgb", () => {
   it("parses the r g b triple and rejects junk", () => {
     assert.deepEqual(parseAmbientRgb("122 146 172"), { r: 122, g: 146, b: 172 });
     assert.equal(parseAmbientRgb("122 146"), null);
     assert.equal(parseAmbientRgb("red"), null);
     assert.equal(parseAmbientRgb(null), null);
-  });
-
-  it("blends between two posters and clamps t", () => {
-    const from = { r: 0, g: 100, b: 200 };
-    const to = { r: 200, g: 100, b: 0 };
-    assert.deepEqual(mixAmbientRgb(from, to, 0.5), { r: 100, g: 100, b: 100 });
-    assert.deepEqual(mixAmbientRgb(from, to, 2), to);
-    assert.deepEqual(mixAmbientRgb(from, to, -1), from);
-  });
-
-  it("eases out from 0 to 1", () => {
-    assert.equal(easeOutAmbient(0), 0);
-    assert.equal(easeOutAmbient(1), 1);
-    assert.ok(easeOutAmbient(0.25) > 0.25);
   });
 });

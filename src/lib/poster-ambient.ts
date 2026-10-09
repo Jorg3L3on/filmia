@@ -32,19 +32,6 @@ export const parseAmbientRgb = (value: string | null | undefined): AmbientRgb | 
   return { r, g, b };
 };
 
-/** Straight blend, `t` 0 → `from`, 1 → `to`. */
-export const mixAmbientRgb = (from: AmbientRgb, to: AmbientRgb, t: number): AmbientRgb => {
-  const k = Math.min(1, Math.max(0, t));
-  return {
-    r: from.r + (to.r - from.r) * k,
-    g: from.g + (to.g - from.g) * k,
-    b: from.b + (to.b - from.b) * k,
-  };
-};
-
-/** `--ease-out` (cubic-bezier(0.22, 1, 0.36, 1)) is easeOutQuint. */
-export const easeOutAmbient = (t: number) => 1 - (1 - Math.min(1, Math.max(0, t))) ** 5;
-
 export const isAmbientFallback = (rgb: AmbientRgb) =>
   rgb.r === AMBIENT_FALLBACK_RGB.r &&
   rgb.g === AMBIENT_FALLBACK_RGB.g &&

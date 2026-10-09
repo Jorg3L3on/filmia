@@ -3,9 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import {
   AMBIENT_FALLBACK_RGB,
-  easeOutAmbient,
   formatAmbientRgb,
-  mixAmbientRgb,
   normalizePosterAmbientPath,
   parseAmbientRgb,
   sampleAmbientFromImageData,
@@ -186,82 +184,66 @@ export const usePosterAmbientColor = (
   };
 };
 
-/** How long the sala takes to blend from one poster's light to the next. */
-const GRADE_BLEND_MS = 600;
-
-const prefersReducedMotion = () =>
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+type GradeSlot = "a" | "b";
 
 /**
  * Propagate the deck's grade to the deck root, the enclosing `.diario-que-ver-shell` and
  * <html>, so the full-bleed wash can sit behind SiteHeader. No-op when not cinematic.
  *
- * `--que-ver-glow` is an unregistered "r g b" string: CSS can't interpolate it (nor the
- * gradients built from it), so a new poster used to snap the whole room. The blend runs
- * here, one rAF loop for GRADE_BLEND_MS, retargeting from wherever it is mid-swipe.
+ * The big washes are blurred, blended, full-viewport layers: repainting them is the most
+ * expensive thing the sala does, and `--que-ver-glow` can't be interpolated by CSS anyway.
+ * So they come in two slots (`.que-ver-slot-a` / `-b`, html and shell ::before / ::after).
+ * A new color goes into the hidden slot once and `html[data-que-ver-slot]` flips: the
+ * browser crossfades the slots' opacity on the compositor, with no repaint per frame.
+ * `--que-ver-glow` itself (titles, chips, rail halo: small, cheap) switches at once.
  */
 export const useAmbientGrade = (
   deckRootRef: RefObject<HTMLElement | null>,
   cssRgb: string,
   cinematic: boolean,
 ) => {
-  const shownRef = useRef<AmbientRgb | null>(null);
-  const rafRef = useRef<number | null>(null);
+  const slotRef = useRef<GradeSlot>("a");
+  const shownRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!cinematic) {
+      return;
+    }
+    const shell = deckRootRef.current?.closest(".diario-que-ver-shell") as HTMLElement | null;
+    const root = document.documentElement;
+    shell?.setAttribute("data-que-ver-grade", "live");
+    root.dataset.queVerGrade = "live";
+    root.dataset.queVerSlot = slotRef.current;
+    return () => {
+      shownRef.current = null;
+      for (const node of [shell, root]) {
+        node?.style.removeProperty("--que-ver-glow");
+        node?.style.removeProperty("--que-ver-glow-a");
+        node?.style.removeProperty("--que-ver-glow-b");
+      }
+      shell?.removeAttribute("data-que-ver-grade");
+      delete root.dataset.queVerGrade;
+      delete root.dataset.queVerSlot;
+    };
+  }, [cinematic, deckRootRef]);
+
+  useEffect(() => {
+    if (!cinematic || shownRef.current === cssRgb) {
       return;
     }
     const deckRoot = deckRootRef.current;
     const shell = deckRoot?.closest(".diario-que-ver-shell") as HTMLElement | null;
     const root = document.documentElement;
-    shell?.setAttribute("data-que-ver-grade", "live");
-    root.dataset.queVerGrade = "live";
-    return () => {
-      if (rafRef.current != null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-      shownRef.current = null;
-      shell?.style.removeProperty("--que-ver-glow");
-      shell?.removeAttribute("data-que-ver-grade");
-      root.style.removeProperty("--que-ver-glow");
-      delete root.dataset.queVerGrade;
-    };
-  }, [cinematic, deckRootRef]);
-
-  useEffect(() => {
-    if (!cinematic) {
-      return;
+    const nodes = [deckRoot, shell, root].filter((node): node is HTMLElement => node != null);
+    // First color fills the visible slot; every later one goes to the hidden slot, then flips.
+    const slot: GradeSlot =
+      shownRef.current == null ? slotRef.current : slotRef.current === "a" ? "b" : "a";
+    for (const node of nodes) {
+      node.style.setProperty(`--que-ver-glow-${slot}`, cssRgb);
+      node.style.setProperty("--que-ver-glow", cssRgb);
     }
-    const target = parseAmbientRgb(cssRgb) ?? AMBIENT_FALLBACK_RGB;
-    const deckRoot = deckRootRef.current;
-    const shell = deckRoot?.closest(".diario-que-ver-shell") as HTMLElement | null;
-    const nodes = [deckRoot, shell, document.documentElement].filter(
-      (node): node is HTMLElement => node != null,
-    );
-    const write = (rgb: AmbientRgb) => {
-      shownRef.current = rgb;
-      const value = formatAmbientRgb(rgb);
-      nodes.forEach((node) => node.style.setProperty("--que-ver-glow", value));
-    };
-
-    if (rafRef.current != null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-    const from = shownRef.current;
-    if (!from || prefersReducedMotion()) {
-      write(target);
-      return;
-    }
-
-    const start = performance.now();
-    const step = (now: number) => {
-      const t = (now - start) / GRADE_BLEND_MS;
-      write(mixAmbientRgb(from, target, easeOutAmbient(t)));
-      rafRef.current = t < 1 ? requestAnimationFrame(step) : null;
-    };
-    rafRef.current = requestAnimationFrame(step);
+    shownRef.current = cssRgb;
+    slotRef.current = slot;
+    root.dataset.queVerSlot = slot;
   }, [cinematic, cssRgb, deckRootRef]);
 };

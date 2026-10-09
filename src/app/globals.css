@@ -668,8 +668,10 @@ body {
   isolation: isolate;
 }
 
-/* Viewport full-bleed poster wash — behind transparent SiteHeader (not clipped by main). */
-html[data-que-ver-grade="live"]::before {
+/* Viewport full-bleed poster wash — behind transparent SiteHeader (not clipped by main).
+   ::before / ::after are the two grade slots (see «Grade slots» below). */
+html[data-que-ver-grade="live"]::before,
+html[data-que-ver-grade="live"]::after {
   content: "";
   pointer-events: none;
   position: fixed;
@@ -718,8 +720,9 @@ html[data-que-ver-grade="live"] body {
   background: transparent;
 }
 
-/* In-sala grade (html::before owns header bleed). Soft top so no hard plate. */
-.diario-que-ver-shell[data-que-ver-grade="live"]::before {
+/* In-sala grade (html::before owns header bleed). Soft top so no hard plate. Two slots too. */
+.diario-que-ver-shell[data-que-ver-grade="live"]::before,
+.diario-que-ver-shell[data-que-ver-grade="live"]::after {
   content: "";
   pointer-events: none;
   position: absolute;
@@ -753,7 +756,6 @@ html[data-que-ver-grade="live"] body {
     #000 100%
   );
   mix-blend-mode: screen;
-  transition: opacity var(--duration-morph) var(--ease-out);
 }
 
 .diario-que-ver-shell > * {
@@ -796,7 +798,6 @@ html[data-que-ver-grade="live"] body {
       rgb(var(--que-ver-glow, 124 156 255) / 0.12) 48%,
       transparent 74%
     );
-  mix-blend-mode: soft-light;
   opacity: 1;
   animation: que-ver-grade-breath 7.2s ease-in-out infinite;
 }
@@ -836,7 +837,6 @@ html[data-que-ver-grade="live"] body {
   );
   filter: blur(64px);
   opacity: 1;
-  mix-blend-mode: screen;
   animation: que-ver-haze-breath 6.4s ease-in-out infinite;
 }
 
@@ -867,7 +867,6 @@ html[data-que-ver-grade="live"] body {
     );
   filter: blur(16px);
   opacity: 1;
-  mix-blend-mode: screen;
 }
 
 /* Ghost: larger/softer double-exposure of the next poster in the fog. */
@@ -1049,7 +1048,6 @@ html[data-que-ver-grade="live"] body {
     #000 32%,
     #000 100%
   );
-  transition: background var(--duration-morph) var(--ease-out);
 }
 
 /* Genre coverflow — replaces category chips (JOR-230 Solo B). */
@@ -1395,6 +1393,98 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
 .diario-que-ver-deck[data-still] .que-ver-atmosphere-flicker,
 .diario-que-ver-deck[data-still] .coverflow-card.is-cinematic.is-focused .coverflow-card-face {
   animation-play-state: paused;
+}
+
+/*
+ * Grade slots (useAmbientGrade). The poster-tinted washes come twice: slot a and slot b
+ * (html / shell ::before = a, ::after = b; `.que-ver-slot-a` / `-b` in the deck). A new
+ * color goes into the hidden slot once and `html[data-que-ver-slot]` flips; the opacity
+ * crossfade runs on the compositor, so changing movie repaints none of these blurred,
+ * blended layers while it fades. Same curve both ways: the two add up to one light, no
+ * flare. Once faded the hidden slot is `visibility: hidden` and its breaths pause, so at
+ * rest it costs nothing.
+ */
+.que-ver-slot-a,
+html[data-que-ver-grade="live"]::before,
+.diario-que-ver-shell[data-que-ver-grade="live"]::before {
+  --que-ver-glow: var(--que-ver-glow-a, 124 156 255);
+}
+
+.que-ver-slot-b,
+html[data-que-ver-grade="live"]::after,
+.diario-que-ver-shell[data-que-ver-grade="live"]::after {
+  --que-ver-glow: var(--que-ver-glow-b, 124 156 255);
+}
+
+.que-ver-slot,
+html[data-que-ver-grade="live"]::before,
+html[data-que-ver-grade="live"]::after,
+.diario-que-ver-shell[data-que-ver-grade="live"]::before,
+.diario-que-ver-shell[data-que-ver-grade="live"]::after {
+  transition:
+    opacity 600ms var(--ease-out),
+    visibility 0s;
+}
+
+html:not([data-que-ver-slot="b"]) .que-ver-slot-b,
+html[data-que-ver-slot="b"] .que-ver-slot-a,
+html[data-que-ver-grade="live"]:not([data-que-ver-slot="b"])::after,
+html[data-que-ver-grade="live"][data-que-ver-slot="b"]::before,
+html:not([data-que-ver-slot="b"]) .diario-que-ver-shell[data-que-ver-grade="live"]::after,
+html[data-que-ver-slot="b"] .diario-que-ver-shell[data-que-ver-grade="live"]::before {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 600ms var(--ease-out),
+    visibility 0s 600ms;
+}
+
+html:not([data-que-ver-slot="b"]) .que-ver-slot-b > *,
+html[data-que-ver-slot="b"] .que-ver-slot-a > * {
+  animation-play-state: paused;
+}
+
+/* Inside the atmosphere a slot is the old layer's box; the blend lives on the slot. */
+.que-ver-atmosphere > .que-ver-slot {
+  position: absolute;
+  inset: 0;
+}
+
+.que-ver-slot.is-soft-light {
+  mix-blend-mode: soft-light;
+}
+
+.que-ver-slot.is-screen {
+  mix-blend-mode: screen;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .que-ver-slot,
+  html[data-que-ver-grade="live"]::before,
+  html[data-que-ver-grade="live"]::after,
+  .diario-que-ver-shell[data-que-ver-grade="live"]::before,
+  .diario-que-ver-shell[data-que-ver-grade="live"]::after {
+    transition: none;
+  }
+}
+
+/* Lite sala (useDeckLite): a phone that can't hold the frame rate keeps the light but
+   drops what costs most: the blur on the big washes and every breath. */
+html[data-que-ver-lite][data-que-ver-grade="live"]::before,
+html[data-que-ver-lite][data-que-ver-grade="live"]::after,
+html[data-que-ver-lite] .diario-que-ver-shell[data-que-ver-grade="live"]::before,
+html[data-que-ver-lite] .diario-que-ver-shell[data-que-ver-grade="live"]::after,
+html[data-que-ver-lite] .que-ver-atmosphere-haze,
+html[data-que-ver-lite] .que-ver-atmosphere-floor {
+  filter: none;
+}
+
+html[data-que-ver-lite] .que-ver-atmosphere-grade,
+html[data-que-ver-lite] .que-ver-atmosphere-haze,
+html[data-que-ver-lite] .que-ver-atmosphere-grain,
+html[data-que-ver-lite] .que-ver-atmosphere-flicker,
+html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-face {
+  animation: none;
 }
 
 .que-ver-deck-slide-next {
@@ -1943,11 +2033,11 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   }
 }
 
+/* Opacity + transform only: compositor work, nothing to re-filter on a slow phone. */
 @keyframes deck-footer-out {
   to {
     opacity: 0;
     transform: translateY(-3px);
-    filter: blur(3px);
   }
 }
 
