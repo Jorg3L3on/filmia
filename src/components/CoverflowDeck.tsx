@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DeckCard } from "@/components/coverflow/DeckCard";
-import { DeckFooter } from "@/components/coverflow/DeckFooter";
+import { DeckFooterSwap } from "@/components/coverflow/DeckFooterSwap";
 import { CoverflowIndicators } from "@/components/coverflow/CoverflowIndicators";
-import { QueVerAtmosphere } from "@/components/coverflow/QueVerAtmosphere";
+import { QueVerAtmosphere, SoftGlowSlots } from "@/components/coverflow/QueVerAtmosphere";
 import { useCoverflowEngine } from "@/components/coverflow/useCoverflowEngine";
 import { useCoverflowLocalTitles } from "@/components/coverflow/useCoverflowLocalTitles";
+import { useDeckLite } from "@/components/coverflow/useDeckLite";
 import { useDeckStillness } from "@/components/coverflow/useDeckStillness";
 import { useListCardMenu } from "@/components/coverflow/useListCardMenu";
 import { useAmbientGrade, usePosterAmbientColor } from "@/components/coverflow/usePosterAmbientColor";
@@ -60,11 +61,18 @@ export const CoverflowDeck = ({
       typeof window === "undefined" ? initialCardId : (deckCardFrom(window.location.search) ?? initialCardId);
     return deckIndexOf(incomingTitles, cardId) ?? initialIndex;
   });
-  const engine = useCoverflowEngine(titles.length, isSheet, cinematic, { initialIndex: startIndex });
+  const deckLite = useDeckLite(cinematic);
+  const engine = useCoverflowEngine(titles.length, isSheet, cinematic, {
+    initialIndex: startIndex,
+    lite: deckLite.lite,
+    onMotionFrame: deckLite.reportFrame,
+  });
   const {
     containerRef,
     stageRef,
+    cardsRef,
     activeIndex,
+    restingIndex,
     cardWidth,
     stageWidth,
     registerNode,
@@ -86,24 +94,17 @@ export const CoverflowDeck = ({
   }, [focusRequest, jumpTo]);
 
   const activeTitle = titles[activeIndex] ?? titles[0];
+  // Light, ghost and footer follow where the deck will rest, never each card a drag
+  // passes: a swipe does no work but moving the cards.
+  const restingTitle = titles[restingIndex] ?? activeTitle;
   const ambient = usePosterAmbientColor(
-    cinematic ? activeTitle?.posterPath : null,
-    activeTitle?.tonight?.posterAmbient ?? null,
+    cinematic ? restingTitle?.posterPath : null,
+    restingTitle?.tonight?.posterAmbient ?? null,
   );
 
-  const nextTitle =
-    cinematic && activeIndex < titles.length - 1
-      ? titles[activeIndex + 1]
-      : null;
-  const ghostPosterPath = cinematic ? (nextTitle?.posterPath ?? null) : null;
-  // Soft always-on ghost; stronger near the trailing edge (continuum hint).
-  const nearTrailingEdge =
-    cinematic && titles.length > 1 && activeIndex >= titles.length - 2;
-  const ghostOpacity = !ghostPosterPath
-    ? 0
-    : nearTrailingEdge
-      ? 0.48
-      : 0.28;
+  // Soft always-on ghost of the next poster; stronger on the last pair (continuum hint).
+  const ghostPosterPath = cinematic ? (titles[restingIndex + 1]?.posterPath ?? null) : null;
+  const ghostOpacity = !ghostPosterPath ? 0 : restingIndex >= titles.length - 2 ? 0.48 : 0.28;
 
   const handleSlideCommit = useCallback(() => {
     if (!cinematic) {
@@ -112,6 +113,8 @@ export const CoverflowDeck = ({
     setLightLeakKey((value) => value + 1);
   }, [cinematic]);
 
+  // First paint only (SSR carries the seeded color); after that useAmbientGrade owns it.
+  const [initialAmbientStyle] = useState(() => ({ ...ambient.style, "--que-ver-glow-a": ambient.cssRgb }));
   useAmbientGrade(deckRootRef, ambient.cssRgb, cinematic);
   const still = useDeckStillness(deckRootRef, activeTitle?.id ?? null, cinematic);
 
@@ -165,7 +168,7 @@ export const CoverflowDeck = ({
             : "space-y-6",
         className,
       )}
-      style={cinematic ? ambient.style : undefined}
+      style={cinematic ? initialAmbientStyle : undefined}
       data-still={still ? "" : undefined}
     >
       <div
@@ -201,16 +204,15 @@ export const CoverflowDeck = ({
         >
           {cinematic ? (
             <QueVerAtmosphere
-              glowRgb={ambient.cssRgb}
               ghostPosterPath={ghostPosterPath}
               ghostOpacity={ghostOpacity}
               lightLeakKey={lightLeakKey}
+              lite={deckLite.lite}
             />
           ) : null}
-          {cinematic ? (
-            <div className="coverflow-soft-glow" aria-hidden />
-          ) : null}
+          {cinematic ? <SoftGlowSlots /> : null}
           <div
+            ref={cardsRef}
             className="absolute left-1/2 top-1/2 z-[1]"
             style={{
               width: cardWidth,
@@ -251,18 +253,18 @@ export const CoverflowDeck = ({
         )}
       </div>
 
-      {activeTitle ? (
-        <div className={cinematic ? "shrink-0" : undefined}>
-          <DeckFooter
-            activeTitle={activeTitle}
-            isSheet={isSheet}
-            footer={footer}
-            focusClassName={focusSpring.className}
-            onOpenMenu={cardMenu.openMenu}
-            onSlideCommit={cinematic ? handleSlideCommit : undefined}
-          />
-        </div>
-      ) : null}
+      {/* Cinematic: the footer follows where the deck will rest, not every card a drag passes. */}
+      <div className={cinematic ? "shrink-0" : undefined}>
+        <DeckFooterSwap
+          crossfade={cinematic}
+          activeTitle={cinematic ? restingTitle : activeTitle}
+          isSheet={isSheet}
+          footer={footer}
+          focusClassName={focusSpring.className}
+          onOpenMenu={cardMenu.openMenu}
+          onSlideCommit={cinematic ? handleSlideCommit : undefined}
+        />
+      </div>
 
       {cardMenu.menu}
     </div>

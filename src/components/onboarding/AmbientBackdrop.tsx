@@ -12,7 +12,7 @@ type AmbientBackdropProps = {
 /** Fixed layer behind the flow: a blurred wash of the favorite's poster plus its sampled glow. */
 export const AmbientBackdrop = ({ ambient, posterPath }: AmbientBackdropProps) => {
   const poster = tmdbPosterUrl(posterPath, "w342");
-  const style = { "--que-ver-glow": ambient ?? "124 156 255" } as CSSProperties;
+  const style = { "--que-ver-glow": ambient ?? "var(--accent-rgb)" } as CSSProperties;
   return (
     <div className="bienvenida-backdrop" aria-hidden="true" style={style}>
       <div className="bienvenida-glow" />

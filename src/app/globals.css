@@ -11,9 +11,11 @@
   --chrome-hover: #3a4452;
   --line: #252b32;
   --line-hover: #555555;
-  --accent: #7c9cff;
-  --accent-hover: #9bb3ff;
-  --accent-rgb: 124 156 255;
+  --accent: #ff7a45;
+  --accent-hover: #ff9466;
+  --accent-rgb: 255 122 69;
+  /* Light accent-tinted text on dark glass (pills, ticket stub). */
+  --accent-tint: #ffe3d8;
   --accent-soft: rgb(var(--accent-rgb) / 0.4);
   --ink: #0e1114;
   --paper: #f0f2f4;
@@ -668,8 +670,10 @@ body {
   isolation: isolate;
 }
 
-/* Viewport full-bleed poster wash — behind transparent SiteHeader (not clipped by main). */
-html[data-que-ver-grade="live"]::before {
+/* Viewport full-bleed poster wash — behind transparent SiteHeader (not clipped by main).
+   ::before / ::after are the two grade slots (see «Grade slots» below). */
+html[data-que-ver-grade="live"]::before,
+html[data-que-ver-grade="live"]::after {
   content: "";
   pointer-events: none;
   position: fixed;
@@ -678,14 +682,14 @@ html[data-que-ver-grade="live"]::before {
   background:
     radial-gradient(
       ellipse 95% 70% at 50% 28%,
-      rgb(var(--que-ver-glow, 124 156 255) / 0.42),
-      rgb(var(--que-ver-glow, 124 156 255) / 0.18) 38%,
-      rgb(var(--que-ver-glow, 124 156 255) / 0.06) 58%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.42),
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.18) 38%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.06) 58%,
       transparent 78%
     ),
     radial-gradient(
       ellipse 110% 55% at 50% 100%,
-      rgb(var(--que-ver-glow, 124 156 255) / 0.22),
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.22),
       transparent 62%
     );
   filter: blur(64px);
@@ -718,8 +722,9 @@ html[data-que-ver-grade="live"] body {
   background: transparent;
 }
 
-/* In-sala grade (html::before owns header bleed). Soft top so no hard plate. */
-.diario-que-ver-shell[data-que-ver-grade="live"]::before {
+/* In-sala grade (html::before owns header bleed). Soft top so no hard plate. Two slots too. */
+.diario-que-ver-shell[data-que-ver-grade="live"]::before,
+.diario-que-ver-shell[data-que-ver-grade="live"]::after {
   content: "";
   pointer-events: none;
   position: absolute;
@@ -728,13 +733,13 @@ html[data-que-ver-grade="live"] body {
   background:
     radial-gradient(
       ellipse 88% 72% at 50% 40%,
-      rgb(var(--que-ver-glow, 124 156 255) / 0.28),
-      rgb(var(--que-ver-glow, 124 156 255) / 0.1) 48%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.28),
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.1) 48%,
       transparent 76%
     ),
     radial-gradient(
       ellipse 110% 60% at 50% 100%,
-      rgb(var(--que-ver-glow, 124 156 255) / 0.16),
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.16),
       transparent 60%
     );
   filter: blur(48px);
@@ -753,7 +758,6 @@ html[data-que-ver-grade="live"] body {
     #000 100%
   );
   mix-blend-mode: screen;
-  transition: opacity var(--duration-morph) var(--ease-out);
 }
 
 .diario-que-ver-shell > * {
@@ -792,11 +796,10 @@ html[data-que-ver-grade="live"] body {
   background:
     radial-gradient(
       ellipse 78% 64% at 50% 40%,
-      rgb(var(--que-ver-glow, 124 156 255) / 0.34),
-      rgb(var(--que-ver-glow, 124 156 255) / 0.12) 48%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.34),
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.12) 48%,
       transparent 74%
     );
-  mix-blend-mode: soft-light;
   opacity: 1;
   animation: que-ver-grade-breath 7.2s ease-in-out infinite;
 }
@@ -830,13 +833,12 @@ html[data-que-ver-grade="live"] body {
   inset: 0% 2% 8%;
   background: radial-gradient(
     ellipse 78% 68% at 50% 36%,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.5),
-    rgb(var(--que-ver-glow, 124 156 255) / 0.22) 40%,
+    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.5),
+    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.22) 40%,
     transparent 74%
   );
   filter: blur(64px);
   opacity: 1;
-  mix-blend-mode: screen;
   animation: que-ver-haze-breath 6.4s ease-in-out infinite;
 }
 
@@ -851,8 +853,8 @@ html[data-que-ver-grade="live"] body {
   background:
     radial-gradient(
       ellipse 70% 55% at 50% 45%,
-      rgb(var(--que-ver-glow, 124 156 255) / 0.62),
-      rgb(var(--que-ver-glow, 124 156 255) / 0.22) 38%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.62),
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.22) 38%,
       transparent 72%
     ),
     radial-gradient(
@@ -867,7 +869,6 @@ html[data-que-ver-grade="live"] body {
     );
   filter: blur(16px);
   opacity: 1;
-  mix-blend-mode: screen;
 }
 
 /* Ghost: larger/softer double-exposure of the next poster in the fog. */
@@ -1027,10 +1028,10 @@ html[data-que-ver-grade="live"] body {
      clips a blur halo to the border-box and leaves a hard vertical seam. */
   background: radial-gradient(
     ellipse closest-side at center,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.58),
-    rgb(var(--que-ver-glow, 124 156 255) / 0.3) 34%,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.12) 62%,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.03) 84%,
+    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.58),
+    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.3) 34%,
+    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.12) 62%,
+    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.03) 84%,
     transparent 100%
   );
   opacity: 1;
@@ -1049,7 +1050,6 @@ html[data-que-ver-grade="live"] body {
     #000 32%,
     #000 100%
   );
-  transition: background var(--duration-morph) var(--ease-out);
 }
 
 /* Genre coverflow — replaces category chips (JOR-230 Solo B). */
@@ -1071,8 +1071,8 @@ html[data-que-ver-grade="live"] body {
   transform: translate(-50%, -50%);
   background: radial-gradient(
     ellipse at center,
-    rgb(var(--que-ver-glow, 124 156 255) / 0.42),
-    rgb(var(--que-ver-glow, 124 156 255) / 0.12) 55%,
+    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.42),
+    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.12) 55%,
     transparent 75%
   );
   filter: blur(16px);
@@ -1102,7 +1102,7 @@ html[data-que-ver-grade="live"] body {
   white-space: nowrap;
   text-overflow: ellipsis;
   text-shadow:
-    0 0 18px rgb(var(--que-ver-glow, 124 156 255) / 0.55),
+    0 0 18px rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.55),
     0 1px 2px rgb(0 0 0 / 0.45);
   animation: genre-coverflow-title-in var(--duration-enter) var(--ease-out) backwards;
 }
@@ -1213,7 +1213,7 @@ html[data-que-ver-grade="live"] body {
 .genre-coverflow-dot.is-active {
   width: 18px;
   background: var(--accent);
-  box-shadow: 0 0 10px rgb(var(--que-ver-glow, 124 156 255) / 0.7);
+  box-shadow: 0 0 10px rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.7);
 }
 
 /* Mode toggle — chrome soft but readable (Qué ver / Historial at arm's length). */
@@ -1248,7 +1248,7 @@ html[data-que-ver-grade="live"] body {
 }
 
 /* SiteHeader plate — default chrome; Qué ver sala kills the seam under logo. */
-/* Glass header (MiCasa): frosted, hairline, blue-tinted float shadow. */
+/* Glass header (MiCasa): frosted, hairline, accent-tinted float shadow. */
 header.site-header {
   border-bottom: 1px solid rgb(255 255 255 / 0.1);
   background: rgb(10 13 20 / 0.85);
@@ -1361,7 +1361,7 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[aria-curren
 }
 
 body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] [data-dock-indicator] {
-  background-color: rgb(var(--que-ver-glow, 124 156 255) / 0.16);
+  background-color: rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.16);
 }
 
 body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="search"] {
@@ -1395,6 +1395,98 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
 .diario-que-ver-deck[data-still] .que-ver-atmosphere-flicker,
 .diario-que-ver-deck[data-still] .coverflow-card.is-cinematic.is-focused .coverflow-card-face {
   animation-play-state: paused;
+}
+
+/*
+ * Grade slots (useAmbientGrade). The poster-tinted washes come twice: slot a and slot b
+ * (html / shell ::before = a, ::after = b; `.que-ver-slot-a` / `-b` in the deck). A new
+ * color goes into the hidden slot once and `html[data-que-ver-slot]` flips; the opacity
+ * crossfade runs on the compositor, so changing movie repaints none of these blurred,
+ * blended layers while it fades. Same curve both ways: the two add up to one light, no
+ * flare. Once faded the hidden slot is `visibility: hidden` and its breaths pause, so at
+ * rest it costs nothing.
+ */
+.que-ver-slot-a,
+html[data-que-ver-grade="live"]::before,
+.diario-que-ver-shell[data-que-ver-grade="live"]::before {
+  --que-ver-glow: var(--que-ver-glow-a, 124 156 255);
+}
+
+.que-ver-slot-b,
+html[data-que-ver-grade="live"]::after,
+.diario-que-ver-shell[data-que-ver-grade="live"]::after {
+  --que-ver-glow: var(--que-ver-glow-b, 124 156 255);
+}
+
+.que-ver-slot,
+html[data-que-ver-grade="live"]::before,
+html[data-que-ver-grade="live"]::after,
+.diario-que-ver-shell[data-que-ver-grade="live"]::before,
+.diario-que-ver-shell[data-que-ver-grade="live"]::after {
+  transition:
+    opacity 600ms var(--ease-out),
+    visibility 0s;
+}
+
+html:not([data-que-ver-slot="b"]) .que-ver-slot-b,
+html[data-que-ver-slot="b"] .que-ver-slot-a,
+html[data-que-ver-grade="live"]:not([data-que-ver-slot="b"])::after,
+html[data-que-ver-grade="live"][data-que-ver-slot="b"]::before,
+html:not([data-que-ver-slot="b"]) .diario-que-ver-shell[data-que-ver-grade="live"]::after,
+html[data-que-ver-slot="b"] .diario-que-ver-shell[data-que-ver-grade="live"]::before {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 600ms var(--ease-out),
+    visibility 0s 600ms;
+}
+
+html:not([data-que-ver-slot="b"]) .que-ver-slot-b > *,
+html[data-que-ver-slot="b"] .que-ver-slot-a > * {
+  animation-play-state: paused;
+}
+
+/* Inside the atmosphere a slot is the old layer's box; the blend lives on the slot. */
+.que-ver-atmosphere > .que-ver-slot {
+  position: absolute;
+  inset: 0;
+}
+
+.que-ver-slot.is-soft-light {
+  mix-blend-mode: soft-light;
+}
+
+.que-ver-slot.is-screen {
+  mix-blend-mode: screen;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .que-ver-slot,
+  html[data-que-ver-grade="live"]::before,
+  html[data-que-ver-grade="live"]::after,
+  .diario-que-ver-shell[data-que-ver-grade="live"]::before,
+  .diario-que-ver-shell[data-que-ver-grade="live"]::after {
+    transition: none;
+  }
+}
+
+/* Lite sala (useDeckLite): a phone that can't hold the frame rate keeps the light but
+   drops what costs most: the blur on the big washes and every breath. */
+html[data-que-ver-lite][data-que-ver-grade="live"]::before,
+html[data-que-ver-lite][data-que-ver-grade="live"]::after,
+html[data-que-ver-lite] .diario-que-ver-shell[data-que-ver-grade="live"]::before,
+html[data-que-ver-lite] .diario-que-ver-shell[data-que-ver-grade="live"]::after,
+html[data-que-ver-lite] .que-ver-atmosphere-haze,
+html[data-que-ver-lite] .que-ver-atmosphere-floor {
+  filter: none;
+}
+
+html[data-que-ver-lite] .que-ver-atmosphere-grade,
+html[data-que-ver-lite] .que-ver-atmosphere-haze,
+html[data-que-ver-lite] .que-ver-atmosphere-grain,
+html[data-que-ver-lite] .que-ver-atmosphere-flicker,
+html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-face {
+  animation: none;
 }
 
 .que-ver-deck-slide-next {
@@ -1742,7 +1834,7 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   background: rgb(10 12 15 / 0.82);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  color: #dfe6ff;
+  color: var(--accent-tint);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.18em;
@@ -1763,7 +1855,7 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
 }
 
 .ticket-stub svg {
-  color: #9bb3ff;
+  color: var(--accent-hover);
 }
 
 .coverflow-card.is-focused .ticket-stub {
@@ -1793,11 +1885,11 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
 }
 
 .ticket-stub.is-armed {
-  border-top-color: rgb(124 156 255 / 0.9);
+  border-top-color: rgb(var(--accent-rgb) / 0.9);
   box-shadow:
     0 22px 36px rgb(0 0 0 / 0.55),
-    0 0 0 1.5px rgb(124 156 255 / 0.6),
-    0 0 24px rgb(124 156 255 / 0.35);
+    0 0 0 1.5px rgb(var(--accent-rgb) / 0.6),
+    0 0 24px rgb(var(--accent-rgb) / 0.35);
 }
 
 .ticket-stub.is-torn {
@@ -1889,15 +1981,15 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
 @keyframes nav-receive {
   0% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgb(124 156 255 / 0.6);
+    box-shadow: 0 0 0 0 rgb(var(--accent-rgb) / 0.6);
   }
   40% {
     transform: scale(1.18);
-    box-shadow: 0 0 0 8px rgb(124 156 255 / 0.25);
+    box-shadow: 0 0 0 8px rgb(var(--accent-rgb) / 0.25);
   }
   100% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgb(124 156 255 / 0);
+    box-shadow: 0 0 0 0 rgb(var(--accent-rgb) / 0);
   }
 }
 
@@ -1921,6 +2013,36 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   animation: genre-coverflow-title-in var(--duration-enter) var(--ease-out) backwards;
 }
 
+/* Cinematic footer crossfade (DeckFooterSwap): the old footer fades over the new one. */
+.deck-footer-swap {
+  position: relative;
+}
+
+.deck-footer-swap-in {
+  animation: deck-footer-in var(--duration-enter) var(--ease-out) backwards;
+}
+
+.deck-footer-swap-out {
+  position: absolute;
+  inset: 0 0 auto;
+  pointer-events: none;
+  animation: deck-footer-out var(--duration-exit) var(--ease-out) forwards;
+}
+
+@keyframes deck-footer-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Opacity + transform only: compositor work, nothing to re-filter on a slow phone. */
+@keyframes deck-footer-out {
+  to {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+
 .tonight-reason {
   display: inline-flex;
   align-items: center;
@@ -1929,9 +2051,9 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   height: 26px;
   padding: 0 10px 0 8px;
   border-radius: 9999px;
-  border: 1px solid rgb(124 156 255 / 0.3);
-  background: rgb(124 156 255 / 0.12);
-  color: #dfe6ff;
+  border: 1px solid rgb(var(--accent-rgb) / 0.3);
+  background: rgb(var(--accent-rgb) / 0.12);
+  color: var(--accent-tint);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
@@ -1942,8 +2064,8 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
 }
 
 .tonight-reason:hover {
-  border-color: rgb(124 156 255 / 0.55);
-  background: rgb(124 156 255 / 0.18);
+  border-color: rgb(var(--accent-rgb) / 0.55);
+  background: rgb(var(--accent-rgb) / 0.18);
 }
 
 /* «Dirigida por X» (FIL-I3-6): same pill, the name is its own link (with a taller hit area). */
@@ -2112,6 +2234,7 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   .visto-stamp,
   .deck-deal .coverflow-card-face,
   .tonight-title-in,
+  .deck-footer-swap-in,
   .person-card-in,
   .nav-receive > :first-child {
     animation: none !important;
@@ -2121,6 +2244,10 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   .visto-stamp {
     opacity: 1;
     transform: translate(-50%, -50%) rotate(-12deg);
+  }
+
+  .deck-footer-swap-out {
+    display: none;
   }
 
   ::view-transition-group(*),
@@ -2465,13 +2592,13 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   background:
     radial-gradient(
       ellipse 80% 55% at 50% 12%,
-      rgb(var(--que-ver-glow, 124 156 255) / 0.42),
-      rgb(var(--que-ver-glow, 124 156 255) / 0.14) 40%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.42),
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.14) 40%,
       transparent 72%
     ),
     radial-gradient(
       ellipse 90% 45% at 50% 100%,
-      rgb(var(--que-ver-glow, 124 156 255) / 0.18),
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.18),
       transparent 60%
     );
   filter: blur(48px);

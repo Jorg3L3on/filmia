@@ -7,6 +7,7 @@ import {
   COVERFLOW_CARD_WIDTH_MIN,
   getCoverflowCardMetrics,
   measureCoverflowCardWidth,
+  stepCoverflowSpring,
 } from "./coverflow-metrics";
 
 describe("coverflow metrics", () => {
@@ -94,4 +95,27 @@ describe("coverflow metrics", () => {
     assert.ok(far.blur >= side.blur);
   });
 
+
+  it("settles the spring in the same time at 60 Hz and 120 Hz", () => {
+    const run = (hz: number, seconds: number) => {
+      let state = { offset: 1, velocity: 0 };
+      for (let i = 0; i < Math.round(seconds * hz); i += 1) {
+        state = stepCoverflowSpring(state.offset, state.velocity, 1 / hz);
+      }
+      return state;
+    };
+    const at60 = run(60, 0.15);
+    const at120 = run(120, 0.15);
+    assert.ok(Math.abs(at60.offset - at120.offset) < 1e-9);
+    assert.ok(at60.offset > 0 && at60.offset < 1);
+    // At rest after half a second, without overshooting past the target.
+    assert.ok(Math.abs(run(60, 0.5).offset) < 0.01);
+    assert.ok(run(120, 0.5).offset >= 0);
+  });
+
+  it("eases into the spring instead of starting at full speed", () => {
+    const first = stepCoverflowSpring(1, 0, 1 / 60);
+    const second = stepCoverflowSpring(first.offset, first.velocity, 1 / 60);
+    assert.ok(1 - first.offset < first.offset - second.offset);
+  });
 });

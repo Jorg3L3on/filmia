@@ -23,8 +23,8 @@ export const hexToRgbChannels = (hex: string) => {
   return `${(value >> 16) & 255} ${(value >> 8) & 255} ${value & 255}`;
 };
 
-/** Filmia accent as channels — fallback glow for titles without a platform. */
-export const ACCENT_RGB = "124 156 255";
+/** Filmia accent as channels (globals.css --accent-rgb) — fallback glow for titles without a platform. */
+export const ACCENT_RGB = "255 122 69";
 
 /**
  * Glow hue per platform. Uses the brand's vivid color; near-black brands use

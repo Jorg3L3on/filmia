@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import {
   AMBIENT_FALLBACK_RGB,
   formatAmbientRgb,
   normalizePosterAmbientPath,
+  parseAmbientRgb,
   sampleAmbientFromImageData,
   softenAmbientRgb,
   type AmbientRgb,
@@ -133,19 +134,6 @@ const resolveAmbient = async (posterPath: string): Promise<AmbientRgb> => {
   return request;
 };
 
-/** `"122 146 172"` (server-sampled posterAmbient) → rgb, or null when malformed. */
-const parseSeedRgb = (seed: string | null | undefined): AmbientRgb | null => {
-  if (!seed) {
-    return null;
-  }
-  const parts = seed.trim().split(/\s+/).map(Number);
-  if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part))) {
-    return null;
-  }
-  const [r, g, b] = parts as [number, number, number];
-  return { r, g, b };
-};
-
 export const usePosterAmbientColor = (
   posterPath: string | null | undefined,
   seedRgb: string | null = null,
@@ -153,7 +141,7 @@ export const usePosterAmbientColor = (
   const path = normalizePosterAmbientPath(posterPath);
   // Esta noche ships the sampled color with the card: correct glow on first paint.
   if (path && !cache.has(path)) {
-    const seeded = parseSeedRgb(seedRgb);
+    const seeded = parseAmbientRgb(seedRgb);
     if (seeded) {
       cache.set(path, seeded);
     }
@@ -196,33 +184,66 @@ export const usePosterAmbientColor = (
   };
 };
 
+type GradeSlot = "a" | "b";
+
 /**
- * Propagate the deck's grade to the enclosing `.diario-que-ver-shell` and <html>, so the
- * full-bleed wash can sit behind SiteHeader. No-op outside a shell or when not cinematic.
+ * Propagate the deck's grade to the deck root, the enclosing `.diario-que-ver-shell` and
+ * <html>, so the full-bleed wash can sit behind SiteHeader. No-op when not cinematic.
+ *
+ * The big washes are blurred, blended, full-viewport layers: repainting them is the most
+ * expensive thing the sala does, and `--que-ver-glow` can't be interpolated by CSS anyway.
+ * So they come in two slots (`.que-ver-slot-a` / `-b`, html and shell ::before / ::after).
+ * A new color goes into the hidden slot once and `html[data-que-ver-slot]` flips: the
+ * browser crossfades the slots' opacity on the compositor, with no repaint per frame.
+ * `--que-ver-glow` itself (titles, chips, rail halo: small, cheap) switches at once.
  */
 export const useAmbientGrade = (
   deckRootRef: RefObject<HTMLElement | null>,
   cssRgb: string,
   cinematic: boolean,
 ) => {
+  const slotRef = useRef<GradeSlot>("a");
+  const shownRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!cinematic) {
       return;
     }
     const shell = deckRootRef.current?.closest(".diario-que-ver-shell") as HTMLElement | null;
-    if (!shell) {
+    const root = document.documentElement;
+    shell?.setAttribute("data-que-ver-grade", "live");
+    root.dataset.queVerGrade = "live";
+    root.dataset.queVerSlot = slotRef.current;
+    return () => {
+      shownRef.current = null;
+      for (const node of [shell, root]) {
+        node?.style.removeProperty("--que-ver-glow");
+        node?.style.removeProperty("--que-ver-glow-a");
+        node?.style.removeProperty("--que-ver-glow-b");
+      }
+      shell?.removeAttribute("data-que-ver-grade");
+      delete root.dataset.queVerGrade;
+      delete root.dataset.queVerSlot;
+    };
+  }, [cinematic, deckRootRef]);
+
+  useEffect(() => {
+    if (!cinematic || shownRef.current === cssRgb) {
       return;
     }
+    const deckRoot = deckRootRef.current;
+    const shell = deckRoot?.closest(".diario-que-ver-shell") as HTMLElement | null;
     const root = document.documentElement;
-    shell.style.setProperty("--que-ver-glow", cssRgb);
-    shell.dataset.queVerGrade = "live";
-    root.style.setProperty("--que-ver-glow", cssRgb);
-    root.dataset.queVerGrade = "live";
-    return () => {
-      shell.style.removeProperty("--que-ver-glow");
-      delete shell.dataset.queVerGrade;
-      root.style.removeProperty("--que-ver-glow");
-      delete root.dataset.queVerGrade;
-    };
+    const nodes = [deckRoot, shell, root].filter((node): node is HTMLElement => node != null);
+    // First color fills the visible slot; every later one goes to the hidden slot, then flips.
+    const slot: GradeSlot =
+      shownRef.current == null ? slotRef.current : slotRef.current === "a" ? "b" : "a";
+    for (const node of nodes) {
+      node.style.setProperty(`--que-ver-glow-${slot}`, cssRgb);
+      node.style.setProperty("--que-ver-glow", cssRgb);
+    }
+    shownRef.current = cssRgb;
+    slotRef.current = slot;
+    root.dataset.queVerSlot = slot;
   }, [cinematic, cssRgb, deckRootRef]);
 };
