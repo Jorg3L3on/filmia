@@ -5,6 +5,7 @@ import {
   clampByte,
   formatAmbientRgb,
   normalizePosterAmbientPath,
+  parseAmbientRgb,
   sampleAmbientFromImageData,
   softenAmbientRgb,
 } from "./poster-ambient";
@@ -94,5 +95,14 @@ describe("poster ambient", () => {
     );
     assert.equal(normalizePosterAmbientPath("/posters/x.png"), "/posters/x.png");
     assert.equal(normalizePosterAmbientPath(null), null);
+  });
+});
+
+describe("ambient rgb", () => {
+  it("parses the r g b triple and rejects junk", () => {
+    assert.deepEqual(parseAmbientRgb("122 146 172"), { r: 122, g: 146, b: 172 });
+    assert.equal(parseAmbientRgb("122 146"), null);
+    assert.equal(parseAmbientRgb("red"), null);
+    assert.equal(parseAmbientRgb(null), null);
   });
 });

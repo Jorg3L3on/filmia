@@ -19,7 +19,7 @@ import {
 import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import type { Platform } from "@/db";
 
-type DeckFooterProps = {
+export type DeckFooterProps = {
   activeTitle: CoverflowTitle;
   isSheet: boolean;
   footer: "full" | "watched" | "tonight" | "list";

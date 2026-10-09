@@ -19,6 +19,19 @@ export const ambientCssVars = (rgb: AmbientRgb): Record<string, string> => ({
   "--que-ver-glow": formatAmbientRgb(rgb),
 });
 
+/** `"122 146 172"` → rgb, or null when malformed. */
+export const parseAmbientRgb = (value: string | null | undefined): AmbientRgb | null => {
+  if (!value) {
+    return null;
+  }
+  const parts = value.trim().split(/\s+/).map(Number);
+  if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part))) {
+    return null;
+  }
+  const [r, g, b] = parts as [number, number, number];
+  return { r, g, b };
+};
+
 export const isAmbientFallback = (rgb: AmbientRgb) =>
   rgb.r === AMBIENT_FALLBACK_RGB.r &&
   rgb.g === AMBIENT_FALLBACK_RGB.g &&
