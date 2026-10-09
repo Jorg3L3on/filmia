@@ -7,7 +7,9 @@ export const COVERFLOW_CARD_WIDTH_CINEMATIC_MIN = 200;
 export const COVERFLOW_CARD_WIDTH_CINEMATIC_MAX = 440;
 export const COVERFLOW_DRAG_THRESHOLD = 6;
 export const COVERFLOW_WHEEL_SENSITIVITY = 0.0044;
-export const COVERFLOW_SNAP_LERP = 0.24;
+/** Critically damped settle (rad/s): ~0.4 s to rest, eases in instead of jolting. */
+export const COVERFLOW_SPRING_OMEGA = 16;
+/** Per 60 Hz frame; scaled by real frame time so 120 Hz coasts the same. */
 export const COVERFLOW_COAST_FRICTION = 0.9;
 export const COVERFLOW_COAST_MIN_VELOCITY = 0.003;
 export const COVERFLOW_WHEEL_SNAP_MS = 70;
@@ -43,6 +45,25 @@ export const prefersCoverflowReducedMotion = () =>
 
 export const clampCoverflowIndex = (value: number, max: number) =>
   Math.min(Math.max(value, 0), Math.max(max, 0));
+
+/**
+ * One step of a critically damped spring toward 0, in closed form: the same
+ * elapsed time lands in the same place whatever the frame rate.
+ * `offset` is position − target (cards); `velocity` is cards per second.
+ */
+export const stepCoverflowSpring = (
+  offset: number,
+  velocity: number,
+  dtSeconds: number,
+  omega = COVERFLOW_SPRING_OMEGA,
+) => {
+  const decay = Math.exp(-omega * dtSeconds);
+  const c = velocity + omega * offset;
+  return {
+    offset: (offset + c * dtSeconds) * decay,
+    velocity: (velocity - omega * c * dtSeconds) * decay,
+  };
+};
 
 export const getCoverflowCardMetrics = (
   offset: number,

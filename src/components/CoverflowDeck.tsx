@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DeckCard } from "@/components/coverflow/DeckCard";
-import { DeckFooter } from "@/components/coverflow/DeckFooter";
+import { DeckFooterSwap } from "@/components/coverflow/DeckFooterSwap";
 import { CoverflowIndicators } from "@/components/coverflow/CoverflowIndicators";
 import { QueVerAtmosphere } from "@/components/coverflow/QueVerAtmosphere";
 import { useCoverflowEngine } from "@/components/coverflow/useCoverflowEngine";
@@ -64,7 +64,9 @@ export const CoverflowDeck = ({
   const {
     containerRef,
     stageRef,
+    cardsRef,
     activeIndex,
+    restingIndex,
     cardWidth,
     stageWidth,
     registerNode,
@@ -112,6 +114,8 @@ export const CoverflowDeck = ({
     setLightLeakKey((value) => value + 1);
   }, [cinematic]);
 
+  // First paint only (SSR carries the seeded color); after that useAmbientGrade blends it.
+  const [initialAmbientStyle] = useState(() => ambient.style);
   useAmbientGrade(deckRootRef, ambient.cssRgb, cinematic);
   const still = useDeckStillness(deckRootRef, activeTitle?.id ?? null, cinematic);
 
@@ -165,7 +169,7 @@ export const CoverflowDeck = ({
             : "space-y-6",
         className,
       )}
-      style={cinematic ? ambient.style : undefined}
+      style={cinematic ? initialAmbientStyle : undefined}
       data-still={still ? "" : undefined}
     >
       <div
@@ -201,7 +205,6 @@ export const CoverflowDeck = ({
         >
           {cinematic ? (
             <QueVerAtmosphere
-              glowRgb={ambient.cssRgb}
               ghostPosterPath={ghostPosterPath}
               ghostOpacity={ghostOpacity}
               lightLeakKey={lightLeakKey}
@@ -211,6 +214,7 @@ export const CoverflowDeck = ({
             <div className="coverflow-soft-glow" aria-hidden />
           ) : null}
           <div
+            ref={cardsRef}
             className="absolute left-1/2 top-1/2 z-[1]"
             style={{
               width: cardWidth,
@@ -251,18 +255,18 @@ export const CoverflowDeck = ({
         )}
       </div>
 
-      {activeTitle ? (
-        <div className={cinematic ? "shrink-0" : undefined}>
-          <DeckFooter
-            activeTitle={activeTitle}
-            isSheet={isSheet}
-            footer={footer}
-            focusClassName={focusSpring.className}
-            onOpenMenu={cardMenu.openMenu}
-            onSlideCommit={cinematic ? handleSlideCommit : undefined}
-          />
-        </div>
-      ) : null}
+      {/* Cinematic: the footer follows where the deck will rest, not every card a drag passes. */}
+      <div className={cinematic ? "shrink-0" : undefined}>
+        <DeckFooterSwap
+          crossfade={cinematic}
+          activeTitle={cinematic ? (titles[restingIndex] ?? activeTitle) : activeTitle}
+          isSheet={isSheet}
+          footer={footer}
+          focusClassName={focusSpring.className}
+          onOpenMenu={cardMenu.openMenu}
+          onSlideCommit={cinematic ? handleSlideCommit : undefined}
+        />
+      </div>
 
       {cardMenu.menu}
     </div>

@@ -1921,6 +1921,36 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   animation: genre-coverflow-title-in var(--duration-enter) var(--ease-out) backwards;
 }
 
+/* Cinematic footer crossfade (DeckFooterSwap): the old footer fades over the new one. */
+.deck-footer-swap {
+  position: relative;
+}
+
+.deck-footer-swap-in {
+  animation: deck-footer-in var(--duration-enter) var(--ease-out) backwards;
+}
+
+.deck-footer-swap-out {
+  position: absolute;
+  inset: 0 0 auto;
+  pointer-events: none;
+  animation: deck-footer-out var(--duration-exit) var(--ease-out) forwards;
+}
+
+@keyframes deck-footer-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes deck-footer-out {
+  to {
+    opacity: 0;
+    transform: translateY(-3px);
+    filter: blur(3px);
+  }
+}
+
 .tonight-reason {
   display: inline-flex;
   align-items: center;
@@ -2112,6 +2142,7 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   .visto-stamp,
   .deck-deal .coverflow-card-face,
   .tonight-title-in,
+  .deck-footer-swap-in,
   .person-card-in,
   .nav-receive > :first-child {
     animation: none !important;
@@ -2121,6 +2152,10 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   .visto-stamp {
     opacity: 1;
     transform: translate(-50%, -50%) rotate(-12deg);
+  }
+
+  .deck-footer-swap-out {
+    display: none;
   }
 
   ::view-transition-group(*),

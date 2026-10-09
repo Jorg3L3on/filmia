@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import {
   AMBIENT_FALLBACK_RGB,
+  easeOutAmbient,
   formatAmbientRgb,
+  mixAmbientRgb,
   normalizePosterAmbientPath,
+  parseAmbientRgb,
   sampleAmbientFromImageData,
   softenAmbientRgb,
   type AmbientRgb,
@@ -133,19 +136,6 @@ const resolveAmbient = async (posterPath: string): Promise<AmbientRgb> => {
   return request;
 };
 
-/** `"122 146 172"` (server-sampled posterAmbient) → rgb, or null when malformed. */
-const parseSeedRgb = (seed: string | null | undefined): AmbientRgb | null => {
-  if (!seed) {
-    return null;
-  }
-  const parts = seed.trim().split(/\s+/).map(Number);
-  if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part))) {
-    return null;
-  }
-  const [r, g, b] = parts as [number, number, number];
-  return { r, g, b };
-};
-
 export const usePosterAmbientColor = (
   posterPath: string | null | undefined,
   seedRgb: string | null = null,
@@ -153,7 +143,7 @@ export const usePosterAmbientColor = (
   const path = normalizePosterAmbientPath(posterPath);
   // Esta noche ships the sampled color with the card: correct glow on first paint.
   if (path && !cache.has(path)) {
-    const seeded = parseSeedRgb(seedRgb);
+    const seeded = parseAmbientRgb(seedRgb);
     if (seeded) {
       cache.set(path, seeded);
     }
@@ -196,33 +186,82 @@ export const usePosterAmbientColor = (
   };
 };
 
+/** How long the sala takes to blend from one poster's light to the next. */
+const GRADE_BLEND_MS = 600;
+
+const prefersReducedMotion = () =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 /**
- * Propagate the deck's grade to the enclosing `.diario-que-ver-shell` and <html>, so the
- * full-bleed wash can sit behind SiteHeader. No-op outside a shell or when not cinematic.
+ * Propagate the deck's grade to the deck root, the enclosing `.diario-que-ver-shell` and
+ * <html>, so the full-bleed wash can sit behind SiteHeader. No-op when not cinematic.
+ *
+ * `--que-ver-glow` is an unregistered "r g b" string: CSS can't interpolate it (nor the
+ * gradients built from it), so a new poster used to snap the whole room. The blend runs
+ * here, one rAF loop for GRADE_BLEND_MS, retargeting from wherever it is mid-swipe.
  */
 export const useAmbientGrade = (
   deckRootRef: RefObject<HTMLElement | null>,
   cssRgb: string,
   cinematic: boolean,
 ) => {
+  const shownRef = useRef<AmbientRgb | null>(null);
+  const rafRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (!cinematic) {
       return;
     }
-    const shell = deckRootRef.current?.closest(".diario-que-ver-shell") as HTMLElement | null;
-    if (!shell) {
-      return;
-    }
+    const deckRoot = deckRootRef.current;
+    const shell = deckRoot?.closest(".diario-que-ver-shell") as HTMLElement | null;
     const root = document.documentElement;
-    shell.style.setProperty("--que-ver-glow", cssRgb);
-    shell.dataset.queVerGrade = "live";
-    root.style.setProperty("--que-ver-glow", cssRgb);
+    shell?.setAttribute("data-que-ver-grade", "live");
     root.dataset.queVerGrade = "live";
     return () => {
-      shell.style.removeProperty("--que-ver-glow");
-      delete shell.dataset.queVerGrade;
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      shownRef.current = null;
+      shell?.style.removeProperty("--que-ver-glow");
+      shell?.removeAttribute("data-que-ver-grade");
       root.style.removeProperty("--que-ver-glow");
       delete root.dataset.queVerGrade;
     };
+  }, [cinematic, deckRootRef]);
+
+  useEffect(() => {
+    if (!cinematic) {
+      return;
+    }
+    const target = parseAmbientRgb(cssRgb) ?? AMBIENT_FALLBACK_RGB;
+    const deckRoot = deckRootRef.current;
+    const shell = deckRoot?.closest(".diario-que-ver-shell") as HTMLElement | null;
+    const nodes = [deckRoot, shell, document.documentElement].filter(
+      (node): node is HTMLElement => node != null,
+    );
+    const write = (rgb: AmbientRgb) => {
+      shownRef.current = rgb;
+      const value = formatAmbientRgb(rgb);
+      nodes.forEach((node) => node.style.setProperty("--que-ver-glow", value));
+    };
+
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    const from = shownRef.current;
+    if (!from || prefersReducedMotion()) {
+      write(target);
+      return;
+    }
+
+    const start = performance.now();
+    const step = (now: number) => {
+      const t = (now - start) / GRADE_BLEND_MS;
+      write(mixAmbientRgb(from, target, easeOutAmbient(t)));
+      rafRef.current = t < 1 ? requestAnimationFrame(step) : null;
+    };
+    rafRef.current = requestAnimationFrame(step);
   }, [cinematic, cssRgb, deckRootRef]);
 };
