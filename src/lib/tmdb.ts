@@ -403,6 +403,8 @@ export type TmdbDiscoverResult = TmdbCatalogResult & {
   voteAverage: number | null;
   voteCount: number;
   popularity: number;
+  /** TMDB genre ids straight from the list payload: a taste signal with no extra call. */
+  genreIds: number[];
 };
 
 type TmdbDiscoverItem = {
@@ -442,6 +444,7 @@ const toDiscoverResult = (
     voteAverage: typeof item.vote_average === "number" && item.vote_average > 0 ? item.vote_average : null,
     voteCount: item.vote_count ?? 0,
     popularity: item.popularity ?? 0,
+    genreIds: Array.isArray(item.genre_ids) ? item.genre_ids.filter(Number.isInteger) : [],
   };
 };
 

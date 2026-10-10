@@ -24,64 +24,67 @@ export type HoldoutSplit<T extends HoldoutCandidate> = {
 };
 
 /**
- * Hide the most recent well-rated watches (≥8, 20 %, between 2 and 8) as the
- * ground truth «this user liked it». `null` when the user is too thin to test.
+ * K-fold hold-out over the user's well-rated watches (≥8): round-robin over
+ * recency so every fold mixes recent and old, each fold hides 2–8 titles as the
+ * ground truth «this user liked it» and every liked title is hidden exactly once.
+ * Empty when the user is too thin to test.
  */
-export const splitHoldout = <T extends HoldoutCandidate>(
+export const splitFolds = <T extends HoldoutCandidate>(
   titles: readonly T[],
-): HoldoutSplit<T> | null => {
+  folds = 3,
+): HoldoutSplit<T>[] => {
   const rated = titles.filter((title) => title.watchedAt != null && title.rating != null);
   if (rated.length < EVAL_MIN_RATED) {
-    return null;
+    return [];
   }
   const liked = rated
     .filter((title) => (title.rating ?? 0) >= HOLDOUT_MIN_RATING)
     .sort((a, b) => (b.watchedAt?.getTime() ?? 0) - (a.watchedAt?.getTime() ?? 0));
-  const size = Math.min(
-    HOLDOUT_MAX,
-    Math.max(HOLDOUT_MIN, Math.ceil(liked.length * HOLDOUT_FRACTION)),
-  );
-  if (liked.length < size + 1) {
-    return null;
+  const count = Math.min(folds, Math.floor(liked.length / HOLDOUT_MIN));
+  if (count < 1 || liked.length < HOLDOUT_MIN + 1) {
+    return [];
   }
-  const holdout = liked.slice(0, size);
-  const hidden = new Set(holdout.map((title) => title.id));
-  return { holdout, train: titles.filter((title) => !hidden.has(title.id)) };
+  return Array.from({ length: count }, (_, fold) => {
+    const holdout = liked.filter((_, index) => index % count === fold).slice(0, HOLDOUT_MAX);
+    const hidden = new Set(holdout.map((title) => title.id));
+    return { holdout, train: titles.filter((title) => !hidden.has(title.id)) };
+  });
 };
 
 export const evalKey = (kind: TitleKind, tmdbId: number) => `${kind}:${tmdbId}`;
 
-/** Share of the hidden titles found among the first `k` ranked keys. */
-export const recallAtK = (
-  ranked: readonly string[],
-  hidden: ReadonlySet<string>,
-  k: number,
-) => {
-  if (hidden.size === 0) {
-    return 0;
-  }
+/** How many hidden titles sit among the first `k` ranked keys. */
+export const hitsAtK = (ranked: readonly string[], hidden: ReadonlySet<string>, k: number) => {
   let hits = 0;
   for (const key of ranked.slice(0, k)) {
     if (hidden.has(key)) {
       hits += 1;
     }
   }
-  return hits / hidden.size;
+  return hits;
 };
 
-/** Share of the hidden titles present anywhere in the candidate pool. */
-export const poolRecall = (pool: ReadonlySet<string>, hidden: ReadonlySet<string>) => {
-  if (hidden.size === 0) {
-    return 0;
-  }
+/** Share of the hidden titles found among the first `k` ranked keys. */
+export const recallAtK = (ranked: readonly string[], hidden: ReadonlySet<string>, k: number) =>
+  hidden.size === 0 ? 0 : hitsAtK(ranked, hidden, k) / hidden.size;
+
+/** How many hidden titles are present anywhere in the candidate pool. */
+export const poolHits = (pool: ReadonlySet<string>, hidden: ReadonlySet<string>) => {
   let hits = 0;
   for (const key of hidden) {
     if (pool.has(key)) {
       hits += 1;
     }
   }
-  return hits / hidden.size;
+  return hits;
 };
+
+/** Share of the hidden titles present anywhere in the candidate pool. */
+export const poolRecall = (pool: ReadonlySet<string>, hidden: ReadonlySet<string>) =>
+  hidden.size === 0 ? 0 : poolHits(pool, hidden) / hidden.size;
+
+/** Sorted, joined keys: two accounts with the same signature hold the same library. */
+export const librarySignature = (keys: readonly string[]) => [...keys].sort().join("|");
 
 export const mean = (values: readonly number[]) =>
   values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;
