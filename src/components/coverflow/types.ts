@@ -16,6 +16,10 @@ export type CoverflowTonightMeta = {
   posterAmbient: string | null;
   /** Directors / creators with TMDB ids, for the «Dirigida por» link. */
   leads?: TonightPerson[];
+  /** `reco`: recommended, not in Quiero ver or the library (FIL-I6). */
+  source?: "queue" | "reco";
+  /** Only for `reco`: what to open it with and what led to it. */
+  reco?: { tmdbId: number; seedName: string | null; sourceKind: "recommendations" | "discover" };
 };
 
 export type CoverflowGenre = {

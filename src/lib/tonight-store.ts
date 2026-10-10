@@ -8,7 +8,9 @@ import {
   pickEvents,
   titles,
   tonightPicks,
+  tonightRecos,
   users,
+  type CatalogRow,
   type Platform,
   type Title,
 } from "@/db";
@@ -24,6 +26,9 @@ import {
   PICK_EVENT_KINDS,
   toTonightEvents,
 } from "@/lib/tonight/events";
+import { blockedItemIds } from "@/lib/tonight/candidates";
+import { composeLenses, type RecoEntry } from "@/lib/tonight/compose";
+import { itemVector } from "@/lib/tonight/features";
 import { PARA_TI_NAME, PARA_TI_SLUG } from "@/lib/tonight/select";
 import { findPinnedTitleId, PIN_WINDOW_MS, PINNED_REASON } from "@/lib/tonight/pin";
 import {
@@ -67,6 +72,9 @@ export type TonightCard = CoverflowTitle & {
   overview: string | null;
   /** Directors / creators with their TMDB ids («Dirigida por» links to Buscar). */
   leads: TonightPerson[];
+  /** `reco`: recommended and not in the library, so `id` is the film's catalog id (FIL-I6). */
+  source: "queue" | "reco";
+  reco: { tmdbId: number; seedName: string | null; sourceKind: "recommendations" | "discover" } | null;
 };
 
 export type TonightLensView = {
@@ -430,6 +438,8 @@ const toCard = (
   queueNote: queueEntryOf(row)?.queueNote ?? null,
   overview: row.overview,
   leads: parseStoredPeople(row.tmdbPeople).filter((person) => person.role !== "cast"),
+  source: "queue",
+  reco: null,
 });
 
 /**
@@ -467,6 +477,128 @@ const applyPinnedCard = (
       ? { ...lens, titles: [card, ...lens.titles.filter((title) => title.id !== card.id)] }
       : lens,
   );
+};
+
+/** The pool older than this is a night that never ran: better the queue alone than stale taste. */
+export const RECO_STALE_MS = 7 * 24 * 60 * 60 * 1000;
+
+const catalogToTonightTitle = (row: CatalogRow): TonightTitle => {
+  const providers = parseStoredWatchProviders(row.watchProvidersMx);
+  return {
+    id: row.id,
+    name: row.name,
+    kind: row.kind,
+    year: row.year,
+    runtimeMinutes: row.runtimeMinutes,
+    imdbRating: row.imdbRating,
+    imdbVotes: row.imdbVotes,
+    genres: parseStoredTmdbGenres(row.tmdbGenres),
+    keywords: parseStoredKeywords(row.tmdbKeywords),
+    people: parseStoredPeople(row.tmdbPeople),
+    originalLanguage: row.originalLanguage,
+    platform: null,
+    flatrate: providers?.flatrate ?? [],
+    availableOnMine: true,
+    watchedAt: null,
+    rating: null,
+    review: null,
+    seriesStatus: null,
+    seriesSeason: null,
+    listSlugs: [],
+    availableSince: row.availableSince,
+    createdAt: row.createdAt,
+  };
+};
+
+/**
+ * The user's recommended pool as cards, ready to compose into the lenses. Database only (the
+ * nightly cron did the TMDB work). Films the user has added since, «Ahora no» and «Menos así»
+ * are dropped, and so is a pool nobody has refreshed for a week.
+ */
+export const loadRecoEntries = async (
+  userId: string,
+  userPlatforms: readonly Platform[],
+  events: readonly TonightEvent[],
+  now: Date,
+): Promise<RecoEntry<TonightCard>[]> => {
+  const rows = await db
+    .select({ reco: tonightRecos, catalog })
+    .from(tonightRecos)
+    .innerJoin(catalog, eq(tonightRecos.catalogId, catalog.id))
+    .where(
+      and(
+        eq(tonightRecos.userId, userId),
+        gte(tonightRecos.computedAt, new Date(now.getTime() - RECO_STALE_MS)),
+      ),
+    )
+    .orderBy(asc(tonightRecos.rank));
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const owned = await loadOwnedTitleIdsByCatalog(
+    userId,
+    rows.map((row) => row.catalog.id),
+  );
+  const blocked = blockedItemIds(events, now);
+
+  return rows.flatMap(({ reco, catalog: film }) => {
+    if (owned.has(film.id) || blocked.has(film.id)) {
+      return [];
+    }
+    const title = catalogToTonightTitle(film);
+    const components = parseComponents(reco.components);
+    const reasons = parseReasons(reco.reasons);
+    const sourceKind: "recommendations" | "discover" =
+      reco.sourceKind === "discover" ? "discover" : "recommendations";
+    const card: TonightCard = {
+      ...toCoverflowTitle(
+        {
+          id: film.id,
+          name: film.name,
+          kind: film.kind,
+          year: film.year,
+          rating: null,
+          posterPath: film.posterPath,
+          platform: null,
+          imdbRating: film.imdbRating,
+          watchedAt: null,
+          review: null,
+          seriesStatus: null,
+          watchProvidersMx: film.watchProvidersMx,
+          tmdbGenres: film.tmdbGenres,
+        },
+        userPlatforms,
+      ),
+      runtimeMinutes: film.runtimeMinutes,
+      components,
+      reasons,
+      wildcard: false,
+      pinned: false,
+      posterAmbient: film.posterAmbient,
+      queueNote: null,
+      overview: film.overview,
+      leads: parseStoredPeople(film.tmdbPeople).filter((person) => person.role !== "cast"),
+      source: "reco",
+      reco: { tmdbId: film.tmdbId, seedName: reco.seedName, sourceKind },
+    };
+    return [
+      {
+        card,
+        scored: {
+          title,
+          vector: itemVector(title),
+          pick: {
+            titleId: film.id,
+            components,
+            baseScore: reco.score,
+            reasons,
+            wildcard: false,
+          },
+        },
+      },
+    ];
+  });
 };
 
 const lensesFromResult = (
@@ -555,16 +687,18 @@ export const getTonightDecks = async (
     const rowsById = new Map(input.rows.map((row) => [row.id, row]));
     const freshPinnedId = findPinnedTitleId(input.events, now);
     const freshLenses = lensesFromResult(result, rowsById, input.userPlatforms);
+    const freshRecos = await loadRecoEntries(userId, input.userPlatforms, input.events, now);
+    const queueLenses = freshPinnedId
+      ? applyPinnedCard(
+          freshLenses,
+          rowsById.get(freshPinnedId),
+          result.lenses.flatMap((lens) => lens.picks).find((pick) => pick.titleId === freshPinnedId) ??
+            null,
+          input.userPlatforms,
+        )
+      : freshLenses;
     return {
-      lenses: freshPinnedId
-        ? applyPinnedCard(
-            freshLenses,
-            rowsById.get(freshPinnedId),
-            result.lenses.flatMap((lens) => lens.picks).find((pick) => pick.titleId === freshPinnedId) ??
-              null,
-            input.userPlatforms,
-          )
-        : freshLenses,
+      lenses: composeLenses(queueLenses, freshRecos),
       nightEnds: input.nightEnds,
       userPlatforms: input.userPlatforms,
       profileSize: result.profileSize,
@@ -635,23 +769,26 @@ export const getTonightDecks = async (
       picks.find((pick) => pick.titleId === pinnedId))
     : undefined;
 
+  const queueLenses = pinnedId
+    ? applyPinnedCard(
+        lenses,
+        rowsById.get(pinnedId),
+        pinnedPick
+          ? {
+              titleId: pinnedPick.titleId,
+              components: parseComponents(pinnedPick.components),
+              baseScore: pinnedPick.score,
+              reasons: parseReasons(pinnedPick.reasons),
+              wildcard: pinnedPick.wildcard === 1,
+            }
+          : null,
+        prefs.userPlatforms,
+      )
+    : lenses;
+  const recos = await loadRecoEntries(userId, prefs.userPlatforms, events, now);
+
   return {
-    lenses: pinnedId
-      ? applyPinnedCard(
-          lenses,
-          rowsById.get(pinnedId),
-          pinnedPick
-            ? {
-                titleId: pinnedPick.titleId,
-                components: parseComponents(pinnedPick.components),
-                baseScore: pinnedPick.score,
-                reasons: parseReasons(pinnedPick.reasons),
-                wildcard: pinnedPick.wildcard === 1,
-              }
-            : null,
-          prefs.userPlatforms,
-        )
-      : lenses,
+    lenses: composeLenses(queueLenses, recos),
     nightEnds: prefs.nightEnds,
     userPlatforms: prefs.userPlatforms,
     profileSize: 0,

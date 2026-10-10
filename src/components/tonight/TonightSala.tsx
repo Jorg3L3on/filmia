@@ -18,6 +18,7 @@ import { useNavLabel } from "@/components/NavOriginTracker";
 import { cn } from "@/lib/cn";
 import { DECK_CARD_PARAM, deckCardFrom, deckIndexOf } from "@/lib/nav-origin";
 import { showToast } from "@/lib/toast";
+import { interleaveBySource } from "@/lib/tonight/compose";
 import { rankForNow, TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import { dayPartOf } from "@/lib/tonight/time";
 import type { TonightDecks } from "@/lib/tonight-store";
@@ -90,7 +91,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
       });
       map.set(
         lens.slug,
-        ranked.map((card) => ({
+        // Ranked by the clock, then queue and recommended alternate (the pinned one leads).
+        interleaveBySource(ranked).map((card) => ({
           ...card,
           tonight: {
             runtimeMinutes: card.runtimeMinutes,
@@ -103,6 +105,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
             lens: lens.slug,
             posterAmbient: card.posterAmbient,
             leads: card.leads,
+            source: card.source,
+            reco: card.reco ?? undefined,
           },
         })),
       );
