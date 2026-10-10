@@ -127,12 +127,13 @@ const main = async () => {
     ...chunk(sourceEvents).map((rows) =>
       db.insert(pickEvents).values(
         rows
-          .filter((row) => titleMap.has(row.titleId))
+          .filter((row) => (row.titleId ? titleMap.has(row.titleId) : row.catalogId != null))
           .map((row) => ({
             ...row,
             id: createId(),
             userId,
-            titleId: mapped(titleMap, row.titleId),
+            // Events on recommendations (no title yet) are filed by film only.
+            titleId: row.titleId ? mapped(titleMap, row.titleId) : null,
           })),
       ),
     ),

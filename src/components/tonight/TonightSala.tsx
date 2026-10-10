@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { markNotTonight } from "@/app/actions/tonight";
+import { markNotTonight, sendTasteFeedback } from "@/app/actions/tonight";
 import { removeFromWatchlist, undoMarkWatched } from "@/app/actions/watchlist";
 import { CoverflowDeck } from "@/components/CoverflowDeck";
 import { EmptyState } from "@/components/EmptyState";
@@ -11,13 +11,17 @@ import type { CoverflowTitle } from "@/components/coverflow/types";
 import { TonightCardMenu } from "@/components/tonight/TonightCardMenu";
 import { TonightProvider, type TonightHandlers } from "@/components/tonight/TonightContext";
 import { TonightEyebrow } from "@/components/tonight/TonightEyebrow";
+import { RecoPreviewSheet } from "@/components/tonight/RecoPreviewSheet";
 import { WhySheet } from "@/components/tonight/WhySheet";
 import { useImpressions } from "@/components/tonight/useImpressions";
+import { useRecoActions } from "@/components/tonight/useRecoActions";
 import { useTonightClock } from "@/components/tonight/useTonightClock";
 import { useNavLabel } from "@/components/NavOriginTracker";
 import { cn } from "@/lib/cn";
 import { DECK_CARD_PARAM, deckCardFrom, deckIndexOf } from "@/lib/nav-origin";
 import { showToast } from "@/lib/toast";
+import { interleaveBySource } from "@/lib/tonight/compose";
+import { pickRefOf } from "@/lib/tonight/reco-card";
 import { rankForNow, TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import { dayPartOf } from "@/lib/tonight/time";
 import type { TonightDecks } from "@/lib/tonight-store";
@@ -52,6 +56,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   const liveRef = useRef<HTMLDivElement>(null);
   const timers = useRef<number[]>([]);
   const impressions = useImpressions(activeSlug);
+  const reco = useRecoActions();
+  const recoLocal = reco.local;
 
   useEffect(
     () => () => {
@@ -90,7 +96,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
       });
       map.set(
         lens.slug,
-        ranked.map((card) => ({
+        // Ranked by the clock, then queue and recommended alternate (the pinned one leads).
+        interleaveBySource(ranked).map((card) => ({
           ...card,
           tonight: {
             runtimeMinutes: card.runtimeMinutes,
@@ -103,12 +110,14 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
             lens: lens.slug,
             posterAmbient: card.posterAmbient,
             leads: card.leads,
+            source: card.source,
+            reco: card.reco ? { ...card.reco, saved: recoLocal[card.id]?.inWatchlist ?? false } : undefined,
           },
         })),
       );
     }
     return map;
-  }, [decks, hidden, now]);
+  }, [decks, hidden, now, recoLocal]);
 
   const lenses = useMemo(
     () =>
@@ -163,9 +172,16 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     dayPart,
     onWhy: (title) => setWhyTitle(title),
     onOpenMenu: (title) => setMenuTitle(title),
-    onOpened: (title) => impressions.push(title.id, "opened"),
+    onOpened: (title) => impressions.push(pickRefOf(title), "opened"),
+    onOpenReco: (title) => {
+      impressions.push(pickRefOf(title), "opened");
+      reco.openPreview(title);
+    },
+    markRecoSeen: (title) => reco.markSeen(title),
     onWatched: (title) => {
-      impressions.push(title.id, "watched");
+      impressions.push(pickRefOf(title), "watched");
+      // A recommendation becomes a real title the moment it is seen: undo works on that one.
+      const titleId = reco.titleIdOf(title.id) ?? title.id;
       hide(title.id);
       showToast({
         title: "En tu diario",
@@ -175,7 +191,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
           label: "Deshacer",
           onClick: () => {
             unhide(title.id);
-            void undoMarkWatched(title.id).catch(() => {
+            void undoMarkWatched(titleId).catch(() => {
               showToast({ title: "No se pudo deshacer", variant: "error" });
             });
           },
@@ -198,6 +214,17 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     });
   };
 
+  /** «No me interesa» on a recommendation: gone for good (Menos así) and Hoy learns. */
+  const handleNotInterested = (title: CoverflowTitle) => {
+    setMenuTitle(null);
+    hide(title.id);
+    showToast({ title: "No te la volveremos a sugerir", description: title.name });
+    void sendTasteFeedback({ catalogId: title.id }, "less_like", title.tonight?.lens ?? activeLens?.slug).catch(() => {
+      unhide(title.id);
+      showToast({ title: "No se pudo guardar", variant: "error" });
+    });
+  };
+
   const handleRemove = (title: CoverflowTitle) => {
     setMenuTitle(null);
     hide(title.id);
@@ -211,7 +238,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   // The hero's own lens drives the rail; lens + card live in the URL (impressions settle the previous hero first).
   const handleActiveChange = useCallback(
     (_index: number, title: CoverflowTitle) => {
-      impressions.onHeroChange(title.id);
+      impressions.onHeroChange(pickRefOf(title));
       const slug = title.tonight?.lens;
       if (!slug) {
         return;
@@ -286,7 +313,22 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
           onClose={() => setMenuTitle(null)}
           onNotTonight={handleNotTonight}
           onRemove={handleRemove}
+          onOpenReco={(title) => {
+            setMenuTitle(null);
+            reco.openPreview(title);
+          }}
+          onSaveReco={(title) => {
+            setMenuTitle(null);
+            reco.add(title, "watchlist");
+          }}
+          onPinReco={(title) => {
+            setMenuTitle(null);
+            reco.pin(title);
+          }}
+          onNotInterested={handleNotInterested}
+          saved={menuTitle ? reco.isSaved(menuTitle.id) : false}
         />
+        <RecoPreviewSheet actions={reco} />
       </div>
     </TonightProvider>
   );

@@ -8,7 +8,7 @@ import { SearchResultsSkeleton } from "@/components/PageSkeletons";
 import { SearchPreviewSheet } from "@/components/SearchPreviewSheet";
 import { TmdbSearchUnavailable } from "@/components/TmdbSearchUnavailable";
 import { TmdbSearchResults } from "@/components/TmdbSearchResults";
-import { BuscarStart } from "@/components/tmdb-search/BuscarStart";
+import { BuscarStart, FavoriteDirectors } from "@/components/tmdb-search/BuscarStart";
 import {
   DirectorPicker,
   DirectorSuggestion,
@@ -230,7 +230,7 @@ export const TmdbSearchAdd = ({
         />
       ) : (
         <>
-          <div className="sticky top-[calc(3rem+env(safe-area-inset-top))] z-30 -mx-4 bg-canvas/90 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+          <div className="sticky top-[calc(7.25rem+env(safe-area-inset-top))] z-30 sm:top-[calc(3rem+env(safe-area-inset-top))] -mx-4 bg-canvas/90 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
             <TmdbKindFilterChips
               value={mode === "director" ? "DIRECTOR" : kindFilter}
               onChange={onChip}
@@ -294,17 +294,20 @@ export const TmdbSearchAdd = ({
 
           {!hasSearched ? (
             mode === "director" ? (
-              <EmptyState
-                variant="buscar"
-                title="Busca un director"
-                description="Escribe su nombre y verás su filmografía, de lo más reciente a lo primero."
-              />
+              startDirectors.length > 0 ? (
+                <FavoriteDirectors directors={startDirectors} />
+              ) : (
+                <EmptyState
+                  variant="buscar"
+                  title="Busca un director"
+                  description="Escribe su nombre y verás su filmografía, de lo más reciente a lo primero."
+                />
+              )
             ) : (
               <BuscarStart
                 recents={recents}
                 onPickRecent={onQueryChange}
                 onClearRecents={clearRecents}
-                directors={startDirectors}
               />
             )
           ) : null}

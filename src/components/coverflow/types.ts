@@ -16,6 +16,22 @@ export type CoverflowTonightMeta = {
   posterAmbient: string | null;
   /** Directors / creators with TMDB ids, for the «Dirigida por» link. */
   leads?: TonightPerson[];
+  /** `reco`: recommended, not in Quiero ver or the library (FIL-I6). */
+  source?: "queue" | "reco";
+  /** Only for `reco`: what to open it with and what led to it. */
+  reco?: RecoMeta;
+};
+
+/** What a recommended card (not in the library) knows about the film, enough to open its preview. */
+export type RecoMeta = {
+  tmdbId: number;
+  seedName: string | null;
+  sourceKind: "recommendations" | "discover";
+  originalName: string | null;
+  backdropPath: string | null;
+  overview: string | null;
+  /** Added to Quiero ver (or pinned) during this visit: the badge says so. */
+  saved?: boolean;
 };
 
 export type CoverflowGenre = {

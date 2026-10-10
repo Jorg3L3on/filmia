@@ -66,9 +66,10 @@ const useOriginTab = (pathname: string, searchMode: boolean) => {
 
 /**
  * Floating glass dock: four tabs + center Buscar disc, sliding glass pill on
- * the active tab. On /buscar it changes shape (iOS 26 Music / App Store): the
- * tabs fold into one disc on the left (the tab you came from) and the center
- * disc stretches into the search field, within thumb reach.
+ * the active tab. On /buscar it changes shape: the tabs fold into one disc on
+ * the left (the tab you came from) and the center disc stretches into the search
+ * field, which moves to the top of the screen under the header, where people
+ * expect a search box (it used to ride at the bottom, above the keyboard).
  */
 export const BottomNav = () => {
   const pathname = usePathname();
@@ -79,7 +80,6 @@ export const BottomNav = () => {
     isMobileNavCurrent(item.href, pathname),
   );
   const activeColumn = activeIndex === -1 ? null : columnFor(activeIndex);
-  const [keyboardInset, setKeyboardInset] = useState(0);
 
   // Leaving Buscar: the next visit starts from its own URL, not the last words.
   useEffect(() => {
@@ -90,11 +90,11 @@ export const BottomNav = () => {
 
   if (searchMode) {
     return (
-      <BottomNavShell keyboardInset={keyboardInset}>
+      <BottomNavShell placement="top">
         {/* Results fade out under the field instead of colliding with it. */}
         <div
           aria-hidden
-          className="pointer-events-none fixed inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-canvas via-canvas/85 to-transparent"
+          className="pointer-events-none fixed inset-x-0 top-[calc(3rem+env(safe-area-inset-top))] -z-10 h-[4.25rem] bg-gradient-to-b from-canvas via-canvas/95 to-canvas/0"
         />
         <div className="flex items-center gap-2.5">
           <ViewTransition name="dock-shell" share={DOCK_MORPH} default="none">
@@ -105,7 +105,8 @@ export const BottomNav = () => {
               data-nav={origin.icon}
               className={cn(
                 dockGlassClass,
-                "press-scale relative flex size-[3.375rem] shrink-0 items-center justify-center rounded-full text-paper",
+                // The glass highlight is a hairline across the top: on a round disc it reads as a stray white line.
+                "before:hidden press-scale relative flex size-[3.375rem] shrink-0 items-center justify-center rounded-full text-paper",
                 focusRing,
               )}
             >
@@ -113,7 +114,7 @@ export const BottomNav = () => {
             </Link>
           </ViewTransition>
           <ViewTransition name="dock-search" share={DOCK_MORPH} default="none">
-            <DockSearchField onKeyboardInset={setKeyboardInset} />
+            <DockSearchField />
           </ViewTransition>
         </div>
       </BottomNavShell>

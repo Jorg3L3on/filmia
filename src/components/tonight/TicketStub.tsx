@@ -25,6 +25,11 @@ type TicketStubProps = {
   onCommit?: () => void;
   onSaved?: () => void;
   onError?: (message: string) => void;
+  /**
+   * Log it seen right away instead of opening «Marqué visto» (a recommendation has no title to
+   * rate yet). Resolves to an error message, or null when it saved.
+   */
+  commitDirectly?: () => Promise<string | null>;
   className?: string;
 };
 
@@ -50,6 +55,7 @@ export const TicketStub = ({
   onCommit,
   onSaved,
   onError,
+  commitDirectly,
   className,
 }: TicketStubProps) => {
   const [open, setOpen] = useState(false);
@@ -71,6 +77,17 @@ export const TicketStub = ({
   const openSheet = () => {
     onCommit?.();
     setTorn(true);
+    if (commitDirectly) {
+      void commitDirectly().then((error) => {
+        if (error) {
+          reset();
+          onError?.(error);
+          return;
+        }
+        onSaved?.();
+      });
+      return;
+    }
     setOpen(true);
   };
 

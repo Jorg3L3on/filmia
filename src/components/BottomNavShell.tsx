@@ -7,15 +7,19 @@ import { safeAreaInsetXPadClass } from "@/lib/ui";
 
 type BottomNavShellProps = {
   children: ReactNode;
-  /** iOS keyboard height while the Buscar field has focus: the dock rides above it. */
-  keyboardInset?: number;
+  /**
+   * `bottom` (tabs) floats above the home indicator; `top` (the Buscar field) sits right under
+   * the header, where people look for a search box, and needs no keyboard handling.
+   */
+  placement?: "bottom" | "top";
 };
 
 /**
  * Tiny client leaf: floating glass dock frame + blur stale focus on route change.
- * The dock floats above the home indicator: max(safe-area-inset-bottom, 0.75rem).
+ * The tab dock floats above the home indicator: max(safe-area-inset-bottom, 0.75rem). The
+ * Buscar field sits under the 3 rem header instead (see SiteHeader).
  */
-export const BottomNavShell = ({ children, keyboardInset = 0 }: BottomNavShellProps) => {
+export const BottomNavShell = ({ children, placement = "bottom" }: BottomNavShellProps) => {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
 
@@ -37,11 +41,12 @@ export const BottomNavShell = ({ children, keyboardInset = 0 }: BottomNavShellPr
       ref={navRef}
       aria-label="Principal móvil"
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-0 z-50 sm:hidden",
-        keyboardInset > 0 ? "pb-2" : "pb-[max(env(safe-area-inset-bottom),0.75rem)]",
+        "pointer-events-none fixed inset-x-0 z-50 sm:hidden",
+        placement === "top"
+          ? "top-[calc(3rem+env(safe-area-inset-top))] pt-2"
+          : "bottom-0 pb-[max(env(safe-area-inset-bottom),0.75rem)]",
         safeAreaInsetXPadClass,
       )}
-      style={keyboardInset > 0 ? { bottom: keyboardInset } : undefined}
     >
       <div className="pointer-events-auto relative mx-auto max-w-lg">{children}</div>
     </nav>

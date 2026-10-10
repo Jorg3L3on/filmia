@@ -1,23 +1,34 @@
 import { createId } from "@paralleldrive/cuid2";
 import { and, asc, eq, gte, inArray, sql, type SQL } from "drizzle-orm";
 import {
+  catalog,
   db,
   listItems,
   lists,
   pickEvents,
   titles,
   tonightPicks,
+  tonightRecos,
   users,
+  type CatalogRow,
   type Platform,
   type Title,
 } from "@/db";
-import type { CoverflowTitle } from "@/components/coverflow/types";
+import type { CoverflowTitle, RecoMeta } from "@/components/coverflow/types";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { flattenTitle } from "@/lib/catalog-core";
 import { toCoverflowTitle } from "@/lib/coverflow-title";
 import { scheduleDiaryWatchlistEnrichment } from "@/lib/diary-enrich";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { WATCHLIST_SLUG } from "@/lib/lists";
+import {
+  isPickEventKind,
+  PICK_EVENT_KINDS,
+  toTonightEvents,
+} from "@/lib/tonight/events";
+import { blockedItemIds } from "@/lib/tonight/candidates";
+import { composeLenses, type RecoEntry } from "@/lib/tonight/compose";
+import { itemVector } from "@/lib/tonight/features";
 import { PARA_TI_NAME, PARA_TI_SLUG } from "@/lib/tonight/select";
 import { findPinnedTitleId, PIN_WINDOW_MS, PINNED_REASON } from "@/lib/tonight/pin";
 import {
@@ -46,19 +57,7 @@ import { parseStoredWatchProviders } from "@/lib/watch-providers";
 export const TONIGHT_STALE_MS = 24 * 60 * 60 * 1000;
 export const TONIGHT_EVENTS_WINDOW_DAYS = 30;
 
-export const PICK_EVENT_KINDS: readonly PickEventKind[] = [
-  "shown",
-  "skipped",
-  "not_tonight",
-  "opened",
-  "watched",
-  "more_like",
-  "less_like",
-  "pinned",
-];
-
-export const isPickEventKind = (value: unknown): value is PickEventKind =>
-  typeof value === "string" && (PICK_EVENT_KINDS as readonly string[]).includes(value);
+export { isPickEventKind, PICK_EVENT_KINDS };
 
 /** What the sala receives: a coverflow card plus everything the ranker and the reasons need. */
 export type TonightCard = CoverflowTitle & {
@@ -73,6 +72,9 @@ export type TonightCard = CoverflowTitle & {
   overview: string | null;
   /** Directors / creators with their TMDB ids («Dirigida por» links to Buscar). */
   leads: TonightPerson[];
+  /** `reco`: recommended and not in the library, so `id` is the film's catalog id (FIL-I6). */
+  source: "queue" | "reco";
+  reco: RecoMeta | null;
 };
 
 export type TonightLensView = {
@@ -208,17 +210,39 @@ export const toTonightTitle = (
   };
 };
 
-const loadEvents = async (userId: string, now: Date): Promise<TonightEvent[]> => {
+/** Owned `Title` ids by film, so events filed under a catalog id reach the user's title. */
+export const loadOwnedTitleIdsByCatalog = async (
+  userId: string,
+  catalogIds: readonly string[],
+): Promise<Map<string, string>> => {
+  const unique = [...new Set(catalogIds)];
+  if (unique.length === 0) {
+    return new Map();
+  }
+  const rows = await db.query.titles.findMany({
+    where: and(eq(titles.userId, userId), inArray(titles.catalogId, unique)),
+    columns: { id: true, catalogId: true },
+  });
+  return new Map(rows.map((row) => [row.catalogId, row.id]));
+};
+
+const loadEvents = async (
+  userId: string,
+  now: Date,
+  ownedByCatalog?: ReadonlyMap<string, string>,
+): Promise<TonightEvent[]> => {
   const since = new Date(now.getTime() - TONIGHT_EVENTS_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   const rows = await db.query.pickEvents.findMany({
     where: and(eq(pickEvents.userId, userId), gte(pickEvents.createdAt, since)),
-    columns: { titleId: true, kind: true, createdAt: true },
+    columns: { titleId: true, catalogId: true, kind: true, createdAt: true },
   });
-  return rows.flatMap((row) =>
-    isPickEventKind(row.kind)
-      ? [{ titleId: row.titleId, kind: row.kind, createdAt: row.createdAt }]
-      : [],
-  );
+  const owned =
+    ownedByCatalog ??
+    (await loadOwnedTitleIdsByCatalog(
+      userId,
+      rows.flatMap((row) => (row.catalogId ? [row.catalogId] : [])),
+    ));
+  return toTonightEvents(rows, owned);
 };
 
 /** The title pinned for tonight right now (Buscar opens its sheet in the done state). */
@@ -233,14 +257,13 @@ export const getPinnedTonightTitleId = async (
       gte(pickEvents.createdAt, since),
       inArray(pickEvents.kind, ["pinned", "not_tonight"]),
     ),
-    columns: { titleId: true, kind: true, createdAt: true },
+    columns: { titleId: true, catalogId: true, kind: true, createdAt: true },
   });
-  return findPinnedTitleId(
-    rows.flatMap((row) =>
-      isPickEventKind(row.kind) ? [{ titleId: row.titleId, kind: row.kind, createdAt: row.createdAt }] : [],
-    ),
-    now,
+  const owned = await loadOwnedTitleIdsByCatalog(
+    userId,
+    rows.flatMap((row) => (row.catalogId ? [row.catalogId] : [])),
   );
+  return findPinnedTitleId(toTonightEvents(rows, owned), now);
 };
 
 const loadUserPrefs = async (userId: string) => {
@@ -325,23 +348,83 @@ export const scheduleTonightRecompute = (userId: string) => {
   });
 };
 
-export const recordPickEvents = async (
-  userId: string,
-  events: ReadonlyArray<{ titleId: string; kind: PickEventKind; lens?: string | null }>,
-) => {
+export type PickEventWrite = {
+  /** The user's own entry, when the feedback is about a title they have. */
+  titleId?: string | null;
+  /** The film; set for recommendations that are not in the library yet. */
+  catalogId?: string | null;
+  kind: PickEventKind;
+  lens?: string | null;
+};
+
+/**
+ * Store feedback by film. A `titleId` is resolved to its `catalogId` (so the event survives the
+ * title and still counts for the recommendation of the same film); a bare `catalogId` must exist.
+ */
+export const recordPickEvents = async (userId: string, events: ReadonlyArray<PickEventWrite>) => {
   if (events.length === 0) {
     return;
   }
+
+  const titleIds = [...new Set(events.flatMap((event) => (event.titleId ? [event.titleId] : [])))];
+  const ownedRows = titleIds.length
+    ? await db.query.titles.findMany({
+        where: and(eq(titles.userId, userId), inArray(titles.id, titleIds)),
+        columns: { id: true, catalogId: true },
+      })
+    : [];
+  const catalogByTitle = new Map(ownedRows.map((row) => [row.id, row.catalogId]));
+
+  const bareCatalogIds = [
+    ...new Set(
+      events.flatMap((event) => (!event.titleId && event.catalogId ? [event.catalogId] : [])),
+    ),
+  ];
+  const knownCatalog = new Set(
+    bareCatalogIds.length
+      ? (
+          await db.query.catalog.findMany({
+            where: inArray(catalog.id, bareCatalogIds),
+            columns: { id: true },
+          })
+        ).map((row) => row.id)
+      : [],
+  );
+
   const now = new Date();
+  const values = events.flatMap((event): Array<{
+    titleId: string | null;
+    catalogId: string;
+    kind: PickEventKind;
+    lens: string | null;
+  }> => {
+    if (event.titleId) {
+      const catalogId = catalogByTitle.get(event.titleId);
+      // Not the user's title: drop it rather than file feedback under someone else's id.
+      return catalogId
+        ? [{ titleId: event.titleId, catalogId, kind: event.kind, lens: event.lens ?? null }]
+        : [];
+    }
+    if (event.catalogId && knownCatalog.has(event.catalogId)) {
+      // About the film as a recommendation: it keeps no title even if the user adds it a moment
+      // later (reads map it to their title), so recommended and queue events stay apart.
+      return [
+        {
+          titleId: null,
+          catalogId: event.catalogId,
+          kind: event.kind,
+          lens: event.lens ?? null,
+        },
+      ];
+    }
+    return [];
+  });
+  if (values.length === 0) {
+    return;
+  }
+
   await db.insert(pickEvents).values(
-    events.map((event) => ({
-      id: createId(),
-      userId,
-      titleId: event.titleId,
-      kind: event.kind,
-      lens: event.lens ?? null,
-      createdAt: now,
-    })),
+    values.map((value) => ({ id: createId(), userId, ...value, createdAt: now })),
   );
 };
 
@@ -361,6 +444,8 @@ const toCard = (
   queueNote: queueEntryOf(row)?.queueNote ?? null,
   overview: row.overview,
   leads: parseStoredPeople(row.tmdbPeople).filter((person) => person.role !== "cast"),
+  source: "queue",
+  reco: null,
 });
 
 /**
@@ -398,6 +483,135 @@ const applyPinnedCard = (
       ? { ...lens, titles: [card, ...lens.titles.filter((title) => title.id !== card.id)] }
       : lens,
   );
+};
+
+/** The pool older than this is a night that never ran: better the queue alone than stale taste. */
+export const RECO_STALE_MS = 7 * 24 * 60 * 60 * 1000;
+
+const catalogToTonightTitle = (row: CatalogRow): TonightTitle => {
+  const providers = parseStoredWatchProviders(row.watchProvidersMx);
+  return {
+    id: row.id,
+    name: row.name,
+    kind: row.kind,
+    year: row.year,
+    runtimeMinutes: row.runtimeMinutes,
+    imdbRating: row.imdbRating,
+    imdbVotes: row.imdbVotes,
+    genres: parseStoredTmdbGenres(row.tmdbGenres),
+    keywords: parseStoredKeywords(row.tmdbKeywords),
+    people: parseStoredPeople(row.tmdbPeople),
+    originalLanguage: row.originalLanguage,
+    platform: null,
+    flatrate: providers?.flatrate ?? [],
+    availableOnMine: true,
+    watchedAt: null,
+    rating: null,
+    review: null,
+    seriesStatus: null,
+    seriesSeason: null,
+    listSlugs: [],
+    availableSince: row.availableSince,
+    createdAt: row.createdAt,
+  };
+};
+
+/**
+ * The user's recommended pool as cards, ready to compose into the lenses. Database only (the
+ * nightly cron did the TMDB work). Films the user has added since, «Ahora no» and «Menos así»
+ * are dropped, and so is a pool nobody has refreshed for a week.
+ */
+export const loadRecoEntries = async (
+  userId: string,
+  userPlatforms: readonly Platform[],
+  events: readonly TonightEvent[],
+  now: Date,
+): Promise<RecoEntry<TonightCard>[]> => {
+  const rows = await db
+    .select({ reco: tonightRecos, catalog })
+    .from(tonightRecos)
+    .innerJoin(catalog, eq(tonightRecos.catalogId, catalog.id))
+    .where(
+      and(
+        eq(tonightRecos.userId, userId),
+        gte(tonightRecos.computedAt, new Date(now.getTime() - RECO_STALE_MS)),
+      ),
+    )
+    .orderBy(asc(tonightRecos.rank));
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const owned = await loadOwnedTitleIdsByCatalog(
+    userId,
+    rows.map((row) => row.catalog.id),
+  );
+  const blocked = blockedItemIds(events, now);
+
+  return rows.flatMap(({ reco, catalog: film }) => {
+    if (owned.has(film.id) || blocked.has(film.id)) {
+      return [];
+    }
+    const title = catalogToTonightTitle(film);
+    const components = parseComponents(reco.components);
+    const reasons = parseReasons(reco.reasons);
+    const sourceKind: "recommendations" | "discover" =
+      reco.sourceKind === "discover" ? "discover" : "recommendations";
+    const card: TonightCard = {
+      ...toCoverflowTitle(
+        {
+          id: film.id,
+          name: film.name,
+          kind: film.kind,
+          year: film.year,
+          rating: null,
+          posterPath: film.posterPath,
+          platform: null,
+          imdbRating: film.imdbRating,
+          watchedAt: null,
+          review: null,
+          seriesStatus: null,
+          watchProvidersMx: film.watchProvidersMx,
+          tmdbGenres: film.tmdbGenres,
+        },
+        userPlatforms,
+      ),
+      runtimeMinutes: film.runtimeMinutes,
+      components,
+      reasons,
+      wildcard: false,
+      pinned: false,
+      posterAmbient: film.posterAmbient,
+      queueNote: null,
+      overview: film.overview,
+      leads: parseStoredPeople(film.tmdbPeople).filter((person) => person.role !== "cast"),
+      source: "reco",
+      reco: {
+        tmdbId: film.tmdbId,
+        seedName: reco.seedName,
+        sourceKind,
+        originalName: film.originalName,
+        backdropPath: film.backdropPath,
+        overview: film.overview,
+      },
+    };
+    return [
+      {
+        card,
+        scored: {
+          title,
+          vector: itemVector(title),
+          pick: {
+            titleId: film.id,
+            components,
+            baseScore: reco.score,
+            reasons,
+            wildcard: false,
+          },
+        },
+      },
+    ];
+  });
 };
 
 const lensesFromResult = (
@@ -486,16 +700,18 @@ export const getTonightDecks = async (
     const rowsById = new Map(input.rows.map((row) => [row.id, row]));
     const freshPinnedId = findPinnedTitleId(input.events, now);
     const freshLenses = lensesFromResult(result, rowsById, input.userPlatforms);
+    const freshRecos = await loadRecoEntries(userId, input.userPlatforms, input.events, now);
+    const queueLenses = freshPinnedId
+      ? applyPinnedCard(
+          freshLenses,
+          rowsById.get(freshPinnedId),
+          result.lenses.flatMap((lens) => lens.picks).find((pick) => pick.titleId === freshPinnedId) ??
+            null,
+          input.userPlatforms,
+        )
+      : freshLenses;
     return {
-      lenses: freshPinnedId
-        ? applyPinnedCard(
-            freshLenses,
-            rowsById.get(freshPinnedId),
-            result.lenses.flatMap((lens) => lens.picks).find((pick) => pick.titleId === freshPinnedId) ??
-              null,
-            input.userPlatforms,
-          )
-        : freshLenses,
+      lenses: composeLenses(queueLenses, freshRecos),
       nightEnds: input.nightEnds,
       userPlatforms: input.userPlatforms,
       profileSize: result.profileSize,
@@ -566,23 +782,26 @@ export const getTonightDecks = async (
       picks.find((pick) => pick.titleId === pinnedId))
     : undefined;
 
+  const queueLenses = pinnedId
+    ? applyPinnedCard(
+        lenses,
+        rowsById.get(pinnedId),
+        pinnedPick
+          ? {
+              titleId: pinnedPick.titleId,
+              components: parseComponents(pinnedPick.components),
+              baseScore: pinnedPick.score,
+              reasons: parseReasons(pinnedPick.reasons),
+              wildcard: pinnedPick.wildcard === 1,
+            }
+          : null,
+        prefs.userPlatforms,
+      )
+    : lenses;
+  const recos = await loadRecoEntries(userId, prefs.userPlatforms, events, now);
+
   return {
-    lenses: pinnedId
-      ? applyPinnedCard(
-          lenses,
-          rowsById.get(pinnedId),
-          pinnedPick
-            ? {
-                titleId: pinnedPick.titleId,
-                components: parseComponents(pinnedPick.components),
-                baseScore: pinnedPick.score,
-                reasons: parseReasons(pinnedPick.reasons),
-                wildcard: pinnedPick.wildcard === 1,
-              }
-            : null,
-          prefs.userPlatforms,
-        )
-      : lenses,
+    lenses: composeLenses(queueLenses, recos),
     nightEnds: prefs.nightEnds,
     userPlatforms: prefs.userPlatforms,
     profileSize: 0,

@@ -22,7 +22,10 @@ import {
 } from "@/lib/tonight-store";
 
 export type PickEventInput = {
-  titleId: string;
+  /** The user's own title; omit for a recommendation that is not in the library yet. */
+  titleId?: string;
+  /** The film itself; needed when there is no `titleId`. */
+  catalogId?: string;
   kind: PickEventKind;
   lens?: string | null;
 };
@@ -35,8 +38,8 @@ export const recordPickEvents = async (events: PickEventInput[]) => {
   const clean = events
     .filter(
       (event) =>
-        typeof event.titleId === "string" &&
-        event.titleId.length > 0 &&
+        ((typeof event.titleId === "string" && event.titleId.length > 0) ||
+          (typeof event.catalogId === "string" && event.catalogId.length > 0)) &&
         isPickEventKind(event.kind),
     )
     .slice(0, MAX_BATCH);
@@ -154,14 +157,17 @@ export const pinTonightFromFicha = async (titleId: string): Promise<PinTonightFr
   return { ok: true, addedToWatchlist: !inWatchlist };
 };
 
-/** Más así / Menos así from the «Por qué esta» sheet. */
+/**
+ * Más así / Menos así from the «Por qué esta» sheet, and «No me interesa» on a recommendation.
+ * A film in the library is addressed by its `titleId`; a recommendation, by its `catalogId`.
+ */
 export const sendTasteFeedback = async (
-  titleId: string,
+  ref: { titleId?: string; catalogId?: string },
   kind: "more_like" | "less_like",
   lens?: string | null,
 ) => {
   const userId = await requireUserId();
-  await persistPickEvents(userId, [{ titleId, kind, lens }]);
+  await persistPickEvents(userId, [{ ...ref, kind, lens }]);
   scheduleTonightRecompute(userId);
   revalidatePath("/");
 };

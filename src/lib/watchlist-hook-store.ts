@@ -4,7 +4,8 @@ import { PARA_TI_SLUG } from "@/lib/tonight/select";
 import { findPinnedTitleId } from "@/lib/tonight/pin";
 import { NOT_TONIGHT_DAYS } from "@/lib/tonight/score";
 import type { TonightEvent, TonightReason } from "@/lib/tonight/types";
-import { isPickEventKind, parseReasons } from "@/lib/tonight-store";
+import { toTonightEvents } from "@/lib/tonight/events";
+import { loadOwnedTitleIdsByCatalog, parseReasons } from "@/lib/tonight-store";
 import type { WatchlistSignals } from "@/lib/watchlist-ficha";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -29,7 +30,7 @@ export const loadWatchlistSignals = async (
         gte(pickEvents.createdAt, since),
         inArray(pickEvents.kind, ["not_tonight", "pinned"]),
       ),
-      columns: { titleId: true, kind: true, createdAt: true },
+      columns: { titleId: true, catalogId: true, kind: true, createdAt: true },
     }),
   ]);
 
@@ -41,11 +42,11 @@ export const loadWatchlistSignals = async (
     }
   }
 
-  const events: TonightEvent[] = rows.flatMap((row) =>
-    isPickEventKind(row.kind)
-      ? [{ titleId: row.titleId, kind: row.kind, createdAt: row.createdAt }]
-      : [],
+  const owned = await loadOwnedTitleIdsByCatalog(
+    userId,
+    rows.flatMap((row) => (row.catalogId ? [row.catalogId] : [])),
   );
+  const events: TonightEvent[] = toTonightEvents(rows, owned);
 
   const snoozedUntilByTitle = new Map<string, Date>();
   for (const event of events) {
