@@ -53,10 +53,6 @@ export const BuscarStart = ({ recents, onPickRecent, onClearRecents, directors }
 
   return (
     <div className="space-y-8">
-      <p className="text-sm leading-relaxed text-fog">
-        Lo que añades se guarda en tu Filmia: en Quiero ver, como vista o en tus listas.
-      </p>
-
       {recents.length > 0 ? (
         <section aria-labelledby="buscar-recientes" className="space-y-3">
           <div className="flex items-baseline justify-between">
