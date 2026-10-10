@@ -110,6 +110,8 @@ export const DeckCard = memo(function DeckCard({
   const isTonight = Boolean(tonight && sala && cinematic && !compact);
   const holdable = isTonight || Boolean(onOpenMenu && cinematic && !compact);
   const showStub = !compact && !title.watched;
+  const isReco = isTonight && tonight?.source === "reco";
+  const recoSaved = Boolean(isReco && tonight?.reco?.saved);
   const [stamped, setStamped] = useState(false);
   const rootRef = useRef<HTMLElement | null>(null);
   const [pressing, setPressing] = useState(false);
@@ -224,13 +226,19 @@ export const DeckCard = memo(function DeckCard({
       }
     >
       <Link
-        href={`/titulos/${title.id}`}
+        // A recommendation has no ficha yet: tapping the hero opens its preview sheet.
+        href={isReco ? "/" : `/titulos/${title.id}`}
         tabIndex={nearFocus ? 0 : -1}
         aria-label={`${title.name}${title.year ? ` (${title.year})` : ""}${
           availabilityLabel ? ` en ${availabilityLabel}` : ""
-        }`}
+        }${isReco ? (recoSaved ? ", ya en Quiero ver" : ", recomendada, no está en Quiero ver") : ""}`}
         onClick={(event) => {
           handleClick(event);
+          if (isReco && !event.defaultPrevented) {
+            event.preventDefault();
+            sala?.onOpenReco(title);
+            return;
+          }
           if (isTonight && !event.defaultPrevented) {
             sala?.onOpened(title);
           }
@@ -299,6 +307,12 @@ export const DeckCard = memo(function DeckCard({
             />
           </span>
         ) : null}
+        {isReco ? (
+          <span data-deck-reco-badge className={cn("reco-badge", recoSaved && "is-saved")} aria-hidden>
+            {recoSaved ? <CheckIcon /> : <SparkIcon />}
+            {recoSaved ? "En Quiero ver" : "Recomendada"}
+          </span>
+        ) : null}
         {!cinematic &&
         !compact &&
         title.kind === "SERIES" &&
@@ -339,6 +353,7 @@ export const DeckCard = memo(function DeckCard({
           onCommit={onStubCommit}
           onSaved={handleStubSaved}
           onError={handleStubError}
+          commitDirectly={isReco && sala ? () => sala.markRecoSeen(title) : undefined}
         />
       ) : null}
       {showMarkSeenEye && !title.watched ? (
@@ -356,3 +371,16 @@ export const DeckCard = memo(function DeckCard({
     </article>
   );
 });
+
+const SparkIcon = () => (
+  <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true">
+    <path d="M12 2.5c.6 3.9 2.6 5.9 6.5 6.5-3.9.6-5.9 2.6-6.5 6.5-.6-3.9-2.6-5.9-6.5-6.5 3.9-.6 5.9-2.6 6.5-6.5Z" />
+    <path d="M5 15.5c.3 1.8 1.2 2.7 3 3-1.8.3-2.7 1.2-3 3-.3-1.8-1.2-2.7-3-3 1.8-.3 2.7-1.2 3-3Z" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth={3} aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d="m5 12.5 4.5 4.5L19 7.5" />
+  </svg>
+);

@@ -87,7 +87,11 @@ export type ReasonKind =
   | "fresh_added"
   | "aging"
   | "wildcard"
-  | "pinned";
+  | "pinned"
+  /** Recommended, not in your library: «Porque tienes X en Quiero ver» / «Porque le diste 5★ a X». */
+  | "reco_seed"
+  /** Recommended by genre: no seed, just the genres you keep coming back to. */
+  | "reco_genre";
 
 export type TonightReason = {
   kind: ReasonKind;
@@ -141,4 +145,48 @@ export type TonightFit = {
   endsAt: string;
   overflowMinutes: number;
   remainingMinutes: number;
+};
+
+/** Where a recommendation came from. */
+export type RecoSourceKind = "recommendations" | "discover";
+
+/** A film of the user's library that led to a recommendation. */
+export type RecoSeed = {
+  /** The user's `Title` id (the engine's id for it). */
+  titleId: string;
+  catalogId: string;
+  tmdbId: number;
+  kind: TitleKind;
+  name: string;
+  via: "queue" | "watched";
+  rating: number | null;
+};
+
+/** A film listed by TMDB (`/recommendations` or `/discover`), before we know more about it. */
+export type RecoCandidate = {
+  /** `MOVIE:603`. */
+  key: string;
+  /** Deterministic `Catalog.id` (`catalogIdFor`); also the engine's id for the recommendation. */
+  catalogId: string;
+  tmdbId: number;
+  kind: TitleKind;
+  name: string;
+  originalName: string | null;
+  year: number | null;
+  posterPath: string | null;
+  backdropPath: string | null;
+  overview: string | null;
+  voteAverage: number | null;
+  voteCount: number;
+  genreIds: number[];
+  sources: Array<{ kind: RecoSourceKind; seed: RecoSeed | null }>;
+};
+
+/** A recommendation ranked by the engine: `titleId` is the film's `catalogId`. */
+export type RecoPick = TonightPickBase & {
+  catalogId: string;
+  sourceKind: RecoSourceKind;
+  seed: RecoSeed | null;
+  candidate: RecoCandidate;
+  genres: TonightGenre[];
 };

@@ -216,8 +216,12 @@ assert(
     "Reduced motion: the dock crossfades into the field (no travel or scale); documented",
   );
   assert(
-    field.includes("text-base") && field.includes('enterKeyHint="search"') && field.includes("visualViewport"),
-    "Dock field: 16 px input (no iOS zoom), search key, rides the keyboard via visualViewport",
+    field.includes("text-base") &&
+      field.includes('enterKeyHint="search"') &&
+      !field.includes("visualViewport") &&
+      dock.includes('placement="top"') &&
+      read("src/components/BottomNavShell.tsx").includes("top-[calc(3rem+env(safe-area-inset-top))]"),
+    "Dock field: 16 px input (no iOS zoom), search key, docked under the header (top of the screen, no keyboard riding)",
   );
   assert(topForm.includes("hidden") && topForm.includes("sm:block"), "One field on mobile: the top form is desktop only");
 }

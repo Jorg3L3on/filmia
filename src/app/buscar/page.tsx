@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { PageHeader } from "@/components/PageHeader";
 import { SearchBodySkeleton } from "@/components/PageSkeletons";
 import { TmdbSearchAdd } from "@/components/TmdbSearchAdd";
 import type { PersonViewState } from "@/components/tmdb-search/PersonSearch";
@@ -63,8 +62,9 @@ export default function SearchPage({
   searchParams: Promise<SearchParams>;
 }) {
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 lg:max-w-4xl">
-      <PageHeader title="Buscar" />
+    // On phones the search field is docked under the header (3.375 rem + gaps): start below it.
+    <div className="mx-auto w-full max-w-2xl space-y-6 pt-[3.5rem] sm:pt-0 lg:max-w-4xl">
+      <h1 className="sr-only">Buscar</h1>
       <Suspense fallback={<SearchBodySkeleton />}>
         <SearchBody searchParams={searchParams} />
       </Suspense>

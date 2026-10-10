@@ -42,6 +42,8 @@ export const DROPPED_WEIGHT = -0.8;
 export const FEEDBACK_NUDGE = 0.5;
 export const ANCHOR_MIN_RATING = 8;
 export const ANCHOR_LIMIT = 16;
+/** Quiero ver says what you want, not what you liked: half the weight of a neutral watch. */
+export const QUEUE_WEIGHT = 0.5;
 
 export const recencyWeight = (watchedAt: Date | null, now: Date) => {
   if (!watchedAt) {
@@ -162,4 +164,30 @@ export const closestAnchor = (profile: TasteProfile, vector: FeatureVector) => {
     }
   }
   return best;
+};
+
+/**
+ * The profile as recommendations see it: what you watched plus what you saved for later, the
+ * latter at `QUEUE_WEIGHT` and fading with how long ago you added it. Someone with no watches
+ * and a few saved films still gets a taste. The queue's own ranking keeps the plain profile,
+ * so adding this changes nothing for the titles already in Quiero ver.
+ */
+export const withQueueTaste = (
+  profile: TasteProfile,
+  queued: ReadonlyArray<{ title: TonightTitle; addedAt: Date }>,
+  now: Date,
+): TasteProfile => {
+  if (queued.length === 0) {
+    return profile;
+  }
+  const vector: FeatureVector = new Map(profile.vector);
+  const genreAffinity = new Map(profile.genreAffinity);
+  for (const { title, addedAt } of queued) {
+    const weight = QUEUE_WEIGHT * recencyWeight(addedAt, now);
+    addScaled(vector, itemVector(title), weight);
+    for (const genre of title.genres) {
+      genreAffinity.set(genre.id, (genreAffinity.get(genre.id) ?? 0) + weight);
+    }
+  }
+  return { ...profile, vector, genreAffinity, size: profile.size + queued.length };
 };

@@ -394,6 +394,8 @@ export type TmdbDiscoverOptions = {
   withWatchProviders?: readonly number[];
   watchRegion?: string;
   watchMonetizationTypes?: "flatrate";
+  /** TMDB genre ids, AND-joined (a title must carry all of them). */
+  withGenres?: readonly number[];
   page?: number;
 };
 
@@ -401,6 +403,8 @@ export type TmdbDiscoverResult = TmdbCatalogResult & {
   voteAverage: number | null;
   voteCount: number;
   popularity: number;
+  /** TMDB genre ids straight from the list payload: a taste signal with no extra call. */
+  genreIds: number[];
 };
 
 type TmdbDiscoverItem = {
@@ -440,6 +444,7 @@ const toDiscoverResult = (
     voteAverage: typeof item.vote_average === "number" && item.vote_average > 0 ? item.vote_average : null,
     voteCount: item.vote_count ?? 0,
     popularity: item.popularity ?? 0,
+    genreIds: Array.isArray(item.genre_ids) ? item.genre_ids.filter(Number.isInteger) : [],
   };
 };
 
@@ -465,6 +470,9 @@ export const discoverTmdb = async (
   if (options.region) {
     params.region = options.region;
   }
+  if (options.withGenres && options.withGenres.length > 0) {
+    params.with_genres = [...options.withGenres].join(",");
+  }
   if (options.withWatchProviders && options.withWatchProviders.length > 0) {
     params.with_watch_providers = [...options.withWatchProviders].join("|");
     params.watch_region = options.watchRegion ?? "MX";
@@ -480,6 +488,38 @@ export const discoverTmdb = async (
     const result = toDiscoverResult(item, kind);
     return result ? [result] : [];
   });
+};
+
+export type TmdbRelatedKind = "recommendations" | "similar";
+
+/**
+ * TMDB `/{movie|tv}/{id}/recommendations` (what TMDB users pair with it) or
+ * `/similar` (metadata match). Same result shape as `discoverTmdb`; goes through
+ * `tmdbFetch`, so it shares the metadata cache. Never throws for a missing seed:
+ * an unknown id is an empty list.
+ */
+export const getTmdbRelated = async (
+  tmdbId: number,
+  kind: TitleKind,
+  relation: TmdbRelatedKind,
+  page = 1,
+): Promise<TmdbDiscoverResult[]> => {
+  const segment = kind === "SERIES" ? "tv" : "movie";
+  try {
+    const data = await tmdbFetch<{ results?: TmdbDiscoverItem[] }>(
+      `/${segment}/${tmdbId}/${relation}`,
+      { page: String(page) },
+    );
+    return (data.results ?? []).flatMap((item) => {
+      const result = toDiscoverResult(item, kind);
+      return result ? [result] : [];
+    });
+  } catch (error) {
+    if (error instanceof TmdbRequestError && error.status === 404) {
+      return [];
+    }
+    throw error;
+  }
 };
 
 export const getTmdbExternalIds = async (

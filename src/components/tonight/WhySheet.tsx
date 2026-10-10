@@ -31,6 +31,8 @@ const ICON: Record<ReasonKind, "spark" | "clock" | "hourglass" | "note" | "star"
   aging: "hourglass",
   wildcard: "spark",
   pinned: "spark",
+  reco_seed: "spark",
+  reco_genre: "spark",
 };
 
 /** «Por qué esta»: the reasons behind a pick, plus Más así / Menos así. */
@@ -51,7 +53,11 @@ export const WhySheet = ({ title, lens, onClose }: WhySheetProps) => {
     });
     startTransition(async () => {
       try {
-        await sendTasteFeedback(title.id, kind, lens);
+        await sendTasteFeedback(
+          tonight?.source === "reco" ? { catalogId: title.id } : { titleId: title.id },
+          kind,
+          lens,
+        );
       } catch {
         showToast({ title: "No se pudo guardar", variant: "error" });
       }

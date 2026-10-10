@@ -56,11 +56,13 @@ export const TmdbKindFilterChips = ({ value, onChange }: TmdbKindFilterChipsProp
   }, [value]);
 
   return (
-    <div ref={railRef} role="group" aria-label="Buscar por" className="rail rail-fade relative flex gap-2 overflow-x-auto">
+    <div ref={railRef} role="group" aria-label="Buscar por" // The rail scrolls (overflow clips both axes): padding gives the pill's glow room, negative margins keep the layout.
+    className="rail rail-fade relative -my-1.5 -ml-1.5 flex gap-2 overflow-x-auto py-1.5 pl-1.5"
+    >
       <span
         ref={pillRef}
         aria-hidden="true"
-        className={cn(auraPillClass, "buscar-chip-pill pointer-events-none absolute top-0 left-0 h-full")}
+        className={cn(auraPillClass, "buscar-chip-pill pointer-events-none absolute top-1.5 left-0 h-[calc(100%-0.75rem)]")}
       />
       {BUSCAR_CHIPS.map((chip) => {
         const isCurrent = value === chip.value;

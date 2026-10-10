@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { recordPickEvents, type PickEventInput } from "@/app/actions/tonight";
 import type { PickEventKind } from "@/lib/tonight";
+import type { PickRef } from "@/lib/tonight/reco-card";
 
 const SHOWN_AFTER_MS = 1200;
 const SKIP_MIN_MS = 180;
@@ -14,7 +15,7 @@ const FLUSH_EVERY_MS = 8000;
  */
 export const useImpressions = (lens: string) => {
   const queue = useRef<PickEventInput[]>([]);
-  const current = useRef<{ titleId: string; since: number } | null>(null);
+  const current = useRef<{ ref: PickRef; since: number } | null>(null);
   const lensRef = useRef(lens);
 
   useEffect(() => {
@@ -32,8 +33,8 @@ export const useImpressions = (lens: string) => {
     });
   }, []);
 
-  const push = useCallback((titleId: string, kind: PickEventKind) => {
-    queue.current.push({ titleId, kind, lens: lensRef.current });
+  const push = useCallback((ref: PickRef, kind: PickEventKind) => {
+    queue.current.push({ ...ref, kind, lens: lensRef.current });
   }, []);
 
   const settle = useCallback(() => {
@@ -43,18 +44,18 @@ export const useImpressions = (lens: string) => {
     }
     const dwell = performance.now() - active.since;
     if (dwell >= SHOWN_AFTER_MS) {
-      push(active.titleId, "shown");
+      push(active.ref, "shown");
     } else if (dwell >= SKIP_MIN_MS) {
-      push(active.titleId, "skipped");
+      push(active.ref, "skipped");
     }
     current.current = null;
   }, [push]);
 
   const onHeroChange = useCallback(
-    (titleId: string | null) => {
+    (ref: PickRef | null) => {
       settle();
-      if (titleId) {
-        current.current = { titleId, since: performance.now() };
+      if (ref) {
+        current.current = { ref, since: performance.now() };
       }
     },
     [settle],

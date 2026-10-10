@@ -18,6 +18,10 @@
     {
       "path": "/api/cron/tonight-picks",
       "schedule": "30 9 * * *"
+    },
+    {
+      "path": "/api/cron/tonight-recos",
+      "schedule": "45 9 * * *"
     }
   ]
 }

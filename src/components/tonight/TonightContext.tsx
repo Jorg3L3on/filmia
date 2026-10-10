@@ -15,6 +15,10 @@ export type TonightHandlers = {
   onWatched: (title: CoverflowTitle) => void;
   onWatchError: (title: CoverflowTitle, message: string) => void;
   onOpened: (title: CoverflowTitle) => void;
+  /** A recommended card (not in the library): open its preview sheet. */
+  onOpenReco: (title: CoverflowTitle) => void;
+  /** «Vi esto» on a recommended card: log it as seen; resolves to an error message or null. */
+  markRecoSeen: (title: CoverflowTitle) => Promise<string | null>;
 };
 
 const TonightContext = createContext<TonightHandlers | null>(null);

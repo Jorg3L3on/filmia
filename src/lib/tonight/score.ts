@@ -249,7 +249,7 @@ export const agingScore = (
   return { value, reasons };
 };
 
-const sharedFeatureNames = (a: TonightTitle, b: TonightTitle) => {
+export const sharedFeatureNames = (a: TonightTitle, b: TonightTitle) => {
   const names: string[] = [];
   const genresB = new Set(b.genres.map((genre) => genre.id));
   for (const genre of a.genres) {
@@ -266,7 +266,7 @@ const sharedFeatureNames = (a: TonightTitle, b: TonightTitle) => {
   return [...new Set(names)].slice(0, 3);
 };
 
-const joinEs = (parts: string[]) => {
+export const joinEs = (parts: string[]) => {
   if (parts.length <= 1) {
     return parts.join("");
   }
