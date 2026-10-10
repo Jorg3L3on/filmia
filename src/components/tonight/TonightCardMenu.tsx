@@ -13,6 +13,13 @@ type TonightCardMenuProps = {
   onClose: () => void;
   onNotTonight: (title: CoverflowTitle) => void;
   onRemove: (title: CoverflowTitle) => void;
+  /** Recommended cards (not in the library) get their own actions. */
+  onOpenReco: (title: CoverflowTitle) => void;
+  onSaveReco: (title: CoverflowTitle) => void;
+  onPinReco: (title: CoverflowTitle) => void;
+  onNotInterested: (title: CoverflowTitle) => void;
+  /** The recommended card is already in Quiero ver (added during this visit). */
+  saved?: boolean;
 };
 
 const itemClass = cn(
@@ -21,8 +28,19 @@ const itemClass = cn(
 );
 
 /** Mantén pulsado el póster: Ver ficha · Ahora no · Mover a una lista · Quitar. */
-export const TonightCardMenu = ({ title, onClose, onNotTonight, onRemove }: TonightCardMenuProps) => {
+export const TonightCardMenu = ({
+  title,
+  onClose,
+  onNotTonight,
+  onRemove,
+  onOpenReco,
+  onSaveReco,
+  onPinReco,
+  onNotInterested,
+  saved = false,
+}: TonightCardMenuProps) => {
   const headingId = useId();
+  const recommended = title?.tonight?.source === "reco";
   return (
     <Sheet
       open={Boolean(title)}
@@ -46,6 +64,27 @@ export const TonightCardMenu = ({ title, onClose, onNotTonight, onRemove }: Toni
               </h2>
             </div>
           </div>
+          {recommended ? (
+            <div role="menu" aria-label={`Acciones de ${title.name}`} className="space-y-0.5 px-3 pb-2 pt-4" data-no-sheet-drag>
+              <button type="button" role="menuitem" onClick={() => onOpenReco(title)} className={itemClass}>
+                <Icon kind="ficha" /> Ver detalles
+              </button>
+              <button type="button" role="menuitem" onClick={() => onSaveReco(title)} disabled={saved} className={cn(itemClass, "disabled:opacity-60")}>
+                <Icon kind="plus" /> {saved ? "Ya está en Quiero ver" : "Quiero ver"}
+              </button>
+              <button type="button" role="menuitem" onClick={() => onPinReco(title)} className={itemClass}>
+                <Icon kind="moon" /> Ver esta noche
+              </button>
+              <span aria-hidden="true" className="mx-3 my-1 block h-px bg-white/8" />
+              <button type="button" role="menuitem" onClick={() => onNotInterested(title)} className={itemClass}>
+                <Icon kind="hand" />
+                <span>
+                  No me interesa
+                  <span className="block text-xs font-normal text-fog">No te la volveremos a sugerir</span>
+                </span>
+              </button>
+            </div>
+          ) : (
           <div role="menu" aria-label={`Acciones de ${title.name}`} className="space-y-0.5 px-3 pb-2 pt-4" data-no-sheet-drag>
             <Link role="menuitem" href={`/titulos/${title.id}`} onClick={onClose} className={itemClass}>
               <Icon kind="ficha" /> Ver ficha
@@ -65,19 +104,24 @@ export const TonightCardMenu = ({ title, onClose, onNotTonight, onRemove }: Toni
               <Icon kind="trash" /> Quitar de Quiero ver
             </button>
           </div>
+          )}
         </>
       ) : null}
     </Sheet>
   );
 };
 
-const Icon = ({ kind }: { kind: "ficha" | "hand" | "list" | "trash" }) => {
+const Icon = ({ kind }: { kind: "ficha" | "hand" | "list" | "trash" | "plus" | "moon" }) => {
   const common = { viewBox: "0 0 24 24", width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 1.75, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, className: kind === "trash" ? "text-danger" : "text-accent-hover" } as const;
   switch (kind) {
     case "ficha":
       return <svg {...common}><rect x="7" y="3.5" width="10" height="17" rx="2" /><path d="M10 7.5h4M10 11h4M10 14.5h2.5" /></svg>;
     case "hand":
       return <svg {...common}><path d="M9 11.5V4.8a1.6 1.6 0 0 1 3.2 0V11M12.2 10.4a1.6 1.6 0 0 1 3.2 0V12M15.4 11.6a1.6 1.6 0 0 1 3.2 0v4.6c0 2.9-2.3 5.3-5.2 5.3h-1.9c-1.5 0-3-.7-3.9-1.9L4.4 17a1.6 1.6 0 0 1 2.4-2.1L9 17.2" /></svg>;
+    case "plus":
+      return <svg {...common}><path d="M12 5.5v13M5.5 12h13" /></svg>;
+    case "moon":
+      return <svg {...common}><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" /></svg>;
     case "list":
       return <svg {...common}><path d="M6 7h12M6 12h12M6 17h8" /></svg>;
     default:

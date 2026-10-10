@@ -14,7 +14,7 @@ import {
   type Platform,
   type Title,
 } from "@/db";
-import type { CoverflowTitle } from "@/components/coverflow/types";
+import type { CoverflowTitle, RecoMeta } from "@/components/coverflow/types";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { flattenTitle } from "@/lib/catalog-core";
 import { toCoverflowTitle } from "@/lib/coverflow-title";
@@ -74,7 +74,7 @@ export type TonightCard = CoverflowTitle & {
   leads: TonightPerson[];
   /** `reco`: recommended and not in the library, so `id` is the film's catalog id (FIL-I6). */
   source: "queue" | "reco";
-  reco: { tmdbId: number; seedName: string | null; sourceKind: "recommendations" | "discover" } | null;
+  reco: RecoMeta | null;
 };
 
 export type TonightLensView = {
@@ -580,7 +580,14 @@ export const loadRecoEntries = async (
       overview: film.overview,
       leads: parseStoredPeople(film.tmdbPeople).filter((person) => person.role !== "cast"),
       source: "reco",
-      reco: { tmdbId: film.tmdbId, seedName: reco.seedName, sourceKind },
+      reco: {
+        tmdbId: film.tmdbId,
+        seedName: reco.seedName,
+        sourceKind,
+        originalName: film.originalName,
+        backdropPath: film.backdropPath,
+        overview: film.overview,
+      },
     };
     return [
       {

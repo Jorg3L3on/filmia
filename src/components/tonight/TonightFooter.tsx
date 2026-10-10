@@ -43,6 +43,8 @@ export const TonightFooter = ({ title, className }: TonightFooterProps) => {
   const fit = night ? (tonight?.fit ?? null) : null;
   const overflow = Boolean(fit && fit.overflowMinutes > 0);
   const nightOver = Boolean(fit && fit.remainingMinutes === 0);
+  const recommended = tonight?.source === "reco";
+  const recoSaved = Boolean(recommended && tonight?.reco?.saved);
 
   return (
     <div className={cn("tonight-footer mx-auto flex w-full max-w-xl flex-col items-center gap-2 text-center", className)}>
@@ -51,15 +53,29 @@ export const TonightFooter = ({ title, className }: TonightFooterProps) => {
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">
             Tu elección de esta noche
           </p>
+        ) : recommended ? (
+          <p className="reco-eyebrow">
+            {recoSaved ? "Ya está en Quiero ver" : "Recomendada · no está en Quiero ver"}
+          </p>
         ) : null}
         <h2 className="tonight-title font-serif text-[1.55rem] font-semibold leading-tight text-paper sm:text-3xl md:text-4xl">
-          <Link
-            href={`/titulos/${title.id}`}
-            onClick={() => sala?.onOpened(title)}
-            className={cn("hover:text-accent", focusRing)}
-          >
-            {title.name}
-          </Link>
+          {recommended ? (
+            <button
+              type="button"
+              onClick={() => sala?.onOpenReco(title)}
+              className={cn("text-inherit hover:text-accent", focusRing)}
+            >
+              {title.name}
+            </button>
+          ) : (
+            <Link
+              href={`/titulos/${title.id}`}
+              onClick={() => sala?.onOpened(title)}
+              className={cn("hover:text-accent", focusRing)}
+            >
+              {title.name}
+            </Link>
+          )}
         </h2>
         <p className="tonight-meta text-[13px] font-medium text-paper/85 sm:text-sm">
           {metaParts.map((part, index) => (

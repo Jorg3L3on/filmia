@@ -63,6 +63,14 @@ const run = () => {
   const recoMigration = read("drizzle/0011_tonight_recos.sql");
   assert(recoMigration.includes("IF NOT EXISTS") && !/DROP\s+(TABLE|COLUMN)/i.test(recoMigration) && !/SET NOT NULL/i.test(recoMigration), "Migration 0011 is additive and idempotent (live build keeps working)");
 
+  // Recommended cards (FIL-I6-4): a badge that is not the queue's, its own menu, the Buscar sheet, no blur.
+  const deckCard = read("src/components/coverflow/DeckCard.tsx");
+  assert(deckCard.includes("data-deck-reco-badge") && deckCard.includes("recomendada, no está en Quiero ver"), "Recommended card carries a badge and says so to screen readers");
+  assert(deckCard.includes("sala?.onOpenReco(title)") && deckCard.includes("commitDirectly"), "Tapping a recommendation opens its preview; the stub logs it directly");
+  assert(read("src/components/tonight/TonightCardMenu.tsx").includes("No me interesa") && read("src/components/tonight/RecoPreviewSheet.tsx").includes("SearchPreviewSheet"), "Recommended cards have their own menu and reuse the Buscar preview sheet");
+  const recoCss = css.slice(css.indexOf(".reco-badge {"), css.indexOf(".tonight-chip {"));
+  assert(recoCss.includes(".reco-eyebrow") && !/backdrop-filter|filter:\s*blur/.test(recoCss), "Recommended styles use no blur (the sala must stay light)");
+
   // Pure engine sanity.
   assert(PARA_TI_SLUG === "para-ti", "First lens is Para ti");
   const friday = new Date(2026, 9, 2, 22, 0);

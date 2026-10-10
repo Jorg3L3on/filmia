@@ -53,7 +53,11 @@ export const WhySheet = ({ title, lens, onClose }: WhySheetProps) => {
     });
     startTransition(async () => {
       try {
-        await sendTasteFeedback(title.id, kind, lens);
+        await sendTasteFeedback(
+          tonight?.source === "reco" ? { catalogId: title.id } : { titleId: title.id },
+          kind,
+          lens,
+        );
       } catch {
         showToast({ title: "No se pudo guardar", variant: "error" });
       }

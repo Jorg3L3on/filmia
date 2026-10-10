@@ -157,14 +157,17 @@ export const pinTonightFromFicha = async (titleId: string): Promise<PinTonightFr
   return { ok: true, addedToWatchlist: !inWatchlist };
 };
 
-/** Más así / Menos así from the «Por qué esta» sheet. */
+/**
+ * Más así / Menos así from the «Por qué esta» sheet, and «No me interesa» on a recommendation.
+ * A film in the library is addressed by its `titleId`; a recommendation, by its `catalogId`.
+ */
 export const sendTasteFeedback = async (
-  titleId: string,
+  ref: { titleId?: string; catalogId?: string },
   kind: "more_like" | "less_like",
   lens?: string | null,
 ) => {
   const userId = await requireUserId();
-  await persistPickEvents(userId, [{ titleId, kind, lens }]);
+  await persistPickEvents(userId, [{ ...ref, kind, lens }]);
   scheduleTonightRecompute(userId);
   revalidatePath("/");
 };
