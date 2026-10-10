@@ -14,7 +14,6 @@ type BuscarStartProps = {
   recents: string[];
   onPickRecent: (query: string) => void;
   onClearRecents: () => void;
-  directors: StartDirector[];
 };
 
 const initialsOf = (name: string) =>
@@ -39,9 +38,9 @@ const DirectorFace = ({ director }: { director: StartDirector }) => {
   );
 };
 
-/** Buscar before typing: recent searches on this device and the directors of your favorites. */
-export const BuscarStart = ({ recents, onPickRecent, onClearRecents, directors }: BuscarStartProps) => {
-  if (recents.length === 0 && directors.length === 0) {
+/** Buscar (Todos) before typing: recent searches on this device. The directors live in the Director tab. */
+export const BuscarStart = ({ recents, onPickRecent, onClearRecents }: BuscarStartProps) => {
+  if (recents.length === 0) {
     return (
       <EmptyState
         variant="buscar"
@@ -90,30 +89,31 @@ export const BuscarStart = ({ recents, onPickRecent, onClearRecents, directors }
           </ul>
         </section>
       ) : null}
-
-      {directors.length > 0 ? (
-        <section aria-labelledby="buscar-directores" className="space-y-3">
-          <h2 id="buscar-directores" className="text-[11px] font-medium uppercase tracking-[0.2em] text-mist">
-            Directores de tus favoritas
-          </h2>
-          <ul className="rail rail-fade -mx-4 flex gap-1 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-            {directors.map((director, index) => (
-              <li key={director.id} className="person-card-in w-[5.5rem] shrink-0" style={staggerStyle(index)}>
-                <Link
-                  href={buildPersonSearchHref({ personId: director.id, role: "director", name: director.name })}
-                  className={cn("group press-scale flex flex-col items-center gap-2 rounded-2xl px-1 py-1.5 text-center", focusRing)}
-                >
-                  <DirectorFace director={director} />
-                  <span className="line-clamp-2 text-xs leading-snug text-paper">{director.name}</span>
-                  <span className="-mt-1.5 text-[11px] text-mist">
-                    {director.count === 1 ? "1 favorita" : `${director.count} favoritas`}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
     </div>
   );
 };
+
+/** The Director tab before typing: the directors of your favorites, one tap to their filmography. */
+export const FavoriteDirectors = ({ directors }: { directors: StartDirector[] }) => (
+  <section aria-labelledby="buscar-directores" className="space-y-3">
+    <h2 id="buscar-directores" className="text-[11px] font-medium uppercase tracking-[0.2em] text-mist">
+      Directores de tus favoritas
+    </h2>
+    <ul className="rail rail-fade -mx-4 flex gap-1 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+      {directors.map((director, index) => (
+        <li key={director.id} className="person-card-in w-[5.5rem] shrink-0" style={staggerStyle(index)}>
+          <Link
+            href={buildPersonSearchHref({ personId: director.id, role: "director", name: director.name })}
+            className={cn("group press-scale flex flex-col items-center gap-2 rounded-2xl px-1 py-1.5 text-center", focusRing)}
+          >
+            <DirectorFace director={director} />
+            <span className="line-clamp-2 text-xs leading-snug text-paper">{director.name}</span>
+            <span className="-mt-1.5 text-[11px] text-mist">
+              {director.count === 1 ? "1 favorita" : `${director.count} favoritas`}
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  </section>
+);

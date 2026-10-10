@@ -8,7 +8,7 @@ import { SearchResultsSkeleton } from "@/components/PageSkeletons";
 import { SearchPreviewSheet } from "@/components/SearchPreviewSheet";
 import { TmdbSearchUnavailable } from "@/components/TmdbSearchUnavailable";
 import { TmdbSearchResults } from "@/components/TmdbSearchResults";
-import { BuscarStart } from "@/components/tmdb-search/BuscarStart";
+import { BuscarStart, FavoriteDirectors } from "@/components/tmdb-search/BuscarStart";
 import {
   DirectorPicker,
   DirectorSuggestion,
@@ -294,17 +294,20 @@ export const TmdbSearchAdd = ({
 
           {!hasSearched ? (
             mode === "director" ? (
-              <EmptyState
-                variant="buscar"
-                title="Busca un director"
-                description="Escribe su nombre y verás su filmografía, de lo más reciente a lo primero."
-              />
+              startDirectors.length > 0 ? (
+                <FavoriteDirectors directors={startDirectors} />
+              ) : (
+                <EmptyState
+                  variant="buscar"
+                  title="Busca un director"
+                  description="Escribe su nombre y verás su filmografía, de lo más reciente a lo primero."
+                />
+              )
             ) : (
               <BuscarStart
                 recents={recents}
                 onPickRecent={onQueryChange}
                 onClearRecents={clearRecents}
-                directors={startDirectors}
               />
             )
           ) : null}
