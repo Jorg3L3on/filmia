@@ -321,6 +321,32 @@ describe("tonight/reco", () => {
     assert.equal(pick!.reasons[0]!.kind, "reco_seed", "the seed leads the headline");
   });
 
+  it("does not explain a pick with a lukewarm watch", () => {
+    const lukewarm = title("Sacrificio", {
+      name: "Sacrificio",
+      genres: [DRAMA],
+      watchedAt: new Date(NOW.getTime() - 30 * DAY),
+      rating: 7,
+    });
+    const profile = buildTasteProfile([lukewarm], [], NOW);
+    const [pick] = scoreRecos({
+      inputs: [
+        {
+          candidate: { ...candidateOf(65, lukewarm, "watched"), catalogId: "cat-65" },
+          title: title("cat-65", { genres: [DRAMA] }),
+        },
+      ],
+      profile,
+      titlesById: new Map([[lukewarm.id, lukewarm]]),
+      events: [],
+      now: NOW,
+    });
+    assert.equal(pick!.seed, null);
+    assert.ok(!pick!.reasons.some((item) => item.text.includes("Sacrificio") && item.kind === "reco_seed"));
+    // It still came from /recommendations, only the story is the genre.
+    assert.equal(pick!.sourceKind, "recommendations");
+  });
+
   it("falls back to the genre when no seed led here", () => {
     const profile = withQueueTaste(
       buildTasteProfile([], [], NOW),

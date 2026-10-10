@@ -25,7 +25,11 @@ export const RECO_POOL_SIZE = 36;
 /** A candidate plus what the engine needs to read it as a title. */
 export type RecoInput = { candidate: RecoCandidate; title: TonightTitle };
 
-/** The seed that explains a recommendation best: a film you rated high, then one you queued. */
+/**
+ * The seed that explains a recommendation best: a film you rated high or keep in Favoritas,
+ * then one you saved in Quiero ver. A lukewarm 3.5★ watch can lead us to a film but is not a
+ * reason worth showing, so it never explains one.
+ */
 export const bestSeed = (candidate: RecoCandidate): RecoSeed | null => {
   let best: { seed: RecoSeed; strength: number } | null = null;
   for (const source of candidate.sources) {
@@ -33,8 +37,10 @@ export const bestSeed = (candidate: RecoCandidate): RecoSeed | null => {
     if (!seed) {
       continue;
     }
-    const strength = seed.via === "watched" && (seed.rating ?? 0) >= 8 ? 3 : seed.via === "queue" ? 2 : 1;
-    if (!best || strength > best.strength) {
+    // Watched with no rating can only have got here through Favoritas.
+    const loved = seed.via === "watched" && (seed.rating == null || seed.rating >= 8);
+    const strength = loved ? 3 : seed.via === "queue" ? 2 : 0;
+    if (strength > 0 && (!best || strength > best.strength)) {
       best = { seed, strength };
     }
   }
@@ -143,7 +149,7 @@ export const scoreRecos = (input: {
       titleId: candidate.catalogId,
       reasons,
       catalogId: candidate.catalogId,
-      sourceKind: seed ? "recommendations" : candidate.sources[0]?.kind ?? "discover",
+      sourceKind: candidate.sources.some((source) => source.seed) ? "recommendations" : "discover",
       seed,
       candidate,
       genres: title.genres,
