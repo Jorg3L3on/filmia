@@ -1,6 +1,7 @@
 import { createId } from "@paralleldrive/cuid2";
 import { and, asc, eq, gte, inArray, sql, type SQL } from "drizzle-orm";
 import {
+  catalog,
   db,
   listItems,
   lists,
@@ -18,6 +19,11 @@ import { toCoverflowTitle } from "@/lib/coverflow-title";
 import { scheduleDiaryWatchlistEnrichment } from "@/lib/diary-enrich";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { WATCHLIST_SLUG } from "@/lib/lists";
+import {
+  isPickEventKind,
+  PICK_EVENT_KINDS,
+  toTonightEvents,
+} from "@/lib/tonight/events";
 import { PARA_TI_NAME, PARA_TI_SLUG } from "@/lib/tonight/select";
 import { findPinnedTitleId, PIN_WINDOW_MS, PINNED_REASON } from "@/lib/tonight/pin";
 import {
@@ -46,19 +52,7 @@ import { parseStoredWatchProviders } from "@/lib/watch-providers";
 export const TONIGHT_STALE_MS = 24 * 60 * 60 * 1000;
 export const TONIGHT_EVENTS_WINDOW_DAYS = 30;
 
-export const PICK_EVENT_KINDS: readonly PickEventKind[] = [
-  "shown",
-  "skipped",
-  "not_tonight",
-  "opened",
-  "watched",
-  "more_like",
-  "less_like",
-  "pinned",
-];
-
-export const isPickEventKind = (value: unknown): value is PickEventKind =>
-  typeof value === "string" && (PICK_EVENT_KINDS as readonly string[]).includes(value);
+export { isPickEventKind, PICK_EVENT_KINDS };
 
 /** What the sala receives: a coverflow card plus everything the ranker and the reasons need. */
 export type TonightCard = CoverflowTitle & {
@@ -208,17 +202,39 @@ export const toTonightTitle = (
   };
 };
 
-const loadEvents = async (userId: string, now: Date): Promise<TonightEvent[]> => {
+/** Owned `Title` ids by film, so events filed under a catalog id reach the user's title. */
+export const loadOwnedTitleIdsByCatalog = async (
+  userId: string,
+  catalogIds: readonly string[],
+): Promise<Map<string, string>> => {
+  const unique = [...new Set(catalogIds)];
+  if (unique.length === 0) {
+    return new Map();
+  }
+  const rows = await db.query.titles.findMany({
+    where: and(eq(titles.userId, userId), inArray(titles.catalogId, unique)),
+    columns: { id: true, catalogId: true },
+  });
+  return new Map(rows.map((row) => [row.catalogId, row.id]));
+};
+
+const loadEvents = async (
+  userId: string,
+  now: Date,
+  ownedByCatalog?: ReadonlyMap<string, string>,
+): Promise<TonightEvent[]> => {
   const since = new Date(now.getTime() - TONIGHT_EVENTS_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   const rows = await db.query.pickEvents.findMany({
     where: and(eq(pickEvents.userId, userId), gte(pickEvents.createdAt, since)),
-    columns: { titleId: true, kind: true, createdAt: true },
+    columns: { titleId: true, catalogId: true, kind: true, createdAt: true },
   });
-  return rows.flatMap((row) =>
-    isPickEventKind(row.kind)
-      ? [{ titleId: row.titleId, kind: row.kind, createdAt: row.createdAt }]
-      : [],
-  );
+  const owned =
+    ownedByCatalog ??
+    (await loadOwnedTitleIdsByCatalog(
+      userId,
+      rows.flatMap((row) => (row.catalogId ? [row.catalogId] : [])),
+    ));
+  return toTonightEvents(rows, owned);
 };
 
 /** The title pinned for tonight right now (Buscar opens its sheet in the done state). */
@@ -233,14 +249,13 @@ export const getPinnedTonightTitleId = async (
       gte(pickEvents.createdAt, since),
       inArray(pickEvents.kind, ["pinned", "not_tonight"]),
     ),
-    columns: { titleId: true, kind: true, createdAt: true },
+    columns: { titleId: true, catalogId: true, kind: true, createdAt: true },
   });
-  return findPinnedTitleId(
-    rows.flatMap((row) =>
-      isPickEventKind(row.kind) ? [{ titleId: row.titleId, kind: row.kind, createdAt: row.createdAt }] : [],
-    ),
-    now,
+  const owned = await loadOwnedTitleIdsByCatalog(
+    userId,
+    rows.flatMap((row) => (row.catalogId ? [row.catalogId] : [])),
   );
+  return findPinnedTitleId(toTonightEvents(rows, owned), now);
 };
 
 const loadUserPrefs = async (userId: string) => {
@@ -325,23 +340,77 @@ export const scheduleTonightRecompute = (userId: string) => {
   });
 };
 
-export const recordPickEvents = async (
-  userId: string,
-  events: ReadonlyArray<{ titleId: string; kind: PickEventKind; lens?: string | null }>,
-) => {
+export type PickEventWrite = {
+  /** The user's own entry, when the feedback is about a title they have. */
+  titleId?: string | null;
+  /** The film; set for recommendations that are not in the library yet. */
+  catalogId?: string | null;
+  kind: PickEventKind;
+  lens?: string | null;
+};
+
+/**
+ * Store feedback by film. A `titleId` is resolved to its `catalogId` (so the event survives the
+ * title and still counts for the recommendation of the same film); a bare `catalogId` must exist.
+ */
+export const recordPickEvents = async (userId: string, events: ReadonlyArray<PickEventWrite>) => {
   if (events.length === 0) {
     return;
   }
+
+  const titleIds = [...new Set(events.flatMap((event) => (event.titleId ? [event.titleId] : [])))];
+  const ownedRows = titleIds.length
+    ? await db.query.titles.findMany({
+        where: and(eq(titles.userId, userId), inArray(titles.id, titleIds)),
+        columns: { id: true, catalogId: true },
+      })
+    : [];
+  const catalogByTitle = new Map(ownedRows.map((row) => [row.id, row.catalogId]));
+
+  const bareCatalogIds = [
+    ...new Set(
+      events.flatMap((event) => (!event.titleId && event.catalogId ? [event.catalogId] : [])),
+    ),
+  ];
+  const knownCatalog = new Set(
+    bareCatalogIds.length
+      ? (
+          await db.query.catalog.findMany({
+            where: inArray(catalog.id, bareCatalogIds),
+            columns: { id: true },
+          })
+        ).map((row) => row.id)
+      : [],
+  );
+  const ownedByCatalog = await loadOwnedTitleIdsByCatalog(userId, bareCatalogIds);
+
   const now = new Date();
+  const values = events.flatMap((event) => {
+    if (event.titleId) {
+      const catalogId = catalogByTitle.get(event.titleId);
+      // Not the user's title: drop it rather than file feedback under someone else's id.
+      return catalogId
+        ? [{ titleId: event.titleId, catalogId, kind: event.kind, lens: event.lens ?? null }]
+        : [];
+    }
+    if (event.catalogId && knownCatalog.has(event.catalogId)) {
+      return [
+        {
+          titleId: ownedByCatalog.get(event.catalogId) ?? null,
+          catalogId: event.catalogId,
+          kind: event.kind,
+          lens: event.lens ?? null,
+        },
+      ];
+    }
+    return [];
+  });
+  if (values.length === 0) {
+    return;
+  }
+
   await db.insert(pickEvents).values(
-    events.map((event) => ({
-      id: createId(),
-      userId,
-      titleId: event.titleId,
-      kind: event.kind,
-      lens: event.lens ?? null,
-      createdAt: now,
-    })),
+    values.map((value) => ({ id: createId(), userId, ...value, createdAt: now })),
   );
 };
 

@@ -56,6 +56,13 @@ const run = () => {
   assert(read("src/lib/tmdb.ts").includes("append_to_response") && read("src/lib/omdb.ts").includes("imdbVotes"), "Enrichment fetches keywords/credits in one call and IMDb votes");
   assert(exists("drizzle/0004_tonight_picks.sql") && read("drizzle/0004_tonight_picks.sql").includes("IF NOT EXISTS"), "Migration 0004 is additive and idempotent");
 
+  // Recommendations (FIL-I6): built by their own cron, never while Hoy is served; migration 0011 is additive.
+  const recoCron = read("src/app/api/cron/tonight-recos/route.ts");
+  assert(recoCron.includes("CRON_SECRET") && recoCron.includes("computeRecosForUser") && read("vercel.json").includes("/api/cron/tonight-recos"), "Recommendation pool has its own authorized nightly cron");
+  assert(!store.includes("reco-store") && !store.includes("getTmdbRelated") && !store.includes("discoverTmdb"), "Serving Hoy never calls TMDB for recommendations");
+  const recoMigration = read("drizzle/0011_tonight_recos.sql");
+  assert(recoMigration.includes("IF NOT EXISTS") && !/DROP\s+(TABLE|COLUMN)/i.test(recoMigration) && !/SET NOT NULL/i.test(recoMigration), "Migration 0011 is additive and idempotent (live build keeps working)");
+
   // Pure engine sanity.
   assert(PARA_TI_SLUG === "para-ti", "First lens is Para ti");
   const friday = new Date(2026, 9, 2, 22, 0);

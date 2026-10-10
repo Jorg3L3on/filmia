@@ -248,7 +248,12 @@ export const tonightPicks = pgTable(
   ],
 );
 
-/** Feedback for Esta noche: impressions, skips, «Ahora no», opens, Más/Menos así. */
+/**
+ * Feedback for Esta noche: impressions, skips, «Ahora no», opens, Más/Menos así.
+ * An event is about a film, not about a user's entry: `catalogId` is the identity
+ * (recommendations have no `Title` yet), `titleId` is kept for events on titles the
+ * user owns. Both are nullable so builds from before 0011 keep inserting.
+ */
 export const pickEvents = pgTable(
   "PickEvent",
   {
@@ -256,9 +261,8 @@ export const pickEvents = pgTable(
     userId: text("userId")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    titleId: text("titleId")
-      .notNull()
-      .references(() => titles.id, { onDelete: "cascade" }),
+    titleId: text("titleId").references(() => titles.id, { onDelete: "cascade" }),
+    catalogId: text("catalogId").references(() => catalog.id, { onDelete: "cascade" }),
     kind: text("kind").notNull(),
     lens: text("lens"),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
@@ -268,6 +272,41 @@ export const pickEvents = pgTable(
   (table) => [
     index("PickEvent_userId_createdAt_idx").on(table.userId, table.createdAt),
     index("PickEvent_userId_titleId_idx").on(table.userId, table.titleId),
+    index("PickEvent_userId_catalogId_idx").on(table.userId, table.catalogId),
+  ],
+);
+
+/**
+ * The user's pool of recommended films (Hoy · «Recomendada»): candidates from TMDB that are
+ * not in their library, ranked by the Esta noche engine and computed by the nightly cron.
+ * Lenses pick from it at read time, so reading Hoy never calls TMDB. A cache like
+ * `TonightPick`: safe to delete, rebuilt on the next run.
+ */
+export const tonightRecos = pgTable(
+  "TonightReco",
+  {
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    catalogId: text("catalogId")
+      .notNull()
+      .references(() => catalog.id, { onDelete: "cascade" }),
+    rank: integer("rank").notNull().default(0),
+    score: real("score").notNull().default(0),
+    components: jsonb("components").notNull().default({}),
+    reasons: jsonb("reasons").notNull().default([]),
+    /** `recommendations` (TMDB item-to-item from a seed) or `discover` (by genre on your platforms). */
+    sourceKind: text("sourceKind").notNull(),
+    /** The library film that led here, when the source was a seed. */
+    seedCatalogId: text("seedCatalogId"),
+    seedName: text("seedName"),
+    computedAt: timestamp("computedAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.catalogId] }),
+    index("TonightReco_userId_rank_idx").on(table.userId, table.rank),
   ],
 );
 
@@ -311,6 +350,7 @@ export type List = typeof lists.$inferSelect;
 export type ListItem = typeof listItems.$inferSelect;
 export type TonightPickRow = typeof tonightPicks.$inferSelect;
 export type PickEventRow = typeof pickEvents.$inferSelect;
+export type TonightRecoRow = typeof tonightRecos.$inferSelect;
 
 export type ListItemWithTitleRelations = typeof listItems.$inferSelect & {
   title: Title;
