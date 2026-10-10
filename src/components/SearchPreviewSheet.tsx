@@ -121,7 +121,29 @@ export const SearchPreviewSheet = ({
       <div className="flex flex-col items-center px-5 pt-3">
         <SheetHandle className="sm:hidden" />
       </div>
-      <div className="relative aspect-[16/9] shrink-0 overflow-hidden bg-well">
+      {/* The whole header (backdrop, poster, title) opens the ficha, like the «Ficha» button. */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={`Abrir la ficha de ${result.name}`}
+        aria-disabled={pending}
+        onClick={() => {
+          if (!pending) {
+            onOpen();
+          }
+        }}
+        onKeyDown={(event) => {
+          if ((event.key === "Enter" || event.key === " ") && !pending) {
+            event.preventDefault();
+            onOpen();
+          }
+        }}
+        className={cn(
+          "relative aspect-[16/9] shrink-0 cursor-pointer overflow-hidden bg-well",
+          pending && "cursor-default",
+          focusRing,
+        )}
+      >
         {backdrop ? (
           <Image
             src={backdrop}

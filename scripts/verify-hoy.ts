@@ -68,6 +68,8 @@ const run = () => {
   assert(deckCard.includes("data-deck-reco-badge") && deckCard.includes("recomendada, no está en Quiero ver"), "Recommended card carries a badge and says so to screen readers");
   assert(deckCard.includes("sala?.onOpenReco(title)") && deckCard.includes("commitDirectly"), "Tapping a recommendation opens its preview; the stub logs it directly");
   assert(read("src/components/tonight/TonightCardMenu.tsx").includes("No me interesa") && read("src/components/tonight/RecoPreviewSheet.tsx").includes("SearchPreviewSheet"), "Recommended cards have their own menu and reuse the Buscar preview sheet");
+  const sheet = read("src/components/SearchPreviewSheet.tsx");
+  assert(sheet.includes("Abrir la ficha de") && sheet.includes("onOpen();"), "Tapping the preview sheet's header opens the ficha, like the Ficha button");
   const recoActions = read("src/components/tonight/useRecoActions.ts");
   assert(recoActions.includes("localRef.current[cardId]") && recoActions.includes("localRef.current = {"), "Deshacer reads the title id from a ref, not from the render that started the stub's flight");
   assert(read("src/lib/tonight-store.ts").includes("titleId: null,\n          catalogId: event.catalogId"), "Events on a recommendation keep no title, so they stay apart from the queue's");
