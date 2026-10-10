@@ -390,10 +390,14 @@ export const recordPickEvents = async (userId: string, events: ReadonlyArray<Pic
         ).map((row) => row.id)
       : [],
   );
-  const ownedByCatalog = await loadOwnedTitleIdsByCatalog(userId, bareCatalogIds);
 
   const now = new Date();
-  const values = events.flatMap((event) => {
+  const values = events.flatMap((event): Array<{
+    titleId: string | null;
+    catalogId: string;
+    kind: PickEventKind;
+    lens: string | null;
+  }> => {
     if (event.titleId) {
       const catalogId = catalogByTitle.get(event.titleId);
       // Not the user's title: drop it rather than file feedback under someone else's id.
@@ -402,9 +406,11 @@ export const recordPickEvents = async (userId: string, events: ReadonlyArray<Pic
         : [];
     }
     if (event.catalogId && knownCatalog.has(event.catalogId)) {
+      // About the film as a recommendation: it keeps no title even if the user adds it a moment
+      // later (reads map it to their title), so recommended and queue events stay apart.
       return [
         {
-          titleId: ownedByCatalog.get(event.catalogId) ?? null,
+          titleId: null,
           catalogId: event.catalogId,
           kind: event.kind,
           lens: event.lens ?? null,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useRef, useState, useTransition } from "react";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { pinTonightFromSearch } from "@/app/actions/tonight";
 import type { SearchAddDestination, SearchPendingAction } from "@/components/SearchPreviewSheet";
@@ -25,6 +25,9 @@ export const useRecoActions = () => {
   const router = useRouter();
   const [preview, setPreview] = useState<CoverflowTitle | null>(null);
   const [local, setLocal] = useState<Record<string, RecoLocal>>({});
+  // Handlers handed to long animations (the stub's flight) keep an old render's closure: read the
+  // latest entries from a ref, or «Deshacer» would look for the title under the catalog id.
+  const localRef = useRef<Record<string, RecoLocal>>({});
   const [pending, setPending] = useState<{ id: string; action: SearchPendingAction } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tonightError, setTonightError] = useState<string | null>(null);
@@ -33,7 +36,8 @@ export const useRecoActions = () => {
   const [, startTransition] = useTransition();
 
   const remember = useCallback((cardId: string, entry: RecoLocal) => {
-    setLocal((current) => ({ ...current, [cardId]: entry }));
+    localRef.current = { ...localRef.current, [cardId]: entry };
+    setLocal(localRef.current);
   }, []);
 
   const fromCard = (card: CoverflowTitle) => {
@@ -195,7 +199,7 @@ export const useRecoActions = () => {
     pin,
     openFicha,
     markSeen,
-    titleIdOf: (cardId: string) => local[cardId]?.titleId ?? null,
+    titleIdOf: (cardId: string) => localRef.current[cardId]?.titleId ?? null,
     isSaved: (cardId: string) => Boolean(local[cardId]?.inWatchlist),
   };
 };
