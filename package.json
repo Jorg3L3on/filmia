@@ -25,7 +25,8 @@
     "db:backfill-people": "tsx scripts/backfill-people.ts",
     "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs",
     "eval:tonight": "tsx scripts/eval-tonight.ts",
-    "preview:recos": "tsx scripts/preview-recos.ts"
+    "preview:recos": "tsx scripts/preview-recos.ts",
+    "compute:recos": "tsx scripts/compute-recos.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
