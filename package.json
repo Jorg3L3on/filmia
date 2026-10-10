@@ -27,7 +27,8 @@
     "eval:tonight": "tsx scripts/eval-tonight.ts",
     "preview:recos": "tsx scripts/preview-recos.ts",
     "compute:recos": "tsx scripts/compute-recos.ts",
-    "preview:decks": "tsx scripts/preview-decks.ts"
+    "preview:decks": "tsx scripts/preview-decks.ts",
+    "metrics:recos": "tsx scripts/reco-metrics.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
