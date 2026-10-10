@@ -184,7 +184,13 @@ const listBatches = async (
  */
 export const buildRecoPool = async (
   input: TonightInputLoaded,
-  options: { poolSize?: number; maxScored?: number; maxNewCatalog?: number } = {},
+  options: {
+    poolSize?: number;
+    maxScored?: number;
+    maxNewCatalog?: number;
+    /** Rank and filter only: no Catalog rows are created or enriched. */
+    dryRun?: boolean;
+  } = {},
 ): Promise<RecoPoolResult> => {
   const { now } = input;
   const stats = emptyStats();
@@ -267,6 +273,10 @@ export const buildRecoPool = async (
   });
   const chosen = checked.filter((pick) => available.has(pick.catalogId)).slice(0, poolSize);
   stats.available = available.size;
+
+  if (options.dryRun) {
+    return { ok: true, picks: chosen, stats };
+  }
 
   // Only what we will show becomes a shared Catalog row (and gets enriched once).
   let spent = 0;
