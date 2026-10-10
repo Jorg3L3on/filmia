@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { cn } from "@/lib/cn";
 import { dockSearch } from "@/lib/dock-search";
 
@@ -8,24 +8,18 @@ import { dockSearch } from "@/lib/dock-search";
 const fieldGlassClass =
   "border border-white/14 bg-[rgb(12_16_24/0.72)] shadow-panel backdrop-blur-2xl backdrop-saturate-180 supports-[backdrop-filter]:bg-[rgb(12_16_24/0.45)] before:pointer-events-none before:absolute before:inset-x-6 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent";
 
-type DockSearchFieldProps = {
-  /** Keyboard height while focused (0 when closed), so the dock can ride above it. */
-  onKeyboardInset: (inset: number) => void;
-};
-
 /**
- * Buscar's field in the dock (mobile): magnifier, 16 px input (no iOS zoom),
+ * Buscar's field in the dock (mobile, at the top): magnifier, 16 px input (no iOS zoom),
  * ✕ to clear, Enter searches. Value and edits go through `dockSearch` to the
  * page's search (same 280 ms debounce and cache as before).
  */
-export const DockSearchField = ({ onKeyboardInset }: DockSearchFieldProps) => {
+export const DockSearchField = () => {
   const { query } = useSyncExternalStore(
     dockSearch.subscribe,
     dockSearch.getSnapshot,
     dockSearch.getServerSnapshot,
   );
   const inputRef = useRef<HTMLInputElement>(null);
-  const [focused, setFocused] = useState(false);
 
   // Arrived by tapping the dock disc: try to take focus. iOS only opens the
   // keyboard inside a user gesture, so after the navigation it may not; then
@@ -35,27 +29,6 @@ export const DockSearchField = ({ onKeyboardInset }: DockSearchFieldProps) => {
       inputRef.current?.focus({ preventScroll: true });
     }
   }, []);
-
-  // Keyboard: follow visualViewport while focused so the field sits right above it.
-  useEffect(() => {
-    const viewport = typeof window === "undefined" ? null : window.visualViewport;
-    if (!focused || !viewport) {
-      onKeyboardInset(0);
-      return;
-    }
-    const sync = () => {
-      const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
-      onKeyboardInset(inset > 40 ? Math.round(inset) : 0);
-    };
-    sync();
-    viewport.addEventListener("resize", sync);
-    viewport.addEventListener("scroll", sync);
-    return () => {
-      viewport.removeEventListener("resize", sync);
-      viewport.removeEventListener("scroll", sync);
-      onKeyboardInset(0);
-    };
-  }, [focused, onKeyboardInset]);
 
   return (
     <form
@@ -88,8 +61,6 @@ export const DockSearchField = ({ onKeyboardInset }: DockSearchFieldProps) => {
           ref={inputRef}
           value={query}
           onChange={(event) => dockSearch.type(event.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
           placeholder="Películas, series o directores"
           inputMode="search"
           enterKeyHint="search"

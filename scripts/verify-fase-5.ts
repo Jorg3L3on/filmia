@@ -215,14 +215,15 @@ const run = () => {
     "fieldClass must use text-base on mobile to avoid iOS zoom (JOR-218)",
   );
 
-  // Mobile searches from the dock (FIL-I3-3): the sticky row there is the chips (h-12 header);
-  // the top form is desktop only (h-14 header).
+  // Mobile searches from the dock (FIL-I3-3), docked under the h-12 header: the sticky chips sit
+  // under that field (7.25 rem); from sm up the top form is desktop only and they sit flush under the header.
   const buscarAdd = read("src/components/TmdbSearchAdd.tsx");
   assert(
     buscarForm.includes("3.5rem") &&
       buscarAdd.includes("top-[calc(3rem+env(safe-area-inset-top))]") &&
+      buscarAdd.includes("top-[calc(7.25rem+env(safe-area-inset-top))]") &&
       !buscarForm.includes("4rem+env(safe-area-inset-top)"),
-    "Buscar sticky must sit flush under SiteHeader h-12/h-14 (JOR-218)",
+    "Buscar sticky sits under the docked field on mobile and flush under SiteHeader from sm (JOR-218)",
   );
 
   assert(

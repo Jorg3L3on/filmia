@@ -230,7 +230,7 @@ export const TmdbSearchAdd = ({
         />
       ) : (
         <>
-          <div className="sticky top-[calc(3rem+env(safe-area-inset-top))] z-30 -mx-4 bg-canvas/90 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+          <div className="sticky top-[calc(7.25rem+env(safe-area-inset-top))] z-30 sm:top-[calc(3rem+env(safe-area-inset-top))] -mx-4 bg-canvas/90 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
             <TmdbKindFilterChips
               value={mode === "director" ? "DIRECTOR" : kindFilter}
               onChange={onChip}
