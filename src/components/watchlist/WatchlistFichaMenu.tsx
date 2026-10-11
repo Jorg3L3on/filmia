@@ -72,7 +72,7 @@ export const WatchlistFichaMenu = ({
             <SheetHandle />
             <div className="flex w-full items-center gap-3">
               <div className="w-10 shrink-0">
-                <PosterImage name={ficha.name} posterPath={ficha.posterPath} sizes="40px" className="rounded-md" />
+                <PosterImage name={ficha.name} posterPath={ficha.posterPath} sizes="40px" tmdbSize="w185" className="rounded-md" />
               </div>
               <div className="min-w-0 flex-1">
                 <h2 id={headingId} className="truncate font-serif text-xl text-paper">

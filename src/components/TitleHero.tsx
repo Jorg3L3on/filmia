@@ -81,6 +81,7 @@ export const TitleHero = ({
             priority
             fetchPriority="high"
             sizes="(max-width: 640px) 42vw, 280px"
+            tmdbSize="w500"
           />
         </SharedPoster>
       </div>

@@ -232,6 +232,7 @@ const RelinkSheetBody = ({
                         name={result.name}
                         posterPath={result.posterPath}
                         sizes="48px"
+                        tmdbSize="w185"
                         className="rounded-lg"
                       />
                     </span>

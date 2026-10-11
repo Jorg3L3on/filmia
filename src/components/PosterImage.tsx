@@ -11,6 +11,8 @@ type PosterImageProps = {
   fetchPriority?: "high" | "low" | "auto";
   sizes?: string;
   ratio?: "poster" | "fill";
+  // TMDB file size: w185 for thumbnails up to 56px, w500 for the ficha poster.
+  tmdbSize?: "w185" | "w342" | "w500";
 };
 
 export const PosterImage = ({
@@ -21,8 +23,9 @@ export const PosterImage = ({
   fetchPriority,
   sizes = "(max-width: 768px) 50vw, 220px",
   ratio = "poster",
+  tmdbSize = "w342",
 }: PosterImageProps) => {
-  const src = tmdbPosterUrl(posterPath, "w342");
+  const src = tmdbPosterUrl(posterPath, tmdbSize);
 
   if (!src) {
     return (
@@ -35,7 +38,6 @@ export const PosterImage = ({
 
   const isExternal =
     src.startsWith("https://") || src.startsWith("http://");
-  const isTmdb = src.includes("image.tmdb.org") || src.includes("media.themoviedb.org");
 
   return (
     <div
@@ -53,7 +55,9 @@ export const PosterImage = ({
         className="object-cover"
         priority={priority}
         fetchPriority={fetchPriority ?? (priority ? "high" : undefined)}
-        unoptimized={isExternal && !isTmdb}
+        // External posters (TMDB included) skip Vercel Image Optimization: the
+        // file size is picked per use through tmdbSize.
+        unoptimized={isExternal}
       />
     </div>
   );
