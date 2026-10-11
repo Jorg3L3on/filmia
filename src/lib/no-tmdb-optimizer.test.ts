@@ -61,7 +61,7 @@ describe("TMDB images skip the Vercel optimizer", () => {
       offenders,
       [],
       `<Image> sin \`unoptimized\` (cada imagen de TMDB nueva cuesta una transformación de Vercel); ` +
-        `añade \`unoptimized={isTmdbImage(src)}\` o \`unoptimized\`:\n${offenders.join("\n")}`,
+        `añade \`unoptimized={isRemoteImage(src)}\` o \`unoptimized\`:\n${offenders.join("\n")}`,
     );
   });
 

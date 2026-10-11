@@ -10,7 +10,7 @@ import { WatchlistFichaDetail } from "@/components/watchlist/WatchlistFichaDetai
 import { WatchlistHookLine } from "@/components/watchlist/WatchlistHookLine";
 import type { FichaView } from "@/components/watchlist/types";
 import { cn } from "@/lib/cn";
-import { isTmdbImage, tmdbBackdropUrl, tmdbPosterUrl } from "@/lib/tmdb";
+import { isRemoteImage, tmdbBackdropUrl, tmdbPosterUrl } from "@/lib/tmdb";
 import { focusRing } from "@/lib/ui";
 
 type WatchlistStageProps = {
@@ -47,7 +47,7 @@ export const WatchlistStage = ({ ficha, onMarkSeen, onTonight, onMenu }: Watchli
             fill
             sizes="460px"
             className={cn("object-cover object-[center_35%]", !ficha.backdropPath && "scale-125 blur-2xl")}
-            unoptimized={isTmdbImage(backdropSrc)}
+            unoptimized={isRemoteImage(backdropSrc)}
           />
         ) : null}
         <div

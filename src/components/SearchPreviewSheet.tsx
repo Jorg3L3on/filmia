@@ -9,7 +9,7 @@ import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import { membershipStatusCopy, titleListMemberships } from "@/lib/list-membership";
 import { initialListSelection, type SelectableList } from "@/lib/list-selection";
-import { isTmdbImage, tmdbBackdropUrl, tmdbPosterUrl, type TmdbCatalogResult } from "@/lib/tmdb";
+import { isRemoteImage, tmdbBackdropUrl, tmdbPosterUrl, type TmdbCatalogResult } from "@/lib/tmdb";
 import { focusRing } from "@/lib/ui";
 
 type LocalTitle = {
@@ -151,7 +151,7 @@ export const SearchPreviewSheet = ({
             fill
             sizes="512px"
             className="object-cover"
-            unoptimized={isTmdbImage(backdrop)}
+            unoptimized={isRemoteImage(backdrop)}
           />
         ) : null}
         <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/55 to-canvas/20" />

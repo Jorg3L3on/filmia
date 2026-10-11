@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { usePrefersReducedMotion } from "@/lib/motion";
-import { isTmdbImage, tmdbPosterUrl } from "@/lib/tmdb";
+import { isRemoteImage, tmdbPosterUrl } from "@/lib/tmdb";
 
 type QueVerAtmosphereProps = {
   /** Soft double-exposure of the next poster in the haze (C). */
@@ -131,7 +131,7 @@ export const QueVerAtmosphere = ({
             sizes="280px"
             className="object-cover"
             draggable={false}
-            unoptimized={isTmdbImage(layer.src)}
+            unoptimized={isRemoteImage(layer.src)}
             onLoad={() => ghost.markReady(layer.id)}
           />
         </div>
