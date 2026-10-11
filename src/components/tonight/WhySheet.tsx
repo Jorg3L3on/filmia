@@ -80,7 +80,7 @@ export const WhySheet = ({ title, lens, onClose }: WhySheetProps) => {
             <SheetHandle />
             <div className="flex w-full items-start gap-3">
               <div className="w-11 shrink-0">
-                <PosterImage name={title.name} posterPath={title.posterPath} sizes="44px" className="rounded-md" />
+                <PosterImage name={title.name} posterPath={title.posterPath} sizes="44px" tmdbSize="w185" className="rounded-md" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">

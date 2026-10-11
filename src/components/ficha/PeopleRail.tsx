@@ -41,6 +41,7 @@ export const PeopleRail = ({ items }: { items: readonly PeopleRailItem[] }) => {
                   width={68}
                   height={68}
                   sizes="(max-width: 640px) 68px, 84px"
+                  unoptimized
                   className="person-photo size-[4.25rem] shrink-0 rounded-full object-cover ring-1 ring-white/14 sm:size-[5.25rem]"
                 />
               ) : null}

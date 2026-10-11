@@ -26,6 +26,13 @@ const getTmdbApiKey = () => process.env.TMDB_API_KEY?.trim() ?? "";
 
 export const isTmdbConfigured = () => Boolean(getTmdbApiKey());
 
+// Remote images (TMDB and the older full URLs stored in the catalog) are served
+// as-is with `unoptimized`: the optimizer bills a Vercel transformation per image
+// + width, and the origin already sends long-lived caching. Local assets (`/posters/*`,
+// the logo) keep going through it. Same rule as PosterImage's `isExternal`.
+export const isRemoteImage = (src: string | null | undefined) =>
+  typeof src === "string" && /^https?:\/\//.test(src);
+
 export const tmdbBackdropUrl = (
   backdropPath: string | null | undefined,
   size: "w780" | "w1280" = "w780",

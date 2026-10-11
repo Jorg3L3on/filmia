@@ -40,6 +40,7 @@ export const SearchResultRow = ({
       name={result.name}
       posterPath={result.posterPath}
       sizes="56px"
+      tmdbSize="w185"
       className="rounded-poster"
     />
   );

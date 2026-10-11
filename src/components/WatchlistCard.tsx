@@ -76,7 +76,7 @@ export const WatchlistReorderRow = ({
         {position}
       </span>
       <div className="w-12 shrink-0">
-        <PosterImage name={ficha.name} posterPath={ficha.posterPath} sizes="48px" className="rounded-md" />
+        <PosterImage name={ficha.name} posterPath={ficha.posterPath} sizes="48px" tmdbSize="w185" className="rounded-md" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-paper">{ficha.name}</p>

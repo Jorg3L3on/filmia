@@ -107,6 +107,7 @@ export const ProfileDiary = async () => {
                         posterPath={primary.posterPath}
                         ratio="fill"
                         sizes="52px"
+                        tmdbSize="w185"
                         className="h-full rounded-none"
                       />
                     </SharedPoster>
@@ -159,6 +160,7 @@ export const ProfileDiary = async () => {
                         name={title.name}
                         posterPath={title.posterPath}
                         sizes="44px"
+                        tmdbSize="w185"
                         className="rounded-lg shadow-[0_8px_18px_rgba(0,0,0,0.45)]"
                       />
                     </SharedPoster>
