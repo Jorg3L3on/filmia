@@ -57,7 +57,7 @@ export const TonightCardMenu = ({
             <SheetHandle />
             <div className="flex w-full items-center gap-3">
               <div className="w-10 shrink-0">
-                <PosterImage name={title.name} posterPath={title.posterPath} sizes="40px" className="rounded-md" />
+                <PosterImage name={title.name} posterPath={title.posterPath} sizes="40px" tmdbSize="w185" className="rounded-md" />
               </div>
               <h2 id={headingId} className="min-w-0 flex-1 truncate font-serif text-xl text-paper">
                 {title.name}

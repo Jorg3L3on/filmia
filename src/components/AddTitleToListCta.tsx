@@ -408,6 +408,7 @@ const CandidateRow = ({
         name={name}
         posterPath={posterPath}
         sizes="48px"
+        tmdbSize="w185"
         className="rounded-lg transition-[filter] duration-[var(--duration-hover)]"
       />
     </span>

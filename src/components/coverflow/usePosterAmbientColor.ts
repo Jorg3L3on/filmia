@@ -6,11 +6,8 @@ import {
   formatAmbientRgb,
   normalizePosterAmbientPath,
   parseAmbientRgb,
-  sampleAmbientFromImageData,
-  softenAmbientRgb,
   type AmbientRgb,
 } from "@/lib/poster-ambient";
-import { tmdbPosterUrl } from "@/lib/tmdb";
 
 const cache = new Map<string, AmbientRgb>();
 const inflight = new Map<string, Promise<AmbientRgb>>();
@@ -33,50 +30,6 @@ const parseAmbientPayload = (payload: unknown): AmbientRgb | null => {
   };
 };
 
-/** Same-origin Next image optimizer URL — canvas-safe, no CORS taint. */
-const sameOriginPosterSrc = (posterPath: string) => {
-  if (posterPath.startsWith("/posters/")) {
-    return posterPath;
-  }
-  const remote = tmdbPosterUrl(posterPath, "w185");
-  if (!remote) {
-    return null;
-  }
-  if (remote.startsWith("/")) {
-    return remote;
-  }
-  return `/_next/image?url=${encodeURIComponent(remote)}&w=96&q=75`;
-};
-
-const sampleFromSameOriginImage = (src: string) =>
-  new Promise<AmbientRgb>((resolve) => {
-    const image = new Image();
-    image.decoding = "async";
-    // Same-origin (/_next/image or /posters) — do NOT set crossOrigin (avoids taint path).
-    image.onload = () => {
-      try {
-        const size = 24;
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d", { willReadFrequently: true });
-        if (!ctx) {
-          resolve(AMBIENT_FALLBACK_RGB);
-          return;
-        }
-        ctx.drawImage(image, 0, 0, size, size);
-        const sampled = softenAmbientRgb(
-          sampleAmbientFromImageData(ctx.getImageData(0, 0, size, size)),
-        );
-        resolve(sampled);
-      } catch {
-        resolve(AMBIENT_FALLBACK_RGB);
-      }
-    };
-    image.onerror = () => resolve(AMBIENT_FALLBACK_RGB);
-    image.src = src;
-  });
-
 const fetchAmbientFromApi = async (posterPath: string): Promise<AmbientRgb> => {
   try {
     const response = await fetch(
@@ -92,14 +45,11 @@ const fetchAmbientFromApi = async (posterPath: string): Promise<AmbientRgb> => {
   }
 };
 
-const isFallback = (rgb: AmbientRgb) =>
-  rgb.r === AMBIENT_FALLBACK_RGB.r &&
-  rgb.g === AMBIENT_FALLBACK_RGB.g &&
-  rgb.b === AMBIENT_FALLBACK_RGB.b;
-
 /**
- * Prefer same-origin `/_next/image` canvas sample (no CORS taint).
- * If that yields indigo fallback, try harder via `/api/poster-ambient` (server sharp).
+ * Seed (the card's `posterAmbient`) and the in-memory cache are checked by the hook;
+ * a miss asks `/api/poster-ambient` (server sharp, CDN-cached). TMDB sends no CORS
+ * headers, so sampling the poster in a canvas would need Next's image optimizer, which
+ * bills a Vercel transformation per poster.
  */
 const resolveAmbient = async (posterPath: string): Promise<AmbientRgb> => {
   const cached = cache.get(posterPath);
@@ -112,23 +62,14 @@ const resolveAmbient = async (posterPath: string): Promise<AmbientRgb> => {
     return pending;
   }
 
-  const request = (async () => {
-    const sameOrigin = sameOriginPosterSrc(posterPath);
-    let sampled = AMBIENT_FALLBACK_RGB;
-    if (sameOrigin) {
-      sampled = await sampleFromSameOriginImage(sameOrigin);
-    }
-    if (isFallback(sampled)) {
-      const fromApi = await fetchAmbientFromApi(posterPath);
-      if (!isFallback(fromApi)) {
-        sampled = fromApi;
-      }
-    }
-    cache.set(posterPath, sampled);
-    return sampled;
-  })().finally(() => {
-    inflight.delete(posterPath);
-  });
+  const request = fetchAmbientFromApi(posterPath)
+    .then((sampled) => {
+      cache.set(posterPath, sampled);
+      return sampled;
+    })
+    .finally(() => {
+      inflight.delete(posterPath);
+    });
 
   inflight.set(posterPath, request);
   return request;
