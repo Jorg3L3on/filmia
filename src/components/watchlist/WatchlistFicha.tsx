@@ -14,7 +14,7 @@ import { ACCENT_RGB } from "@/lib/aura";
 import { cn } from "@/lib/cn";
 import { useLongPress } from "@/lib/motion";
 import { staggerStyle } from "@/lib/motion-style";
-import { tmdbBackdropUrl, tmdbPosterUrl } from "@/lib/tmdb";
+import { isTmdbImage, tmdbBackdropUrl, tmdbPosterUrl } from "@/lib/tmdb";
 import { focusRing, glassRowClass } from "@/lib/ui";
 
 type WatchlistFichaProps = {
@@ -118,6 +118,7 @@ const WatchlistFichaImpl = ({
               fill
               sizes="(min-width: 1024px) 640px, 100vw"
               className={cn("object-cover object-[center_30%]", !ficha.backdropPath && "scale-125 blur-2xl")}
+              unoptimized={isTmdbImage(backdropSrc)}
             />
           </div>
         ) : null}

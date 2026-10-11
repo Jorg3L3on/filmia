@@ -6,6 +6,7 @@ import { SharedPoster } from "@/components/SharedPoster";
 import { LaurelIcon } from "@/components/watchlist/icons";
 import { cn } from "@/lib/cn";
 import { formatStarScore } from "@/lib/labels";
+import { isTmdbImage } from "@/lib/tmdb";
 import { posterFrame } from "@/lib/ui";
 
 type TitleHeroProps = {
@@ -66,6 +67,7 @@ export const TitleHero = ({
             sizes="100vw"
             className="ficha-backdrop-a-img object-cover object-[center_25%]"
             fetchPriority="low"
+            unoptimized={isTmdbImage(backdropSrc)}
           />
         ) : null}
         <div className="ficha-backdrop-a-shade" />

@@ -26,6 +26,11 @@ const getTmdbApiKey = () => process.env.TMDB_API_KEY?.trim() ?? "";
 
 export const isTmdbConfigured = () => Boolean(getTmdbApiKey());
 
+// TMDB images are served as-is (`unoptimized`): the optimizer would bill a Vercel
+// transformation per image + width, and TMDB already sends long-lived caching.
+export const isTmdbImage = (src: string | null | undefined) =>
+  Boolean(src) && (src!.includes("image.tmdb.org") || src!.includes("media.themoviedb.org"));
+
 export const tmdbBackdropUrl = (
   backdropPath: string | null | undefined,
   size: "w780" | "w1280" = "w780",

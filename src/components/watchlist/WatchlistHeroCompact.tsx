@@ -10,7 +10,7 @@ import { WatchlistFichaChips } from "@/components/watchlist/WatchlistFichaChips"
 import { WatchlistHookLine } from "@/components/watchlist/WatchlistHookLine";
 import type { FichaView } from "@/components/watchlist/types";
 import { cn } from "@/lib/cn";
-import { tmdbBackdropUrl, tmdbPosterUrl } from "@/lib/tmdb";
+import { isTmdbImage, tmdbBackdropUrl, tmdbPosterUrl } from "@/lib/tmdb";
 import { focusRing, pillActionClass } from "@/lib/ui";
 
 type WatchlistHeroCompactProps = {
@@ -47,6 +47,7 @@ export const WatchlistHeroCompact = ({ ficha, stamped, onMarkSeen, onMenu }: Wat
           priority
           sizes="(min-width: 1024px) 1152px, 100vw"
           className={cn("-z-20 object-cover opacity-55", !ficha.backdropPath && "scale-125 blur-2xl")}
+          unoptimized={isTmdbImage(backdropSrc)}
         />
       ) : null}
       <div
