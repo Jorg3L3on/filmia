@@ -9,12 +9,14 @@ const LOGIN_PATH = "/login";
 const SIGNUP_PATH = "/registro";
 
 // /api/cron authenticates itself with CRON_SECRET instead of a session.
+// /compartir pages check their own signed token (FIL-I15-4) and are read-only.
 const PUBLIC_PATHS = [
   LOGIN_PATH,
   SIGNUP_PATH,
   "/api/auth",
   "/api/poster-ambient",
   "/api/cron",
+  "/compartir",
 ];
 
 const isPublicPath = (pathname: string) =>
