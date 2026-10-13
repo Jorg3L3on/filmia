@@ -21,6 +21,8 @@ type TrailerButtonProps = {
  */
 export const TrailerButton = ({ trailerKey, titleName, backdropSrc }: TrailerButtonProps) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -29,7 +31,10 @@ export const TrailerButton = ({ trailerKey, titleName, backdropSrc }: TrailerBut
     if (!dialog || !open) {
       return;
     }
+    const trigger = triggerRef.current;
     dialog.showModal();
+    // Focus «Cerrar», not the player: keys never leave YouTube's iframe, so Escape would stop working.
+    closeRef.current?.focus();
     // iOS keeps scrolling the page behind a modal dialog unless <html> is locked too.
     const { documentElement: html, body } = document;
     const saved = { html: html.style.overflow, body: body.style.overflow };
@@ -41,6 +46,7 @@ export const TrailerButton = ({ trailerKey, titleName, backdropSrc }: TrailerBut
       if (dialog.open) {
         dialog.close();
       }
+      trigger?.focus({ preventScroll: true });
     };
   }, [open]);
 
@@ -52,6 +58,7 @@ export const TrailerButton = ({ trailerKey, titleName, backdropSrc }: TrailerBut
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
@@ -118,6 +125,7 @@ export const TrailerButton = ({ trailerKey, titleName, backdropSrc }: TrailerBut
         <button
           type="button"
           onClick={close}
+          ref={closeRef}
           aria-label="Cerrar tráiler"
           className={cn(
             "absolute right-[max(0.75rem,env(safe-area-inset-right))] top-[max(0.75rem,env(safe-area-inset-top))] inline-flex size-11 items-center justify-center rounded-full bg-white/12 text-paper backdrop-blur transition hover:bg-white/20",
