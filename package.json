@@ -29,6 +29,7 @@
     "eval:affinity": "tsx scripts/eval-affinity.ts",
     "preview:affinity": "tsx scripts/preview-affinity.ts",
     "metrics:affinity": "tsx scripts/affinity-metrics.ts",
+    "metrics:onboarding": "tsx scripts/onboarding-metrics.ts",
     "preview:recos": "tsx scripts/preview-recos.ts",
     "compute:recos": "tsx scripts/compute-recos.ts",
     "preview:decks": "tsx scripts/preview-decks.ts",

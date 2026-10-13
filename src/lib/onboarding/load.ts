@@ -26,6 +26,8 @@ import { withTimeout } from "@/lib/with-timeout";
 
 const LOOKUP_TIMEOUT_MS = 2500;
 const SUGGESTIONS_SIZE = 18;
+/** TV talk, news, reality and soap: popular in MX, but nobody plans a night around them. */
+const NON_NIGHT_TV_GENRES = [10767, 10763, 10764, 10766];
 
 export type YearGridItem = {
   tmdbId: number;
@@ -129,13 +131,18 @@ const interleave = <T>(a: readonly T[], b: readonly T[]) => {
 const buildPlatformSuggestions = async (platformsKey: string): Promise<SuggestionItem[]> => {
   const platforms = platformsKey.split(",").filter(Boolean) as Platform[];
   const providerIds = userStreamingProviderIds(platforms);
-  if (!isTmdbConfigured() || providerIds.length === 0) {
+  if (!isTmdbConfigured() || (platforms.length > 0 && providerIds.length === 0)) {
     return [];
   }
-  const base = { withWatchProviders: providerIds, watchRegion: "MX", sortBy: "popularity.desc" as const, voteCountGte: 50 };
+  // No platforms («Elige 3» fallback): what is popular in MX, wherever it streams.
+  const base = {
+    ...(providerIds.length > 0 ? { withWatchProviders: providerIds, watchRegion: "MX" } : { region: "MX" }),
+    sortBy: "popularity.desc" as const,
+    voteCountGte: 50,
+  };
   const [movies, series] = await Promise.all([
     discoverTmdb({ ...base, kind: "MOVIE" }).catch(() => [] as TmdbDiscoverResult[]),
-    discoverTmdb({ ...base, kind: "SERIES" }).catch(() => [] as TmdbDiscoverResult[]),
+    discoverTmdb({ ...base, kind: "SERIES", withoutGenres: NON_NIGHT_TV_GENRES }).catch(() => [] as TmdbDiscoverResult[]),
   ]);
   // Two movies per series: the sala is mostly films.
   const picked = interleave(movies.slice(0, 12), series.slice(0, 6)).slice(0, SUGGESTIONS_SIZE);
@@ -148,6 +155,9 @@ const buildPlatformSuggestions = async (platformsKey: string): Promise<Suggestio
     posterPath: result.posterPath,
     platform: null,
   }));
+  if (platforms.length === 0) {
+    return items;
+  }
   // Which of *their* platforms carries it, for the corner logo. Best effort.
   await runPool(items, 4, async (item) => {
     const data = await withTimeout(fetchMxWatchProviders(item.tmdbId, item.kind), LOOKUP_TIMEOUT_MS, null);
@@ -165,10 +175,13 @@ const buildPlatformSuggestions = async (platformsKey: string): Promise<Suggestio
   return items;
 };
 
-/** Popular titles streaming flatrate on these platforms (MX). Cached per platform set, per day. */
+/**
+ * Popular titles streaming flatrate on these platforms (MX). Cached per platform set, per day.
+ * An empty set means popular in MX on any service (the «Elige 3» fallback).
+ */
 export const getPlatformSuggestions = (platforms: readonly Platform[]): Promise<SuggestionItem[]> => {
   const key = [...new Set(platforms)].sort().join(",");
-  return unstable_cache(buildPlatformSuggestions, ["onboarding-suggestions", "v1"], {
+  return unstable_cache(buildPlatformSuggestions, ["onboarding-suggestions", "v2"], {
     revalidate: 86400,
     tags: [TMDB_CACHE_TAG],
   })(key).catch(() => buildPlatformSuggestions(key));

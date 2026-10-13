@@ -62,6 +62,12 @@ const run = () => {
   assert(payoff.includes("acaba a las") && flow.includes("Entrar a Filmia"), "Payoff shows the fit and the final CTA");
   assert(read("src/app/actions/onboarding.ts").includes("computeTonightForUser"), "Payoff computes Hoy inline");
 
+  // FIL-I11: three titles before Hoy, enforced by the server; skipping lands on «Elige 3».
+  const actions = read("src/app/actions/onboarding.ts");
+  assert(actions.includes('reason: "needs-titles"') && actions.includes("needsQuickPicks(titleCount)"), "finishOnboarding refuses a first finish with fewer than 3 titles");
+  assert(flow.includes("resolveLeave(titleCount)") && flow.includes('variant="tres"'), "Skip and «Entrar a Filmia» detour to «Elige 3» below 3 titles");
+  assert(!flow.includes("onClick={finish}"), "Nothing skips straight to Hoy");
+
   // Motion: slides reuse the diary keyframes with ease-out; spring only on tap feedback.
   const css = read("src/app/globals.css");
   for (const selector of [

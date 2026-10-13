@@ -7,7 +7,7 @@ import { upsertTitleFromTmdbForUser } from "@/lib/add-title-from-tmdb";
 import { catalogEnrichmentPatch } from "@/lib/catalog-enrich-core";
 import { ensureDefaultLists, FAVORITAS_SLUG, WATCHLIST_SLUG } from "@/lib/lists";
 import { resolveTitleMetadata } from "@/lib/metadata";
-import { isOnboardingStepId, type OnboardingStepId } from "@/lib/onboarding/steps";
+import { isOnboardingStepId, needsQuickPicks, type OnboardingStepId } from "@/lib/onboarding/steps";
 import { getOnboardingLibrary, getPlatformSuggestions, type SuggestionItem } from "@/lib/onboarding/load";
 import { payoffEmptyKind, pickPayoffCard, type PayoffPayload } from "@/lib/onboarding/payoff";
 import type { YearPickState } from "@/lib/onboarding/year-grid";
@@ -200,15 +200,21 @@ export const removeWatchlistPick = async (titleId: string, createdByFlow: boolea
   scheduleTonightRecompute(userId);
 };
 
-/** Popular titles on the platforms the user just picked, minus what they already have. */
-export const getOnboardingSuggestions = async (excludeTmdbIds: number[]): Promise<SuggestionItem[]> => {
+/**
+ * Popular titles on the platforms the user just picked, minus what they already have. With no
+ * platforms, `popularFallback` (the «Elige 3» step) widens it to what is popular in MX.
+ */
+export const getOnboardingSuggestions = async (
+  excludeTmdbIds: number[],
+  options: { popularFallback?: boolean } = {},
+): Promise<SuggestionItem[]> => {
   const userId = await requireUserId();
   const user = await db.query.users.findFirst({
     where: eq(users.id, userId),
     columns: { streamingPlatforms: true },
   });
   const platforms = parseStoredStreamingPlatforms(user?.streamingPlatforms);
-  if (platforms.length === 0) {
+  if (platforms.length === 0 && !options.popularFallback) {
     return [];
   }
   const [suggestions, library] = await Promise.all([
@@ -325,9 +331,33 @@ export const loadOnboardingPayoff = async (nowIso: string): Promise<PayoffPayloa
   return { kind: "empty", empty: payoffEmptyKind(decks), queueSize: decks.queueSize };
 };
 
-/** Finish or skip: lift the gate in the DB and re-mint the cookie. Idempotent. */
-export const finishOnboarding = async (): Promise<{ ok: true }> => {
+export type FinishOnboardingResult = { ok: true } | { ok: false; reason: "needs-titles"; titleCount: number };
+
+const countUserTitles = async (userId: string) => {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(titles)
+    .where(eq(titles.userId, userId));
+  return row?.count ?? 0;
+};
+
+/**
+ * Finish or skip: lift the gate in the DB and re-mint the cookie. Idempotent. A first finish
+ * needs three titles in the account (FIL-I11); an account that already finished (cookie resync)
+ * always goes through.
+ */
+export const finishOnboarding = async (): Promise<FinishOnboardingResult> => {
   const userId = await requireUserId();
+  const current = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { onboardedAt: true },
+  });
+  if (current && !current.onboardedAt) {
+    const titleCount = await countUserTitles(userId);
+    if (needsQuickPicks(titleCount)) {
+      return { ok: false, reason: "needs-titles", titleCount };
+    }
+  }
   const [user] = await db
     .update(users)
     .set({ onboardedAt: sql`COALESCE(${users.onboardedAt}, now())`, onboardingStep: null })

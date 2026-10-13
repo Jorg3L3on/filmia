@@ -2896,6 +2896,27 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   }
 }
 
+/* «Elige 3»: three segments that fill as the account reaches three titles (FIL-I11). */
+.quick-pick-meter {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.375rem;
+}
+
+.quick-pick-meter > span {
+  height: 0.3rem;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.1);
+  transition:
+    background-color var(--duration-tab) var(--ease-out),
+    box-shadow var(--duration-tab) var(--ease-out);
+}
+
+.quick-pick-meter > span.is-filled {
+  background: var(--accent);
+  box-shadow: 0 0 12px rgb(var(--accent-rgb) / 0.55);
+}
+
 /* Quiero ver counter: the digit rolls in. */
 .queue-counter-num {
   animation: queue-counter-in var(--duration-enter) var(--ease-out) both;
