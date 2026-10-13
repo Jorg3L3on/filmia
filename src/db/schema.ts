@@ -310,6 +310,58 @@ export const tonightRecos = pgTable(
   ],
 );
 
+/**
+ * One Web Push endpoint per browser/device that turned on «Avisos» in Perfil. Having a row is
+ * the opt-in; the browser's `PushSubscription.toJSON()` is stored as is. Rows the push service
+ * answers 404/410 for are deleted on the next send.
+ */
+export const pushSubscriptions = pgTable(
+  "PushSubscription",
+  {
+    id: text("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    userAgent: text("userAgent"),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow(),
+    lastSuccessAt: timestamp("lastSuccessAt", { precision: 3, mode: "date" }),
+  },
+  (table) => [
+    uniqueIndex("PushSubscription_endpoint_key").on(table.endpoint),
+    index("PushSubscription_userId_idx").on(table.userId),
+  ],
+);
+
+/**
+ * «Llegó a tu plataforma» ledger: one row per arrival a user was told about. Keyed by the
+ * catalog's `availableSince` stamp, so the same arrival is never sent twice and a title that
+ * leaves and comes back (new stamp) counts again.
+ */
+export const platformAlerts = pgTable(
+  "PlatformAlert",
+  {
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    catalogId: text("catalogId")
+      .notNull()
+      .references(() => catalog.id, { onDelete: "cascade" }),
+    availableSince: timestamp("availableSince", { precision: 3, mode: "date" }).notNull(),
+    platform: platformEnum("platform").notNull(),
+    sentAt: timestamp("sentAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.catalogId, table.availableSince] }),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   titles: many(titles),
   lists: many(lists),
@@ -351,6 +403,8 @@ export type ListItem = typeof listItems.$inferSelect;
 export type TonightPickRow = typeof tonightPicks.$inferSelect;
 export type PickEventRow = typeof pickEvents.$inferSelect;
 export type TonightRecoRow = typeof tonightRecos.$inferSelect;
+export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect;
+export type PlatformAlertRow = typeof platformAlerts.$inferSelect;
 
 export type ListItemWithTitleRelations = typeof listItems.$inferSelect & {
   title: Title;

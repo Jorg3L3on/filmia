@@ -6,7 +6,9 @@ import { ProfileHeaderSkeleton, ProfileBodySkeleton } from "@/components/PageSke
 import { ProfileDiary } from "@/components/ProfileDiary";
 import { ProfileAccountCard } from "@/components/profile/ProfileAccountCard";
 import { ProfileMarquee } from "@/components/profile/ProfileMarquee";
+import { PushAlertsToggle } from "@/components/profile/PushAlertsToggle";
 import { StreamingPlatformPicker } from "@/components/StreamingPlatformPicker";
+import { isPushConfigured, vapidPublicKey } from "@/lib/push/web-push";
 import { getCurrentUserProfile, getRecentWatchedTitles } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -55,6 +57,7 @@ const ProfileBody = async () => {
         <div className="space-y-9">
           <NightEndsForm value={profile.nightEnds} />
           <StreamingPlatformPicker selected={profile.streamingPlatforms} />
+          <PushAlertsToggle vapidPublicKey={isPushConfigured() ? vapidPublicKey() : null} />
           <ProfileAccountCard
             name={profile.name}
             email={profile.email}

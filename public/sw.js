@@ -2,6 +2,7 @@
  * Caches same-origin static assets (JS/CSS/fonts/icons) only.
  * Never caches HTML navigations, RSC/flight, API, or diary/user data.
  * No offline sync.
+ * FIL-I12: also shows Web Push notices («Llegó a tu plataforma») and opens their ficha.
  */
 const CACHE = "filmia-assets-v4";
 
@@ -75,6 +76,57 @@ self.addEventListener("fetch", (event) => {
         cache.put(request, response.clone());
       }
       return response;
+    }),
+  );
+});
+
+/** Payload from src/lib/push/web-push.ts: { title, body, url, tag?, icon? }. */
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = { body: event.data ? event.data.text() : "" };
+  }
+
+  const title = typeof payload.title === "string" && payload.title ? payload.title : "Filmia";
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: typeof payload.body === "string" ? payload.body : "",
+      icon: typeof payload.icon === "string" ? payload.icon : "/icon-192.png",
+      badge: "/icon-192.png",
+      tag: typeof payload.tag === "string" ? payload.tag : undefined,
+      lang: "es",
+      data: { url: typeof payload.url === "string" ? payload.url : "/" },
+    }),
+  );
+});
+
+/** Same-origin paths only, so a payload can never send the app somewhere else. */
+const notificationTarget = (data) => {
+  try {
+    const url = new URL((data && data.url) || "/", self.location.origin);
+    return url.origin === self.location.origin ? url.href : self.location.origin + "/";
+  } catch {
+    return self.location.origin + "/";
+  }
+};
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = notificationTarget(event.notification.data);
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (windows) => {
+      const open = windows.find((client) => new URL(client.url).origin === self.location.origin);
+      if (open) {
+        await open.focus();
+        if ("navigate" in open) {
+          return open.navigate(target);
+        }
+        return undefined;
+      }
+      return self.clients.openWindow(target);
     }),
   );
 });
