@@ -14,11 +14,15 @@ import {
   TMDB_CACHE_TAG,
 } from "@/lib/rendering";
 import {
-  parseTmdbPeople,
-  type TmdbCreatedBy,
-  type TmdbCreditsPayload,
-  type TmdbPerson,
-} from "@/lib/tmdb-people";
+  parseTmdbDetails,
+  parseTmdbYear,
+  type TmdbDetails,
+  type TmdbGenre,
+  type TmdbKeyword,
+  type TmdbMovieDetailsPayload,
+  type TmdbTvDetailsPayload,
+} from "@/lib/tmdb-details";
+import type { TmdbPerson } from "@/lib/tmdb-people";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
@@ -81,11 +85,6 @@ export type TmdbCatalogResult = TmdbSearchResult & {
   kind: TitleKind;
 };
 
-export type TmdbGenre = {
-  id: number;
-  name: string;
-};
-
 type TmdbExternalIds = {
   imdb_id: string | null;
 };
@@ -143,6 +142,15 @@ const isTmdbAccessToken = (apiKey: string) => apiKey.startsWith("eyJ");
 const TMDB_LANGUAGE = "es-MX";
 const OVERVIEW_FALLBACK_LANGUAGES = ["es-ES", "en-US"] as const;
 
+const tmdbSearch = (path: string, params: Record<string, string>) => {
+  const url = new URL(`${TMDB_BASE}${path}`);
+  url.searchParams.set("language", TMDB_LANGUAGE);
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+  return url.search;
+};
+
 const tmdbFetch = async <T>(path: string, params: Record<string, string> = {}) => {
   const apiKey = getTmdbApiKey();
   if (!apiKey) {
@@ -152,14 +160,10 @@ const tmdbFetch = async <T>(path: string, params: Record<string, string> = {}) =
     );
   }
 
-  const url = new URL(`${TMDB_BASE}${path}`);
-  url.searchParams.set("language", TMDB_LANGUAGE);
-  for (const [key, value] of Object.entries(params)) {
-    url.searchParams.set(key, value);
-  }
+  const search = tmdbSearch(path, params);
 
   try {
-    return (await loadCachedTmdbJson(path, url.search)) as T;
+    return (await loadCachedTmdbJson(path, search)) as T;
   } catch (error) {
     if (error instanceof TmdbRequestError) {
       throw error;
@@ -167,7 +171,7 @@ const tmdbFetch = async <T>(path: string, params: Record<string, string> = {}) =
     // Outside a Next request scope (scripts, cron workers) unstable_cache has no
     // incremental cache: fall through to the plain fetch instead of failing.
     try {
-      return (await fetchTmdbJson(path, url.search)) as T;
+      return (await fetchTmdbJson(path, search)) as T;
     } catch (direct) {
       if (direct instanceof TmdbRequestError) {
         throw direct;
@@ -180,7 +184,15 @@ const tmdbFetch = async <T>(path: string, params: Record<string, string> = {}) =
   }
 };
 
-const fetchTmdbJson = async (path: string, search: string): Promise<unknown> => {
+/**
+ * `store: false` skips Next's fetch cache: for payloads we trim before caching
+ * (getTmdbDetails), the raw response must not be stored on its own.
+ */
+const fetchTmdbJson = async (
+  path: string,
+  search: string,
+  { store = true }: { store?: boolean } = {},
+): Promise<unknown> => {
   const apiKey = getTmdbApiKey();
   if (!apiKey) {
     throw new TmdbRequestError(
@@ -200,10 +212,9 @@ const fetchTmdbJson = async (path: string, search: string): Promise<unknown> => 
   let response: Response;
   try {
     response = await fetch(url, {
-      next: {
-        revalidate: METADATA_REVALIDATE_SECONDS,
-        tags: [TMDB_CACHE_TAG],
-      },
+      ...(store
+        ? { next: { revalidate: METADATA_REVALIDATE_SECONDS, tags: [TMDB_CACHE_TAG] } }
+        : { cache: "no-store" as const }),
       headers,
     });
   } catch {
@@ -236,15 +247,6 @@ const loadCachedTmdbJson = unstable_cache(fetchTmdbJson, ["tmdb-json"], {
   revalidate: METADATA_REVALIDATE_SECONDS,
   tags: [TMDB_CACHE_TAG],
 });
-
-const parseYear = (value: string | null | undefined) => {
-  if (!value) {
-    return null;
-  }
-
-  const year = Number(value.slice(0, 4));
-  return Number.isInteger(year) ? year : null;
-};
 
 export const searchTmdb = async (
   query: string,
@@ -293,7 +295,7 @@ export const searchTmdb = async (
         tmdbId: item.id,
         name: item.title,
         originalName: item.original_title ?? null,
-        year: parseYear(item.release_date),
+        year: parseTmdbYear(item.release_date),
         posterPath: item.poster_path ?? null,
         backdropPath: item.backdrop_path ?? null,
         overview: item.overview ?? null,
@@ -304,7 +306,7 @@ export const searchTmdb = async (
       tmdbId: item.id,
       name: item.name,
       originalName: item.original_name ?? null,
-      year: parseYear(item.first_air_date),
+      year: parseTmdbYear(item.first_air_date),
       posterPath: item.poster_path ?? null,
       backdropPath: item.backdrop_path ?? null,
       overview: item.overview ?? null,
@@ -355,7 +357,7 @@ export const searchTmdbMulti = async (
         tmdbId: item.id,
         name,
         originalName: item.original_title ?? null,
-        year: parseYear(item.release_date),
+        year: parseTmdbYear(item.release_date),
         posterPath: item.poster_path ?? null,
         backdropPath: item.backdrop_path ?? null,
         overview: item.overview ?? null,
@@ -374,7 +376,7 @@ export const searchTmdbMulti = async (
         tmdbId: item.id,
         name,
         originalName: item.original_name ?? null,
-        year: parseYear(item.first_air_date),
+        year: parseTmdbYear(item.first_air_date),
         posterPath: item.poster_path ?? null,
         backdropPath: item.backdrop_path ?? null,
         overview: item.overview ?? null,
@@ -443,7 +445,7 @@ const toDiscoverResult = (
     tmdbId: item.id,
     name,
     originalName: (kind === "SERIES" ? item.original_name : item.original_title) ?? null,
-    year: parseYear(kind === "SERIES" ? item.first_air_date : item.release_date),
+    year: parseTmdbYear(kind === "SERIES" ? item.first_air_date : item.release_date),
     posterPath: item.poster_path ?? null,
     backdropPath: item.backdrop_path ?? null,
     overview: item.overview ?? null,
@@ -582,33 +584,6 @@ export const getTmdbWatchProviders = async (tmdbId: number, kind: TitleKind) => 
   return tmdbFetch<TmdbWatchProvidersResponse>(`/${segment}/${tmdbId}/watch/providers`);
 };
 
-export const parseTmdbGenres = (value: unknown): TmdbGenre[] => {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  const genres: TmdbGenre[] = [];
-  const seen = new Set<number>();
-
-  for (const item of value) {
-    if (!item || typeof item !== "object") {
-      continue;
-    }
-
-    const raw = item as { id?: unknown; name?: unknown };
-    const id = Number(raw.id);
-    const name = typeof raw.name === "string" ? raw.name.trim() : "";
-    if (!Number.isInteger(id) || id <= 0 || !name || seen.has(id)) {
-      continue;
-    }
-
-    seen.add(id);
-    genres.push({ id, name });
-  }
-
-  return genres;
-};
-
 export type TmdbTitleExtras = {
   overview: string | null;
   runtimeMinutes: number | null;
@@ -618,18 +593,6 @@ export type TmdbTitleExtras = {
   keywords?: TmdbKeyword[];
   people?: TmdbPerson[];
   originalLanguage?: string | null;
-};
-
-const parseRuntimeMinutes = (data: {
-  runtime?: number | null;
-  episode_run_time?: number[] | null;
-}) => {
-  if (typeof data.runtime === "number" && data.runtime > 0) {
-    return data.runtime;
-  }
-
-  const episode = data.episode_run_time?.find((value) => value > 0);
-  return episode ?? null;
 };
 
 const overviewWithFallback = async (
@@ -654,112 +617,59 @@ const overviewWithFallback = async (
   return null;
 };
 
-export type TmdbKeyword = { id: number; name: string };
 export {
   parseTmdbPeople,
   type TmdbCreditsPayload,
   type TmdbPerson,
   type TmdbPersonRole,
 } from "@/lib/tmdb-people";
+export {
+  parseTmdbGenres,
+  parseTmdbKeywords,
+  type TmdbDetails,
+  type TmdbGenre,
+  type TmdbKeyword,
+} from "@/lib/tmdb-details";
 
-type TmdbKeywordsPayload = {
-  keywords?: Array<{ id?: number; name?: string }>;
-  results?: Array<{ id?: number; name?: string }>;
-};
-
-export const parseTmdbKeywords = (payload: TmdbKeywordsPayload | null | undefined): TmdbKeyword[] => {
-  const raw = payload?.keywords ?? payload?.results ?? [];
-  const seen = new Set<number>();
-  const keywords: TmdbKeyword[] = [];
-  for (const item of raw) {
-    const id = Number(item?.id);
-    const name = item?.name?.trim();
-    if (!Number.isInteger(id) || id <= 0 || !name || seen.has(id)) {
-      continue;
-    }
-    seen.add(id);
-    keywords.push({ id, name });
-  }
-  return keywords;
-};
-
-export const getTmdbDetails = async (tmdbId: number, kind: TitleKind) => {
-  const segment = kind === "SERIES" ? "tv" : "movie";
-  type MovieDetails = {
-    id: number;
-    title: string;
-    original_title?: string;
-    original_language?: string;
-    release_date?: string;
-    poster_path?: string | null;
-    backdrop_path?: string | null;
-    overview?: string;
-    runtime?: number | null;
-    genres?: Array<{ id?: number; name?: string }>;
-    keywords?: TmdbKeywordsPayload;
-    credits?: TmdbCreditsPayload;
-  };
-  type TvDetails = {
-    id: number;
-    name: string;
-    original_name?: string;
-    original_language?: string;
-    first_air_date?: string;
-    poster_path?: string | null;
-    backdrop_path?: string | null;
-    overview?: string;
-    episode_run_time?: number[];
-    genres?: Array<{ id?: number; name?: string }>;
-    keywords?: TmdbKeywordsPayload;
-    aggregate_credits?: TmdbCreditsPayload;
-    created_by?: TmdbCreatedBy;
-  };
-
-  // One call: details + keywords + credits (Esta noche taste vector). TV keywords
-  // come back under `results`, movies under `keywords`; parseTmdbKeywords handles both.
-  const data = await tmdbFetch<MovieDetails | TvDetails>(`/${segment}/${tmdbId}`, {
-    append_to_response: segment === "tv" ? "keywords,aggregate_credits" : "keywords,credits",
-  });
-  const genres = parseTmdbGenres(data.genres);
-  const keywords = parseTmdbKeywords(data.keywords);
-  const overview = await overviewWithFallback(
-    segment,
-    data.id,
-    data.overview?.trim() || null,
-  );
-  const originalLanguage = data.original_language?.trim() || null;
-
-  if ("title" in data) {
-    return {
-      tmdbId: data.id,
-      name: data.title,
-      originalName: data.original_title ?? null,
-      originalLanguage,
-      year: parseYear(data.release_date),
-      posterPath: data.poster_path ?? null,
-      backdropPath: data.backdrop_path ?? null,
-      overview,
-      runtimeMinutes: parseRuntimeMinutes(data),
-      genres,
-      keywords,
-      people: parseTmdbPeople(data.credits, undefined),
-    };
-  }
-
+// One call: details + keywords + credits (Esta noche taste vector). The cache
+// holds the parsed result, not TMDB's payload: `aggregate_credits` of a long
+// series runs to megabytes (over Vercel's 2 MB entry limit) and we keep eight
+// people (FIL-20).
+const fetchTmdbDetails = async (
+  tmdbId: number,
+  segment: "movie" | "tv",
+): Promise<TmdbDetails> => {
+  const path = `/${segment}/${tmdbId}`;
+  const data = (await fetchTmdbJson(
+    path,
+    tmdbSearch(path, {
+      append_to_response: segment === "tv" ? "keywords,aggregate_credits" : "keywords,credits",
+    }),
+    { store: false },
+  )) as TmdbMovieDetailsPayload | TmdbTvDetailsPayload;
+  const details = parseTmdbDetails(data);
   return {
-    tmdbId: data.id,
-    name: data.name,
-    originalName: data.original_name ?? null,
-    originalLanguage,
-    year: parseYear(data.first_air_date),
-    posterPath: data.poster_path ?? null,
-    backdropPath: data.backdrop_path ?? null,
-    overview,
-    runtimeMinutes: parseRuntimeMinutes(data),
-    genres,
-    keywords,
-    people: parseTmdbPeople(data.aggregate_credits, data.created_by),
+    ...details,
+    overview: await overviewWithFallback(segment, details.tmdbId, details.overview),
   };
+};
+
+const loadCachedTmdbDetails = unstable_cache(fetchTmdbDetails, ["tmdb-details", "v1"], {
+  revalidate: METADATA_REVALIDATE_SECONDS,
+  tags: [TMDB_CACHE_TAG],
+});
+
+export const getTmdbDetails = async (tmdbId: number, kind: TitleKind): Promise<TmdbDetails> => {
+  const segment = kind === "SERIES" ? "tv" : "movie";
+  try {
+    return await loadCachedTmdbDetails(tmdbId, segment);
+  } catch (error) {
+    if (error instanceof TmdbRequestError) {
+      throw error;
+    }
+    // Outside a Next request scope (scripts, cron workers): no incremental cache.
+    return fetchTmdbDetails(tmdbId, segment);
+  }
 };
 
 export const getTmdbTitleExtras = cache(async (
