@@ -1,4 +1,5 @@
 import type { TitleKind } from "@/db";
+import type { AffinityLevel } from "@/lib/tonight/affinity";
 import { awardChipLabel } from "@/lib/awards";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { catalogNeedsEnrichment } from "@/lib/title-preview";
@@ -15,7 +16,18 @@ export type SearchResultFacts = {
   runtimeMinutes: number | null;
   genre: string | null;
   platform: string | null;
+  /** «Para ti» (FIL-I9): for a film you have not watched, once your profile has 8 rated watches. */
+  affinity: SearchAffinityChip | null;
+  /** A film you watched shows your rating, never a prediction (null = watched, not rated). */
+  watched: { rating: number | null } | null;
   pending: boolean;
+};
+
+/** The row's chip: the level only (the reasons live in the ficha). */
+export type SearchAffinityChip = {
+  level: AffinityLevel;
+  label: string;
+  lowConfidence: boolean;
 };
 
 export type SearchFactsItem = { tmdbId: number; kind: TitleKind };
@@ -42,6 +54,8 @@ export const PENDING_FACTS: SearchResultFacts = {
   runtimeMinutes: null,
   genre: null,
   platform: null,
+  affinity: null,
+  watched: null,
   pending: true,
 };
 
@@ -62,6 +76,8 @@ export const factsFromCatalog = (row: SearchFactsRow): SearchResultFacts => ({
   runtimeMinutes: row.runtimeMinutes ?? null,
   genre: parseStoredTmdbGenres(row.tmdbGenres)[0]?.name ?? null,
   platform: pickPlatformName(row.watchProvidersMx),
+  affinity: null,
+  watched: null,
   pending: false,
 });
 

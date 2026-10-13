@@ -20,6 +20,7 @@ import { DiaryDayChip } from "@/components/ficha/DiaryDayChip";
 import { FichaTopBar } from "@/components/ficha/FichaTopBar";
 import { requireUserId } from "@/lib/session";
 import { getPinnedTonightTitleId } from "@/lib/tonight-store";
+import { fichaAffinity } from "@/lib/affinity-store";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { resolveTitleExtras, storedTitleExtras } from "@/lib/title-extras";
 import { resolveTitlePeople } from "@/lib/title-people";
@@ -27,6 +28,8 @@ import { parseDiaryLog } from "@/lib/title-preview";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 import TitleLoading from "./loading";
 import {
+  AffinitySlot,
+  affinityRowOf,
   TitleActionsBlock,
   TitleHeroBlock,
   TitleHeroFallback,
@@ -110,6 +113,13 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
   const pinnedPromise = title.watchedAt
     ? Promise.resolve(null)
     : requireUserId().then((userId) => getPinnedTonightTitleId(userId));
+  // «Para ti» (FIL-I9): only for a film you have not watched (a watched one shows your rating).
+  const affinity = title.watchedAt ? null : (
+    <AffinitySlot
+      promise={requireUserId().then((userId) => fichaAffinity(userId, affinityRowOf(title)))}
+      titleName={title.name}
+    />
+  );
   const relatedPromise = getRelatedTitles(
     title.id,
     parseStoredTmdbGenres(title.tmdbGenres).map((genre) => genre.id),
@@ -121,8 +131,10 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
       {/* Dirección A «Cartel»: hero, synopsis and actions share one grid (poster left on desktop). */}
       <section className="ficha-head" aria-label={title.name}>
         <FichaTopBar trailing={diaryLog ? <DiaryDayChip log={diaryLog} /> : undefined} />
-        <Suspense fallback={<TitleHeroFallback title={title} extras={storedTitleExtras(title)} />}>
-          <TitleHeroBlock title={title} extrasPromise={extrasPromise} />
+        <Suspense
+          fallback={<TitleHeroFallback title={title} extras={storedTitleExtras(title)} affinity={affinity} />}
+        >
+          <TitleHeroBlock title={title} extrasPromise={extrasPromise} affinity={affinity} />
         </Suspense>
         <div className="ficha-body-a space-y-4">
           <Suspense fallback={null}>

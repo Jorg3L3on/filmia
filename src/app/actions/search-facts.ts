@@ -3,6 +3,12 @@
 import { and, eq, or } from "drizzle-orm";
 import { catalog, db } from "@/db";
 import { scheduleAfterResponse } from "@/lib/after-response";
+import {
+  affinityForCatalogRow,
+  chipOf,
+  loadUserAffinity,
+  watchedRatingOf,
+} from "@/lib/affinity-store";
 import { findCatalogByTmdb, findOrCreateCatalog } from "@/lib/catalog";
 import { enrichCatalog } from "@/lib/catalog-enrich";
 import { TITLE_KINDS } from "@/lib/labels";
@@ -69,24 +75,42 @@ export const getSearchResultFacts = async (
     return {};
   }
 
-  const found: SearchFactsRow[] = await db
-    .select({
-      tmdbId: catalog.tmdbId,
-      kind: catalog.kind,
-      imdbId: catalog.imdbId,
-      imdbRating: catalog.imdbRating,
-      awards: catalog.awards,
-      runtimeMinutes: catalog.runtimeMinutes,
-      tmdbGenres: catalog.tmdbGenres,
-      watchProvidersMx: catalog.watchProvidersMx,
-    })
-    .from(catalog)
-    .where(or(...wanted.map((item) => and(eq(catalog.tmdbId, item.tmdbId), eq(catalog.kind, item.kind)))));
-  const rows = new Map(found.map((row) => [searchFactsKey(row.kind, row.tmdbId), row]));
+  // The user's taste (FIL-I9) loads next to the Catalog lookup; it never blocks the IMDb line.
+  const [found, user] = await Promise.all([
+    db
+      .select({
+        id: catalog.id,
+        tmdbId: catalog.tmdbId,
+        kind: catalog.kind,
+        name: catalog.name,
+        year: catalog.year,
+        imdbId: catalog.imdbId,
+        imdbRating: catalog.imdbRating,
+        imdbVotes: catalog.imdbVotes,
+        awards: catalog.awards,
+        runtimeMinutes: catalog.runtimeMinutes,
+        tmdbGenres: catalog.tmdbGenres,
+        tmdbKeywords: catalog.tmdbKeywords,
+        tmdbPeople: catalog.tmdbPeople,
+        originalLanguage: catalog.originalLanguage,
+        watchProvidersMx: catalog.watchProvidersMx,
+      })
+      .from(catalog)
+      .where(or(...wanted.map((item) => and(eq(catalog.tmdbId, item.tmdbId), eq(catalog.kind, item.kind))))),
+    loadUserAffinity(userId).catch(() => null),
+  ]);
+  const rows = new Map<string, SearchFactsRow>(found.map((row) => [searchFactsKey(row.kind, row.tmdbId), row]));
 
   const facts: Record<string, SearchResultFacts> = {};
   for (const row of found) {
-    facts[searchFactsKey(row.kind, row.tmdbId)] = factsFromCatalog(row);
+    const base = factsFromCatalog(row);
+    facts[searchFactsKey(row.kind, row.tmdbId)] = user
+      ? {
+          ...base,
+          watched: watchedRatingOf(user, row.kind, row.tmdbId),
+          affinity: chipOf(affinityForCatalogRow(user, row)),
+        }
+      : base;
   }
 
   if (!isTmdbConfigured()) {
