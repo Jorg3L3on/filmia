@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { securityHeaders } from "./src/lib/security-headers";
 
 const nextConfig: NextConfig = {
   // iPad/LAN access in next dev (host != localhost)
@@ -6,6 +7,11 @@ const nextConfig: NextConfig = {
   // Hosting playbook (env names, migrate outside build, preview off): docs/vercel-playbook.md (JOR-213).
   // Do not run drizzle migrate from this config or from `next build`.
   devIndicators: false,
+  // FIL-I10-6 L1: no `x-powered-by`, and CSP / framing / sniffing / referrer headers everywhere.
+  poweredByHeader: false,
+  headers: async () => [
+    { source: "/:path*", headers: securityHeaders(process.env.NODE_ENV !== "production") },
+  ],
   serverExternalPackages: ["@neondatabase/serverless", "sharp"],
   // Auth-gated pages keep `export const dynamic = "force-dynamic"` (a string
   // literal — Next cannot parse a shared constant) so Neon HTTP fetches are

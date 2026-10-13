@@ -14,7 +14,18 @@ export type AuthenticatedUser = {
 
 export type CredentialsResult =
   | { ok: true; user: AuthenticatedUser; onboarded: boolean; sessionVersion: number }
-  | { ok: false; reason: "invalid" | "google-only" };
+  | { ok: false; reason: "invalid" };
+
+let decoyHash: Promise<string> | null = null;
+
+/**
+ * Hash a throwaway password when there is no real hash to check, so an unknown email or a
+ * Google-only account answers in the same time as a wrong password (FIL-I10-6 L2).
+ */
+const spendPasswordCheck = async (password: string) => {
+  decoyHash ??= hashPassword("filmia-decoy-password");
+  await verifyPassword(password, await decoyHash);
+};
 
 export const authenticateCredentials = async (
   email: string,
@@ -29,14 +40,10 @@ export const authenticateCredentials = async (
     where: eq(users.email, normalizedEmail),
   });
 
-  if (!user) {
+  // Unknown email and password-less (Google) account fail exactly like a wrong password.
+  if (!user?.passwordHash) {
+    await spendPasswordCheck(password);
     return { ok: false, reason: "invalid" };
-  }
-
-  if (!user.passwordHash) {
-    // Password-less account (signed up with Google). Say so instead of a generic
-    // mismatch: this is a personal app, the hint is worth more than the secrecy.
-    return { ok: false, reason: user.googleId ? "google-only" : "invalid" };
   }
 
   const valid = await verifyPassword(password, user.passwordHash);

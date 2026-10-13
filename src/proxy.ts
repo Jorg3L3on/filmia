@@ -9,14 +9,10 @@ const LOGIN_PATH = "/login";
 
 const SIGNUP_PATH = "/registro";
 
-// /api/cron authenticates itself with CRON_SECRET instead of a session.
-const PUBLIC_PATHS = [
-  LOGIN_PATH,
-  SIGNUP_PATH,
-  "/api/auth",
-  "/api/poster-ambient",
-  "/api/cron",
-];
+// /api/cron authenticates itself with CRON_SECRET instead of a session. /api/poster-ambient
+// is not here: each new path costs a TMDB fetch + sharp, so only signed-in users get it
+// (FIL-I10-6 L6); its answers stay CDN-cached.
+const PUBLIC_PATHS = [LOGIN_PATH, SIGNUP_PATH, "/api/auth", "/api/cron"];
 
 const isPublicPath = (pathname: string) =>
   PUBLIC_PATHS.some(

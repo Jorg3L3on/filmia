@@ -1,0 +1,18 @@
+# FIL-I10-6 L5. Security updates are on regardless; these are the weekly version bumps,
+# grouped so they arrive as one PR per ecosystem. They target sandbox, like every branch.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: sandbox
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: sandbox
+    schedule:
+      interval: monthly

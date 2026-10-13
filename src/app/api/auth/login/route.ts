@@ -6,10 +6,9 @@ import { RATE_LIMITS, clientIp } from "@/lib/rate-limit";
 import { checkAuthRateLimit, tooManyAttempts } from "@/lib/rate-limit-store";
 import { requestOrigin } from "@/lib/request-origin";
 
-const FAILURE_MESSAGES = {
-  invalid: "Correo o contraseña incorrectos.",
-  "google-only": "Esa cuenta entra con Google. Usa «Continuar con Google».",
-} as const;
+// One message for every failure, so the answer never tells whether an email has an
+// account or how it signs in (FIL-I10-6 L2).
+const INVALID_CREDENTIALS = "Correo o contraseña incorrectos.";
 
 export const POST = async (request: Request) => {
   const formData = await request.formData();
@@ -36,7 +35,7 @@ export const POST = async (request: Request) => {
     const result = await authenticateCredentials(email, password);
     if (!result.ok) {
       return NextResponse.json(
-        { error: FAILURE_MESSAGES[result.reason] },
+        { error: INVALID_CREDENTIALS },
         { status: 401 },
       );
     }
@@ -52,8 +51,11 @@ export const POST = async (request: Request) => {
     });
     return response;
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "No se pudo iniciar sesión.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    // The internal message stays in the logs (FIL-I10-6 L4).
+    console.error("[auth/login] failed", error);
+    return NextResponse.json(
+      { error: "No se pudo iniciar sesión. Reintenta en unos segundos." },
+      { status: 500 },
+    );
   }
 };
