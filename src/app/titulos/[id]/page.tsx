@@ -37,6 +37,7 @@ import {
   TitleRelatedBlock,
   TitlePeopleBlock,
   TitleSynopsisBlock,
+  TrailerSlot,
   isSeriesTitle,
 } from "./title-sections";
 
@@ -120,6 +121,15 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
       titleName={title.name}
     />
   );
+  const trailer = (
+    <TrailerSlot
+      tmdbId={title.tmdbId}
+      kind={title.kind}
+      titleName={title.name}
+      backdropPath={title.backdropPath}
+      extrasPromise={extrasPromise}
+    />
+  );
   const relatedPromise = getRelatedTitles(
     title.id,
     parseStoredTmdbGenres(title.tmdbGenres).map((genre) => genre.id),
@@ -132,9 +142,21 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
       <section className="ficha-head" aria-label={title.name}>
         <FichaTopBar trailing={diaryLog ? <DiaryDayChip log={diaryLog} /> : undefined} />
         <Suspense
-          fallback={<TitleHeroFallback title={title} extras={storedTitleExtras(title)} affinity={affinity} />}
+          fallback={
+            <TitleHeroFallback
+              title={title}
+              extras={storedTitleExtras(title)}
+              affinity={affinity}
+              trailer={trailer}
+            />
+          }
         >
-          <TitleHeroBlock title={title} extrasPromise={extrasPromise} affinity={affinity} />
+          <TitleHeroBlock
+            title={title}
+            extrasPromise={extrasPromise}
+            affinity={affinity}
+            trailer={trailer}
+          />
         </Suspense>
         <div className="ficha-body-a space-y-4">
           <Suspense fallback={null}>

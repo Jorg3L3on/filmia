@@ -29,6 +29,8 @@ type TitleHeroProps = {
   posterAmbient?: string | null;
   /** «Para ti» (FIL-I9): streamed chip next to the IMDb one (unwatched films only). */
   affinity?: ReactNode;
+  /** «▶ Tráiler» (FIL-I15): streamed, first chip under the title; nothing when TMDB has none. */
+  trailer?: ReactNode;
 };
 
 const ambientStyle = (posterAmbient: string | null | undefined) =>
@@ -59,6 +61,7 @@ export const TitleHero = ({
   watched,
   posterAmbient,
   affinity,
+  trailer,
 }: TitleHeroProps) => {
   const restBits = [runtimeLabel, kindLabel, genreLabel].filter(Boolean);
 
@@ -115,6 +118,7 @@ export const TitleHero = ({
           className="ficha-enter flex flex-wrap items-center justify-center gap-2 pt-1.5 sm:justify-start"
           style={{ "--i": 3 } as CSSProperties}
         >
+          {trailer}
           {imdbRating != null ? (
             <span className="liquid-glass liquid-glass-pill relative inline-flex h-7 items-center rounded-full pl-1 pr-2.5">
               <ImdbBadge rating={imdbRating} compact />
