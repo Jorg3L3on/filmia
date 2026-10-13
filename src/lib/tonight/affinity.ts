@@ -3,12 +3,21 @@ import { cosine, itemVector, type FeatureVector } from "@/lib/tonight/features";
 import {
   buildTasteProfile,
   closestAnchor,
+  RECENCY_HALF_LIFE_MONTHS,
   watchWeight,
   type TasteProfile,
   type TasteProfileOptions,
 } from "@/lib/tonight/profile";
-import { bayesianQuality, meanImdb } from "@/lib/tonight/score";
-import type { TonightEvent, TonightTitle } from "@/lib/tonight/types";
+import {
+  bayesianQuality,
+  formatVotes,
+  joinEs,
+  meanImdb,
+  QUALITY_REASON_MIN,
+  tasteReasons,
+} from "@/lib/tonight/score";
+import { GUSTO_SCALE } from "@/lib/tonight";
+import type { TonightEvent, TonightReason, TonightTitle } from "@/lib/tonight/types";
 
 /**
  * FIL-I9 · «% para ti»: how likely you are to like a film you have not seen, from the
@@ -158,7 +167,8 @@ export const likedTasteLeaveOneOut = (
 ): number[] => {
   const profileVector = ctx.profile.vector;
   const profileSq = squaredNorm(profileVector);
-  const halfLife = options.halfLifeMonths === undefined ? 18 : options.halfLifeMonths;
+  const halfLife =
+    options.halfLifeMonths === undefined ? RECENCY_HALF_LIFE_MONTHS : options.halfLifeMonths;
   const values: number[] = [];
   for (const title of titles) {
     if (title.watchedAt == null || !isLiked(title)) {
@@ -218,3 +228,182 @@ export const filmAsTitle = (film: AffinityFilm): TonightTitle => ({
   availableSince: null,
   createdAt: new Date(0),
 });
+
+// ── The served answer (FIL-I9-2) ─────────────────────────────────────────────────────
+
+/**
+ * Profile settings decided by the study (FIL-I9-1, pinned decision): flat recency
+ * («¿me gustaría?» does not forget) and your own collections as mild positive evidence.
+ * Hoy keeps its defaults (18 months, no bonus).
+ */
+export const AFFINITY_PROFILE_OPTIONS: TasteProfileOptions = {
+  halfLifeMonths: null,
+  collectionBonus: 0.3,
+};
+
+/**
+ * Levels, not a percentage: with 6 «no me gustó» in the whole database a probability
+ * could not beat «always say the base rate» (FIL-I9-1). The level compares the film's
+ * taste with the taste of what you liked, measured without each of them.
+ */
+export type AffinityLevel = "alta" | "media" | "baja";
+
+export const AFFINITY_LABEL: Record<AffinityLevel, string> = {
+  alta: "Muy tu estilo",
+  media: "Podría gustarte",
+  baja: "Fuera de tu zona",
+};
+
+/** What the level means, for the «¿Por qué?» sheet. */
+export const AFFINITY_MEANING: Record<AffinityLevel, string> = {
+  alta: "Se parece a tu gusto tanto como la mitad de lo que te ha gustado.",
+  media: "Está entre lo que sueles calificar alto y lo que casi nunca ves.",
+  baja: "Se parece a tu gusto menos que casi todo lo que te ha gustado.",
+};
+
+/** «Muy tu estilo» from this quantile of your liked films' taste… */
+export const LEVEL_HIGH_QUANTILE = 0.5;
+/** …«Fuera de tu zona» under this one. */
+export const LEVEL_LOW_QUANTILE = 0.1;
+/** Rated watches for full confidence; below, the level leans toward «Podría gustarte». */
+export const CONFIDENT_RATED = 20;
+/** Share of the film's features your profile has seen, for full confidence. */
+export const CONFIDENT_COVERAGE = 0.5;
+export const LOW_CONFIDENCE = 0.6;
+export const AFFINITY_REASON_LIMIT = 3;
+
+export type AffinityScorer = {
+  ctx: AffinityContext;
+  cutoffs: { high: number; low: number };
+  titlesById: ReadonlyMap<string, TonightTitle>;
+};
+
+export type Affinity = {
+  level: AffinityLevel;
+  label: string;
+  meaning: string;
+  /** 0–1: how much the profile knows (rated watches × features it has seen). */
+  confidence: number;
+  lowConfidence: boolean;
+  /** Up to three, strongest first, in Spanish like Hoy's. */
+  reasons: TonightReason[];
+};
+
+/** Built once per request; `null` while the profile is too thin (cold start: show nothing). */
+export const buildAffinityScorer = (
+  titles: readonly TonightTitle[],
+  events: readonly TonightEvent[],
+  now: Date,
+  options: TasteProfileOptions = AFFINITY_PROFILE_OPTIONS,
+): AffinityScorer | null => {
+  const ctx = buildAffinityContext(titles, events, now, options);
+  if (ctx.profile.ratedCount < AFFINITY_MIN_RATED || ctx.profile.vector.size === 0) {
+    return null;
+  }
+  const liked = likedTasteLeaveOneOut(ctx, titles, now, options);
+  if (liked.length === 0) {
+    return null;
+  }
+  return {
+    ctx,
+    cutoffs: {
+      high: quantile(liked, LEVEL_HIGH_QUANTILE),
+      low: quantile(liked, LEVEL_LOW_QUANTILE),
+    },
+    titlesById: new Map(titles.map((title) => [title.id, title])),
+  };
+};
+
+/** Share (by squared weight) of the film's features that appear in the profile. */
+export const featureCoverage = (profile: TasteProfile, vector: FeatureVector) => {
+  let seen = 0;
+  let total = 0;
+  for (const [key, value] of vector) {
+    const square = value * value;
+    total += square;
+    if (profile.vector.get(key)) {
+      seen += square;
+    }
+  }
+  return total === 0 ? 0 : seen / total;
+};
+
+export const levelFor = (taste: number, cutoffs: { high: number; low: number }): AffinityLevel =>
+  taste >= cutoffs.high ? "alta" : taste < cutoffs.low ? "baja" : "media";
+
+const genreReason = (
+  ctx: AffinityContext,
+  title: TonightTitle,
+  level: AffinityLevel,
+): TonightReason | null => {
+  if (title.genres.length === 0 || ctx.genreScale === 0) {
+    return null;
+  }
+  const scored = title.genres.map((genre) => ({
+    name: genre.name.toLowerCase(),
+    value: (ctx.profile.genreAffinity.get(genre.id) ?? 0) / ctx.genreScale,
+  }));
+  const liked = scored.filter((genre) => genre.value >= 0.25).sort((a, b) => b.value - a.value);
+  if (liked.length > 0 && level !== "baja") {
+    const names = liked.slice(0, 2).map((genre) => genre.name);
+    return {
+      kind: "taste_genre",
+      text: `${names.length > 1 ? "Géneros" : "Un género"} que calificas alto: ${joinEs(names)}`,
+      weight: 0.05 + liked[0].value * 0.05,
+      personal: true,
+    };
+  }
+  const rare = scored.filter((genre) => genre.value < 0.1);
+  if (level !== "alta" && rare.length > 0) {
+    const names = rare.slice(0, 2).map((genre) => genre.name);
+    return {
+      kind: "taste_genre",
+      text: `Casi no ves ${joinEs(names)}`,
+      detail: "Pocas de tus vistas, o con notas bajas",
+      weight: 0.06,
+      personal: true,
+    };
+  }
+  return null;
+};
+
+/** The level and its reasons for a film you have not watched. Pure. */
+export const affinityFor = (scorer: AffinityScorer, title: TonightTitle): Affinity => {
+  const { ctx, cutoffs } = scorer;
+  const vector = itemVector(title);
+  const taste = cosine(ctx.profile.vector, vector);
+
+  const confidence =
+    Math.min(1, ctx.profile.ratedCount / CONFIDENT_RATED) *
+    Math.min(1, featureCoverage(ctx.profile, vector) / CONFIDENT_COVERAGE);
+  // Shrink toward the middle of your range when the profile knows little about this film.
+  const middle = (cutoffs.high + cutoffs.low) / 2;
+  const level = levelFor(middle + (taste - middle) * confidence, cutoffs);
+
+  const gusto = Math.min(1, Math.max(0, 0.5 + taste * GUSTO_SCALE));
+  const reasons: TonightReason[] = tasteReasons(title, vector, gusto, ctx.profile, scorer.titlesById);
+  const genre = genreReason(ctx, title, level);
+  if (genre) {
+    reasons.push(genre);
+  }
+  const weighted = bayesianQuality(title.imdbRating, title.imdbVotes, ctx.qualityPrior);
+  if (title.imdbRating != null && weighted != null && weighted >= QUALITY_REASON_MIN) {
+    reasons.push({
+      kind: "quality",
+      text: `IMDb ${title.imdbRating.toFixed(1)}`,
+      detail: title.imdbVotes ? formatVotes(title.imdbVotes) : undefined,
+      weight: 0.04,
+      personal: false,
+    });
+  }
+  reasons.sort((a, b) => b.weight - a.weight);
+
+  return {
+    level,
+    label: AFFINITY_LABEL[level],
+    meaning: AFFINITY_MEANING[level],
+    confidence,
+    lowConfidence: confidence < LOW_CONFIDENCE,
+    reasons: reasons.slice(0, AFFINITY_REASON_LIMIT),
+  };
+};
