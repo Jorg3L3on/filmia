@@ -13,7 +13,7 @@ import { TitleKind } from "@/db";
 import { awardChipLabel } from "@/lib/awards";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { titleListMemberships } from "@/lib/list-membership";
-import { formatRuntime, TITLE_KIND_LABEL } from "@/lib/labels";
+import { formatRuntime, imdbTitleUrl, TITLE_KIND_LABEL } from "@/lib/labels";
 import { getTmdbTrailer, isTmdbConfigured, tmdbBackdropUrl, type TmdbTitleExtras } from "@/lib/tmdb";
 import type { AffinityCatalogRow, FichaAffinity } from "@/lib/affinity-store";
 import type { DiaryLog } from "@/lib/title-preview";
@@ -53,6 +53,7 @@ export type HeroSource = Pick<
   | "kind"
   | "tmdbGenres"
   | "imdbRating"
+  | "imdbId"
   | "awards"
   | "rating"
   | "watchedAt"
@@ -85,6 +86,7 @@ export const heroProps = (
     kindLabel: TITLE_KIND_LABEL[title.kind],
     genreLabel: parseStoredTmdbGenres(title.tmdbGenres)[0]?.name ?? extras?.genres[0]?.name ?? null,
     imdbRating: title.imdbRating,
+    imdbHref: imdbTitleUrl(title.imdbId),
     imdbPending: options.imdbPending ?? false,
     awardLabel: awardChipLabel(title.awards),
     rating: title.rating,
