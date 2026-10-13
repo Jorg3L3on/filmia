@@ -3146,6 +3146,14 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   pointer-events: auto;
 }
 
+/* Diario mode (FIL-I8): «Diario · 12 oct» sits opposite the back pill. */
+.ficha-topbar.has-trail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .ficha-topbar-blur {
   position: absolute;
   inset: 0;

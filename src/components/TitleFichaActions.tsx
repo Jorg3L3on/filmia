@@ -3,19 +3,28 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useId, useState, type CSSProperties, type ReactNode } from "react";
-import { pinTonightFromFicha } from "@/app/actions/tonight";
-import { setTitleRating } from "@/app/actions/titles";
+import { saveTmdbTitleInLists } from "@/app/actions/lists";
+import { markTmdbTitleWatched, rateTmdbTitle } from "@/app/actions/title-preview";
+import { pinTonightFromFicha, pinTonightFromSearch } from "@/app/actions/tonight";
+import { addTitleFromTmdb, setTitleRating } from "@/app/actions/titles";
 import {
   addToWatchlistById,
   clearTitleWatched,
+  markTitleWatched,
   removeFromWatchlistById,
 } from "@/app/actions/watchlist";
 import { MarkWatchedSheet } from "@/components/MarkWatchedSheet";
+import { retargetCurrentNav } from "@/components/NavOriginTracker";
 import { RatingSheet } from "@/components/RatingSheet";
+import { SearchListPicker } from "@/components/tmdb-search/SearchListPicker";
 import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
 import { formatStarScore } from "@/lib/labels";
+import { WATCHLIST_SAVE_LABEL } from "@/lib/mark-seen";
+import type { SelectableList } from "@/lib/list-selection";
 import { useSpringFeedback } from "@/lib/motion";
+import type { AddTitleFromTmdbInput } from "@/lib/add-title-from-tmdb";
+import { diaryDayLabel, diaryMonthHref, ownedFichaHref, type DiaryLog } from "@/lib/title-preview";
 import { showToast } from "@/lib/toast";
 import { PARA_TI_SLUG } from "@/lib/tonight/select";
 import { TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
@@ -24,8 +33,21 @@ import { useStickyOptimistic } from "@/lib/use-optimistic-action";
 
 const HOY_PARA_TI_HREF = `/?${TONIGHT_LENS_PARAM}=${PARA_TI_SLUG}`;
 
+/** The film as the ficha preview knows it: enough to create the user's Title. */
+export type FichaTmdbSnapshot = Pick<
+  AddTitleFromTmdbInput,
+  "tmdbId" | "kind" | "name" | "originalName" | "year" | "posterPath"
+>;
+
 type TitleFichaActionsProps = {
-  titleId: string;
+  /**
+   * The user's Title. Null on a ficha preview (FIL-I8): every action first
+   * creates the Title from `snapshot`, then the URL becomes `/titulos/{id}`.
+   */
+  titleId: string | null;
+  snapshot?: FichaTmdbSnapshot;
+  /** Diario mode (Buscar from the calendar): the primary logs a viewing on that day. */
+  diaryLog?: DiaryLog | null;
   titleName: string;
   watched: boolean;
   inWatchlist: boolean;
@@ -37,7 +59,9 @@ type TitleFichaActionsProps = {
   platform: Platform | null;
   /** This title is tonight's pin right now. */
   pinnedTonight: boolean;
-  listsPanel: ReactNode;
+  /** The user's lists panel; a preview passes `previewLists` instead (nothing is written until confirmed). */
+  listsPanel?: ReactNode;
+  previewLists?: SelectableList[];
 };
 
 type ActionState = {
@@ -70,6 +94,8 @@ const groupItemClass = (active: boolean) =>
  */
 export const TitleFichaActions = ({
   titleId,
+  snapshot,
+  diaryLog = null,
   titleName,
   watched,
   inWatchlist,
@@ -79,6 +105,7 @@ export const TitleFichaActions = ({
   platform,
   pinnedTonight,
   listsPanel,
+  previewLists = [],
 }: TitleFichaActionsProps) => {
   const router = useRouter();
   const listsPanelId = useId();
@@ -96,6 +123,23 @@ export const TitleFichaActions = ({
   const watchedSpring = useSpringFeedback();
   const ratingSpring = useSpringFeedback();
   const watchlistSpring = useSpringFeedback();
+  const [isLogging, setLogging] = useState(false);
+  const [listsError, setListsError] = useState<string | null>(null);
+  const [isSavingLists, setSavingLists] = useState(false);
+
+  /** Preview: the Title now exists, so the ficha becomes the user's own. */
+  const becomeOwned = (newTitleId: string) => {
+    const href = ownedFichaHref(newTitleId);
+    retargetCurrentNav(href);
+    router.replace(href);
+  };
+
+  const previewSnapshot = () => {
+    if (!snapshot) {
+      throw new Error("Falta la película.");
+    }
+    return snapshot;
+  };
 
   const displayedWatched = state.watched || seenOptimistic;
 
@@ -107,6 +151,19 @@ export const TitleFichaActions = ({
     setJustPinned(true);
     run({ ...state, pinned: true, inWatchlist: true }, async () => {
       try {
+        if (titleId == null) {
+          const result = await pinTonightFromSearch(previewSnapshot());
+          if (!result.ok) {
+            throw new Error(result.error);
+          }
+          showToast({
+            title: "Sale primero en Hoy",
+            description: `${titleName} · también en Quiero ver`,
+            action: { label: "Ver en Hoy", onClick: () => router.push(HOY_PARA_TI_HREF) },
+          });
+          becomeOwned(result.titleId);
+          return;
+        }
         const result = await pinTonightFromFicha(titleId);
         if (!result.ok) {
           throw new Error(result.error);
@@ -129,7 +186,17 @@ export const TitleFichaActions = ({
     showToast({ title: next ? "En Quiero ver" : "Fuera de Quiero ver" });
     run({ ...state, inWatchlist: next }, async () => {
       try {
-        if (next) {
+        if (titleId == null) {
+          const result = await addTitleFromTmdb({
+            ...previewSnapshot(),
+            destination: "watchlist",
+            addToWatchlist: true,
+          });
+          if (!result.ok) {
+            throw new Error(result.error);
+          }
+          becomeOwned(result.titleId);
+        } else if (next) {
           await addToWatchlistById(titleId);
         } else {
           await removeFromWatchlistById(titleId);
@@ -151,7 +218,9 @@ export const TitleFichaActions = ({
     showToast({ title: "Quitada del diario" });
     run({ ...state, watched: false }, async () => {
       try {
-        await clearTitleWatched(titleId);
+        if (titleId != null) {
+          await clearTitleWatched(titleId);
+        }
       } finally {
         setPendingAction(null);
       }
@@ -169,9 +238,78 @@ export const TitleFichaActions = ({
           formData.set("rating", String(next.rating));
         }
         formData.set("review", next.review);
+        if (titleId == null) {
+          // Nothing to keep: no Title for an empty nota.
+          if (next.rating == null && !next.review) {
+            return;
+          }
+          const result = await rateTmdbTitle(previewSnapshot(), formData);
+          if (!result.ok) {
+            throw new Error(result.error);
+          }
+          becomeOwned(result.titleId);
+          return;
+        }
         await setTitleRating(titleId, formData);
       } finally {
         setPendingAction(null);
+      }
+    });
+  };
+
+  /** Preview «Lista»: the Title is born in the confirmed lists. */
+  const handleConfirmPreviewLists = async (selectedIds: string[]) => {
+    if (selectedIds.length === 0) {
+      setListsOpen(false);
+      return;
+    }
+    setListsError(null);
+    setSavingLists(true);
+    try {
+      const result = await saveTmdbTitleInLists({ tmdb: previewSnapshot(), add: selectedIds });
+      if (!result.ok) {
+        setListsError(result.error);
+        return;
+      }
+      showToast({
+        title: selectedIds.length === 1 ? "Guardada en tu lista" : `Guardada en ${selectedIds.length} listas`,
+        description: titleName,
+      });
+      becomeOwned(result.titleId);
+    } finally {
+      setSavingLists(false);
+    }
+  };
+
+  /** Diario mode: log the viewing on the calendar's day and go back to that month. */
+  const handleLogDiary = () => {
+    if (!diaryLog || isLogging) {
+      return;
+    }
+    setLogging(true);
+    const dayLabel = diaryDayLabel(diaryLog.date);
+    run({ ...state, watched: true, inWatchlist: false }, async () => {
+      try {
+        if (titleId == null) {
+          const result = await addTitleFromTmdb({
+            ...previewSnapshot(),
+            destination: "watched",
+            watchedAt: diaryLog.date,
+          });
+          if (!result.ok) {
+            throw new Error(result.error);
+          }
+        } else {
+          const formData = new FormData();
+          if (diaryLog.date) {
+            formData.set("watchedAt", diaryLog.date);
+          }
+          await markTitleWatched(titleId, formData);
+        }
+        showToast({ title: "En tu Diario", description: `${titleName} · ${dayLabel}` });
+        router.push(diaryMonthHref(diaryLog.date));
+      } finally {
+        setLogging(false);
       }
     });
   };
@@ -181,7 +319,21 @@ export const TitleFichaActions = ({
       className="ficha-actions-a ficha-enter space-y-3 sm:flex sm:flex-wrap sm:items-center sm:gap-3 sm:space-y-0"
       style={{ "--i": 5 } as CSSProperties}
     >
-      {displayedWatched ? null : state.pinned ? (
+      {diaryLog ? (
+        <button
+          type="button"
+          onClick={handleLogDiary}
+          disabled={isLogging}
+          aria-busy={isLogging || undefined}
+          className={cn(
+            "press-scale relative flex h-[3.25rem] w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-success px-5 text-base font-semibold text-ink disabled:opacity-70 sm:w-auto sm:px-7",
+            focusRing,
+          )}
+        >
+          <CheckIcon />
+          {isLogging ? "Anotando…" : `Registrar vista · ${diaryDayLabel(diaryLog.date)}`}
+        </button>
+      ) : displayedWatched ? null : state.pinned ? (
         <Link
           href={HOY_PARA_TI_HREF}
           aria-label="Fijada para esta noche. Ver en Hoy"
@@ -213,7 +365,14 @@ export const TitleFichaActions = ({
         </button>
       )}
 
-      <div role="group" aria-label="Acciones del título" className="ficha-action-group grid grid-cols-4 gap-1 p-1.5 sm:flex sm:gap-0.5 sm:rounded-full sm:p-1">
+      <div
+        role="group"
+        aria-label="Acciones del título"
+        className={cn(
+          "ficha-action-group grid gap-1 p-1.5 sm:flex sm:gap-0.5 sm:rounded-full sm:p-1",
+          diaryLog ? "grid-cols-3" : "grid-cols-4",
+        )}
+      >
         <button
           type="button"
           onClick={handleToggleWatchlist}
@@ -232,22 +391,24 @@ export const TitleFichaActions = ({
           </span>
         </button>
 
-        <button
-          type="button"
-          onClick={handleToggleWatched}
-          disabled={pendingAction === "watched"}
-          aria-pressed={displayedWatched}
-          aria-label={displayedWatched ? "Quitar de visto" : "Marcar como visto"}
-          className={cn(
-            groupItemClass(displayedWatched),
-            "spring-fill",
-            watchedSpring.className,
-            displayedWatched && "bg-success/12 text-success",
-          )}
-        >
-          {displayedWatched ? <CheckIcon /> : <EyeIcon />}
-          {displayedWatched ? "Vista" : "Vi esto"}
-        </button>
+        {diaryLog ? null : (
+          <button
+            type="button"
+            onClick={handleToggleWatched}
+            disabled={pendingAction === "watched"}
+            aria-pressed={displayedWatched}
+            aria-label={displayedWatched ? "Quitar de visto" : "Marcar como visto"}
+            className={cn(
+              groupItemClass(displayedWatched),
+              "spring-fill",
+              watchedSpring.className,
+              displayedWatched && "bg-success/12 text-success",
+            )}
+          >
+            {displayedWatched ? <CheckIcon /> : <EyeIcon />}
+            {displayedWatched ? "Vista" : "Vi esto"}
+          </button>
+        )}
 
         <button
           type="button"
@@ -282,28 +443,53 @@ export const TitleFichaActions = ({
 
       {listsOpen ? (
         <div id={listsPanelId} className="sm:basis-full">
-          {listsPanel}
+          {titleId == null ? (
+            <div className="ficha-action-group rounded-[1.375rem] p-4">
+              <SearchListPicker
+                lists={previewLists}
+                initialIds={[]}
+                pending={isSavingLists}
+                error={listsError}
+                onCancel={() => setListsOpen(false)}
+                onConfirm={(ids) => void handleConfirmPreviewLists(ids)}
+              />
+            </div>
+          ) : (
+            listsPanel
+          )}
         </div>
       ) : null}
 
       <MarkWatchedSheet
         open={seenOpen}
-        titleId={titleId}
+        titleId={titleId ?? `preview:${snapshot?.kind}:${snapshot?.tmdbId}`}
         titleName={titleName}
         rating={state.rating}
         review={state.review}
         platform={platform}
+        saveLabel={state.inWatchlist ? WATCHLIST_SAVE_LABEL : "Guardar en el diario"}
         onClose={() => setSeenOpen(false)}
         onSaved={() => {
           setSeenOptimistic(true);
           watchedSpring.trigger();
         }}
         onError={() => setSeenOptimistic(false)}
+        submit={
+          titleId == null
+            ? async (formData) => {
+                const result = await markTmdbTitleWatched(previewSnapshot(), formData);
+                if (!result.ok) {
+                  throw new Error(result.error);
+                }
+                becomeOwned(result.titleId);
+              }
+            : undefined
+        }
       />
 
       <RatingSheet
         open={ratingOpen}
-        titleId={titleId}
+        titleId={titleId ?? "preview"}
         rating={state.rating}
         review={state.review}
         pending={pendingAction === "rating"}

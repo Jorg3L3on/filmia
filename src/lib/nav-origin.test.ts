@@ -16,6 +16,7 @@ import {
   pathOf,
   readNavStack,
   recordVisit,
+  retargetTop,
   saveCurrentScroll,
   truncateNavLabel,
   withDeckCard,
@@ -223,5 +224,21 @@ describe("nav-origin/deck card", () => {
     assert.equal(deckIndexOf(deck, "t7"), 2);
     assert.equal(deckIndexOf(deck, "gone"), null);
     assert.equal(deckIndexOf(deck, null), null);
+  });
+});
+
+describe("retargetTop", () => {
+  it("lets a ficha preview become the user's ficha without pushing", () => {
+    const stack = visitAll(["/buscar?q=Animals", "/titulos/tmdb/pelicula/340666"]);
+    const labelled = labelCurrent(stack, "/titulos/tmdb/pelicula/340666", "Animales nocturnos");
+    const retargeted = retargetTop(labelled, "/titulos/abc");
+    assert.equal(retargeted.length, 2);
+    assert.deepEqual(retargeted.at(-1), { ...labelled.at(-1), href: "/titulos/abc" });
+    assert.equal(recordVisit(retargeted, "/titulos/abc").kind, "none");
+    assert.equal(backLabel(retargeted), "Buscar");
+  });
+
+  it("leaves an empty stack alone", () => {
+    assert.deepEqual(retargetTop([], "/titulos/abc"), []);
   });
 });

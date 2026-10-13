@@ -11,6 +11,7 @@ import {
   navOrigin,
   readNavStack,
   recordVisit,
+  retargetTop,
   saveCurrentScroll,
   writeNavStack,
   type NavAnchor,
@@ -51,6 +52,11 @@ const commit = (next: NavEntry[], notify = true) => {
       listener();
     }
   }
+};
+
+/** Call right before `router.replace(href)` when the current page becomes `href` (see retargetTop). */
+export const retargetCurrentNav = (href: string) => {
+  commit(retargetTop(load(), href), false);
 };
 
 const currentHref = () => `${window.location.pathname}${window.location.search}`;
