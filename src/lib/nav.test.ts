@@ -88,6 +88,9 @@ describe("isImmersiveFichaPath", () => {
     assert.equal(isImmersiveFichaPath("/titulos/abc"), true);
     assert.equal(isImmersiveFichaPath("/titulos/abc?x=1"), true);
     assert.equal(isImmersiveFichaPath("/titulos/abc/editar"), false);
+    assert.equal(isImmersiveFichaPath("/titulos/tmdb/pelicula/340666"), true);
+    assert.equal(isImmersiveFichaPath("/titulos/tmdb/serie/1399?fecha=2026-10-12"), true);
+    assert.equal(isImmersiveFichaPath("/titulos/tmdb/otro/1"), false);
     assert.equal(isImmersiveFichaPath("/titulos"), false);
     assert.equal(isImmersiveFichaPath("/watchlist"), false);
   });

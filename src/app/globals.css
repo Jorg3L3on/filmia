@@ -17,6 +17,9 @@
   /* «Recomendada» (Hoy): a cool hue on purpose, so it is never mistaken for the orange accent. */
   --reco: #8fd9cd;
   --reco-rgb: 143 217 205;
+  /* «Para ti» (FIL-I9): lilac, the magenta side of the icon; never IMDb yellow, reco teal or accent. */
+  --affinity: #c9b2ff;
+  --affinity-rgb: 201 178 255;
   /* Light accent-tinted text on dark glass (pills, ticket stub). */
   --accent-tint: #ffe3d8;
   --accent-soft: rgb(var(--accent-rgb) / 0.4);
@@ -81,6 +84,7 @@
   --color-star: var(--star);
   --color-rating: var(--rating);
   --color-imdb: var(--imdb);
+  --color-affinity: var(--affinity);
   --color-success: var(--success);
   --color-success-hover: var(--success-hover);
   --color-success-well: var(--success-well);
@@ -3146,6 +3150,53 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   pointer-events: auto;
 }
 
+/* Buscar · Mantener A «Menú anclado» (FIL-I8): the held row lifts over the
+ * blurred list and the glass menu grows from it. Transform/opacity only. */
+.search-menu-scrim {
+  background: rgb(0 0 0 / 0.45);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: search-menu-fade var(--duration-enter) var(--ease-out) both;
+}
+
+.search-menu-lift {
+  box-shadow: 0 24px 50px rgb(0 0 0 / 0.6);
+  border-color: rgb(255 255 255 / 0.2);
+  animation: search-menu-lift var(--duration-pop) var(--spring) both;
+}
+
+.search-menu-panel {
+  transform-origin: top left;
+  animation: search-menu-pop var(--duration-pop) var(--spring) both;
+}
+
+@keyframes search-menu-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes search-menu-lift {
+  to {
+    transform: scale(1.025);
+  }
+}
+
+@keyframes search-menu-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(-6px);
+  }
+}
+
+/* Diario mode (FIL-I8): «Diario · 12 oct» sits opposite the back pill. */
+.ficha-topbar.has-trail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .ficha-topbar-blur {
   position: absolute;
   inset: 0;
@@ -3465,6 +3516,12 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
     color: var(--mist);
     background: none;
   }
+
+  .search-menu-scrim,
+  .search-menu-lift,
+  .search-menu-panel {
+    animation: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3497,4 +3554,54 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   .year-tile img {
     transition: none;
   }
+}
+
+/* «Para ti» (FIL-I9): three-dot meter + label. Level sets how many dots light up. */
+.affinity-chip {
+  --affinity-on: var(--affinity);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  color: var(--affinity);
+}
+.affinity-chip[data-level="baja"] {
+  --affinity-on: var(--fog);
+  color: var(--fog);
+}
+.affinity-chip[data-low-confidence="true"] {
+  opacity: 0.72;
+}
+.affinity-dots {
+  display: inline-flex;
+  gap: 2px;
+}
+.affinity-dots > i {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.18);
+}
+.affinity-dots > i.is-on {
+  background: var(--affinity-on);
+  box-shadow: 0 0 6px -1px var(--affinity-on);
+}
+.affinity-chip-ficha {
+  height: 28px;
+  padding: 0 10px 0 9px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgb(var(--affinity-rgb) / 0.1);
+  box-shadow: inset 0 0 0 1px rgb(var(--affinity-rgb) / 0.32);
+}
+.affinity-chip-ficha[data-level="baja"] {
+  background: rgb(255 255 255 / 0.06);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+.affinity-chip-ficha[data-low-confidence="true"] {
+  box-shadow: inset 0 0 0 1px rgb(var(--affinity-rgb) / 0.32);
+  background: transparent;
+  border: 1px dashed rgb(var(--affinity-rgb) / 0.35);
 }

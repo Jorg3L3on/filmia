@@ -1,11 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useRef, useState, useTransition } from "react";
 import { saveTmdbTitleInLists } from "@/app/actions/lists";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { pinTonightFromSearch } from "@/app/actions/tonight";
-import type { SearchAddDestination, SearchPendingAction } from "@/components/SearchPreviewSheet";
+import type { SearchAddDestination, SearchPendingAction } from "@/components/tmdb-search/search-actions";
 import { useTmdbDiscoverSearch } from "@/components/tmdb-search/useTmdbDiscoverSearch";
 import { titleMatchesKind } from "@/lib/catalog-filters";
 import { pulseNav } from "@/lib/fly-to-nav";
@@ -81,7 +81,6 @@ export const useTmdbSearchAdd = ({
   const [listIndex, setListIndex] = useState(memberships);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<SearchPendingAction | null>(null);
-  const [preview, setPreviewState] = useState<TmdbCatalogResult | null>(null);
   const [listsError, setListsError] = useState<string | null>(null);
   const [pinnedTitleId, setPinnedTitleId] = useState(initialPinnedTitleId);
   /** Result key pinned during this visit: only a fresh pin gets the moon pop. */
@@ -179,19 +178,14 @@ export const useTmdbSearchAdd = ({
     titleMatchesKind(result.kind, kindFilter),
   );
 
-  const previewLocal = useMemo(() => {
-    if (!preview) {
-      return null;
-    }
-    return lookupTmdbCatalogEntry(catalog, preview.tmdbId, preview.kind);
-  }, [catalog, preview]);
-
-  const previewListIds = useMemo(() => {
-    if (!previewLocal || previewLocal.titleId.startsWith("pending:")) {
+  /** The lists a result is already in, so «Agregar a lista» starts from them. */
+  const listIdsFor = (result: TmdbCatalogResult) => {
+    const local = lookupTmdbCatalogEntry(catalog, result.tmdbId, result.kind);
+    if (!local || local.titleId.startsWith("pending:")) {
       return [];
     }
-    return listIndex[previewLocal.titleId] ?? [];
-  }, [listIndex, previewLocal]);
+    return listIndex[local.titleId] ?? [];
+  };
 
   const upsertLocal = (
     result: TmdbCatalogResult,
@@ -266,15 +260,10 @@ export const useTmdbSearchAdd = ({
     });
   };
 
-  const setPreview = (next: TmdbCatalogResult | null) => {
-    setListsError(null);
-    setTonightError(null);
-    setPreviewState(next);
-  };
 
   /**
    * «Ver esta noche»: into Quiero ver if needed, then first in Para ti. The
-   * sheet stays open and confirms; the toast offers Hoy instead of navigating.
+   * toast confirms and offers Hoy instead of navigating.
    */
   const handlePinTonight = (result: TmdbCatalogResult) => {
     const key = tmdbCatalogKey(result.tmdbId, result.kind);
@@ -295,6 +284,7 @@ export const useTmdbSearchAdd = ({
 
       if (!outcome.ok) {
         setTonightError(outcome.error);
+        showToast({ title: "No se pudo reservar", description: outcome.error, variant: "error" });
         return;
       }
 
@@ -370,39 +360,6 @@ export const useTmdbSearchAdd = ({
       });
     });
 
-  const handleOpen = (result: TmdbCatalogResult) => {
-    const local = lookupTmdbCatalogEntry(catalog, result.tmdbId, result.kind);
-    if (local) {
-      if (local.titleId.startsWith("pending:")) {
-        return;
-      }
-      router.push(`/titulos/${local.titleId}`);
-      return;
-    }
-
-    startAdd(async () => {
-      setPendingKey(tmdbCatalogKey(result.tmdbId, result.kind));
-      setPendingAction("open");
-      const outcome = await addTitleFromTmdb({
-        tmdbId: result.tmdbId,
-        kind: result.kind,
-        name: result.name,
-        originalName: result.originalName,
-        year: result.year,
-        posterPath: result.posterPath,
-        destination: defaultDestination === "watched" ? "watched" : undefined,
-        watchedAt: defaultDestination === "watched" ? watchedDate : null,
-      });
-      setPendingKey(null);
-      setPendingAction(null);
-      if (!outcome.ok) {
-        setError(outcome.error);
-        return;
-      }
-      router.push(`/titulos/${outcome.titleId}`);
-    });
-  };
-
   return {
     query,
     mode,
@@ -417,16 +374,13 @@ export const useTmdbSearchAdd = ({
     error,
     pendingKey,
     pendingAction,
-    preview,
-    setPreview,
     hasSearched,
     kindFilter,
     setKindFilter,
     isSearching,
     isAdding,
     visibleResults,
-    previewLocal,
-    previewListIds,
+    listIdsFor,
     listsError,
     pinnedTitleId,
     justPinnedKey,
@@ -434,7 +388,6 @@ export const useTmdbSearchAdd = ({
     handleSearch,
     handleQueryChange,
     handleAdd,
-    handleOpen,
     handleSaveLists,
     handlePinTonight,
   };

@@ -3,7 +3,7 @@
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { SearchResultsSkeleton } from "@/components/PageSkeletons";
-import { SearchResultRow } from "@/components/tmdb-search/SearchResultRow";
+import { SearchResultRow, type SearchRowWiring } from "@/components/tmdb-search/SearchResultRow";
 import { WatchlistCountTicker } from "@/components/watchlist/WatchlistCountTicker";
 import { staggerStyle } from "@/lib/motion";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
@@ -16,7 +16,7 @@ type TmdbSearchResultsProps = {
   isSearching: boolean;
   hasSearched: boolean;
   error: string | null;
-  onPreview: (result: TmdbCatalogResult) => void;
+  rows: SearchRowWiring;
   onRetry?: () => void;
 };
 
@@ -26,7 +26,7 @@ export const TmdbSearchResults = ({
   isSearching,
   hasSearched,
   error,
-  onPreview,
+  rows,
   onRetry,
 }: TmdbSearchResultsProps) => {
   if (results.length > 0) {
@@ -46,13 +46,17 @@ export const TmdbSearchResults = ({
           {results.map((result, index) => {
             const key = tmdbCatalogKey(result.tmdbId, result.kind);
             const local = catalog.get(key) ?? catalog.get(String(result.tmdbId));
+            const titleId = local?.titleId ?? null;
             return (
               <li key={key} className="stagger-in" style={staggerStyle(index)}>
                 <SearchResultRow
                   result={result}
-                  titleId={local?.titleId}
+                  titleId={titleId}
                   status={local?.watched ? "watched" : local?.inWatchlist ? "watchlist" : null}
-                  onPreview={onPreview}
+                  facts={rows.factsFor?.(result) ?? null}
+                  href={rows.hrefFor(result, titleId)}
+                  onOpen={rows.onOpen}
+                  onMenu={rows.onMenu}
                 />
               </li>
             );

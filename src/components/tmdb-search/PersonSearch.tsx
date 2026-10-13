@@ -6,7 +6,11 @@ import { useNavLabel } from "@/components/NavOriginTracker";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { SearchResultsSkeleton } from "@/components/PageSkeletons";
-import { SearchResultRow, type SearchRowStatus } from "@/components/tmdb-search/SearchResultRow";
+import {
+  SearchResultRow,
+  type SearchRowStatus,
+  type SearchRowWiring,
+} from "@/components/tmdb-search/SearchResultRow";
 import { cn } from "@/lib/cn";
 import { staggerStyle } from "@/lib/motion";
 import {
@@ -138,7 +142,7 @@ type PersonViewProps = {
   /** Painted from the tap while the filmography loads. */
   pending: { name: string; profilePath: string | null; role: PersonRole } | null;
   statusOf: (result: TmdbCatalogResult) => { titleId: string | null; status: SearchRowStatus };
-  onPreview: (result: TmdbCatalogResult) => void;
+  rows: SearchRowWiring;
   onRetry: () => void;
   /** «‹ Resultados»: only when there is a search to go back to. */
   backLabel: string | null;
@@ -155,7 +159,7 @@ export const PersonView = ({
   state,
   pending,
   statusOf,
-  onPreview,
+  rows,
   onRetry,
   backLabel,
   onBack,
@@ -228,7 +232,7 @@ export const PersonView = ({
           entries={state.data.entries}
           role={state.data.role}
           statusOf={statusOf}
-          onPreview={onPreview}
+          rows={rows}
         />
       )}
     </div>
@@ -239,12 +243,12 @@ const FilmographyList = ({
   entries,
   role,
   statusOf,
-  onPreview,
+  rows,
 }: {
   entries: FilmographyEntry[];
   role: PersonRole;
   statusOf: PersonViewProps["statusOf"];
-  onPreview: (result: TmdbCatalogResult) => void;
+  rows: SearchRowWiring;
 }) => (
   <section className="space-y-3">
     <header className="flex items-baseline justify-between gap-3">
@@ -263,7 +267,10 @@ const FilmographyList = ({
               titleId={titleId}
               status={status}
               detail={role === "reparto" && entry.character ? entry.character : null}
-              onPreview={onPreview}
+              facts={rows.factsFor?.(entry) ?? null}
+              href={rows.hrefFor(entry, titleId)}
+              onOpen={rows.onOpen}
+              onMenu={rows.onMenu}
             />
           </li>
         );

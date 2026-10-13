@@ -76,6 +76,8 @@ export type TonightInput = {
 export type ReasonKind =
   | "taste_anchor"
   | "taste_person"
+  /** «% para ti» (FIL-I9): genres you rate high, or barely watch. */
+  | "taste_genre"
   | "quality"
   | "fit"
   | "fit_over"

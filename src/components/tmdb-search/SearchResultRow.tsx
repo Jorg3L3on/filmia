@@ -1,10 +1,16 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { SharedPoster } from "@/components/SharedPoster";
+import Link from "next/link";
+import { useRef, type PointerEvent, type ReactNode } from "react";
+import { AffinityChip } from "@/components/affinity/AffinityChip";
+import { ImdbBadge } from "@/components/ImdbBadge";
 import { PosterImage } from "@/components/PosterImage";
+import { SharedPoster } from "@/components/SharedPoster";
+import { LaurelIcon } from "@/components/watchlist/icons";
 import { cn } from "@/lib/cn";
-import { TITLE_KIND_LABEL } from "@/lib/labels";
+import { formatRuntime, formatStarScore, TITLE_KIND_LABEL } from "@/lib/labels";
+import { useLongPress } from "@/lib/motion";
+import type { SearchResultFacts } from "@/lib/search-result-facts";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import { focusRing, glassRowClass } from "@/lib/ui";
 
@@ -18,23 +24,122 @@ type SearchResultRowProps = {
   /** Extra meta after «año · tipo» (e.g. the character in a cast filmography). */
   detail?: ReactNode;
   status?: SearchRowStatus;
-  onPreview: (result: TmdbCatalogResult) => void;
+  /** IMDb, award, runtime and platform from the shared Catalog (FIL-I8-4); `pending` while it fills. */
+  facts?: SearchResultFacts | null;
+  /** The ficha: the user's own, or the preview by TMDB (FIL-I8). */
+  href: string;
+  /** Tap: the row is leaving for its ficha (Buscar remembers the query). */
+  onOpen?: (result: TmdbCatalogResult) => void;
+  /** Long press / right click: the shortcuts menu, anchored to this row. */
+  onMenu?: (result: TmdbCatalogResult, anchor: DOMRect) => void;
+};
+
+/** How Buscar wires every row (results, filmographies): where it goes, what holding it does. */
+export type SearchRowWiring = {
+  hrefFor: (result: TmdbCatalogResult, titleId: string | null) => string;
+  onOpen: (result: TmdbCatalogResult) => void;
+  onMenu: (result: TmdbCatalogResult, anchor: DOMRect) => void;
+  factsFor?: (result: TmdbCatalogResult) => SearchResultFacts | null;
 };
 
 const sameTitle = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
+/** Poster key for the morph: the local title, else the film (the ficha preview uses the same). */
+export const searchPosterKey = (result: Pick<TmdbCatalogResult, "kind" | "tmdbId">, titleId?: string | null) =>
+  titleId && !titleId.startsWith("pending:") ? titleId : `tmdb-${result.kind}-${result.tmdbId}`;
+
 /**
- * One Buscar result, «Fichas» direction: the glass row of La cartelera, serif title
- * (up to two lines), «año · tipo», the original title when it differs, and where it
- * already lives in your Filmia. Poster and chevron never shrink, so it fits any width.
+ * One Buscar result, «Fichas» direction with row A «Línea de datos» (FIL-I8):
+ * glass row, serif title, «año · duración · tipo · género», then IMDb · premio ·
+ * plataforma, and where it already lives in your Filmia. The whole row is the
+ * link to the ficha; holding it opens the shortcuts.
  */
 export const SearchResultRow = ({
   result,
   titleId,
   detail,
   status = null,
-  onPreview,
+  facts = null,
+  href,
+  onOpen,
+  onMenu,
 }: SearchResultRowProps) => {
+  const rowRef = useRef<HTMLAnchorElement>(null);
+  const firedRef = useRef(false);
+  const openMenu = () => {
+    const node = rowRef.current;
+    if (!onMenu || !node) {
+      return;
+    }
+    firedRef.current = true;
+    navigator.vibrate?.(8);
+    onMenu(result, node.getBoundingClientRect());
+  };
+  const longPress = useLongPress(openMenu);
+
+  return (
+    <Link
+      ref={rowRef}
+      href={href}
+      prefetch={false}
+      data-search-row={`${result.kind}:${result.tmdbId}`}
+      onClickCapture={(event) => {
+        // The long press already opened the menu: the release is not a tap.
+        if (firedRef.current) {
+          firedRef.current = false;
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }}
+      onClick={() => onOpen?.(result)}
+      onContextMenu={(event) => {
+        if (!onMenu) {
+          return;
+        }
+        event.preventDefault();
+        openMenu();
+        // A right click never ends in a click: nothing to swallow.
+        firedRef.current = false;
+      }}
+      {...(onMenu
+        ? {
+            ...longPress,
+            onPointerDown: (event: PointerEvent) => {
+              // A new gesture: whatever the last hold left behind is not this tap's.
+              firedRef.current = false;
+              longPress.onPointerDown(event);
+            },
+          }
+        : {})}
+      className={cn(
+        glassRowClass,
+        "group card-physics press-scale flex w-full min-w-0 select-none items-center gap-3 p-2.5 text-left [-webkit-touch-callout:none]",
+        "transition-[border-color,background-color] duration-[var(--duration-hover)] ease-[var(--ease-out)] hover:border-accent/40",
+        status === "watchlist" && "border-accent/30",
+        focusRing,
+      )}
+    >
+      <SearchResultRowBody
+        result={result}
+        titleId={titleId}
+        detail={detail}
+        status={status}
+        facts={facts}
+        morph
+      />
+    </Link>
+  );
+};
+
+/** The row's content; the menu's lifted copy reuses it without the link or the morph. */
+export const SearchResultRowBody = ({
+  result,
+  titleId,
+  detail,
+  status = null,
+  facts = null,
+  morph = false,
+}: Pick<SearchResultRowProps, "result" | "titleId" | "detail" | "status" | "facts"> & { morph?: boolean }) => {
   const poster = (
     <PosterImage
       name={result.name}
@@ -46,32 +151,30 @@ export const SearchResultRow = ({
   );
   const original =
     result.originalName && !sameTitle(result.originalName, result.name) ? result.originalName : null;
+  const meta = [
+    result.year ? String(result.year) : null,
+    formatRuntime(facts?.runtimeMinutes ?? null),
+    TITLE_KIND_LABEL[result.kind],
+    facts?.genre ?? null,
+  ].filter(Boolean);
 
   return (
-    <button
-      type="button"
-      onClick={() => onPreview(result)}
-      className={cn(
-        glassRowClass,
-        "group card-physics press-scale flex w-full min-w-0 items-center gap-3 p-2.5 text-left",
-        "transition-[border-color,background-color] duration-[var(--duration-hover)] ease-[var(--ease-out)] hover:border-accent/40",
-        status === "watchlist" && "border-accent/30",
-        focusRing,
-      )}
-    >
+    <>
       <span className="w-14 shrink-0 overflow-hidden rounded-poster shadow-[0_10px_24px_rgba(0,0,0,0.45)] transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110">
-        {titleId ? <SharedPoster titleId={titleId}>{poster}</SharedPoster> : poster}
+        <SharedPoster titleId={searchPosterKey(result, titleId)} share={morph}>
+          {poster}
+        </SharedPoster>
       </span>
       <span className="min-w-0 flex-1 space-y-1">
         <span className="line-clamp-2 font-serif text-[17px] leading-snug text-pretty break-words text-paper">
           {result.name}
         </span>
         <span className="block truncate text-[13px] text-fog">
-          {result.year ? `${result.year} · ` : ""}
-          {TITLE_KIND_LABEL[result.kind]}
+          {meta.join(" · ")}
           {detail ? <> · {detail}</> : null}
         </span>
         {original ? <span className="block truncate text-xs italic text-mist">{original}</span> : null}
+        <SearchFactsLine facts={facts} />
         {status ? <LibraryPill status={status} /> : null}
       </span>
       <svg
@@ -86,7 +189,77 @@ export const SearchResultRow = ({
       >
         <path d="m9 6 6 6-6 6" />
       </svg>
-    </button>
+    </>
+  );
+};
+
+/**
+ * Row A's data line: IMDb · Para ti (or your rating) · laurel · platform in plain text. Nothing without
+ * data (the ficha says «Aún sin calificación»; a row stays quiet). While the
+ * Catalog fills, two pills hold the line's height so nothing jumps.
+ */
+const SearchFactsLine = ({ facts }: { facts: SearchResultFacts | null }) => {
+  if (!facts) {
+    return null;
+  }
+  if (facts.pending) {
+    return (
+      <span className="flex h-4 items-center gap-1.5" aria-hidden="true">
+        <span className="shimmer inline-block h-3 w-12 rounded-full" />
+        <span className="shimmer inline-block h-3 w-16 rounded-full" />
+      </span>
+    );
+  }
+  const bits: ReactNode[] = [];
+  if (facts.imdbRating != null) {
+    bits.push(<ImdbBadge key="imdb" rating={facts.imdbRating} compact />);
+  }
+  // «Para ti» (FIL-I9): a watched film shows your rating, never a prediction.
+  if (facts.watched?.rating != null) {
+    bits.push(
+      <span key="mine" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-semibold text-star">
+        ★ {formatStarScore(facts.watched.rating)}
+        <span className="font-normal text-fog">tu nota</span>
+      </span>,
+    );
+  } else if (facts.affinity) {
+    bits.push(
+      <AffinityChip
+        key="affinity"
+        level={facts.affinity.level}
+        label={facts.affinity.label}
+        lowConfidence={facts.affinity.lowConfidence}
+        className="shrink-0"
+      />,
+    );
+  }
+  if (facts.awardLabel) {
+    bits.push(
+      <span key="award" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs text-star">
+        <LaurelIcon />
+        {facts.awardLabel}
+      </span>,
+    );
+  }
+  if (facts.platform) {
+    bits.push(
+      <span key="platform" className="min-w-0 truncate text-xs text-paper/75">
+        {facts.platform}
+      </span>,
+    );
+  }
+  if (bits.length === 0) {
+    return null;
+  }
+  return (
+    <span className="flex h-4 min-w-0 items-center gap-1.5 overflow-hidden">
+      {bits.map((bit, index) => (
+        <span key={index} className={cn("inline-flex items-center gap-1.5", index === bits.length - 1 ? "min-w-0" : "shrink-0")}>
+          {index > 0 ? <span className="text-xs text-faint" aria-hidden="true">·</span> : null}
+          {bit}
+        </span>
+      ))}
+    </span>
   );
 };
 

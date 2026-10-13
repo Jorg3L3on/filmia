@@ -45,6 +45,11 @@ type MarkWatchedSheetProps = {
   onClose: () => void;
   onSaved?: () => void;
   onError?: (message: string) => void;
+  /**
+   * Replaces `markTitleWatched(titleId, …)`: the ficha preview (FIL-I8) has no
+   * Title yet and creates it watched with the same form. Throw to report.
+   */
+  submit?: (formData: FormData) => Promise<void>;
 };
 
 export const MarkWatchedSheet = ({
@@ -60,6 +65,7 @@ export const MarkWatchedSheet = ({
   onClose,
   onSaved,
   onError,
+  submit,
 }: MarkWatchedSheetProps) => {
   const generation = useOpenGeneration(open);
 
@@ -78,6 +84,7 @@ export const MarkWatchedSheet = ({
       onClose={onClose}
       onSaved={onSaved}
       onError={onError}
+      submit={submit}
     />
   );
 };
@@ -95,6 +102,7 @@ const MarkWatchedSheetFields = ({
   onClose,
   onSaved,
   onError,
+  submit,
 }: MarkWatchedSheetProps) => {
   const titleDomId = useId();
   const hasInitialDate = Boolean(initialWatchedAt);
@@ -151,7 +159,11 @@ const MarkWatchedSheetFields = ({
           // "" = Ninguna → null server-side (parsePlatform).
           formData.set("platform", selectedPlatform);
         }
-        await markTitleWatched(titleId, formData);
+        if (submit) {
+          await submit(formData);
+        } else {
+          await markTitleWatched(titleId, formData);
+        }
       } catch (caught) {
         const message =
           caught instanceof Error ? caught.message : "No se pudo guardar.";

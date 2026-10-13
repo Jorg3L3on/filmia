@@ -7,7 +7,7 @@ import {
 } from "@/lib/tonight/features";
 import { monthsBetween } from "@/lib/tonight/time";
 import type { TonightEvent, TonightTitle } from "@/lib/tonight/types";
-import { FAVORITAS_SLUG, POR_REWATCH_SLUG } from "@/lib/lists";
+import { FAVORITAS_SLUG, FIXED_LIST_SLUGS, POR_REWATCH_SLUG } from "@/lib/lists";
 
 export type TasteAnchor = {
   titleId: string;
@@ -45,12 +45,39 @@ export const ANCHOR_LIMIT = 16;
 /** Quiero ver says what you want, not what you liked: half the weight of a neutral watch. */
 export const QUEUE_WEIGHT = 0.5;
 
-export const recencyWeight = (watchedAt: Date | null, now: Date) => {
+/**
+ * How much a watch still says about you. `halfLifeMonths: null` = flat (no forgetting):
+ * «¿me gustaría?» (FIL-I9) remembers longer than «¿esta noche?».
+ */
+export const recencyWeight = (
+  watchedAt: Date | null,
+  now: Date,
+  halfLifeMonths: number | null = RECENCY_HALF_LIFE_MONTHS,
+) => {
+  if (halfLifeMonths == null) {
+    return 1;
+  }
   if (!watchedAt) {
     return 0.6;
   }
   const months = monthsBetween(watchedAt, now);
-  return Math.max(RECENCY_FLOOR, Math.pow(0.5, months / RECENCY_HALF_LIFE_MONTHS));
+  return Math.max(RECENCY_FLOOR, Math.pow(0.5, months / halfLifeMonths));
+};
+
+const FIXED_SLUGS: ReadonlySet<string> = new Set(FIXED_LIST_SLUGS);
+
+/** The user's own collections («Comedia»…) a title is in: not Quiero ver, Favoritas… */
+export const customListCount = (title: TonightTitle) =>
+  title.listSlugs.filter((slug) => !FIXED_SLUGS.has(slug)).length;
+
+export type TasteProfileOptions = {
+  /** Recency half-life; `null` = flat. Default: Hoy's 18 months. */
+  halfLifeMonths?: number | null;
+  /**
+   * Mild positive evidence for a watched title kept in one of your own collections (FIL-I9).
+   * Added to an unrated or liked watch, never to one you rated below your mean. Default 0 (Hoy).
+   */
+  collectionBonus?: number;
 };
 
 /** Base weight of a watched title: how much it says about your taste, signed. */
@@ -68,11 +95,30 @@ export const titleTasteWeight = (title: TonightTitle, mean: number) => {
   return weight;
 };
 
+/** Signed weight a watched title carries in the profile (taste × list bonus × recency). */
+export const watchWeight = (
+  title: TonightTitle,
+  mean: number,
+  now: Date,
+  halfLifeMonths: number | null = RECENCY_HALF_LIFE_MONTHS,
+  collectionBonus = 0,
+) => {
+  let base = titleTasteWeight(title, mean);
+  if (collectionBonus !== 0 && base >= 0 && customListCount(title) > 0) {
+    base += collectionBonus;
+  }
+  return base * recencyWeight(title.watchedAt, now, halfLifeMonths);
+};
+
 export const buildTasteProfile = (
   titles: readonly TonightTitle[],
   events: readonly TonightEvent[],
   now: Date,
+  options: TasteProfileOptions = {},
 ): TasteProfile => {
+  const halfLife =
+    options.halfLifeMonths === undefined ? RECENCY_HALF_LIFE_MONTHS : options.halfLifeMonths;
+  const collectionBonus = options.collectionBonus ?? 0;
   const watched = titles.filter((title) => title.watchedAt != null);
   const rated = watched.filter((title) => title.rating != null);
   const mean =
@@ -86,7 +132,7 @@ export const buildTasteProfile = (
   const anchors: TasteAnchor[] = [];
 
   for (const title of watched) {
-    const weight = titleTasteWeight(title, mean) * recencyWeight(title.watchedAt, now);
+    const weight = watchWeight(title, mean, now, halfLife, collectionBonus);
     if (weight === 0) {
       continue;
     }

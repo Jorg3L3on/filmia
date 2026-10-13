@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { ImdbBadge } from "@/components/ImdbBadge";
 import { PosterImage } from "@/components/PosterImage";
 import { SharedPoster } from "@/components/SharedPoster";
@@ -20,11 +20,15 @@ type TitleHeroProps = {
   kindLabel: string;
   genreLabel?: string | null;
   imdbRating?: number | null;
+  /** The ficha preview is still resolving OMDb: placeholder chips instead of «sin calificación». */
+  imdbPending?: boolean;
   awardLabel?: string | null;
   rating?: number | null;
   watched: boolean;
   /** Catalog.posterAmbient («r g b»): the poster's light on the backdrop. */
   posterAmbient?: string | null;
+  /** «Para ti» (FIL-I9): streamed chip next to the IMDb one (unwatched films only). */
+  affinity?: ReactNode;
 };
 
 const ambientStyle = (posterAmbient: string | null | undefined) =>
@@ -49,10 +53,12 @@ export const TitleHero = ({
   kindLabel,
   genreLabel,
   imdbRating,
+  imdbPending = false,
   awardLabel,
   rating,
   watched,
   posterAmbient,
+  affinity,
 }: TitleHeroProps) => {
   const restBits = [runtimeLabel, kindLabel, genreLabel].filter(Boolean);
 
@@ -113,7 +119,17 @@ export const TitleHero = ({
             <span className="liquid-glass liquid-glass-pill relative inline-flex h-7 items-center rounded-full pl-1 pr-2.5">
               <ImdbBadge rating={imdbRating} compact />
             </span>
-          ) : null}
+          ) : imdbPending ? (
+            <>
+              <span className="shimmer inline-block h-7 w-[4.75rem] rounded-full" aria-hidden="true" />
+              <span className="shimmer inline-block h-7 w-32 rounded-full" aria-hidden="true" />
+            </>
+          ) : (
+            <span className="liquid-glass liquid-glass-pill relative inline-flex h-7 items-center rounded-full px-2.5 text-xs text-fog">
+              Aún sin calificación en IMDb
+            </span>
+          )}
+          {affinity}
           {awardLabel ? (
             <span className="inline-flex h-7 max-w-full items-center gap-1 truncate rounded-full border border-star/35 bg-star/10 px-2.5 text-xs font-medium text-star">
               <LaurelIcon />

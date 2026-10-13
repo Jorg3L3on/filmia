@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { markNotTonight, sendTasteFeedback } from "@/app/actions/tonight";
 import { removeFromWatchlist, undoMarkWatched } from "@/app/actions/watchlist";
@@ -11,7 +12,6 @@ import type { CoverflowTitle } from "@/components/coverflow/types";
 import { TonightCardMenu } from "@/components/tonight/TonightCardMenu";
 import { TonightProvider, type TonightHandlers } from "@/components/tonight/TonightContext";
 import { TonightEyebrow } from "@/components/tonight/TonightEyebrow";
-import { RecoPreviewSheet } from "@/components/tonight/RecoPreviewSheet";
 import { WhySheet } from "@/components/tonight/WhySheet";
 import { useImpressions } from "@/components/tonight/useImpressions";
 import { useRecoActions } from "@/components/tonight/useRecoActions";
@@ -58,6 +58,20 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   const impressions = useImpressions(activeSlug);
   const reco = useRecoActions();
   const recoLocal = reco.local;
+  const router = useRouter();
+
+  // Back from a ficha preview that saved a recommended film: the card learns it (FIL-I8).
+  const { adoptFromFichas } = reco;
+  useEffect(() => {
+    adoptFromFichas(decks.lenses.flatMap((lens) => lens.titles));
+  }, [adoptFromFichas, decks]);
+
+  /** A recommended film opens its ficha (the preview until it is the user's): «opened» goes first. */
+  const openReco = (title: CoverflowTitle) => {
+    impressions.push(pickRefOf(title), "opened");
+    impressions.flush();
+    router.push(reco.hrefOf(title));
+  };
 
   useEffect(
     () => () => {
@@ -87,7 +101,10 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
       return map;
     }
     for (const lens of decks.lenses) {
-      const visible = lens.titles.filter((title) => !hidden.has(title.id));
+      // Seen from its ficha while away (FIL-I8): it leaves the deck like a torn stub.
+      const visible = lens.titles.filter(
+        (title) => !hidden.has(title.id) && !(recoLocal[title.id]?.fromFicha && recoLocal[title.id]?.watched),
+      );
       const ranked = rankForNow(visible, {
         now,
         nightEnds: decks.nightEnds,
@@ -173,10 +190,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     onWhy: (title) => setWhyTitle(title),
     onOpenMenu: (title) => setMenuTitle(title),
     onOpened: (title) => impressions.push(pickRefOf(title), "opened"),
-    onOpenReco: (title) => {
-      impressions.push(pickRefOf(title), "opened");
-      reco.openPreview(title);
-    },
+    onOpenReco: openReco,
     markRecoSeen: (title) => reco.markSeen(title),
     onWatched: (title) => {
       impressions.push(pickRefOf(title), "watched");
@@ -315,7 +329,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
           onRemove={handleRemove}
           onOpenReco={(title) => {
             setMenuTitle(null);
-            reco.openPreview(title);
+            openReco(title);
           }}
           onSaveReco={(title) => {
             setMenuTitle(null);
@@ -328,7 +342,6 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
           onNotInterested={handleNotInterested}
           saved={menuTitle ? reco.isSaved(menuTitle.id) : false}
         />
-        <RecoPreviewSheet actions={reco} />
       </div>
     </TonightProvider>
   );
