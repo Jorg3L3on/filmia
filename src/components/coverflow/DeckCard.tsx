@@ -29,6 +29,7 @@ import {
 import { PICKS_SAVE_LABEL } from "@/lib/mark-seen";
 import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
 import type { Platform } from "@/db";
+import { recoPreviewHref } from "@/lib/tonight/reco-card";
 
 const DeckAvailabilityMark = ({
   title,
@@ -226,8 +227,8 @@ export const DeckCard = memo(function DeckCard({
       }
     >
       <Link
-        // A recommendation has no ficha yet: tapping the hero opens its preview sheet.
-        href={isReco ? "/" : `/titulos/${title.id}`}
+        // A recommendation has no Title yet: its ficha is the preview by TMDB (FIL-I8).
+        href={isReco ? (recoPreviewHref(title) ?? "/") : `/titulos/${title.id}`}
         tabIndex={nearFocus ? 0 : -1}
         aria-label={`${title.name}${title.year ? ` (${title.year})` : ""}${
           availabilityLabel ? ` en ${availabilityLabel}` : ""

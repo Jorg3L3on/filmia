@@ -1,17 +1,24 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState, useTransition } from "react";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { pinTonightFromSearch } from "@/app/actions/tonight";
 import type { SearchAddDestination, SearchPendingAction } from "@/components/tmdb-search/search-actions";
 import type { CoverflowTitle } from "@/components/coverflow/types";
+import { handoffKey, readFichaHandoffs } from "@/lib/ficha-handoff";
 import { pulseNav } from "@/lib/fly-to-nav";
+import { previewFichaHref } from "@/lib/title-preview";
 import { recoResultOf } from "@/lib/tonight/reco-card";
 import { showToast } from "@/lib/toast";
 
 /** What we learn about a recommended film once the user acts on it during this visit. */
-export type RecoLocal = { titleId: string; inWatchlist: boolean; watched: boolean };
+export type RecoLocal = {
+  titleId: string;
+  inWatchlist: boolean;
+  watched: boolean;
+  /** Learned from a ficha preview on Back (FIL-I8), not from an action in the sala. */
+  fromFicha?: boolean;
+};
 
 const savedInFilmia = (name: string, created: boolean) =>
   created ? `${name} · se guarda en tu Filmia` : name;
@@ -22,15 +29,12 @@ const savedInFilmia = (name: string, created: boolean) =>
  * sala learns the new `titleId` here.
  */
 export const useRecoActions = () => {
-  const router = useRouter();
-  const [preview, setPreview] = useState<CoverflowTitle | null>(null);
   const [local, setLocal] = useState<Record<string, RecoLocal>>({});
   // Handlers handed to long animations (the stub's flight) keep an old render's closure: read the
   // latest entries from a ref, or «Deshacer» would look for the title under the catalog id.
   const localRef = useRef<Record<string, RecoLocal>>({});
   const [pending, setPending] = useState<{ id: string; action: SearchPendingAction } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [tonightError, setTonightError] = useState<string | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(null);
   const [justPinnedId, setJustPinnedId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -48,7 +52,7 @@ export const useRecoActions = () => {
     return result;
   };
 
-  /** «Quiero ver» / «Vi esto» from the sheet or the card menu. */
+  /** «Quiero ver» / «Vi esto» from the card menu. */
   const add = useCallback(
     (card: CoverflowTitle, destination: SearchAddDestination) => {
       const result = fromCard(card);
@@ -91,7 +95,6 @@ export const useRecoActions = () => {
   const pin = useCallback(
     (card: CoverflowTitle) => {
       const result = fromCard(card);
-      setTonightError(null);
       setPending({ id: card.id, action: "tonight" });
       startTransition(async () => {
         const outcome = await pinTonightFromSearch({
@@ -104,7 +107,7 @@ export const useRecoActions = () => {
         });
         setPending(null);
         if (!outcome.ok) {
-          setTonightError(outcome.error);
+          showToast({ title: "No se pudo reservar", description: outcome.error, variant: "error" });
           return;
         }
         remember(card.id, { titleId: outcome.titleId, inWatchlist: true, watched: false });
@@ -121,40 +124,44 @@ export const useRecoActions = () => {
     [remember],
   );
 
-  /** «Ficha»: the title is created on the way, like opening a result in Buscar. */
-  const openFicha = useCallback(
+  /**
+   * The card's ficha (FIL-I8): the user's own once they acted on it, else the
+   * preview by TMDB, which creates nothing until an action there.
+   */
+  const hrefOf = useCallback(
     (card: CoverflowTitle) => {
-      const known = local[card.id];
+      const known = localRef.current[card.id];
       if (known) {
-        router.push(`/titulos/${known.titleId}`);
-        return;
+        return `/titulos/${known.titleId}`;
       }
-      const result = fromCard(card);
-      setError(null);
-      setPending({ id: card.id, action: "open" });
-      startTransition(async () => {
-        const outcome = await addTitleFromTmdb({
-          tmdbId: result.tmdbId,
-          kind: result.kind,
-          name: result.name,
-          originalName: result.originalName,
-          year: result.year,
-          posterPath: result.posterPath,
-        });
-        setPending(null);
-        if (!outcome.ok) {
-          setError(outcome.error);
-          return;
+      const reco = card.tonight?.reco;
+      return reco ? previewFichaHref(card.kind, reco.tmdbId) : `/titulos/${card.id}`;
+    },
+    [],
+  );
+
+  /**
+   * Back from a ficha preview that saved one of these films: adopt what it
+   * learned so the card says «Ya está en Quiero ver» (or leaves the deck, if seen).
+   */
+  const adoptFromFichas = useCallback(
+    (cards: readonly CoverflowTitle[]) => {
+      const handoffs = readFichaHandoffs();
+      for (const card of cards) {
+        const reco = card.tonight?.reco;
+        const entry = reco ? handoffs[handoffKey(card.kind, reco.tmdbId)] : undefined;
+        if (!entry || localRef.current[card.id]) {
+          continue;
         }
         remember(card.id, {
-          titleId: outcome.titleId,
-          inWatchlist: outcome.addedToWatchlist,
-          watched: outcome.markedWatched,
+          titleId: entry.titleId,
+          inWatchlist: entry.inWatchlist,
+          watched: entry.watched,
+          fromFicha: true,
         });
-        router.push(`/titulos/${outcome.titleId}`);
-      });
+      }
     },
-    [local, remember, router],
+    [remember],
   );
 
   /** «Vi esto» torn from the stub: logs it as seen today; resolves to an error message or null. */
@@ -179,25 +186,16 @@ export const useRecoActions = () => {
     [remember],
   );
 
-  const closePreview = useCallback(() => {
-    setPreview(null);
-    setError(null);
-    setTonightError(null);
-  }, []);
-
   return {
-    preview,
-    openPreview: (card: CoverflowTitle) => setPreview(card),
-    closePreview,
     local,
     pending,
     error,
-    tonightError,
     pinnedId,
     justPinnedId,
     add,
     pin,
-    openFicha,
+    hrefOf,
+    adoptFromFichas,
     markSeen,
     titleIdOf: (cardId: string) => localRef.current[cardId]?.titleId ?? null,
     isSaved: (cardId: string) => Boolean(local[cardId]?.inWatchlist),

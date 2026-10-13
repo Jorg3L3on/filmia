@@ -24,6 +24,7 @@ import { WATCHLIST_SAVE_LABEL } from "@/lib/mark-seen";
 import type { SelectableList } from "@/lib/list-selection";
 import { useSpringFeedback } from "@/lib/motion";
 import type { AddTitleFromTmdbInput } from "@/lib/add-title-from-tmdb";
+import { handoffKey, writeFichaHandoff } from "@/lib/ficha-handoff";
 import { diaryDayLabel, diaryMonthHref, ownedFichaHref, type DiaryLog } from "@/lib/title-preview";
 import { showToast } from "@/lib/toast";
 import { PARA_TI_SLUG } from "@/lib/tonight/select";
@@ -128,7 +129,14 @@ export const TitleFichaActions = ({
   const [isSavingLists, setSavingLists] = useState(false);
 
   /** Preview: the Title now exists, so the ficha becomes the user's own. */
-  const becomeOwned = (newTitleId: string) => {
+  const becomeOwned = (newTitleId: string, learned: { inWatchlist?: boolean; watched?: boolean } = {}) => {
+    if (snapshot) {
+      writeFichaHandoff(handoffKey(snapshot.kind, snapshot.tmdbId), {
+        titleId: newTitleId,
+        inWatchlist: Boolean(learned.inWatchlist),
+        watched: Boolean(learned.watched),
+      });
+    }
     const href = ownedFichaHref(newTitleId);
     retargetCurrentNav(href);
     router.replace(href);
@@ -161,7 +169,7 @@ export const TitleFichaActions = ({
             description: `${titleName} · también en Quiero ver`,
             action: { label: "Ver en Hoy", onClick: () => router.push(HOY_PARA_TI_HREF) },
           });
-          becomeOwned(result.titleId);
+          becomeOwned(result.titleId, { inWatchlist: true });
           return;
         }
         const result = await pinTonightFromFicha(titleId);
@@ -195,7 +203,7 @@ export const TitleFichaActions = ({
           if (!result.ok) {
             throw new Error(result.error);
           }
-          becomeOwned(result.titleId);
+          becomeOwned(result.titleId, { inWatchlist: true });
         } else if (next) {
           await addToWatchlistById(titleId);
         } else {
@@ -299,6 +307,12 @@ export const TitleFichaActions = ({
           if (!result.ok) {
             throw new Error(result.error);
           }
+          const film = previewSnapshot();
+          writeFichaHandoff(handoffKey(film.kind, film.tmdbId), {
+            titleId: result.titleId,
+            inWatchlist: false,
+            watched: true,
+          });
         } else {
           const formData = new FormData();
           if (diaryLog.date) {
@@ -481,7 +495,7 @@ export const TitleFichaActions = ({
                 if (!result.ok) {
                   throw new Error(result.error);
                 }
-                becomeOwned(result.titleId);
+                becomeOwned(result.titleId, { watched: true });
               }
             : undefined
         }
