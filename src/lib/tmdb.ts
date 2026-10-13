@@ -405,6 +405,8 @@ export type TmdbDiscoverOptions = {
   watchMonetizationTypes?: "flatrate";
   /** TMDB genre ids, AND-joined (a title must carry all of them). */
   withGenres?: readonly number[];
+  /** TMDB genre ids to leave out, OR-joined (any of them excludes the title). */
+  withoutGenres?: readonly number[];
   page?: number;
 };
 
@@ -481,6 +483,9 @@ export const discoverTmdb = async (
   }
   if (options.withGenres && options.withGenres.length > 0) {
     params.with_genres = [...options.withGenres].join(",");
+  }
+  if (options.withoutGenres && options.withoutGenres.length > 0) {
+    params.without_genres = [...options.withoutGenres].join("|");
   }
   if (options.withWatchProviders && options.withWatchProviders.length > 0) {
     params.with_watch_providers = [...options.withWatchProviders].join("|");
