@@ -300,8 +300,9 @@ const main = async () => {
   const passes =
     lift >= GATE_AUC_LIFT && gap <= GATE_MAX_GAP && enoughNegatives && beatsBaseRate;
 
+  // Coefficients only matter when a percentage ships.
   const finalModel =
-    chosen.kind === "a"
+    passes && chosen.kind === "a"
       ? fitLogistic(chosen.result.rows.map((row) => row.x), chosen.result.rows.map((row) => row.label))
       : null;
 
