@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { notifyPlatformArrivals } from "@/lib/platform-arrivals-store";
 import { isTmdbConfigured } from "@/lib/tmdb";
 import { refreshStaleWatchProviders } from "@/lib/watch-providers-refresh";
 
@@ -17,7 +18,10 @@ const isAuthorizedCron = (request: Request) => {
   return received.length === expected.length && timingSafeEqual(received, expected);
 };
 
-/** Vercel Cron: keeps «Disponible en MX» current without anyone opening each ficha. */
+/**
+ * Vercel Cron: keeps «Disponible en MX» current without anyone opening each ficha, then
+ * pushes «Llegó a tu plataforma» for the Quiero ver titles that just arrived (FIL-I12).
+ */
 export const GET = async (request: Request) => {
   if (!isAuthorizedCron(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -28,5 +32,12 @@ export const GET = async (request: Request) => {
   }
 
   const summary = await refreshStaleWatchProviders();
-  return NextResponse.json(summary);
+  let alerts: Awaited<ReturnType<typeof notifyPlatformArrivals>> | { error: string };
+  try {
+    alerts = await notifyPlatformArrivals();
+  } catch {
+    // The refresh already landed; a failed push pass must not turn the cron red.
+    alerts = { error: "platform_alerts_failed" };
+  }
+  return NextResponse.json({ ...summary, alerts });
 };
