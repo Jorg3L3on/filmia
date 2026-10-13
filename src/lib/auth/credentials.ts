@@ -13,7 +13,7 @@ export type AuthenticatedUser = {
 };
 
 export type CredentialsResult =
-  | { ok: true; user: AuthenticatedUser; onboarded: boolean }
+  | { ok: true; user: AuthenticatedUser; onboarded: boolean; sessionVersion: number }
   | { ok: false; reason: "invalid" | "google-only" };
 
 export const authenticateCredentials = async (
@@ -57,5 +57,6 @@ export const authenticateCredentials = async (
       name: user.name,
     },
     onboarded: user.onboardedAt != null,
+    sessionVersion: user.sessionVersion,
   };
 };

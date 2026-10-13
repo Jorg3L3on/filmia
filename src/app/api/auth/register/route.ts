@@ -6,6 +6,8 @@ import { setSessionCookie } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth/password";
 import { ensureDefaultLists } from "@/lib/lists";
 import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
+import { RATE_LIMITS, clientIp } from "@/lib/rate-limit";
+import { checkAuthRateLimit, tooManyAttempts } from "@/lib/rate-limit-store";
 import { SIGNUP_FIELD_ORDER, normalizeEmail, validateSignup } from "@/lib/signup-validation";
 
 export const POST = async (request: Request) => {
@@ -23,6 +25,14 @@ export const POST = async (request: Request) => {
       { error: fieldErrors[firstInvalid], fieldErrors },
       { status: 400 },
     );
+  }
+
+  // Counted after validation so typos don't burn the budget; the 409 below counts.
+  const limit = await checkAuthRateLimit([
+    { rule: RATE_LIMITS.signupIp, subject: clientIp(request.headers) },
+  ]);
+  if (!limit.ok) {
+    return tooManyAttempts(limit);
   }
 
   const existing = await db.query.users.findFirst({
@@ -55,6 +65,9 @@ export const POST = async (request: Request) => {
 
   // New accounts go through the Bienvenida first; the claim lifts when they finish or skip it.
   const response = NextResponse.json({ ok: true, onboarding: true, next: ONBOARDING_PATH });
-  await setSessionCookie(response, { id: userId, email, name }, { onboarded: false });
+  await setSessionCookie(response, { id: userId, email, name }, {
+    onboarded: false,
+    sessionVersion: 0,
+  });
   return response;
 };
