@@ -46,8 +46,19 @@ export type AffinityView = AffinityChip & {
  * are missing. A watched film never gets one (the hero shows your rating).
  */
 export type FichaAffinity =
-  | { kind: "prediction"; affinity: AffinityView }
+  | { kind: "prediction"; affinity: AffinityView; catalogId: string }
   | { kind: "cold"; missing: number };
+
+/**
+ * Telemetry (FIL-I9-5): the ficha logs the level it showed as a `PickEvent` of this kind,
+ * with `lens` = `afinidad:<level>` (`~` appended at low confidence). Film only (no
+ * `titleId`): Hoy never reads this kind and the limbo cleanup keeps ignoring it.
+ * `metrics:affinity` compares it later with the rating the user gave.
+ */
+export const AFFINITY_SHOWN_KIND = "affinity_shown";
+
+export const affinityEventLens = (level: AffinityLevel, lowConfidence: boolean) =>
+  `afinidad:${level}${lowConfidence ? "~" : ""}`;
 
 type OwnedEntry = { watched: boolean; rating: number | null };
 
@@ -278,7 +289,7 @@ export const fichaAffinity = async (
     return { kind: "cold", missing: Math.max(1, AFFINITY_MIN_RATED - user.ratedCount) };
   }
   const affinity = affinityForCatalogRow(user, row);
-  return affinity ? { kind: "prediction", affinity } : null;
+  return affinity ? { kind: "prediction", affinity, catalogId: row.id } : null;
 };
 
 /** The user's rating of a film they watched, for Buscar rows («vistas muestran tu nota»). */

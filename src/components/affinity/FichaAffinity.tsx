@@ -1,6 +1,7 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { recordAffinityShown } from "@/app/actions/affinity";
 import { AffinityChip } from "@/components/affinity/AffinityChip";
 import { Sheet, SheetHandle } from "@/components/Sheet";
 import type { FichaAffinity as FichaAffinityState } from "@/lib/affinity-store";
@@ -20,6 +21,14 @@ type FichaAffinityProps = {
 export const FichaAffinity = ({ state, titleName }: FichaAffinityProps) => {
   const [open, setOpen] = useState(false);
   const headingId = useId();
+
+  // Telemetry (FIL-I9-5): the level this ficha showed, to compare with your rating later.
+  const shown = state.kind === "prediction" ? state : null;
+  useEffect(() => {
+    if (shown) {
+      void recordAffinityShown(shown.catalogId, shown.affinity.level, shown.affinity.lowConfidence);
+    }
+  }, [shown?.catalogId, shown?.affinity.level, shown?.affinity.lowConfidence]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (state.kind === "cold") {
     return (
