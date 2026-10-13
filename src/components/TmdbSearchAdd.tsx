@@ -24,6 +24,7 @@ import {
 } from "@/components/tmdb-search/TmdbKindFilterChips";
 import { usePersonFilmography } from "@/components/tmdb-search/usePersonFilmography";
 import { TmdbSearchForm } from "@/components/tmdb-search/TmdbSearchForm";
+import { useSearchFacts } from "@/components/tmdb-search/useSearchFacts";
 import { useSearchRecents } from "@/components/tmdb-search/useSearchRecents";
 import { useTmdbSearchAdd } from "@/components/tmdb-search/useTmdbSearchAdd";
 import type { StartDirector } from "@/lib/buscar-start";
@@ -135,8 +136,10 @@ export const TmdbSearchAdd = ({
   const [menu, setMenu] = useState<SearchMenuTarget | null>(null);
   const closeMenu = useCallback(() => setMenu(null), []);
   const [listsFor, setListsFor] = useState<TmdbCatalogResult | null>(null);
+  const factsFor = useSearchFacts(visibleResults);
   const rows: SearchRowWiring = {
     hrefFor,
+    factsFor,
     onOpen: () => rememberQuery(),
     onMenu: (result, anchor) => {
       rememberQuery();
@@ -325,6 +328,7 @@ export const TmdbSearchAdd = ({
         listsFor={listsFor}
         onCloseLists={() => setListsFor(null)}
         statusOf={statusOf}
+        factsFor={factsFor}
         logMode={logMode}
         logDate={watchedDate}
         pinnedTitleId={pinnedTitleId}

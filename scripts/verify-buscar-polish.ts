@@ -39,6 +39,14 @@ const hook = read("src/components/tmdb-search/useTmdbSearchAdd.ts");
 assert(!hook.includes("handleOpen"), "Opening a ficha never creates a Title (the old FICHA button did)");
 assert(read("src/components/tmdb-search/SearchRowMenu.tsx").includes("createPortal"), "Mantener A: the menu is anchored over a blurred list");
 
+// FIL-I8-4 · row A «Línea de datos»: IMDb · premio · plataforma from the shared Catalog.
+assert(row.includes("SearchFactsLine") && row.includes("ImdbBadge") && row.includes("LaurelIcon"), "Rows show IMDb, the award and the platform (row A)");
+const facts = read("src/app/actions/search-facts.ts");
+assert(
+  facts.includes("pickEnrichmentCandidates") && facts.includes("takeEnrichBudget") && facts.includes("scheduleAfterResponse"),
+  "Unknown films are enriched after the response, capped per search and per user",
+);
+
 const page = read("src/app/buscar/page.tsx");
 assert(page.includes("getFavoriteDirectors") && page.includes("loadPersonView"), "Page loads start directors and keeps the person view");
 

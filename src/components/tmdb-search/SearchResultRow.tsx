@@ -215,15 +215,15 @@ const SearchFactsLine = ({ facts }: { facts: SearchResultFacts | null }) => {
   }
   if (facts.awardLabel) {
     bits.push(
-      <span key="award" className="inline-flex min-w-0 items-center gap-1 truncate text-xs text-star">
+      <span key="award" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs text-star">
         <LaurelIcon />
-        <span className="truncate">{facts.awardLabel}</span>
+        {facts.awardLabel}
       </span>,
     );
   }
   if (facts.platform) {
     bits.push(
-      <span key="platform" className="shrink-0 truncate text-xs text-paper/75">
+      <span key="platform" className="min-w-0 truncate text-xs text-paper/75">
         {facts.platform}
       </span>,
     );
@@ -234,7 +234,7 @@ const SearchFactsLine = ({ facts }: { facts: SearchResultFacts | null }) => {
   return (
     <span className="flex h-4 min-w-0 items-center gap-1.5 overflow-hidden">
       {bits.map((bit, index) => (
-        <span key={index} className="inline-flex min-w-0 items-center gap-1.5">
+        <span key={index} className={cn("inline-flex items-center gap-1.5", index === bits.length - 1 ? "min-w-0" : "shrink-0")}>
           {index > 0 ? <span className="text-xs text-faint" aria-hidden="true">·</span> : null}
           {bit}
         </span>

@@ -7,6 +7,7 @@ import { SearchListPicker } from "@/components/tmdb-search/SearchListPicker";
 import type { SearchRowStatus } from "@/components/tmdb-search/SearchResultRow";
 import { SearchRowMenu, type SearchMenuTarget } from "@/components/tmdb-search/SearchRowMenu";
 import type { SelectableList } from "@/lib/list-selection";
+import type { SearchResultFacts } from "@/lib/search-result-facts";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import { canOfferTonightPin } from "@/lib/tonight/pin";
 
@@ -16,6 +17,7 @@ type SearchShortcutsProps = {
   listsFor: TmdbCatalogResult | null;
   onCloseLists: () => void;
   statusOf: (result: TmdbCatalogResult) => { titleId: string | null; status: SearchRowStatus };
+  factsFor: (result: TmdbCatalogResult) => SearchResultFacts | null;
   logMode: boolean;
   logDate: string | null;
   pinnedTitleId: string | null;
@@ -41,6 +43,7 @@ export const SearchShortcuts = ({
   listsFor,
   onCloseLists,
   statusOf,
+  factsFor,
   logMode,
   logDate,
   pinnedTitleId,
@@ -71,7 +74,7 @@ export const SearchShortcuts = ({
         target={menu}
         titleId={held?.titleId ?? null}
         status={held?.status ?? null}
-        facts={null}
+        facts={menu ? factsFor(menu.result) : null}
         logMode={logMode}
         logDate={logDate}
         canPin={canOfferTonightPin({ watched: held?.status === "watched", logMode })}
