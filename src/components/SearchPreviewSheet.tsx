@@ -18,8 +18,9 @@ type LocalTitle = {
   watched: boolean;
 };
 
-export type SearchAddDestination = "watchlist" | "watched";
-export type SearchPendingAction = SearchAddDestination | "open" | "lists" | "tonight";
+import type { SearchAddDestination, SearchPendingAction } from "@/components/tmdb-search/search-actions";
+
+export type { SearchAddDestination, SearchPendingAction };
 
 /** «Ver esta noche» in the sheet; omitted for watched titles and while logging. */
 export type SearchTonightAction = {

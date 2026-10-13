@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState, useTransition } from "react";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { pinTonightFromSearch } from "@/app/actions/tonight";
-import type { SearchAddDestination, SearchPendingAction } from "@/components/SearchPreviewSheet";
+import type { SearchAddDestination, SearchPendingAction } from "@/components/tmdb-search/search-actions";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { pulseNav } from "@/lib/fly-to-nav";
 import { recoResultOf } from "@/lib/tonight/reco-card";
