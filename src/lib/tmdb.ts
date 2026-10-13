@@ -23,6 +23,12 @@ import {
   type TmdbTvDetailsPayload,
 } from "@/lib/tmdb-details";
 import type { TmdbPerson } from "@/lib/tmdb-people";
+import {
+  pickTrailer,
+  TRAILER_VIDEO_LANGUAGES,
+  type TmdbVideosPayload,
+  type Trailer,
+} from "@/lib/tmdb-trailer";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
@@ -539,6 +545,23 @@ export const getTmdbExternalIds = async (
   const data = await tmdbFetch<TmdbExternalIds>(`/${segment}/${tmdbId}/external_ids`);
   return data.imdb_id ?? null;
 };
+
+/** The ficha's trailer (FIL-I15-1); null without TMDB, on errors or when there is none. */
+export const getTmdbTrailer = cache(async (tmdbId: number, kind: TitleKind): Promise<Trailer | null> => {
+  if (!isTmdbConfigured()) {
+    return null;
+  }
+  const segment = kind === "SERIES" ? "tv" : "movie";
+  try {
+    return pickTrailer(
+      await tmdbFetch<TmdbVideosPayload>(`/${segment}/${tmdbId}/videos`, {
+        include_video_language: TRAILER_VIDEO_LANGUAGES,
+      }),
+    );
+  } catch {
+    return null;
+  }
+});
 
 export const tmdbProviderLogoUrl = (
   logoPath: string | null | undefined,
