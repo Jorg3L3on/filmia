@@ -8,6 +8,7 @@ import { loadOgMark, OG_COLORS, OgFrame, OgPoster, ogImageSrc } from "@/componen
 export const alt = "Reseña en Filmia";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+export const dynamic = "force-dynamic";
 
 /** The review card (FIL-I15-4): what a chat or a social network shows for the link, and what Compartir sends. */
 export default async function Image({ params }: { params: Promise<{ token: string }> }) {

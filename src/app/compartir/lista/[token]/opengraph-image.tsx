@@ -7,6 +7,7 @@ import { loadOgMark, OG_COLORS, OgFrame, OgPoster, ogImageSrc } from "@/componen
 export const alt = "Lista en Filmia";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+export const dynamic = "force-dynamic";
 
 const POSTERS = 5;
 

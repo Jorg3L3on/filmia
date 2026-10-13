@@ -21,3 +21,14 @@ export const excerpt = (text: string | null | undefined, max: number) => {
 };
 
 export const STAR_PATH = "m12 2.8 2.83 5.73 6.33.92-4.58 4.46 1.08 6.3L12 17.24l-5.66 2.97 1.08-6.3-4.58-4.46 6.33-.92Z";
+
+/** What Compartir sends next to the card and the link: «Athena · ★ 4.0 — «review…»». */
+export const reviewShareText = (name: string, rating: number | null, review: string | null) => {
+  const stars = ratingToStars(rating);
+  const head = stars == null ? name : `${name} · ★ ${stars.toFixed(1)}`;
+  const quote = excerpt(review, 140);
+  return quote ? `${head} — «${quote}»` : head;
+};
+
+export const listShareText = (name: string, total: number) =>
+  `${name} · ${total === 1 ? "1 título" : `${total} títulos`} en Filmia`;

@@ -19,6 +19,7 @@ import { FichaVisit } from "@/components/FichaVisit";
 import { DiaryDayChip } from "@/components/ficha/DiaryDayChip";
 import { FichaTopBar } from "@/components/ficha/FichaTopBar";
 import { requireUserId } from "@/lib/session";
+import { sharePath } from "@/lib/share-token";
 import { getPinnedTonightTitleId } from "@/lib/tonight-store";
 import { fichaAffinity } from "@/lib/affinity-store";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
@@ -200,6 +201,7 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
           rating={title.rating}
           review={title.review}
           platform={title.platform}
+          sharePath={sharePath("resena", title.id)}
         />
       ) : null}
 
