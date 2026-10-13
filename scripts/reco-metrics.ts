@@ -46,6 +46,7 @@ const main = async () => {
     from "PickEvent" e
     join "Title" t on t."userId" = e."userId" and t."catalogId" = e."catalogId"
     where e."titleId" is null
+      and e.kind <> 'affinity_shown'
       and e."createdAt" > now() - make_interval(days => ${days})
       and t."createdAt" >= e."createdAt"`);
   const shownFilms = await db.execute(sql`

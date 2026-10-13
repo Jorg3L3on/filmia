@@ -1,3 +1,6 @@
+import { Suspense, type ReactNode } from "react";
+import { AffinityChipSkeleton } from "@/components/affinity/AffinityChip";
+import { FichaAffinityBlock } from "@/components/affinity/FichaAffinityBlock";
 import { PeopleRail } from "@/components/ficha/PeopleRail";
 import { TitleFichaActions } from "@/components/TitleFichaActions";
 import { TitleHero } from "@/components/TitleHero";
@@ -11,6 +14,7 @@ import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { titleListMemberships } from "@/lib/list-membership";
 import { formatRuntime, TITLE_KIND_LABEL } from "@/lib/labels";
 import { isTmdbConfigured, tmdbBackdropUrl, type TmdbTitleExtras } from "@/lib/tmdb";
+import type { AffinityCatalogRow, FichaAffinity } from "@/lib/affinity-store";
 import type { DiaryLog } from "@/lib/title-preview";
 import { peopleRailItems, type TmdbPerson } from "@/lib/tmdb-people";
 import type { WatchProvidersResult } from "@/lib/watch-providers-cache";
@@ -57,7 +61,7 @@ export type HeroSource = Pick<
 export const heroProps = (
   title: HeroSource,
   extras: TmdbTitleExtras | null | undefined,
-  options: { posterKey?: string; imdbPending?: boolean } = {},
+  options: { posterKey?: string; imdbPending?: boolean; affinity?: ReactNode } = {},
 ) => {
   const posterPath = title.posterPath ?? extras?.posterPath ?? null;
   return {
@@ -80,24 +84,69 @@ export const heroProps = (
     rating: title.rating,
     watched: Boolean(title.watchedAt),
     posterAmbient: title.posterAmbient,
+    affinity: options.affinity,
   };
 };
 
 export const TitleHeroFallback = ({
   title,
   extras,
+  affinity,
 }: {
   title: TitleDetail;
   extras?: TmdbTitleExtras | null;
-}) => <TitleHero {...heroProps(title, extras)} />;
+  affinity?: ReactNode;
+}) => <TitleHero {...heroProps(title, extras, { affinity })} />;
 
 export const TitleHeroBlock = async ({
   title,
   extrasPromise,
+  affinity,
 }: {
   title: TitleDetail;
   extrasPromise: Promise<TmdbTitleExtras | null>;
-}) => <TitleHero {...heroProps(title, await extrasPromise)} />;
+  affinity?: ReactNode;
+}) => <TitleHero {...heroProps(title, await extrasPromise, { affinity })} />;
+
+/** The Catalog fields «Para ti» reads, from a flat ficha title (owned or preview). */
+export const affinityRowOf = (title: {
+  catalogId: string;
+  tmdbId: number;
+  kind: TitleDetail["kind"];
+  name: string;
+  year: number | null;
+  imdbRating: number | null;
+  imdbVotes: number | null;
+  tmdbGenres: unknown;
+  tmdbKeywords: unknown;
+  tmdbPeople: unknown;
+  originalLanguage: string | null;
+}): AffinityCatalogRow => ({
+  id: title.catalogId,
+  tmdbId: title.tmdbId,
+  kind: title.kind,
+  name: title.name,
+  year: title.year,
+  imdbRating: title.imdbRating,
+  imdbVotes: title.imdbVotes,
+  tmdbGenres: title.tmdbGenres,
+  tmdbKeywords: title.tmdbKeywords,
+  tmdbPeople: title.tmdbPeople,
+  originalLanguage: title.originalLanguage,
+});
+
+/** The chip, streamed in its own boundary so the hero never waits for the profile. */
+export const AffinitySlot = ({
+  promise,
+  titleName,
+}: {
+  promise: Promise<FichaAffinity | null>;
+  titleName: string;
+}) => (
+  <Suspense fallback={<AffinityChipSkeleton />}>
+    <FichaAffinityBlock promise={promise} titleName={titleName} />
+  </Suspense>
+);
 
 export const TitleActionsBlock = async ({
   title,

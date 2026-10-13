@@ -34,6 +34,8 @@ describe("factsFromCatalog", () => {
       runtimeMinutes: 116,
       genre: "Drama",
       platform: "Netflix",
+      affinity: null,
+      watched: null,
       pending: false,
     });
   });

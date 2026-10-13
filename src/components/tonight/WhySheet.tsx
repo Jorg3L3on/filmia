@@ -19,6 +19,7 @@ type WhySheetProps = {
 const ICON: Record<ReasonKind, "spark" | "clock" | "hourglass" | "note" | "star" | "tv"> = {
   taste_anchor: "spark",
   taste_person: "spark",
+  taste_genre: "spark",
   quality: "star",
   fit: "clock",
   fit_over: "clock",

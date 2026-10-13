@@ -8,7 +8,9 @@ import { TitleActionsSkeleton, TitleProvidersSkeleton } from "@/components/PageS
 import { TitleFichaActions } from "@/components/TitleFichaActions";
 import { TitleHero } from "@/components/TitleHero";
 import { TitleSynopsis } from "@/components/TitleSynopsis";
+import type { ReactNode } from "react";
 import type { CatalogRow } from "@/db";
+import { fichaAffinity } from "@/lib/affinity-store";
 import type { TmdbTitleExtras } from "@/lib/tmdb";
 import {
   getOwnedTitleIdByTmdb,
@@ -33,6 +35,8 @@ import {
 } from "@/lib/title-preview";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 import {
+  AffinitySlot,
+  affinityRowOf,
   heroProps,
   TitlePeopleBlock,
   TitleProvidersBlock,
@@ -86,7 +90,7 @@ export default async function TitlePreviewPage({ params, searchParams }: Preview
 
   return (
     <Suspense fallback={<TitleLoading />}>
-      <TitlePreview tmdbId={parsed.tmdbId} kind={parsed.kind} diaryLog={diaryLog} />
+      <TitlePreview tmdbId={parsed.tmdbId} kind={parsed.kind} diaryLog={diaryLog} userId={userId} />
     </Suspense>
   );
 }
@@ -95,10 +99,12 @@ const TitlePreview = async ({
   tmdbId,
   kind,
   diaryLog,
+  userId,
 }: {
   tmdbId: number;
   kind: CatalogRow["kind"];
   diaryLog: DiaryLog | null;
+  userId: string;
 }) => {
   const row = await resolvePreviewCatalog(tmdbId, kind);
   if (!row) {
@@ -115,6 +121,13 @@ const TitlePreview = async ({
   const peoplePromise = resolveTitlePeople(title);
   const providersPromise = getWatchProvidersForTitle(title);
   const platformsPromise = getUserStreamingPlatforms();
+  // «Para ti» (FIL-I9) once the row has its genres, keywords and people (same lookup as the chips).
+  const affinity = (
+    <AffinitySlot
+      promise={fullPromise.then((full) => fichaAffinity(userId, affinityRowOf(full)))}
+      titleName={title.name}
+    />
+  );
   const relatedPromise = fullPromise.then((full) =>
     getRelatedTitles("", parseStoredTmdbGenres(full.tmdbGenres).map((genre) => genre.id)),
   );
@@ -124,13 +137,14 @@ const TitlePreview = async ({
       <FichaVisit titleId={null} name={title.name} />
       <section className="ficha-head" aria-label={title.name}>
         <FichaTopBar trailing={diaryLog ? <DiaryDayChip log={diaryLog} /> : undefined} />
-        <Suspense fallback={<TitleHero {...heroProps(title, null, { posterKey, imdbPending: pending })} />}>
+        <Suspense fallback={<TitleHero {...heroProps(title, null, { posterKey, imdbPending: pending, affinity })} />}>
           <PreviewHero
             title={title}
             extrasPromise={extrasPromise}
             fullPromise={fullPromise}
             posterKey={posterKey}
             pending={pending}
+            affinity={affinity}
           />
         </Suspense>
         <div className="ficha-body-a space-y-4">
@@ -169,17 +183,19 @@ const PreviewHero = async ({
   fullPromise,
   posterKey,
   pending,
+  affinity,
 }: {
   title: PreviewTitle;
   extrasPromise: Promise<TmdbTitleExtras>;
   fullPromise: Promise<PreviewTitle>;
   posterKey: string;
   pending: boolean;
+  affinity: ReactNode;
 }) => {
   const extras = await extrasPromise;
   return (
-    <Suspense fallback={<TitleHero {...heroProps(title, extras, { posterKey, imdbPending: pending })} />}>
-      <PreviewHeroFull extras={extras} fullPromise={fullPromise} posterKey={posterKey} />
+    <Suspense fallback={<TitleHero {...heroProps(title, extras, { posterKey, imdbPending: pending, affinity })} />}>
+      <PreviewHeroFull extras={extras} fullPromise={fullPromise} posterKey={posterKey} affinity={affinity} />
     </Suspense>
   );
 };
@@ -188,11 +204,13 @@ const PreviewHeroFull = async ({
   extras,
   fullPromise,
   posterKey,
+  affinity,
 }: {
   extras: TmdbTitleExtras;
   fullPromise: Promise<PreviewTitle>;
   posterKey: string;
-}) => <TitleHero {...heroProps(await fullPromise, extras, { posterKey })} />;
+  affinity: ReactNode;
+}) => <TitleHero {...heroProps(await fullPromise, extras, { posterKey, affinity })} />;
 
 const PreviewSynopsis = async ({ extrasPromise }: { extrasPromise: Promise<TmdbTitleExtras> }) => (
   <TitleSynopsis text={(await extrasPromise).overview ?? null} />

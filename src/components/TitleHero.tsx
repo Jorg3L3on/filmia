@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { ImdbBadge } from "@/components/ImdbBadge";
 import { PosterImage } from "@/components/PosterImage";
 import { SharedPoster } from "@/components/SharedPoster";
@@ -27,6 +27,8 @@ type TitleHeroProps = {
   watched: boolean;
   /** Catalog.posterAmbient («r g b»): the poster's light on the backdrop. */
   posterAmbient?: string | null;
+  /** «Para ti» (FIL-I9): streamed chip next to the IMDb one (unwatched films only). */
+  affinity?: ReactNode;
 };
 
 const ambientStyle = (posterAmbient: string | null | undefined) =>
@@ -56,6 +58,7 @@ export const TitleHero = ({
   rating,
   watched,
   posterAmbient,
+  affinity,
 }: TitleHeroProps) => {
   const restBits = [runtimeLabel, kindLabel, genreLabel].filter(Boolean);
 
@@ -126,6 +129,7 @@ export const TitleHero = ({
               Aún sin calificación en IMDb
             </span>
           )}
+          {affinity}
           {awardLabel ? (
             <span className="inline-flex h-7 max-w-full items-center gap-1 truncate rounded-full border border-star/35 bg-star/10 px-2.5 text-xs font-medium text-star">
               <LaurelIcon />

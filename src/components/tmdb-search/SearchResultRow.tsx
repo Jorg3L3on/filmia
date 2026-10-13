@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useRef, type PointerEvent, type ReactNode } from "react";
+import { AffinityChip } from "@/components/affinity/AffinityChip";
 import { ImdbBadge } from "@/components/ImdbBadge";
 import { PosterImage } from "@/components/PosterImage";
 import { SharedPoster } from "@/components/SharedPoster";
 import { LaurelIcon } from "@/components/watchlist/icons";
 import { cn } from "@/lib/cn";
-import { formatRuntime, TITLE_KIND_LABEL } from "@/lib/labels";
+import { formatRuntime, formatStarScore, TITLE_KIND_LABEL } from "@/lib/labels";
 import { useLongPress } from "@/lib/motion";
 import type { SearchResultFacts } from "@/lib/search-result-facts";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
@@ -193,7 +194,7 @@ export const SearchResultRowBody = ({
 };
 
 /**
- * Row A's data line: IMDb · laurel · platform in plain text. Nothing without
+ * Row A's data line: IMDb · Para ti (or your rating) · laurel · platform in plain text. Nothing without
  * data (the ficha says «Aún sin calificación»; a row stays quiet). While the
  * Catalog fills, two pills hold the line's height so nothing jumps.
  */
@@ -212,6 +213,25 @@ const SearchFactsLine = ({ facts }: { facts: SearchResultFacts | null }) => {
   const bits: ReactNode[] = [];
   if (facts.imdbRating != null) {
     bits.push(<ImdbBadge key="imdb" rating={facts.imdbRating} compact />);
+  }
+  // «Para ti» (FIL-I9): a watched film shows your rating, never a prediction.
+  if (facts.watched?.rating != null) {
+    bits.push(
+      <span key="mine" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-semibold text-star">
+        ★ {formatStarScore(facts.watched.rating)}
+        <span className="font-normal text-fog">tu nota</span>
+      </span>,
+    );
+  } else if (facts.affinity) {
+    bits.push(
+      <AffinityChip
+        key="affinity"
+        level={facts.affinity.level}
+        label={facts.affinity.label}
+        lowConfidence={facts.affinity.lowConfidence}
+        className="shrink-0"
+      />,
+    );
   }
   if (facts.awardLabel) {
     bits.push(
