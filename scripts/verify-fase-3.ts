@@ -92,10 +92,11 @@ const run = () => {
       read("src/components/TmdbSearchUnavailable.tsx").includes("TMDB_UNAVAILABLE_COPY"),
     "Buscar degrades when TMDB is missing (server island)",
   );
-  const preview = read("src/components/SearchPreviewSheet.tsx");
+  // FIL-I8: the preview sheet became the ficha preview (/titulos/tmdb/[kind]/[tmdbId]).
+  const preview = read("src/app/titulos/tmdb/[kind]/[tmdbId]/page.tsx");
   assert(
-    preview.includes("PosterImage") && preview.includes("aspect-[16/9]"),
-    "Search preview hero includes poster + backdrop polish",
+    preview.includes("TitleHero") && preview.includes("resolvePreviewCatalog"),
+    "A search result opens the full ficha (poster + backdrop) without creating a Title",
   );
 
   const missing = new TmdbRequestError(
@@ -270,12 +271,11 @@ const run = () => {
       searchResults.includes("SearchResultsSkeleton"),
     "Buscar results use hover/press, danger-well retry, and in-flight skeleton",
   );
+  // FIL-I8: no preview sheet; the held row's menu carries the press/hover tokens.
+  const rowMenu = read("src/components/tmdb-search/SearchRowMenu.tsx");
   assert(
-    preview.includes("SheetHandle") &&
-      preview.includes("sm:hidden") &&
-      preview.includes("press-scale") &&
-      preview.includes("var(--duration-hover)"),
-    "Search preview sheet matches MarkWatched chrome + press/hover tokens",
+    rowMenu.includes("role=\"menuitem\"") && rowMenu.includes("var(--duration-hover)") && searchRow.includes("press-scale"),
+    "Buscar's held-row menu and rows keep the press/hover tokens",
   );
   assert(
     read("src/components/EmptyState.tsx").includes('variant === "buscar"') &&

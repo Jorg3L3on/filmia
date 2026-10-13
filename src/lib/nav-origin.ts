@@ -125,6 +125,19 @@ export const recordVisit = (stack: readonly NavEntry[], href: string): VisitResu
   };
 };
 
+/**
+ * The page turns into another URL in place (a ficha preview becomes the user's
+ * ficha once an action creates the Title): the top entry takes the new href and
+ * keeps its label and scroll, so the follow-up `router.replace` is not a push.
+ */
+export const retargetTop = (stack: readonly NavEntry[], href: string): NavEntry[] => {
+  const top = stack.at(-1);
+  if (!top || !isTrackedHref(href)) {
+    return [...stack];
+  }
+  return [...stack.slice(0, -1), { ...top, href }];
+};
+
 /** The page names itself («Hoy · Terror», «Obsesión», «Listas · Para Halloween»). */
 export const labelCurrent = (stack: readonly NavEntry[], href: string, label: string): NavEntry[] => {
   const top = stack.at(-1);

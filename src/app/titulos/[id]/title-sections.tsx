@@ -11,6 +11,7 @@ import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { titleListMemberships } from "@/lib/list-membership";
 import { formatRuntime, TITLE_KIND_LABEL } from "@/lib/labels";
 import { isTmdbConfigured, tmdbBackdropUrl, type TmdbTitleExtras } from "@/lib/tmdb";
+import type { DiaryLog } from "@/lib/title-preview";
 import { peopleRailItems, type TmdbPerson } from "@/lib/tmdb-people";
 import type { WatchProvidersResult } from "@/lib/watch-providers-cache";
 import type { getAssignableLists, getRelatedTitles, getTitleById, getUserStreamingPlatforms } from "@/lib/queries";
@@ -34,10 +35,33 @@ const titleMembership = (title: TitleDetail) => {
   };
 };
 
-const heroProps = (title: TitleDetail, extras: TmdbTitleExtras | null | undefined) => {
+/** What the hero reads: a user's Title or a ficha preview's catalog row (FIL-I8). */
+export type HeroSource = Pick<
+  TitleDetail,
+  | "id"
+  | "name"
+  | "originalName"
+  | "posterPath"
+  | "backdropPath"
+  | "year"
+  | "runtimeMinutes"
+  | "kind"
+  | "tmdbGenres"
+  | "imdbRating"
+  | "awards"
+  | "rating"
+  | "watchedAt"
+  | "posterAmbient"
+>;
+
+export const heroProps = (
+  title: HeroSource,
+  extras: TmdbTitleExtras | null | undefined,
+  options: { posterKey?: string; imdbPending?: boolean } = {},
+) => {
   const posterPath = title.posterPath ?? extras?.posterPath ?? null;
   return {
-    titleId: title.id,
+    titleId: options.posterKey ?? title.id,
     name: title.name,
     originalName: title.originalName,
     posterPath,
@@ -51,6 +75,7 @@ const heroProps = (title: TitleDetail, extras: TmdbTitleExtras | null | undefine
     kindLabel: TITLE_KIND_LABEL[title.kind],
     genreLabel: parseStoredTmdbGenres(title.tmdbGenres)[0]?.name ?? extras?.genres[0]?.name ?? null,
     imdbRating: title.imdbRating,
+    imdbPending: options.imdbPending ?? false,
     awardLabel: awardChipLabel(title.awards),
     rating: title.rating,
     watched: Boolean(title.watchedAt),
@@ -78,10 +103,12 @@ export const TitleActionsBlock = async ({
   title,
   listsPromise,
   pinnedPromise,
+  diaryLog = null,
 }: {
   title: TitleDetail;
   listsPromise: Promise<AssignableLists>;
   pinnedPromise: Promise<string | null>;
+  diaryLog?: DiaryLog | null;
 }) => {
   const [assignableLists, pinnedTitleId] = await Promise.all([listsPromise, pinnedPromise]);
   const { memberListIds, inWatchlist, listCount } = titleMembership(title);
@@ -89,6 +116,7 @@ export const TitleActionsBlock = async ({
   return (
     <TitleFichaActions
       titleId={title.id}
+      diaryLog={diaryLog}
       titleName={title.name}
       watched={Boolean(title.watchedAt)}
       inWatchlist={inWatchlist}

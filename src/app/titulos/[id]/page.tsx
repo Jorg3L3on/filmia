@@ -16,12 +16,14 @@ import {
   getUserStreamingPlatforms,
 } from "@/lib/queries";
 import { FichaVisit } from "@/components/FichaVisit";
+import { DiaryDayChip } from "@/components/ficha/DiaryDayChip";
 import { FichaTopBar } from "@/components/ficha/FichaTopBar";
 import { requireUserId } from "@/lib/session";
 import { getPinnedTonightTitleId } from "@/lib/tonight-store";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { resolveTitleExtras, storedTitleExtras } from "@/lib/title-extras";
 import { resolveTitlePeople } from "@/lib/title-people";
+import { parseDiaryLog } from "@/lib/title-preview";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 import TitleLoading from "./loading";
 import {
@@ -39,6 +41,7 @@ export const dynamic = "force-dynamic";
 
 type TitlePageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ fecha?: string | string[]; destino?: string | string[] }>;
 };
 
 const buildFichaDescription = (
@@ -82,20 +85,17 @@ export const generateMetadata = async ({
   };
 };
 
-export default function TitleDetailPage({ params }: TitlePageProps) {
+export default function TitleDetailPage({ params, searchParams }: TitlePageProps) {
   return (
     <Suspense fallback={<TitleLoading />}>
-      <TitleDetail params={params} />
+      <TitleDetail params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
-const TitleDetail = async ({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) => {
+const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
   const { id } = await params;
+  const diaryLog = parseDiaryLog(await searchParams);
   const title = await getTitleById(id);
 
   if (!title) {
@@ -120,7 +120,7 @@ const TitleDetail = async ({
       <FichaVisit titleId={title.id} name={title.name} />
       {/* Dirección A «Cartel»: hero, synopsis and actions share one grid (poster left on desktop). */}
       <section className="ficha-head" aria-label={title.name}>
-        <FichaTopBar />
+        <FichaTopBar trailing={diaryLog ? <DiaryDayChip log={diaryLog} /> : undefined} />
         <Suspense fallback={<TitleHeroFallback title={title} extras={storedTitleExtras(title)} />}>
           <TitleHeroBlock title={title} extrasPromise={extrasPromise} />
         </Suspense>
@@ -129,7 +129,12 @@ const TitleDetail = async ({
             <TitleSynopsisBlock storedOverview={title.overview} extrasPromise={extrasPromise} />
           </Suspense>
           <Suspense fallback={<TitleActionsSkeleton />}>
-            <TitleActionsBlock title={title} listsPromise={listsPromise} pinnedPromise={pinnedPromise} />
+            <TitleActionsBlock
+              title={title}
+              listsPromise={listsPromise}
+              pinnedPromise={pinnedPromise}
+              diaryLog={diaryLog}
+            />
           </Suspense>
         </div>
       </section>

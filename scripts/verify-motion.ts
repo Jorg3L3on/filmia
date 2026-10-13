@@ -16,7 +16,7 @@ const css = read("src/app/globals.css");
 const ui = read("src/lib/ui.ts");
 const motion = read("src/lib/motion.ts");
 const motionDoc = read("docs/motion.md");
-const searchSheet = read("src/components/SearchPreviewSheet.tsx");
+const searchShortcuts = read("src/components/tmdb-search/SearchShortcuts.tsx");
 const addToList = read("src/components/AddTitleToListCta.tsx");
 const ratingSheet = read("src/components/RatingSheet.tsx");
 const filtersSheet = read("src/components/CatalogMoreFilters.tsx");
@@ -55,7 +55,7 @@ assert(
   "Sheet drag-dismiss is on by default",
 );
 for (const [name, src] of [
-  ["SearchPreviewSheet", searchSheet],
+  ["SearchShortcuts", searchShortcuts],
   ["AddTitleToListCta", addToList],
   ["RatingSheet", ratingSheet],
   ["CatalogMoreFilters", filtersSheet],
@@ -180,7 +180,7 @@ assert(
 );
 assert(
   /\.tonight-pin\.press-scale \{[^}]*--duration-press\) var\(--spring\)[^}]*--duration-tab\) var\(--ease-out\)/.test(css) &&
-    searchSheet.includes("celebrate && \"spring-pop\"") &&
+    read("src/components/TitleFichaActions.tsx").includes("justPinned && \"spring-pop\"") &&
     motionDoc.includes(".tonight-pin"),
   "«Ver esta noche»: press spring + ease-out light; the moon pops only right after the tap; documented",
 );

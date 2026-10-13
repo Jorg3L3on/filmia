@@ -23,6 +23,7 @@
     "db:backfill-tonight": "tsx scripts/backfill-tonight.ts",
     "db:backfill-awards": "tsx scripts/backfill-awards.ts",
     "db:backfill-people": "tsx scripts/backfill-people.ts",
+    "db:clean-limbo": "tsx scripts/clean-limbo-titles.ts",
     "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs",
     "eval:tonight": "tsx scripts/eval-tonight.ts",
     "preview:recos": "tsx scripts/preview-recos.ts",

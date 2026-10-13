@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { BackButton } from "@/components/BackButton";
 
 const COLLAPSE_AFTER_PX = 140;
@@ -11,7 +11,7 @@ const COLLAPSE_AFTER_PX = 140;
  * scrolling up opens it again (Morphing Button / the Shop back-button spell).
  * On desktop it sits in the flow above the hero.
  */
-export const FichaTopBar = () => {
+export const FichaTopBar = ({ trailing }: { trailing?: ReactNode } = {}) => {
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -42,9 +42,10 @@ export const FichaTopBar = () => {
   }, []);
 
   return (
-    <div className="ficha-topbar">
+    <div className={trailing ? "ficha-topbar has-trail" : "ficha-topbar"}>
       <div className="ficha-topbar-blur" aria-hidden="true" />
       <BackButton collapsed={collapsed} />
+      {trailing}
     </div>
   );
 };

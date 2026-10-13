@@ -1,11 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BackButton } from "@/components/BackButton";
 import { EmptyState } from "@/components/EmptyState";
+import { useNavLabel } from "@/components/NavOriginTracker";
 import { SearchResultsSkeleton } from "@/components/PageSkeletons";
-import { SearchPreviewSheet } from "@/components/SearchPreviewSheet";
 import { TmdbSearchUnavailable } from "@/components/TmdbSearchUnavailable";
 import { TmdbSearchResults } from "@/components/TmdbSearchResults";
 import { BuscarStart, FavoriteDirectors } from "@/components/tmdb-search/BuscarStart";
@@ -15,13 +15,16 @@ import {
   PersonView,
   type PersonViewState,
 } from "@/components/tmdb-search/PersonSearch";
-import type { SearchRowStatus } from "@/components/tmdb-search/SearchResultRow";
+import type { SearchRowStatus, SearchRowWiring } from "@/components/tmdb-search/SearchResultRow";
+import type { SearchMenuTarget } from "@/components/tmdb-search/SearchRowMenu";
+import { SearchShortcuts } from "@/components/tmdb-search/SearchShortcuts";
 import {
   TmdbKindFilterChips,
   type BuscarChipValue,
 } from "@/components/tmdb-search/TmdbKindFilterChips";
 import { usePersonFilmography } from "@/components/tmdb-search/usePersonFilmography";
 import { TmdbSearchForm } from "@/components/tmdb-search/TmdbSearchForm";
+import { useSearchFacts } from "@/components/tmdb-search/useSearchFacts";
 import { useSearchRecents } from "@/components/tmdb-search/useSearchRecents";
 import { useTmdbSearchAdd } from "@/components/tmdb-search/useTmdbSearchAdd";
 import type { StartDirector } from "@/lib/buscar-start";
@@ -31,8 +34,8 @@ import { resolveDirectorQuery } from "@/lib/person-filmography";
 import { buildSearchHref, liveSearchState, type SearchKind, type SearchMode } from "@/lib/search-session";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import type { UserTmdbEntry } from "@/lib/queries";
-import { lookupTmdbCatalogEntry, tmdbCatalogKey } from "@/lib/tmdb-search-catalog";
-import { canOfferTonightPin } from "@/lib/tonight/pin";
+import { lookupTmdbCatalogEntry } from "@/lib/tmdb-search-catalog";
+import { ownedFichaHref, previewFichaHref } from "@/lib/title-preview";
 
 type TmdbSearchAddProps = {
   configured: { tmdb: boolean; omdb: boolean };
@@ -90,26 +93,18 @@ export const TmdbSearchAdd = ({
     closePerson,
     catalog,
     error,
-    pendingKey,
-    pendingAction,
-    preview,
-    setPreview,
     hasSearched,
     kindFilter,
     setKindFilter,
     isSearching,
     isAdding,
     visibleResults,
-    previewLocal,
-    previewListIds,
+    listIdsFor,
     listsError,
     pinnedTitleId,
-    justPinnedKey,
-    tonightError,
     handleSearch,
     handleQueryChange,
     handleAdd,
-    handleOpen,
     handleSaveLists,
     handlePinTonight,
   } = useTmdbSearchAdd({
@@ -131,9 +126,25 @@ export const TmdbSearchAdd = ({
 
   // A search earns a spot in «Recientes» once it led somewhere: a result or a person was opened.
   const rememberQuery = () => remember(settledQuery || query);
-  const previewResult = (result: TmdbCatalogResult) => {
-    rememberQuery();
-    setPreview(result);
+
+  /** FIL-I8: a result is its ficha (yours, or the preview by TMDB); Diario mode rides along. */
+  const diaryLog = logMode ? { date: watchedDate } : null;
+  const hrefFor = (result: TmdbCatalogResult, titleId: string | null) =>
+    titleId && !titleId.startsWith("pending:")
+      ? ownedFichaHref(titleId, diaryLog)
+      : previewFichaHref(result.kind, result.tmdbId, diaryLog);
+  const [menu, setMenu] = useState<SearchMenuTarget | null>(null);
+  const closeMenu = useCallback(() => setMenu(null), []);
+  const [listsFor, setListsFor] = useState<TmdbCatalogResult | null>(null);
+  const factsFor = useSearchFacts(visibleResults);
+  const rows: SearchRowWiring = {
+    hrefFor,
+    factsFor,
+    onOpen: () => rememberQuery(),
+    onMenu: (result, anchor) => {
+      rememberQuery();
+      setMenu({ result, anchor });
+    },
   };
   const openDirector: typeof openPerson = (hit) => {
     rememberQuery();
@@ -149,6 +160,9 @@ export const TmdbSearchAdd = ({
   const inlinePerson = directorResolution?.kind === "person" ? directorResolution.hit : null;
   const inline = usePersonFilmography(inlinePerson);
   const personPage = person !== null || pendingPerson !== null;
+  // «‹ Buscar · Animals» on the ficha a result opens; the person view names itself.
+  const searchedFor = settledQuery.trim();
+  useNavLabel(personPage ? null : searchedFor ? `Buscar · ${searchedFor}` : "Buscar");
 
   const statusOf = (result: TmdbCatalogResult) => {
     const local = lookupTmdbCatalogEntry(catalog, result.tmdbId, result.kind);
@@ -199,12 +213,6 @@ export const TmdbSearchAdd = ({
     dockSearch.syncFromPage(query);
   }, [query]);
 
-  // Keep the last preview mounted while the sheet plays its exit animation.
-  const [sheetResult, setSheetResult] = useState(preview);
-  if (preview && preview !== sheetResult) {
-    setSheetResult(preview);
-  }
-
   if (!configured.tmdb) {
     return <TmdbSearchUnavailable />;
   }
@@ -222,7 +230,7 @@ export const TmdbSearchAdd = ({
           state={person}
           pending={pendingPerson}
           statusOf={statusOf}
-          onPreview={previewResult}
+          rows={rows}
           onRetry={() => router.refresh()}
           backLabel={query.trim() ? `Resultados de «${query.trim()}»` : null}
           onBack={closePerson}
@@ -251,7 +259,7 @@ export const TmdbSearchAdd = ({
                 state={inline.state}
                 pending={null}
                 statusOf={statusOf}
-                onPreview={previewResult}
+                rows={rows}
                 onRetry={inline.retry}
                 backLabel={null}
                 onBack={() => undefined}
@@ -271,7 +279,7 @@ export const TmdbSearchAdd = ({
                 isSearching={false}
                 hasSearched
                 error={error}
-                onPreview={previewResult}
+                rows={rows}
                 onRetry={handleSearch}
               />
             ) : null
@@ -286,7 +294,7 @@ export const TmdbSearchAdd = ({
                 isSearching={isSearching}
                 hasSearched={hasSearched}
                 error={error}
-                onPreview={previewResult}
+                rows={rows}
                 onRetry={handleSearch}
               />
             </>
@@ -314,35 +322,27 @@ export const TmdbSearchAdd = ({
         </>
       )}
 
-      {sheetResult ? (
-        <SearchPreviewSheet
-          open={Boolean(preview)}
-          result={sheetResult}
-          local={previewLocal}
-          pending={isAdding && pendingKey === tmdbCatalogKey(sheetResult.tmdbId, sheetResult.kind)}
-          pendingAction={pendingAction}
-          onClose={() => setPreview(null)}
-          onAdd={(destination) => handleAdd(sheetResult, destination)}
-          onOpen={() => handleOpen(sheetResult)}
-          lists={lists}
-          memberListIds={previewListIds}
-          error={listsError}
-          onSaveLists={(initialIds, selectedIds) =>
-            handleSaveLists(sheetResult, initialIds, selectedIds)
-          }
-          tonight={
-            canOfferTonightPin({ watched: Boolean(previewLocal?.watched), logMode })
-              ? {
-                  done: Boolean(previewLocal && previewLocal.titleId === pinnedTitleId),
-                  celebrate:
-                    justPinnedKey === tmdbCatalogKey(sheetResult.tmdbId, sheetResult.kind),
-                  error: tonightError,
-                  onPin: () => handlePinTonight(sheetResult),
-                }
-              : null
-          }
-        />
-      ) : null}
+      <SearchShortcuts
+        menu={menu}
+        onCloseMenu={closeMenu}
+        listsFor={listsFor}
+        onCloseLists={() => setListsFor(null)}
+        statusOf={statusOf}
+        factsFor={factsFor}
+        logMode={logMode}
+        logDate={watchedDate}
+        pinnedTitleId={pinnedTitleId}
+        hrefFor={hrefFor}
+        lists={lists ?? []}
+        listIdsFor={listIdsFor}
+        listsPending={isAdding}
+        listsError={listsError}
+        onAdd={handleAdd}
+        onPin={handlePinTonight}
+        onPickLists={setListsFor}
+        onSaveLists={handleSaveLists}
+        onOpenFicha={(href) => router.push(href)}
+      />
 
       <p className="sr-only">{isSearching ? "Buscando" : isAdding ? "Guardando" : ""}</p>
       {!personPage && mode === "titles" && hasSearched ? (
@@ -353,3 +353,4 @@ export const TmdbSearchAdd = ({
     </div>
   );
 };
+
