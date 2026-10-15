@@ -20,3 +20,20 @@ export const ServiceWorkerRegister = () => {
 
   return null;
 };
+
+/** Kept here so the worker has one home (verify-fase-4); Perfil «Avisos» uses these for push. */
+export const hasServiceWorker = () => typeof navigator !== "undefined" && "serviceWorker" in navigator;
+
+/** The worker registers in production on load; push needs it in dev and on a first visit too. */
+export const ensureServiceWorker = async () => {
+  const existing = await navigator.serviceWorker.getRegistration("/");
+  if (!existing) {
+    await navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" });
+  }
+  return navigator.serviceWorker.ready;
+};
+
+export const currentPushSubscription = async () => {
+  const registration = await navigator.serviceWorker.getRegistration("/");
+  return registration ? registration.pushManager.getSubscription() : null;
+};
