@@ -1,6 +1,7 @@
 "use server";
 
 import { metadataServicesConfigured, searchTmdbCatalog } from "@/lib/metadata";
+import { requireUserId } from "@/lib/session";
 import {
   isPersonRole,
   personNameMatchesQuery,
@@ -26,7 +27,10 @@ const directorNamed = async (query: string): Promise<DirectorHit | null> => {
   }
 };
 
+// Each action spends TMDB quota, so it needs a session like any other (FIL-I10-6 L3):
+// Server Functions can be invoked by POSTing to any path, public ones included.
 export const searchTmdbDiscover = async (query: string) => {
+  await requireUserId();
   if (!metadataServicesConfigured().tmdb) {
     return { results: [], director: null, error: TMDB_UNAVAILABLE_COPY };
   }
@@ -44,6 +48,7 @@ export const searchTmdbDiscover = async (query: string) => {
 
 /** Buscar's «Director» chip. */
 export const searchDirectors = async (query: string) => {
+  await requireUserId();
   if (!metadataServicesConfigured().tmdb) {
     return { directors: [] as DirectorHit[], error: TMDB_UNAVAILABLE_COPY };
   }
@@ -64,6 +69,7 @@ export const loadPersonFilmography = async (
   personId: number,
   role: PersonRole,
 ): Promise<PersonFilmographyResult> => {
+  await requireUserId();
   if (!metadataServicesConfigured().tmdb) {
     return { ok: false, error: TMDB_UNAVAILABLE_COPY };
   }

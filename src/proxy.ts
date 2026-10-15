@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
-import { verifySessionToken } from "@/lib/auth/session-token";
+import { sessionCookieOptions, verifySessionToken } from "@/lib/auth/session-token";
+import { isSessionCurrent } from "@/lib/auth/session-version";
 import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
 import { requestOrigin } from "@/lib/request-origin";
 
@@ -8,14 +9,10 @@ const LOGIN_PATH = "/login";
 
 const SIGNUP_PATH = "/registro";
 
-// /api/cron authenticates itself with CRON_SECRET instead of a session.
-const PUBLIC_PATHS = [
-  LOGIN_PATH,
-  SIGNUP_PATH,
-  "/api/auth",
-  "/api/poster-ambient",
-  "/api/cron",
-];
+// /api/cron authenticates itself with CRON_SECRET instead of a session. /api/poster-ambient
+// is not here: each new path costs a TMDB fetch + sharp, so only signed-in users get it
+// (FIL-I10-6 L6); its answers stay CDN-cached.
+const PUBLIC_PATHS = [LOGIN_PATH, SIGNUP_PATH, "/api/auth", "/api/cron"];
 
 const isPublicPath = (pathname: string) =>
   PUBLIC_PATHS.some(
@@ -33,6 +30,11 @@ const isStaticAsset = (pathname: string) =>
 
 export const proxy = async (request: Request) => {
   const { pathname } = new URL(request.url);
+
+  if (isStaticAsset(pathname) || pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
+  }
+
   const token = request.headers
     .get("cookie")
     ?.split(";")
@@ -40,22 +42,34 @@ export const proxy = async (request: Request) => {
     .find((part) => part.startsWith(`${SESSION_COOKIE_NAME}=`))
     ?.slice(SESSION_COOKIE_NAME.length + 1);
 
-  const session = token ? await verifySessionToken(decodeURIComponent(token)) : null;
+  const isAuthScreen = pathname === LOGIN_PATH || pathname === SIGNUP_PATH;
+  const publicPath = isPublicPath(pathname);
+  // Only requests whose answer depends on the session pay for the version lookup.
+  const verified =
+    token && (!publicPath || isAuthScreen)
+      ? await verifySessionToken(decodeURIComponent(token))
+      : null;
+  // A password change bumps User.sessionVersion: older tokens stop working here (FIL-I10-3).
+  const revoked = verified ? !(await isSessionCurrent(verified)) : false;
+  const session = revoked ? null : verified;
   const loggedIn = Boolean(session?.id);
   // New accounts stay on /bienvenida until they finish or skip it (the claim is re-minted then).
   const gated = loggedIn && session?.onboarded === false;
 
-  if (isStaticAsset(pathname) || pathname.startsWith("/api/auth")) {
-    return NextResponse.next();
-  }
+  const respond = (response: NextResponse) => {
+    if (revoked) {
+      response.cookies.set(SESSION_COOKIE_NAME, "", { ...sessionCookieOptions(), maxAge: 0 });
+    }
+    return response;
+  };
 
-  if (isPublicPath(pathname)) {
-    if (loggedIn && (pathname === LOGIN_PATH || pathname === SIGNUP_PATH)) {
+  if (publicPath) {
+    if (loggedIn && isAuthScreen) {
       return NextResponse.redirect(
         new URL(gated ? ONBOARDING_PATH : "/", requestOrigin(request)),
       );
     }
-    return NextResponse.next();
+    return respond(NextResponse.next());
   }
 
   // Server Functions POST to the page they are used on, so /bienvenida itself must stay reachable.
@@ -69,7 +83,7 @@ export const proxy = async (request: Request) => {
     if (callbackPath && callbackPath !== "/") {
       loginUrl.searchParams.set("callbackUrl", callbackPath);
     }
-    return NextResponse.redirect(loginUrl);
+    return respond(NextResponse.redirect(loginUrl));
   }
 
   return NextResponse.next();

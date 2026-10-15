@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db, users } from "@/db";
 import { hashPassword } from "@/lib/auth/password";
 
@@ -13,7 +13,8 @@ if (!email || !password) {
 const passwordHash = await hashPassword(password);
 const updated = await db
   .update(users)
-  .set({ passwordHash })
+  // A reset also signs out every existing session (FIL-I10-3).
+  .set({ passwordHash, sessionVersion: sql`${users.sessionVersion} + 1` })
   .where(eq(users.email, email))
   .returning({ email: users.email });
 
@@ -22,4 +23,4 @@ if (updated.length === 0) {
   process.exit(1);
 }
 
-console.log(`Contraseña PBKDF2 actualizada para ${email}`);
+console.log(`Contraseña PBKDF2 actualizada para ${email}; sesiones abiertas revocadas`);

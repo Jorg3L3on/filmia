@@ -15,6 +15,7 @@ export type AppSession = {
   user: SessionUser;
   /** False only while a new account has not finished (or skipped) the Bienvenida. */
   onboarded: boolean;
+  sessionVersion: number;
 };
 
 export const readSessionCookie = async (): Promise<AppSession | null> => {
@@ -36,6 +37,7 @@ export const readSessionCookie = async (): Promise<AppSession | null> => {
       name: payload.name,
     },
     onboarded: payload.onboarded,
+    sessionVersion: payload.sessionVersion,
   };
 };
 
@@ -72,12 +74,16 @@ export const clearSessionOnCookieStore = async () => {
 };
 
 /**
- * Re-mint the cookie after a profile change. Without `flags` the current `onboarded` claim is
- * preserved, so updating the name mid-Bienvenida does not lift the gate.
+ * Re-mint the cookie after a profile change. Claims not passed in `flags` keep their current
+ * value, so updating the name mid-Bienvenida does not lift the gate nor reset the version.
  */
-export const refreshSessionUser = async (user: SessionUser, flags?: SessionFlags) => {
-  const current = flags ?? { onboarded: (await readSessionCookie())?.onboarded ?? true };
-  await setSessionOnCookieStore(user, current);
+export const refreshSessionUser = async (user: SessionUser, flags?: Partial<SessionFlags>) => {
+  const current = await readSessionCookie();
+  await setSessionOnCookieStore(user, {
+    onboarded: current?.onboarded ?? true,
+    sessionVersion: current?.sessionVersion ?? 0,
+    ...flags,
+  });
 };
 
 export { SESSION_COOKIE_NAME } from "@/lib/auth/constants";

@@ -6,6 +6,10 @@ on:
   push:
     branches: [sandbox, main]
 
+# FIL-I10-6 L5: the job only reads the repo.
+permissions:
+  contents: read
+
 jobs:
   check:
     name: lint · types · tests

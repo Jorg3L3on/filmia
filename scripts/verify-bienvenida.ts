@@ -30,7 +30,7 @@ const run = () => {
   assert(read("src/lib/auth/session-token.ts").includes("onboarded: payload.onboarded !== false"), "Missing claim ⇒ onboarded (legacy sessions never gated)");
   const proxy = read("src/proxy.ts");
   assert(proxy.includes("ONBOARDING_PATH") && proxy.includes("session?.onboarded === false"), "Proxy redirects gated sessions to /bienvenida");
-  assert(read("src/app/api/auth/register/route.ts").includes("{ onboarded: false }"), "Register mints onboarded: false");
+  assert(/onboarded: false,\s+sessionVersion: 0/.test(read("src/app/api/auth/register/route.ts")), "Register mints onboarded: false");
   assert(read("src/lib/auth/google.ts").includes("created: true") && read("src/lib/auth/google.ts").includes("onboarded: false"), "Google sign-up reports created + gated");
   assert(read("src/app/api/auth/google/callback/route.ts").includes("ONBOARDING_PATH"), "Google callback lands gated users on /bienvenida");
   assert(read("src/components/SignupForm.tsx").includes("router.push(ONBOARDING_PATH)"), "SignupForm pushes /bienvenida");

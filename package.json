@@ -24,6 +24,7 @@
     "db:backfill-awards": "tsx scripts/backfill-awards.ts",
     "db:backfill-people": "tsx scripts/backfill-people.ts",
     "db:clean-limbo": "tsx scripts/clean-limbo-titles.ts",
+    "db:verify-role": "tsx scripts/verify-db-role.ts",
     "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs",
     "eval:tonight": "tsx scripts/eval-tonight.ts",
     "eval:affinity": "tsx scripts/eval-affinity.ts",
