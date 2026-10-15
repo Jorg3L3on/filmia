@@ -41,6 +41,7 @@ import {
   TitlePeopleBlock,
   TitleProvidersBlock,
   TitleRelatedBlock,
+  TrailerSlot,
 } from "../../../[id]/title-sections";
 import TitleLoading from "./loading";
 
@@ -128,6 +129,15 @@ const TitlePreview = async ({
       titleName={title.name}
     />
   );
+  const trailer = (
+    <TrailerSlot
+      tmdbId={tmdbId}
+      kind={kind}
+      titleName={title.name}
+      backdropPath={title.backdropPath}
+      extrasPromise={extrasPromise}
+    />
+  );
   const relatedPromise = fullPromise.then((full) =>
     getRelatedTitles("", parseStoredTmdbGenres(full.tmdbGenres).map((genre) => genre.id)),
   );
@@ -137,7 +147,7 @@ const TitlePreview = async ({
       <FichaVisit titleId={null} name={title.name} />
       <section className="ficha-head" aria-label={title.name}>
         <FichaTopBar trailing={diaryLog ? <DiaryDayChip log={diaryLog} /> : undefined} />
-        <Suspense fallback={<TitleHero {...heroProps(title, null, { posterKey, imdbPending: pending, affinity })} />}>
+        <Suspense fallback={<TitleHero {...heroProps(title, null, { posterKey, imdbPending: pending, affinity, trailer })} />}>
           <PreviewHero
             title={title}
             extrasPromise={extrasPromise}
@@ -145,6 +155,7 @@ const TitlePreview = async ({
             posterKey={posterKey}
             pending={pending}
             affinity={affinity}
+            trailer={trailer}
           />
         </Suspense>
         <div className="ficha-body-a space-y-4">
@@ -184,6 +195,7 @@ const PreviewHero = async ({
   posterKey,
   pending,
   affinity,
+  trailer,
 }: {
   title: PreviewTitle;
   extrasPromise: Promise<TmdbTitleExtras>;
@@ -191,11 +203,20 @@ const PreviewHero = async ({
   posterKey: string;
   pending: boolean;
   affinity: ReactNode;
+  trailer: ReactNode;
 }) => {
   const extras = await extrasPromise;
   return (
-    <Suspense fallback={<TitleHero {...heroProps(title, extras, { posterKey, imdbPending: pending, affinity })} />}>
-      <PreviewHeroFull extras={extras} fullPromise={fullPromise} posterKey={posterKey} affinity={affinity} />
+    <Suspense
+      fallback={<TitleHero {...heroProps(title, extras, { posterKey, imdbPending: pending, affinity, trailer })} />}
+    >
+      <PreviewHeroFull
+        extras={extras}
+        fullPromise={fullPromise}
+        posterKey={posterKey}
+        affinity={affinity}
+        trailer={trailer}
+      />
     </Suspense>
   );
 };
@@ -205,12 +226,14 @@ const PreviewHeroFull = async ({
   fullPromise,
   posterKey,
   affinity,
+  trailer,
 }: {
   extras: TmdbTitleExtras;
   fullPromise: Promise<PreviewTitle>;
   posterKey: string;
   affinity: ReactNode;
-}) => <TitleHero {...heroProps(await fullPromise, extras, { posterKey, affinity })} />;
+  trailer: ReactNode;
+}) => <TitleHero {...heroProps(await fullPromise, extras, { posterKey, affinity, trailer })} />;
 
 const PreviewSynopsis = async ({ extrasPromise }: { extrasPromise: Promise<TmdbTitleExtras> }) => (
   <TitleSynopsis text={(await extrasPromise).overview ?? null} />

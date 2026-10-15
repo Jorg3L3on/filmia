@@ -8,6 +8,7 @@ import { Button } from "@/components/Button";
 import { AuthDivider, GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { PasswordField } from "@/components/PasswordField";
 import { messageForSignInError } from "@/lib/auth-errors";
+import { safeNextPath } from "@/lib/google-oauth";
 import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
 import { fieldClass, focusRing } from "@/lib/ui";
 
@@ -18,7 +19,7 @@ type LoginFormProps = {
 export const LoginForm = ({ googleEnabled }: LoginFormProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
+  const callbackUrl = safeNextPath(searchParams.get("callbackUrl"));
   const [error, setError] = useState<string | null>(() =>
     messageForSignInError(searchParams.get("error")),
   );
@@ -54,7 +55,7 @@ export const LoginForm = ({ googleEnabled }: LoginFormProps) => {
       return;
     }
 
-    router.push(callbackUrl.startsWith("/") ? callbackUrl : "/");
+    router.push(callbackUrl);
     router.refresh();
   };
 

@@ -168,3 +168,11 @@ export const posterTone = (name: string) => {
   const hash = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0);
   return tones[hash % tones.length];
 };
+
+const IMDB_ID = /^tt\d{7,10}$/;
+
+/** The title's IMDb page (FIL-I15-3); on a phone the universal link opens the IMDb app. */
+export const imdbTitleUrl = (imdbId: string | null | undefined) => {
+  const id = imdbId?.trim();
+  return id && IMDB_ID.test(id) ? `https://www.imdb.com/title/${id}/` : null;
+};

@@ -24,11 +24,13 @@
     "db:backfill-awards": "tsx scripts/backfill-awards.ts",
     "db:backfill-people": "tsx scripts/backfill-people.ts",
     "db:clean-limbo": "tsx scripts/clean-limbo-titles.ts",
+    "db:verify-role": "tsx scripts/verify-db-role.ts",
     "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs",
     "eval:tonight": "tsx scripts/eval-tonight.ts",
     "eval:affinity": "tsx scripts/eval-affinity.ts",
     "preview:affinity": "tsx scripts/preview-affinity.ts",
     "metrics:affinity": "tsx scripts/affinity-metrics.ts",
+    "metrics:onboarding": "tsx scripts/onboarding-metrics.ts",
     "preview:recos": "tsx scripts/preview-recos.ts",
     "compute:recos": "tsx scripts/compute-recos.ts",
     "preview:decks": "tsx scripts/preview-decks.ts",
@@ -47,7 +49,8 @@
     "next": "16.3.8",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "sharp": "^0.35.5"
+    "sharp": "^0.35.5",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -55,6 +58,7 @@
     "@types/node": "^24.19.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@types/web-push": "^3.6.4",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",

@@ -13,12 +13,16 @@ export type SessionUser = {
   name: string | null;
 };
 
-/** Claims beyond identity. `onboarded: false` keeps the proxy redirecting to /bienvenida. */
+/**
+ * Claims beyond identity. `onboarded: false` keeps the proxy redirecting to /bienvenida;
+ * `sessionVersion` must match `User.sessionVersion` or the proxy drops the session.
+ */
 export type SessionFlags = {
   onboarded: boolean;
+  sessionVersion: number;
 };
 
-export const DEFAULT_SESSION_FLAGS: SessionFlags = { onboarded: true };
+export const DEFAULT_SESSION_FLAGS: SessionFlags = { onboarded: true, sessionVersion: 0 };
 
 export type SessionPayload = SessionUser &
   SessionFlags & {

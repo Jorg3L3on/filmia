@@ -85,6 +85,20 @@
       "when": 1791608606101,
       "tag": "0011_tonight_recos",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791933157218,
+      "tag": "0012_session_version_rate_limit",
+        "breakpoints": true
+      },
+      {
+      "idx": 13,
+      "version": "7",
+      "when": 1791934424901,
+      "tag": "0013_platform_alerts",
+      "breakpoints": true
     }
   ]
 }

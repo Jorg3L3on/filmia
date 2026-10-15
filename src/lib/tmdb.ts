@@ -23,6 +23,12 @@ import {
   type TmdbTvDetailsPayload,
 } from "@/lib/tmdb-details";
 import type { TmdbPerson } from "@/lib/tmdb-people";
+import {
+  pickTrailer,
+  TRAILER_VIDEO_LANGUAGES,
+  type TmdbVideosPayload,
+  type Trailer,
+} from "@/lib/tmdb-trailer";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
@@ -405,6 +411,8 @@ export type TmdbDiscoverOptions = {
   watchMonetizationTypes?: "flatrate";
   /** TMDB genre ids, AND-joined (a title must carry all of them). */
   withGenres?: readonly number[];
+  /** TMDB genre ids to leave out, OR-joined (any of them excludes the title). */
+  withoutGenres?: readonly number[];
   page?: number;
 };
 
@@ -482,6 +490,9 @@ export const discoverTmdb = async (
   if (options.withGenres && options.withGenres.length > 0) {
     params.with_genres = [...options.withGenres].join(",");
   }
+  if (options.withoutGenres && options.withoutGenres.length > 0) {
+    params.without_genres = [...options.withoutGenres].join("|");
+  }
   if (options.withWatchProviders && options.withWatchProviders.length > 0) {
     params.with_watch_providers = [...options.withWatchProviders].join("|");
     params.watch_region = options.watchRegion ?? "MX";
@@ -539,6 +550,23 @@ export const getTmdbExternalIds = async (
   const data = await tmdbFetch<TmdbExternalIds>(`/${segment}/${tmdbId}/external_ids`);
   return data.imdb_id ?? null;
 };
+
+/** The ficha's trailer (FIL-I15-1); null without TMDB, on errors or when there is none. */
+export const getTmdbTrailer = cache(async (tmdbId: number, kind: TitleKind): Promise<Trailer | null> => {
+  if (!isTmdbConfigured()) {
+    return null;
+  }
+  const segment = kind === "SERIES" ? "tv" : "movie";
+  try {
+    return pickTrailer(
+      await tmdbFetch<TmdbVideosPayload>(`/${segment}/${tmdbId}/videos`, {
+        include_video_language: TRAILER_VIDEO_LANGUAGES,
+      }),
+    );
+  } catch {
+    return null;
+  }
+});
 
 export const tmdbProviderLogoUrl = (
   logoPath: string | null | undefined,

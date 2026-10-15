@@ -2,6 +2,7 @@ import { Suspense, type ReactNode } from "react";
 import { AffinityChipSkeleton } from "@/components/affinity/AffinityChip";
 import { FichaAffinityBlock } from "@/components/affinity/FichaAffinityBlock";
 import { PeopleRail } from "@/components/ficha/PeopleRail";
+import { TrailerButton } from "@/components/ficha/TrailerButton";
 import { TitleFichaActions } from "@/components/TitleFichaActions";
 import { TitleHero } from "@/components/TitleHero";
 import { TitleListsPanel } from "@/components/TitleListsPanel";
@@ -12,8 +13,8 @@ import { TitleKind } from "@/db";
 import { awardChipLabel } from "@/lib/awards";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { titleListMemberships } from "@/lib/list-membership";
-import { formatRuntime, TITLE_KIND_LABEL } from "@/lib/labels";
-import { isTmdbConfigured, tmdbBackdropUrl, type TmdbTitleExtras } from "@/lib/tmdb";
+import { formatRuntime, imdbTitleUrl, TITLE_KIND_LABEL } from "@/lib/labels";
+import { getTmdbTrailer, isTmdbConfigured, tmdbBackdropUrl, type TmdbTitleExtras } from "@/lib/tmdb";
 import type { AffinityCatalogRow, FichaAffinity } from "@/lib/affinity-store";
 import type { DiaryLog } from "@/lib/title-preview";
 import { peopleRailItems, type TmdbPerson } from "@/lib/tmdb-people";
@@ -52,6 +53,7 @@ export type HeroSource = Pick<
   | "kind"
   | "tmdbGenres"
   | "imdbRating"
+  | "imdbId"
   | "awards"
   | "rating"
   | "watchedAt"
@@ -61,7 +63,12 @@ export type HeroSource = Pick<
 export const heroProps = (
   title: HeroSource,
   extras: TmdbTitleExtras | null | undefined,
-  options: { posterKey?: string; imdbPending?: boolean; affinity?: ReactNode } = {},
+  options: {
+    posterKey?: string;
+    imdbPending?: boolean;
+    affinity?: ReactNode;
+    trailer?: ReactNode;
+  } = {},
 ) => {
   const posterPath = title.posterPath ?? extras?.posterPath ?? null;
   return {
@@ -79,12 +86,14 @@ export const heroProps = (
     kindLabel: TITLE_KIND_LABEL[title.kind],
     genreLabel: parseStoredTmdbGenres(title.tmdbGenres)[0]?.name ?? extras?.genres[0]?.name ?? null,
     imdbRating: title.imdbRating,
+    imdbHref: imdbTitleUrl(title.imdbId),
     imdbPending: options.imdbPending ?? false,
     awardLabel: awardChipLabel(title.awards),
     rating: title.rating,
     watched: Boolean(title.watchedAt),
     posterAmbient: title.posterAmbient,
     affinity: options.affinity,
+    trailer: options.trailer,
   };
 };
 
@@ -92,21 +101,78 @@ export const TitleHeroFallback = ({
   title,
   extras,
   affinity,
+  trailer,
 }: {
   title: TitleDetail;
   extras?: TmdbTitleExtras | null;
   affinity?: ReactNode;
-}) => <TitleHero {...heroProps(title, extras, { affinity })} />;
+  trailer?: ReactNode;
+}) => <TitleHero {...heroProps(title, extras, { affinity, trailer })} />;
 
 export const TitleHeroBlock = async ({
   title,
   extrasPromise,
   affinity,
+  trailer,
 }: {
   title: TitleDetail;
   extrasPromise: Promise<TmdbTitleExtras | null>;
   affinity?: ReactNode;
-}) => <TitleHero {...heroProps(title, await extrasPromise, { affinity })} />;
+  trailer?: ReactNode;
+}) => <TitleHero {...heroProps(title, await extrasPromise, { affinity, trailer })} />;
+
+/** «▶ Tráiler» (FIL-I15-2), streamed on its own so the hero never waits for TMDB /videos. */
+export const TrailerSlot = ({
+  tmdbId,
+  kind,
+  titleName,
+  backdropPath,
+  extrasPromise,
+}: {
+  tmdbId: number | null;
+  kind: TitleDetail["kind"];
+  titleName: string;
+  backdropPath: string | null;
+  extrasPromise: Promise<TmdbTitleExtras | null>;
+}) =>
+  tmdbId ? (
+    <Suspense fallback={null}>
+      <TrailerBlock
+        tmdbId={tmdbId}
+        kind={kind}
+        titleName={titleName}
+        backdropPath={backdropPath}
+        extrasPromise={extrasPromise}
+      />
+    </Suspense>
+  ) : null;
+
+const TrailerBlock = async ({
+  tmdbId,
+  kind,
+  titleName,
+  backdropPath,
+  extrasPromise,
+}: {
+  tmdbId: number;
+  kind: TitleDetail["kind"];
+  titleName: string;
+  backdropPath: string | null;
+  extrasPromise: Promise<TmdbTitleExtras | null>;
+}) => {
+  const trailer = await getTmdbTrailer(tmdbId, kind);
+  if (!trailer) {
+    return null;
+  }
+  const backdrop = backdropPath ?? (await extrasPromise)?.backdropPath ?? null;
+  return (
+    <TrailerButton
+      trailerKey={trailer.key}
+      titleName={titleName}
+      backdropSrc={backdrop ? tmdbBackdropUrl(backdrop, "w1280") : null}
+    />
+  );
+};
 
 /** The Catalog fields «Para ti» reads, from a flat ficha title (owned or preview). */
 export const affinityRowOf = (title: {

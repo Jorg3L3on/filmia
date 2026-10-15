@@ -11,10 +11,18 @@ import { flowTitleKey, type FlowTitle } from "@/components/onboarding/types";
 import { useOnboardingSearch } from "@/components/onboarding/useOnboardingSearch";
 import type { Platform } from "@/db";
 import type { SuggestionItem } from "@/lib/onboarding/load";
+import { MIN_ONBOARDING_TITLES, quickPickRemaining } from "@/lib/onboarding/steps";
 import { PLATFORM_SERVICE_LABEL } from "@/lib/labels";
 import { showToast } from "@/lib/toast";
 
 type WatchlistStepProps = {
+  /**
+   * «quiero-ver» is the regular step; «tres» is the detour before Hoy (FIL-I11): same one-tap
+   * grid, but it counts every title in the account toward three and always has suggestions.
+   */
+  variant?: "quiero-ver" | "tres";
+  /** Titles in the account (seen, rated, favorite or queued), for the «tres» counter. */
+  accountTitleCount?: number;
   platforms: Platform[];
   /** Everything already in the library (watched or queued): never suggest it again. */
   libraryTmdbIds: number[];
@@ -37,6 +45,8 @@ type Candidate = {
 };
 
 export const WatchlistStep = ({
+  variant = "quiero-ver",
+  accountTitleCount = 0,
   platforms,
   libraryTmdbIds,
   queue,
@@ -50,19 +60,21 @@ export const WatchlistStep = ({
   const [isLoading, startLoad] = useTransition();
   const [, startSave] = useTransition();
   const [pending, setPending] = useState<Set<string>>(new Set());
+  const isQuickPick = variant === "tres";
+  const showSuggestions = platforms.length > 0 || isQuickPick;
   const excludeKey = [...new Set([...libraryTmdbIds, ...queue.map((title) => title.tmdbId)])].join(",");
 
   useEffect(() => {
-    if (suggestions || !tmdbConfigured || platforms.length === 0) {
+    if (suggestions || !tmdbConfigured || !showSuggestions) {
       return;
     }
     const exclude = excludeKey ? excludeKey.split(",").map(Number) : [];
     startLoad(async () => {
-      const items = await getOnboardingSuggestions(exclude).catch(() => []);
+      const items = await getOnboardingSuggestions(exclude, { popularFallback: isQuickPick }).catch(() => []);
       onSuggestions(items);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once per visit; the queue only seeds the exclusion
-  }, [suggestions, tmdbConfigured, platforms.length]);
+  }, [suggestions, tmdbConfigured, showSuggestions]);
 
   const queued = new Map(queue.map((title) => [flowTitleKey(title), title]));
 
@@ -133,32 +145,76 @@ export const WatchlistStep = ({
       ? `Quitar ${candidate.name} de Quiero ver`
       : `Añadir ${candidate.name}${candidate.year ? ` (${candidate.year})` : ""} a Quiero ver`;
 
+  const remaining = quickPickRemaining(accountTitleCount);
+  const suggestionsHeading =
+    platforms.length > 0
+      ? isLoading || !suggestions
+        ? "Buscando en tus plataformas…"
+        : "Populares en tus plataformas"
+      : isLoading || !suggestions
+        ? "Buscando lo más visto…"
+        : "Lo más visto ahora";
+
   return (
     <div className="space-y-6">
-      <StepHeader
-        headingRef={headingRef}
-        eyebrow="Quiero ver"
-        title={
-          <>
-            ¿Qué quieres <span className="text-accent">ver</span>?
-          </>
-        }
-        lede={
-          platforms.length > 0
-            ? "Lo que está incluido en tus plataformas ahora mismo. Toca para guardar en Quiero ver."
-            : "Busca lo que tienes pendiente y guárdalo en Quiero ver."
-        }
-      />
+      {isQuickPick ? (
+        <StepHeader
+          headingRef={headingRef}
+          eyebrow="Antes de entrar"
+          title={
+            <>
+              Elige <span className="text-accent">3</span> para empezar
+            </>
+          }
+          lede="Hoy elige tu noche entre lo que guardas. Toca tres que quieras ver y ya tiene de dónde escoger."
+        />
+      ) : (
+        <StepHeader
+          headingRef={headingRef}
+          eyebrow="Quiero ver"
+          title={
+            <>
+              ¿Qué quieres <span className="text-accent">ver</span>?
+            </>
+          }
+          lede={
+            platforms.length > 0
+              ? "Lo que está incluido en tus plataformas ahora mismo. Toca para guardar en Quiero ver."
+              : "Busca lo que tienes pendiente y guárdalo en Quiero ver."
+          }
+        />
+      )}
 
-      <div className="flex items-center justify-between gap-3">
-        <p className="queue-counter text-sm font-semibold text-paper" aria-live="polite" aria-atomic="true">
-          <span key={queue.length} className="queue-counter-num inline-block text-accent">
-            {queue.length}
-          </span>{" "}
-          en Quiero ver
-        </p>
-        <p className="text-xs text-mist">Con 3 o más, Hoy tiene de dónde elegir.</p>
-      </div>
+      {isQuickPick ? (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <p className="queue-counter text-sm font-semibold text-paper" aria-live="polite" aria-atomic="true">
+              <span key={Math.min(accountTitleCount, MIN_ONBOARDING_TITLES)} className="queue-counter-num inline-block text-accent">
+                {Math.min(accountTitleCount, MIN_ONBOARDING_TITLES)}
+              </span>{" "}
+              de {MIN_ONBOARDING_TITLES}
+            </p>
+            <p className="text-xs text-mist">
+              {remaining > 0 ? `Te ${remaining === 1 ? "falta 1" : `faltan ${remaining}`}` : "Listo, ya puedes entrar."}
+            </p>
+          </div>
+          <div className="quick-pick-meter" aria-hidden="true">
+            {Array.from({ length: MIN_ONBOARDING_TITLES }, (_, index) => (
+              <span key={index} className={index < accountTitleCount ? "is-filled" : undefined} />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-3">
+          <p className="queue-counter text-sm font-semibold text-paper" aria-live="polite" aria-atomic="true">
+            <span key={queue.length} className="queue-counter-num inline-block text-accent">
+              {queue.length}
+            </span>{" "}
+            en Quiero ver
+          </p>
+          <p className="text-xs text-mist">Con 3 o más, Hoy tiene de dónde elegir.</p>
+        </div>
+      )}
 
       {tmdbConfigured ? (
         <OnboardingSearchField
@@ -193,11 +249,9 @@ export const WatchlistStep = ({
         <p className="text-sm text-mist">Nada con ese nombre.</p>
       ) : null}
 
-      {platforms.length > 0 ? (
+      {showSuggestions ? (
         <section className="space-y-2">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-fog">
-            {isLoading || !suggestions ? "Buscando en tus plataformas…" : "Populares en tus plataformas"}
-          </h2>
+          <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-fog">{suggestionsHeading}</h2>
           {!suggestions ? (
             <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4" aria-hidden="true">
               {Array.from({ length: 6 }, (_, index) => (
@@ -207,7 +261,7 @@ export const WatchlistStep = ({
               ))}
             </ul>
           ) : suggestions.length > 0 ? (
-            <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4" aria-label="Populares en tus plataformas">
+            <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4" aria-label={suggestionsHeading}>
               {suggestions.map((item, index) => (
                 <PosterPickTile
                   key={`${item.kind}:${item.tmdbId}`}

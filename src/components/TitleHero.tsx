@@ -7,7 +7,7 @@ import { LaurelIcon } from "@/components/watchlist/icons";
 import { cn } from "@/lib/cn";
 import { formatStarScore } from "@/lib/labels";
 import { isRemoteImage } from "@/lib/tmdb";
-import { posterFrame } from "@/lib/ui";
+import { focusRing, posterFrame } from "@/lib/ui";
 
 type TitleHeroProps = {
   titleId: string;
@@ -20,6 +20,8 @@ type TitleHeroProps = {
   kindLabel: string;
   genreLabel?: string | null;
   imdbRating?: number | null;
+  /** IMDb title page (FIL-I15-3): the rating chip links there when the id is known. */
+  imdbHref?: string | null;
   /** The ficha preview is still resolving OMDb: placeholder chips instead of «sin calificación». */
   imdbPending?: boolean;
   awardLabel?: string | null;
@@ -29,6 +31,8 @@ type TitleHeroProps = {
   posterAmbient?: string | null;
   /** «Para ti» (FIL-I9): streamed chip next to the IMDb one (unwatched films only). */
   affinity?: ReactNode;
+  /** «▶ Tráiler» (FIL-I15): streamed, first chip under the title; nothing when TMDB has none. */
+  trailer?: ReactNode;
 };
 
 const ambientStyle = (posterAmbient: string | null | undefined) =>
@@ -53,12 +57,14 @@ export const TitleHero = ({
   kindLabel,
   genreLabel,
   imdbRating,
+  imdbHref,
   imdbPending = false,
   awardLabel,
   rating,
   watched,
   posterAmbient,
   affinity,
+  trailer,
 }: TitleHeroProps) => {
   const restBits = [runtimeLabel, kindLabel, genreLabel].filter(Boolean);
 
@@ -115,7 +121,22 @@ export const TitleHero = ({
           className="ficha-enter flex flex-wrap items-center justify-center gap-2 pt-1.5 sm:justify-start"
           style={{ "--i": 3 } as CSSProperties}
         >
-          {imdbRating != null ? (
+          {trailer}
+          {imdbRating != null && imdbHref ? (
+            <a
+              href={imdbHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`IMDb ${imdbRating.toFixed(1)} de 10: abrir en IMDb`}
+              className={cn(
+                "liquid-glass liquid-glass-pill relative inline-flex h-7 items-center gap-1 rounded-full pl-1 pr-2 transition-transform active:scale-[0.97]",
+                focusRing,
+              )}
+            >
+              <ImdbBadge rating={imdbRating} compact />
+              <ExternalGlyph />
+            </a>
+          ) : imdbRating != null ? (
             <span className="liquid-glass liquid-glass-pill relative inline-flex h-7 items-center rounded-full pl-1 pr-2.5">
               <ImdbBadge rating={imdbRating} compact />
             </span>
@@ -161,5 +182,11 @@ export const TitleHero = ({
 const StarGlyph = () => (
   <svg viewBox="0 0 24 24" className="size-3.5" fill="currentColor" aria-hidden="true">
     <path d="m12 4.5 2.1 4.4 4.8.6-3.5 3.3.9 4.8L12 15.4 7.7 17.6l.9-4.8-3.5-3.3 4.8-.6Z" />
+  </svg>
+);
+
+const ExternalGlyph = () => (
+  <svg viewBox="0 0 24 24" className="size-3 text-[#f5c518]/70" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4" />
   </svg>
 );

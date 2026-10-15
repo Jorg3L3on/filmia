@@ -23,14 +23,19 @@ import { PayoffStep } from "@/components/onboarding/PayoffStep";
 import { PlatformsStep } from "@/components/onboarding/PlatformsStep";
 import { WatchlistStep } from "@/components/onboarding/WatchlistStep";
 import { YearStep, type YearTitleRef } from "@/components/onboarding/YearStep";
-import type { FlowTitle } from "@/components/onboarding/types";
+import { flowTitleKey, type FlowTitle } from "@/components/onboarding/types";
 import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
 import type { LibraryEntry, SuggestionItem, YearGrid, YearGridItem } from "@/lib/onboarding/load";
 import type { PayoffPayload } from "@/lib/onboarding/payoff";
 import {
+  QUICK_PICK_STEP,
+  countAccountTitles,
+  needsQuickPicks,
   nextStep,
   prevStep,
+  quickPickRemaining,
+  resolveLeave,
   stepAnnouncement,
   stepDirection,
   type OnboardingStepId,
@@ -57,7 +62,7 @@ const TRANSITION_TYPES = {
   "bienvenida-back": "bienvenida-back",
 } as const;
 
-const SEARCH_STEPS: OnboardingStepId[] = ["favorita", "anio", "quiero-ver"];
+const SEARCH_STEPS: OnboardingStepId[] = ["favorita", "anio", "quiero-ver", QUICK_PICK_STEP];
 
 const favoriteFromLibrary = (library: LibraryEntry[]): { title: FlowTitle; ambient: string | null } | null => {
   const [entry] = library
@@ -124,6 +129,16 @@ export const OnboardingFlow = ({
   const [nightEnds, setNightEnds] = useState<NightEnds>(initialNightEnds);
   const [payoff, setPayoff] = useState<PayoffPayload | null>(null);
   const [isFinishing, startFinish] = useTransition();
+  /** Where «Elige 3» was reached from when the person tried to leave early (skip or finish). */
+  const [detourFrom, setDetourFrom] = useState<OnboardingStepId | null>(null);
+
+  // Everything the account holds right now: what it had, plus what the flow added or kept.
+  const titleCount = countAccountTitles([
+    ...library.map(flowTitleKey),
+    ...(favorite ? [flowTitleKey(favorite)] : []),
+    ...[...(yearSelection?.seen ?? [])].map((tmdbId) => flowTitleKey({ kind: "MOVIE", tmdbId })),
+    ...queue.map(flowTitleKey),
+  ]);
 
   useKeyboardInset(SEARCH_STEPS.includes(step));
 
@@ -136,6 +151,9 @@ export const OnboardingFlow = ({
   }, [step]);
 
   const go = (to: OnboardingStepId) => {
+    if (to !== QUICK_PICK_STEP) {
+      setDetourFrom(null);
+    }
     const direction = stepDirection(step, to);
     startTransition(() => {
       addTransitionType(`bienvenida-${direction}`);
@@ -144,16 +162,35 @@ export const OnboardingFlow = ({
     void saveOnboardingStep(to).catch(() => null);
   };
 
+  const detour = () => {
+    setDetourFrom(step === QUICK_PICK_STEP ? detourFrom : step);
+    go(QUICK_PICK_STEP);
+  };
+
   const finish = () => {
     startFinish(async () => {
       try {
-        await finishOnboarding();
+        const result = await finishOnboarding();
+        if (!result.ok) {
+          // The server counted fewer than three titles: pick them before Hoy.
+          detour();
+          return;
+        }
       } catch {
         // The gate stays; the proxy will bring them back here on the next request.
       }
       router.push("/");
       router.refresh();
     });
+  };
+
+  /** «Saltar por ahora» and «Entrar a Filmia»: Hoy only with three titles in the account. */
+  const leave = () => {
+    if (resolveLeave(titleCount) === "finish") {
+      finish();
+      return;
+    }
+    detour();
   };
 
   const setPlatforms = (next: Platform[]) => {
@@ -171,26 +208,38 @@ export const OnboardingFlow = ({
     plataformas: platformsState.value.length > 0,
     "quiero-ver": queue.length > 0,
     noche: true,
+    tres: !needsQuickPicks(titleCount),
     "primera-noche": true,
   };
 
-  const next = nextStep(step);
-  const previous = prevStep(step);
+  const next = nextStep(step, titleCount);
+  const previous = step === QUICK_PICK_STEP && detourFrom ? detourFrom : prevStep(step);
+  const remaining = quickPickRemaining(titleCount);
+  const quickPickBlocked = step === QUICK_PICK_STEP && remaining > 0;
 
   const primaryLabel =
     step === "intro"
       ? "Empezar"
-      : step === "primera-noche"
-        ? "Entrar a Filmia"
-        : step === "noche"
-          ? "Listo"
-          : answered[step]
-            ? "Siguiente"
-            : "Saltar";
+      : step === QUICK_PICK_STEP
+        ? remaining > 0
+          ? `Te ${remaining === 1 ? "falta 1" : `faltan ${remaining}`}`
+          : detourFrom
+            ? "Entrar a Filmia"
+            : "Siguiente"
+        : step === "primera-noche"
+          ? "Entrar a Filmia"
+          : step === "noche"
+            ? "Listo"
+            : answered[step]
+              ? "Siguiente"
+              : "Saltar";
 
   const onPrimary = () => {
-    if (step === "primera-noche") {
-      finish();
+    if (quickPickBlocked) {
+      return;
+    }
+    if (step === "primera-noche" || (step === QUICK_PICK_STEP && detourFrom)) {
+      leave();
       return;
     }
     if (next) {
@@ -257,6 +306,21 @@ export const OnboardingFlow = ({
             headingRef={headingRef}
           />
         );
+      case QUICK_PICK_STEP:
+        return (
+          <WatchlistStep
+            variant="tres"
+            accountTitleCount={titleCount}
+            platforms={platformsState.value}
+            libraryTmdbIds={libraryTmdbIds}
+            queue={queue}
+            onQueue={updateQueue}
+            suggestions={suggestions}
+            onSuggestions={setSuggestions}
+            tmdbConfigured={tmdbConfigured}
+            headingRef={headingRef}
+          />
+        );
       case "noche":
         return <BedtimeStep value={nightEnds} onChange={setNightEnds} headingRef={headingRef} />;
       case "primera-noche":
@@ -287,8 +351,8 @@ export const OnboardingFlow = ({
       <header className="bienvenida-chrome-top sticky top-0 z-20 px-5 pt-[calc(0.9rem+env(safe-area-inset-top))] pb-3">
         <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-4">
           <FilmStripProgress step={step} />
-          {step !== "intro" && step !== "primera-noche" ? (
-            <button type="button" onClick={finish} className={cn(btnLink, "text-mist")}>
+          {step !== "intro" && step !== "primera-noche" && step !== QUICK_PICK_STEP ? (
+            <button type="button" onClick={leave} className={cn(btnLink, "text-mist")}>
               Saltar por ahora
             </button>
           ) : null}
@@ -317,6 +381,7 @@ export const OnboardingFlow = ({
             size="lg"
             className={cn("flex-1 shadow-[0_12px_30px_-12px_rgb(var(--accent-rgb)/0.8)]", step === "intro" && "bienvenida-cta-pulse")}
             onClick={onPrimary}
+            disabled={quickPickBlocked}
             pending={isFinishing}
             pendingLabel="Abriendo tu sala…"
           >
@@ -325,7 +390,7 @@ export const OnboardingFlow = ({
         </div>
         {step === "intro" ? (
           <div className="mx-auto mt-3 flex w-full max-w-xl items-center justify-center gap-4 text-xs">
-            <button type="button" onClick={finish} className={cn(btnLink, "text-mist")}>
+            <button type="button" onClick={leave} className={cn(btnLink, "text-mist")}>
               Saltar por ahora
             </button>
             <span className="text-faint" aria-hidden="true">

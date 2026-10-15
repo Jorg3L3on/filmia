@@ -6,10 +6,13 @@ import { Button } from "@/components/Button";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { MarkWatchedSheet } from "@/components/MarkWatchedSheet";
 import { WatchedBadge } from "@/components/WatchedBadge";
+import { ShareButton, ShareIcon } from "@/components/share/ShareButton";
 import type { Platform } from "@/db";
 import { formatWatchedDate, toDateInput } from "@/lib/dates";
+import { slugify } from "@/lib/labels";
+import { reviewShareText } from "@/lib/share-card";
 import { showToast } from "@/lib/toast";
-import { wellClass } from "@/lib/ui";
+import { buttonClass, wellClass } from "@/lib/ui";
 
 type FichaWatchedSectionProps = {
   titleId: string;
@@ -18,6 +21,8 @@ type FichaWatchedSectionProps = {
   rating: number | null;
   review: string | null;
   platform: Platform | null;
+  /** Public review page (FIL-I15-5), signed on the server. */
+  sharePath: string;
 };
 
 export const FichaWatchedSection = ({
@@ -27,6 +32,7 @@ export const FichaWatchedSection = ({
   rating,
   review,
   platform,
+  sharePath,
 }: FichaWatchedSectionProps) => {
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -52,6 +58,16 @@ export const FichaWatchedSection = ({
         <Button type="button" onClick={() => setOpen(true)}>
           Editar registro
         </Button>
+        <ShareButton
+          path={sharePath}
+          title={titleName}
+          text={reviewShareText(titleName, rating, review)}
+          fileName={`${slugify(titleName) || "filmia"}.png`}
+          className={buttonClass({ variant: "secondary", className: "gap-2" })}
+        >
+          <ShareIcon className="size-4" />
+          Compartir
+        </ShareButton>
         <ConfirmSubmit
           label="Quitar del diario"
           confirmMessage="¿Quitar la fecha de visto? Se conservan tu nota y el comentario."
