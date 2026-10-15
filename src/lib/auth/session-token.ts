@@ -30,6 +30,7 @@ export const createSessionToken = async (
     email: user.email,
     name: user.name,
     onboarded: flags.onboarded,
+    sv: flags.sessionVersion,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt(now)
@@ -62,6 +63,8 @@ export const verifySessionToken = async (
       name,
       // Tokens minted before the Bienvenida existed carry no claim: those sessions are never gated.
       onboarded: payload.onboarded !== false,
+      // Tokens minted before FIL-I10-3 carry no version: they match the column default (0).
+      sessionVersion: typeof payload.sv === "number" ? payload.sv : 0,
       iat: payload.iat ?? 0,
       exp: payload.exp ?? 0,
     };
@@ -69,6 +72,13 @@ export const verifySessionToken = async (
     return null;
   }
 };
+
+/**
+ * A session is current while its token carries the account's `sessionVersion`. A deleted
+ * account (`null`) has no current sessions.
+ */
+export const isSessionVersionCurrent = (tokenVersion: number, accountVersion: number | null) =>
+  accountVersion !== null && tokenVersion === accountVersion;
 
 export const sessionCookieOptions = () => ({
   httpOnly: true,

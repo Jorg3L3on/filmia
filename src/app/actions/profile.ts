@@ -1,6 +1,7 @@
 "use server";
 
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
+import { headers } from "next/headers";
 import { db, users } from "@/db";
 import { refreshSessionUser } from "@/lib/auth";
 import {
@@ -13,8 +14,10 @@ import {
   parsePasswordChange,
   parseStreamingPlatforms,
 } from "@/lib/form-data";
+import { RATE_LIMITS, RATE_LIMIT_MESSAGE, clientIp } from "@/lib/rate-limit";
+import { checkAuthRateLimit } from "@/lib/rate-limit-store";
 import { revalidateProfileSurfaces } from "@/lib/revalidate-surfaces";
-import { requireUserId } from "@/lib/session";
+import { requireUser, requireUserId } from "@/lib/session";
 import { scheduleTonightRecompute } from "@/lib/tonight-store";
 
 export type ProfileActionState = { error: string } | { ok: true } | null;
@@ -72,7 +75,8 @@ export const updatePassword = async (
   _prev: ProfileActionState,
   formData: FormData,
 ): Promise<ProfileActionState> => {
-  const userId = await requireUserId();
+  const sessionUser = await requireUser();
+  const userId = sessionUser.id;
 
   let currentPassword: string;
   let newPassword: string;
@@ -83,6 +87,14 @@ export const updatePassword = async (
     return {
       error: error instanceof Error ? error.message : "Datos no válidos.",
     };
+  }
+
+  const limit = await checkAuthRateLimit([
+    { rule: RATE_LIMITS.passwordIp, subject: clientIp(await headers()) },
+    { rule: RATE_LIMITS.passwordAccount, subject: userId },
+  ]);
+  if (!limit.ok) {
+    return { error: RATE_LIMIT_MESSAGE };
   }
 
   const user = await db.query.users.findFirst({
@@ -101,10 +113,19 @@ export const updatePassword = async (
     return { error: "La contraseña actual no es correcta." };
   }
 
-  await db
+  // Bumping the version signs out every other session (FIL-I10-3); this one gets a fresh cookie.
+  const [updated] = await db
     .update(users)
-    .set({ passwordHash: await hashPassword(newPassword) })
-    .where(eq(users.id, userId));
+    .set({
+      passwordHash: await hashPassword(newPassword),
+      sessionVersion: sql`${users.sessionVersion} + 1`,
+    })
+    .where(eq(users.id, userId))
+    .returning({ sessionVersion: users.sessionVersion });
+
+  if (updated) {
+    await refreshSessionUser(sessionUser, { sessionVersion: updated.sessionVersion });
+  }
 
   revalidateProfile();
   return { ok: true };
