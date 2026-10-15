@@ -115,9 +115,16 @@ export type GoogleUserResolution = {
   created: boolean;
   /** False while the account still owes the Bienvenida (new, or registered by email and never finished). */
   onboarded: boolean;
+  sessionVersion: number;
 };
 
-const SESSION_COLUMNS = { id: true, email: true, name: true, onboardedAt: true } as const;
+const SESSION_COLUMNS = {
+  id: true,
+  email: true,
+  name: true,
+  onboardedAt: true,
+  sessionVersion: true,
+} as const;
 
 /**
  * Resolve the Filmia account for a verified Google identity:
@@ -133,8 +140,8 @@ export const findOrCreateGoogleUser = async (
     columns: SESSION_COLUMNS,
   });
   if (linked) {
-    const { onboardedAt, ...user } = linked;
-    return { user, created: false, onboarded: onboardedAt != null };
+    const { onboardedAt, sessionVersion, ...user } = linked;
+    return { user, created: false, onboarded: onboardedAt != null, sessionVersion };
   }
 
   const byEmail = await db.query.users.findFirst({
@@ -151,6 +158,7 @@ export const findOrCreateGoogleUser = async (
       user: { id: byEmail.id, email: byEmail.email, name },
       created: false,
       onboarded: byEmail.onboardedAt != null,
+      sessionVersion: byEmail.sessionVersion,
     };
   }
 
@@ -168,5 +176,6 @@ export const findOrCreateGoogleUser = async (
     user: { id, email: identity.email, name: identity.name },
     created: true,
     onboarded: false,
+    sessionVersion: 0,
   };
 };

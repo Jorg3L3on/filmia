@@ -68,6 +68,8 @@ export const users = pgTable(
     onboardedAt: timestamp("onboardedAt", { precision: 3, mode: "date" }),
     /** Resume pointer (OnboardingStepId) while the Bienvenida is in progress. */
     onboardingStep: text("onboardingStep"),
+    /** Signed into every session token; bumping it (password change) revokes older sessions. */
+    sessionVersion: integer("sessionVersion").notNull().default(0),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),
@@ -309,6 +311,16 @@ export const tonightRecos = pgTable(
     index("TonightReco_userId_rank_idx").on(table.userId, table.rank),
   ],
 );
+
+/**
+ * Fixed-window counters for login, signup and password change (FIL-I10-2). `key` is
+ * `<rule>:<subject>` with the subject hashed; expired rows are swept on write.
+ */
+export const rateLimits = pgTable("RateLimit", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull().default(0),
+  resetAt: timestamp("resetAt", { precision: 3, mode: "date" }).notNull(),
+});
 
 export const usersRelations = relations(users, ({ many }) => ({
   titles: many(titles),

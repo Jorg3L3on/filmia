@@ -30,7 +30,7 @@ const run = () => {
   assert(read("src/lib/auth/session-token.ts").includes("onboarded: payload.onboarded !== false"), "Missing claim ⇒ onboarded (legacy sessions never gated)");
   const proxy = read("src/proxy.ts");
   assert(proxy.includes("ONBOARDING_PATH") && proxy.includes("session?.onboarded === false"), "Proxy redirects gated sessions to /bienvenida");
-  assert(read("src/app/api/auth/register/route.ts").includes("{ onboarded: false }"), "Register mints onboarded: false");
+  assert(/onboarded: false,\s+sessionVersion: 0/.test(read("src/app/api/auth/register/route.ts")), "Register mints onboarded: false");
   assert(read("src/lib/auth/google.ts").includes("created: true") && read("src/lib/auth/google.ts").includes("onboarded: false"), "Google sign-up reports created + gated");
   assert(read("src/app/api/auth/google/callback/route.ts").includes("ONBOARDING_PATH"), "Google callback lands gated users on /bienvenida");
   assert(read("src/components/SignupForm.tsx").includes("router.push(ONBOARDING_PATH)"), "SignupForm pushes /bienvenida");
@@ -61,6 +61,12 @@ const run = () => {
   const payoff = read("src/components/onboarding/PayoffStep.tsx");
   assert(payoff.includes("acaba a las") && flow.includes("Entrar a Filmia"), "Payoff shows the fit and the final CTA");
   assert(read("src/app/actions/onboarding.ts").includes("computeTonightForUser"), "Payoff computes Hoy inline");
+
+  // FIL-I11: three titles before Hoy, enforced by the server; skipping lands on «Elige 3».
+  const actions = read("src/app/actions/onboarding.ts");
+  assert(actions.includes('reason: "needs-titles"') && actions.includes("needsQuickPicks(titleCount)"), "finishOnboarding refuses a first finish with fewer than 3 titles");
+  assert(flow.includes("resolveLeave(titleCount)") && flow.includes('variant="tres"'), "Skip and «Entrar a Filmia» detour to «Elige 3» below 3 titles");
+  assert(!flow.includes("onClick={finish}"), "Nothing skips straight to Hoy");
 
   // Motion: slides reuse the diary keyframes with ease-out; spring only on tap feedback.
   const css = read("src/app/globals.css");

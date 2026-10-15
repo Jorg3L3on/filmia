@@ -69,7 +69,18 @@ export const safeNextPath = (value: string | null | undefined) => {
   if (!value) {
     return "/";
   }
-  if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) {
+  // Browsers drop tabs/newlines and treat a backslash as "/", so "/\t/evil.com" would become
+  // "//evil.com". Reject control characters and anything that resolves off-origin.
+  if (
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    value.startsWith("/\\") ||
+    /[\u0000-\u001f\u007f]/.test(value)
+  ) {
+    return "/";
+  }
+  const sentinel = "http://filmia.invalid";
+  if (new URL(value, sentinel).origin !== sentinel) {
     return "/";
   }
   if (

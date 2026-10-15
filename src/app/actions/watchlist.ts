@@ -27,7 +27,8 @@ const revalidateDiary = (titleId: string) => {
   revalidateDiarySurfaces(titleId);
 };
 
-export const ensureWatchlist = async (userId: string) => {
+// Not exported: every export of a "use server" file is callable with any arguments.
+const ensureWatchlist = async (userId: string) => {
   await ensureDefaultLists(userId);
 
   const watchlist = await db.query.lists.findFirst({

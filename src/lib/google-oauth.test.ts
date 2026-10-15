@@ -39,6 +39,14 @@ describe("google oauth helpers", () => {
     assert.equal(safeNextPath("/api/auth/google"), "/");
     assert.equal(safeNextPath("/loginpage"), "/loginpage");
     assert.equal(safeNextPath("/bienvenida"), "/bienvenida");
+    // FIL-I10-4: the login callbackUrl goes through here too.
+    assert.equal(safeNextPath("http://evil.example/x"), "/");
+    assert.equal(safeNextPath("javascript:alert(1)"), "/");
+    assert.equal(safeNextPath("/\t/evil.example"), "/");
+    assert.equal(safeNextPath("/\n/evil.example"), "/");
+    assert.equal(safeNextPath("listas"), "/");
+    assert.equal(safeNextPath("../listas"), "/");
+    assert.equal(safeNextPath("/listas/../watchlist"), "/listas/../watchlist");
   });
 
   it("builds the start href with an optional next", () => {

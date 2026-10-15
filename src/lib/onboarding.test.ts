@@ -4,16 +4,24 @@ import {
   BEDTIME_SLOTS,
   EMPTY_YEAR_SELECTION,
   FIRST_STEP,
+  MIN_ONBOARDING_TITLES,
   ONBOARDING_STEPS,
+  QUICK_PICK_STEP,
   bedtimeCopy,
+  countAccountTitles,
   cycleYearPick,
   hhmmToSlot,
+  isOnboardingStepId,
   moonElevation,
+  needsQuickPicks,
   nextStep,
   pickYearGrid,
   prevStep,
+  quickPickRemaining,
   resolveBienvenidaEntry,
   resolveInitialStep,
+  resolveLeave,
+  stepIndex,
   resolveOnboardingYear,
   selectionFromLibrary,
   slotToHHMM,
@@ -51,6 +59,48 @@ describe("bienvenida steps", () => {
     assert.equal(resolveBienvenidaEntry({ onboardedAt: new Date(), cookieOnboarded: undefined }), "home");
     // DB says finished, this device's cookie still says no: re-mint it on the way to Hoy.
     assert.equal(resolveBienvenidaEntry({ onboardedAt: new Date(), cookieOnboarded: false }), "resync");
+  });
+});
+
+describe("tres títulos antes de Hoy (FIL-I11)", () => {
+  it("needs three titles to leave for Hoy", () => {
+    assert.equal(MIN_ONBOARDING_TITLES, 3);
+    assert.equal(needsQuickPicks(0), true);
+    assert.equal(needsQuickPicks(2), true);
+    assert.equal(needsQuickPicks(3), false);
+    assert.equal(resolveLeave(0), QUICK_PICK_STEP);
+    assert.equal(resolveLeave(2), QUICK_PICK_STEP);
+    assert.equal(resolveLeave(3), "finish");
+    assert.equal(resolveLeave(12), "finish");
+    assert.equal(quickPickRemaining(0), 3);
+    assert.equal(quickPickRemaining(2), 1);
+    assert.equal(quickPickRemaining(5), 0);
+  });
+
+  it("detours through «Elige 3» after «noche» only when the account is short", () => {
+    assert.equal(nextStep("noche", 0), QUICK_PICK_STEP);
+    assert.equal(nextStep("noche", 2), QUICK_PICK_STEP);
+    assert.equal(nextStep("noche", 3), "primera-noche");
+    assert.equal(nextStep("noche"), "primera-noche");
+    assert.equal(nextStep(QUICK_PICK_STEP, 3), "primera-noche");
+    assert.equal(prevStep(QUICK_PICK_STEP), "noche");
+    assert.equal(stepDirection("noche", QUICK_PICK_STEP), "forward");
+    assert.equal(stepDirection(QUICK_PICK_STEP, "primera-noche"), "forward");
+    assert.equal(stepDirection(QUICK_PICK_STEP, "favorita"), "back");
+    // Off the film strip: it lights the last hole and keeps the strip at seven.
+    assert.equal(stepIndex(QUICK_PICK_STEP), ONBOARDING_STEPS.length - 1);
+    assert.equal(stepAnnouncement(QUICK_PICK_STEP), "Antes de entrar: Elige 3 para empezar");
+  });
+
+  it("resumes on «Elige 3»", () => {
+    assert.equal(isOnboardingStepId(QUICK_PICK_STEP), true);
+    assert.equal(resolveInitialStep({ onboardingStep: QUICK_PICK_STEP }), QUICK_PICK_STEP);
+  });
+
+  it("counts each title once, whichever step added it", () => {
+    assert.equal(countAccountTitles([]), 0);
+    // Library favorite also ticked in the year grid, plus one queued series: two titles.
+    assert.equal(countAccountTitles(["MOVIE:1", "MOVIE:1", "SERIES:1"]), 2);
   });
 });
 
