@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import nextConfig from "../../next.config";
-import { IMAGE_HOSTS, contentSecurityPolicy, securityHeaders } from "./security-headers";
+import { FRAME_HOSTS, IMAGE_HOSTS, contentSecurityPolicy, securityHeaders } from "./security-headers";
+import { trailerEmbedUrl } from "./tmdb-trailer";
 
 describe("security headers (FIL-I10-6 L1)", () => {
   it("sends CSP, framing, sniffing and referrer headers on every route", async () => {
@@ -28,6 +29,12 @@ describe("security headers (FIL-I10-6 L1)", () => {
     const values = Object.fromEntries(securityHeaders(false).map((h) => [h.key, h.value]));
     assert.equal(values["X-Frame-Options"], "DENY");
     assert.equal(values["X-Content-Type-Options"], "nosniff");
+  });
+
+  it("frames only the trailer player (FIL-I15-2)", () => {
+    const csp = contentSecurityPolicy(false);
+    assert.match(csp, /frame-src https:\/\/www\.youtube-nocookie\.com(;|$)/);
+    assert.ok(trailerEmbedUrl("abcDEF12345").startsWith(`${FRAME_HOSTS[0]}/`));
   });
 
   it("allows every remote image host next/image is configured for", () => {

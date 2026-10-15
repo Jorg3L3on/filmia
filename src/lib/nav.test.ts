@@ -34,10 +34,11 @@ describe("isCurrentPath nested routes", () => {
 });
 
 describe("isAuthChromePath", () => {
-  it("hides the chrome on auth screens and the Bienvenida", () => {
+  it("hides the chrome on auth screens, the Bienvenida and public shares", () => {
     assert.equal(isAuthChromePath("/login"), true);
     assert.equal(isAuthChromePath("/registro?callbackUrl=%2F"), true);
     assert.equal(isAuthChromePath("/bienvenida"), true);
+    assert.equal(isAuthChromePath("/compartir/resena/abc.def"), true);
     assert.equal(isAuthChromePath("/"), false);
     assert.equal(isAuthChromePath("/perfil"), false);
   });

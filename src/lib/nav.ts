@@ -1,6 +1,6 @@
 const pathOnly = (pathname: string) => pathname.split("?")[0] ?? pathname;
 
-/** Full-screen routes without header/dock: auth screens and the Bienvenida. */
+/** Full-screen routes without header/dock: auth screens, the Bienvenida and public shares. */
 export const isAuthChromePath = (pathname: string) => {
   const path = pathOnly(pathname);
   return (
@@ -9,7 +9,8 @@ export const isAuthChromePath = (pathname: string) => {
     path === "/bienvenida" ||
     path.startsWith("/login/") ||
     path.startsWith("/registro/") ||
-    path.startsWith("/bienvenida/")
+    path.startsWith("/bienvenida/") ||
+    path.startsWith("/compartir/")
   );
 };
 

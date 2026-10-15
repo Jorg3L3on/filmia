@@ -14,6 +14,9 @@ export const IMAGE_HOSTS = [
   "https://upload.wikimedia.org",
 ];
 
+/** Embeds the app shows in an iframe: the trailer player. */
+export const FRAME_HOSTS = ["https://www.youtube-nocookie.com"];
+
 export const contentSecurityPolicy = (dev: boolean) =>
   [
     "default-src 'self'",
@@ -23,6 +26,8 @@ export const contentSecurityPolicy = (dev: boolean) =>
     `img-src 'self' data: blob: ${IMAGE_HOSTS.join(" ")}`,
     "font-src 'self'",
     `connect-src 'self'${dev ? " ws: wss:" : ""}`,
+    // The ficha's trailer (FIL-I15-2) is the only embed.
+    `frame-src ${FRAME_HOSTS.join(" ")}`,
     "worker-src 'self'",
     "manifest-src 'self'",
     "object-src 'none'",

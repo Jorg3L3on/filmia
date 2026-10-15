@@ -14,6 +14,7 @@ import {
 } from "@/components/MinePlatformsNotice";
 import { ListsBodySkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/PageHeader";
+import { ShareButton, ShareIcon } from "@/components/share/ShareButton";
 import {
   parseCatalogOrder,
   parseKindFilter,
@@ -27,7 +28,10 @@ import {
   isSeriesStatusListSlug,
   WATCHLIST_SLUG,
 } from "@/lib/lists";
+import { slugify } from "@/lib/labels";
 import { metadataServicesConfigured } from "@/lib/metadata";
+import { listShareText } from "@/lib/share-card";
+import { sharePath } from "@/lib/share-token";
 import { parseDeckCard } from "@/lib/nav-origin";
 import { getListById, getTitleOptionsOutsideList, getUserStreamingPlatforms } from "@/lib/queries";
 import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
@@ -149,6 +153,17 @@ const ListDetail = async ({
                 compact
               />
             )}
+            <ShareButton
+              path={sharePath("lista", list.id)}
+              title={list.name}
+              text={listShareText(list.name, list.items.length)}
+              fileName={`${slugify(list.name) || "lista"}.png`}
+              ariaLabel="Compartir lista"
+              className={segmentActionCompactClass}
+            >
+              <ShareIcon className="size-5" />
+              <SegmentActionTooltip label="Compartir lista" />
+            </ShareButton>
             <Link
               href={`/listas/${list.id}/editar`}
               aria-label={fixed ? "Editar descripción" : "Editar lista"}
