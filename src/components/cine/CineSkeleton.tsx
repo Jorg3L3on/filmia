@@ -2,13 +2,23 @@ import { MarqueeBulbs } from "@/components/cine/CineParts";
 import { PosterRailSkeleton, ShimmerBlock } from "@/components/PageSkeletons";
 
 /** Cine loading: the marquee stays, sections shimmer (never a full-screen spinner). */
-export const CineSkeleton = ({ sections = 3, label = "Cargando Cine" }: { sections?: number; label?: string }) => (
+export const CineSkeleton = ({
+  sections = 3,
+  label = "Cargando Cine",
+  marquee = true,
+}: {
+  sections?: number;
+  label?: string;
+  marquee?: boolean;
+}) => (
   <div className="space-y-10" aria-busy="true" aria-label={label}>
-    <div className="space-y-3">
-      <MarqueeBulbs />
-      <ShimmerBlock className="h-10 w-32 rounded-xl" />
-      <ShimmerBlock className="h-4 w-44 rounded-full" />
-    </div>
+    {marquee ? (
+      <div className="space-y-3">
+        <MarqueeBulbs />
+        <ShimmerBlock className="h-10 w-32 rounded-xl" />
+        <ShimmerBlock className="h-4 w-44 rounded-full" />
+      </div>
+    ) : null}
     {Array.from({ length: sections }, (_, index) => (
       <div key={index} className="space-y-3.5">
         <ShimmerBlock className="h-6 w-40 rounded-lg" />

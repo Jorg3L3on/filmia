@@ -6,6 +6,7 @@ import { config as loadEnv } from "dotenv";
  *   npm run cine:revisar                 # read-only: the stored cartelera (now / upcoming / gone)
  *   npm run cine:revisar -- --status=now # one status
  *   npm run cine:correr                  # WRITES: runs the cron steps (TMDB → Catalog + CinemaRelease)
+ *   npm run cine:top -- --anios=2026,2025 # WRITES: recomputes «Lo mejor del año» (TMDB + OMDb → YearTop)
  *
  * Both take --env=<path to .env>.
  */
@@ -65,12 +66,22 @@ const correr = async () => {
   console.log(`${Math.round((Date.now() - started) / 1000)} s`);
 };
 
+const top = async () => {
+  const { computeYearTop } = await import("../src/lib/cine-top-store");
+  const years = (flag("anios") ?? String(new Date().getFullYear())).split(",").map(Number);
+  for (const year of years) {
+    console.log(JSON.stringify(await computeYearTop(year)));
+  }
+};
+
 const main = async () => {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL no está definida (usa --env=<ruta al .env>).");
   }
   if (command === "correr") {
     await correr();
+  } else if (command === "top") {
+    await top();
   } else {
     await revisar();
   }

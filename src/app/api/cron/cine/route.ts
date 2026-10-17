@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { refreshYearTops } from "@/lib/cine-top-store";
 import { applyImcineReleases, backfillPastReleases, refreshCinemaReleases, shouldBackfill } from "@/lib/cine-store";
 import { isTmdbConfigured } from "@/lib/tmdb";
 
@@ -30,7 +31,8 @@ const step = async <T>(run: () => Promise<T>) => {
 
 /**
  * Vercel Cron (10:00 UTC, after watch-providers / tonight-*): Cine (FIL-I17). Materializes the
- * MX cartelera into CinemaRelease; the pages only ever read the table.
+ * MX cartelera into CinemaRelease (IMCINE dates on top, past releases weekly) and «Lo mejor del
+ * año» into YearTop. The pages only ever read the tables.
  */
 export const GET = async (request: Request) => {
   if (!isAuthorizedCron(request)) {
@@ -46,5 +48,6 @@ export const GET = async (request: Request) => {
   const backfill = await step(async () =>
     (await shouldBackfill()) ? backfillPastReleases() : { ok: true as const, skipped: "not_due" },
   );
-  return NextResponse.json({ cartelera, imcine, backfill });
+  const yearTop = await step(() => refreshYearTops());
+  return NextResponse.json({ cartelera, imcine, backfill, yearTop });
 };
