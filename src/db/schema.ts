@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  date,
   index,
   integer,
   jsonb,
@@ -34,7 +35,7 @@ export const platformEnum = pgEnum("Platform", [
   "CURIOSITY",
   "LIONSGATE",
 ]);
-export const listKindEnum = pgEnum("ListKind", ["COLLECTION", "WATCHLIST"]);
+export const listKindEnum = pgEnum("ListKind", ["COLLECTION", "WATCHLIST", "YEAR_TOP"]);
 
 const enumObject = <T extends string>(values: readonly T[]) =>
   Object.fromEntries(values.map((value) => [value, value])) as { [K in T]: K };
@@ -186,6 +187,8 @@ export const lists = pgTable(
     description: text("description"),
     kind: listKindEnum("kind").notNull().default("COLLECTION"),
     slug: text("slug"),
+    /** YEAR_TOP only: the release year the top 10 is about (slug `top-{year}`). */
+    year: integer("year"),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),
@@ -374,13 +377,73 @@ export const platformAlerts = pgTable(
   ],
 );
 
+/**
+ * Cine (FIL-I17): films in MX theaters or announced for them, materialized by the daily cron
+ * from TMDB (and the IMCINE file for Mexican cinema). Rows are never deleted: a film that stops
+ * showing up for 3 days turns `gone`, which is what «Ya en casa» reads.
+ */
+export const cinemaReleases = pgTable(
+  "CinemaRelease",
+  {
+    catalogId: text("catalogId")
+      .primaryKey()
+      .references(() => catalog.id, { onDelete: "cascade" }),
+    /** Commercial MX release (TMDB type 3, or IMCINE). Calendar day, no time. */
+    mxReleaseDate: date("mxReleaseDate", { mode: "string" }).notNull(),
+    /** `now` | `upcoming` | `gone` (see `CinemaReleaseStatus`). */
+    status: text("status").notNull(),
+    popularity: real("popularity").notNull().default(0),
+    firstSeenAt: timestamp("firstSeenAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow(),
+    lastSeenAt: timestamp("lastSeenAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow(),
+    /** `tmdb` | `imcine`; an IMCINE date wins over TMDB's. */
+    source: text("source").notNull().default("tmdb"),
+  },
+  (table) => [
+    index("CinemaRelease_status_mxReleaseDate_idx").on(table.status, table.mxReleaseDate),
+  ],
+);
+
+/** «Lo mejor del año · según IMDb»: ten films per release year, recomputed weekly by the cron. */
+export const yearTops = pgTable(
+  "YearTop",
+  {
+    year: integer("year").notNull(),
+    rank: integer("rank").notNull(),
+    catalogId: text("catalogId")
+      .notNull()
+      .references(() => catalog.id, { onDelete: "cascade" }),
+    imdbRating: real("imdbRating").notNull(),
+    imdbVotes: integer("imdbVotes").notNull(),
+    computedAt: timestamp("computedAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.year, table.rank] })],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   titles: many(titles),
   lists: many(lists),
 }));
 
-export const catalogRelations = relations(catalog, ({ many }) => ({
+export const catalogRelations = relations(catalog, ({ many, one }) => ({
   titles: many(titles),
+  cinemaRelease: one(cinemaReleases, {
+    fields: [catalog.id],
+    references: [cinemaReleases.catalogId],
+  }),
+}));
+
+export const cinemaReleasesRelations = relations(cinemaReleases, ({ one }) => ({
+  catalog: one(catalog, { fields: [cinemaReleases.catalogId], references: [catalog.id] }),
+}));
+
+export const yearTopsRelations = relations(yearTops, ({ one }) => ({
+  catalog: one(catalog, { fields: [yearTops.catalogId], references: [catalog.id] }),
 }));
 
 export const titlesRelations = relations(titles, ({ one, many }) => ({
@@ -417,6 +480,8 @@ export type PickEventRow = typeof pickEvents.$inferSelect;
 export type TonightRecoRow = typeof tonightRecos.$inferSelect;
 export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect;
 export type PlatformAlertRow = typeof platformAlerts.$inferSelect;
+export type CinemaReleaseRow = typeof cinemaReleases.$inferSelect;
+export type YearTopRow = typeof yearTops.$inferSelect;
 
 export type ListItemWithTitleRelations = typeof listItems.$inferSelect & {
   title: Title;
