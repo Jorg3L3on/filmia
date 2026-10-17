@@ -6,6 +6,7 @@ import { config as loadEnv } from "dotenv";
  *   npm run cine:revisar                 # read-only: the stored cartelera (now / upcoming / gone)
  *   npm run cine:revisar -- --status=now # one status
  *   npm run cine:correr                  # WRITES: runs the cron steps (TMDB → Catalog + CinemaRelease)
+ *   npm run cine:avisos                  # read-only: the «Llega a cines» pushes the cron would send now
  *   npm run cine:top -- --anios=2026,2025 # WRITES: recomputes «Lo mejor del año» (TMDB + OMDb → YearTop)
  *
  * Both take --env=<path to .env>.
@@ -74,12 +75,23 @@ const top = async () => {
   }
 };
 
+const avisos = async () => {
+  const { findCinemaArrivals } = await import("../src/lib/cine-alerts-store");
+  const { today, candidates, arrivals } = await findCinemaArrivals();
+  console.log(`${today}: ${candidates} candidatas, ${arrivals.length} avisos`);
+  for (const arrival of arrivals) {
+    console.log(`${arrival.mxReleaseDate}  ${arrival.userId}  ${arrival.name}`);
+  }
+};
+
 const main = async () => {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL no está definida (usa --env=<ruta al .env>).");
   }
   if (command === "correr") {
     await correr();
+  } else if (command === "avisos") {
+    await avisos();
   } else if (command === "top") {
     await top();
   } else {

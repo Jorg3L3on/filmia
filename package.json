@@ -37,7 +37,8 @@
     "metrics:recos": "tsx scripts/reco-metrics.ts",
     "cine:revisar": "tsx scripts/cine.ts revisar",
     "cine:correr": "tsx scripts/cine.ts correr",
-    "cine:top": "tsx scripts/cine.ts top"
+    "cine:top": "tsx scripts/cine.ts top",
+    "cine:avisos": "tsx scripts/cine.ts avisos"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

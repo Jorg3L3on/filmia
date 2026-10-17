@@ -425,6 +425,27 @@ export const yearTops = pgTable(
   (table) => [primaryKey({ columns: [table.year, table.rank] })],
 );
 
+/**
+ * «Llega a cines» ledger (FIL-I17-6): one row per Quiero ver film a user was told premieres in MX.
+ * Keyed by the release date, so a date that moves (IMCINE) can be announced again.
+ */
+export const cinemaAlerts = pgTable(
+  "CinemaAlert",
+  {
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    catalogId: text("catalogId")
+      .notNull()
+      .references(() => catalog.id, { onDelete: "cascade" }),
+    mxReleaseDate: date("mxReleaseDate", { mode: "string" }).notNull(),
+    sentAt: timestamp("sentAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.catalogId, table.mxReleaseDate] })],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   titles: many(titles),
   lists: many(lists),
@@ -482,6 +503,7 @@ export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect;
 export type PlatformAlertRow = typeof platformAlerts.$inferSelect;
 export type CinemaReleaseRow = typeof cinemaReleases.$inferSelect;
 export type YearTopRow = typeof yearTops.$inferSelect;
+export type CinemaAlertRow = typeof cinemaAlerts.$inferSelect;
 
 export type ListItemWithTitleRelations = typeof listItems.$inferSelect & {
   title: Title;
