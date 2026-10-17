@@ -33,6 +33,7 @@ import {
   parseTmdbIdParam,
   type DiaryLog,
 } from "@/lib/title-preview";
+import { getCinemaRelease } from "@/lib/cine";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 import {
   AffinitySlot,
@@ -177,7 +178,11 @@ const TitlePreview = async ({
       </Suspense>
 
       <Suspense fallback={<TitleProvidersSkeleton />}>
-        <TitleProvidersBlock providersPromise={providersPromise} platformsPromise={platformsPromise} />
+        <TitleProvidersBlock
+          providersPromise={providersPromise}
+          platformsPromise={platformsPromise}
+          cinemaPromise={getCinemaRelease(title.catalogId)}
+        />
       </Suspense>
 
       <Suspense fallback={null}>

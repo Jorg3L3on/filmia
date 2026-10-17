@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { applyImcineReleases, refreshCinemaReleases } from "@/lib/cine-store";
+import { applyImcineReleases, backfillPastReleases, refreshCinemaReleases, shouldBackfill } from "@/lib/cine-store";
 import { isTmdbConfigured } from "@/lib/tmdb";
 
 export const runtime = "nodejs";
@@ -43,5 +43,8 @@ export const GET = async (request: Request) => {
 
   const cartelera = await step(() => refreshCinemaReleases());
   const imcine = await step(() => applyImcineReleases());
-  return NextResponse.json({ cartelera, imcine });
+  const backfill = await step(async () =>
+    (await shouldBackfill()) ? backfillPastReleases() : { ok: true as const, skipped: "not_due" },
+  );
+  return NextResponse.json({ cartelera, imcine, backfill });
 };

@@ -26,6 +26,7 @@ import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { resolveTitleExtras, storedTitleExtras } from "@/lib/title-extras";
 import { resolveTitlePeople } from "@/lib/title-people";
 import { parseDiaryLog } from "@/lib/title-preview";
+import { getCinemaRelease } from "@/lib/cine";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 import TitleLoading from "./loading";
 import {
@@ -182,6 +183,7 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
         <TitleProvidersBlock
           providersPromise={providersPromise}
           platformsPromise={platformsPromise}
+          cinemaPromise={getCinemaRelease(title.catalogId)}
         />
       </Suspense>
 

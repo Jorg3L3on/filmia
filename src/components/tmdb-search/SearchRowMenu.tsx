@@ -29,6 +29,8 @@ type SearchRowMenuProps = {
   onPin: () => void;
   onLists: () => void;
   onOpenFicha: () => void;
+  /** What lifts over the blur instead of the Buscar row (Cine lifts the held poster). */
+  lift?: ReactNode;
 };
 
 const MENU_WIDTH = 262;
@@ -70,6 +72,7 @@ export const SearchRowMenu = ({
   onPin,
   onLists,
   onOpenFicha,
+  lift,
 }: SearchRowMenuProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -138,13 +141,23 @@ export const SearchRowMenu = ({
   return createPortal(
     <div className="search-menu fixed inset-0 z-[80]">
       <div className="search-menu-scrim absolute inset-0" aria-hidden="true" onClick={onClose} />
-      <div
-        aria-hidden="true"
-        className={cn(glassRowClass, "search-menu-lift pointer-events-none fixed flex items-center gap-3 bg-[rgb(36_43_51/0.96)] p-2.5")}
-        style={{ top: anchor.top, left: anchor.left, width: anchor.width, minHeight: anchor.height }}
-      >
-        <SearchResultRowBody result={result} titleId={titleId} status={status} facts={facts} />
-      </div>
+      {lift ? (
+        <div
+          aria-hidden="true"
+          className="search-menu-lift pointer-events-none fixed"
+          style={{ top: anchor.top, left: anchor.left, width: anchor.width, height: anchor.height }}
+        >
+          {lift}
+        </div>
+      ) : (
+        <div
+          aria-hidden="true"
+          className={cn(glassRowClass, "search-menu-lift pointer-events-none fixed flex items-center gap-3 bg-[rgb(36_43_51/0.96)] p-2.5")}
+          style={{ top: anchor.top, left: anchor.left, width: anchor.width, minHeight: anchor.height }}
+        >
+          <SearchResultRowBody result={result} titleId={titleId} status={status} facts={facts} />
+        </div>
+      )}
       <div
         ref={menuRef}
         role="menu"

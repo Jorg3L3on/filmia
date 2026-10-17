@@ -7,6 +7,7 @@ import {
   addDays,
   GONE_AFTER_DAYS,
   HOME_AFTER_DAYS,
+  HOME_LOOKBACK_DAYS,
   judgeCinemaCandidate,
   mergeRelease,
   mxToday,
@@ -358,4 +359,95 @@ export const sweepCinemaReleases = async (today: string, now = new Date()) => {
     )
     .returning({ catalogId: cinemaReleases.catalogId });
   return gone.length;
+};
+
+export type BackfillSummary = { ok: true; listed: number; kept: number; created: number; enriched: number; skipped?: string } | { ok: false; error: string };
+
+/** The backfill runs on Mondays, or any day while the «Ya en casa» window is still empty. */
+export const shouldBackfill = async (now = new Date()) => {
+  if (now.getUTCDay() === 1) {
+    return true;
+  }
+  const today = mxToday(now);
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(cinemaReleases)
+    .where(
+      and(
+        sql`${cinemaReleases.mxReleaseDate} >= ${addDays(today, -HOME_LOOKBACK_DAYS)}::date`,
+        sql`${cinemaReleases.mxReleaseDate} < ${addDays(today, -HOME_AFTER_DAYS)}::date`,
+      ),
+    );
+  return (row?.count ?? 0) < 20;
+};
+
+/**
+ * «Ya en casa» history (FIL-I17-4): commercial MX releases from six months to six weeks ago,
+ * stored as `gone` so the page can show which of them stream now. Rows that already exist are
+ * left alone; the daily providers cron keeps their availability current.
+ */
+export const backfillPastReleases = async (now = new Date()): Promise<BackfillSummary> => {
+  const today = mxToday(now);
+  let ids: number[];
+  try {
+    ids = await discoverTmdbReleaseIds({
+      from: addDays(today, -HOME_LOOKBACK_DAYS),
+      to: addDays(today, -HOME_AFTER_DAYS - 1),
+      types: "3",
+      maxPages: 10,
+    });
+  } catch {
+    return { ok: false, error: "tmdb_lists_failed" };
+  }
+
+  const existing = await loadStoredReleases();
+  const kept: { info: TmdbMovieReleaseInfo; mxReleaseDate: string }[] = [];
+  await runPool(ids, DETAIL_CONCURRENCY, async (tmdbId) => {
+    try {
+      const info = await getTmdbMovieReleaseInfo(tmdbId);
+      if (!info) {
+        return;
+      }
+      const verdict = judgeCinemaCandidate({
+        tmdbId: info.tmdbId,
+        popularity: info.popularity,
+        originalLanguage: info.originalLanguage,
+        productionCountries: info.productionCountries,
+        releaseDate: info.releaseDate,
+        runtimeMinutes: info.runtimeMinutes,
+        mxReleaseDates: info.releaseDates.MX ?? [],
+      });
+      if (verdict.ok) {
+        kept.push({ info, mxReleaseDate: verdict.mxReleaseDate });
+      }
+    } catch {
+      // One film failing is fine: next week's run tries it again.
+    }
+  });
+
+  const budget = { left: MAX_ENRICH_PER_RUN, enriched: 0 };
+  let created = 0;
+  kept.sort((a, b) => b.info.popularity - a.info.popularity);
+  await runPool(kept, ENRICH_CONCURRENCY, async ({ info, mxReleaseDate }) => {
+    const { row } = await materializeCatalog(info, budget);
+    if (existing.has(row.id)) {
+      return;
+    }
+    const inserted = await db
+      .insert(cinemaReleases)
+      .values({
+        catalogId: row.id,
+        mxReleaseDate,
+        status: "gone",
+        popularity: info.popularity,
+        firstSeenAt: now,
+        lastSeenAt: now,
+        source: "tmdb",
+      })
+      .onConflictDoNothing()
+      .returning({ catalogId: cinemaReleases.catalogId });
+    created += inserted.length;
+  });
+
+  return { ok: true, listed: ids.length, kept: kept.length, created, enriched: budget.enriched };
 };
