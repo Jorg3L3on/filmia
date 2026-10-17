@@ -20,6 +20,9 @@
   /* «Para ti» (FIL-I9): lilac, the magenta side of the icon; never IMDb yellow, reco teal or accent. */
   --affinity: #c9b2ff;
   --affinity-rgb: 201 178 255;
+  /* Cine (FIL-I17): the neon magenta of the app icon. Gold stays stars/IMDb. */
+  --cine: #ff4f9e;
+  --cine-rgb: 255 79 158;
   /* Light accent-tinted text on dark glass (pills, ticket stub). */
   --accent-tint: #ffe3d8;
   --accent-soft: rgb(var(--accent-rgb) / 0.4);
@@ -85,6 +88,7 @@
   --color-rating: var(--rating);
   --color-imdb: var(--imdb);
   --color-affinity: var(--affinity);
+  --color-cine: var(--cine);
   --color-success: var(--success);
   --color-success-hover: var(--success-hover);
   --color-success-well: var(--success-well);

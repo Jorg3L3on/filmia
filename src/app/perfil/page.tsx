@@ -5,6 +5,7 @@ import { NightEndsForm } from "@/components/NightEndsForm";
 import { ProfileHeaderSkeleton, ProfileBodySkeleton } from "@/components/PageSkeletons";
 import { ProfileDiary } from "@/components/ProfileDiary";
 import { ProfileAccountCard } from "@/components/profile/ProfileAccountCard";
+import { ProfileListsRow } from "@/components/profile/ProfileListsRow";
 import { ProfileMarquee } from "@/components/profile/ProfileMarquee";
 import { PushAlertsToggle } from "@/components/profile/PushAlertsToggle";
 import { StreamingPlatformPicker } from "@/components/StreamingPlatformPicker";
@@ -55,6 +56,7 @@ const ProfileBody = async () => {
         {/* Tu diario stays exactly as it was; only its surroundings changed. */}
         <ProfileDiary />
         <div className="space-y-9">
+          <ProfileListsRow />
           <NightEndsForm value={profile.nightEnds} />
           <StreamingPlatformPicker selected={profile.streamingPlatforms} />
           <PushAlertsToggle vapidPublicKey={isPushConfigured() ? vapidPublicKey() : null} />

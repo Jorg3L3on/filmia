@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { focusRing, glassRowClass } from "@/lib/ui";
 
@@ -38,13 +39,15 @@ type ProfileRowProps = {
   /** Second line under the label (e.g. why a row is not editable). */
   hint?: ReactNode;
   onClick?: () => void;
+  /** A row that navigates (Listas ›) instead of opening a sheet. */
+  href?: string;
   ariaLabel?: string;
 };
 
 const rowBase = "flex min-h-14 w-full items-center gap-3 py-2 pr-3.5 pl-4 text-left text-[15px] text-paper";
 
 /** One row of a ProfileGroup: a button (with chevron) when it opens something, plain otherwise. */
-export const ProfileRow = ({ icon, iconClassName, label, value, hint, onClick, ariaLabel }: ProfileRowProps) => {
+export const ProfileRow = ({ icon, iconClassName, label, value, hint, onClick, href, ariaLabel }: ProfileRowProps) => {
   const body = (
     <>
       <span
@@ -58,25 +61,28 @@ export const ProfileRow = ({ icon, iconClassName, label, value, hint, onClick, a
         {hint ? <span className="block text-xs text-mist">{hint}</span> : null}
       </span>
       {value ? <span className="ml-auto min-w-0 truncate text-right text-sm text-fog">{value}</span> : null}
-      {onClick ? <ChevronIcon className={cn("size-4 shrink-0 text-faint", !value && "ml-auto")} /> : null}
+      {onClick || href ? <ChevronIcon className={cn("size-4 shrink-0 text-faint", !value && "ml-auto")} /> : null}
     </>
   );
 
+  const interactive = cn(
+    rowBase,
+    "transition-[background-color] duration-[var(--duration-hover)] ease-[var(--ease-out)] hover:bg-white/[0.04] active:bg-white/[0.06]",
+    focusRing,
+    "focus-visible:-outline-offset-2",
+  );
+  if (href) {
+    return (
+      <Link href={href} aria-label={ariaLabel} className={interactive}>
+        {body}
+      </Link>
+    );
+  }
   if (!onClick) {
     return <div className={rowBase}>{body}</div>;
   }
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={ariaLabel}
-      className={cn(
-        rowBase,
-        "transition-[background-color] duration-[var(--duration-hover)] ease-[var(--ease-out)] hover:bg-white/[0.04] active:bg-white/[0.06]",
-        focusRing,
-        "focus-visible:-outline-offset-2",
-      )}
-    >
+    <button type="button" onClick={onClick} aria-label={ariaLabel} className={interactive}>
       {body}
     </button>
   );
@@ -95,6 +101,12 @@ const iconProps = {
 export const ChevronIcon = ({ className }: { className?: string }) => (
   <svg {...iconProps} strokeWidth={2} className={className}>
     <path d="m9 6 6 6-6 6" />
+  </svg>
+);
+
+export const ListsIcon = () => (
+  <svg {...iconProps}>
+    <path d="M8 6h12M8 12h12M8 18h8M4 6h.01M4 12h.01M4 18h.01" />
   </svg>
 );
 

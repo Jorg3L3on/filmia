@@ -54,6 +54,7 @@ const STATIC_LABELS: Array<[RegExp, string]> = [
   [/^\/$/, "Hoy"],
   [/^\/watchlist(\/|$)/, "Quiero ver"],
   [/^\/listas(\/|$)/, "Listas"],
+  [/^\/cine(\/|$)/, "Cine"],
   [/^\/buscar(\/|$)/, "Buscar"],
   [/^\/perfil(\/|$)/, "Perfil"],
   [/^\/diario(\/|$)/, "Diario"],
