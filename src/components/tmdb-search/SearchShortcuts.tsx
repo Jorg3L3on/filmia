@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { Sheet, SheetHandle } from "@/components/Sheet";
 import type { SearchAddDestination } from "@/components/tmdb-search/search-actions";
 import { SearchListPicker } from "@/components/tmdb-search/SearchListPicker";
@@ -31,6 +31,8 @@ type SearchShortcutsProps = {
   onPickLists: (result: TmdbCatalogResult) => void;
   onSaveLists: (result: TmdbCatalogResult, initialIds: string[], selectedIds: string[]) => Promise<boolean>;
   onOpenFicha: (href: string) => void;
+  /** Lifted copy of the held item; default is the Buscar row. */
+  liftFor?: (result: TmdbCatalogResult) => ReactNode;
 };
 
 /**
@@ -57,6 +59,7 @@ export const SearchShortcuts = ({
   onPickLists,
   onSaveLists,
   onOpenFicha,
+  liftFor,
 }: SearchShortcutsProps) => {
   const listsTitleId = useId();
   const held = menu ? statusOf(menu.result) : null;
@@ -85,6 +88,7 @@ export const SearchShortcuts = ({
         onPin={run(onPin)}
         onLists={run(onPickLists)}
         onOpenFicha={run((result) => onOpenFicha(hrefFor(result, statusOf(result).titleId)))}
+        lift={menu && liftFor ? liftFor(menu.result) : undefined}
       />
 
       <Sheet

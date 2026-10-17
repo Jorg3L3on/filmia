@@ -53,11 +53,13 @@ for (const pathname of onListas) {
 
 assert(isCurrentPath("/", "/titulos/abc"), "Diario highlights nested ficha routes");
 assert(isCurrentPath("/listas", "/listas/abc"), "Listas highlights nested list routes");
+assert(isMobileNavCurrent("/perfil", "/listas/abc"), "The Listas hub lives under Perfil (FIL-I17)");
+assert(isMobileNavCurrent("/cine", "/cine/cartelera"), "Cine lights up on /cine/*");
 
 assert(mobileNavItems.length === 4, "Mobile tab bar has 4 tabs around the center Buscar disc");
 assert(
-  mobileNavItems.map((item) => item.label).join("|") === "Hoy|Quiero ver|Listas|Perfil",
-  "Mobile nav order must be Hoy, Quiero ver, (Buscar), Listas, Perfil",
+  mobileNavItems.map((item) => item.label).join("|") === "Hoy|Quiero ver|Cine|Perfil",
+  "Mobile nav order must be Hoy, Quiero ver, (Buscar), Cine, Perfil",
 );
 assert(mobileNavSearchSlot === 2, "Buscar disc must sit in the middle (3rd) dock column");
 assert(mobileNavItems[3]?.href === "/perfil", "Perfil must be the last mobile nav item");
@@ -94,8 +96,8 @@ assert(
 
 assert(desktopNavItems[0]?.label === "Hoy", "Desktop nav leads with Hoy");
 assert(
-  desktopNavItems.map((item) => item.label).join("|") === "Hoy|Quiero ver|Listas|Buscar|Perfil",
-  "Desktop nav is Hoy · Quiero ver · Listas · Buscar · Perfil",
+  desktopNavItems.map((item) => item.label).join("|") === "Hoy|Quiero ver|Buscar|Cine|Perfil",
+  "Desktop nav is Hoy · Quiero ver · Buscar · Cine · Perfil",
 );
 assert(isDesktopNavCurrent("/perfil", "/diario"), "Desktop Perfil tab lights up on /diario");
 {
@@ -115,5 +117,5 @@ assert(isAuthChromePath("/registro/missing"), "signup-path 404s hide app chrome"
 assert(!isAuthChromePath("/"), "diario keeps app chrome");
 assert(!isAuthChromePath("/watchlist"), "watchlist keeps app chrome");
 
-console.log("✓ Nested paths highlight Hoy / Listas / Perfil (Tu diario)");
+console.log("✓ Nested paths highlight Hoy / Cine / Perfil (Tu diario, Listas)");
 console.log("✓ Mobile dock is 4 tabs around the center Buscar disc (lit on /buscar) with Perfil at the end; no «+» menu, no header magnifier");

@@ -117,13 +117,19 @@ export const sortUserLists = <T extends { slug: string | null; name: string }>(
   });
 };
 
-export const partitionUserLists = <T extends { slug: string | null; name: string }>(
+export const isYearTopList = (list: { kind?: ListKind | null }) => list.kind === "YEAR_TOP";
+
+/** Lists hub: fixed («Listas diarias»), your own, and your top 10 per year (newest year first). */
+export const partitionUserLists = <
+  T extends { slug: string | null; name: string; kind?: ListKind | null; year?: number | null },
+>(
   listRows: T[],
 ) => {
   const ordered = sortUserLists(listRows);
   return {
     fixed: ordered.filter((list) => isFixedListSlug(list.slug)),
-    custom: ordered.filter((list) => !isFixedListSlug(list.slug)),
+    custom: ordered.filter((list) => !isFixedListSlug(list.slug) && !isYearTopList(list)),
+    years: ordered.filter(isYearTopList).sort((a, b) => (b.year ?? 0) - (a.year ?? 0)),
   };
 };
 

@@ -20,6 +20,9 @@
   /* «Para ti» (FIL-I9): lilac, the magenta side of the icon; never IMDb yellow, reco teal or accent. */
   --affinity: #c9b2ff;
   --affinity-rgb: 201 178 255;
+  /* Cine (FIL-I17): the neon magenta of the app icon. Gold stays stars/IMDb. */
+  --cine: #ff4f9e;
+  --cine-rgb: 255 79 158;
   /* Light accent-tinted text on dark glass (pills, ticket stub). */
   --accent-tint: #ffe3d8;
   --accent-soft: rgb(var(--accent-rgb) / 0.4);
@@ -85,6 +88,7 @@
   --color-rating: var(--rating);
   --color-imdb: var(--imdb);
   --color-affinity: var(--affinity);
+  --color-cine: var(--cine);
   --color-success: var(--success);
   --color-success-hover: var(--success-hover);
   --color-success-well: var(--success-well);
@@ -3544,6 +3548,82 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Cine (FIL-I17): marquee bulbs, ticket stubs. Magenta is --cine; gold stays IMDb.
+ * ------------------------------------------------------------------------- */
+.cine-bulbs {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.cine-bulb {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 9999px;
+  background: rgb(var(--cine-rgb) / 0.95);
+  box-shadow: 0 0 6px 1px rgb(var(--cine-rgb) / 0.75), 0 0 14px 2px rgb(var(--cine-rgb) / 0.3);
+  animation: cine-bulb 2.8s ease-in-out infinite;
+  animation-delay: calc(var(--bulb, 0) * 0.35s);
+}
+
+@keyframes cine-bulb {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.cine-glow {
+  text-shadow: 0 0 18px rgb(var(--cine-rgb) / 0.45);
+}
+
+/* Ticket stub: notches on both sides, dashed tear line on the right. */
+.cine-stub {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.25rem;
+  padding: 0.45rem 0.6rem 0.5rem;
+  border-radius: 0.6rem;
+  background: rgb(var(--cine-rgb) / 0.12);
+  border: 1px solid rgb(var(--cine-rgb) / 0.35);
+  color: var(--paper);
+  -webkit-mask: radial-gradient(circle at 0 50%, transparent 0.32rem, #000 0.34rem) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 0.32rem, #000 0.34rem) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle at 0 50%, transparent 0.32rem, #000 0.34rem) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 0.32rem, #000 0.34rem) right / 51% 100% no-repeat;
+}
+
+.cine-stub::after {
+  content: "";
+  position: absolute;
+  inset: 0.4rem 0.25rem 0.4rem auto;
+  border-right: 1px dashed rgb(var(--cine-rgb) / 0.4);
+}
+
+.cine-dot-live {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  background: var(--cine);
+  box-shadow: 0 0 8px rgb(var(--cine-rgb) / 0.9);
+  animation: cine-bulb 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cine-bulb,
+  .cine-dot-live {
+    animation: none;
+  }
+}
+
 
 @media (prefers-reduced-motion: reduce) {
   .bienvenida-glow,

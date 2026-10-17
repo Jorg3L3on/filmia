@@ -15,7 +15,7 @@ describe("warm nav hrefs", () => {
       [
         "/",
         "/buscar",
-        "/listas",
+        "/cine",
         "/perfil",
         "/titulos/a",
       ],
@@ -27,7 +27,7 @@ describe("warm nav hrefs", () => {
       "/",
       "/watchlist",
       "/buscar",
-      "/listas",
+      "/cine",
       "/perfil",
     ]);
     assert.ok(!collectWarmNavHrefs("/").includes("/"));

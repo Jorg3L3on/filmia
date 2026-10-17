@@ -18,7 +18,7 @@ export const SiteHeaderNav = () => (
             "rounded-full px-3 py-1.5 tab-transition",
             focusRing,
             isCurrent
-              ? "bg-accent font-medium text-ink"
+              ? cn("font-medium text-ink", item.href === "/cine" ? "bg-cine" : "bg-accent")
               : "text-fog hover:bg-chrome hover:text-paper",
           )
         }

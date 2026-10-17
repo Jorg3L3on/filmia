@@ -2,8 +2,10 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { TitleKind } from "@/db";
 import {
+  countRoles,
   parseFilmography,
   summarizeFilmography,
+  todayIso,
   type DirectorHit,
   type PersonFilmography,
   type PersonRole,
@@ -800,14 +802,133 @@ export const getTmdbPersonFilmography = async (
     }>(`/person/${personId}`),
     tmdbFetch<TmdbCombinedCredits>(`/person/${personId}/combined_credits`),
   ]);
+  const name = person.name?.trim() || "";
+  const today = todayIso();
   return summarizeFilmography(
     {
       id: person.id,
-      name: person.name?.trim() || "",
+      name,
       profilePath: person.profile_path ?? null,
       department: person.known_for_department ?? null,
     },
     role,
-    parseFilmography(credits, role),
+    parseFilmography(credits, role, name),
+    { today, roles: countRoles(credits, name, today) },
   );
+};
+
+// ---------------------------------------------------------------------------
+// Cine (FIL-I17): MX theatrical lists for the daily cron. Fetched fresh (no
+// 24 h cache): the point is today's cartelera. Nothing on a page calls these.
+// ---------------------------------------------------------------------------
+
+type TmdbMoviePage = { results?: { id: number }[]; total_pages?: number };
+
+const fetchMovieIdPages = async (path: string, params: Record<string, string>, maxPages: number) => {
+  const ids: number[] = [];
+  for (let page = 1; page <= maxPages; page += 1) {
+    const data = (await fetchTmdbJson(path, tmdbSearch(path, { ...params, page: String(page) }), {
+      store: false,
+    })) as TmdbMoviePage;
+    for (const item of data.results ?? []) {
+      if (Number.isInteger(item.id)) {
+        ids.push(item.id);
+      }
+    }
+    if (!data.total_pages || page >= data.total_pages) {
+      break;
+    }
+  }
+  return ids;
+};
+
+/** `/movie/now_playing` for a region, every page up to `maxPages`. */
+export const getTmdbNowPlayingIds = (region = "MX", maxPages = 8) =>
+  fetchMovieIdPages("/movie/now_playing", { region }, maxPages);
+
+/** `/discover/movie` by regional release date and release types (`2|3`), soonest first. */
+export const discoverTmdbReleaseIds = (
+  options: { region?: string; from: string; to: string; types: string; maxPages?: number },
+) =>
+  fetchMovieIdPages(
+    "/discover/movie",
+    {
+      region: options.region ?? "MX",
+      "release_date.gte": options.from,
+      "release_date.lte": options.to,
+      with_release_type: options.types,
+      sort_by: "primary_release_date.asc",
+      include_adult: "false",
+    },
+    options.maxPages ?? 6,
+  );
+
+export type TmdbMovieReleaseInfo = {
+  tmdbId: number;
+  name: string;
+  originalName: string | null;
+  year: number | null;
+  posterPath: string | null;
+  popularity: number;
+  originalLanguage: string | null;
+  productionCountries: string[];
+  releaseDate: string | null;
+  runtimeMinutes: number | null;
+  releaseDates: Record<
+    string,
+    { type: number; release_date: string; note?: string; iso_639_1?: string; certification?: string }[]
+  >;
+};
+
+type TmdbMovieReleasePayload = {
+  id: number;
+  title?: string;
+  original_title?: string;
+  release_date?: string;
+  poster_path?: string | null;
+  popularity?: number;
+  runtime?: number | null;
+  original_language?: string;
+  production_countries?: { iso_3166_1: string }[];
+  release_dates?: {
+    results?: {
+      iso_3166_1: string;
+      release_dates: { type: number; release_date: string; note?: string; iso_639_1?: string; certification?: string }[];
+    }[];
+  };
+};
+
+/** One call: details + every country's release dates. Null for an unknown id. */
+export const getTmdbMovieReleaseInfo = async (tmdbId: number): Promise<TmdbMovieReleaseInfo | null> => {
+  const path = `/movie/${tmdbId}`;
+  let data: TmdbMovieReleasePayload;
+  try {
+    data = (await fetchTmdbJson(path, tmdbSearch(path, { append_to_response: "release_dates" }), {
+      store: false,
+    })) as TmdbMovieReleasePayload;
+  } catch (error) {
+    if (error instanceof TmdbRequestError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+  const name = data.title?.trim() ?? "";
+  if (!name) {
+    return null;
+  }
+  return {
+    tmdbId: data.id,
+    name,
+    originalName: data.original_title?.trim() || null,
+    year: parseTmdbYear(data.release_date),
+    posterPath: data.poster_path ?? null,
+    popularity: data.popularity ?? 0,
+    originalLanguage: data.original_language ?? null,
+    productionCountries: (data.production_countries ?? []).map((country) => country.iso_3166_1),
+    releaseDate: data.release_date || null,
+    runtimeMinutes: data.runtime || null,
+    releaseDates: Object.fromEntries(
+      (data.release_dates?.results ?? []).map((entry) => [entry.iso_3166_1, entry.release_dates ?? []]),
+    ),
+  };
 };

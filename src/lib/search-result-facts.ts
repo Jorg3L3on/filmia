@@ -47,6 +47,8 @@ export type SearchFactsRow = SearchFactsItem & {
 /** Most a search asks the Catalog about; most it enriches (one OMDb call each). */
 export const SEARCH_FACTS_LOOKUP_LIMIT = 24;
 export const SEARCH_FACTS_ENRICH_LIMIT = 6;
+/** A filmography asks about its whole work (Brad Pitt: 88); enrichment keeps Buscar's limit. */
+export const FILMOGRAPHY_FACTS_LIMIT = 150;
 
 export const PENDING_FACTS: SearchResultFacts = {
   imdbRating: null,

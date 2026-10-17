@@ -22,6 +22,10 @@
     {
       "path": "/api/cron/tonight-recos",
       "schedule": "45 9 * * *"
+    },
+    {
+      "path": "/api/cron/cine",
+      "schedule": "0 10 * * *"
     }
   ]
 }

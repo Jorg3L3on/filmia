@@ -4,7 +4,7 @@ export const NAV_PREFETCH_HREFS = [
   "/",
   "/watchlist",
   "/buscar",
-  "/listas",
+  "/cine",
   "/perfil",
 ] as const;
 
@@ -13,7 +13,7 @@ export const NAV_PREFETCH_PRIORITY = [
   "/",
   "/watchlist",
   "/buscar",
-  "/listas",
+  "/cine",
   "/perfil",
 ] as const;
 
@@ -68,8 +68,11 @@ const navIndex = (pathname: string) => {
   if (path.startsWith("/titulos/")) {
     return 0; // ficha lives under Diario in the chrome
   }
-  if (path.startsWith("/listas/")) {
-    return NAV_PREFETCH_PRIORITY.indexOf("/listas");
+  if (path.startsWith("/cine/")) {
+    return NAV_PREFETCH_PRIORITY.indexOf("/cine");
+  }
+  if (path === "/listas" || path.startsWith("/listas/")) {
+    return NAV_PREFETCH_PRIORITY.indexOf("/perfil"); // Listas lives under Perfil
   }
   return -1;
 };
