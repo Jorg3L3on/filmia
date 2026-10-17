@@ -10,7 +10,9 @@ import {
   segmentActionCompactClass,
 } from "@/components/SegmentAction";
 import { ListsBodySkeleton } from "@/components/PageSkeletons";
+import { mxToday } from "@/lib/cine-core";
 import { listHref, partitionUserLists } from "@/lib/lists";
+import { focusRing } from "@/lib/ui";
 import { getLists } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -60,7 +62,8 @@ export default function ListsPage() {
 
 const ListsBody = async () => {
   const lists = await getLists();
-  const { fixed, custom } = partitionUserLists(lists);
+  const { fixed, custom, years } = partitionUserLists(lists);
+  const year = Number(mxToday().slice(0, 4));
 
   return (
     <div className="space-y-12">
@@ -109,6 +112,44 @@ const ListsBody = async () => {
         ) : (
           <ListCollection layout="grid">
             {custom.map((list, index) => (
+              <li
+                key={list.id}
+                className="min-w-0 stagger-in"
+                style={{ "--stagger": index } as CSSProperties}
+              >
+                <ListCard
+                  href={listHref(list)}
+                  name={list.name}
+                  slug={list.slug}
+                  description={list.description}
+                  itemCount={list._count.items}
+                  posters={list.items.map((item) => item.title)}
+                  layout="grid"
+                />
+              </li>
+            ))}
+          </ListCollection>
+        )}
+      </section>
+
+      <section id="tus-anos" className="scroll-mt-20 space-y-4 pt-2">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-paper">
+          <span className="text-cine" aria-hidden="true">
+            ✦
+          </span>
+          Tus años
+        </h2>
+        {years.length === 0 ? (
+          <Link
+            href="/cine#mejor"
+            className={`inline-flex items-center gap-1.5 text-sm text-fog transition-colors hover:text-paper ${focusRing}`}
+          >
+            Arma tu top 10 de {year} en Cine
+            <span aria-hidden="true">›</span>
+          </Link>
+        ) : (
+          <ListCollection layout="grid">
+            {years.map((list, index) => (
               <li
                 key={list.id}
                 className="min-w-0 stagger-in"

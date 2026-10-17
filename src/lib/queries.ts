@@ -371,7 +371,8 @@ export const getAssignableLists = cache(async () => {
   const userId = await requireUserId();
 
   const rows = await db.query.lists.findMany({
-    where: eq(lists.userId, userId),
+    // Tu top 10 del año is built from Cine (only films of that year you saw), never from a picker.
+    where: and(eq(lists.userId, userId), ne(lists.kind, "YEAR_TOP")),
     columns: { id: true, name: true, slug: true, kind: true },
   });
 

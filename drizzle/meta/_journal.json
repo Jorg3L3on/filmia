@@ -91,13 +91,27 @@
       "version": "7",
       "when": 1791933157218,
       "tag": "0012_session_version_rate_limit",
-        "breakpoints": true
-      },
-      {
+      "breakpoints": true
+    },
+    {
       "idx": 13,
       "version": "7",
       "when": 1791934424901,
       "tag": "0013_platform_alerts",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792220647736,
+      "tag": "0014_cine",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1792225241297,
+      "tag": "0015_cinema_alerts",
       "breakpoints": true
     }
   ]

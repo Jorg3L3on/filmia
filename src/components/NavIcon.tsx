@@ -61,6 +61,19 @@ export const NavIcon = ({
     );
   }
 
+  if (name === "ticket") {
+    // Admit-one stub: notched sides, perforation down the tear line.
+    return (
+      <svg {...common}>
+        <path
+          strokeLinejoin="round"
+          d="M4.5 7.5a1 1 0 0 1 1-1h13a1 1 0 0 1 1 1v2a2.5 2.5 0 0 0 0 5v2a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1v-2a2.5 2.5 0 0 0 0-5v-2Z"
+        />
+        <path strokeLinecap="round" strokeDasharray="1.4 2.1" d="M14.5 8v8" />
+      </svg>
+    );
+  }
+
   if (name === "profile") {
     return (
       <svg {...common}>

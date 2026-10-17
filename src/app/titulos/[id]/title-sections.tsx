@@ -9,6 +9,7 @@ import { TitleListsPanel } from "@/components/TitleListsPanel";
 import { TitlePosterRail } from "@/components/TitlePosterRail";
 import { TitleSynopsis } from "@/components/TitleSynopsis";
 import { WatchProvidersMx } from "@/components/WatchProvidersMx";
+import { CinemaBadge } from "@/components/cine/CinemaBadge";
 import { TitleKind } from "@/db";
 import { awardChipLabel } from "@/lib/awards";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
@@ -19,9 +20,11 @@ import type { AffinityCatalogRow, FichaAffinity } from "@/lib/affinity-store";
 import type { DiaryLog } from "@/lib/title-preview";
 import { peopleRailItems, type TmdbPerson } from "@/lib/tmdb-people";
 import type { WatchProvidersResult } from "@/lib/watch-providers-cache";
+import type { getCinemaRelease } from "@/lib/cine";
 import type { getAssignableLists, getRelatedTitles, getTitleById, getUserStreamingPlatforms } from "@/lib/queries";
 
 type TitleDetail = NonNullable<Awaited<ReturnType<typeof getTitleById>>>;
+type CinemaRelease = Awaited<ReturnType<typeof getCinemaRelease>>;
 type AssignableLists = Awaited<ReturnType<typeof getAssignableLists>>;
 type UserPlatforms = Awaited<ReturnType<typeof getUserStreamingPlatforms>>;
 type RelatedTitles = Awaited<ReturnType<typeof getRelatedTitles>>;
@@ -275,22 +278,37 @@ export const TitlePeopleBlock = async ({
 export const TitleProvidersBlock = async ({
   providersPromise,
   platformsPromise,
+  cinemaPromise,
 }: {
   providersPromise: Promise<WatchProvidersResult>;
   platformsPromise: Promise<UserPlatforms>;
+  /** Cine (FIL-I17-4): the film's MX theatrical release, when it has one. */
+  cinemaPromise?: Promise<CinemaRelease>;
 }) => {
-  const [watchProvidersResult, userPlatforms] = await Promise.all([
+  const [watchProvidersResult, userPlatforms, cinema] = await Promise.all([
     providersPromise,
     platformsPromise,
+    cinemaPromise ?? null,
   ]);
+  // Once it streams in MX the theaters are old news.
+  const showCinema = cinema && !(watchProvidersResult.data?.flatrate.length);
 
-  return (
+  const providers = (
     <WatchProvidersMx
       data={watchProvidersResult.data}
       userPlatforms={userPlatforms}
       tmdbConfigured={isTmdbConfigured()}
       stale={watchProvidersResult.stale}
     />
+  );
+  if (!showCinema) {
+    return providers;
+  }
+  return (
+    <div className="space-y-3">
+      <CinemaBadge release={cinema} />
+      {providers}
+    </div>
   );
 };
 
