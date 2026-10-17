@@ -2,8 +2,10 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { TitleKind } from "@/db";
 import {
+  countRoles,
   parseFilmography,
   summarizeFilmography,
+  todayIso,
   type DirectorHit,
   type PersonFilmography,
   type PersonRole,
@@ -800,15 +802,18 @@ export const getTmdbPersonFilmography = async (
     }>(`/person/${personId}`),
     tmdbFetch<TmdbCombinedCredits>(`/person/${personId}/combined_credits`),
   ]);
+  const name = person.name?.trim() || "";
+  const today = todayIso();
   return summarizeFilmography(
     {
       id: person.id,
-      name: person.name?.trim() || "",
+      name,
       profilePath: person.profile_path ?? null,
       department: person.known_for_department ?? null,
     },
     role,
-    parseFilmography(credits, role),
+    parseFilmography(credits, role, name),
+    { today, roles: countRoles(credits, name, today) },
   );
 };
 

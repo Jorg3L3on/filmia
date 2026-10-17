@@ -16,12 +16,22 @@ const RETRY_DELAYS_MS = [2500, 5000];
 
 const itemKey = (item: SearchFactsItem) => searchFactsKey(item.kind, item.tmdbId);
 
+type FactsSource = {
+  /** The server action that answers (Buscar's results, or a whole filmography). */
+  load?: (items: SearchFactsItem[]) => Promise<Record<string, SearchResultFacts>>;
+  /** How many of `results` to ask about, in order. */
+  limit?: number;
+};
+
 /**
  * Row A's data line for the settled results (FIL-I8-4). Known facts are kept
  * for the visit, so going back and forth between searches asks only for what
  * is new; rows hold a skeleton while their first answer is on the way.
  */
-export const useSearchFacts = (results: readonly TmdbCatalogResult[]) => {
+export const useSearchFacts = (
+  results: readonly Pick<TmdbCatalogResult, "kind" | "tmdbId">[],
+  { load = getSearchResultFacts, limit = SEARCH_FACTS_LOOKUP_LIMIT }: FactsSource = {},
+) => {
   const [facts, setFacts] = useState<Record<string, SearchResultFacts>>({});
   const [loading, setLoading] = useState<ReadonlySet<string>>(() => new Set());
   const factsRef = useRef(facts);
@@ -32,9 +42,9 @@ export const useSearchFacts = (results: readonly TmdbCatalogResult[]) => {
   const items = useMemo(
     () =>
       results
-        .slice(0, SEARCH_FACTS_LOOKUP_LIMIT)
+        .slice(0, limit)
         .map((result) => ({ tmdbId: result.tmdbId, kind: result.kind })),
-    [results],
+    [results, limit],
   );
   const signature = items.map(itemKey).join(",");
 
@@ -55,7 +65,7 @@ export const useSearchFacts = (results: readonly TmdbCatalogResult[]) => {
     const run = async (batch: SearchFactsItem[], attempt: number) => {
       let answer: Record<string, SearchResultFacts> = {};
       try {
-        answer = await getSearchResultFacts(batch);
+        answer = await load(batch);
       } catch {
         answer = {};
       }

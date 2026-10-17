@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState, useTransition } from "react";
+import { retargetCurrentNav } from "@/components/NavOriginTracker";
 import { useTmdbDiscoverSearch } from "@/components/tmdb-search/useTmdbDiscoverSearch";
 import { useTmdbTitleActions } from "@/components/tmdb-search/useTmdbTitleActions";
 import { titleMatchesKind } from "@/lib/catalog-filters";
@@ -149,6 +150,26 @@ export const useTmdbSearchAdd = ({
     });
   };
 
+  /**
+   * The role menu: the same person in another role. A lateral move, not a new
+   * page: the URL is replaced and the nav entry retargeted, so «‹ atrás» still
+   * goes where it went (FIL-I4-6).
+   */
+  const switchPersonRole = (hit: Pick<DirectorHit, "id" | "name" | "profilePath">, role: PersonRole) => {
+    const href = buildPersonSearchHref({
+      personId: hit.id,
+      role,
+      name: hit.name,
+      query,
+      mode: mode === "director" ? "director" : null,
+    });
+    setPendingPerson({ ...hit, role });
+    startOpenPerson(() => {
+      retargetCurrentNav(href);
+      router.replace(href, { scroll: false });
+    });
+  };
+
   /** Leave the person view for the search results of what is typed. */
   const closePerson = () => {
     setPendingPerson(null);
@@ -176,6 +197,7 @@ export const useTmdbSearchAdd = ({
     directors,
     pendingPerson: isOpeningPerson ? pendingPerson : null,
     openPerson,
+    switchPersonRole,
     closePerson,
     catalog,
     error,
