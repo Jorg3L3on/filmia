@@ -6,6 +6,7 @@ import {
   isGone,
   isPremiereWeek,
   judgeCinemaCandidate,
+  mergeRelease,
   mxToday,
   releaseStatusOn,
   staleLabel,
@@ -82,6 +83,12 @@ describe("judgeCinemaCandidate", () => {
     assert.equal(judgeCinemaCandidate(candidate({ popularity: 3, originalLanguage: "es", productionCountries: ["ES"] })).ok, true);
   });
 
+  it("drops a short (FICM online) but keeps an unknown runtime", () => {
+    const mexican = { originalLanguage: "es", productionCountries: ["MX"], popularity: 0 };
+    assert.deepEqual(judgeCinemaCandidate(candidate({ ...mexican, runtimeMinutes: 15 })), { ok: false, reason: "short" });
+    assert.equal(judgeCinemaCandidate(candidate({ ...mexican, runtimeMinutes: null })).ok, true);
+  });
+
   it("drops a film with no MX entry at all", () => {
     assert.deepEqual(judgeCinemaCandidate(candidate({ mxReleaseDates: [] })), { ok: false, reason: "no_theatrical" });
   });
@@ -136,5 +143,35 @@ describe("cine calendar", () => {
     assert.equal(staleLabel(new Date("2026-10-17T10:00:00Z"), now), null);
     assert.equal(staleLabel(new Date("2026-10-16T08:00:00Z"), now), "Actualizado hace 28 h");
     assert.equal(staleLabel(new Date("2026-10-14T08:00:00Z"), now), "Actualizado hace 3 días");
+  });
+});
+
+describe("mergeRelease", () => {
+  const today = "2026-10-17";
+
+  it("lets an IMCINE date win over TMDB and keeps it on later TMDB runs", () => {
+    const tmdb = mergeRelease(null, { mxReleaseDate: "2026-11-12", source: "tmdb", popularity: 2 }, today);
+    assert.equal(tmdb.status, "upcoming");
+    const imcine = mergeRelease(tmdb, { mxReleaseDate: "2026-10-15", source: "imcine", popularity: 0 }, today);
+    assert.deepEqual(imcine, { mxReleaseDate: "2026-10-15", source: "imcine", popularity: 2, status: "now" });
+    const again = mergeRelease(imcine, { mxReleaseDate: "2026-11-12", source: "tmdb", popularity: 3.5 }, today);
+    assert.deepEqual(again, { mxReleaseDate: "2026-10-15", source: "imcine", popularity: 3.5, status: "now" });
+  });
+
+  it("creates the row from IMCINE alone when TMDB never listed it", () => {
+    assert.deepEqual(
+      mergeRelease(null, { mxReleaseDate: "2026-10-30", source: "imcine", popularity: 0 }, today),
+      { mxReleaseDate: "2026-10-30", source: "imcine", popularity: 0, status: "upcoming" },
+    );
+  });
+
+  it("follows a moved TMDB date", () => {
+    const moved = mergeRelease(
+      { mxReleaseDate: "2026-10-16", source: "tmdb", popularity: 9 },
+      { mxReleaseDate: "2026-10-30", source: "tmdb", popularity: 9 },
+      today,
+    );
+    assert.equal(moved.mxReleaseDate, "2026-10-30");
+    assert.equal(moved.status, "upcoming");
   });
 });

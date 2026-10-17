@@ -56,9 +56,11 @@ const revisar = async () => {
 };
 
 const correr = async () => {
-  const { refreshCinemaReleases } = await import("../src/lib/cine-store");
+  const { applyImcineReleases, refreshCinemaReleases } = await import("../src/lib/cine-store");
   const started = Date.now();
-  console.log(JSON.stringify({ cartelera: await refreshCinemaReleases() }, null, 2));
+  const cartelera = await refreshCinemaReleases();
+  const imcine = await applyImcineReleases();
+  console.log(JSON.stringify({ cartelera, imcine }, null, 2));
   console.log(`${Math.round((Date.now() - started) / 1000)} s`);
 };
 

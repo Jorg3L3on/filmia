@@ -1,4 +1,5 @@
 import { and, eq, inArray, lt, ne, sql } from "drizzle-orm";
+import imcineFile from "../../data/cines-mx.json";
 import { catalog, cinemaReleases, db, type CatalogRow } from "@/db";
 import { findOrCreateCatalog } from "@/lib/catalog";
 import { enrichCatalog } from "@/lib/catalog-enrich";
@@ -7,9 +8,12 @@ import {
   GONE_AFTER_DAYS,
   HOME_AFTER_DAYS,
   judgeCinemaCandidate,
+  mergeRelease,
   mxToday,
   type CinemaVerdict,
+  type StoredRelease,
 } from "@/lib/cine-core";
+import { parseImcineFile, type ImcineIssue } from "@/lib/cine-imcine";
 import { runPool } from "@/lib/run-pool";
 import {
   discoverTmdbReleaseIds,
@@ -126,8 +130,9 @@ export const refreshCinemaReleases = async (now = new Date()): Promise<Cartelera
     return { ok: false, error: "tmdb_details_failed" };
   }
 
-  const rejected = { no_theatrical: 0, rerelease: 0, unpopular: 0 };
+  const rejected = { no_theatrical: 0, rerelease: 0, unpopular: 0, short: 0 };
   const kept: { info: TmdbMovieReleaseInfo; mxReleaseDate: string }[] = [];
+  const rejectedIds: number[] = [];
   for (const info of infos) {
     const verdict = judgeCinemaCandidate({
       tmdbId: info.tmdbId,
@@ -135,18 +140,18 @@ export const refreshCinemaReleases = async (now = new Date()): Promise<Cartelera
       originalLanguage: info.originalLanguage,
       productionCountries: info.productionCountries,
       releaseDate: info.releaseDate,
+      runtimeMinutes: info.runtimeMinutes,
       mxReleaseDates: info.releaseDates.MX ?? [],
     });
     if (verdict.ok) {
       kept.push({ info, mxReleaseDate: verdict.mxReleaseDate });
     } else {
       rejected[verdict.reason] += 1;
+      rejectedIds.push(info.tmdbId);
     }
   }
 
-  const existing = new Set(
-    (await db.select({ catalogId: cinemaReleases.catalogId }).from(cinemaReleases)).map((row) => row.catalogId),
-  );
+  const existing = await loadStoredReleases();
   const budget = { left: MAX_ENRICH_PER_RUN, enriched: 0 };
   let catalogCreated = 0;
   let created = 0;
@@ -159,14 +164,11 @@ export const refreshCinemaReleases = async (now = new Date()): Promise<Cartelera
     if (newCatalog) {
       catalogCreated += 1;
     }
-    await upsertCinemaRelease({
-      catalogId: row.id,
-      mxReleaseDate,
-      popularity: info.popularity,
-      source: "tmdb",
-      today,
+    await writeCinemaRelease(
+      row.id,
+      mergeRelease(existing.get(row.id) ?? null, { mxReleaseDate, popularity: info.popularity, source: "tmdb" }, today),
       now,
-    });
+    );
     if (existing.has(row.id)) {
       updated += 1;
     } else {
@@ -196,7 +198,28 @@ export const refreshCinemaReleases = async (now = new Date()): Promise<Cartelera
     }
   }
 
-  const gone = await sweepCinemaReleases(today, now);
+  // A film TMDB still lists but the filter now turns down (a rule changed, its date moved to
+  // limited-only) leaves the cartelera at once — unless IMCINE vouches for it.
+  let rejectedGone = 0;
+  if (rejectedIds.length > 0) {
+    const rows = await db
+      .update(cinemaReleases)
+      .set({ status: "gone" })
+      .where(
+        and(
+          ne(cinemaReleases.status, "gone"),
+          eq(cinemaReleases.source, "tmdb"),
+          inArray(
+            cinemaReleases.catalogId,
+            db.select({ id: catalog.id }).from(catalog).where(and(eq(catalog.kind, "MOVIE"), inArray(catalog.tmdbId, rejectedIds))),
+          ),
+        ),
+      )
+      .returning({ catalogId: cinemaReleases.catalogId });
+    rejectedGone = rows.length;
+  }
+
+  const gone = rejectedGone + (await sweepCinemaReleases(today, now));
 
   return {
     ok: true,
@@ -214,44 +237,108 @@ export const refreshCinemaReleases = async (now = new Date()): Promise<Cartelera
   };
 };
 
-/**
- * Insert or refresh one release. An IMCINE date is never replaced by TMDB's; the status always
- * follows the effective date. A `gone` film that TMDB lists again comes back.
- */
-export const upsertCinemaRelease = async (input: {
-  catalogId: string;
-  mxReleaseDate: string;
-  popularity: number;
-  source: "tmdb" | "imcine";
-  today: string;
-  now: Date;
-}) => {
-  const status = input.mxReleaseDate <= input.today ? "now" : "upcoming";
-  const keepImcine = input.source === "tmdb";
-  const effectiveDate = keepImcine
-    ? sql`CASE WHEN ${cinemaReleases.source} = 'imcine' THEN ${cinemaReleases.mxReleaseDate} ELSE excluded."mxReleaseDate" END`
-    : sql`excluded."mxReleaseDate"`;
+const loadStoredReleases = async () =>
+  new Map<string, StoredRelease>(
+    (
+      await db
+        .select({
+          catalogId: cinemaReleases.catalogId,
+          mxReleaseDate: cinemaReleases.mxReleaseDate,
+          source: cinemaReleases.source,
+          popularity: cinemaReleases.popularity,
+        })
+        .from(cinemaReleases)
+    ).map((row) => [
+      row.catalogId,
+      { mxReleaseDate: row.mxReleaseDate, source: row.source === "imcine" ? "imcine" : "tmdb", popularity: row.popularity },
+    ]),
+  );
+
+/** Insert or refresh one release with what `mergeRelease` decided; `firstSeenAt` is kept. */
+const writeCinemaRelease = async (
+  catalogId: string,
+  release: StoredRelease & { status: "now" | "upcoming" },
+  now: Date,
+) => {
   await db
     .insert(cinemaReleases)
-    .values({
-      catalogId: input.catalogId,
-      mxReleaseDate: input.mxReleaseDate,
-      status,
-      popularity: input.popularity,
-      firstSeenAt: input.now,
-      lastSeenAt: input.now,
-      source: input.source,
-    })
+    .values({ catalogId, ...release, firstSeenAt: now, lastSeenAt: now })
     .onConflictDoUpdate({
       target: cinemaReleases.catalogId,
-      set: {
-        mxReleaseDate: effectiveDate,
-        status: sql`CASE WHEN (${effectiveDate}) <= ${input.today}::date THEN 'now' ELSE 'upcoming' END`,
-        popularity: keepImcine ? sql`excluded."popularity"` : sql`GREATEST(${cinemaReleases.popularity}, excluded."popularity")`,
-        lastSeenAt: input.now,
-        source: keepImcine ? sql`${cinemaReleases.source}` : sql`'imcine'`,
-      },
+      set: { ...release, lastSeenAt: now },
     });
+};
+
+export type ImcineSummary = {
+  ok: true;
+  entries: number;
+  applied: number;
+  created: number;
+  catalogCreated: number;
+  skipped: { title: string; reason: string }[];
+  invalid: ImcineIssue[];
+};
+
+/**
+ * IMCINE step (FIL-I17-2): apply `data/cines-mx.json` over TMDB. Its dates win; a film TMDB did
+ * not list as a commercial release is created anyway. Runs after the cartelera step and touches
+ * `lastSeenAt`, so IMCINE films never age out while they are in the file's window.
+ */
+export const applyImcineReleases = async (now = new Date(), raw: unknown = imcineFile): Promise<ImcineSummary> => {
+  const today = mxToday(now);
+  const { releases, issues } = parseImcineFile(raw);
+  const existing = await loadStoredReleases();
+  const budget = { left: 10, enriched: 0 };
+  const summary: ImcineSummary = {
+    ok: true,
+    entries: releases.length,
+    applied: 0,
+    created: 0,
+    catalogCreated: 0,
+    skipped: [],
+    invalid: issues,
+  };
+
+  await runPool(releases, 3, async (entry) => {
+    if (entry.tmdbId == null) {
+      summary.skipped.push({ title: entry.title, reason: "sin_tmdb" });
+      return;
+    }
+    // Films more than a quarter past their date are history: leave their rows alone.
+    if (entry.mxReleaseDate < addDays(today, -HOME_AFTER_DAYS * 2)) {
+      summary.skipped.push({ title: entry.title, reason: "vieja" });
+      return;
+    }
+    let info: TmdbMovieReleaseInfo | null = null;
+    try {
+      info = await getTmdbMovieReleaseInfo(entry.tmdbId);
+    } catch {
+      // TMDB down: the file still has a title; popularity stays as stored.
+    }
+    const { row, created } = await materializeCatalog(
+      info ?? { tmdbId: entry.tmdbId, name: entry.title, originalName: null, year: Number(entry.mxReleaseDate.slice(0, 4)), posterPath: null },
+      budget,
+    );
+    if (created) {
+      summary.catalogCreated += 1;
+    }
+    const stored = existing.get(row.id) ?? null;
+    if (!stored) {
+      summary.created += 1;
+    }
+    await writeCinemaRelease(
+      row.id,
+      mergeRelease(
+        stored,
+        { mxReleaseDate: entry.mxReleaseDate, source: "imcine", popularity: info?.popularity ?? 0 },
+        today,
+      ),
+      now,
+    );
+    summary.applied += 1;
+  });
+
+  return summary;
 };
 
 /** Upcoming films whose day came turn `now`; rows unseen for GONE_AFTER_DAYS turn `gone`. */

@@ -868,6 +868,7 @@ export type TmdbMovieReleaseInfo = {
   originalLanguage: string | null;
   productionCountries: string[];
   releaseDate: string | null;
+  runtimeMinutes: number | null;
   releaseDates: Record<
     string,
     { type: number; release_date: string; note?: string; iso_639_1?: string; certification?: string }[]
@@ -881,6 +882,7 @@ type TmdbMovieReleasePayload = {
   release_date?: string;
   poster_path?: string | null;
   popularity?: number;
+  runtime?: number | null;
   original_language?: string;
   production_countries?: { iso_3166_1: string }[];
   release_dates?: {
@@ -919,6 +921,7 @@ export const getTmdbMovieReleaseInfo = async (tmdbId: number): Promise<TmdbMovie
     originalLanguage: data.original_language ?? null,
     productionCountries: (data.production_countries ?? []).map((country) => country.iso_3166_1),
     releaseDate: data.release_date || null,
+    runtimeMinutes: data.runtime || null,
     releaseDates: Object.fromEntries(
       (data.release_dates?.results ?? []).map((entry) => [entry.iso_3166_1, entry.release_dates ?? []]),
     ),

@@ -18,6 +18,8 @@ export const RELEASE_TYPE_THEATRICAL = 3;
 export const MIN_POPULARITY = 5;
 /** A commercial MX date this long after the original release is a re-release. */
 export const RERELEASE_GAP_DAYS = 365;
+/** Shorts (FICM online, Nuestro Cine MX) are not cartelera. Unknown runtime (0/null) passes. */
+export const MIN_FEATURE_MINUTES = 40;
 /** A row the TMDB lists stop returning for this long turns `gone`. */
 export const GONE_AFTER_DAYS = 3;
 /** «Estreno» tag on a poster for its first week in theaters. */
@@ -45,13 +47,14 @@ export type CinemaCandidate = {
   productionCountries: string[];
   /** Primary (worldwide) release date, `YYYY-MM-DD`. */
   releaseDate: string | null;
+  runtimeMinutes?: number | null;
   /** The `MX` entry of `release_dates.results`. */
   mxReleaseDates: TmdbReleaseDate[];
 };
 
 export type CinemaVerdict =
   | { ok: true; mxReleaseDate: string }
-  | { ok: false; reason: "no_theatrical" | "rerelease" | "unpopular" };
+  | { ok: false; reason: "no_theatrical" | "rerelease" | "unpopular" | "short" };
 
 const dayOf = (value: string) => value.slice(0, 10);
 
@@ -81,6 +84,10 @@ export const judgeCinemaCandidate = (candidate: CinemaCandidate): CinemaVerdict 
     return { ok: false, reason: "rerelease" };
   }
 
+  if (candidate.runtimeMinutes && candidate.runtimeMinutes < MIN_FEATURE_MINUTES) {
+    return { ok: false, reason: "short" };
+  }
+
   if (candidate.popularity < MIN_POPULARITY && !isMexicanOrSpanish(candidate)) {
     return { ok: false, reason: "unpopular" };
   }
@@ -102,6 +109,28 @@ export const addDays = (day: string, days: number) =>
 
 export const releaseStatusOn = (mxReleaseDate: string, today: string): "now" | "upcoming" =>
   dayOf(mxReleaseDate) <= today ? "now" : "upcoming";
+
+export type StoredRelease = { mxReleaseDate: string; source: CinemaReleaseSource; popularity: number };
+
+/**
+ * What a release row becomes when a source reports it: an IMCINE date always wins and TMDB never
+ * replaces it (TMDB still refreshes the popularity); the status follows the resulting date.
+ */
+export const mergeRelease = (
+  existing: StoredRelease | null,
+  incoming: StoredRelease,
+  today: string,
+): StoredRelease & { status: "now" | "upcoming" } => {
+  const keepImcine = existing?.source === "imcine" && incoming.source === "tmdb";
+  const merged: StoredRelease = keepImcine
+    ? { mxReleaseDate: existing.mxReleaseDate, source: "imcine", popularity: incoming.popularity }
+    : {
+        mxReleaseDate: incoming.mxReleaseDate,
+        source: incoming.source,
+        popularity: incoming.source === "imcine" ? Math.max(existing?.popularity ?? 0, incoming.popularity) : incoming.popularity,
+      };
+  return { ...merged, status: releaseStatusOn(merged.mxReleaseDate, today) };
+};
 
 export const isGone = (lastSeenAt: Date, now = new Date()) =>
   now.getTime() - lastSeenAt.getTime() >= GONE_AFTER_DAYS * DAY_MS;

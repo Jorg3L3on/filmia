@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { refreshCinemaReleases } from "@/lib/cine-store";
+import { applyImcineReleases, refreshCinemaReleases } from "@/lib/cine-store";
 import { isTmdbConfigured } from "@/lib/tmdb";
 
 export const runtime = "nodejs";
@@ -42,5 +42,6 @@ export const GET = async (request: Request) => {
   }
 
   const cartelera = await step(() => refreshCinemaReleases());
-  return NextResponse.json({ cartelera });
+  const imcine = await step(() => applyImcineReleases());
+  return NextResponse.json({ cartelera, imcine });
 };
