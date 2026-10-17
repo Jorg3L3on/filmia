@@ -5,6 +5,7 @@ import { useCallback, useRef, useState, useTransition } from "react";
 import { saveTmdbTitleInLists } from "@/app/actions/lists";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { pinTonightFromSearch } from "@/app/actions/tonight";
+import { retargetCurrentNav } from "@/components/NavOriginTracker";
 import type { SearchAddDestination, SearchPendingAction } from "@/components/tmdb-search/search-actions";
 import { useTmdbDiscoverSearch } from "@/components/tmdb-search/useTmdbDiscoverSearch";
 import { titleMatchesKind } from "@/lib/catalog-filters";
@@ -157,6 +158,26 @@ export const useTmdbSearchAdd = ({
           mode: mode === "director" ? "director" : null,
         }),
       );
+    });
+  };
+
+  /**
+   * The role menu: the same person in another role. A lateral move, not a new
+   * page: the URL is replaced and the nav entry retargeted, so «‹ atrás» still
+   * goes where it went (FIL-I4-6).
+   */
+  const switchPersonRole = (hit: Pick<DirectorHit, "id" | "name" | "profilePath">, role: PersonRole) => {
+    const href = buildPersonSearchHref({
+      personId: hit.id,
+      role,
+      name: hit.name,
+      query,
+      mode: mode === "director" ? "director" : null,
+    });
+    setPendingPerson({ ...hit, role });
+    startOpenPerson(() => {
+      retargetCurrentNav(href);
+      router.replace(href, { scroll: false });
     });
   };
 
@@ -369,6 +390,7 @@ export const useTmdbSearchAdd = ({
     directors,
     pendingPerson: isOpeningPerson ? pendingPerson : null,
     openPerson,
+    switchPersonRole,
     closePerson,
     catalog,
     error,
