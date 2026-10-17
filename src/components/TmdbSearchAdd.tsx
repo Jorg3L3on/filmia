@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getFilmographyFacts } from "@/app/actions/search-facts";
 import { BackButton } from "@/components/BackButton";
 import { EmptyState } from "@/components/EmptyState";
 import { useNavLabel } from "@/components/NavOriginTracker";
@@ -30,7 +31,8 @@ import { useTmdbSearchAdd } from "@/components/tmdb-search/useTmdbSearchAdd";
 import type { StartDirector } from "@/lib/buscar-start";
 import { dockSearch } from "@/lib/dock-search";
 import type { SelectableList } from "@/lib/list-selection";
-import { resolveDirectorQuery } from "@/lib/person-filmography";
+import { resolveDirectorQuery, type PersonFilmography } from "@/lib/person-filmography";
+import { FILMOGRAPHY_FACTS_LIMIT } from "@/lib/search-result-facts";
 import { buildSearchHref, liveSearchState, type SearchKind, type SearchMode } from "@/lib/search-session";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import type { UserTmdbEntry } from "@/lib/queries";
@@ -90,6 +92,7 @@ export const TmdbSearchAdd = ({
     directors,
     pendingPerson,
     openPerson,
+    switchPersonRole,
     closePerson,
     catalog,
     error,
@@ -137,19 +140,6 @@ export const TmdbSearchAdd = ({
   const closeMenu = useCallback(() => setMenu(null), []);
   const [listsFor, setListsFor] = useState<TmdbCatalogResult | null>(null);
   const factsFor = useSearchFacts(visibleResults);
-  const rows: SearchRowWiring = {
-    hrefFor,
-    factsFor,
-    onOpen: () => rememberQuery(),
-    onMenu: (result, anchor) => {
-      rememberQuery();
-      setMenu({ result, anchor });
-    },
-  };
-  const openDirector: typeof openPerson = (hit) => {
-    rememberQuery();
-    openPerson(hit);
-  };
 
   // Director chip: one clear match shows the person right here (URL stays
   // ?q=…&tipo=director, so «atrás» never bounces back into it).
@@ -160,6 +150,44 @@ export const TmdbSearchAdd = ({
   const inlinePerson = directorResolution?.kind === "person" ? directorResolution.hit : null;
   const inline = usePersonFilmography(inlinePerson);
   const personPage = person !== null || pendingPerson !== null;
+
+  // FIL-I16-1: the person on screen asks the Catalog about its whole work; the
+  // best-known titles go first, so OMDb's few calls per visit land where they count.
+  const shownPerson: PersonFilmography | null = personPage
+    ? person?.kind === "ready" && !pendingPerson
+      ? person.data
+      : null
+    : inlinePerson && inline.state?.kind === "ready"
+      ? inline.state.data
+      : null;
+  const filmographyItems = useMemo(
+    () => (shownPerson ? [...shownPerson.entries].sort((a, b) => b.votes - a.votes) : []),
+    [shownPerson],
+  );
+  const filmographyFactsFor = useSearchFacts(filmographyItems, {
+    load: getFilmographyFacts,
+    limit: FILMOGRAPHY_FACTS_LIMIT,
+  });
+  const rowFactsFor = shownPerson ? filmographyFactsFor : factsFor;
+
+  const rows: SearchRowWiring = {
+    hrefFor,
+    factsFor: rowFactsFor,
+    onOpen: () => rememberQuery(),
+    onMenu: (result, anchor) => {
+      rememberQuery();
+      setMenu({ result, anchor });
+    },
+  };
+  const openDirector: typeof openPerson = (hit) => {
+    rememberQuery();
+    openPerson(hit);
+  };
+  const switchRole = (role: PersonFilmography["role"]) => {
+    if (shownPerson) {
+      switchPersonRole(shownPerson.person, role);
+    }
+  };
   // «‹ Buscar · Animals» on the ficha a result opens; the person view names itself.
   const searchedFor = settledQuery.trim();
   useNavLabel(personPage ? null : searchedFor ? `Buscar · ${searchedFor}` : "Buscar");
@@ -235,6 +263,7 @@ export const TmdbSearchAdd = ({
           backLabel={query.trim() ? `Resultados de «${query.trim()}»` : null}
           onBack={closePerson}
           originBack={<BackButton hideWithoutOrigin hideWhenOriginPath="/buscar" className="-mb-1" />}
+          onSwitchRole={switchRole}
         />
       ) : (
         <>
@@ -263,6 +292,7 @@ export const TmdbSearchAdd = ({
                 onRetry={inline.retry}
                 backLabel={null}
                 onBack={() => undefined}
+                onSwitchRole={switchRole}
               />
             ) : directorResolution?.kind === "choose" ? (
               <DirectorPicker directors={directorResolution.hits} onOpen={(hit) => openDirector(hit)} />
@@ -328,7 +358,7 @@ export const TmdbSearchAdd = ({
         listsFor={listsFor}
         onCloseLists={() => setListsFor(null)}
         statusOf={statusOf}
-        factsFor={factsFor}
+        factsFor={rowFactsFor}
         logMode={logMode}
         logDate={watchedDate}
         pinnedTitleId={pinnedTitleId}

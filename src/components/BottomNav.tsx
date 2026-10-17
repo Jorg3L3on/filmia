@@ -156,7 +156,9 @@ export const BottomNav = () => {
               >
                 {(isCurrent) => (
                   <>
-                    <NavIcon name={item.icon} day={item.icon === "today" ? day : null} />
+                    <span className={cn("contents", isCurrent && item.icon === "ticket" && "text-cine")}>
+                      <NavIcon name={item.icon} day={item.icon === "today" ? day : null} />
+                    </span>
                     <span
                       className={cn(
                         "max-w-full truncate text-center leading-tight",

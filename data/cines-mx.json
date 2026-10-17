@@ -1,0 +1,16 @@
+{
+  "updatedAt": "2026-10-17",
+  "sources": [
+    "https://www.imcine.gob.mx/nota.php?id=404 · «Estrenos de octubre: los misterios del mundo» (IMCINE, 6 oct 2026)"
+  ],
+  "releases": [
+    { "tmdbId": 1785139, "title": "Un mal partido", "mxReleaseDate": "2026-10-08", "source": "imcine" },
+    { "tmdbId": null, "title": "No hablo inglés", "mxReleaseDate": "2026-10-10", "source": "imcine", "note": "Sin ficha en TMDB al 2026-10-17." },
+    { "tmdbId": 772431, "title": "La isla de las muñecas", "mxReleaseDate": "2026-10-15", "source": "imcine", "note": "TMDB la trata como reestreno (limitada en 2024); el estreno comercial es este." },
+    { "tmdbId": 1751598, "title": "Amarte", "mxReleaseDate": "2026-10-22", "source": "imcine" },
+    { "tmdbId": 1406492, "title": "La venganza del Charro Negro", "mxReleaseDate": "2026-10-22", "source": "imcine" },
+    { "tmdbId": 1487046, "title": "Ciudad de muertos", "mxReleaseDate": "2026-10-29", "source": "imcine" },
+    { "tmdbId": 1629064, "title": "Campeón gabacho", "mxReleaseDate": "2026-10-29", "source": "imcine" },
+    { "tmdbId": 1294943, "title": "Río de sapos", "mxReleaseDate": "2026-10-30", "source": "imcine", "note": "TMDB solo tiene la fecha de festival (2024)." }
+  ]
+}

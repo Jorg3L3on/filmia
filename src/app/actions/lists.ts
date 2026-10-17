@@ -52,6 +52,9 @@ const revalidateLists = (
   }
 };
 
+/** Tu top 10 del año only takes films of that year you saw, through `saveYearTop`. */
+const YEAR_TOP_FROM_CINE = "Tu top del año se arma desde Cine.";
+
 const requireOwnedList = async (listId: string, userId: string) => {
   const list = await db.query.lists.findFirst({
     where: and(eq(lists.id, listId), eq(lists.userId, userId)),
@@ -220,6 +223,9 @@ export const addTitleToList = async (listId: string, titleId: string) => {
   if (isSeriesStatusListSlug(list.slug)) {
     throw new Error("Esta lista se actualiza sola con el estado de la serie.");
   }
+  if (list.kind === "YEAR_TOP") {
+    throw new Error(YEAR_TOP_FROM_CINE);
+  }
 
   const title = await db.query.titles.findFirst({
     where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
@@ -289,6 +295,9 @@ export const toggleTitleInList = async (listId: string, titleId: string) => {
       .delete(listItems)
       .where(and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)));
   } else {
+    if (list.kind === "YEAR_TOP") {
+      throw new Error(YEAR_TOP_FROM_CINE);
+    }
     const last = await db.query.listItems.findFirst({
       where: eq(listItems.listId, listId),
       orderBy: [desc(listItems.position)],
@@ -358,12 +367,16 @@ export const saveTmdbTitleInLists = async ({
       touchedIds.length > 0
         ? await db.query.lists.findMany({
             where: and(eq(lists.userId, userId), inArray(lists.id, touchedIds)),
-            columns: { id: true, slug: true },
+            columns: { id: true, slug: true, kind: true },
           })
         : [];
 
     if (owned.length !== touchedIds.length) {
       return { ok: false, error: "Lista no encontrada." };
+    }
+
+    if (owned.some((list) => list.kind === "YEAR_TOP" && addIds.includes(list.id))) {
+      return { ok: false, error: YEAR_TOP_FROM_CINE };
     }
 
     if (owned.some((list) => isSeriesStatusListSlug(list.slug))) {

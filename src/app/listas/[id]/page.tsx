@@ -127,6 +127,8 @@ const ListDetail = async ({
   const fixed = isFixedListSlug(list.slug);
   // «Series en progreso» / «Series abandonadas» las llena el estado de la serie.
   const automatic = isSeriesStatusListSlug(list.slug);
+  // «Mi top de {año}» is built in Cine (only films of that year you saw): edit it there.
+  const yearTop = list.kind === "YEAR_TOP" && list.year != null;
   const empty = emptyStateForList(list.slug);
   const filteredEmpty = list.items.length > 0 && visibleItems.length === 0;
   const clearHref = catalogHref(`/listas/${list.id}`, {});
@@ -143,7 +145,7 @@ const ListDetail = async ({
         inlineActions
         actions={
           <>
-            {automatic ? null : (
+            {automatic || yearTop ? null : (
               <AddTitleToListCta
                 action={addAction}
                 titles={availableTitles}
@@ -165,12 +167,12 @@ const ListDetail = async ({
               <SegmentActionTooltip label="Compartir lista" />
             </ShareButton>
             <Link
-              href={`/listas/${list.id}/editar`}
-              aria-label={fixed ? "Editar descripción" : "Editar lista"}
+              href={yearTop ? `/cine/mejor/${list.year}` : `/listas/${list.id}/editar`}
+              aria-label={yearTop ? "Editar en Cine" : fixed ? "Editar descripción" : "Editar lista"}
               className={segmentActionCompactClass}
             >
               <PencilIcon className="size-5 group-hover/action:-rotate-12" />
-              <SegmentActionTooltip label={fixed ? "Editar descripción" : "Editar lista"} />
+              <SegmentActionTooltip label={yearTop ? "Editar en Cine" : fixed ? "Editar descripción" : "Editar lista"} />
             </Link>
           </>
         }
@@ -189,7 +191,7 @@ const ListDetail = async ({
 
       {list.items.length === 0 ? (
         <>
-          {automatic ? null : (
+          {automatic || yearTop ? null : (
             <AddTitleToListCta
               action={addAction}
               titles={availableTitles}

@@ -23,6 +23,11 @@ export const isListasHubPath = (pathname: string) => {
   return path === "/listas" || path.startsWith("/listas/");
 };
 
+export const isCinePath = (pathname: string) => {
+  const path = pathOnly(pathname);
+  return path === "/cine" || path.startsWith("/cine/");
+};
+
 export const isCurrentPath = (href: string, pathname: string) => {
   const path = pathOnly(pathname);
   if (href === "/") {
@@ -40,13 +45,16 @@ export const isDiaryPath = (pathname: string) => {
   return path === "/diario" || path.startsWith("/diario/");
 };
 
-/** Bottom-nav active state: Listas stays lit on /listas/*, Perfil on /diario. */
+/**
+ * Bottom-nav active state: Cine on /cine/*; Perfil on /perfil, Tu diario and the Listas hub,
+ * which moved under Perfil when Cine took its tab (FIL-I17).
+ */
 export const isMobileNavCurrent = (href: string, pathname: string) => {
-  if (href === "/listas") {
-    return isListasHubPath(pathname);
+  if (href === "/cine") {
+    return isCinePath(pathname);
   }
   if (href === "/perfil") {
-    return isCurrentPath("/perfil", pathname) || isDiaryPath(pathname);
+    return isCurrentPath("/perfil", pathname) || isDiaryPath(pathname) || isListasHubPath(pathname);
   }
   return isCurrentPath(href, pathname);
 };
@@ -54,19 +62,19 @@ export const isMobileNavCurrent = (href: string, pathname: string) => {
 export const desktopNavItems = [
   { href: "/", label: "Hoy" },
   { href: "/watchlist", label: "Quiero ver" },
-  { href: "/listas", label: "Listas" },
   { href: "/buscar", label: "Buscar" },
+  { href: "/cine", label: "Cine" },
   { href: "/perfil", label: "Perfil" },
 ] as const;
 
-/** Desktop header tabs light up like the dock: Listas on /listas/*, Perfil on Tu diario too. */
+/** Desktop header tabs light up like the dock: Cine on /cine/*, Perfil on Tu diario and Listas too. */
 export const isDesktopNavCurrent = (href: string, pathname: string) => isMobileNavCurrent(href, pathname);
 
 /** Bottom tab bar: four tabs around the center Buscar disc. */
 export const mobileNavItems = [
   { href: "/", label: "Hoy", icon: "today" },
   { href: "/watchlist", label: "Quiero ver", icon: "queue" },
-  { href: "/listas", label: "Listas", icon: "lists" },
+  { href: "/cine", label: "Cine", icon: "ticket" },
   { href: "/perfil", label: "Perfil", icon: "profile" },
 ] as const;
 
@@ -76,7 +84,7 @@ export const mobileNavSearch = { href: "/buscar", label: "Buscar", icon: "search
 /** React transition type of the dock's own taps: the dock ⇄ Buscar field morph. */
 export const DOCK_SEARCH_TRANSITION = "dock-search";
 
-/** Grid column the Buscar disc occupies (between Quiero ver and Listas). */
+/** Grid column the Buscar disc occupies (between Quiero ver and Cine). */
 export const mobileNavSearchSlot = 2;
 
 export type MobileNavIcon =
