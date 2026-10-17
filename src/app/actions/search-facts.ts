@@ -15,6 +15,7 @@ import { TITLE_KINDS } from "@/lib/labels";
 import {
   createEnrichBudget,
   factsFromCatalog,
+  FILMOGRAPHY_FACTS_LIMIT,
   PENDING_FACTS,
   pickEnrichmentCandidates,
   SEARCH_FACTS_LOOKUP_LIMIT,
@@ -61,16 +62,17 @@ const enrichOne = async ({ tmdbId, kind }: SearchFactsItem) => {
 };
 
 /**
- * Buscar row A (FIL-I8-4): IMDb, award, runtime, genre and MX platform for the
- * results, from the shared Catalog in one query. The first few films the
- * Catalog does not know yet are enriched after the response (TMDB + OMDb,
- * both cached a day) and come back `pending`, so the client asks once more.
+ * Row A's facts for up to `limit` titles, from the shared Catalog in one query.
+ * The first few films the Catalog does not know yet (in the order given) are
+ * enriched after the response (TMDB + OMDb, both cached a day) and come back
+ * `pending`, so the client asks once more.
  */
-export const getSearchResultFacts = async (
+const lookupFacts = async (
   items: SearchFactsItem[],
+  limit: number,
 ): Promise<Record<string, SearchResultFacts>> => {
   const userId = await requireUserId();
-  const wanted = items.filter(isItem).slice(0, SEARCH_FACTS_LOOKUP_LIMIT);
+  const wanted = items.filter(isItem).slice(0, limit);
   if (wanted.length === 0) {
     return {};
   }
@@ -138,3 +140,15 @@ export const getSearchResultFacts = async (
 
   return facts;
 };
+
+/** Buscar row A (FIL-I8-4): IMDb, award, runtime, genre and MX platform for the results. */
+export const getSearchResultFacts = async (items: SearchFactsItem[]) =>
+  lookupFacts(items, SEARCH_FACTS_LOOKUP_LIMIT);
+
+/**
+ * A person's filmography (FIL-I16-1): the whole work at once, because «Lo
+ * esencial» and «Podría gustarte» rank all of it. OMDb stays gradual: the same
+ * per-call and per-user budget as Buscar, best-known titles first (the client's order).
+ */
+export const getFilmographyFacts = async (items: SearchFactsItem[]) =>
+  lookupFacts(items, FILMOGRAPHY_FACTS_LIMIT);
