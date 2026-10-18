@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Fraunces, Geist } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
+import { LaunchBoot } from "@/components/launch/LaunchBoot";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { ensureDefaultLists } from "@/lib/lists";
 import { IOS_SPLASH_IMAGES } from "@/lib/pwa/ios-splash";
@@ -16,6 +17,7 @@ const geistSans = Geist({
 const fraunces = Fraunces({
   variable: "--font-fraunces",
   subsets: ["latin"],
+  axes: ["opsz"],
 });
 
 /** Filmia canvas — keep in sync with globals.css --canvas, manifest, and splash PNGs. */
@@ -75,6 +77,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="flex min-h-full min-h-[100dvh] flex-col bg-canvas text-paper">
+        <LaunchBoot />
         <AppShell>{children}</AppShell>
       </body>
     </html>

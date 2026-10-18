@@ -1,7 +1,7 @@
 import devices from "./ios-splash-devices.json";
 
 /** Bump when the frame-0 artwork changes so a re-install does not reuse a stale HTTP cache. */
-export const IOS_SPLASH_VERSION = "1";
+export const IOS_SPLASH_VERSION = "2";
 
 /** Single launch color. Manifest, viewport, html, and the PNGs all use this hex. */
 export const LAUNCH_COLOR = "#0e1114";

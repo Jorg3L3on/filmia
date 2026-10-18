@@ -7,7 +7,8 @@ export const dynamic = "force-dynamic";
  * HTML chunk. A loading file cannot cover the layout in its own segment; the
  * root fallback can. The yield is one macrotask: a promise that is already
  * resolved never flushes that shell. Hoy's deck query stays in the page
- * Suspense, so the iris does not wait on it.
+ * Suspense, so the iris does not wait on it. Return visits keep this yield,
+ * but the root fallback swaps to HoySkeleton once `data-booted` is set.
  */
 const DiarioLayout = async ({ children }: { children: ReactNode }) => {
   await new Promise<void>((resolve) => {

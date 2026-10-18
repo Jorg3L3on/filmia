@@ -70,10 +70,21 @@ describe("launch wiring", () => {
     assert.match(layout, /themeColor: THEME_COLOR/);
     assert.match(layout, /startupImage: IOS_SPLASH_IMAGES/);
     assert.match(layout, /"apple-mobile-web-app-capable": "yes"/);
-    assert.match(read("src/app/globals.css"), /@property --iris-r/);
-    assert.match(read("src/app/globals.css"), /iris-fade-out 170ms/);
-    assert.match(read("src/app/loading.tsx"), /IrisLoader/);
-    assert.match(read("src/app/loading.tsx"), /exit="iris-out"/);
+    const css = read("src/app/globals.css");
+    assert.match(css, /@property --iris-r/);
+    assert.match(css, /iris-fade-out 170ms/);
+    assert.match(css, /--iris-hole: 620px/);
+    assert.match(css, /iris-safety 240ms ease 4s forwards/);
+    assert.match(css, /display-mode: standalone/);
+    assert.match(css, /html\[data-booted\] \.iris-loader/);
+    assert.match(css, /line-height: normal/);
+    assert.doesNotMatch(css, /"SOFT" 50/);
+    assert.match(layout, /axes: \["opsz"\]/);
+    const loading = read("src/app/loading.tsx");
+    assert.match(loading, /IrisLoader/);
+    assert.match(loading, /HoySkeleton/);
+    assert.match(loading, /exit="iris-out"/);
+    assert.match(read("src/components/launch/LaunchBoot.tsx"), /dataset\.booted/);
   });
 
   it("skips the session lookup for the worker and splash files", () => {
