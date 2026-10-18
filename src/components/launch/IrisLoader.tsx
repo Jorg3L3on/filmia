@@ -1,7 +1,3 @@
-import { IOS_SPLASH_DEVICES, splashHref, splashMedia } from "@/lib/pwa/ios-splash";
-
-const stillMedia = IOS_SPLASH_DEVICES.map((device) => splashMedia(device)).join(", ");
-
 type MarkProps = {
   title: string;
 };
@@ -36,13 +32,11 @@ const Mark = ({ title }: MarkProps) => {
 };
 
 /**
- * Frame 0 of the launch loader. On a known iPhone/iPad the still is the startup
- * PNG, so the handoff from the native splash is the same pixels. After the 0.6s
- * hold the still drops and the CSS pose (same geometry) takes over.
+ * Launch loader. The iOS startup image is the same pose, linked only from
+ * the Apple startup meta — this tree does not download it.
  */
 export const IrisLoader = () => (
   <div className="iris-loader" role="status" aria-label="Preparando la función">
-    <style>{`@media ${stillMedia}{.iris-still{display:block}}`}</style>
     <div className="iris-lin">
       <div className="iris-weave">
         <div className="iris-bloom" />
@@ -66,11 +60,5 @@ export const IrisLoader = () => (
     </div>
     <div className="iris-vig" aria-hidden="true" />
     <div className="iris-grain" aria-hidden="true" />
-    <picture className="iris-still">
-      {IOS_SPLASH_DEVICES.map((device) => (
-        <source key={splashHref(device)} media={splashMedia(device)} srcSet={splashHref(device)} />
-      ))}
-      <img alt="" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" />
-    </picture>
   </div>
 );

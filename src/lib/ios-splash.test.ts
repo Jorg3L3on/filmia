@@ -85,6 +85,10 @@ describe("launch wiring", () => {
     assert.match(loading, /HoySkeleton/);
     assert.match(loading, /exit="iris-out"/);
     assert.match(read("src/components/launch/LaunchBoot.tsx"), /dataset\.booted/);
+    assert.doesNotMatch(read("src/components/launch/IrisLoader.tsx"), /iris-still/);
+    assert.doesNotMatch(css, /\.iris-still/);
+    assert.match(css, /iris-fade-out 170ms linear/);
+    assert.match(css, /\.iris-logo \.iris-mark/);
   });
 
   it("skips the session lookup for the worker and splash files", () => {

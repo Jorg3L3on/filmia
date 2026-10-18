@@ -3864,7 +3864,7 @@ html[data-booted] .iris-loader {
   height: 104px;
 }
 
-.iris-logo > .iris-mark {
+.iris-logo .iris-mark {
   position: relative;
   filter:
     drop-shadow(0 4px 14px rgb(30 0 20 / 0.55))
@@ -3952,23 +3952,6 @@ html[data-booted] .iris-loader {
 
 .iris-weave {
   animation: iris-weave 0.25s steps(1) var(--iris-hold) infinite;
-}
-
-/* Shown only on a device whose startup PNG we ship (inline media in IrisLoader). */
-.iris-still {
-  position: absolute;
-  inset: 0;
-  z-index: 40;
-  display: none;
-  margin: 0;
-  pointer-events: none;
-  animation: iris-still-hide 0s linear var(--iris-hold) forwards;
-}
-
-.iris-still img {
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
 }
 
 /* Radius motion needs a registered <length>. Otherwise stay on the PNG pose. */
@@ -4122,13 +4105,6 @@ html[data-booted] .iris-loader {
   }
 }
 
-@keyframes iris-still-hide {
-  to {
-    visibility: hidden;
-    opacity: 0;
-  }
-}
-
 @keyframes iris-fade-out {
   to {
     opacity: 0;
@@ -4161,19 +4137,17 @@ html[data-booted] .iris-loader {
   }
 }
 
-/* Kill the UA 250ms crossfade on this name only, so Hoy is already under the hole. */
+/* The UA 250ms crossfade still runs. It is not visible: HoySkeleton sits under the iris. */
 ::view-transition-group(launch),
-::view-transition-image-pair(launch),
-::view-transition-new(launch),
-::view-transition-new(.iris-out) {
+::view-transition-image-pair(launch) {
   animation: none;
   opacity: 1;
 }
 
-/* No @property: a short fade. The hole below needs a registered length. */
+/* No @property: a short linear fade. The hole below needs a registered length. */
 ::view-transition-old(launch),
 ::view-transition-old(.iris-out) {
-  animation: iris-fade-out 170ms ease both;
+  animation: iris-fade-out 170ms linear both;
   pointer-events: none;
 }
 
@@ -4202,17 +4176,12 @@ html[data-booted] .iris-loader {
   .iris-grain,
   .iris-weave,
   .iris-leak,
-  .iris-streak,
-  .iris-still {
+  .iris-streak {
     animation: none !important;
   }
 
   .iris-grain {
     opacity: 0.085;
-  }
-
-  .iris-still {
-    display: none !important;
   }
 
   .iris-bloom {
@@ -4225,7 +4194,7 @@ html[data-booted] .iris-loader {
 
   ::view-transition-old(launch),
   ::view-transition-old(.iris-out) {
-    animation: iris-fade-out 170ms ease both !important;
+    animation: iris-fade-out 170ms linear both !important;
     -webkit-mask: none !important;
     mask: none !important;
   }

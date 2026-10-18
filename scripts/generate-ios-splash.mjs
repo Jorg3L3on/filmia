@@ -1,7 +1,13 @@
 /**
  * Portrait iOS startup PNGs, one per device. Each file is a headless Chrome
- * screenshot of the real Iris CSS at t = 0 (animations paused, the startup
- * still hidden, the same next/font files). Full-color PNG, no palette.
+ * screenshot of the real Iris CSS at t = 0 (animations paused, the same
+ * next/font files). The iPhone 14 Pro frame is checked against a second shot
+ * of that page at 600ms — the file on disk, after compression.
+ *
+ * pngquant's 256-color palette moves channels by dozens on this grain, so it
+ * cannot stay inside a max channel delta of 3. The shrink is a posterize of
+ * at most 2 levels (no banding; the grain already dithers the gradients),
+ * kept only when that delta still holds, then lossless oxipng.
  *
  * Requires a production build so the shot uses the shipped CSS and fonts:
  *   npm run build && npm run generate:ios-splash
@@ -9,8 +15,8 @@
  * Optional argv filters the device list (a size like 393x852, or a name).
  */
 import { createServer } from "node:http";
-import { spawnSync } from "node:child_process";
-import { readFileSync, readdirSync, mkdirSync, writeFileSync } from "node:fs";
+import { spawnSync, execFileSync } from "node:child_process";
+import { readFileSync, readdirSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
@@ -60,7 +66,6 @@ const html = `<!doctype html>
 ${cssFiles.map((file) => `<link rel="stylesheet" href="/_next/static/chunks/${path.basename(file)}"/>`).join("")}
 <style>
   html, body { margin: 0; background: #0e1114; }
-  .iris-still { display: none !important; }
 </style>
 </head>
 <body>${markup.stdout}</body>
@@ -118,19 +123,43 @@ const pauseAt = async (page, ms) => {
   }, ms);
 };
 
-const meanDelta = (left, right) => {
+const channelDelta = (left, right) => {
   let sum = 0;
+  let max = 0;
   let changed = 0;
   const pixels = left.length / 4;
   for (let i = 0; i < left.length; i += 4) {
-    const delta =
-      Math.abs(left[i] - right[i]) +
-      Math.abs(left[i + 1] - right[i + 1]) +
-      Math.abs(left[i + 2] - right[i + 2]);
-    sum += delta;
-    if (delta > 0) changed += 1;
+    const dr = Math.abs(left[i] - right[i]);
+    const dg = Math.abs(left[i + 1] - right[i + 1]);
+    const db = Math.abs(left[i + 2] - right[i + 2]);
+    const peak = Math.max(dr, dg, db);
+    sum += dr + dg + db;
+    if (peak > max) max = peak;
+    if (peak > 0) changed += 1;
   }
-  return { mean: sum / pixels, changed: changed / pixels };
+  return { mean: sum / pixels, max, changed: changed / pixels };
+};
+
+const toRgba = (buffer) => sharp(buffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+
+/** Snap each channel to a multiple of `step`. Step 1 is a copy. Max error is step/2. */
+const posterize = (rgba, step) => {
+  if (step <= 1) return Buffer.from(rgba);
+  const copy = Buffer.from(rgba);
+  for (let i = 0; i < copy.length; i += 4) {
+    copy[i] = Math.min(255, Math.round(copy[i] / step) * step);
+    copy[i + 1] = Math.min(255, Math.round(copy[i + 1] / step) * step);
+    copy[i + 2] = Math.min(255, Math.round(copy[i + 2] / step) * step);
+  }
+  return copy;
+};
+
+const writePng = async (file, rgba, width, height) => {
+  await sharp(rgba, { raw: { width, height, channels: 4 } })
+    .removeAlpha()
+    .png({ compressionLevel: 9 })
+    .toFile(file);
+  execFileSync("oxipng", ["-o", "4", "--strip", "safe", file], { stdio: "ignore" });
 };
 
 const browser = await chromium.launch({
@@ -147,6 +176,11 @@ const selected = devices.filter((device) => {
     `${device.width}x${device.height}` === filter
   );
 });
+const isReference = (device) => device.width === 393 && device.height === 852;
+selected.sort((a, b) => Number(isReference(b)) - Number(isReference(a)));
+
+/** Largest posterize that keeps the reference file within a channel delta of 3. */
+let quantStep = 1;
 
 try {
   for (const device of selected) {
@@ -186,18 +220,34 @@ try {
     const fileName = `apple-splash-${device.width * device.ratio}x${device.height * device.ratio}.png`;
     const file = path.join(outDir, fileName);
     const frame0 = await page.screenshot({ type: "png" });
-    writeFileSync(file, frame0);
+    const shot = await toRgba(frame0);
 
-    if (device.width === 393 && device.height === 852) {
+    if (isReference(device)) {
       await pauseAt(page, 600);
-      const atHold = await page.screenshot({ type: "png" });
-      const [a, b] = await Promise.all(
-        [frame0, atHold].map((buffer) => sharp(buffer).ensureAlpha().raw().toBuffer()),
-      );
-      const delta = meanDelta(a, b);
+      const css = await toRgba(await page.screenshot({ type: "png" }));
+      if (css.info.width !== shot.info.width || css.info.height !== shot.info.height) {
+        throw new Error("CSS pose screenshot size does not match the startup PNG");
+      }
+      quantStep = 1;
+      for (const step of [4, 2]) {
+        const delta = channelDelta(posterize(shot.data, step), css.data);
+        if (delta.max <= 3) {
+          quantStep = step;
+          break;
+        }
+      }
+      const rgba = posterize(shot.data, quantStep);
+      await writePng(file, rgba, shot.info.width, shot.info.height);
+      const written = await toRgba(readFileSync(file));
+      const delta = channelDelta(written.data, css.data);
       console.log(
-        `delta 393x852 @3  t=0 vs t=600ms  mean=${delta.mean.toFixed(4)}  changed=${(delta.changed * 100).toFixed(3)}%`,
+        `delta 393x852 @3  png vs css@600ms  step=${quantStep}  max=${delta.max}  mean=${delta.mean.toFixed(4)}  changed=${(delta.changed * 100).toFixed(3)}%`,
       );
+      if (delta.max > 3) {
+        throw new Error(`Splash delta ${delta.max} exceeds 3`);
+      }
+    } else {
+      await writePng(file, posterize(shot.data, quantStep), shot.info.width, shot.info.height);
     }
 
     console.log(`wrote public/splash/${fileName} (${device.name})`);
