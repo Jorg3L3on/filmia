@@ -1,9 +1,11 @@
 import type { MetadataRoute } from "next";
 
-/** Filmia canvas from globals.css --canvas (JOR-217). */
+/**
+ * Launch color. Same hex as globals.css --canvas, the viewport themeColor,
+ * and the iOS startup PNGs. One color, so iOS never paints a different plate
+ * while the splash image is loading.
+ */
 const CANVAS = "#0e1114";
-/** globals.css --canvas-deep. Splash background behind the gradient tile icon. */
-const PLATE = "#090b0d";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -14,10 +16,14 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     display_override: ["standalone", "minimal-ui"],
-    background_color: PLATE,
+    background_color: CANVAS,
     theme_color: CANVAS,
     lang: "es",
-    orientation: "any",
+    // Portrait only. Startup images match a single orientation; `any` would
+    // launch a landscape iPhone onto the flat background color. The UI is a
+    // phone diary (bottom nav, coverflow), so the standalone app stays portrait
+    // and each device needs one PNG.
+    orientation: "portrait",
     icons: [
       {
         src: "/icon-192.png",

@@ -26,6 +26,7 @@
     "db:clean-limbo": "tsx scripts/clean-limbo-titles.ts",
     "db:verify-role": "tsx scripts/verify-db-role.ts",
     "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs",
+    "generate:ios-splash": "node scripts/generate-ios-splash.mjs",
     "eval:tonight": "tsx scripts/eval-tonight.ts",
     "eval:affinity": "tsx scripts/eval-affinity.ts",
     "preview:affinity": "tsx scripts/preview-affinity.ts",
@@ -58,6 +59,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^24.19.1",

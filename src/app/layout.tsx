@@ -4,6 +4,7 @@ import { Fraunces, Geist } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { ensureDefaultLists } from "@/lib/lists";
+import { IOS_SPLASH_IMAGES } from "@/lib/pwa/ios-splash";
 import { auth } from "@/lib/session";
 import "./globals.css";
 
@@ -17,7 +18,7 @@ const fraunces = Fraunces({
   subsets: ["latin"],
 });
 
-/** Filmia canvas (~#0e1114) — keep in sync with globals.css --canvas and manifest. */
+/** Filmia canvas — keep in sync with globals.css --canvas, manifest, and splash PNGs. */
 const THEME_COLOR = "#0e1114";
 
 export const metadata: Metadata = {
@@ -39,6 +40,12 @@ export const metadata: Metadata = {
     capable: true,
     title: "Filmia",
     statusBarStyle: "black-translucent",
+    startupImage: IOS_SPLASH_IMAGES,
+  },
+  // Next emits `mobile-web-app-capable` only. iOS before 16.4 needs the Apple
+  // name to honor startup images and the translucent status bar.
+  other: {
+    "apple-mobile-web-app-capable": "yes",
   },
   formatDetection: {
     telephone: false,
