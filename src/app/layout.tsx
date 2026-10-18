@@ -2,8 +2,10 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Fraunces, Geist } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
+import { LaunchBoot } from "@/components/launch/LaunchBoot";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { ensureDefaultLists } from "@/lib/lists";
+import { IOS_SPLASH_IMAGES } from "@/lib/pwa/ios-splash";
 import { auth } from "@/lib/session";
 import "./globals.css";
 
@@ -15,9 +17,10 @@ const geistSans = Geist({
 const fraunces = Fraunces({
   variable: "--font-fraunces",
   subsets: ["latin"],
+  axes: ["opsz"],
 });
 
-/** Filmia canvas (~#0e1114) — keep in sync with globals.css --canvas and manifest. */
+/** Filmia canvas — keep in sync with globals.css --canvas, manifest, and splash PNGs. */
 const THEME_COLOR = "#0e1114";
 
 export const metadata: Metadata = {
@@ -39,6 +42,12 @@ export const metadata: Metadata = {
     capable: true,
     title: "Filmia",
     statusBarStyle: "black-translucent",
+    startupImage: IOS_SPLASH_IMAGES,
+  },
+  // Next emits `mobile-web-app-capable` only. iOS before 16.4 needs the Apple
+  // name to honor startup images and the translucent status bar.
+  other: {
+    "apple-mobile-web-app-capable": "yes",
   },
   formatDetection: {
     telephone: false,
@@ -68,6 +77,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="flex min-h-full min-h-[100dvh] flex-col bg-canvas text-paper">
+        <LaunchBoot />
         <AppShell>{children}</AppShell>
       </body>
     </html>

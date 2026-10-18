@@ -3,6 +3,7 @@
 :root {
   --background: #0e1114;
   --foreground: #f0f2f4;
+  /* PWA launch color. Keep in lockstep with manifest background/theme, viewport, splash PNGs. */
   --canvas: #0e1114;
   --canvas-deep: #090b0d;
   --well: #161a1f;
@@ -3625,38 +3626,6 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 }
 
 
-@media (prefers-reduced-motion: reduce) {
-  .bienvenida-glow,
-  .bienvenida-poster-wash,
-  .bienvenida-cta-pulse,
-  .favorite-hero,
-  .favorite-stars span,
-  .queue-counter-num,
-  .bedtime-digits,
-  .year-crown,
-  .year-check,
-  .payoff-card-in {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
-
-  .bienvenida-poster-wash {
-    opacity: 0.28;
-    transform: scale(1.08);
-  }
-
-  .film-hole,
-  .bedtime-moon,
-  .bedtime-stars,
-  .bedtime-sky,
-  .hour-tick-mark,
-  .hour-tick-label,
-  .year-tile img {
-    transition: none;
-  }
-}
-
 /* «Para ti» (FIL-I9): three-dot meter + label. Level sets how many dots light up. */
 .affinity-chip {
   --affinity-on: var(--affinity);
@@ -3705,4 +3674,560 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   box-shadow: inset 0 0 0 1px rgb(var(--affinity-rgb) / 0.32);
   background: transparent;
   border: 1px dashed rgb(var(--affinity-rgb) / 0.35);
+}
+
+/* --- Iris launch loader -------------------------------------------------
+ * Frame 0 matches the Playwright splash (r = 112px, center at 43%).
+ * @property animates the radius. The oklab @supports test also matches
+ * Safari 16.2–16.3, which do not interpolate @property; those releases jump
+ * from the still pose to the open one. `paint()` is not a tighter test:
+ * Safari does not implement CSS Paint at all.
+ * ---------------------------------------------------------------------- */
+
+@property --iris-r {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 112px;
+}
+
+@property --iris-hole {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+.iris-loader {
+  --iris-r: 112px;
+  --iris-hold: 0.6s;
+  --iris-amber: #ffb35a;
+  --iris-amber-rgb: 255 179 90;
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  display: none;
+  overflow: hidden;
+  background: #0e1114;
+  pointer-events: none;
+  user-select: none;
+  animation: iris-safety 240ms ease 4s forwards;
+}
+
+@media (display-mode: standalone) {
+  .iris-loader {
+    display: block;
+  }
+}
+
+html[data-booted] .iris-loader {
+  display: none;
+}
+
+.iris-lin,
+.iris-weave {
+  position: absolute;
+  inset: 0;
+}
+
+.iris-bloom {
+  position: absolute;
+  left: 50%;
+  top: 43%;
+  z-index: 5;
+  width: 460px;
+  height: 460px;
+  margin: -230px 0 0 -230px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 140 80 / 0.2), transparent);
+  animation: iris-bloom 3.6s ease-in-out 2s infinite;
+}
+
+.iris-leak {
+  position: absolute;
+  z-index: 5;
+  top: -240px;
+  right: -300px;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 150 70 / 0.55), rgb(196 35 127 / 0.28) 45%, transparent 70%);
+  filter: blur(60px);
+  opacity: 0.32;
+  animation: iris-leak 9s ease-in-out var(--iris-hold) infinite;
+}
+
+.iris-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  -webkit-mask: radial-gradient(
+    circle at 50% 43%,
+    #000 calc(var(--iris-r) - 16px),
+    transparent var(--iris-r)
+  );
+  mask: radial-gradient(circle at 50% 43%, #000 calc(var(--iris-r) - 16px), transparent var(--iris-r));
+}
+
+.iris-grade {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(240px 120px at 26% 30%, rgb(255 150 70 / 0.42), transparent 70%),
+    radial-gradient(220px 200px at 72% 56%, rgb(196 35 127 / 0.45), transparent 70%),
+    linear-gradient(180deg, #24161a 0%, #1a1116 40%, #120d11 100%);
+}
+
+.iris-poster {
+  position: absolute;
+  left: 50%;
+  top: 43%;
+  width: 170px;
+  height: 255px;
+  margin: -128px 0 0 -85px;
+  border-radius: 16px;
+  background: linear-gradient(165deg, rgb(255 196 140 / 0.75), rgb(214 70 110 / 0.45) 45%, rgb(60 14 40 / 0.6) 100%);
+  box-shadow:
+    -18px 10px 0 -2px rgb(255 170 110 / 0.12),
+    20px -8px 0 -4px rgb(196 35 127 / 0.14);
+  filter: blur(5px);
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  animation: iris-kb 9s ease-in-out var(--iris-hold) infinite;
+}
+
+.iris-streak {
+  position: absolute;
+  top: calc(43% - 2px);
+  right: -40px;
+  left: -40px;
+  height: 4px;
+  border-radius: 50%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 190 120 / 0) 20%,
+    rgb(255 214 170 / 0.75) 50%,
+    rgb(255 190 120 / 0) 80%,
+    transparent
+  );
+  filter: blur(2.5px);
+  opacity: 0.75;
+  animation: iris-streak 3.6s ease-in-out 2s infinite;
+}
+
+.iris-blades {
+  position: absolute;
+  left: 50%;
+  top: 43%;
+  z-index: 7;
+  width: 560px;
+  height: 560px;
+  margin: -280px 0 0 -280px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 8deg at 57% 46%,
+    #20262c 0deg,
+    #0f1215 44.2deg,
+    rgb(var(--iris-amber-rgb) / 0.3) 44.3deg 45deg
+  );
+  -webkit-mask: radial-gradient(
+    circle,
+    transparent calc(var(--iris-r) - 3px),
+    #000 calc(var(--iris-r) + 1px),
+    #000 190px,
+    transparent 280px
+  );
+  mask: radial-gradient(
+    circle,
+    transparent calc(var(--iris-r) - 3px),
+    #000 calc(var(--iris-r) + 1px),
+    #000 190px,
+    transparent 280px
+  );
+  animation:
+    iris-blade-in 1.4s var(--ease-out) var(--iris-hold) both,
+    iris-blade-rest 3.6s ease-in-out 2s infinite;
+}
+
+.iris-logo {
+  position: absolute;
+  left: 50%;
+  top: 43%;
+  z-index: 8;
+  width: 104px;
+  height: 104px;
+  margin: -52px 0 0 -52px;
+}
+
+.iris-mark {
+  display: block;
+  width: 104px;
+  height: 104px;
+}
+
+.iris-logo .iris-mark {
+  position: relative;
+  filter:
+    drop-shadow(0 4px 14px rgb(30 0 20 / 0.55))
+    drop-shadow(0 0 18px rgb(255 200 150 / 0.35));
+}
+
+.iris-ghost {
+  position: absolute;
+  inset: 0;
+  opacity: 0.28;
+  transform: translate(6px, -3px);
+  filter: blur(1.4px) sepia(1) saturate(3) hue-rotate(-20deg);
+  animation: iris-ghost 3.2s ease-in-out var(--iris-hold) infinite;
+}
+
+.iris-rim {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 43%,
+    transparent calc(var(--iris-r) - 6px),
+    rgb(255 190 110 / 0.38) calc(var(--iris-r) - 1px),
+    rgb(255 190 110 / 0) calc(var(--iris-r) + 6px)
+  );
+  filter: blur(0.4px);
+}
+
+.iris-word {
+  position: absolute;
+  top: calc(43% + 193.64px);
+  right: 0;
+  left: 0;
+  z-index: 20;
+  margin: 0;
+  color: #f3ede4;
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-size: 42px;
+  font-weight: 540;
+  letter-spacing: -0.01em;
+  line-height: normal;
+  text-align: center;
+  font-variation-settings: "opsz" 96;
+}
+
+.iris-cap {
+  position: absolute;
+  top: calc(43% + 257.64px);
+  right: 0;
+  left: 0;
+  z-index: 20;
+  margin: 0;
+  color: var(--iris-amber);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.34em;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  opacity: 0.85;
+  animation: iris-cap-breathe 2.4s ease-in-out var(--iris-hold) infinite;
+}
+
+.iris-vig {
+  position: absolute;
+  inset: 0;
+  z-index: 29;
+  pointer-events: none;
+  background: radial-gradient(120% 80% at 50% 46%, transparent 45%, rgb(14 17 20 / 0.65) 78%, #0e1114 100%);
+}
+
+.iris-grain {
+  position: absolute;
+  inset: -60px;
+  z-index: 30;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 .95  0 0 0 0 .88  0 0 0 1.1 -.25'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 180px 180px;
+  opacity: 0.085;
+  mix-blend-mode: screen;
+  animation: iris-grain 0.5s steps(1) var(--iris-hold) infinite;
+}
+
+.iris-weave {
+  animation: iris-weave 0.25s steps(1) var(--iris-hold) infinite;
+}
+
+/* Radius motion needs a registered <length>. Otherwise stay on the PNG pose. */
+@supports (background: linear-gradient(in oklab, black, white)) {
+  .iris-lin {
+    animation:
+      iris-open 1.4s var(--ease-out) var(--iris-hold) both,
+      iris-breathe 3.6s ease-in-out 2s infinite;
+  }
+}
+
+@keyframes iris-open {
+  from {
+    --iris-r: 112px;
+  }
+  to {
+    --iris-r: 150px;
+  }
+}
+
+@keyframes iris-breathe {
+  0%,
+  100% {
+    --iris-r: 150px;
+  }
+  50% {
+    --iris-r: 136px;
+  }
+}
+
+@keyframes iris-blade-in {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-14deg);
+  }
+}
+
+@keyframes iris-blade-rest {
+  0%,
+  100% {
+    transform: rotate(-14deg);
+  }
+  50% {
+    transform: rotate(-9deg);
+  }
+}
+
+@keyframes iris-kb {
+  0%,
+  100% {
+    transform: scale(1) translate(0, 0);
+  }
+  50% {
+    transform: scale(1.08) translate(-6px, 4px);
+  }
+}
+
+@keyframes iris-streak {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes iris-ghost {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: translate(6px, -3px);
+  }
+  50% {
+    opacity: 0.16;
+    transform: translate(3px, -1.5px);
+  }
+}
+
+@keyframes iris-bloom {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes iris-leak {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: translate(0, 0);
+  }
+  40% {
+    opacity: 0.55;
+    transform: translate(-40px, 30px);
+  }
+  70% {
+    opacity: 0.24;
+    transform: translate(-10px, 60px);
+  }
+}
+
+@keyframes iris-cap-breathe {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes iris-grain {
+  17% {
+    transform: translate(-41px, 23px);
+  }
+  33% {
+    transform: translate(29px, -37px);
+  }
+  50% {
+    transform: translate(-17px, -52px);
+  }
+  67% {
+    transform: translate(48px, 11px);
+  }
+  83% {
+    transform: translate(-55px, 39px);
+  }
+}
+
+@keyframes iris-weave {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(0.4px, -0.6px);
+  }
+  50% {
+    transform: translate(-0.3px, 0.5px);
+  }
+  75% {
+    transform: translate(0.2px, 0.3px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes iris-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes iris-hole-out {
+  from {
+    --iris-hole: 0px;
+  }
+  to {
+    --iris-hole: 620px;
+  }
+}
+
+@keyframes iris-safety {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes iris-rm-glow {
+  0%,
+  100% {
+    opacity: 0.62;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+/* The UA 250ms crossfade still runs. It is not visible: HoySkeleton sits under the iris. */
+::view-transition-group(launch),
+::view-transition-image-pair(launch) {
+  animation: none;
+  opacity: 1;
+}
+
+/* No @property: a short linear fade. The hole below needs a registered length. */
+::view-transition-old(launch),
+::view-transition-old(.iris-out) {
+  animation: iris-fade-out 170ms linear both;
+  pointer-events: none;
+}
+
+@supports (background: linear-gradient(in oklab, black, white)) {
+  ::view-transition-old(launch),
+  ::view-transition-old(.iris-out) {
+    animation: iris-hole-out 240ms cubic-bezier(0.5, 0, 0.75, 0) both;
+    -webkit-mask: radial-gradient(
+      circle at 50% 43%,
+      transparent calc(var(--iris-hole) - 30px),
+      #000 var(--iris-hole)
+    );
+    mask: radial-gradient(
+      circle at 50% 43%,
+      transparent calc(var(--iris-hole) - 30px),
+      #000 var(--iris-hole)
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iris-lin,
+  .iris-blades,
+  .iris-poster,
+  .iris-ghost,
+  .iris-grain,
+  .iris-weave,
+  .iris-leak,
+  .iris-streak {
+    animation: none !important;
+  }
+
+  .iris-grain {
+    opacity: 0.085;
+  }
+
+  .iris-bloom {
+    animation: iris-rm-glow 2.8s ease-in-out var(--iris-hold) infinite !important;
+  }
+
+  .iris-cap {
+    animation: iris-cap-breathe 2.4s ease-in-out var(--iris-hold) infinite !important;
+  }
+
+  ::view-transition-old(launch),
+  ::view-transition-old(.iris-out) {
+    animation: iris-fade-out 170ms linear both !important;
+    -webkit-mask: none !important;
+    mask: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bienvenida-glow,
+  .bienvenida-poster-wash,
+  .bienvenida-cta-pulse,
+  .favorite-hero,
+  .favorite-stars span,
+  .queue-counter-num,
+  .bedtime-digits,
+  .year-crown,
+  .year-check,
+  .payoff-card-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .bienvenida-poster-wash {
+    opacity: 0.28;
+    transform: scale(1.08);
+  }
+
+  .film-hole,
+  .bedtime-moon,
+  .bedtime-stars,
+  .bedtime-sky,
+  .hour-tick-mark,
+  .hour-tick-label,
+  .year-tile img {
+    transition: none;
+  }
 }
