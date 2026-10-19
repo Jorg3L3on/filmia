@@ -1,17 +1,20 @@
+import { ViewTransition } from "react";
+import { HoySkeleton } from "@/components/PageSkeletons";
+import { IrisLoader } from "@/components/launch/IrisLoader";
+
+/**
+ * Cold start (standalone, before hydration) paints Iris. After `data-booted`,
+ * the loader is `display: none` and this boundary is the Hoy skeleton.
+ * The named view transition is the 240ms iris-out; its new image is not
+ * crossfaded, so Hoy is already painted under the hole.
+ */
 export default function Loading() {
   return (
-    <div
-      className="mx-auto max-w-lg space-y-4 rounded-2xl border border-line bg-well p-6"
-      aria-busy="true"
-      aria-label="Cargando"
-    >
-      <div className="shimmer h-3 w-24 rounded-full" />
-      <div className="shimmer h-40 rounded-xl" />
-      <div className="shimmer h-24 rounded-xl" />
-      <div className="flex gap-3">
-        <div className="shimmer h-10 flex-1 rounded-[var(--radius-button)]" />
-        <div className="shimmer h-10 w-24 rounded-[var(--radius-button)]" />
-      </div>
-    </div>
+    <>
+      <ViewTransition name="launch" default="none" exit="iris-out">
+        <IrisLoader />
+      </ViewTransition>
+      <HoySkeleton />
+    </>
   );
 }

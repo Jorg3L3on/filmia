@@ -3,6 +3,7 @@ import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 import { sessionCookieOptions, verifySessionToken } from "@/lib/auth/session-token";
 import { isSessionCurrent } from "@/lib/auth/session-version";
 import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
+import { isProxyStaticAsset } from "@/lib/proxy-static";
 import { requestOrigin } from "@/lib/request-origin";
 
 const LOGIN_PATH = "/login";
@@ -20,19 +21,13 @@ const isPublicPath = (pathname: string) =>
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
 
-const isStaticAsset = (pathname: string) =>
-  pathname.startsWith("/_next/") ||
-  pathname === "/favicon.ico" ||
-  pathname === "/filmia-mark.png" ||
-  pathname === "/manifest.webmanifest" ||
-  pathname === "/manifest.webmanifest/" ||
-  pathname.startsWith("/icon-") ||
-  pathname.startsWith("/posters/");
-
 export const proxy = async (request: Request) => {
   const { pathname } = new URL(request.url);
 
-  if (isStaticAsset(pathname) || pathname.startsWith("/api/auth")) {
+  // Static files, including /sw.js, never read the session. Otherwise a worker
+  // update (and every splash PNG, if the matcher changes) pays for Neon — and
+  // a signed-out check would redirect the worker script to /login.
+  if (isProxyStaticAsset(pathname) || pathname.startsWith("/api/auth")) {
     return NextResponse.next();
   }
 
@@ -73,7 +68,9 @@ export const proxy = async (request: Request) => {
     return respond(NextResponse.next());
   }
 
-  // Server Functions POST to the page they are used on, so /bienvenida itself must stay reachable.
+  // Redirect before any HTML so the launch loader is not painted on a bounce
+  // from / to /login or /bienvenida. Server Functions POST to the page they
+  // are used on, so /bienvenida itself must stay reachable.
   if (gated && pathname !== ONBOARDING_PATH && !pathname.startsWith("/api/")) {
     return NextResponse.redirect(new URL(ONBOARDING_PATH, requestOrigin(request)));
   }
@@ -92,6 +89,6 @@ export const proxy = async (request: Request) => {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|filmia-mark.png|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|filmia-mark.png|sw\\.js|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff2?)$).*)",
   ],
 };

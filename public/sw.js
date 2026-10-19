@@ -4,7 +4,7 @@
  * No offline sync.
  * FIL-I12: also shows Web Push notices («Llegó a tu plataforma») and opens their ficha.
  */
-const CACHE = "filmia-assets-v4";
+const CACHE = "filmia-assets-v5";
 
 const PRECACHE = [
   "/icon-192.png",
@@ -24,12 +24,17 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))),
-      )
-      .then(() => self.clients.claim()),
+    (async () => {
+      // Navigations are not intercepted (no HTML cache). Preload still starts
+      // the document request while this worker boots, so a cold open does not
+      // wait out the worker startup before the network begins.
+      if (self.registration.navigationPreload) {
+        await self.registration.navigationPreload.enable();
+      }
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)));
+      await self.clients.claim();
+    })(),
   );
 });
 

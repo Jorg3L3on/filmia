@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# generated font cache for scripts/generate-ios-splash.mjs
+scripts/.cache
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
