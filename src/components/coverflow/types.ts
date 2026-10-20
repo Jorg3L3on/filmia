@@ -57,6 +57,18 @@ export type CoverflowTitle = {
   genres?: CoverflowGenre[];
   /** Present only inside the Esta noche sala. */
   tonight?: CoverflowTonightMeta;
+  /** Shared lists (FIL-I18): who put it there, when, with what note. */
+  addedBy?: CoverflowAddedBy;
+  /** The viewer never saved this film (a shared list): no «Mover a otra lista». */
+  noEntry?: boolean;
+};
+
+export type CoverflowAddedBy = {
+  /** Null once that account is gone. */
+  id: string | null;
+  name: string | null;
+  addedAt: string;
+  note: string | null;
 };
 
 export type CoverflowDeckProps = {

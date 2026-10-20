@@ -438,6 +438,7 @@ export const getSharedWithMe = async (userId: string) => {
         id: lists.id,
         name: lists.name,
         role: listMembers.role,
+        ownerId: lists.userId,
         ownerName: users.name,
         joinedAt: listMembers.joinedAt,
       })
@@ -501,4 +502,52 @@ export const getSharedWithMe = async (userId: string) => {
     })),
     requests,
   };
+};
+
+/** Members (not the owner) of each list, oldest first: the avatars on «compartida con N». */
+export const getMembersByList = async (listIds: string[]) => {
+  const index = new Map<string, Array<{ id: string; name: string | null }>>();
+  if (listIds.length === 0) {
+    return index;
+  }
+  const rows = await db
+    .select({ listId: listMembers.listId, id: users.id, name: users.name })
+    .from(listMembers)
+    .innerJoin(users, eq(users.id, listMembers.userId))
+    .where(inArray(listMembers.listId, listIds))
+    .orderBy(asc(listMembers.joinedAt));
+  for (const { listId, ...person } of rows) {
+    const people = index.get(listId) ?? [];
+    people.push(person);
+    index.set(listId, people);
+  }
+  return index;
+};
+
+/** Pending requests per list the user owns: «Ana quiere unirse» on Listas. */
+export const getPendingRequestsForOwner = async (ownerId: string) =>
+  db
+    .select({
+      id: listJoinRequests.id,
+      listId: lists.id,
+      listName: lists.name,
+      userId: listJoinRequests.userId,
+      name: users.name,
+      role: listJoinRequests.role,
+      createdAt: listJoinRequests.createdAt,
+    })
+    .from(listJoinRequests)
+    .innerJoin(lists, eq(lists.id, listJoinRequests.listId))
+    .innerJoin(users, eq(users.id, listJoinRequests.userId))
+    .where(and(eq(lists.userId, ownerId), eq(listJoinRequests.status, "PENDING")))
+    .orderBy(asc(listJoinRequests.createdAt));
+
+/** Names of whoever added films, including people no longer on the list. */
+export const getPeopleNames = async (ids: string[]) => {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) {
+    return new Map<string, string | null>();
+  }
+  const rows = await db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, unique));
+  return new Map(rows.map((row) => [row.id, row.name]));
 };

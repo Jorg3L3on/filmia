@@ -37,7 +37,7 @@ export const generateMetadata = async ({ params }: JoinPageProps): Promise<Metad
     description,
     robots: { index: false, follow: false },
     openGraph: { title, description, type: "website", siteName: "Filmia" },
-    twitter: { card: "summary", title, description },
+    twitter: { card: "summary_large_image", title, description },
   };
 };
 

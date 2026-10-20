@@ -1,6 +1,8 @@
 import { ListsIcon, ProfileGroup, ProfileRow, ProfileSection } from "@/components/profile/ProfileRows";
 import { partitionUserLists } from "@/lib/lists";
+import { countPendingRequestsForOwner } from "@/lib/list-invites";
 import { getLists } from "@/lib/queries";
+import { requireUserId } from "@/lib/session";
 
 /** «Favoritas · 3 listas · Tus años» — what the Listas hub holds, in one line. */
 export const listsRowSummary = (counts: { custom: number; years: number }) =>
@@ -17,8 +19,13 @@ export const listsRowSummary = (counts: { custom: number; years: number }) =>
  * `/listas`, same routes; only the way in moved.
  */
 export const ProfileListsRow = async () => {
-  const { custom, years } = partitionUserLists(await getLists());
-  const summary = listsRowSummary({ custom: custom.length, years: years.length });
+  const userId = await requireUserId();
+  const [lists, pending] = await Promise.all([getLists(), countPendingRequestsForOwner(userId)]);
+  const { custom, years } = partitionUserLists(lists);
+  const listsSummary = listsRowSummary({ custom: custom.length, years: years.length });
+  // FIL-I18: someone asked to join one of your lists.
+  const summary =
+    pending > 0 ? `${pending} ${pending === 1 ? "solicitud" : "solicitudes"} · ${listsSummary}` : listsSummary;
 
   return (
     <ProfileSection id="listas" title="Listas">

@@ -1,5 +1,10 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { ListInviteKind, ListJoinRequestStatus, ListRole } from "@/db";
+import {
+  GROUP_MAX_USES_DEFAULT,
+  GROUP_MAX_USES_MAX,
+  GROUP_MAX_USES_MIN,
+} from "@/lib/list-invite-limits";
 
 /**
  * Share links for lists (FIL-I18-3). Pure: token, hash, rules. The database
@@ -11,9 +16,8 @@ import type { ListInviteKind, ListJoinRequestStatus, ListRole } from "@/db";
  */
 
 export const PERSONAL_INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-export const GROUP_MAX_USES_MIN = 2;
-export const GROUP_MAX_USES_MAX = 20;
-export const GROUP_MAX_USES_DEFAULT = 5;
+
+export { GROUP_MAX_USES_DEFAULT, GROUP_MAX_USES_MAX, GROUP_MAX_USES_MIN };
 
 /** 32 random bytes, base64url: 43 characters, nothing to guess. */
 export const generateInviteToken = () => randomBytes(32).toString("base64url");

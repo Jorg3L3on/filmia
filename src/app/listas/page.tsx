@@ -14,6 +14,10 @@ import { mxToday } from "@/lib/cine-core";
 import { listHref, partitionUserLists } from "@/lib/lists";
 import { focusRing } from "@/lib/ui";
 import { getLists } from "@/lib/queries";
+import { AvatarStack } from "@/components/lists/PersonAvatar";
+import { OwnerRequestsNotice, SharedWithMeSection } from "@/components/lists/SharedWithMe";
+import { getPendingRequestsForOwner, getSharedWithMe } from "@/lib/list-invites";
+import { requireUserId } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -60,13 +64,28 @@ export default function ListsPage() {
   );
 }
 
+/** «12 · compartida con 3» and the members' avatars on your shared lists (canvas 4·1). */
+const sharedCardProps = (list: { _count: { items: number }; members: Array<{ id: string; name: string | null }> }) =>
+  list.members.length > 0
+    ? {
+        subtitle: `${list._count.items} · compartida con ${list.members.length}`,
+        badge: <AvatarStack people={list.members} />,
+      }
+    : {};
+
 const ListsBody = async () => {
-  const lists = await getLists();
+  const userId = await requireUserId();
+  const [lists, shared, requests] = await Promise.all([
+    getLists(),
+    getSharedWithMe(userId),
+    getPendingRequestsForOwner(userId),
+  ]);
   const { fixed, custom, years } = partitionUserLists(lists);
   const year = Number(mxToday().slice(0, 4));
 
   return (
     <div className="space-y-12">
+      <OwnerRequestsNotice requests={requests} />
       <section className="space-y-4">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-paper">
           <span className="text-accent" aria-hidden="true">
@@ -88,6 +107,7 @@ const ListsBody = async () => {
                 description={list.description}
                 itemCount={list._count.items}
                 posters={list.items.map((item) => item.title)}
+                {...sharedCardProps(list)}
               />
             </li>
           ))}
@@ -125,12 +145,15 @@ const ListsBody = async () => {
                   itemCount={list._count.items}
                   posters={list.items.map((item) => item.title)}
                   layout="grid"
+                  {...sharedCardProps(list)}
                 />
               </li>
             ))}
           </ListCollection>
         )}
       </section>
+
+      <SharedWithMeSection shared={shared} />
 
       <section id="tus-anos" className="scroll-mt-20 space-y-4 pt-2">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-paper">

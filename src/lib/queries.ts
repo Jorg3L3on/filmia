@@ -31,6 +31,7 @@ import {
 import { flattenTitle, WITH_CATALOG } from "@/lib/catalog";
 import { monthUtcRange, toDateInput } from "@/lib/dates";
 import { listAccessFor } from "@/lib/list-access";
+import { getMembersByList } from "@/lib/list-invites";
 import { canOnList } from "@/lib/list-access-core";
 import { loadListItems, withOwnListEntries } from "@/lib/list-items";
 import { sortUserLists } from "@/lib/lists";
@@ -271,8 +272,11 @@ export const getLists = cache(async () => {
     rows.map((row) => row.id),
   );
 
+  const members = await getMembersByList(rows.map((row) => row.id));
+
   return sortUserLists(
     rows.map((list) => ({
+      members: members.get(list.id) ?? [],
       ...list,
       items: list.items.map(({ catalog: film, ...item }) => ({
         ...item,
