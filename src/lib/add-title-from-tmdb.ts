@@ -2,7 +2,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { and, desc, eq } from "drizzle-orm";
 import { db, listItems, lists, titles, type TitleKind } from "@/db";
 import { findCatalogByTmdb, findOrCreateCatalog } from "@/lib/catalog";
-import { catalogIdOfTitle } from "@/lib/list-items";
+import { catalogIdOfOwnTitle, catalogIdOfTitle } from "@/lib/list-items";
 import { scheduleCatalogEnrichment } from "@/lib/catalog-enrich";
 import { parseOptionalDate } from "@/lib/form-data";
 import { TITLE_KINDS } from "@/lib/labels";
@@ -64,11 +64,15 @@ const enqueueInWatchlist = async (userId: string, titleId: string) => {
     orderBy: [desc(listItems.position)],
   });
 
+  const catalogId = await catalogIdOfOwnTitle(userId, titleId);
+  if (!catalogId) {
+    throw new Error("Título no encontrado.");
+  }
   await db
     .insert(listItems)
     .values({
       listId: watchlist.id,
-      catalogId: catalogIdOfTitle(titleId),
+      catalogId,
       addedByUserId: userId,
       position: (last?.position ?? -1) + 1,
     })

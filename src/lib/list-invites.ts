@@ -212,7 +212,7 @@ export const requestToJoin = async (userId: string, token: string): Promise<Join
   if (await pendingRequestOf(listId, userId)) {
     return { status: "pending", listId };
   }
-  if (!inviteUsable(invite) || !(await consumeInvite(invite.id))) {
+  if (!inviteUsable(invite)) {
     return { status: "unavailable" };
   }
 
@@ -224,23 +224,40 @@ export const requestToJoin = async (userId: string, token: string): Promise<Join
     return { status: "unavailable" };
   }
 
+  // The row first, the link's use after: a double tap creates one row and
+  // spends one use; if the link ran out meanwhile, the row is taken back.
   if (!list.requireApproval) {
-    await db
+    const joined = await db
       .insert(listMembers)
       .values({ listId, userId, role: invite.role })
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning({ userId: listMembers.userId });
+    if (joined.length === 0) {
+      return { status: "member", listId };
+    }
+    if (!(await consumeInvite(invite.id))) {
+      await db
+        .delete(listMembers)
+        .where(and(eq(listMembers.listId, listId), eq(listMembers.userId, userId)));
+      return { status: "unavailable" };
+    }
     return { status: "joined", listId };
   }
 
-  const inserted = await db
+  const [created] = await db
     .insert(listJoinRequests)
     .values({ id: createId(), listId, userId, inviteId: invite.id, role: invite.role })
     .onConflictDoNothing()
     .returning({ id: listJoinRequests.id });
-  if (inserted.length > 0) {
-    scheduleAfterResponse(() => notifyOwnerOfRequest(list, userId));
+  if (!created) {
+    return { status: "pending", listId };
   }
-  return { status: inserted.length > 0 ? "requested" : "pending", listId };
+  if (!(await consumeInvite(invite.id))) {
+    await db.delete(listJoinRequests).where(eq(listJoinRequests.id, created.id));
+    return { status: "unavailable" };
+  }
+  scheduleAfterResponse(() => notifyOwnerOfRequest(list, userId));
+  return { status: "requested", listId };
 };
 
 /** «Ana quiere unirse a Thrillers del finde», when the owner allowed notifications. */

@@ -127,7 +127,7 @@ const requireOwnedSeries = async (titleId: string) => {
   const userId = await requireUserId();
   const title = await db.query.titles.findFirst({
     where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
-    columns: { id: true, seriesStatus: true },
+    columns: { id: true, catalogId: true, seriesStatus: true },
     with: { catalog: { columns: { kind: true } } },
   });
 
@@ -139,7 +139,7 @@ const requireOwnedSeries = async (titleId: string) => {
     throw new Error("El estado de seguimiento solo aplica a series.");
   }
 
-  return { id: title.id, seriesStatus: title.seriesStatus, userId };
+  return { id: title.id, catalogId: title.catalogId, seriesStatus: title.seriesStatus, userId };
 };
 
 export const setTitleRating = async (titleId: string, formData: FormData) => {
@@ -168,7 +168,7 @@ export const setSeriesStatus = async (
   titleId: string,
   status: SeriesStatus | "NONE",
 ) => {
-  const { userId, seriesStatus: previousStatus } = await requireOwnedSeries(titleId);
+  const { userId, catalogId, seriesStatus: previousStatus } = await requireOwnedSeries(titleId);
 
   const nextStatus =
     status === "NONE"
@@ -232,7 +232,7 @@ export const setSeriesStatus = async (
             .insert(listItems)
             .values({
               listId: joinListId,
-              catalogId: catalogIdOfTitle(titleId),
+              catalogId,
               addedByUserId: userId,
               position: (lastItem?.position ?? -1) + 1,
             })

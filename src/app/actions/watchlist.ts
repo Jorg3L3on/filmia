@@ -219,11 +219,15 @@ export const undoMarkWatched = async (titleId: string) => {
     where: eq(listItems.listId, watchlist.id),
     orderBy: [desc(listItems.position)],
   });
+  const catalogId = await catalogIdOfOwnTitle(userId, titleId);
+  if (!catalogId) {
+    throw new Error("Título no encontrado.");
+  }
   await db
     .insert(listItems)
     .values({
       listId: watchlist.id,
-      catalogId: catalogIdOfTitle(titleId),
+      catalogId,
       addedByUserId: userId,
       position: (last?.position ?? -1) + 1,
     })

@@ -2,7 +2,7 @@
 
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { catalog, db, listItems, lists, titles, users, type TitleKind } from "@/db";
-import { catalogIdOfTitle, deleteOwnListItemsOfTitle } from "@/lib/list-items";
+import { catalogIdOfOwnTitle, catalogIdOfTitle, deleteOwnListItemsOfTitle } from "@/lib/list-items";
 import { refreshSessionUser } from "@/lib/auth";
 import { upsertTitleFromTmdbForUser } from "@/lib/add-title-from-tmdb";
 import { catalogEnrichmentPatch } from "@/lib/catalog-enrich-core";
@@ -67,11 +67,15 @@ const appendToList = async (userId: string, listId: string, titleId: string) => 
     orderBy: [desc(listItems.position)],
     columns: { position: true },
   });
+  const catalogId = await catalogIdOfOwnTitle(userId, titleId);
+  if (!catalogId) {
+    return;
+  }
   await db
     .insert(listItems)
     .values({
       listId,
-      catalogId: catalogIdOfTitle(titleId),
+      catalogId,
       addedByUserId: userId,
       position: (last?.position ?? -1) + 1,
     })

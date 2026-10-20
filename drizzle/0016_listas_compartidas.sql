@@ -64,12 +64,20 @@ CREATE UNIQUE INDEX IF NOT EXISTS "ListItem_listId_titleId_key" ON "ListItem" US
 CREATE UNIQUE INDEX IF NOT EXISTS "ListItem_listId_catalogId_key" ON "ListItem" USING btree ("listId","catalogId");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "ListItem_catalogId_idx" ON "ListItem" USING btree ("catalogId");--> statement-breakpoint
 
--- Until 0017: rows the previous build inserts by titleId get their catalogId.
+-- Until 0017 the trigger bridges both builds: rows the previous build inserts
+-- by titleId get their catalogId, and rows the new build inserts by catalogId
+-- get the list owner's titleId, so rolling the deploy back before 0017 still
+-- reads them. (Films a member added have no owner Title: those stay null, and
+-- only exist once the new build let someone join.)
 CREATE OR REPLACE FUNCTION "listitem_fill_catalog"() RETURNS trigger AS $$
 BEGIN
   IF NEW."catalogId" IS NULL AND NEW."titleId" IS NOT NULL THEN
     SELECT t."catalogId", t."userId" INTO NEW."catalogId", NEW."addedByUserId"
     FROM "Title" t WHERE t.id = NEW."titleId";
+  ELSIF NEW."titleId" IS NULL AND NEW."catalogId" IS NOT NULL THEN
+    SELECT t.id INTO NEW."titleId"
+    FROM "Title" t JOIN "List" l ON l."userId" = t."userId"
+    WHERE l.id = NEW."listId" AND t."catalogId" = NEW."catalogId";
   END IF;
   RETURN NEW;
 END;
