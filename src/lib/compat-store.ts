@@ -85,7 +85,12 @@ const toCard = async (compat: Compat, a: LoadedPerson): Promise<CompatCard> => {
 };
 
 export type MemberCompat = {
-  pairs: { other: { id: string; name: string }; card: CompatCard | null; sharePath: string | null }[];
+  /** `name` is the first name for the text, `fullName` feeds the avatar's initials. */
+  pairs: {
+    other: { id: string; name: string; fullName: string | null };
+    card: CompatCard | null;
+    sharePath: string | null;
+  }[];
   group: { percent: number; approx: boolean } | null;
 };
 
@@ -110,7 +115,7 @@ export const loadMemberCompat = async (
       .map(async (person) => {
         const compat = compatibility(me, loaded.get(person.id)!);
         return {
-          other: { id: person.id, name: personFirstName(person.name) },
+          other: { id: person.id, name: personFirstName(person.name), fullName: person.name },
           card: compat ? await toCard(compat, me) : null,
           sharePath: compat ? sharePath("compat", compatShareId(listId, viewerId, person.id)) : null,
         };

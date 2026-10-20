@@ -80,7 +80,7 @@ export default async function WatchTogetherPage({
   const watchingIds = parseWatching(query.ven, people);
   const enough = watchingIds.length >= 2;
   const [data, chosen] = await Promise.all([
-    enough ? loadWatchTogether(id, watchingIds, people) : Promise.resolve(null),
+    enough ? loadWatchTogether(id, watchingIds, people, userId) : Promise.resolve(null),
     chosenOfList(id),
   ]);
 

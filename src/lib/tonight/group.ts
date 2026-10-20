@@ -26,6 +26,8 @@ export type GroupMember = {
   watched: ReadonlySet<string>;
   /** `User.streamingPlatforms`. */
   platforms: readonly Platform[];
+  /** The person looking at the page: reasons say «a ti» instead of their name. */
+  self?: boolean;
 };
 
 export type GroupCandidate = {
@@ -135,30 +137,34 @@ const reasonsFor = (
     }
   }
 
-  const nameOf = new Map(members.map((member) => [member.id, member.name]));
-  const who = (ids: string[]) =>
-    ids.length === members.length && ids.length > 1
-      ? `A los ${ids.length}`
-      : `A ${joinEs(ids.map((id) => nameOf.get(id) ?? "alguien"))}`;
+  const memberOf = new Map(members.map((member) => [member.id, member]));
+  // «A los 2», «A ti», «A Ana», «A ti y a Ana»; the pronoun follows: te / le / les.
+  const who = (ids: string[]) => {
+    if (ids.length === members.length && ids.length > 1) {
+      return `A los ${ids.length}`;
+    }
+    const names = ids.map((id) => (memberOf.get(id)?.self ? "ti" : (memberOf.get(id)?.name ?? "alguien")));
+    return `A ${names.length > 1 ? `${names.slice(0, -1).join(", a ")} y a ${names.at(-1)}` : names[0]}`;
+  };
+  const pronoun = (ids: string[]) => (ids.length > 1 ? "les" : memberOf.get(ids[0])?.self ? "te" : "le");
   const reasons: GroupReason[] = [];
   for (const entry of byAnchor.values()) {
     reasons.push({
       memberIds: entry.memberIds,
-      text: `${who(entry.memberIds)} ${entry.memberIds.length > 1 ? "les" : "le"} gustó ${entry.name}`,
+      text: `${who(entry.memberIds)} ${pronoun(entry.memberIds)} gustó ${entry.name}`,
     });
   }
   for (const entry of people.values()) {
     const role = candidate.title.kind === "SERIES" ? "Creada" : "Dirigida";
-    const plural = entry.memberIds.length > 1;
     reasons.push({
       memberIds: entry.memberIds,
-      text: `${role} por ${entry.name}: ${who(entry.memberIds).replace(/^A /, "a ")} ${plural ? "les" : "le"} gusta su cine`,
+      text: `${role} por ${entry.name}: ${who(entry.memberIds).replace(/^A /, "a ")} ${pronoun(entry.memberIds)} gusta su cine`,
     });
   }
   for (const [key, ids] of genres) {
     reasons.push({
       memberIds: ids,
-      text: `${who(ids)} ${ids.length > 1 ? "les" : "le"} gusta ${joinEs(key.split("|"))}`,
+      text: `${who(ids)} ${pronoun(ids)} gusta ${joinEs(key.split("|"))}`,
     });
   }
   // The shared reasons first: they are the point of watching together.

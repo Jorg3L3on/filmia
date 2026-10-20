@@ -73,6 +73,7 @@ export const loadWatchTogether = async (
   listId: string,
   watchingIds: readonly string[],
   people: readonly ListPerson[],
+  viewerId: string,
 ): Promise<GroupPageData> => {
   const ids = [...watchingIds];
   const [affinities, platformRows, watchedRows, listed, pooled] = await Promise.all([
@@ -109,6 +110,7 @@ export const loadWatchTogether = async (
     scorer: affinities[index].scorer,
     watched: watchedOf.get(id) ?? new Set(),
     platforms: platformsOf.get(id) ?? [],
+    self: id === viewerId,
   }));
 
   type Row = (typeof pooled)[number] & { addedByUserId?: string | null; chosenAt?: Date | null };

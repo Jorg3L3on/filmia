@@ -219,6 +219,20 @@ describe("tonight/group · Qué vemos juntos", () => {
     }
   });
 
+  it("talks to the person looking: «a ti», «te»", () => {
+    const result = rankForGroup(
+      [member("Ana", ANA, { self: true }), member("Jorge", JORGE), member("Leo", JORGE)],
+      [candidate("comedy-ok", { genres: [COMEDY, SCIFI], keywords: [kw(1), kw(4)] }), candidate("scifi", SCIFI_FILM)],
+    );
+    assert.equal(result.status, "ok");
+    if (result.status !== "ok") return;
+    const texts = result.picks.flatMap((pick) => pick.reasons.map((reason) => reason.text));
+    assert.ok(!texts.some((text) => /\bA Ana\b|a Ana le/.test(text)), texts.join(" | "));
+    for (const text of texts.filter((t) => /\bti\b/.test(t))) {
+      assert.match(text, /^A ti te |^A ti y a |: a ti te /);
+    }
+  });
+
   it("ordered by the mean, ties by the least happy person", () => {
     const result = rankForGroup(
       [member("Ana", ANA), member("Jorge", JORGE)],

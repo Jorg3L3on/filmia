@@ -15,7 +15,7 @@ export const MemberCompatSection = ({
   viewer,
 }: {
   compat: MemberCompat;
-  viewer: { id: string; name: string };
+  viewer: { id: string; name: string; fullName: string | null };
 }) => (
   <section className="space-y-3" aria-labelledby="compatibilidad-title">
     <h2 id="compatibilidad-title" className="text-sm font-semibold uppercase tracking-[0.14em] text-fog">
@@ -34,8 +34,8 @@ export const MemberCompatSection = ({
             <details className="group">
               <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-3">
                 <span className="inline-flex">
-                  <PersonAvatar person={viewer} size={28} />
-                  <PersonAvatar person={other} size={28} className="-ml-2" />
+                  <PersonAvatar person={{ id: viewer.id, name: viewer.fullName }} size={28} />
+                  <PersonAvatar person={{ id: other.id, name: other.fullName }} size={28} className="-ml-2" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[15px] font-semibold text-paper">Tú × {other.name}</span>
@@ -107,8 +107,8 @@ export const MemberCompatSection = ({
           ) : (
             <div className="flex items-center gap-3 px-3 py-3">
               <span className="inline-flex">
-                <PersonAvatar person={viewer} size={28} />
-                <PersonAvatar person={other} size={28} className="-ml-2" />
+                <PersonAvatar person={{ id: viewer.id, name: viewer.fullName }} size={28} />
+                <PersonAvatar person={{ id: other.id, name: other.fullName }} size={28} className="-ml-2" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[15px] font-semibold text-paper">Tú × {other.name}</span>

@@ -39,7 +39,7 @@ export default async function ListMembersPage({ params }: { params: Promise<{ id
   const ownerName = people.find((person) => person.role === "OWNER")?.name ?? null;
   // «% de compatibilidad» (FIL-I19-4): same lists and people as «Qué vemos juntos».
   const compat = canWatchTogether(list, role, people) ? await loadMemberCompat(list.id, userId, people) : null;
-  const viewerName = personFirstName(people.find((person) => person.id === userId)?.name);
+  const viewerFullName = people.find((person) => person.id === userId)?.name ?? null;
 
   return (
     <div className="mx-auto max-w-xl space-y-8 py-2">
@@ -111,7 +111,7 @@ export default async function ListMembersPage({ params }: { params: Promise<{ id
         }))}
       />
 
-      {compat ? <MemberCompatSection compat={compat} viewer={{ id: userId, name: viewerName }} /> : null}
+      {compat ? <MemberCompatSection compat={compat} viewer={{ id: userId, name: personFirstName(viewerFullName), fullName: viewerFullName }} /> : null}
 
       {isOwner && roles.length > 0 ? (
         <div className="flex justify-center">
