@@ -1,5 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { registerTools, type McpToolDeps, type ToolDefinition } from "@/lib/mcp/define-tool";
+import { listCinemaTool, listPlatformArrivalsTool } from "@/lib/mcp/tools/discover";
+import { getTitleTool, listDiaryTool, listLibraryTool } from "@/lib/mcp/tools/library";
+import { getListTool, getWatchTogetherTool, listListsTool } from "@/lib/mcp/tools/lists";
+import { getTonightTool, recommendTool } from "@/lib/mcp/tools/tonight";
 import { whoamiTool } from "@/lib/mcp/tools/whoami";
 
 export const MCP_SERVER_INFO = { name: "filmia", version: "1.0.0" } as const;
@@ -13,7 +17,19 @@ export const MCP_INSTRUCTIONS = [
 ].join(" ");
 
 /** Every tool the connector exposes, in tools/list order. */
-export const mcpToolDefinitions = (): ToolDefinition[] => [whoamiTool];
+export const mcpToolDefinitions = (): ToolDefinition[] => [
+  whoamiTool,
+  getTonightTool,
+  recommendTool,
+  listLibraryTool,
+  getTitleTool,
+  listDiaryTool,
+  listListsTool,
+  getListTool,
+  getWatchTogetherTool,
+  listPlatformArrivalsTool,
+  listCinemaTool,
+];
 
 export const registerFilmiaTools = (server: McpServer, deps: McpToolDeps) =>
   registerTools(server, mcpToolDefinitions(), deps);

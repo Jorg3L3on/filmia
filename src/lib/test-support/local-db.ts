@@ -6,7 +6,16 @@ import { installLocalPg } from "@/db/local-pg";
  * TEST_DATABASE_URL to a database with the current schema (`npm run test:db:setup`).
  * Without it these suites are skipped, so `npm test` still runs anywhere.
  */
-export const testDatabaseUrl = process.env.TEST_DATABASE_URL?.trim() || null;
+const withUser = (value: string) => {
+  // The Neon driver needs a user in the URL; local Postgres defaults to the OS account.
+  const url = new URL(value);
+  if (!url.username) url.username = process.env.USER || "postgres";
+  return url.toString();
+};
+
+export const testDatabaseUrl = process.env.TEST_DATABASE_URL?.trim()
+  ? withUser(process.env.TEST_DATABASE_URL.trim())
+  : null;
 
 if (testDatabaseUrl) {
   const host = new URL(testDatabaseUrl).hostname;

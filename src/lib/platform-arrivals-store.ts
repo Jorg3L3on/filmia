@@ -33,11 +33,31 @@ export type PlatformArrivalsSummary = {
 };
 
 /**
- * Quiero ver entries (unwatched) of users with at least one push subscription whose film got
- * an `availableSince` stamp inside the window and that nobody told them about yet.
+ * Quiero ver entries (unwatched) whose film got an `availableSince` stamp inside the window.
+ * For the push cron: of users with at least one push subscription, and not told yet. With
+ * `forUser`: one person's arrivals whatever was pushed (the MCP connector, FIL-I20-3).
  */
-export const arrivalCandidatesQuery = (now: Date) => {
-  const since = new Date(now.getTime() - ARRIVAL_WINDOW_MS);
+export const arrivalCandidatesQuery = (
+  now: Date,
+  { forUser, windowMs = ARRIVAL_WINDOW_MS }: { forUser?: string; windowMs?: number } = {},
+) => {
+  const since = new Date(now.getTime() - windowMs);
+  const audience = forUser
+    ? [eq(lists.userId, forUser)]
+    : [
+        exists(
+          db
+            .select({ one: sql`1` })
+            .from(pushSubscriptions)
+            .where(eq(pushSubscriptions.userId, titles.userId)),
+        ),
+        sql`NOT EXISTS (
+          SELECT 1 FROM ${platformAlerts}
+          WHERE ${platformAlerts.userId} = ${titles.userId}
+            AND ${platformAlerts.catalogId} = ${catalog.id}
+            AND ${platformAlerts.availableSince} = ${catalog.availableSince}
+        )`,
+      ];
 
   return db
     .select({
@@ -56,24 +76,19 @@ export const arrivalCandidatesQuery = (now: Date) => {
     .innerJoin(catalog, eq(catalog.id, listItems.catalogId))
     .innerJoin(users, eq(users.id, titles.userId))
     .where(
-      and(
-        eq(lists.slug, WATCHLIST_SLUG),
-        isNull(titles.watchedAt),
-        gte(catalog.availableSince, since),
-        exists(
-          db
-            .select({ one: sql`1` })
-            .from(pushSubscriptions)
-            .where(eq(pushSubscriptions.userId, titles.userId)),
-        ),
-        sql`NOT EXISTS (
-          SELECT 1 FROM ${platformAlerts}
-          WHERE ${platformAlerts.userId} = ${titles.userId}
-            AND ${platformAlerts.catalogId} = ${catalog.id}
-            AND ${platformAlerts.availableSince} = ${catalog.availableSince}
-        )`,
-      ),
+      and(eq(lists.slug, WATCHLIST_SLUG), isNull(titles.watchedAt), gte(catalog.availableSince, since), ...audience),
     );
+};
+
+/** What arrived on one person's platforms from their Quiero ver in the last `windowMs`, newest first. */
+export const loadUserPlatformArrivals = async (userId: string, now = new Date(), windowMs = ARRIVAL_WINDOW_MS) => {
+  const rows = await arrivalCandidatesQuery(now, { forUser: userId, windowMs });
+  const candidates = rows.flatMap((row) =>
+    row.availableSince ? [{ ...row, availableSince: row.availableSince }] : [],
+  );
+  return selectArrivals(candidates, now, windowMs).sort(
+    (a, b) => b.availableSince.getTime() - a.availableSince.getTime(),
+  );
 };
 
 const loadArrivalCandidates = async (now: Date): Promise<ArrivalCandidate[]> => {

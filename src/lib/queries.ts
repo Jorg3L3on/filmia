@@ -168,8 +168,8 @@ const titleOrderBy = (sort: TitleFilters["sort"]) => {
   }
 };
 
-export const getTitles = cache(async (filters: TitleFilters = EMPTY_TITLE_FILTERS) => {
-  const userId = await requireUserId();
+/** One user's titles with their catalog, filtered and sorted (Diario, Quiero ver, MCP). */
+export const loadTitles = async (userId: string, filters: TitleFilters = EMPTY_TITLE_FILTERS) => {
   const { sort = "recent" } = filters;
 
   const rows = await joinCatalog()
@@ -177,7 +177,9 @@ export const getTitles = cache(async (filters: TitleFilters = EMPTY_TITLE_FILTER
     .orderBy(...titleOrderBy(sort));
 
   return rows.map((row) => flattenTitle({ ...row.title, catalog: row.catalog }));
-});
+};
+
+export const getTitles = cache(async (filters: TitleFilters = EMPTY_TITLE_FILTERS) => loadTitles(await requireUserId(), filters));
 
 export const getLatestWatchedMonth = cache(async (filters: TitleFilters = EMPTY_TITLE_FILTERS) => {
   const userId = await requireUserId();
@@ -205,8 +207,8 @@ export const getLatestWatchedMonth = cache(async (filters: TitleFilters = EMPTY_
   return toDateInput(watchedAt).slice(0, 7) || null;
 });
 
-export const getTitleById = cache(async (id: string) => {
-  const userId = await requireUserId();
+/** One of the user's titles with its own list entries (the ficha, MCP). */
+export const loadTitleById = async (userId: string, id: string) => {
 
   const row = await db.query.titles.findFirst({
     where: and(eq(titles.id, id), eq(titles.userId, userId)),
@@ -218,7 +220,9 @@ export const getTitleById = cache(async (id: string) => {
 
   const [withLists] = await withOwnListEntries(userId, [flattenTitle(row)]);
   return withLists;
-});
+};
+
+export const getTitleById = cache(async (id: string) => loadTitleById(await requireUserId(), id));
 
 /** Ficha «Relacionadas»: titles sharing TMDB genres, most shared first. */
 export const getRelatedTitles = cache(async (titleId: string, genreIds: number[]) => {
@@ -252,8 +256,8 @@ export const getRelatedTitles = cache(async (titleId: string, genreIds: number[]
     .limit(12);
 });
 
-export const getLists = cache(async () => {
-  const userId = await requireUserId();
+/** The lists a user owns, with a preview, counts and members (Listas, MCP). */
+export const loadLists = async (userId: string) => {
 
   const rows = await db.query.lists.findMany({
     where: eq(lists.userId, userId),
@@ -289,10 +293,12 @@ export const getLists = cache(async () => {
       _count: { items: counts.get(list.id) ?? 0 },
     })),
   );
-});
+};
 
-export const getWatchlist = cache(async () => {
-  const userId = await requireUserId();
+export const getLists = cache(async () => loadLists(await requireUserId()));
+
+/** The user's Quiero ver with its items (Quiero ver, MCP). */
+export const loadWatchlist = async (userId: string) => {
 
   const list = await db.query.lists.findFirst({
     where: and(eq(lists.userId, userId), eq(lists.slug, WATCHLIST_SLUG)),
@@ -302,7 +308,9 @@ export const getWatchlist = cache(async () => {
   }
 
   return { ...list, items: await loadListItems([list.id], userId) };
-});
+};
+
+export const getWatchlist = cache(async () => loadWatchlist(await requireUserId()));
 
 export const getWatchlistCount = cache(async () => {
   const userId = await requireUserId();
@@ -361,15 +369,17 @@ export const getAssignableLists = cache(async () => {
 });
 
 /** A list you own or were let into, with your role; undefined otherwise (the page 404s). */
-export const getListById = cache(async (id: string) => {
-  const userId = await requireUserId();
+/** A list the user owns or was let into, with their role; undefined otherwise. */
+export const loadListById = async (userId: string, id: string) => {
   const access = await listAccessFor(id, userId);
   if (!access) {
     return undefined;
   }
 
   return { ...access.list, role: access.role, items: await loadListItems([id], userId) };
-});
+};
+
+export const getListById = cache(async (id: string) => loadListById(await requireUserId(), id));
 
 /** List row only — avoids hydrating every ListItem/Title on editar. */
 export const getListMetaById = cache(async (id: string) => {
@@ -456,16 +466,22 @@ export const getRecentWatchedTitles = cache(async (limit = 3) => {
   return rows.map((row) => flattenTitle(row));
 });
 
-/** Perfil week strip: everything watched since `since` (inclusive). */
-export const getWatchedSince = cache(async (since: Date) => {
-  const userId = await requireUserId();
+/** Everything watched from `since` (inclusive) until `until` (exclusive), newest first (diario, MCP). */
+export const loadWatchedBetween = async (userId: string, since: Date, until?: Date) => {
   const rows = await db.query.titles.findMany({
-    where: and(eq(titles.userId, userId), gte(titles.watchedAt, since)),
-    orderBy: [desc(titles.watchedAt)],
+    where: and(
+      eq(titles.userId, userId),
+      gte(titles.watchedAt, since),
+      until ? lt(titles.watchedAt, until) : undefined,
+    ),
+    orderBy: [desc(titles.watchedAt), asc(titles.createdAt)],
     with: WITH_CATALOG,
   });
   return rows.map((row) => flattenTitle(row));
-});
+};
+
+/** Perfil week strip: everything watched since `since` (inclusive). */
+export const getWatchedSince = cache(async (since: Date) => loadWatchedBetween(await requireUserId(), since));
 
 /** The account's profile by id; the session-bound page and the MCP connector both read it. */
 export const loadUserProfile = async (userId: string) => {
@@ -510,8 +526,8 @@ export type UserTmdbEntry = {
   watched: boolean;
 };
 
-export const getUserTmdbIndex = cache(async (): Promise<UserTmdbEntry[]> => {
-  const userId = await requireUserId();
+/** Every title of the user by TMDB id, with Quiero ver / watched flags (Buscar, MCP). */
+export const loadUserTmdbIndex = async (userId: string): Promise<UserTmdbEntry[]> => {
 
   const [titleRows, watchlist] = await Promise.all([
     db.query.titles.findMany({
@@ -547,7 +563,9 @@ export const getUserTmdbIndex = cache(async (): Promise<UserTmdbEntry[]> => {
       },
     ];
   });
-});
+};
+
+export const getUserTmdbIndex = cache(async (): Promise<UserTmdbEntry[]> => loadUserTmdbIndex(await requireUserId()));
 
 /** Buscar «Agregar a lista»: list ids per title, so the picker starts on what is saved. */
 export const getUserListMembershipIndex = cache(
