@@ -199,6 +199,20 @@ describe("tonight/group · Qué vemos juntos", () => {
     assert.equal(result.picks[1].offPlatforms, true);
   });
 
+  it("only list films off their platforms → no_platform; «otras plataformas» shows them flagged", () => {
+    const members = [member("Ana", ANA, { platforms: ["NETFLIX"] }), member("Jorge", JORGE, { platforms: ["MAX"] })];
+    const candidates = [
+      candidate("listed-disney", SCIFI_FILM, { platforms: ["DISNEY"], inList: true }),
+      candidate("new-disney", SCIFI_FILM, { platforms: ["DISNEY"] }),
+    ];
+    assert.equal(rankForGroup(members, candidates).status, "no_platform");
+    const wider = rankForGroup(members, candidates, { anyPlatform: true });
+    assert.equal(wider.status, "ok");
+    if (wider.status !== "ok") return;
+    assert.deepEqual(wider.picks.map((pick) => pick.catalogId).sort(), ["listed-disney", "new-disney"]);
+    assert.ok(wider.picks.every((pick) => pick.offPlatforms));
+  });
+
   it("nothing on their platforms → no_platform", () => {
     const result = rankForGroup(
       [member("Ana", ANA), member("Jorge", JORGE)],

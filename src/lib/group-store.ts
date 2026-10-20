@@ -35,6 +35,8 @@ export type GroupFilm = {
   director: string | null;
   /** Who added it, when it is in the list. */
   addedBy: string | null;
+  /** The person looking added it («La agregaste tú»). */
+  addedBySelf: boolean;
   chosen: boolean;
 };
 
@@ -74,6 +76,7 @@ export const loadWatchTogether = async (
   watchingIds: readonly string[],
   people: readonly ListPerson[],
   viewerId: string,
+  { anyPlatform = false }: { anyPlatform?: boolean } = {},
 ): Promise<GroupPageData> => {
   const ids = [...watchingIds];
   const [affinities, platformRows, watchedRows, listed, pooled] = await Promise.all([
@@ -145,7 +148,7 @@ export const loadWatchTogether = async (
     });
   }
 
-  const ranked = rankForGroup(members, candidates);
+  const ranked = rankForGroup(members, candidates, { anyPlatform });
   const shared = members.reduce<Platform[] | null>(
     (acc, member) => (acc == null ? [...member.platforms] : acc.filter((p) => member.platforms.includes(p))),
     null,
@@ -178,6 +181,7 @@ export const loadWatchTogether = async (
         runtimeMinutes: row.runtimeMinutes,
         director: director?.name ?? null,
         addedBy: row.addedByUserId ? (nameOf.get(row.addedByUserId) ?? null) : null,
+        addedBySelf: row.addedByUserId === viewerId,
         chosen: row.chosenAt != null,
       },
     };

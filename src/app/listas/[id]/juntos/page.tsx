@@ -34,11 +34,14 @@ const parseFilter = (value: string | string[] | undefined): Filter => {
   return raw === "lista" || raw === "nuevas" ? raw : "todas";
 };
 
-const hrefFor = (listId: string, watching: readonly string[], filter: Filter) => {
+const hrefFor = (listId: string, watching: readonly string[], filter: Filter, anyPlatform = false) => {
   const params = new URLSearchParams();
   params.set("ven", watching.join(","));
   if (filter !== "todas") {
     params.set("filtro", filter);
+  }
+  if (anyPlatform) {
+    params.set("plataformas", "todas");
   }
   return `/listas/${listId}/juntos?${params.toString()}`;
 };
@@ -62,7 +65,7 @@ export default async function WatchTogetherPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ven?: string | string[]; filtro?: string | string[] }>;
+  searchParams: Promise<{ ven?: string | string[]; filtro?: string | string[]; plataformas?: string | string[] }>;
 }) {
   const { id } = await params;
   const query = await searchParams;
@@ -76,11 +79,13 @@ export default async function WatchTogetherPage({
   }
   const { list, userId } = access;
   const filter = parseFilter(query.filtro);
+  // «Ver en otras plataformas» (canvas 1·6): keep films none of them can stream, flagged.
+  const anyPlatform = (Array.isArray(query.plataformas) ? query.plataformas[0] : query.plataformas) === "todas";
   const candidates = deciders(people);
   const watchingIds = parseWatching(query.ven, people);
   const enough = watchingIds.length >= 2;
   const [data, chosen] = await Promise.all([
-    enough ? loadWatchTogether(id, watchingIds, people, userId) : Promise.resolve(null),
+    enough ? loadWatchTogether(id, watchingIds, people, userId, { anyPlatform }) : Promise.resolve(null),
     chosenOfList(id),
   ]);
 
@@ -91,9 +96,14 @@ export default async function WatchTogetherPage({
     // Order as in Miembros, so the URL does not depend on tap order.
     return candidates.map((person) => person.id).filter((other) => next.includes(other));
   };
-  const watchingNames = joinEs(
-    candidates.filter((person) => watchingIds.includes(person.id)).map((person) => personFirstName(person.name)),
-  );
+  // «a Leo y a ti»: the viewer is «ti», everyone gets their own «a».
+  const watchingNames = (() => {
+    const names = candidates
+      .filter((person) => watchingIds.includes(person.id))
+      .sort((a, b) => Number(a.id === userId) - Number(b.id === userId))
+      .map((person) => (person.id === userId ? "ti" : personFirstName(person.name)));
+    return names.length > 1 ? `${names.slice(0, -1).join(", a ")} y a ${names.at(-1)}` : (names[0] ?? "");
+  })();
 
   const picks =
     data?.result.status === "ok"
@@ -127,7 +137,7 @@ export default async function WatchTogetherPage({
             return (
               <Link
                 key={person.id}
-                href={hrefFor(list.id, next.length > 0 ? next : watchingIds, filter)}
+                href={hrefFor(list.id, next.length > 0 ? next : watchingIds, filter, anyPlatform)}
                 aria-pressed={on}
                 replace
                 scroll={false}
@@ -170,7 +180,7 @@ export default async function WatchTogetherPage({
         <EmptyState
           title="Todavía no los conocemos bien"
           description={`${joinEs(data.cold.map((person) => (person.id === userId ? "Tú" : person.name)))} ${
-            data.cold.length > 1 ? "han" : "ha"
+            data.cold.length > 1 ? "han" : data.cold[0]?.id === userId ? "has" : "ha"
           } calificado pocas películas. Con unas cuantas más, Filmia puede adivinar qué les gusta a ${
             watchingIds.length === 2 ? "los 2" : `los ${watchingIds.length}`
           }.`}
@@ -180,9 +190,9 @@ export default async function WatchTogetherPage({
       ) : data?.result.status === "no_platform" ? (
         <EmptyState
           title="Nada en sus plataformas"
-          description="Lo que mejor les queda no está hoy en sus plataformas en México. Cambia quién ve hoy o revisa las plataformas en Perfil."
-          actionHref="/perfil"
-          actionLabel="Mis plataformas"
+          description="Lo que mejor les queda no está hoy en sus plataformas en México. Puedes ver en otras plataformas o cambiar quién ve hoy arriba."
+          actionHref={hrefFor(list.id, watchingIds, filter, true)}
+          actionLabel="Ver en otras plataformas"
         />
       ) : data?.result.status === "ok" ? (
         <>
@@ -203,6 +213,14 @@ export default async function WatchTogetherPage({
               A alguien no le va a encantar ninguna; estas son las que menos le cuestan.
             </p>
           ) : null}
+          {anyPlatform ? (
+            <p className="text-sm text-fog">
+              Incluye lo que no está en sus plataformas.{" "}
+              <Link href={hrefFor(list.id, watchingIds, filter)} replace scroll={false} className="text-paper underline">
+                Solo sus plataformas
+              </Link>
+            </p>
+          ) : null}
           {data.result.platformsUnknown ? (
             <p className="text-sm text-fog">
               Nadie de los que ven hoy marcó sus plataformas: no filtramos por dónde verla.{" "}
@@ -216,7 +234,7 @@ export default async function WatchTogetherPage({
             {FILTERS.map((option) => (
               <Link
                 key={option.value}
-                href={hrefFor(list.id, watchingIds, option.value)}
+                href={hrefFor(list.id, watchingIds, option.value, anyPlatform)}
                 replace
                 scroll={false}
                 aria-current={filter === option.value ? "page" : undefined}
@@ -297,13 +315,29 @@ const PickRow = ({ pick, rank, listId, hero }: { pick: GroupView; rank: number; 
                 {PLATFORM_SERVICE_LABEL[platform]}
               </span>
             ))}
-            {pick.offPlatforms ? <span className="text-[11px] text-fog">No está en sus plataformas</span> : null}
+            {pick.offPlatforms
+              ? pick.availableOn.map((platform) => (
+                  <span key={platform} className="inline-flex items-center gap-1 text-[11px] text-fog opacity-70">
+                    <PlatformLogo platform={platform} size={18} />
+                    {PLATFORM_SERVICE_LABEL[platform]}
+                  </span>
+                ))
+              : null}
+            {pick.offPlatforms ? (
+              <span className="text-[11px] text-fog">
+                {pick.availableOn.length > 0 ? "· no la tienen" : "No está en sus plataformas"}
+              </span>
+            ) : null}
           </div>
           <ul className="space-y-0.5 text-sm text-paper/90">
             {pick.reasons.map((reason) => (
               <li key={reason.text}>{reason.text}</li>
             ))}
-            {film.addedBy ? <li className="text-fog">La agregó {film.addedBy}</li> : null}
+            {film.addedBySelf ? (
+              <li className="text-fog">La agregaste tú</li>
+            ) : film.addedBy ? (
+              <li className="text-fog">La agregó {film.addedBy}</li>
+            ) : null}
           </ul>
           {pick.vetoedBy.length > 0 ? (
             <p className="text-xs text-fog">A alguien le queda lejos de su gusto.</p>

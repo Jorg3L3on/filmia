@@ -51,6 +51,8 @@ export type GroupPick = {
   confidence: number;
   /** Platforms of the people watching that carry it. */
   platforms: Platform[];
+  /** Every MX flatrate platform it is on (what «otras plataformas» shows). */
+  availableOn: Platform[];
   /** In the list but on none of their platforms. */
   offPlatforms: boolean;
   /** Members who would put it «Fuera de tu zona» (only > 0 in relaxed mode). */
@@ -204,7 +206,14 @@ export const mixListed = <T extends { inList: boolean; offPlatforms: boolean }>(
 export const rankForGroup = (
   members: readonly GroupMember[],
   candidates: readonly GroupCandidate[],
-  limit = GROUP_PICK_LIMIT,
+  {
+    limit = GROUP_PICK_LIMIT,
+    anyPlatform = false,
+  }: {
+    limit?: number;
+    /** «Ver en otras plataformas» (canvas 1·6): keep what is off their platforms, flagged. */
+    anyPlatform?: boolean;
+  } = {},
 ): GroupResult => {
   const cold = members.filter((member) => !member.scorer).map((member) => member.id);
   const scoredMembers = members.filter((member) => member.scorer);
@@ -231,7 +240,7 @@ export const rankForGroup = (
     const platforms = candidate.platforms.filter((platform) => theirPlatforms.has(platform));
     const offPlatforms = !platformsUnknown && platforms.length === 0;
     // New suggestions only when someone watching can stream them.
-    if (offPlatforms && !candidate.inList) {
+    if (offPlatforms && !candidate.inList && !anyPlatform) {
       continue;
     }
     const scores = new Map<string, ReturnType<typeof affinityScore>>();
@@ -251,13 +260,15 @@ export const rankForGroup = (
       min: Math.min(...values.map((value) => value.normalized)),
       confidence: values.reduce((sum, value) => sum + value.confidence, 0) / values.length,
       platforms,
+      availableOn: [...candidate.platforms],
       offPlatforms,
       vetoedBy,
       reasons: reasonsFor(candidate, scoredMembers, scores),
     });
   }
 
-  if (scored.length === 0) {
+  // Nothing they can stream tonight: say so (canvas 1·6) instead of a list of «no está».
+  if (scored.length === 0 || (!anyPlatform && scored.every((pick) => pick.offPlatforms))) {
     return { status: "no_platform", cold };
   }
 
