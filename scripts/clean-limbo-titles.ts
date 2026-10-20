@@ -39,7 +39,10 @@ const findLimbo = async (): Promise<LimboRow[]> => {
       and t.platform is null
       and t."seriesStatus" is null
       and t."createdAt" < now() - ${MIN_AGE}::interval
-      and not exists (select 1 from "ListItem" li where li."titleId" = t.id)
+      and not exists (
+        select 1 from "ListItem" li join "List" l on l.id = li."listId"
+        where li."catalogId" = t."catalogId" and l."userId" = t."userId"
+      )
       and not exists (select 1 from "TonightPick" tp where tp."titleId" = t.id)
       and not exists (select 1 from "PickEvent" pe where pe."titleId" = t.id)
     order by u.email, t."createdAt"

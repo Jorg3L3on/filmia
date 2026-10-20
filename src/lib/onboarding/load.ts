@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { db, titles, type Platform, type TitleKind } from "@/db";
+import { ownListEntriesByCatalog } from "@/lib/list-items";
 import { FAVORITAS_SLUG, WATCHLIST_SLUG } from "@/lib/lists";
 import { fetchImdbScore } from "@/lib/omdb";
 import {
@@ -206,7 +207,7 @@ export type LibraryEntry = {
 export const getOnboardingLibrary = async (userId: string): Promise<LibraryEntry[]> => {
   const rows = await db.query.titles.findMany({
     where: and(eq(titles.userId, userId), isNotNull(titles.catalogId)),
-    columns: { id: true, watchedAt: true, rating: true, createdAt: true },
+    columns: { id: true, catalogId: true, watchedAt: true, rating: true, createdAt: true },
     with: {
       catalog: {
         columns: {
@@ -218,15 +219,18 @@ export const getOnboardingLibrary = async (userId: string): Promise<LibraryEntry
           posterAmbient: true,
         },
       },
-      listItems: { with: { list: { columns: { slug: true } } } },
     },
   });
+  const listsByCatalog = await ownListEntriesByCatalog(
+    userId,
+    rows.map((row) => row.catalogId),
+  );
   return rows.flatMap((row) => {
     const film = row.catalog;
     if (!film) {
       return [];
     }
-    const slugs = row.listItems.map((item) => item.list.slug);
+    const slugs = (listsByCatalog.get(row.catalogId) ?? []).map((item) => item.list.slug);
     return [
       {
         titleId: row.id,

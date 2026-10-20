@@ -25,7 +25,13 @@ export const saveYearTop = async (year: number, titleIds: string[]): Promise<Sav
   const picks =
     titleIds.length > 0
       ? await db
-          .select({ titleId: titles.id, watchedAt: titles.watchedAt, year: catalog.year, kind: catalog.kind })
+          .select({
+            titleId: titles.id,
+            catalogId: titles.catalogId,
+            watchedAt: titles.watchedAt,
+            year: catalog.year,
+            kind: catalog.kind,
+          })
           .from(titles)
           .innerJoin(catalog, eq(catalog.id, titles.catalogId))
           .where(and(eq(titles.userId, userId), inArray(titles.id, titleIds)))
@@ -38,6 +44,8 @@ export const saveYearTop = async (year: number, titleIds: string[]): Promise<Sav
   if (error) {
     return { ok: false, error };
   }
+  // yearTopError checked every id is one of the user's titles.
+  const catalogByTitle = new Map(picks.map((pick) => [pick.titleId, pick.catalogId]));
 
   const slug = yearTopSlug(year);
   const existing = await db.query.lists.findFirst({
@@ -67,7 +75,17 @@ export const saveYearTop = async (year: number, titleIds: string[]): Promise<Sav
     head,
     db.delete(listItems).where(eq(listItems.listId, listId)),
     ...(titleIds.length > 0
-      ? [db.insert(listItems).values(titleIds.map((titleId, position) => ({ listId, titleId, position, addedAt: now })))]
+      ? [
+          db.insert(listItems).values(
+            titleIds.map((titleId, position) => ({
+              listId,
+              catalogId: catalogByTitle.get(titleId)!,
+              addedByUserId: userId,
+              position,
+              addedAt: now,
+            })),
+          ),
+        ]
       : []),
   ]);
 

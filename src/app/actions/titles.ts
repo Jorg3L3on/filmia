@@ -2,6 +2,7 @@
 
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db, listItems, lists, titles, type SeriesStatus } from "@/db";
+import { catalogIdOfTitle } from "@/lib/list-items";
 import {
   parseOptionalReview,
   parseRating,
@@ -219,7 +220,7 @@ export const setSeriesStatus = async (
             .delete(listItems)
             .where(
               and(
-                eq(listItems.titleId, titleId),
+                eq(listItems.catalogId, catalogIdOfTitle(titleId)),
                 inArray(listItems.listId, leaveListIds),
               ),
             ),
@@ -231,7 +232,8 @@ export const setSeriesStatus = async (
             .insert(listItems)
             .values({
               listId: joinListId,
-              titleId,
+              catalogId: catalogIdOfTitle(titleId),
+              addedByUserId: userId,
               position: (lastItem?.position ?? -1) + 1,
             })
             .onConflictDoNothing(),

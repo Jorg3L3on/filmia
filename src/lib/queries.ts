@@ -27,10 +27,10 @@ import {
   type SeriesStatus,
   type TitleKind,
   type TitleWithRelations,
-  type UserTitle,
 } from "@/db";
-import { flattenTitle, WITH_CATALOG, type RowWithCatalog } from "@/lib/catalog";
+import { flattenTitle, WITH_CATALOG } from "@/lib/catalog";
 import { monthUtcRange, toDateInput } from "@/lib/dates";
+import { loadListItems, withOwnListEntries } from "@/lib/list-items";
 import { sortUserLists } from "@/lib/lists";
 import { requireUserId } from "@/lib/session";
 import { type SeriesStatusFilter } from "@/lib/series";
@@ -48,10 +48,9 @@ export type {
 
 // Every title read joins its shared catalog row; `flattenTitle` folds it into
 // the flat `Title` shape components expect (name, poster, keywords… + personal fields).
-export const titleWithRelations = {
-  ...WITH_CATALOG,
-  listItems: { with: { list: true } },
-} as const;
+// The lists holding the film are laid on afterwards (`withOwnListEntries`):
+// list items are keyed by catalog, not by Title (FIL-I18).
+export const titleWithRelations = WITH_CATALOG;
 
 /** Film-level columns live on `Catalog`; the personal ones stay on `Title`. */
 const joinCatalog = () => db.select({ title: titles, catalog }).from(titles).innerJoin(catalog, eq(titles.catalogId, catalog.id));
@@ -210,8 +209,12 @@ export const getTitleById = cache(async (id: string) => {
     where: and(eq(titles.id, id), eq(titles.userId, userId)),
     with: titleWithRelations,
   });
+  if (!row) {
+    return undefined;
+  }
 
-  return row ? flattenTitle(row) : undefined;
+  const [withLists] = await withOwnListEntries(userId, [flattenTitle(row)]);
+  return withLists;
 });
 
 /** Ficha «Relacionadas»: titles sharing TMDB genres, most shared first. */
@@ -255,12 +258,7 @@ export const getLists = cache(async () => {
       items: {
         orderBy: [asc(listItems.position)],
         limit: 5,
-        with: {
-          title: {
-            columns: { id: true },
-            with: { catalog: { columns: { name: true, posterPath: true } } },
-          },
-        },
+        with: { catalog: { columns: { id: true, name: true, posterPath: true } } },
       },
     },
   });
@@ -274,12 +272,12 @@ export const getLists = cache(async () => {
   return sortUserLists(
     rows.map((list) => ({
       ...list,
-      items: list.items.map((item) => ({
+      items: list.items.map(({ catalog: film, ...item }) => ({
         ...item,
         title: {
-          id: item.title.id,
-          name: item.title.catalog?.name ?? "",
-          posterPath: item.title.catalog?.posterPath ?? null,
+          id: film.id,
+          name: film.name,
+          posterPath: film.posterPath,
         },
       })),
       _count: { items: counts.get(list.id) ?? 0 },
@@ -287,45 +285,17 @@ export const getLists = cache(async () => {
   );
 });
 
-/**
- * Lists carry their items' titles; fold each title's catalog in. Destructuring
- * (not spreading the generic) keeps the raw `catalog` key out of the result type.
- */
-const flattenListItems = <
-  TItem extends { title: RowWithCatalog<UserTitle> },
-  TRest extends object,
->(
-  list: (TRest & { items: TItem[] }) | undefined,
-) => {
-  if (!list) {
-    return undefined;
-  }
-  const { items, ...rest } = list;
-  return {
-    ...rest,
-    items: items.map((item) => {
-      const { title, ...itemRest } = item;
-      return { ...itemRest, title: flattenTitle(title) };
-    }),
-  };
-};
-
 export const getWatchlist = cache(async () => {
   const userId = await requireUserId();
 
   const list = await db.query.lists.findFirst({
     where: and(eq(lists.userId, userId), eq(lists.slug, WATCHLIST_SLUG)),
-    with: {
-      items: {
-        orderBy: [asc(listItems.position)],
-        with: {
-          title: { with: WITH_CATALOG },
-        },
-      },
-    },
   });
+  if (!list) {
+    return undefined;
+  }
 
-  return flattenListItems(list);
+  return { ...list, items: await loadListItems([list.id], userId) };
 });
 
 export const getWatchlistCount = cache(async () => {
@@ -360,9 +330,14 @@ export const isTitleInWatchlist = cache(async (titleId: string) => {
     return false;
   }
 
-  const item = await db.query.listItems.findFirst({
-    where: and(eq(listItems.listId, watchlist.id), eq(listItems.titleId, titleId)),
-  });
+  const [item] = await db
+    .select({ listId: listItems.listId })
+    .from(listItems)
+    .innerJoin(titles, eq(titles.catalogId, listItems.catalogId))
+    .where(
+      and(eq(listItems.listId, watchlist.id), eq(titles.id, titleId), eq(titles.userId, userId)),
+    )
+    .limit(1);
 
   return Boolean(item);
 });
@@ -384,17 +359,12 @@ export const getListById = cache(async (id: string) => {
 
   const list = await db.query.lists.findFirst({
     where: and(eq(lists.id, id), eq(lists.userId, userId)),
-    with: {
-      items: {
-        orderBy: [asc(listItems.position)],
-        with: {
-          title: { with: WITH_CATALOG },
-        },
-      },
-    },
   });
+  if (!list) {
+    return undefined;
+  }
 
-  return flattenListItems(list);
+  return { ...list, items: await loadListItems([list.id], userId) };
 });
 
 /** List row only — avoids hydrating every ListItem/Title on editar. */
@@ -445,9 +415,9 @@ export const getTitleOptionsOutsideList = cache(async (listId: string) => {
       and(
         eq(titles.userId, userId),
         notInArray(
-          titles.id,
+          titles.catalogId,
           db
-            .select({ titleId: listItems.titleId })
+            .select({ catalogId: listItems.catalogId })
             .from(listItems)
             .where(eq(listItems.listId, listId)),
         ),
@@ -536,7 +506,7 @@ export const getUserTmdbIndex = cache(async (): Promise<UserTmdbEntry[]> => {
   const [titleRows, watchlist] = await Promise.all([
     db.query.titles.findMany({
       where: and(eq(titles.userId, userId), isNotNull(titles.catalogId)),
-      columns: { id: true, watchedAt: true },
+      columns: { id: true, catalogId: true, watchedAt: true },
       with: { catalog: { columns: { tmdbId: true, kind: true } } },
     }),
     db.query.lists.findFirst({
@@ -544,13 +514,13 @@ export const getUserTmdbIndex = cache(async (): Promise<UserTmdbEntry[]> => {
       columns: { id: true },
       with: {
         items: {
-          columns: { titleId: true },
+          columns: { catalogId: true },
         },
       },
     }),
   ]);
 
-  const watchlistIds = new Set(watchlist?.items.map((item) => item.titleId) ?? []);
+  const watchlistIds = new Set(watchlist?.items.map((item) => item.catalogId) ?? []);
 
   return titleRows.flatMap((title) => {
     if (!title.catalog) {
@@ -562,7 +532,7 @@ export const getUserTmdbIndex = cache(async (): Promise<UserTmdbEntry[]> => {
         titleId: title.id,
         tmdbId: title.catalog.tmdbId,
         kind: title.catalog.kind,
-        inWatchlist: watchlistIds.has(title.id),
+        inWatchlist: watchlistIds.has(title.catalogId),
         watched: title.watchedAt != null,
       },
     ];
@@ -575,9 +545,10 @@ export const getUserListMembershipIndex = cache(
     const userId = await requireUserId();
 
     const rows = await db
-      .select({ titleId: listItems.titleId, listId: listItems.listId })
+      .select({ titleId: titles.id, listId: listItems.listId })
       .from(listItems)
       .innerJoin(lists, eq(lists.id, listItems.listId))
+      .innerJoin(titles, and(eq(titles.catalogId, listItems.catalogId), eq(titles.userId, userId)))
       .where(eq(lists.userId, userId));
 
     const index: Record<string, string[]> = {};

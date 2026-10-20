@@ -2,6 +2,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { and, desc, eq } from "drizzle-orm";
 import { db, listItems, lists, titles, type TitleKind } from "@/db";
 import { findCatalogByTmdb, findOrCreateCatalog } from "@/lib/catalog";
+import { catalogIdOfTitle } from "@/lib/list-items";
 import { scheduleCatalogEnrichment } from "@/lib/catalog-enrich";
 import { parseOptionalDate } from "@/lib/form-data";
 import { TITLE_KINDS } from "@/lib/labels";
@@ -67,7 +68,8 @@ const enqueueInWatchlist = async (userId: string, titleId: string) => {
     .insert(listItems)
     .values({
       listId: watchlist.id,
-      titleId,
+      catalogId: catalogIdOfTitle(titleId),
+      addedByUserId: userId,
       position: (last?.position ?? -1) + 1,
     })
     .onConflictDoNothing();
@@ -101,7 +103,7 @@ const markExistingWatched = async (
       db
         .delete(listItems)
         .where(
-          and(eq(listItems.listId, watchlist.id), eq(listItems.titleId, titleId)),
+          and(eq(listItems.listId, watchlist.id), eq(listItems.catalogId, catalogIdOfTitle(titleId))),
         ),
     ]);
   }

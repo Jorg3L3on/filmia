@@ -1,5 +1,7 @@
 import { relations } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
+  boolean,
   date,
   index,
   integer,
@@ -36,6 +38,15 @@ export const platformEnum = pgEnum("Platform", [
   "LIONSGATE",
 ]);
 export const listKindEnum = pgEnum("ListKind", ["COLLECTION", "WATCHLIST", "YEAR_TOP"]);
+/** A member's role on a shared list. The owner is `List.userId`, never a member row. */
+export const listRoleEnum = pgEnum("ListRole", ["EDITOR", "VIEWER"]);
+export const listInviteKindEnum = pgEnum("ListInviteKind", ["PERSONAL", "GROUP"]);
+export const listJoinRequestStatusEnum = pgEnum("ListJoinRequestStatus", [
+  "PENDING",
+  "APPROVED",
+  "REJECTED",
+  "CANCELLED",
+]);
 
 const enumObject = <T extends string>(values: readonly T[]) =>
   Object.fromEntries(values.map((value) => [value, value])) as { [K in T]: K };
@@ -51,6 +62,15 @@ export const Platform = enumObject(platformEnum.enumValues);
 
 export type ListKind = (typeof listKindEnum.enumValues)[number];
 export const ListKind = enumObject(listKindEnum.enumValues);
+
+export type ListRole = (typeof listRoleEnum.enumValues)[number];
+export const ListRole = enumObject(listRoleEnum.enumValues);
+
+export type ListInviteKind = (typeof listInviteKindEnum.enumValues)[number];
+export const ListInviteKind = enumObject(listInviteKindEnum.enumValues);
+
+export type ListJoinRequestStatus = (typeof listJoinRequestStatusEnum.enumValues)[number];
+export const ListJoinRequestStatus = enumObject(listJoinRequestStatusEnum.enumValues);
 
 export const users = pgTable(
   "User",
@@ -189,6 +209,8 @@ export const lists = pgTable(
     slug: text("slug"),
     /** YEAR_TOP only: the release year the top 10 is about (slug `top-{year}`). */
     year: integer("year"),
+    /** Shared lists: a link only creates a join request the owner approves. */
+    requireApproval: boolean("requireApproval").notNull().default(true),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),
@@ -204,15 +226,24 @@ export const lists = pgTable(
   ],
 );
 
+/**
+ * A film in a list. Keyed by the shared `Catalog` row (FIL-I18), not by anyone's
+ * `Title`: on a shared list an editor adds films the owner never saved, and
+ * deleting your own entry no longer removes it from other people's lists.
+ */
 export const listItems = pgTable(
   "ListItem",
   {
     listId: text("listId")
       .notNull()
       .references(() => lists.id, { onDelete: "cascade" }),
-    titleId: text("titleId")
+    catalogId: text("catalogId")
       .notNull()
-      .references(() => titles.id, { onDelete: "cascade" }),
+      .references(() => catalog.id, { onDelete: "cascade" }),
+    /** Who put it there; null once that account is gone («usuario eliminado»). */
+    addedByUserId: text("addedByUserId").references(() => users.id, {
+      onDelete: "set null",
+    }),
     position: integer("position").notNull().default(0),
     queueNote: text("queueNote"),
     addedAt: timestamp("addedAt", { precision: 3, mode: "date" })
@@ -220,8 +251,93 @@ export const listItems = pgTable(
       .defaultNow(),
   },
   (table) => [
-    primaryKey({ columns: [table.listId, table.titleId] }),
+    primaryKey({ columns: [table.listId, table.catalogId] }),
     index("ListItem_listId_position_idx").on(table.listId, table.position),
+    index("ListItem_catalogId_idx").on(table.catalogId),
+  ],
+);
+
+/** People a list is shared with (FIL-I18). The owner is `List.userId` and has no row here. */
+export const listMembers = pgTable(
+  "ListMember",
+  {
+    listId: text("listId")
+      .notNull()
+      .references(() => lists.id, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: listRoleEnum("role").notNull(),
+    joinedAt: timestamp("joinedAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.listId, table.userId] }),
+    index("ListMember_userId_idx").on(table.userId),
+  ],
+);
+
+/**
+ * A share link. Only the sha256 of the token is stored. PERSONAL: one use,
+ * expires in 7 days. GROUP: up to `maxUses`, can be switched off and on.
+ */
+export const listInvites = pgTable(
+  "ListInvite",
+  {
+    id: text("id").primaryKey(),
+    listId: text("listId")
+      .notNull()
+      .references(() => lists.id, { onDelete: "cascade" }),
+    kind: listInviteKindEnum("kind").notNull(),
+    role: listRoleEnum("role").notNull(),
+    tokenHash: text("tokenHash").notNull(),
+    createdByUserId: text("createdByUserId").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    expiresAt: timestamp("expiresAt", { precision: 3, mode: "date" }),
+    maxUses: integer("maxUses").notNull(),
+    usedCount: integer("usedCount").notNull().default(0),
+    disabledAt: timestamp("disabledAt", { precision: 3, mode: "date" }),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("ListInvite_tokenHash_key").on(table.tokenHash),
+    index("ListInvite_listId_idx").on(table.listId),
+  ],
+);
+
+/** «Ana quiere unirse»: what a link creates while the list requires approval. */
+export const listJoinRequests = pgTable(
+  "ListJoinRequest",
+  {
+    id: text("id").primaryKey(),
+    listId: text("listId")
+      .notNull()
+      .references(() => lists.id, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    inviteId: text("inviteId").references(() => listInvites.id, { onDelete: "set null" }),
+    role: listRoleEnum("role").notNull(),
+    status: listJoinRequestStatusEnum("status").notNull().default("PENDING"),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow(),
+    decidedAt: timestamp("decidedAt", { precision: 3, mode: "date" }),
+    decidedByUserId: text("decidedByUserId").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    /** When the requester saw the outcome (the neutral «no se pudo» notice). */
+    seenAt: timestamp("seenAt", { precision: 3, mode: "date" }),
+  },
+  (table) => [
+    uniqueIndex("ListJoinRequest_pending_key")
+      .on(table.listId, table.userId)
+      .where(sql`"status" = 'PENDING'`),
+    index("ListJoinRequest_userId_idx").on(table.userId),
   ],
 );
 
@@ -467,20 +583,26 @@ export const yearTopsRelations = relations(yearTops, ({ one }) => ({
   catalog: one(catalog, { fields: [yearTops.catalogId], references: [catalog.id] }),
 }));
 
-export const titlesRelations = relations(titles, ({ one, many }) => ({
+export const titlesRelations = relations(titles, ({ one }) => ({
   user: one(users, { fields: [titles.userId], references: [users.id] }),
   catalog: one(catalog, { fields: [titles.catalogId], references: [catalog.id] }),
-  listItems: many(listItems),
 }));
 
 export const listsRelations = relations(lists, ({ one, many }) => ({
   user: one(users, { fields: [lists.userId], references: [users.id] }),
   items: many(listItems),
+  members: many(listMembers),
 }));
 
 export const listItemsRelations = relations(listItems, ({ one }) => ({
   list: one(lists, { fields: [listItems.listId], references: [lists.id] }),
-  title: one(titles, { fields: [listItems.titleId], references: [titles.id] }),
+  catalog: one(catalog, { fields: [listItems.catalogId], references: [catalog.id] }),
+  addedBy: one(users, { fields: [listItems.addedByUserId], references: [users.id] }),
+}));
+
+export const listMembersRelations = relations(listMembers, ({ one }) => ({
+  list: one(lists, { fields: [listMembers.listId], references: [lists.id] }),
+  user: one(users, { fields: [listMembers.userId], references: [users.id] }),
 }));
 
 export type User = typeof users.$inferSelect;
@@ -496,6 +618,9 @@ export type CatalogFields = Omit<CatalogRow, "id" | "createdAt" | "updatedAt">;
 export type Title = UserTitle & CatalogFields & { catalogId: string };
 export type List = typeof lists.$inferSelect;
 export type ListItem = typeof listItems.$inferSelect;
+export type ListMemberRow = typeof listMembers.$inferSelect;
+export type ListInviteRow = typeof listInvites.$inferSelect;
+export type ListJoinRequestRow = typeof listJoinRequests.$inferSelect;
 export type TonightPickRow = typeof tonightPicks.$inferSelect;
 export type PickEventRow = typeof pickEvents.$inferSelect;
 export type TonightRecoRow = typeof tonightRecos.$inferSelect;

@@ -511,18 +511,17 @@ const seed = async () => {
       await db.insert(titles).values({ id: savedId, ...data, createdAt: new Date(), updatedAt: new Date() });
     }
 
-    const titleId = savedId!;
-
     for (const listName of title.lists) {
       await db
         .insert(listItems)
         .values({
           listId: listRecords.get(listName)!.id,
-          titleId,
+          catalogId: film.id,
+          addedByUserId: userId,
           position: index,
         })
         .onConflictDoUpdate({
-          target: [listItems.listId, listItems.titleId],
+          target: [listItems.listId, listItems.catalogId],
           set: { position: index },
         });
     }
@@ -579,18 +578,17 @@ const seed = async () => {
       });
     }
 
-    const titleId = savedId!;
-
     await db
       .insert(listItems)
       .values({
         listId: watchlist.id,
-        titleId,
+        catalogId: film.id,
+        addedByUserId: userId,
         position: item.position,
         queueNote: item.queueNote,
       })
       .onConflictDoUpdate({
-        target: [listItems.listId, listItems.titleId],
+        target: [listItems.listId, listItems.catalogId],
         set: {
           position: item.position,
           queueNote: item.queueNote,

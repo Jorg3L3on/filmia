@@ -2,6 +2,7 @@
 
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { catalog, db, listItems, lists, titles, users, type TitleKind } from "@/db";
+import { catalogIdOfTitle, deleteOwnListItemsOfTitle } from "@/lib/list-items";
 import { refreshSessionUser } from "@/lib/auth";
 import { upsertTitleFromTmdbForUser } from "@/lib/add-title-from-tmdb";
 import { catalogEnrichmentPatch } from "@/lib/catalog-enrich-core";
@@ -60,7 +61,7 @@ const fixedListId = async (userId: string, slug: typeof FAVORITAS_SLUG | typeof 
   return fixed.find((list) => list.slug === slug)?.id ?? null;
 };
 
-const appendToList = async (listId: string, titleId: string) => {
+const appendToList = async (userId: string, listId: string, titleId: string) => {
   const last = await db.query.listItems.findFirst({
     where: eq(listItems.listId, listId),
     orderBy: [desc(listItems.position)],
@@ -68,12 +69,20 @@ const appendToList = async (listId: string, titleId: string) => {
   });
   await db
     .insert(listItems)
-    .values({ listId, titleId, position: (last?.position ?? -1) + 1 })
+    .values({
+      listId,
+      catalogId: catalogIdOfTitle(titleId),
+      addedByUserId: userId,
+      position: (last?.position ?? -1) + 1,
+    })
     .onConflictDoNothing();
 };
 
 const deleteOwnedTitle = async (userId: string, titleId: string) => {
-  await db.delete(titles).where(and(eq(titles.id, titleId), eq(titles.userId, userId)));
+  await db.batch([
+    deleteOwnListItemsOfTitle(userId, titleId),
+    db.delete(titles).where(and(eq(titles.id, titleId), eq(titles.userId, userId))),
+  ]);
 };
 
 const ambientFor = async (posterPath: string | null | undefined) => {
@@ -107,7 +116,7 @@ export const pickAllTimeFavorite = async (
     .set({ rating: FAVORITE_RATING })
     .where(and(eq(titles.id, result.titleId), eq(titles.userId, userId)));
   if (favoritasId) {
-    await appendToList(favoritasId, result.titleId);
+    await appendToList(userId, favoritasId, result.titleId);
     revalidateListMembership(favoritasId, result.titleId);
   }
 
@@ -193,7 +202,7 @@ export const removeWatchlistPick = async (titleId: string, createdByFlow: boolea
     if (watchlistId) {
       await db
         .delete(listItems)
-        .where(and(eq(listItems.listId, watchlistId), eq(listItems.titleId, titleId)));
+        .where(and(eq(listItems.listId, watchlistId), eq(listItems.catalogId, catalogIdOfTitle(titleId))));
     }
   }
   revalidateWatchlistSurfaces(titleId);
@@ -235,37 +244,23 @@ export const getOnboardingLibraryForUser = async () => {
  * providers and runtime to rank them. Fill the gaps inline, bounded, before computing.
  */
 const enrichQueueInline = async (userId: string) => {
-  const watchlist = await db.query.lists.findFirst({
-    where: and(eq(lists.userId, userId), eq(lists.slug, WATCHLIST_SLUG)),
-    columns: { id: true },
-    with: {
-      items: {
-        with: {
-          title: {
-            columns: { id: true, watchedAt: true },
-            with: {
-              catalog: {
-                columns: {
-                  id: true,
-                  tmdbId: true,
-                  kind: true,
-                  name: true,
-                  runtimeMinutes: true,
-                  watchProvidersMx: true,
-                },
-              },
-            },
-          },
-        },
-        orderBy: [asc(listItems.position)],
-      },
-    },
-  });
   // The gaps live on the shared catalog row; filling them helps every user who has the film.
-  const pending = (watchlist?.items ?? [])
-    .flatMap((item) =>
-      item.title.catalog && item.title.watchedAt == null ? [item.title.catalog] : [],
-    )
+  const queued = await db
+    .select({
+      id: catalog.id,
+      tmdbId: catalog.tmdbId,
+      kind: catalog.kind,
+      name: catalog.name,
+      runtimeMinutes: catalog.runtimeMinutes,
+      watchProvidersMx: catalog.watchProvidersMx,
+    })
+    .from(listItems)
+    .innerJoin(lists, eq(lists.id, listItems.listId))
+    .innerJoin(catalog, eq(catalog.id, listItems.catalogId))
+    .leftJoin(titles, and(eq(titles.catalogId, listItems.catalogId), eq(titles.userId, userId)))
+    .where(and(eq(lists.userId, userId), eq(lists.slug, WATCHLIST_SLUG), isNull(titles.watchedAt)))
+    .orderBy(asc(listItems.position));
+  const pending = queued
     .filter(
       (film) => film.runtimeMinutes == null || !parseStoredWatchProviders(film.watchProvidersMx),
     )

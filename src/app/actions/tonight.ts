@@ -10,7 +10,7 @@ import {
 import { findCatalogByTmdb } from "@/lib/catalog";
 import { revalidateSearchAddSurfaces } from "@/lib/revalidate-surfaces";
 import { addToWatchlist } from "@/app/actions/watchlist";
-import { WATCHLIST_SLUG } from "@/lib/lists";
+import { isTitleInWatchlist } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 import { FICHA_PIN_LENS, SEARCH_PIN_LENS, searchPinBlocker } from "@/lib/tonight/pin";
 import { isHHMM, parseNightEnds } from "@/lib/tonight/time";
@@ -134,7 +134,6 @@ export const pinTonightFromFicha = async (titleId: string): Promise<PinTonightFr
   const owned = await db.query.titles.findFirst({
     where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
     columns: { id: true, watchedAt: true },
-    with: { listItems: { columns: { listId: true }, with: { list: { columns: { kind: true, slug: true } } } } },
   });
   if (!owned) {
     return { ok: false, error: "Ese título no está en tu biblioteca." };
@@ -143,9 +142,7 @@ export const pinTonightFromFicha = async (titleId: string): Promise<PinTonightFr
   if (blocker) {
     return { ok: false, error: blocker };
   }
-  const inWatchlist = owned.listItems.some(
-    (item) => item.list.kind === "WATCHLIST" || item.list.slug === WATCHLIST_SLUG,
-  );
+  const inWatchlist = await isTitleInWatchlist(titleId);
   if (!inWatchlist) {
     await addToWatchlist(titleId);
   }

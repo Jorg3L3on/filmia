@@ -52,8 +52,8 @@ export const arrivalCandidatesQuery = (now: Date) => {
     })
     .from(listItems)
     .innerJoin(lists, eq(lists.id, listItems.listId))
-    .innerJoin(titles, eq(titles.id, listItems.titleId))
-    .innerJoin(catalog, eq(catalog.id, titles.catalogId))
+    .innerJoin(titles, and(eq(titles.catalogId, listItems.catalogId), eq(titles.userId, lists.userId)))
+    .innerJoin(catalog, eq(catalog.id, listItems.catalogId))
     .innerJoin(users, eq(users.id, titles.userId))
     .where(
       and(

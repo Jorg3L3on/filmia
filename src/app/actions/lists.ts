@@ -4,12 +4,13 @@ import { createId } from "@paralleldrive/cuid2";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { db, listItems, lists, titles } from "@/db";
+import { db, listItems, lists } from "@/db";
 import {
   upsertTitleFromTmdbForUser,
   type AddTitleFromTmdbInput,
 } from "@/lib/add-title-from-tmdb";
 import { parseRequiredName } from "@/lib/form-data";
+import { catalogIdOfOwnTitle, catalogIdsOfOwnTitles } from "@/lib/list-items";
 import { slugify } from "@/lib/labels";
 import {
   hasDuplicateListName,
@@ -227,12 +228,8 @@ export const addTitleToList = async (listId: string, titleId: string) => {
     throw new Error(YEAR_TOP_FROM_CINE);
   }
 
-  const title = await db.query.titles.findFirst({
-    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
-    columns: { id: true },
-  });
-
-  if (!title) {
+  const catalogId = await catalogIdOfOwnTitle(userId, titleId);
+  if (!catalogId) {
     throw new Error("Título no encontrado.");
   }
 
@@ -245,7 +242,8 @@ export const addTitleToList = async (listId: string, titleId: string) => {
     .insert(listItems)
     .values({
       listId,
-      titleId,
+      catalogId,
+      addedByUserId: userId,
       position: (last?.position ?? -1) + 1,
     })
     .onConflictDoNothing();
@@ -262,9 +260,12 @@ export const removeTitleFromList = async (listId: string, titleId: string) => {
     throw new Error("Esta lista se actualiza sola con el estado de la serie.");
   }
 
-  await db
-    .delete(listItems)
-    .where(and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)));
+  const catalogId = await catalogIdOfOwnTitle(userId, titleId);
+  if (catalogId) {
+    await db
+      .delete(listItems)
+      .where(and(eq(listItems.listId, listId), eq(listItems.catalogId, catalogId)));
+  }
   revalidateLists(listId, titleId, list.slug);
   scheduleTonightRecompute(userId);
 };
@@ -277,23 +278,19 @@ export const toggleTitleInList = async (listId: string, titleId: string) => {
     throw new Error("Esta lista se actualiza sola con el estado de la serie.");
   }
 
-  const title = await db.query.titles.findFirst({
-    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
-    columns: { id: true },
-  });
-
-  if (!title) {
+  const catalogId = await catalogIdOfOwnTitle(userId, titleId);
+  if (!catalogId) {
     throw new Error("Título no encontrado.");
   }
 
   const existing = await db.query.listItems.findFirst({
-    where: and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)),
+    where: and(eq(listItems.listId, listId), eq(listItems.catalogId, catalogId)),
   });
 
   if (existing) {
     await db
       .delete(listItems)
-      .where(and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)));
+      .where(and(eq(listItems.listId, listId), eq(listItems.catalogId, catalogId)));
   } else {
     if (list.kind === "YEAR_TOP") {
       throw new Error(YEAR_TOP_FROM_CINE);
@@ -305,7 +302,8 @@ export const toggleTitleInList = async (listId: string, titleId: string) => {
 
     await db.insert(listItems).values({
       listId,
-      titleId,
+      catalogId,
+      addedByUserId: userId,
       position: (last?.position ?? -1) + 1,
     });
   }
@@ -322,10 +320,19 @@ export const moveListItem = async (
 ) => {
   const userId = await requireUserId();
   const list = await requireOwnedList(listId, userId);
-  if (neighborTitleId) {
-    await swapListItemPositions(listId, titleId, neighborTitleId);
+  const catalogIds = await catalogIdsOfOwnTitles(
+    userId,
+    neighborTitleId ? [titleId, neighborTitleId] : [titleId],
+  );
+  const catalogId = catalogIds.get(titleId);
+  const neighborCatalogId = neighborTitleId ? catalogIds.get(neighborTitleId) : undefined;
+  if (!catalogId) {
+    return;
+  }
+  if (neighborCatalogId) {
+    await swapListItemPositions(listId, catalogId, neighborCatalogId);
   } else {
-    await swapAdjacentListItems(listId, titleId, direction);
+    await swapAdjacentListItems(listId, catalogId, direction);
   }
   revalidateLists(listId, titleId, list.slug);
 };
@@ -333,7 +340,11 @@ export const moveListItem = async (
 export const reorderList = async (listId: string, orderedTitleIds: string[]) => {
   const userId = await requireUserId();
   const list = await requireOwnedList(listId, userId);
-  const changed = await reorderListItems(listId, orderedTitleIds);
+  const catalogIds = await catalogIdsOfOwnTitles(userId, orderedTitleIds);
+  const changed = await reorderListItems(
+    listId,
+    orderedTitleIds.flatMap((titleId) => catalogIds.get(titleId) ?? []),
+  );
   if (changed) {
     revalidateLists(listId, undefined, list.slug);
   }
@@ -397,6 +408,10 @@ export const saveTmdbTitleInLists = async ({
     }
 
     const { titleId } = upserted;
+    const catalogId = await catalogIdOfOwnTitle(userId, titleId);
+    if (!catalogId) {
+      return { ok: false, error: "Título no encontrado." };
+    }
 
     if (addIds.length > 0) {
       const tails = await Promise.all(
@@ -414,7 +429,8 @@ export const saveTmdbTitleInLists = async ({
         .values(
           addIds.map((listId, index) => ({
             listId,
-            titleId,
+            catalogId,
+            addedByUserId: userId,
             position: (tails[index]?.position ?? -1) + 1,
           })),
         )
@@ -424,7 +440,7 @@ export const saveTmdbTitleInLists = async ({
     if (removeIds.length > 0) {
       await db
         .delete(listItems)
-        .where(and(eq(listItems.titleId, titleId), inArray(listItems.listId, removeIds)));
+        .where(and(eq(listItems.catalogId, catalogId), inArray(listItems.listId, removeIds)));
     }
 
     for (const list of owned) {
