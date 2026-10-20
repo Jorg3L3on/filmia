@@ -1,5 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { registerTools, type McpToolDeps, type ToolDefinition } from "@/lib/mcp/define-tool";
+import { registerFilmiaPrompts } from "@/lib/mcp/prompts";
+import { registerFilmiaResources } from "@/lib/mcp/resources";
 import { listCinemaTool, listPlatformArrivalsTool } from "@/lib/mcp/tools/discover";
 import { getTitleTool, listDiaryTool, listLibraryTool } from "@/lib/mcp/tools/library";
 import { getListTool, getWatchTogetherTool, listListsTool } from "@/lib/mcp/tools/lists";
@@ -36,5 +38,9 @@ export const mcpToolDefinitions = (): ToolDefinition[] => [
   ...writeTools,
 ];
 
-export const registerFilmiaTools = (server: McpServer, deps: McpToolDeps) =>
+/** Tools, plus prompts and resources for the clients that show them (FIL-I20-8). */
+export const registerFilmiaTools = (server: McpServer, deps: McpToolDeps) => {
   registerTools(server, mcpToolDefinitions(), deps);
+  registerFilmiaPrompts(server);
+  registerFilmiaResources(server);
+};

@@ -47,7 +47,7 @@ export const createMcpEndpoint = (deps: McpEndpointDeps) => {
   const handler = createMcpHandler((server) => registerFilmiaTools(server, deps.tools), {
     serverInfo: MCP_SERVER_INFO,
     instructions: MCP_INSTRUCTIONS,
-    capabilities: { tools: { listChanged: false } },
+    capabilities: { tools: { listChanged: false }, prompts: { listChanged: false }, resources: { listChanged: false } },
   });
 
   const handle = async (request: Request) => {
