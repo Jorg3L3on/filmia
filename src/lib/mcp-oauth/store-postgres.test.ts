@@ -3,7 +3,7 @@ import "@/lib/test-support/oauth";
 import assert from "node:assert/strict";
 import { after, before, it } from "node:test";
 import { eq, inArray } from "drizzle-orm";
-import { db, mcpOAuthClients, mcpOAuthTokenAttempts, users } from "@/db";
+import { db, mcpOAuthClients, mcpOAuthGrants, mcpOAuthTokenAttempts, users } from "@/db";
 import { closeLocalPg } from "@/db/local-pg";
 import { pkcePair } from "@/lib/test-support/oauth";
 import {
@@ -60,12 +60,14 @@ describeWithDb("Postgres OAuth store against the local database (FIL-I20-1)", ()
     const fulfilled = results.filter((result) => result.status === "fulfilled");
     assert.equal(fulfilled.length, 1);
     const issued = (fulfilled[0] as PromiseFulfilledResult<Awaited<ReturnType<typeof exchange>>>).value;
-    const connection = await resolveBearer(deps, issued.access_token);
-    assert.equal(connection?.userId, USER_ID);
-    assert.equal(connection?.canWrite, true);
-
+    const grants = await db.select().from(mcpOAuthGrants).where(eq(mcpOAuthGrants.userId, USER_ID));
+    assert.equal(grants.length, 1, "exactly one grant for one code");
+    // A loser that read the code after the winner claimed it already counts as a replay
+    // (OAuth 2.1 §4.1.2), so the grant may be revoked by the race itself; a later replay
+    // always revokes it.
     await assert.rejects(exchange(), { reason: "code_reuse" });
     assert.equal(await resolveBearer(deps, issued.access_token), null);
+    await db.delete(mcpOAuthGrants).where(eq(mcpOAuthGrants.userId, USER_ID));
   });
 
   it("rotates refresh tokens once under a race and revokes on reuse", async () => {

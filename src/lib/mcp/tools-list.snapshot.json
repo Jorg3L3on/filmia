@@ -355,5 +355,194 @@
       "metadata"
     ],
     "meta": null
+  },
+  {
+    "name": "add_to_library",
+    "title": "Agregar a Quiero ver",
+    "annotations": {
+      "title": "Agregar a Quiero ver",
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "id",
+      "idempotency_key"
+    ],
+    "input_keys": [
+      "id",
+      "status",
+      "note",
+      "idempotency_key"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "title",
+      "status",
+      "newly_added"
+    ],
+    "meta": null
+  },
+  {
+    "name": "set_title_status",
+    "title": "Cambiar el estado",
+    "annotations": {
+      "title": "Cambiar el estado",
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "id",
+      "status"
+    ],
+    "input_keys": [
+      "id",
+      "status"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "title",
+      "status"
+    ],
+    "meta": null
+  },
+  {
+    "name": "mark_seen",
+    "title": "Marcar como vista",
+    "annotations": {
+      "title": "Marcar como vista",
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "required": [
+      "id",
+      "idempotency_key"
+    ],
+    "input_keys": [
+      "id",
+      "watched_on",
+      "rating",
+      "note",
+      "confirm",
+      "idempotency_key"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "title",
+      "watched_on",
+      "rating"
+    ],
+    "meta": null
+  },
+  {
+    "name": "rate_title",
+    "title": "Calificar",
+    "annotations": {
+      "title": "Calificar",
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "id",
+      "rating"
+    ],
+    "input_keys": [
+      "id",
+      "rating",
+      "review",
+      "confirm"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "title",
+      "rating"
+    ],
+    "meta": null
+  },
+  {
+    "name": "create_list",
+    "title": "Crear una lista",
+    "annotations": {
+      "title": "Crear una lista",
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "required": [
+      "name",
+      "idempotency_key"
+    ],
+    "input_keys": [
+      "name",
+      "description",
+      "idempotency_key"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "list"
+    ],
+    "meta": null
+  },
+  {
+    "name": "add_to_list",
+    "title": "Agregar a una lista",
+    "annotations": {
+      "title": "Agregar a una lista",
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "list_id",
+      "id",
+      "idempotency_key"
+    ],
+    "input_keys": [
+      "list_id",
+      "id",
+      "idempotency_key"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "title",
+      "list",
+      "newly_added"
+    ],
+    "meta": null
+  },
+  {
+    "name": "remove_from_list",
+    "title": "Quitar de una lista",
+    "annotations": {
+      "title": "Quitar de una lista",
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "list_id",
+      "id"
+    ],
+    "input_keys": [
+      "list_id",
+      "id",
+      "confirm"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "list",
+      "removed"
+    ],
+    "meta": null
   }
 ]

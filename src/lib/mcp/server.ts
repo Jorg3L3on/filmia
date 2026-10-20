@@ -6,6 +6,7 @@ import { getListTool, getWatchTogetherTool, listListsTool } from "@/lib/mcp/tool
 import { fetchTool, searchTool } from "@/lib/mcp/tools/search";
 import { getTonightTool, recommendTool } from "@/lib/mcp/tools/tonight";
 import { whoamiTool } from "@/lib/mcp/tools/whoami";
+import { writeTools } from "@/lib/mcp/tools/writes";
 
 export const MCP_SERVER_INFO = { name: "filmia", version: "1.0.0" } as const;
 
@@ -32,6 +33,7 @@ export const mcpToolDefinitions = (): ToolDefinition[] => [
   listCinemaTool,
   searchTool,
   fetchTool,
+  ...writeTools,
 ];
 
 export const registerFilmiaTools = (server: McpServer, deps: McpToolDeps) =>

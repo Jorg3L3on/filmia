@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db, listItems, lists, titles, type Platform, type SeriesStatus } from "@/db";
+import { upsertTitleFromTmdbForUser } from "@/lib/add-title-from-tmdb";
 import { DomainError } from "@/lib/domain-error";
 import { catalogIdOfOwnTitle, catalogIdOfTitle } from "@/lib/list-items";
 import { ensureDefaultLists, ensureSeriesStatusList, SERIES_STATUS_LIST_SLUGS, WATCHLIST_SLUG } from "@/lib/lists";
@@ -221,3 +222,23 @@ export const setSeriesStatusFor = async (userId: string, titleId: string, nextSt
 };
 
 export { ownedSeries };
+
+/**
+ * The person's Title for a catalog film, creating it (no state) when they never saved it, the
+ * way Buscar saves a TMDB result.
+ */
+export const ensureOwnTitleFor = async (
+  userId: string,
+  film: { tmdbId: number; kind: "MOVIE" | "SERIES"; name: string; originalName?: string | null; year?: number | null; posterPath?: string | null },
+) => {
+  const result = await upsertTitleFromTmdbForUser(userId, {
+    tmdbId: film.tmdbId,
+    kind: film.kind,
+    name: film.name,
+    originalName: film.originalName ?? undefined,
+    year: film.year ?? undefined,
+    posterPath: film.posterPath ?? undefined,
+  });
+  if (!result.ok) throw new DomainError("validation", result.error);
+  return { titleId: result.titleId, created: result.created };
+};
