@@ -249,6 +249,11 @@ export const listItems = pgTable(
     addedAt: timestamp("addedAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),
+    /** «Vamos con esta» (FIL-I19-3): the film the group picked; one per list, null otherwise. */
+    chosenAt: timestamp("chosenAt", { precision: 3, mode: "date" }),
+    chosenByUserId: text("chosenByUserId").references(() => users.id, {
+      onDelete: "set null",
+    }),
   },
   (table) => [
     primaryKey({ columns: [table.listId, table.catalogId] }),

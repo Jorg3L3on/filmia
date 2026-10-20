@@ -1,10 +1,13 @@
 import { notFound } from "next/navigation";
 import { NavLabel } from "@/components/NavOriginTracker";
 import { PageHeader } from "@/components/PageHeader";
+import { MemberCompatSection } from "@/components/lists/MemberCompatSection";
 import { MembersPanel } from "@/components/lists/MembersPanel";
 import { PersonAvatar } from "@/components/lists/PersonAvatar";
 import { DecideButtons } from "@/components/lists/RequestControls";
 import { ShareListSheet } from "@/components/lists/ShareListSheet";
+import { loadMemberCompat } from "@/lib/compat-store";
+import { canWatchTogether } from "@/lib/group-access";
 import { getListAccess } from "@/lib/list-access";
 import { shareableRoles } from "@/lib/list-access-core";
 import { getListInvites, getListPeople, getPendingRequests } from "@/lib/list-invites";
@@ -34,6 +37,9 @@ export default async function ListMembersPage({ params }: { params: Promise<{ id
   ]);
   const roles = shareableRoles(list);
   const ownerName = people.find((person) => person.role === "OWNER")?.name ?? null;
+  // «% de compatibilidad» (FIL-I19-4): same lists and people as «Qué vemos juntos».
+  const compat = canWatchTogether(list, role, people) ? await loadMemberCompat(list.id, userId, people) : null;
+  const viewerFullName = people.find((person) => person.id === userId)?.name ?? null;
 
   return (
     <div className="mx-auto max-w-xl space-y-8 py-2">
@@ -104,6 +110,8 @@ export default async function ListMembersPage({ params }: { params: Promise<{ id
           status: invite.status,
         }))}
       />
+
+      {compat ? <MemberCompatSection compat={compat} viewer={{ id: userId, name: personFirstName(viewerFullName), fullName: viewerFullName }} /> : null}
 
       {isOwner && roles.length > 0 ? (
         <div className="flex justify-center">
