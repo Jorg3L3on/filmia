@@ -107,7 +107,7 @@ describeWithDb("search and fetch with the ChatGPT shape (FIL-I20-4)", () => {
 
   it("validates against OpenAI's search and fetch schemas", async () => {
     const schemas = JSON.parse(await readFile(new URL("./openai-search-fetch.schema.json", import.meta.url), "utf8"));
-    const ajv = new Ajv({ strict: false });
+    const ajv = new Ajv();
     const search = await call(ana, "search", { query: "Past Lives" });
     assert.ok(ajv.validate(schemas.search, search), JSON.stringify(ajv.errors));
     for (const id of [`title:${pastLives.catalogId}`, "diary:2025-03"]) {

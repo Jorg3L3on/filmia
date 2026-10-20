@@ -1,28 +1,18 @@
 "use server";
 
-import { createId } from "@paralleldrive/cuid2";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, listItems, lists } from "@/db";
 import {
   upsertTitleFromTmdbForUser,
   type AddTitleFromTmdbInput,
 } from "@/lib/add-title-from-tmdb";
-import { parseRequiredName } from "@/lib/form-data";
 import { canOnList } from "@/lib/list-access-core";
 import { LIST_NOT_FOUND, listAccessFor, requireListAccess } from "@/lib/list-access";
-import { catalogIdOfOwnTitle, catalogIdsOfOwnTitles } from "@/lib/list-items";
-import { slugify } from "@/lib/labels";
-import {
-  hasDuplicateListName,
-  isRenameBlocked,
-  LIST_NAME_TAKEN_MESSAGE,
-  type ListFormState,
-} from "@/lib/list-names";
+import { catalogIdOfOwnTitle } from "@/lib/list-items";
+import { type ListFormState } from "@/lib/list-names";
 import {
   isFixedListSlug,
-  isReservedListSlug,
   isSeriesStatusListSlug,
   listHref,
   WATCHLIST_SLUG,
@@ -36,50 +26,19 @@ import {
 import { revalidateSearchAddSurfaces } from "@/lib/revalidate-surfaces";
 import { requireUserId } from "@/lib/session";
 import { scheduleTonightRecompute } from "@/lib/tonight-store";
-
-const revalidateLists = (
-  listId?: string,
-  titleId?: string,
-  slug?: string | null,
-) => {
-  revalidatePath("/listas");
-  if (slug === WATCHLIST_SLUG) {
-    revalidatePath("/watchlist");
-  }
-  if (listId) {
-    revalidatePath(`/listas/${listId}`);
-    revalidatePath(`/listas/${listId}/editar`);
-  }
-  if (titleId) {
-    revalidatePath(`/titulos/${titleId}`);
-  }
-};
+import { isDomainError } from "@/lib/domain-error";
+import {
+  addTitleToListFor,
+  createListFor,
+  parseListName,
+  removeFromListFor,
+  resolveListItemCatalogIds,
+  revalidateLists,
+  userListNameError,
+  YEAR_TOP_FROM_CINE,
+} from "@/lib/list-writes";
 
 /** Tu top 10 del año only takes films of that year you saw, through `saveYearTop`. */
-const YEAR_TOP_FROM_CINE = "Tu top del año se arma desde Cine.";
-
-/**
- * A film on a list is named by the caller's own title id or, for films they
- * never saved (shared lists), by the catalog id already on that list.
- */
-const resolveListItemCatalogIds = async (userId: string, listId: string, ids: readonly string[]) => {
-  const own = await catalogIdsOfOwnTitles(userId, ids);
-  const rest = ids.filter((id) => !own.has(id));
-  const onList =
-    rest.length > 0
-      ? await db
-          .select({ catalogId: listItems.catalogId })
-          .from(listItems)
-          .where(and(eq(listItems.listId, listId), inArray(listItems.catalogId, rest)))
-      : [];
-  const listed = new Set(onList.map((row) => row.catalogId));
-  return new Map(
-    ids.flatMap((id) => {
-      const catalogId = own.get(id) ?? (listed.has(id) ? id : undefined);
-      return catalogId ? [[id, catalogId] as const] : [];
-    }),
-  );
-};
 
 type ListSaveOutcome = { error: string } | { redirectTo: string };
 
@@ -88,73 +47,18 @@ const readListFormValues = (formData: FormData) => ({
   description: String(formData.get("description") ?? ""),
 });
 
-const parseListName = (
-  value: FormDataEntryValue | null,
-): { name: string } | { error: string } => {
-  try {
-    return { name: parseRequiredName(value) };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Datos no válidos." };
-  }
-};
-
-/**
- * Error de nombre para una lista propia: choque con otra lista del usuario
- * (diarias incluidas, comparando con `slugify`) o nombre reservado.
- */
-const userListNameError = async (
-  userId: string,
-  name: string,
-  current?: { id: string; name: string },
-) => {
-  const existing = await db.query.lists.findMany({
-    where: eq(lists.userId, userId),
-    columns: { id: true, name: true },
-  });
-
-  const taken = current
-    ? isRenameBlocked(name, existing, current)
-    : hasDuplicateListName(name, existing);
-  if (taken) {
-    return LIST_NAME_TAKEN_MESSAGE;
-  }
-
-  if (isReservedListSlug(slugify(name))) {
-    return "Ese nombre está reservado para una lista diaria.";
-  }
-
-  return null;
-};
-
 const saveNewList = async (formData: FormData): Promise<ListSaveOutcome> => {
   const userId = await requireUserId();
-  const parsed = parseListName(formData.get("name"));
-  if ("error" in parsed) {
-    return parsed;
+  try {
+    const { listId } = await createListFor(userId, {
+      name: String(formData.get("name") ?? ""),
+      description: String(formData.get("description") ?? ""),
+    });
+    return { redirectTo: `/listas/${listId}` };
+  } catch (error) {
+    if (isDomainError(error)) return { error: error.message };
+    throw error;
   }
-
-  const { name } = parsed;
-  const description = String(formData.get("description") ?? "").trim() || null;
-
-  const nameError = await userListNameError(userId, name);
-  if (nameError) {
-    return { error: nameError };
-  }
-
-  const listId = createId();
-  const now = new Date();
-  await db.insert(lists).values({
-    id: listId,
-    userId,
-    name,
-    description,
-    kind: "COLLECTION",
-    createdAt: now,
-    updatedAt: now,
-  });
-
-  revalidateLists(listId);
-  return { redirectTo: `/listas/${listId}` };
 };
 
 const saveListChanges = async (
@@ -227,56 +131,12 @@ export const addTitleToList = async (listId: string, titleId: string) => {
   if (!titleId) {
     throw new Error("Elige un título para agregar.");
   }
-
-  const { userId, list } = await requireListAccess(listId, "edit_items");
-
-  if (isSeriesStatusListSlug(list.slug)) {
-    throw new Error("Esta lista se actualiza sola con el estado de la serie.");
-  }
-  if (list.kind === "YEAR_TOP") {
-    throw new Error(YEAR_TOP_FROM_CINE);
-  }
-
-  const catalogId = await catalogIdOfOwnTitle(userId, titleId);
-  if (!catalogId) {
-    throw new Error("Título no encontrado.");
-  }
-
-  const last = await db.query.listItems.findFirst({
-    where: eq(listItems.listId, listId),
-    orderBy: [desc(listItems.position)],
-  });
-
-  await db
-    .insert(listItems)
-    .values({
-      listId,
-      catalogId,
-      addedByUserId: userId,
-      position: (last?.position ?? -1) + 1,
-    })
-    .onConflictDoNothing();
-
-  revalidateLists(listId, titleId, list.slug);
-  scheduleTonightRecompute(userId);
+  await addTitleToListFor(await requireUserId(), listId, titleId);
 };
 
 /** `titleId`: your own title, or the catalog id of a film someone else added. */
 export const removeTitleFromList = async (listId: string, titleId: string) => {
-  const { userId, list } = await requireListAccess(listId, "edit_items");
-
-  if (isSeriesStatusListSlug(list.slug)) {
-    throw new Error("Esta lista se actualiza sola con el estado de la serie.");
-  }
-
-  const catalogId = (await resolveListItemCatalogIds(userId, listId, [titleId])).get(titleId);
-  if (catalogId) {
-    await db
-      .delete(listItems)
-      .where(and(eq(listItems.listId, listId), eq(listItems.catalogId, catalogId)));
-  }
-  revalidateLists(listId, titleId, list.slug);
-  scheduleTonightRecompute(userId);
+  await removeFromListFor(await requireUserId(), listId, titleId);
 };
 
 export const toggleTitleInList = async (listId: string, titleId: string) => {

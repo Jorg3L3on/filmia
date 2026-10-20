@@ -9,14 +9,20 @@ import {
   parsePlatform,
   parseRating,
 } from "@/lib/form-data";
-import { ensureDefaultLists, WATCHLIST_SLUG } from "@/lib/lists";
+import { ensureDefaultLists } from "@/lib/lists";
 import { reorderListItems } from "@/lib/list-order";
 import {
   revalidateDiarySurfaces,
   revalidateWatchlistSurfaces,
 } from "@/lib/revalidate-surfaces";
-import { db, listItems, lists, titles } from "@/db";
+import { db, listItems, titles } from "@/db";
 import { catalogIdOfOwnTitle, catalogIdOfTitle } from "@/lib/list-items";
+import {
+  addToWatchlistFor,
+  ensureWatchlistFor,
+  markWatchedFor,
+  removeFromWatchlistFor,
+} from "@/lib/title-writes";
 import { requireUserId } from "@/lib/session";
 import { scheduleTonightRecompute } from "@/lib/tonight-store";
 
@@ -29,19 +35,7 @@ const revalidateDiary = (titleId: string) => {
 };
 
 // Not exported: every export of a "use server" file is callable with any arguments.
-const ensureWatchlist = async (userId: string) => {
-  await ensureDefaultLists(userId);
-
-  const watchlist = await db.query.lists.findFirst({
-    where: and(eq(lists.userId, userId), eq(lists.slug, WATCHLIST_SLUG)),
-  });
-
-  if (!watchlist) {
-    throw new Error("No se pudo crear Quiero ver.");
-  }
-
-  return watchlist;
-};
+const ensureWatchlist = ensureWatchlistFor;
 
 export const ensureCurrentUserWatchlist = async () => {
   const userId = await requireUserId();
@@ -55,43 +49,7 @@ export const ensureCurrentUserDefaultLists = async () => {
 
 export const addToWatchlist = async (titleId: string, queueNote?: string) => {
   const userId = await requireUserId();
-  const watchlist = await ensureWatchlist(userId);
-
-  const catalogId = await catalogIdOfOwnTitle(userId, titleId);
-  if (!catalogId) {
-    throw new Error("Título no encontrado.");
-  }
-
-  const last = await db.query.listItems.findFirst({
-    where: eq(listItems.listId, watchlist.id),
-    orderBy: [desc(listItems.position)],
-  });
-
-  const values = {
-    listId: watchlist.id,
-    catalogId,
-    addedByUserId: userId,
-    position: (last?.position ?? -1) + 1,
-    queueNote: queueNote?.trim() || null,
-  };
-
-  // Drizzle throws "No values to set" if onConflictDoUpdate gets `set: {}`.
-  // The daily Quiero ver tap has no note, so use do-nothing on conflict.
-  if (queueNote?.trim()) {
-    await db
-      .insert(listItems)
-      .values(values)
-      .onConflictDoUpdate({
-        target: [listItems.listId, listItems.catalogId],
-        set: { queueNote: queueNote.trim() },
-      });
-  } else {
-    await db.insert(listItems).values(values).onConflictDoNothing();
-  }
-
-  revalidateWatchlist(titleId);
-  revalidatePath("/");
-  scheduleTonightRecompute(userId);
+  await addToWatchlistFor(userId, titleId, queueNote);
 };
 
 export const addToWatchlistById = async (titleId: string) => {
@@ -111,23 +69,7 @@ export const addToWatchlistFromForm = async (formData: FormData) => {
 
 export const removeFromWatchlist = async (titleId: string) => {
   const userId = await requireUserId();
-
-  const watchlist = await db.query.lists.findFirst({
-    where: and(eq(lists.userId, userId), eq(lists.slug, WATCHLIST_SLUG)),
-    columns: { id: true },
-  });
-
-  if (!watchlist) {
-    return;
-  }
-
-  await db
-    .delete(listItems)
-    .where(and(eq(listItems.listId, watchlist.id), eq(listItems.catalogId, catalogIdOfTitle(titleId))));
-
-  revalidateWatchlist(titleId);
-  revalidatePath("/");
-  scheduleTonightRecompute(userId);
+  await removeFromWatchlistFor(userId, titleId);
 };
 
 export const removeFromWatchlistById = async (titleId: string) => {
@@ -160,45 +102,7 @@ export const markTitleWatched = async (
     throw new Error("La fecha vista no es válida.");
   }
 
-  const title = await db.query.titles.findFirst({
-    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
-    columns: { id: true },
-  });
-
-  if (!title) {
-    throw new Error("Título no encontrado.");
-  }
-
-  const watchlist = await db.query.lists.findFirst({
-    where: and(eq(lists.userId, userId), eq(lists.slug, WATCHLIST_SLUG)),
-    columns: { id: true },
-  });
-
-  const updateTitle = db
-    .update(titles)
-    .set({
-      watchedAt,
-      ...(rating !== undefined ? { rating } : {}),
-      ...(review !== undefined ? { review } : {}),
-      ...(platform !== undefined ? { platform } : {}),
-    })
-    .where(eq(titles.id, titleId));
-
-  if (!watchlist) {
-    await updateTitle;
-  } else {
-    await db.batch([
-      updateTitle,
-      db
-        .delete(listItems)
-        .where(
-          and(eq(listItems.listId, watchlist.id), eq(listItems.catalogId, catalogIdOfTitle(titleId))),
-        ),
-    ]);
-  }
-
-  revalidateDiary(titleId);
-  scheduleTonightRecompute(userId);
+  await markWatchedFor(userId, titleId, { watchedAt, rating, review, platform });
 };
 
 /** Undo for «Vi esto» from the sala: clear the entry and put it back in Quiero ver. */

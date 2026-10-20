@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DomainError } from "@/lib/domain-error";
 
 /**
  * Tool errors the connector may answer (FIL-I20-2). Anything else a tool throws becomes
@@ -76,6 +77,9 @@ export const toErrorBody = (error: unknown, log: (error: unknown) => void): McpE
         ...(error.retryAfterSeconds ? { retry_after_seconds: error.retryAfterSeconds } : {}),
       },
     };
+  }
+  if (error instanceof DomainError) {
+    return { error: { code: error.code, message: error.message } };
   }
   if (error instanceof z.ZodError) {
     return { error: { code: "validation", message: `Argumentos inválidos: ${describeIssues(error)}` } };

@@ -1,8 +1,7 @@
 "use server";
 
-import { and, desc, eq, inArray } from "drizzle-orm";
-import { db, listItems, lists, titles, type SeriesStatus } from "@/db";
-import { catalogIdOfTitle } from "@/lib/list-items";
+import { and, eq } from "drizzle-orm";
+import { db, titles, type SeriesStatus } from "@/db";
 import {
   parseOptionalReview,
   parseRating,
@@ -16,18 +15,15 @@ import {
 import { catalogIdFor, findOrCreateCatalog } from "@/lib/catalog";
 import { scheduleCatalogEnrichment } from "@/lib/catalog-enrich";
 import { SERIES_STATUSES } from "@/lib/labels";
-import { ensureSeriesStatusList, SERIES_STATUS_LIST_SLUGS } from "@/lib/lists";
 import { parseRelinkPick, planRelink } from "@/lib/relink-core";
-import { seriesStatusListTransition } from "@/lib/series-status-lists";
 import {
   revalidateDiarySurfaces,
-  revalidateListMembership,
-  revalidateRatingSurfaces,
   revalidateSearchAddSurfaces,
   revalidateSeriesSurfaces,
 } from "@/lib/revalidate-surfaces";
 import { requireUserId } from "@/lib/session";
 import { scheduleTonightRecompute } from "@/lib/tonight-store";
+import { ownedSeries, setRatingFor, setSeriesStatusFor } from "@/lib/title-writes";
 
 export type { AddTitleFromTmdbInput, AddTitleFromTmdbResult };
 
@@ -123,53 +119,21 @@ export const addTitleFromTmdb = async (
   return result;
 };
 
-const requireOwnedSeries = async (titleId: string) => {
-  const userId = await requireUserId();
-  const title = await db.query.titles.findFirst({
-    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
-    columns: { id: true, catalogId: true, seriesStatus: true },
-    with: { catalog: { columns: { kind: true } } },
-  });
-
-  if (!title) {
-    throw new Error("Título no encontrado.");
-  }
-
-  if (title.catalog.kind !== "SERIES") {
-    throw new Error("El estado de seguimiento solo aplica a series.");
-  }
-
-  return { id: title.id, catalogId: title.catalogId, seriesStatus: title.seriesStatus, userId };
-};
+const requireOwnedSeries = async (titleId: string) => ownedSeries(await requireUserId(), titleId);
 
 export const setTitleRating = async (titleId: string, formData: FormData) => {
   const userId = await requireUserId();
   const rating = parseRating(formData.get("rating"));
   const review = parseOptionalReview(formData.get("review"));
 
-  const updated = await db
-    .update(titles)
-    .set({
-      rating,
-      ...(formData.has("review") ? { review } : {}),
-    })
-    .where(and(eq(titles.id, titleId), eq(titles.userId, userId)))
-    .returning({ id: titles.id });
-
-  if (updated.length === 0) {
-    throw new Error("Título no encontrado.");
-  }
-
-  revalidateRatingSurfaces(titleId);
-  scheduleTonightRecompute(userId);
+  await setRatingFor(userId, titleId, { rating, ...(formData.has("review") ? { review } : {}) });
 };
 
 export const setSeriesStatus = async (
   titleId: string,
   status: SeriesStatus | "NONE",
 ) => {
-  const { userId, catalogId, seriesStatus: previousStatus } = await requireOwnedSeries(titleId);
-
+  const userId = await requireUserId();
   const nextStatus =
     status === "NONE"
       ? null
@@ -181,72 +145,7 @@ export const setSeriesStatus = async (
     throw new Error("El estado de la serie no es válido.");
   }
 
-  // Viendo → «Series en progreso», Abandonada → «Series abandonadas». Terminada
-  // o sin estado: fuera de ambas. La lista destino se crea la primera vez.
-  const transition = seriesStatusListTransition(previousStatus, nextStatus);
-  const statusLists = await db.query.lists.findMany({
-    where: and(
-      eq(lists.userId, userId),
-      inArray(lists.slug, [...SERIES_STATUS_LIST_SLUGS]),
-    ),
-    columns: { id: true, slug: true },
-  });
-  const joinListId = transition.join
-    ? (statusLists.find((list) => list.slug === transition.join)?.id ??
-      (await ensureSeriesStatusList(userId, transition.join)))
-    : null;
-  const leaveListIds = statusLists
-    .filter((list) => list.slug && transition.leave.some((slug) => slug === list.slug))
-    .map((list) => list.id);
-  const lastItem = joinListId
-    ? await db.query.listItems.findFirst({
-        where: eq(listItems.listId, joinListId),
-        orderBy: [desc(listItems.position)],
-        columns: { position: true },
-      })
-    : undefined;
-
-  await db.batch([
-    db
-      .update(titles)
-      .set({
-        seriesStatus: nextStatus,
-        ...(nextStatus == null ? { seriesSeason: null } : {}),
-      })
-      .where(eq(titles.id, titleId)),
-    ...(leaveListIds.length > 0
-      ? [
-          db
-            .delete(listItems)
-            .where(
-              and(
-                eq(listItems.catalogId, catalogIdOfTitle(titleId)),
-                inArray(listItems.listId, leaveListIds),
-              ),
-            ),
-        ]
-      : []),
-    ...(joinListId
-      ? [
-          db
-            .insert(listItems)
-            .values({
-              listId: joinListId,
-              catalogId,
-              addedByUserId: userId,
-              position: (lastItem?.position ?? -1) + 1,
-            })
-            .onConflictDoNothing(),
-        ]
-      : []),
-  ]);
-
-  revalidateSeriesSurfaces(titleId);
-  for (const listId of [joinListId, ...leaveListIds]) {
-    if (listId) {
-      revalidateListMembership(listId, titleId);
-    }
-  }
+  await setSeriesStatusFor(userId, titleId, nextStatus);
 };
 
 export const setSeriesSeason = async (titleId: string, formData: FormData) => {
