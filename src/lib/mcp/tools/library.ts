@@ -1,6 +1,5 @@
 import { z } from "zod";
 import type { Platform } from "@/db/schema";
-import { awardChipLabel, parseOmdbAwards } from "@/lib/awards";
 import { monthUtcRange } from "@/lib/dates";
 import { mxToday, addDays } from "@/lib/cine-core";
 import { queryKey, paginate } from "@/lib/mcp/cursor";
@@ -10,11 +9,10 @@ import { dateSchema, pageInput, pageOutput, platformSchema, titleKindSchema, tit
 import { isoDay, platformShape } from "@/lib/mcp/shapes/common";
 import { personalFields, titleSummary, titleSummaryFields } from "@/lib/mcp/shapes/title";
 import { platformOutput } from "@/lib/mcp/schemas";
-import { loadLibrary, loadOwnTitle, resolveTitleRef, streamingPlatformsOf, type LibraryEntry } from "@/lib/library";
-import { loadWatchedBetween, loadWatchlist } from "@/lib/queries";
-import { resolveTitlePeople } from "@/lib/title-people";
+import { loadLibrary, streamingPlatformsOf, type LibraryEntry } from "@/lib/library";
+import { loadWatchedBetween } from "@/lib/queries";
 import { matchWatchProviderPlatform } from "@/lib/streaming-platforms";
-import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
+import { loadTitleDetail } from "@/lib/title-detail";
 
 const libraryItemOutput = z.object({
   ...titleSummaryFields,
@@ -132,36 +130,13 @@ export const getTitleTool = defineTool({
     my_lists: z.array(z.object({ id: z.string().describe("Id de la lista."), name: z.string().describe("Nombre.") })).describe("Listas propias donde está."),
   },
   run: async ({ userId }, args) => {
-    const resolved = await resolveTitleRef(userId, args.id);
-    if (!resolved) throw notFound("ese título", "Busca primero con search para obtener su id.");
-    const own = await loadOwnTitle(userId, resolved);
-    const row = resolved.catalog;
-    const [people, providers, watchlist] = await Promise.all([
-      resolveTitlePeople({ catalogId: row.id, tmdbId: row.tmdbId, kind: row.kind, tmdbPeople: row.tmdbPeople }),
-      getWatchProvidersForTitle({
-        catalogId: row.id,
-        tmdbId: row.tmdbId,
-        kind: row.kind,
-        watchProvidersMx: row.watchProvidersMx,
-        watchProvidersFetchedAt: row.watchProvidersFetchedAt,
-      }),
-      own ? loadWatchlist(userId) : Promise.resolve(undefined),
-    ]);
-    const inWatchlist = Boolean(watchlist?.items.some((item) => item.catalogId === row.id));
-    const awards = parseOmdbAwards(row.awards);
-    const status = own
-      ? own.watchedAt
-        ? "watched"
-        : own.seriesStatus === "WATCHING"
-          ? "watching"
-          : inWatchlist
-            ? "pending"
-            : "saved"
-      : "not_in_library";
+    const detail = await loadTitleDetail(userId, args.id);
+    if (!detail) throw notFound("ese título", "Busca primero con search para obtener su id.");
+    const { catalog: row, own } = detail;
     return {
       ...titleSummary({
         catalogId: row.id,
-        titleId: resolved.titleId,
+        titleId: detail.titleId,
         tmdbId: row.tmdbId,
         kind: row.kind,
         name: row.name,
@@ -170,27 +145,24 @@ export const getTitleTool = defineTool({
         runtimeMinutes: row.runtimeMinutes,
         genres: (row.tmdbGenres as { name: string }[] | null) ?? [],
         posterPath: row.posterPath,
-        streamingOn: streamingPlatformsOf(providers.data ?? row.watchProvidersMx),
+        streamingOn: detail.streamingOn,
       }),
-      status: status as "pending" | "watching" | "watched" | "saved" | "not_in_library",
+      status: detail.status,
       my_rating: own?.rating ?? null,
       watched_on: isoDay(own?.watchedAt),
       in_library: Boolean(own),
       series_status: seriesStatus(own?.seriesStatus ?? null),
       my_review: own?.review ?? null,
       overview: row.overview ?? null,
-      directors: people.filter((person) => person.role === "director" || person.role === "creator").map((person) => person.name),
-      cast: people
-        .filter((person) => person.role === "cast")
-        .slice(0, 8)
-        .map((person) => ({ name: person.name, character: person.character ?? null })),
+      directors: detail.directors,
+      cast: detail.cast.map((person) => ({ name: person.name, character: person.character ?? null })),
       imdb_rating: row.imdbRating ?? null,
-      awards: awards ? { summary: awardChipLabel(row.awards), wins: awards.wins, nominations: awards.nominations } : null,
+      awards: detail.awards,
       where_to_watch: {
-        included: offers(providers.data?.flatrate),
-        rent: offers(providers.data?.rent),
-        buy: offers(providers.data?.buy),
-        link: providers.data?.link ?? null,
+        included: offers(detail.providers?.flatrate),
+        rent: offers(detail.providers?.rent),
+        buy: offers(detail.providers?.buy),
+        link: detail.providers?.link ?? null,
       },
       my_lists: (own?.listItems ?? []).map((item) => ({ id: item.list.id, name: item.list.name })),
     };

@@ -307,5 +307,53 @@
       "total_count"
     ],
     "meta": null
+  },
+  {
+    "name": "search",
+    "title": "Buscar en Filmia",
+    "annotations": {
+      "title": "Buscar en Filmia",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "query"
+    ],
+    "input_keys": [
+      "query"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "results"
+    ],
+    "meta": null
+  },
+  {
+    "name": "fetch",
+    "title": "Abrir un resultado",
+    "annotations": {
+      "title": "Abrir un resultado",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "id"
+    ],
+    "input_keys": [
+      "id"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "id",
+      "title",
+      "text",
+      "url",
+      "metadata"
+    ],
+    "meta": null
   }
 ]

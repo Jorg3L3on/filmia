@@ -3,6 +3,7 @@ import { registerTools, type McpToolDeps, type ToolDefinition } from "@/lib/mcp/
 import { listCinemaTool, listPlatformArrivalsTool } from "@/lib/mcp/tools/discover";
 import { getTitleTool, listDiaryTool, listLibraryTool } from "@/lib/mcp/tools/library";
 import { getListTool, getWatchTogetherTool, listListsTool } from "@/lib/mcp/tools/lists";
+import { fetchTool, searchTool } from "@/lib/mcp/tools/search";
 import { getTonightTool, recommendTool } from "@/lib/mcp/tools/tonight";
 import { whoamiTool } from "@/lib/mcp/tools/whoami";
 
@@ -29,6 +30,8 @@ export const mcpToolDefinitions = (): ToolDefinition[] => [
   getWatchTogetherTool,
   listPlatformArrivalsTool,
   listCinemaTool,
+  searchTool,
+  fetchTool,
 ];
 
 export const registerFilmiaTools = (server: McpServer, deps: McpToolDeps) =>

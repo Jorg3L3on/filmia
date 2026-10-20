@@ -1,0 +1,32 @@
+{
+  "$comment": "Shapes OpenAI requires of a connector's search and fetch tools (ChatGPT connectors and deep research, platform.openai.com/docs/mcp). Copied here so tests validate filmia's outputs against them (FIL-I20-4).",
+  "search": {
+    "type": "object",
+    "required": ["results"],
+    "properties": {
+      "results": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["id", "title", "url"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1 },
+            "title": { "type": "string", "minLength": 1 },
+            "url": { "type": "string", "pattern": "^https?://" }
+          }
+        }
+      }
+    }
+  },
+  "fetch": {
+    "type": "object",
+    "required": ["id", "title", "text", "url"],
+    "properties": {
+      "id": { "type": "string", "minLength": 1 },
+      "title": { "type": "string", "minLength": 1 },
+      "text": { "type": "string" },
+      "url": { "type": "string", "pattern": "^https?://" },
+      "metadata": { "type": ["object", "null"] }
+    }
+  }
+}
