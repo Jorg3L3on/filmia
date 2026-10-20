@@ -15,6 +15,7 @@ import {
   loginErrorPath,
   type GoogleSignInErrorCode,
 } from "@/lib/google-oauth";
+import { isInvitePath } from "@/lib/invite-path";
 import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
 import { publicOrigin, requestOrigin } from "@/lib/request-origin";
 
@@ -79,7 +80,10 @@ export const GET = async (request: Request) => {
 
     // Accounts that still owe the Bienvenida land there instead of the requested page.
     const response = clearOAuthCookie(
-      NextResponse.redirect(new URL(onboarded ? stored.next : ONBOARDING_PATH, origin), 303),
+      NextResponse.redirect(
+        new URL(onboarded || isInvitePath(stored.next) ? stored.next : ONBOARDING_PATH, origin),
+        303,
+      ),
     );
     await setSessionCookie(response, user, { onboarded, sessionVersion });
     return response;

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { isInvitePath } from "@/lib/invite-path";
 import { useRef, useState } from "react";
 import { AuthScreen } from "@/components/AuthScreen";
 import { Button } from "@/components/Button";
@@ -154,8 +155,9 @@ export const SignupForm = ({ googleEnabled }: SignupFormProps) => {
         return;
       }
 
-      // A fresh account always opens the Bienvenida; finishing it lands on Hoy.
-      router.push(ONBOARDING_PATH);
+      // A fresh account opens the Bienvenida; finishing it lands on Hoy. Coming from a list
+      // invite, it goes back to the invite first (public, so the gate lets it through).
+      router.push(isInvitePath(next) ? next : ONBOARDING_PATH);
       router.refresh();
     } catch {
       setFormError("No pudimos conectar. Revisa tu conexión y reintenta.");

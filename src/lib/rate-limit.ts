@@ -20,6 +20,9 @@ export const RATE_LIMITS = {
   signupIp: { name: "signup:ip", limit: 5, windowMs: 60 * MINUTE },
   passwordIp: { name: "password:ip", limit: 20, windowMs: 15 * MINUTE },
   passwordAccount: { name: "password:account", limit: 5, windowMs: 15 * MINUTE },
+  /** Opening share links (FIL-I18-3): guessing tokens is pointless, but cheap to cap. */
+  joinIp: { name: "join:ip", limit: 30, windowMs: 10 * MINUTE },
+  joinAccount: { name: "join:account", limit: 10, windowMs: 10 * MINUTE },
 } as const satisfies Record<string, RateLimitRule>;
 
 export const RATE_LIMIT_MESSAGE = "Demasiados intentos. Espera unos minutos y vuelve a intentarlo.";
