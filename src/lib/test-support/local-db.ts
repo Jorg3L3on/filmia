@@ -16,6 +16,9 @@ if (testDatabaseUrl) {
   process.env.DATABASE_URL = testDatabaseUrl;
   process.env.FILMIA_LOCAL_PG = "1";
   installLocalPg();
+} else {
+  // Never let a test reach Neon through a DATABASE_URL loaded from .env: queries fail fast.
+  process.env.DATABASE_URL = "invalid://tests-run-without-a-database";
 }
 
 /** `describe` when a local test database is configured, `describe.skip` otherwise. */

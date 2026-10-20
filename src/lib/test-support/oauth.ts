@@ -1,3 +1,4 @@
+import "@/lib/test-support/local-db";
 import { randomBytes } from "node:crypto";
 import type { OAuthHttpDeps } from "@/lib/mcp-oauth/http";
 import { memoryOAuthStore } from "@/lib/mcp-oauth/store";

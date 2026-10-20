@@ -467,8 +467,8 @@ export const getWatchedSince = cache(async (since: Date) => {
   return rows.map((row) => flattenTitle(row));
 });
 
-export const getCurrentUserProfile = cache(async () => {
-  const userId = await requireUserId();
+/** The account's profile by id; the session-bound page and the MCP connector both read it. */
+export const loadUserProfile = async (userId: string) => {
   const user = await db.query.users.findFirst({
     where: eq(users.id, userId),
     columns: {
@@ -498,7 +498,9 @@ export const getCurrentUserProfile = cache(async () => {
     streamingPlatforms: parseStoredStreamingPlatforms(user.streamingPlatforms),
     nightEnds: parseNightEnds(user.nightEndsAt),
   };
-});
+};
+
+export const getCurrentUserProfile = cache(async () => loadUserProfile(await requireUserId()));
 
 export type UserTmdbEntry = {
   titleId: string;

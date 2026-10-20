@@ -1,0 +1,26 @@
+[
+  {
+    "name": "whoami",
+    "title": "Quién soy en Filmia",
+    "annotations": {
+      "title": "Quién soy en Filmia",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [],
+    "input_keys": [],
+    "additional_properties": false,
+    "output_keys": [
+      "user",
+      "connection",
+      "platforms",
+      "timezone",
+      "today"
+    ],
+    "meta": {
+      "openai/profile": true
+    }
+  }
+]
