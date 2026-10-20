@@ -177,3 +177,25 @@ export const groupCompatibility = (pairs: readonly (Compat | null)[]) => {
 /** «72 % compatibles» / «~70 % · por gustos parecidos». */
 export const compatLabel = (compat: { percent: number; approx: boolean }) =>
   `${compat.approx ? "~" : ""}${compat.percent} %`;
+
+/**
+ * The sentence under the % (canvas 2·1): what they share, never where they differ.
+ * `genres` are the shared genre names, `loved` the films both loved.
+ */
+export const compatPhrase = (
+  compat: Pick<Compat, "approx" | "percent">,
+  genres: readonly string[],
+  loved: readonly string[],
+) => {
+  if (genres.length > 0) {
+    const names = genres.slice(0, 2).map((name) => name.toLowerCase());
+    return `A los dos les gusta ${names.length > 1 ? `${names[0]} y ${names[1]}` : names[0]}`;
+  }
+  if (loved.length > 0) {
+    return `A los dos les encantó ${loved[0]}`;
+  }
+  if (compat.approx) {
+    return "Por gustos parecidos";
+  }
+  return compat.percent >= 50 ? "Coinciden más de lo que creen" : "Ven cosas distintas, y eso también suma";
+};

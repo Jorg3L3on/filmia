@@ -3,13 +3,10 @@ import { afterEach, describe, it } from "node:test";
 import { canWatchTogether, deciders, groupRecoEnabled, parseWatching } from "./group-access";
 import type { ListPerson } from "./list-invites";
 
-const person = (id: string, role: ListPerson["role"]): ListPerson => ({
-  id,
-  name: id,
-  role,
-  joinedAt: role === "OWNER" ? null : new Date(2026, 9, 19),
-  added: 0,
-});
+const person = (id: string, role: ListPerson["role"]): ListPerson =>
+  role === "OWNER"
+    ? { id, name: id, role, joinedAt: null, added: 0 }
+    : { id, name: id, role, joinedAt: new Date(2026, 9, 19), added: 0 };
 
 const OWNER = person("owner", "OWNER");
 const EDITOR = person("ana", "EDITOR");

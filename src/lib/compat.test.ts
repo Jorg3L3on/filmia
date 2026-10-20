@@ -4,6 +4,7 @@ import {
   COMPAT_MIN_COMMON,
   compatibility,
   compatLabel,
+  compatPhrase,
   groupCompatibility,
   percentOf,
   ranks,
@@ -115,5 +116,16 @@ describe("compat · the %", () => {
     assert.deepEqual(groupCompatibility([pair(70), pair(50), null]), { percent: 60, approx: false, pairs: 2 });
     assert.equal(groupCompatibility([null, null]), null);
     assert.equal(groupCompatibility([pair(70), pair(45, true)])!.approx, true);
+  });
+});
+
+describe("compat · the phrase", () => {
+  const compat = { percent: 70, approx: false };
+  it("says what they share, never where they differ", () => {
+    assert.equal(compatPhrase(compat, ["Thriller", "Crimen", "Drama"], []), "A los dos les gusta thriller y crimen");
+    assert.equal(compatPhrase(compat, ["Drama"], ["Zodiac"]), "A los dos les gusta drama");
+    assert.equal(compatPhrase(compat, [], ["Zodiac"]), "A los dos les encantó Zodiac");
+    assert.equal(compatPhrase({ percent: 70, approx: true }, [], []), "Por gustos parecidos");
+    assert.equal(compatPhrase({ percent: 30, approx: false }, [], []), "Ven cosas distintas, y eso también suma");
   });
 });
