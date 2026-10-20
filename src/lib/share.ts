@@ -87,8 +87,7 @@ export const getSharedList = cache(async (token: string): Promise<SharedList | n
         posterPath: catalog.posterPath,
       })
       .from(listItems)
-      .innerJoin(titles, eq(listItems.titleId, titles.id))
-      .innerJoin(catalog, eq(titles.catalogId, catalog.id))
+      .innerJoin(catalog, eq(listItems.catalogId, catalog.id))
       .where(eq(listItems.listId, id))
       .orderBy(asc(listItems.position), asc(catalog.name))
       .limit(SHARED_LIST_LIMIT),

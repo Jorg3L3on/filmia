@@ -231,8 +231,8 @@ export const getUserYearTop = async (userId: string, year: number): Promise<User
       rating: titles.rating,
     })
     .from(listItems)
-    .innerJoin(titles, eq(titles.id, listItems.titleId))
-    .innerJoin(catalog, eq(catalog.id, titles.catalogId))
+    .innerJoin(titles, and(eq(titles.catalogId, listItems.catalogId), eq(titles.userId, userId)))
+    .innerJoin(catalog, eq(catalog.id, listItems.catalogId))
     .where(eq(listItems.listId, list.id))
     .orderBy(asc(listItems.position));
   return { listId: list.id, titleIds: films.map((film) => film.titleId), films };

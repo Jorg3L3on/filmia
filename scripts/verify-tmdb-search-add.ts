@@ -285,7 +285,7 @@ const verifyUpsert = async () => {
     ? await db.query.listItems.findMany({
         where: and(
           eq(listItems.listId, watchlist.id),
-          eq(listItems.titleId, first.ok ? first.titleId : ""),
+          eq(listItems.catalogId, stored?.catalogId ?? ""),
         ),
       })
     : [];

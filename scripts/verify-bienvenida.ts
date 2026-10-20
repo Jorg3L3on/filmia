@@ -33,7 +33,11 @@ const run = () => {
   assert(/onboarded: false,\s+sessionVersion: 0/.test(read("src/app/api/auth/register/route.ts")), "Register mints onboarded: false");
   assert(read("src/lib/auth/google.ts").includes("created: true") && read("src/lib/auth/google.ts").includes("onboarded: false"), "Google sign-up reports created + gated");
   assert(read("src/app/api/auth/google/callback/route.ts").includes("ONBOARDING_PATH"), "Google callback lands gated users on /bienvenida");
-  assert(read("src/components/SignupForm.tsx").includes("router.push(ONBOARDING_PATH)"), "SignupForm pushes /bienvenida");
+  // FIL-I18: coming from a list invite (/unirse, public), the new account goes back to it first.
+  assert(
+    /router\.push\((isInvitePath\(next\) \? next : )?ONBOARDING_PATH\)/.test(read("src/components/SignupForm.tsx")),
+    "SignupForm pushes /bienvenida (or back to the invite)",
+  );
   assert(read("src/components/LoginForm.tsx").includes("payload.onboarding"), "LoginForm resumes the Bienvenida");
   assert(read("src/lib/nav.ts").includes('"/bienvenida"'), "Chrome hidden on /bienvenida");
   assert(read("src/lib/rendering.ts").includes("src/app/bienvenida/page.tsx"), "Bienvenida page is in the force-dynamic audit");

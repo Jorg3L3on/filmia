@@ -16,7 +16,7 @@ const START_DIRECTORS = 6;
  */
 export const getFavoriteDirectors = cache(async (userId: string): Promise<StartDirector[]> => {
   const favoritas = db
-    .select({ titleId: listItems.titleId })
+    .select({ catalogId: listItems.catalogId })
     .from(listItems)
     .innerJoin(lists, eq(lists.id, listItems.listId))
     .where(and(eq(lists.userId, userId), eq(lists.slug, FAVORITAS_SLUG)));
@@ -24,22 +24,22 @@ export const getFavoriteDirectors = cache(async (userId: string): Promise<StartD
   const [favoriteRows, rows] = await Promise.all([
     favoritas,
     db
-      .select({ id: titles.id, rating: titles.rating, people: catalog.tmdbPeople })
+      .select({ id: titles.id, catalogId: titles.catalogId, rating: titles.rating, people: catalog.tmdbPeople })
       .from(titles)
       .innerJoin(catalog, eq(catalog.id, titles.catalogId))
       .where(
         and(
           eq(titles.userId, userId),
-          or(gte(titles.rating, LOVED_RATING), inArray(titles.id, favoritas)),
+          or(gte(titles.rating, LOVED_RATING), inArray(titles.catalogId, favoritas)),
         ),
       ),
   ]);
 
-  const favoriteIds = new Set(favoriteRows.map((row) => row.titleId));
+  const favoriteIds = new Set(favoriteRows.map((row) => row.catalogId));
   const ranked = rankFavoriteDirectors(
     rows.map((row) => ({
       rating: row.rating,
-      favorite: favoriteIds.has(row.id),
+      favorite: favoriteIds.has(row.catalogId),
       people: parseStoredPeople(row.people),
     })),
     START_DIRECTORS,

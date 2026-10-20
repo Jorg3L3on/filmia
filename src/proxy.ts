@@ -13,8 +13,9 @@ const SIGNUP_PATH = "/registro";
 // /api/cron authenticates itself with CRON_SECRET instead of a session. /api/poster-ambient
 // is not here: each new path costs a TMDB fetch + sharp, so only signed-in users get it
 // (FIL-I10-6 L6); its answers stay CDN-cached. /compartir pages check their own signed
-// token (FIL-I15-4) and are read-only.
-const PUBLIC_PATHS = [LOGIN_PATH, SIGNUP_PATH, "/api/auth", "/api/cron", "/compartir"];
+// token (FIL-I15-4) and are read-only. /unirse shows a list invite before sign-in
+// (FIL-I18-3): the page checks the link and the session itself.
+const PUBLIC_PATHS = [LOGIN_PATH, SIGNUP_PATH, "/api/auth", "/api/cron", "/compartir", "/unirse"];
 
 const isPublicPath = (pathname: string) =>
   PUBLIC_PATHS.some(

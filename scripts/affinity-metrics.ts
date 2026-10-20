@@ -47,7 +47,7 @@ const main = async () => {
         where t."watchedAt" >= s."createdAt"
           and (t.rating >= 7 or exists (
             select 1 from "ListItem" li join "List" l on l.id = li."listId"
-            where li."titleId" = t.id and l.slug = 'favoritas'))
+            where li."catalogId" = t."catalogId" and l."userId" = t."userId" and l.slug = 'favoritas'))
       )::int as liked,
       avg(t.rating) filter (where t."watchedAt" >= s."createdAt")::float as mean_rating
     from shown s

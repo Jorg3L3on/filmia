@@ -8,6 +8,7 @@ import { useTonight } from "@/components/tonight/TonightContext";
 import { flyPosterToProfile } from "@/lib/fly-to-nav";
 import { useLongPress } from "@/lib/motion";
 import { tmdbPosterUrl } from "@/lib/tmdb";
+import { PersonAvatar } from "@/components/lists/PersonAvatar";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { PosterImage } from "@/components/PosterImage";
 import { SharedPoster } from "@/components/SharedPoster";
@@ -306,6 +307,12 @@ export const DeckCard = memo(function DeckCard({
               size={22}
               className="rounded-[5px] shadow-[0_2px_8px_rgba(0,0,0,0.4)] ring-1 ring-white/25"
             />
+          </span>
+        ) : null}
+        {title.addedBy ? (
+          // Canvas «Avatar de quien agregó»: 20 px, 6 px from the corner (the platform takes the right one).
+          <span className="pointer-events-none absolute left-1.5 top-1.5 z-10">
+            <PersonAvatar person={title.addedBy} size={20} />
           </span>
         ) : null}
         {isReco ? (

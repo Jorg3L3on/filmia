@@ -17,6 +17,7 @@ import {
 import type { CoverflowTitle, RecoMeta } from "@/components/coverflow/types";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { flattenTitle } from "@/lib/catalog-core";
+import { withOwnListEntries } from "@/lib/list-items";
 import { toCoverflowTitle } from "@/lib/coverflow-title";
 import { scheduleDiaryWatchlistEnrichment } from "@/lib/diary-enrich";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
@@ -103,17 +104,19 @@ type TitleRowWithLists = Title & {
   }>;
 };
 
-const TITLE_WITH_LISTS = {
-  catalog: true,
-  listItems: {
-    with: { list: { columns: { id: true, slug: true } } },
-  },
-} as const;
-
-/** Rows come with their catalog; the sala works on the flat `Title` shape. */
-const loadTitleRows = async (where: SQL | undefined): Promise<TitleRowWithLists[]> => {
-  const rows = await db.query.titles.findMany({ where, with: TITLE_WITH_LISTS });
-  return rows.map((row) => flattenTitle(row));
+/**
+ * One user's rows with their catalog; the sala works on the flat `Title` shape.
+ * Only that user's own lists count (never lists shared with them).
+ */
+const loadTitleRows = async (userId: string, where: SQL | undefined): Promise<TitleRowWithLists[]> => {
+  const rows = await db.query.titles.findMany({
+    where: and(eq(titles.userId, userId), where),
+    with: { catalog: true },
+  });
+  return withOwnListEntries(
+    userId,
+    rows.map((row) => flattenTitle(row)),
+  );
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -283,7 +286,7 @@ export const loadTonightInput = async (
   now = new Date(),
 ): Promise<TonightInput & { rows: TitleRowWithLists[]; nightEnds: NightEnds }> => {
   const [rows, prefs, events] = await Promise.all([
-    loadTitleRows(eq(titles.userId, userId)),
+    loadTitleRows(userId, undefined),
     loadUserPrefs(userId),
     loadEvents(userId, now),
   ]);
@@ -729,7 +732,7 @@ export const getTonightDecks = async (
   const titleIds = [...new Set([...picks.map((pick) => pick.titleId), ...(pinnedId ? [pinnedId] : [])])];
   const rows =
     titleIds.length > 0
-      ? await loadTitleRows(and(eq(titles.userId, userId), inArray(titles.id, titleIds)))
+      ? await loadTitleRows(userId, inArray(titles.id, titleIds))
       : [];
 
   const rowsById = new Map(rows.map((row) => [row.id, row]));

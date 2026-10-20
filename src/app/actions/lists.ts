@@ -4,12 +4,15 @@ import { createId } from "@paralleldrive/cuid2";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { db, listItems, lists, titles } from "@/db";
+import { db, listItems, lists } from "@/db";
 import {
   upsertTitleFromTmdbForUser,
   type AddTitleFromTmdbInput,
 } from "@/lib/add-title-from-tmdb";
 import { parseRequiredName } from "@/lib/form-data";
+import { canOnList } from "@/lib/list-access-core";
+import { LIST_NOT_FOUND, listAccessFor, requireListAccess } from "@/lib/list-access";
+import { catalogIdOfOwnTitle, catalogIdsOfOwnTitles } from "@/lib/list-items";
 import { slugify } from "@/lib/labels";
 import {
   hasDuplicateListName,
@@ -55,17 +58,27 @@ const revalidateLists = (
 /** Tu top 10 del año only takes films of that year you saw, through `saveYearTop`. */
 const YEAR_TOP_FROM_CINE = "Tu top del año se arma desde Cine.";
 
-const requireOwnedList = async (listId: string, userId: string) => {
-  const list = await db.query.lists.findFirst({
-    where: and(eq(lists.id, listId), eq(lists.userId, userId)),
-    columns: { id: true, slug: true, kind: true, name: true },
-  });
-
-  if (!list) {
-    throw new Error("Lista no encontrada.");
-  }
-
-  return list;
+/**
+ * A film on a list is named by the caller's own title id or, for films they
+ * never saved (shared lists), by the catalog id already on that list.
+ */
+const resolveListItemCatalogIds = async (userId: string, listId: string, ids: readonly string[]) => {
+  const own = await catalogIdsOfOwnTitles(userId, ids);
+  const rest = ids.filter((id) => !own.has(id));
+  const onList =
+    rest.length > 0
+      ? await db
+          .select({ catalogId: listItems.catalogId })
+          .from(listItems)
+          .where(and(eq(listItems.listId, listId), inArray(listItems.catalogId, rest)))
+      : [];
+  const listed = new Set(onList.map((row) => row.catalogId));
+  return new Map(
+    ids.flatMap((id) => {
+      const catalogId = own.get(id) ?? (listed.has(id) ? id : undefined);
+      return catalogId ? [[id, catalogId] as const] : [];
+    }),
+  );
 };
 
 type ListSaveOutcome = { error: string } | { redirectTo: string };
@@ -148,9 +161,8 @@ const saveListChanges = async (
   listId: string,
   formData: FormData,
 ): Promise<ListSaveOutcome> => {
-  const userId = await requireUserId();
+  const { userId, list: existing } = await requireListAccess(listId, "manage");
   const description = String(formData.get("description") ?? "").trim() || null;
-  const existing = await requireOwnedList(listId, userId);
   const fixed = isFixedListSlug(existing.slug);
 
   let name = existing.name;
@@ -201,8 +213,7 @@ export const updateListWithFeedback = async (
 };
 
 export const deleteList = async (listId: string) => {
-  const userId = await requireUserId();
-  const existing = await requireOwnedList(listId, userId);
+  const { list: existing } = await requireListAccess(listId, "manage");
 
   if (isFixedListSlug(existing.slug)) {
     throw new Error("Las listas diarias no se pueden borrar.");
@@ -213,12 +224,11 @@ export const deleteList = async (listId: string) => {
 };
 
 export const addTitleToList = async (listId: string, titleId: string) => {
-  const userId = await requireUserId();
   if (!titleId) {
     throw new Error("Elige un título para agregar.");
   }
 
-  const list = await requireOwnedList(listId, userId);
+  const { userId, list } = await requireListAccess(listId, "edit_items");
 
   if (isSeriesStatusListSlug(list.slug)) {
     throw new Error("Esta lista se actualiza sola con el estado de la serie.");
@@ -227,12 +237,8 @@ export const addTitleToList = async (listId: string, titleId: string) => {
     throw new Error(YEAR_TOP_FROM_CINE);
   }
 
-  const title = await db.query.titles.findFirst({
-    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
-    columns: { id: true },
-  });
-
-  if (!title) {
+  const catalogId = await catalogIdOfOwnTitle(userId, titleId);
+  if (!catalogId) {
     throw new Error("Título no encontrado.");
   }
 
@@ -245,7 +251,8 @@ export const addTitleToList = async (listId: string, titleId: string) => {
     .insert(listItems)
     .values({
       listId,
-      titleId,
+      catalogId,
+      addedByUserId: userId,
       position: (last?.position ?? -1) + 1,
     })
     .onConflictDoNothing();
@@ -254,46 +261,44 @@ export const addTitleToList = async (listId: string, titleId: string) => {
   scheduleTonightRecompute(userId);
 };
 
+/** `titleId`: your own title, or the catalog id of a film someone else added. */
 export const removeTitleFromList = async (listId: string, titleId: string) => {
-  const userId = await requireUserId();
-  const list = await requireOwnedList(listId, userId);
+  const { userId, list } = await requireListAccess(listId, "edit_items");
 
   if (isSeriesStatusListSlug(list.slug)) {
     throw new Error("Esta lista se actualiza sola con el estado de la serie.");
   }
 
-  await db
-    .delete(listItems)
-    .where(and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)));
+  const catalogId = (await resolveListItemCatalogIds(userId, listId, [titleId])).get(titleId);
+  if (catalogId) {
+    await db
+      .delete(listItems)
+      .where(and(eq(listItems.listId, listId), eq(listItems.catalogId, catalogId)));
+  }
   revalidateLists(listId, titleId, list.slug);
   scheduleTonightRecompute(userId);
 };
 
 export const toggleTitleInList = async (listId: string, titleId: string) => {
-  const userId = await requireUserId();
-  const list = await requireOwnedList(listId, userId);
+  const { userId, list } = await requireListAccess(listId, "edit_items");
 
   if (isSeriesStatusListSlug(list.slug)) {
     throw new Error("Esta lista se actualiza sola con el estado de la serie.");
   }
 
-  const title = await db.query.titles.findFirst({
-    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
-    columns: { id: true },
-  });
-
-  if (!title) {
+  const catalogId = await catalogIdOfOwnTitle(userId, titleId);
+  if (!catalogId) {
     throw new Error("Título no encontrado.");
   }
 
   const existing = await db.query.listItems.findFirst({
-    where: and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)),
+    where: and(eq(listItems.listId, listId), eq(listItems.catalogId, catalogId)),
   });
 
   if (existing) {
     await db
       .delete(listItems)
-      .where(and(eq(listItems.listId, listId), eq(listItems.titleId, titleId)));
+      .where(and(eq(listItems.listId, listId), eq(listItems.catalogId, catalogId)));
   } else {
     if (list.kind === "YEAR_TOP") {
       throw new Error(YEAR_TOP_FROM_CINE);
@@ -305,7 +310,8 @@ export const toggleTitleInList = async (listId: string, titleId: string) => {
 
     await db.insert(listItems).values({
       listId,
-      titleId,
+      catalogId,
+      addedByUserId: userId,
       position: (last?.position ?? -1) + 1,
     });
   }
@@ -320,20 +326,32 @@ export const moveListItem = async (
   direction: ListMoveDirection,
   neighborTitleId?: string | null,
 ) => {
-  const userId = await requireUserId();
-  const list = await requireOwnedList(listId, userId);
-  if (neighborTitleId) {
-    await swapListItemPositions(listId, titleId, neighborTitleId);
+  const { userId, list } = await requireListAccess(listId, "edit_items");
+  const catalogIds = await resolveListItemCatalogIds(
+    userId,
+    listId,
+    neighborTitleId ? [titleId, neighborTitleId] : [titleId],
+  );
+  const catalogId = catalogIds.get(titleId);
+  const neighborCatalogId = neighborTitleId ? catalogIds.get(neighborTitleId) : undefined;
+  if (!catalogId) {
+    return;
+  }
+  if (neighborCatalogId) {
+    await swapListItemPositions(listId, catalogId, neighborCatalogId);
   } else {
-    await swapAdjacentListItems(listId, titleId, direction);
+    await swapAdjacentListItems(listId, catalogId, direction);
   }
   revalidateLists(listId, titleId, list.slug);
 };
 
 export const reorderList = async (listId: string, orderedTitleIds: string[]) => {
-  const userId = await requireUserId();
-  const list = await requireOwnedList(listId, userId);
-  const changed = await reorderListItems(listId, orderedTitleIds);
+  const { userId, list } = await requireListAccess(listId, "edit_items");
+  const catalogIds = await resolveListItemCatalogIds(userId, listId, orderedTitleIds);
+  const changed = await reorderListItems(
+    listId,
+    orderedTitleIds.flatMap((titleId) => catalogIds.get(titleId) ?? []),
+  );
   if (changed) {
     revalidateLists(listId, undefined, list.slug);
   }
@@ -363,17 +381,12 @@ export const saveTmdbTitleInLists = async ({
   const touchedIds = [...addIds, ...removeIds];
 
   try {
-    const owned =
-      touchedIds.length > 0
-        ? await db.query.lists.findMany({
-            where: and(eq(lists.userId, userId), inArray(lists.id, touchedIds)),
-            columns: { id: true, slug: true, kind: true },
-          })
-        : [];
-
-    if (owned.length !== touchedIds.length) {
-      return { ok: false, error: "Lista no encontrada." };
+    // Your lists and the shared ones where you are an editor.
+    const accesses = await Promise.all(touchedIds.map((id) => listAccessFor(id, userId)));
+    if (accesses.some((access) => !access || !canOnList(access.role, "edit_items"))) {
+      return { ok: false, error: LIST_NOT_FOUND };
     }
+    const owned = accesses.flatMap((access) => (access ? [access.list] : []));
 
     if (owned.some((list) => list.kind === "YEAR_TOP" && addIds.includes(list.id))) {
       return { ok: false, error: YEAR_TOP_FROM_CINE };
@@ -397,6 +410,10 @@ export const saveTmdbTitleInLists = async ({
     }
 
     const { titleId } = upserted;
+    const catalogId = await catalogIdOfOwnTitle(userId, titleId);
+    if (!catalogId) {
+      return { ok: false, error: "Título no encontrado." };
+    }
 
     if (addIds.length > 0) {
       const tails = await Promise.all(
@@ -414,7 +431,8 @@ export const saveTmdbTitleInLists = async ({
         .values(
           addIds.map((listId, index) => ({
             listId,
-            titleId,
+            catalogId,
+            addedByUserId: userId,
             position: (tails[index]?.position ?? -1) + 1,
           })),
         )
@@ -424,7 +442,7 @@ export const saveTmdbTitleInLists = async ({
     if (removeIds.length > 0) {
       await db
         .delete(listItems)
-        .where(and(eq(listItems.titleId, titleId), inArray(listItems.listId, removeIds)));
+        .where(and(eq(listItems.catalogId, catalogId), inArray(listItems.listId, removeIds)));
     }
 
     for (const list of owned) {

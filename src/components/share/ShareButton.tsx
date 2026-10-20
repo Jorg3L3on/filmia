@@ -10,6 +10,8 @@ type ShareButtonProps = {
   text: string;
   /** Name of the shared card image, e.g. «athena.png». */
   fileName: string;
+  /** The image to attach; the page's OG card by default (a 9:16 story for compat). */
+  imagePath?: string;
   className?: string;
   ariaLabel?: string;
   children: ReactNode;
@@ -32,7 +34,16 @@ const copyLink = async (url: string) => {
  * The image is fetched once the button is on screen, because iOS only opens the
  * sheet inside the tap's user activation, so the click itself never waits.
  */
-export const ShareButton = ({ path, title, text, fileName, className, ariaLabel, children }: ShareButtonProps) => {
+export const ShareButton = ({
+  path,
+  title,
+  text,
+  fileName,
+  imagePath,
+  className,
+  ariaLabel,
+  children,
+}: ShareButtonProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const fileRef = useRef<File | null>(null);
 
@@ -47,7 +58,7 @@ export const ShareButton = ({ path, title, text, fileName, className, ariaLabel,
         return;
       }
       observer.disconnect();
-      fetch(`${path}/opengraph-image`, { cache: "no-store" })
+      fetch(imagePath ?? `${path}/opengraph-image`, { cache: "no-store" })
         .then((response) => (response.ok ? response.blob() : null))
         .then((blob) => {
           if (!cancelled && blob) {
@@ -63,7 +74,7 @@ export const ShareButton = ({ path, title, text, fileName, className, ariaLabel,
       cancelled = true;
       observer.disconnect();
     };
-  }, [path, fileName]);
+  }, [path, fileName, imagePath]);
 
   const share = () => {
     const url = new URL(path, window.location.origin).href;

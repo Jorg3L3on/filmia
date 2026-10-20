@@ -113,6 +113,27 @@
       "when": 1792225241297,
       "tag": "0015_cinema_alerts",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792464068503,
+      "tag": "0016_listas_compartidas",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792464128503,
+      "tag": "0017_listitem_catalog_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792467399107,
+      "tag": "0018_vamos_con_esta",
+      "breakpoints": true
     }
   ]
 }
