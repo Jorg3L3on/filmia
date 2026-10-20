@@ -9,10 +9,14 @@ import { flattenTitle } from "@/lib/catalog";
  * viewer never saved.
  */
 
-/** The flat Title shape for a film the viewer has not saved: no id, nothing personal. */
+/**
+ * The flat Title shape for a film the viewer has not saved: nothing personal,
+ * and the catalog id as its id so cards stay keyed and `/titulos/{id}`
+ * redirects to the preview ficha.
+ */
 export const titleWithoutEntry = (row: CatalogRow) =>
   flattenTitle({
-    id: "",
+    id: row.id,
     userId: "",
     catalogId: row.id,
     rating: null,

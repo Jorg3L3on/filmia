@@ -30,6 +30,8 @@ import {
 } from "@/db";
 import { flattenTitle, WITH_CATALOG } from "@/lib/catalog";
 import { monthUtcRange, toDateInput } from "@/lib/dates";
+import { listAccessFor } from "@/lib/list-access";
+import { canOnList } from "@/lib/list-access-core";
 import { loadListItems, withOwnListEntries } from "@/lib/list-items";
 import { sortUserLists } from "@/lib/lists";
 import { requireUserId } from "@/lib/session";
@@ -354,17 +356,15 @@ export const getAssignableLists = cache(async () => {
   return sortUserLists(rows);
 });
 
+/** A list you own or were let into, with your role; undefined otherwise (the page 404s). */
 export const getListById = cache(async (id: string) => {
   const userId = await requireUserId();
-
-  const list = await db.query.lists.findFirst({
-    where: and(eq(lists.id, id), eq(lists.userId, userId)),
-  });
-  if (!list) {
+  const access = await listAccessFor(id, userId);
+  if (!access) {
     return undefined;
   }
 
-  return { ...list, items: await loadListItems([list.id], userId) };
+  return { ...access.list, role: access.role, items: await loadListItems([id], userId) };
 });
 
 /** List row only — avoids hydrating every ListItem/Title on editar. */
@@ -399,6 +399,10 @@ export const getTitleOptions = cache(async () => {
 /** Titles not already on the list — SQL exclusion instead of load-all + filter. */
 export const getTitleOptionsOutsideList = cache(async (listId: string) => {
   const userId = await requireUserId();
+  const access = await listAccessFor(listId, userId);
+  if (!canOnList(access?.role ?? null, "edit_items")) {
+    return [];
+  }
 
   return db
     .select({

@@ -18,6 +18,9 @@ export type CatalogSeed = {
   posterPath?: string | null;
 };
 
+export const findCatalogById = (id: string) =>
+  db.query.catalog.findFirst({ where: eq(catalog.id, id), columns: { id: true, tmdbId: true, kind: true } });
+
 export const findCatalogByTmdb = (tmdbId: number, kind: TitleKind) =>
   db.query.catalog.findFirst({
     where: and(eq(catalog.tmdbId, tmdbId), eq(catalog.kind, kind)),

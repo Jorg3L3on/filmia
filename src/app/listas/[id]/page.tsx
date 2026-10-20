@@ -29,6 +29,7 @@ import {
   WATCHLIST_SLUG,
 } from "@/lib/lists";
 import { slugify } from "@/lib/labels";
+import { canOnList } from "@/lib/list-access-core";
 import { metadataServicesConfigured } from "@/lib/metadata";
 import { listShareText } from "@/lib/share-card";
 import { sharePath } from "@/lib/share-token";
@@ -125,6 +126,9 @@ const ListDetail = async ({
     item.title.tmdbId != null ? [tmdbCatalogKey(item.title.tmdbId, item.title.kind)] : [],
   );
   const fixed = isFixedListSlug(list.slug);
+  // Each role sees only what it can use (FIL-I18): viewers just look.
+  const isOwner = list.role === "OWNER";
+  const canEditItems = canOnList(list.role, "edit_items");
   // «Series en progreso» / «Series abandonadas» las llena el estado de la serie.
   const automatic = isSeriesStatusListSlug(list.slug);
   // «Mi top de {año}» is built in Cine (only films of that year you saw): edit it there.
@@ -145,7 +149,7 @@ const ListDetail = async ({
         inlineActions
         actions={
           <>
-            {automatic || yearTop ? null : (
+            {automatic || yearTop || !canEditItems ? null : (
               <AddTitleToListCta
                 action={addAction}
                 titles={availableTitles}
@@ -155,25 +159,29 @@ const ListDetail = async ({
                 compact
               />
             )}
-            <ShareButton
-              path={sharePath("lista", list.id)}
-              title={list.name}
-              text={listShareText(list.name, list.items.length)}
-              fileName={`${slugify(list.name) || "lista"}.png`}
-              ariaLabel="Compartir lista"
-              className={segmentActionCompactClass}
-            >
-              <ShareIcon className="size-5" />
-              <SegmentActionTooltip label="Compartir lista" />
-            </ShareButton>
-            <Link
-              href={yearTop ? `/cine/mejor/${list.year}` : `/listas/${list.id}/editar`}
-              aria-label={yearTop ? "Editar en Cine" : fixed ? "Editar descripción" : "Editar lista"}
-              className={segmentActionCompactClass}
-            >
-              <PencilIcon className="size-5 group-hover/action:-rotate-12" />
-              <SegmentActionTooltip label={yearTop ? "Editar en Cine" : fixed ? "Editar descripción" : "Editar lista"} />
-            </Link>
+            {isOwner ? (
+              <ShareButton
+                path={sharePath("lista", list.id)}
+                title={list.name}
+                text={listShareText(list.name, list.items.length)}
+                fileName={`${slugify(list.name) || "lista"}.png`}
+                ariaLabel="Compartir lista"
+                className={segmentActionCompactClass}
+              >
+                <ShareIcon className="size-5" />
+                <SegmentActionTooltip label="Compartir lista" />
+              </ShareButton>
+            ) : null}
+            {isOwner ? (
+              <Link
+                href={yearTop ? `/cine/mejor/${list.year}` : `/listas/${list.id}/editar`}
+                aria-label={yearTop ? "Editar en Cine" : fixed ? "Editar descripción" : "Editar lista"}
+                className={segmentActionCompactClass}
+              >
+                <PencilIcon className="size-5 group-hover/action:-rotate-12" />
+                <SegmentActionTooltip label={yearTop ? "Editar en Cine" : fixed ? "Editar descripción" : "Editar lista"} />
+              </Link>
+            ) : null}
           </>
         }
       />
@@ -191,7 +199,7 @@ const ListDetail = async ({
 
       {list.items.length === 0 ? (
         <>
-          {automatic || yearTop ? null : (
+          {automatic || yearTop || !canEditItems ? null : (
             <AddTitleToListCta
               action={addAction}
               titles={availableTitles}
@@ -230,7 +238,7 @@ const ListDetail = async ({
         <div className="space-y-4">
           <MissingStreamingDataNote count={catalog.missingCache} />
           <ListTitlesView
-            listId={automatic ? undefined : list.id}
+            listId={automatic || !canEditItems ? undefined : list.id}
             items={visibleItems}
             platforms={platforms}
             initialCardId={parseDeckCard(query.carta)}
