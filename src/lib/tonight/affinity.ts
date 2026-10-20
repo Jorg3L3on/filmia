@@ -367,8 +367,18 @@ const genreReason = (
   return null;
 };
 
-/** The level and its reasons for a film you have not watched. Pure. */
-export const affinityFor = (scorer: AffinityScorer, title: TonightTitle): Affinity => {
+/** The numbers behind a level: what «Qué vemos juntos» (FIL-I19) averages across people. */
+export type AffinityScore = {
+  level: AffinityLevel;
+  /** The shrunk taste on the user's own scale: 0 at «Fuera de tu zona», 1 at «Muy tu estilo». */
+  normalized: number;
+  confidence: number;
+  taste: number;
+  vector: FeatureVector;
+};
+
+/** Level and normalized score for a film. Pure; `affinityFor` adds the reasons. */
+export const affinityScore = (scorer: AffinityScorer, title: TonightTitle): AffinityScore => {
   const { ctx, cutoffs } = scorer;
   const vector = itemVector(title);
   const taste = cosine(ctx.profile.vector, vector);
@@ -378,7 +388,16 @@ export const affinityFor = (scorer: AffinityScorer, title: TonightTitle): Affini
     Math.min(1, featureCoverage(ctx.profile, vector) / CONFIDENT_COVERAGE);
   // Shrink toward the middle of your range when the profile knows little about this film.
   const middle = (cutoffs.high + cutoffs.low) / 2;
-  const level = levelFor(middle + (taste - middle) * confidence, cutoffs);
+  const shrunk = middle + (taste - middle) * confidence;
+  const span = cutoffs.high - cutoffs.low;
+  const normalized = span <= 0 ? 0.5 : Math.min(1, Math.max(0, (shrunk - cutoffs.low) / span));
+  return { level: levelFor(shrunk, cutoffs), normalized, confidence, taste, vector };
+};
+
+/** The level and its reasons for a film you have not watched. Pure. */
+export const affinityFor = (scorer: AffinityScorer, title: TonightTitle): Affinity => {
+  const { ctx } = scorer;
+  const { level, confidence, taste, vector } = affinityScore(scorer, title);
 
   const gusto = Math.min(1, Math.max(0, 0.5 + taste * GUSTO_SCALE));
   const reasons: TonightReason[] = tasteReasons(title, vector, gusto, ctx.profile, scorer.titlesById);
