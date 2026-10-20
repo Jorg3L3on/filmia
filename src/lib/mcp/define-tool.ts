@@ -1,6 +1,7 @@
 import type { McpServer, ServerContext, ToolAnnotations } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { McpToolError, toErrorBody, type McpErrorCode } from "@/lib/mcp/errors";
+import type { IdempotencyStore } from "@/lib/mcp/idempotency";
 import type { McpConnection } from "@/lib/mcp-oauth/service";
 import { RATE_LIMITS, checkRateLimit, type RateLimitStore } from "@/lib/rate-limit";
 
@@ -24,6 +25,8 @@ export type McpToolCall = {
 
 export type McpToolDeps = {
   rateLimit: RateLimitStore;
+  /** Replays of write tools that create rows (FIL-I20-5). */
+  idempotency: IdempotencyStore;
   now: () => Date;
   /** Server log; never sent to the client. */
   log: (event: string, data: Record<string, unknown>) => void;

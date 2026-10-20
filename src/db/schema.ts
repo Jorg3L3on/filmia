@@ -697,6 +697,54 @@ export const mcpOAuthTokenAttempts = pgTable(
   (table) => [index("McpOAuthTokenAttempt_createdAt_idx").on(table.createdAt)],
 );
 
+/**
+ * MCP activity (FIL-I20-6): one row per tools/call, written after the response. What Perfil →
+ * Conexiones shows per connection. No arguments or results are stored. Kept 90 days.
+ */
+export const mcpToolCalls = pgTable(
+  "McpToolCall",
+  {
+    id: text("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** `oauth` (connectionId = McpOAuthGrant.id) or `personal_token` (McpPersonalToken.id). */
+    source: text("source").notNull(),
+    connectionId: text("connectionId").notNull(),
+    tool: text("tool").notNull(),
+    ok: boolean("ok").notNull(),
+    errorCode: text("errorCode"),
+    durationMs: integer("durationMs").notNull(),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("McpToolCall_connectionId_createdAt_idx").on(table.connectionId, table.createdAt),
+    index("McpToolCall_userId_createdAt_idx").on(table.userId, table.createdAt),
+  ],
+);
+
+/**
+ * Write tools' idempotency (FIL-I20-5): the first answer to `(userId, key)` is replayed for 24 h,
+ * so a client that retries does not add twice. `argsHash` catches a key reused for other args.
+ */
+export const mcpIdempotencyKeys = pgTable(
+  "McpIdempotencyKey",
+  {
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    key: text("key").notNull(),
+    tool: text("tool").notNull(),
+    argsHash: text("argsHash").notNull(),
+    response: jsonb("response"),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.key] }),
+    index("McpIdempotencyKey_createdAt_idx").on(table.createdAt),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   titles: many(titles),
   lists: many(lists),
@@ -776,3 +824,4 @@ export type McpOAuthClientRow = typeof mcpOAuthClients.$inferSelect;
 export type McpOAuthAuthorizationCodeRow = typeof mcpOAuthAuthorizationCodes.$inferSelect;
 export type McpOAuthGrantRow = typeof mcpOAuthGrants.$inferSelect;
 export type McpPersonalTokenRow = typeof mcpPersonalTokens.$inferSelect;
+export type McpToolCallRow = typeof mcpToolCalls.$inferSelect;

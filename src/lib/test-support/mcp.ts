@@ -1,6 +1,7 @@
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import type { McpToolCall, McpToolDeps } from "@/lib/mcp/define-tool";
 import { createMcpEndpoint } from "@/lib/mcp/http";
+import { memoryIdempotencyStore } from "@/lib/mcp/idempotency";
 import { createPersonalToken } from "@/lib/mcp-oauth/service";
 import { memoryRateLimitStore } from "@/lib/rate-limit";
 import { TEST_ISSUER, oauthTestbed } from "@/lib/test-support/oauth";
@@ -15,6 +16,7 @@ export const mcpTestbed = (options: Parameters<typeof oauthTestbed>[0] = {}) => 
   const calls: McpToolCall[] = [];
   const tools: McpToolDeps = {
     rateLimit: memoryRateLimitStore(),
+    idempotency: memoryIdempotencyStore(),
     now: oauth.clock.now,
     log: (event, data) => logs.push({ event, data }),
     recordCall: async (call) => {

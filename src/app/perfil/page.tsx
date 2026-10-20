@@ -5,6 +5,7 @@ import { NightEndsForm } from "@/components/NightEndsForm";
 import { ProfileHeaderSkeleton, ProfileBodySkeleton } from "@/components/PageSkeletons";
 import { ProfileDiary } from "@/components/ProfileDiary";
 import { ProfileAccountCard } from "@/components/profile/ProfileAccountCard";
+import { ProfileConnectionsRow } from "@/components/profile/ProfileConnectionsRow";
 import { ProfileListsRow } from "@/components/profile/ProfileListsRow";
 import { ProfileMarquee } from "@/components/profile/ProfileMarquee";
 import { PushAlertsToggle } from "@/components/profile/PushAlertsToggle";
@@ -60,6 +61,7 @@ const ProfileBody = async () => {
           <NightEndsForm value={profile.nightEnds} />
           <StreamingPlatformPicker selected={profile.streamingPlatforms} />
           <PushAlertsToggle vapidPublicKey={isPushConfigured() ? vapidPublicKey() : null} />
+          <ProfileConnectionsRow />
           <ProfileAccountCard
             name={profile.name}
             email={profile.email}
