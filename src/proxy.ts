@@ -17,6 +17,7 @@ const SIGNUP_PATH = "/registro";
 // (FIL-I18-3): the page checks the link and the session itself. The MCP connector (FIL-I20)
 // authenticates on its own: /api/mcp and /mcp check the bearer token, /api/oauth and
 // /.well-known are the OAuth server (its consent POST checks the session and Origin itself).
+// /conector is the connector's public guide (its OAuth service_documentation).
 // /oauth/consent is NOT here: it needs the Filmia session like any page.
 export const PUBLIC_PATHS = [
   LOGIN_PATH,
@@ -29,6 +30,7 @@ export const PUBLIC_PATHS = [
   "/mcp",
   "/api/oauth",
   "/.well-known",
+  "/conector",
 ];
 
 export const isPublicPath = (pathname: string) =>

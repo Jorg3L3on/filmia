@@ -17,6 +17,7 @@ const EXPECTED_PUBLIC_PATHS = [
   "/mcp",
   "/api/oauth",
   "/.well-known",
+  "/conector",
 ];
 
 const request = (path: string) => new Request(`https://filmia.test${path}`, { headers: { host: "filmia.test" } });
@@ -36,6 +37,7 @@ describe("proxy public paths", () => {
       "/.well-known/oauth-protected-resource",
       "/.well-known/oauth-protected-resource/mcp",
       "/.well-known/oauth-authorization-server",
+      "/conector",
     ]) {
       const response = await proxy(request(path));
       assert.equal(response.headers.get("location"), null, path);
