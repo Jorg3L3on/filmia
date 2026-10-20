@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { PosterStack, type PosterStackItem } from "@/components/PosterStack";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
@@ -15,6 +16,10 @@ type ListCardProps = {
   posters: PosterStackItem[];
   /** `rail`: fixed width for horizontal scroll; `grid`: fills its grid cell. */
   layout?: "rail" | "grid";
+  /** Replaces the film count line, e.g. «De Diego · puedes editar» (FIL-I18). */
+  subtitle?: string;
+  /** Over the poster stack's top corner: members' avatars or the owner's. */
+  badge?: ReactNode;
 };
 
 export const ListCard = ({
@@ -23,8 +28,10 @@ export const ListCard = ({
   itemCount,
   posters,
   layout = "rail",
+  subtitle,
+  badge,
 }: ListCardProps) => {
-  const countLabel = `${itemCount} ${itemCount === 1 ? "película" : "películas"}`;
+  const countLabel = subtitle ?? `${itemCount} ${itemCount === 1 ? "película" : "películas"}`;
 
   return (
     <Link
@@ -37,6 +44,7 @@ export const ListCard = ({
     >
       <div className="group relative rounded-2xl card-physics press-scale sm:max-w-[124px]">
         <PosterStack posters={posters} />
+        {badge ? <div className="absolute right-1.5 top-1.5 z-40">{badge}</div> : null}
         <div className="absolute inset-x-0 bottom-0 z-40 rounded-b-2xl bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-2.5 pb-2.5 pt-12 sm:hidden">
           <h2 className="truncate text-sm font-semibold text-paper">{name}</h2>
           <p className="text-xs text-fog">{countLabel}</p>

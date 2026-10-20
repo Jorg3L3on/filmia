@@ -115,9 +115,10 @@ export const loadAffinityLibrary = async (userId: string, now: Date) => {
       .innerJoin(catalog, eq(catalog.id, titles.catalogId))
       .where(eq(titles.userId, userId)),
     db
-      .select({ titleId: listItems.titleId, listId: lists.id, slug: lists.slug })
+      .select({ titleId: titles.id, listId: lists.id, slug: lists.slug })
       .from(listItems)
       .innerJoin(lists, eq(lists.id, listItems.listId))
+      .innerJoin(titles, and(eq(titles.catalogId, listItems.catalogId), eq(titles.userId, userId)))
       .where(eq(lists.userId, userId)),
     db
       .select({

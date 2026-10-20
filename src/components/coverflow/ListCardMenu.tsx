@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { useId } from "react";
+import { PersonAvatar } from "@/components/lists/PersonAvatar";
 import { PosterImage } from "@/components/PosterImage";
 import { Sheet, SheetHandle } from "@/components/Sheet";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { cn } from "@/lib/cn";
+import { personFirstName } from "@/lib/person-avatar";
+import { relativeTimeEs } from "@/lib/relative-time";
 import { focusRing } from "@/lib/ui";
 
 type ListCardMenuProps = {
@@ -40,18 +43,31 @@ export const ListCardMenu = ({ title, onClose, onRemove }: ListCardMenuProps) =>
               <div className="w-10 shrink-0">
                 <PosterImage name={title.name} posterPath={title.posterPath} sizes="40px" tmdbSize="w185" className="rounded-md" />
               </div>
-              <h2 id={headingId} className="min-w-0 flex-1 truncate font-serif text-xl text-paper">
-                {title.name}
-              </h2>
+              <div className="min-w-0 flex-1">
+                <h2 id={headingId} className="truncate font-serif text-xl text-paper">
+                  {title.name}
+                </h2>
+                {title.addedBy ? (
+                  // Canvas 5·2: nobody removes a film blind.
+                  <p className="flex items-center gap-1.5 truncate text-xs text-fog">
+                    <PersonAvatar person={title.addedBy} size={20} />
+                    La agregó {personFirstName(title.addedBy.name, title.addedBy.id == null)}{" "}
+                    {relativeTimeEs(title.addedBy.addedAt)}
+                    {title.addedBy.note ? ` · «${title.addedBy.note}»` : ""}
+                  </p>
+                ) : null}
+              </div>
             </div>
           </div>
           <div role="menu" aria-label={`Acciones de ${title.name}`} className="space-y-0.5 px-3 pb-2 pt-4" data-no-sheet-drag>
             <Link role="menuitem" href={`/titulos/${title.id}`} onClick={onClose} className={itemClass}>
               <Icon kind="ficha" /> Ver ficha
             </Link>
-            <Link role="menuitem" href={`/titulos/${title.id}#listas`} onClick={onClose} className={itemClass}>
-              <Icon kind="list" /> Mover a otra lista
-            </Link>
+            {title.noEntry ? null : (
+              <Link role="menuitem" href={`/titulos/${title.id}#listas`} onClick={onClose} className={itemClass}>
+                <Icon kind="list" /> Mover a otra lista
+              </Link>
+            )}
             <span aria-hidden="true" className="mx-3 my-1 block h-px bg-white/8" />
             <button
               type="button"

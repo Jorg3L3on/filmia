@@ -1,5 +1,7 @@
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { findCatalogById } from "@/lib/catalog";
+import { previewFichaHref } from "@/lib/title-preview";
 import type { Metadata } from "next";
 import { FichaWatchedSection } from "@/components/FichaWatchedSection";
 import {
@@ -105,6 +107,11 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
   const title = await getTitleById(id);
 
   if (!title) {
+    // A shared list links films the viewer never saved by their catalog id.
+    const film = await findCatalogById(id);
+    if (film) {
+      redirect(previewFichaHref(film.kind, film.tmdbId));
+    }
     notFound();
   }
 

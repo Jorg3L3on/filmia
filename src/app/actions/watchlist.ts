@@ -16,6 +16,7 @@ import {
   revalidateWatchlistSurfaces,
 } from "@/lib/revalidate-surfaces";
 import { db, listItems, lists, titles } from "@/db";
+import { catalogIdOfOwnTitle, catalogIdOfTitle } from "@/lib/list-items";
 import { requireUserId } from "@/lib/session";
 import { scheduleTonightRecompute } from "@/lib/tonight-store";
 
@@ -56,12 +57,8 @@ export const addToWatchlist = async (titleId: string, queueNote?: string) => {
   const userId = await requireUserId();
   const watchlist = await ensureWatchlist(userId);
 
-  const title = await db.query.titles.findFirst({
-    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
-    columns: { id: true },
-  });
-
-  if (!title) {
+  const catalogId = await catalogIdOfOwnTitle(userId, titleId);
+  if (!catalogId) {
     throw new Error("Título no encontrado.");
   }
 
@@ -72,7 +69,8 @@ export const addToWatchlist = async (titleId: string, queueNote?: string) => {
 
   const values = {
     listId: watchlist.id,
-    titleId,
+    catalogId,
+    addedByUserId: userId,
     position: (last?.position ?? -1) + 1,
     queueNote: queueNote?.trim() || null,
   };
@@ -84,7 +82,7 @@ export const addToWatchlist = async (titleId: string, queueNote?: string) => {
       .insert(listItems)
       .values(values)
       .onConflictDoUpdate({
-        target: [listItems.listId, listItems.titleId],
+        target: [listItems.listId, listItems.catalogId],
         set: { queueNote: queueNote.trim() },
       });
   } else {
@@ -125,7 +123,7 @@ export const removeFromWatchlist = async (titleId: string) => {
 
   await db
     .delete(listItems)
-    .where(and(eq(listItems.listId, watchlist.id), eq(listItems.titleId, titleId)));
+    .where(and(eq(listItems.listId, watchlist.id), eq(listItems.catalogId, catalogIdOfTitle(titleId))));
 
   revalidateWatchlist(titleId);
   revalidatePath("/");
@@ -194,7 +192,7 @@ export const markTitleWatched = async (
       db
         .delete(listItems)
         .where(
-          and(eq(listItems.listId, watchlist.id), eq(listItems.titleId, titleId)),
+          and(eq(listItems.listId, watchlist.id), eq(listItems.catalogId, catalogIdOfTitle(titleId))),
         ),
     ]);
   }
@@ -221,9 +219,18 @@ export const undoMarkWatched = async (titleId: string) => {
     where: eq(listItems.listId, watchlist.id),
     orderBy: [desc(listItems.position)],
   });
+  const catalogId = await catalogIdOfOwnTitle(userId, titleId);
+  if (!catalogId) {
+    throw new Error("Título no encontrado.");
+  }
   await db
     .insert(listItems)
-    .values({ listId: watchlist.id, titleId, position: (last?.position ?? -1) + 1 })
+    .values({
+      listId: watchlist.id,
+      catalogId,
+      addedByUserId: userId,
+      position: (last?.position ?? -1) + 1,
+    })
     .onConflictDoNothing();
 
   revalidateDiary(titleId);
@@ -255,7 +262,7 @@ export const updateWatchlistNote = async (titleId: string, formData: FormData) =
   await db
     .update(listItems)
     .set({ queueNote })
-    .where(and(eq(listItems.listId, watchlist.id), eq(listItems.titleId, titleId)));
+    .where(and(eq(listItems.listId, watchlist.id), eq(listItems.catalogId, catalogIdOfTitle(titleId))));
 
   revalidateWatchlist();
   scheduleTonightRecompute(userId);
@@ -265,17 +272,18 @@ export const updateWatchlistNote = async (titleId: string, formData: FormData) =
 export const moveWatchlistItemToTop = async (titleId: string) => {
   const userId = await requireUserId();
   const watchlist = await ensureWatchlist(userId);
+  const catalogId = await catalogIdOfOwnTitle(userId, titleId);
   const items = await db.query.listItems.findMany({
     where: eq(listItems.listId, watchlist.id),
     orderBy: [asc(listItems.position)],
-    columns: { titleId: true },
+    columns: { catalogId: true },
   });
-  if (!items.some((item) => item.titleId === titleId)) {
+  if (!catalogId || !items.some((item) => item.catalogId === catalogId)) {
     throw new Error("Ese título no está en Quiero ver.");
   }
   await reorderListItems(watchlist.id, [
-    titleId,
-    ...items.map((item) => item.titleId).filter((id) => id !== titleId),
+    catalogId,
+    ...items.map((item) => item.catalogId).filter((id) => id !== catalogId),
   ]);
   revalidateWatchlist();
   revalidatePath("/");
