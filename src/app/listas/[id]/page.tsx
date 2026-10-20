@@ -30,6 +30,8 @@ import {
 } from "@/lib/lists";
 import { slugify } from "@/lib/labels";
 import { canOnList, shareableRoles } from "@/lib/list-access-core";
+import { canWatchTogether } from "@/lib/group-access";
+import { chosenOfList } from "@/lib/group-store";
 import { getListPeople, getPeopleNames, getPendingRequests } from "@/lib/list-invites";
 import { personFirstName } from "@/lib/person-avatar";
 import { AvatarStack } from "@/components/lists/PersonAvatar";
@@ -115,6 +117,9 @@ const ListDetail = async ({
     : undefined;
   const ownerName = people.find((person) => person.role === "OWNER")?.name ?? null;
   const shareRoles = shareableRoles(list);
+  // «Qué vemos juntos» (FIL-I19-3): lists with an editor, for the owner and editors.
+  const together = canWatchTogether(list, list.role, people);
+  const chosen = together ? await chosenOfList(list.id) : null;
 
   if (list.kind === "WATCHLIST" || list.slug === WATCHLIST_SLUG) {
     redirect("/watchlist");
@@ -245,6 +250,30 @@ const ListDetail = async ({
         <Link href={`/listas/${list.id}/miembros`} className="inline-flex text-sm text-fog hover:text-paper">
           Miembros y links <span aria-hidden="true">&nbsp;›</span>
         </Link>
+      ) : null}
+
+      {together ? (
+        <div className="space-y-3">
+          <Link
+            href={`/listas/${list.id}/juntos`}
+            className="flex items-center justify-between gap-3 rounded-3xl px-4 py-3 text-paper shadow-lg"
+            style={{ backgroundImage: "linear-gradient(120deg, rgb(201 178 255 / 0.32), rgb(255 122 69 / 0.32))" }}
+          >
+            <span>
+              <span className="block text-[15px] font-semibold">Qué vemos juntos</span>
+              <span className="block text-xs text-paper/75">Cruza los gustos de quienes ven hoy</span>
+            </span>
+            <span aria-hidden="true" className="text-lg">›</span>
+          </Link>
+          {chosen ? (
+            <p className="text-sm text-fog">
+              Vamos con esta:{" "}
+              <Link href={`/titulos/${chosen.catalogId}`} className="font-semibold text-accent">
+                {chosen.name}
+              </Link>
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       {isOwner ? (

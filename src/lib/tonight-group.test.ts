@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { affinityScore, buildAffinityScorer, filmAsTitle } from "./tonight/affinity";
-import { GROUP_MIN_SCORED, rankForGroup, type GroupCandidate, type GroupMember } from "./tonight/group";
+import { GROUP_MIN_SCORED, mixListed, rankForGroup, type GroupCandidate, type GroupMember } from "./tonight/group";
 import type { TonightTitle } from "./tonight/types";
 
 const NOW = new Date(2026, 9, 19, 20, 0, 0);
@@ -236,6 +236,28 @@ describe("tonight/group · Qué vemos juntos", () => {
       const [a, b] = [result.picks[i - 1], result.picks[i]];
       assert.ok(a.score > b.score || (a.score === b.score && a.min >= b.min));
     }
+  });
+
+  it("keeps two «En la lista» in the top five when the list has them", () => {
+    const pick = (id: string, inList: boolean) => ({ id, inList, offPlatforms: false });
+    const sorted = [
+      pick("n1", false),
+      pick("n2", false),
+      pick("n3", false),
+      pick("n4", false),
+      pick("l1", true),
+      pick("n5", false),
+      pick("l2", true),
+      pick("l3", true),
+    ];
+    assert.deepEqual(
+      mixListed(sorted).map((p) => p.id),
+      ["n1", "n2", "n3", "l1", "l2", "n4", "n5", "l3"],
+    );
+    const already = [pick("l1", true), pick("l2", true), pick("n1", false)];
+    assert.deepEqual(mixListed(already), already);
+    const none = [pick("n1", false), pick("n2", false)];
+    assert.deepEqual(mixListed(none), none);
   });
 
   it("4 members × 400 candidates in under 150 ms", () => {

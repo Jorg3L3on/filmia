@@ -35,6 +35,11 @@ const EXPECTED: Record<string, Record<string, string>> = {
     addTitleFromTmdbToList: "saveTmdbTitleInLists(",
     createListWithFeedback: "saveNewList(",
   },
+  "src/app/actions/juntos.ts": {
+    addSuggestionToList: "requireTogether(listId)",
+    chooseTonight: "requireTogether(listId)",
+    clearTonight: 'requireListAccess(listId, "edit_items")',
+  },
   "src/app/actions/list-sharing.ts": {
     createInvite: 'requireListAccess(listId, "manage")',
     toggleInvite: 'requireListAccess(listId, "manage")',

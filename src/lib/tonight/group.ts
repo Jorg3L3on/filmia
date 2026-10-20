@@ -76,7 +76,7 @@ export const GROUP_PICK_LIMIT = 12;
 export const GROUP_REASONS_PER_MEMBER = 2;
 export const GROUP_MAX_WATCHING = 6;
 
-type Scored = GroupPick & { candidate: GroupCandidate };
+type Scored = GroupPick;
 
 const reasonsFor = (
   candidate: GroupCandidate,
@@ -165,6 +165,35 @@ const reasonsFor = (
   return reasons.sort((a, b) => b.memberIds.length - a.memberIds.length).slice(0, 3);
 };
 
+/** The top this many keep room for the list (canvas 2, «Mezcla»). */
+export const GROUP_MIX_TOP = 5;
+export const GROUP_MIX_LISTED = 2;
+
+/**
+ * At least two «En la lista» in the top five when the list has them: the list is
+ * what they chose together, suggestions should not bury it. The best listed films
+ * move up into the last slots; the order stays otherwise.
+ */
+export const mixListed = <T extends { inList: boolean; offPlatforms: boolean }>(sorted: readonly T[]): T[] => {
+  const top = sorted.slice(0, GROUP_MIX_TOP);
+  const missing = GROUP_MIX_LISTED - top.filter((pick) => pick.inList).length;
+  if (missing <= 0) {
+    return [...sorted];
+  }
+  const promoted = sorted
+    .slice(GROUP_MIX_TOP)
+    .filter((pick) => pick.inList && !pick.offPlatforms)
+    .slice(0, missing);
+  if (promoted.length === 0) {
+    return [...sorted];
+  }
+  const keep = top.length - promoted.length;
+  const kept = [...top.filter((pick) => pick.inList), ...top.filter((pick) => !pick.inList)].slice(0, keep);
+  const head = top.filter((pick) => kept.includes(pick));
+  const moved = new Set<T>([...head, ...promoted]);
+  return [...head, ...promoted, ...sorted.filter((pick) => !moved.has(pick))];
+};
+
 /** Rank candidates for the people watching tonight. Pure. */
 export const rankForGroup = (
   members: readonly GroupMember[],
@@ -210,7 +239,6 @@ export const rankForGroup = (
     }
     const values = [...scores.values()];
     scored.push({
-      candidate,
       catalogId: candidate.catalogId,
       inList: candidate.inList,
       score: values.reduce((sum, value) => sum + value.normalized, 0) / values.length,
@@ -244,7 +272,8 @@ export const rankForGroup = (
 
   return {
     status: "ok",
-    picks: pool.slice(0, limit).map(({ candidate: _candidate, ...pick }) => pick),
+    picks: mixListed(pool).slice(0, limit),
+
     relaxed,
     cold,
     platformsUnknown,
