@@ -14,10 +14,24 @@ const SIGNUP_PATH = "/registro";
 // is not here: each new path costs a TMDB fetch + sharp, so only signed-in users get it
 // (FIL-I10-6 L6); its answers stay CDN-cached. /compartir pages check their own signed
 // token (FIL-I15-4) and are read-only. /unirse shows a list invite before sign-in
-// (FIL-I18-3): the page checks the link and the session itself.
-const PUBLIC_PATHS = [LOGIN_PATH, SIGNUP_PATH, "/api/auth", "/api/cron", "/compartir", "/unirse"];
+// (FIL-I18-3): the page checks the link and the session itself. The MCP connector (FIL-I20)
+// authenticates on its own: /api/mcp and /mcp check the bearer token, /api/oauth and
+// /.well-known are the OAuth server (its consent POST checks the session and Origin itself).
+// /oauth/consent is NOT here: it needs the Filmia session like any page.
+export const PUBLIC_PATHS = [
+  LOGIN_PATH,
+  SIGNUP_PATH,
+  "/api/auth",
+  "/api/cron",
+  "/compartir",
+  "/unirse",
+  "/api/mcp",
+  "/mcp",
+  "/api/oauth",
+  "/.well-known",
+];
 
-const isPublicPath = (pathname: string) =>
+export const isPublicPath = (pathname: string) =>
   PUBLIC_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );

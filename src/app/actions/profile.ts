@@ -16,6 +16,8 @@ import {
 } from "@/lib/form-data";
 import { RATE_LIMITS, RATE_LIMIT_MESSAGE, clientIp } from "@/lib/rate-limit";
 import { checkAuthRateLimit } from "@/lib/rate-limit-store";
+import { oauthDeps } from "@/lib/mcp-oauth/deps";
+import { revokeAgentAccessForUser } from "@/lib/mcp-oauth/service";
 import { revalidateProfileSurfaces } from "@/lib/revalidate-surfaces";
 import { requireUser, requireUserId } from "@/lib/session";
 import { scheduleTonightRecompute } from "@/lib/tonight-store";
@@ -125,6 +127,10 @@ export const updatePassword = async (
 
   if (updated) {
     await refreshSessionUser(sessionUser, { sessionVersion: updated.sessionVersion });
+    // The MCP connector's grants and personal tokens die with the old sessions (FIL-I20-1).
+    await revokeAgentAccessForUser(oauthDeps, userId, "password_changed").catch((error) =>
+      console.error("[profile] could not revoke MCP access after a password change", error),
+    );
   }
 
   revalidateProfile();
