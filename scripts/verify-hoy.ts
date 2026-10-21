@@ -60,7 +60,12 @@ const run = () => {
   assert(sala.includes("Deshacer") && sala.includes("undoMarkWatched"), "Vi esto offers Deshacer");
 
   const footer = read("src/components/tonight/TonightFooter.tsx");
-  assert(footer.includes("tonight-reason") && footer.includes("acaba") && footer.includes("se pasa"), "Footer: reason pill + fit chip copy");
+  const nightLine = read("src/components/tonight/TonightNightLine.tsx");
+  assert(footer.includes("tonight-reason") && footer.includes("nightLineFor") && nightLine.includes("acaba") && nightLine.includes("se pasa"), "Footer: reason pill + the night line draws the fit (FIL-I21-5)");
+  assert(footer.includes('nightLine?.state === "over-long"') && footer.includes("overflowLabel"), "Without a line (overflow > 30 min) the runtime chip carries «se pasa …» in amber; with a line the chip is just the runtime");
+  const nightLineCss = css.slice(css.indexOf("/* --- Línea de la noche"), css.indexOf(".tonight-chip-imdb {"));
+  assert(nightLineCss.includes("transform: scaleX(0)") && nightLineCss.includes("prefers-reduced-motion") && !/transition:\s*(width|left|background)|filter/.test(nightLineCss), "Night line animates transform/opacity only and respects reduced motion");
+  assert(read("src/lib/tonight/night-line.ts").includes("NIGHT_LINE_MAX_OVERFLOW_MINUTES = 30"), "Night line only when it fits or overflows ≤ 30 min");
 
   // Time of day: Esta mañana / tarde / noche; the moon, bedtime chip and fit copy only at night.
   const eyebrow = read("src/components/tonight/TonightEyebrow.tsx");

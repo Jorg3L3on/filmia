@@ -1974,8 +1974,22 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   }
 
   .tonight-sala .coverflow-cinematic-stage {
-    height: calc(328px - var(--stub-room));
-    min-height: calc(328px - var(--stub-room));
+    /* 310 px of stage → hero ≈ 180 px (52 % of 343): the night line (26 px) keeps 20 px to the dock. */
+    height: calc(310px - var(--stub-room));
+    min-height: calc(310px - var(--stub-room));
+  }
+
+  .tonight-sala .tonight-footer {
+    gap: 0.25rem;
+  }
+
+  .tonight-sala .night-line {
+    height: 26px;
+    margin-top: 0;
+  }
+
+  .tonight-sala .night-line-labels {
+    top: 15px;
   }
 }
 
@@ -2477,6 +2491,144 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 
 .tonight-chip.is-over {
   border-color: rgb(240 179 90 / 0.45);
+}
+
+/* --- Línea de la noche (FIL-I21-5) ---------------------------------------
+ * 2 px track under the chips: start dot, accent fill to where the film ends (scaleX),
+ * moon at bedtime, amber dashed tail for up to 30 min of overflow. Transform + opacity only.
+ * ---------------------------------------------------------------------- */
+.night-line {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  height: 30px;
+  margin-top: 2px;
+}
+
+.night-line-track {
+  position: absolute;
+  left: 5px;
+  right: 7px;
+  top: 7px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.14);
+}
+
+.night-line-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--accent);
+  transform-origin: left center;
+  animation: night-line-fill var(--duration-enter, 280ms) var(--ease-out) backwards;
+}
+
+@keyframes night-line-fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.night-line-tail {
+  position: absolute;
+  top: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(90deg, #f0b35a 0 4px, transparent 4px 7px);
+  animation: night-line-tail var(--duration-enter, 280ms) var(--ease-out) backwards;
+}
+
+@keyframes night-line-tail {
+  from {
+    opacity: 0;
+  }
+}
+
+.night-line-dot {
+  position: absolute;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 9999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.25);
+}
+
+.night-line-dot.is-amber {
+  background: #f0b35a;
+  box-shadow: 0 0 0 3px rgb(240 179 90 / 0.25);
+}
+
+.night-line-mark {
+  position: absolute;
+  top: -5px;
+  width: 2px;
+  height: 12px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: var(--accent-tint);
+}
+
+.night-line-mark.is-amber {
+  background: #f0b35a;
+}
+
+.night-line-moon {
+  position: absolute;
+  top: -6px;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-tint);
+  background: var(--canvas);
+  border-radius: 9999px;
+}
+
+.night-line-labels {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 17px;
+  height: 13px;
+}
+
+.night-line-label {
+  position: absolute;
+  top: 0;
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--fog);
+  font-variant-numeric: tabular-nums;
+}
+
+.night-line-label.is-strong {
+  font-weight: 600;
+  color: var(--accent-tint);
+}
+
+.night-line-label.is-amber {
+  color: #f0b35a;
+}
+
+.night-line.is-past {
+  opacity: 0.85;
+}
+
+.night-line.is-past .night-line-moon {
+  color: var(--fog);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .night-line-fill,
+  .night-line-tail {
+    animation: none;
+  }
 }
 
 .tonight-chip-imdb {

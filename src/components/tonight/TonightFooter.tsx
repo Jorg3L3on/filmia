@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useTonight } from "@/components/tonight/TonightContext";
+import { TonightNightLine } from "@/components/tonight/TonightNightLine";
+import { nightLineFor } from "@/lib/tonight/night-line";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { cn } from "@/lib/cn";
@@ -40,9 +42,17 @@ export const TonightFooter = ({ title, className }: TonightFooterProps) => {
   const headlinePerson = reasonPerson(headline, tonight?.leads ?? []);
   // By day the chip is just the runtime: «acaba 15:31» only means something at night.
   const night = (sala?.dayPart ?? "noche") === "noche";
-  const fit = night ? (tonight?.fit ?? null) : null;
-  const overflow = Boolean(fit && fit.overflowMinutes > 0);
-  const nightOver = Boolean(fit && fit.remainingMinutes === 0);
+  // The night line (FIL-I21-5) draws the fit when it informs; then the chip is just the runtime.
+  const nightLine = sala?.now
+    ? nightLineFor({
+        runtimeMinutes: tonight?.runtimeMinutes ?? null,
+        kind: title.kind === "SERIES" ? "SERIES" : "MOVIE",
+        fit: tonight?.fit ?? null,
+        night,
+        now: sala.now,
+      })
+    : null;
+  const overflow = nightLine?.state === "over-long";
   const recommended = tonight?.source === "reco";
   const recoSaved = Boolean(recommended && tonight?.reco?.saved);
 
@@ -143,18 +153,13 @@ export const TonightFooter = ({ title, className }: TonightFooterProps) => {
           <span className={cn("tonight-chip", overflow && "is-over")}>
             <ClockIcon />
             {runtime}
-            {fit && fit.endsAt ? (
-              <span className={overflow ? "text-[#f0b35a]" : "text-fog"}>
-                {nightOver
-                  ? " · ya pasó tu hora"
-                  : overflow
-                    ? ` · se pasa ${fit.overflowMinutes} min`
-                    : ` · acaba ${fit.endsAt}`}
-              </span>
+            {nightLine?.state === "over-long" ? (
+              <span className="text-[#f0b35a]"> · {nightLine.overflowLabel}</span>
             ) : null}
           </span>
         ) : null}
       </div>
+      {nightLine ? <TonightNightLine line={nightLine} /> : null}
     </div>
   );
 };

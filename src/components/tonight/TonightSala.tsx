@@ -190,6 +190,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   const handlers: TonightHandlers = {
     lens: activeLens?.slug ?? "",
     dayPart,
+    now,
     onWhy: (title) => setWhyTitle(title),
     onOpenMenu: (title) => setMenuTitle(title),
     onOpened: (title) => impressions.push(pickRefOf(title), "opened"),

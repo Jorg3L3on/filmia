@@ -9,6 +9,8 @@ export type TonightHandlers = {
   lens: string;
   /** Viewer's part of the day; the clock copy (acaba / se pasa) only shows at night. */
   dayPart: DayPart;
+  /** The sala clock (null before hydration): the night line draws from it. */
+  now: Date | null;
   onWhy: (title: CoverflowTitle) => void;
   onOpenMenu: (title: CoverflowTitle) => void;
   /** Card finished its stamp + flight: remove from the deck and offer Deshacer. */
