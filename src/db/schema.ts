@@ -567,6 +567,184 @@ export const cinemaAlerts = pgTable(
   (table) => [primaryKey({ columns: [table.userId, table.catalogId, table.mxReleaseDate] })],
 );
 
+/**
+ * MCP connector (FIL-I20). An OAuth client: registered by DCR (`id` is a random UUID) or
+ * resolved from a Client ID Metadata Document (`id` is the https URL, `isCimd`). Clients are
+ * shared; what a person allowed lives on `McpOAuthGrant`.
+ */
+export const mcpOAuthClients = pgTable("McpOAuthClient", {
+  id: text("id").primaryKey(),
+  clientName: text("clientName").notNull(),
+  redirectUris: text("redirectUris").array().notNull(),
+  grantTypes: text("grantTypes").array().notNull(),
+  responseTypes: text("responseTypes").array().notNull(),
+  /** `none` (PKCE only) or `client_secret_post`; `private_key_jwt` CIMDs are stored as `none`. */
+  tokenEndpointAuthMethod: text("tokenEndpointAuthMethod").notNull(),
+  clientUri: text("clientUri"),
+  logoUri: text("logoUri"),
+  clientSecretHash: text("clientSecretHash"),
+  isCimd: boolean("isCimd").notNull().default(false),
+  /** CIMD only: when the document was last fetched; re-fetched after 24 h. */
+  fetchedAt: timestamp("fetchedAt", { precision: 3, mode: "date" }),
+  /** First successful code exchange; DCR clients that never get one are swept after 7 days. */
+  firstTokenAt: timestamp("firstTokenAt", { precision: 3, mode: "date" }),
+  createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+});
+
+/** Single-use authorization code (10 min). `usedAt` is claimed with a conditional update. */
+export const mcpOAuthAuthorizationCodes = pgTable(
+  "McpOAuthAuthorizationCode",
+  {
+    id: text("id").primaryKey(),
+    codeHash: text("codeHash").notNull(),
+    clientId: text("clientId")
+      .notNull()
+      .references(() => mcpOAuthClients.id, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    redirectUri: text("redirectUri").notNull(),
+    codeChallenge: text("codeChallenge").notNull(),
+    resource: text("resource").notNull(),
+    allowWrite: boolean("allowWrite").notNull().default(false),
+    expiresAt: timestamp("expiresAt", { precision: 3, mode: "date" }).notNull(),
+    usedAt: timestamp("usedAt", { precision: 3, mode: "date" }),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("McpOAuthAuthorizationCode_codeHash_key").on(table.codeHash)],
+);
+
+/**
+ * One connection a person approved: a client acting for one user, for one resource. Access
+ * tokens last 24 h, refresh tokens 365 d from each rotation; the refresh token it replaced is
+ * kept so a replay revokes the grant.
+ */
+export const mcpOAuthGrants = pgTable(
+  "McpOAuthGrant",
+  {
+    id: text("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    clientId: text("clientId")
+      .notNull()
+      .references(() => mcpOAuthClients.id, { onDelete: "cascade" }),
+    authorizationCodeId: text("authorizationCodeId"),
+    tokenPrefix: text("tokenPrefix").notNull(),
+    tokenHash: text("tokenHash").notNull(),
+    refreshTokenHash: text("refreshTokenHash").notNull(),
+    previousRefreshTokenHash: text("previousRefreshTokenHash"),
+    allowWrite: boolean("allowWrite").notNull().default(false),
+    resource: text("resource").notNull(),
+    expiresAt: timestamp("expiresAt", { precision: 3, mode: "date" }).notNull(),
+    refreshExpiresAt: timestamp("refreshExpiresAt", { precision: 3, mode: "date" }).notNull(),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+    lastUsedAt: timestamp("lastUsedAt", { precision: 3, mode: "date" }),
+    revokedAt: timestamp("revokedAt", { precision: 3, mode: "date" }),
+    revokedReason: text("revokedReason"),
+  },
+  (table) => [
+    uniqueIndex("McpOAuthGrant_tokenPrefix_key").on(table.tokenPrefix),
+    uniqueIndex("McpOAuthGrant_refreshTokenHash_key").on(table.refreshTokenHash),
+    index("McpOAuthGrant_previousRefreshTokenHash_idx").on(table.previousRefreshTokenHash),
+    index("McpOAuthGrant_authorizationCodeId_idx").on(table.authorizationCodeId),
+    index("McpOAuthGrant_userId_idx").on(table.userId),
+  ],
+);
+
+/** Personal token for clients without OAuth (Cursor). Only the prefix and a sha256 are kept. */
+export const mcpPersonalTokens = pgTable(
+  "McpPersonalToken",
+  {
+    id: text("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    tokenPrefix: text("tokenPrefix").notNull(),
+    tokenHash: text("tokenHash").notNull(),
+    allowWrite: boolean("allowWrite").notNull().default(false),
+    expiresAt: timestamp("expiresAt", { precision: 3, mode: "date" }).notNull(),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+    lastUsedAt: timestamp("lastUsedAt", { precision: 3, mode: "date" }),
+    revokedAt: timestamp("revokedAt", { precision: 3, mode: "date" }),
+  },
+  (table) => [
+    uniqueIndex("McpPersonalToken_tokenPrefix_key").on(table.tokenPrefix),
+    index("McpPersonalToken_userId_idx").on(table.userId),
+  ],
+);
+
+/**
+ * One row per POST to the token endpoint, with no secrets: which fields came and how it
+ * ended. Rate-limited requests, OPTIONS and GET are not written. Kept 30 days.
+ */
+export const mcpOAuthTokenAttempts = pgTable(
+  "McpOAuthTokenAttempt",
+  {
+    id: text("id").primaryKey(),
+    grantType: text("grantType"),
+    clientIdKind: text("clientIdKind").notNull(),
+    hasCode: boolean("hasCode").notNull(),
+    hasVerifier: boolean("hasVerifier").notNull(),
+    hasAssertion: boolean("hasAssertion").notNull(),
+    resourceKind: text("resourceKind").notNull(),
+    error: text("error").notNull(),
+    invalidGrantReason: text("invalidGrantReason"),
+    httpStatus: integer("httpStatus").notNull(),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [index("McpOAuthTokenAttempt_createdAt_idx").on(table.createdAt)],
+);
+
+/**
+ * MCP activity (FIL-I20-6): one row per tools/call, written after the response. What Perfil →
+ * Conexiones shows per connection. No arguments or results are stored. Kept 90 days.
+ */
+export const mcpToolCalls = pgTable(
+  "McpToolCall",
+  {
+    id: text("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** `oauth` (connectionId = McpOAuthGrant.id) or `personal_token` (McpPersonalToken.id). */
+    source: text("source").notNull(),
+    connectionId: text("connectionId").notNull(),
+    tool: text("tool").notNull(),
+    ok: boolean("ok").notNull(),
+    errorCode: text("errorCode"),
+    durationMs: integer("durationMs").notNull(),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("McpToolCall_connectionId_createdAt_idx").on(table.connectionId, table.createdAt),
+    index("McpToolCall_userId_createdAt_idx").on(table.userId, table.createdAt),
+  ],
+);
+
+/**
+ * Write tools' idempotency (FIL-I20-5): the first answer to `(userId, key)` is replayed for 24 h,
+ * so a client that retries does not add twice. `argsHash` catches a key reused for other args.
+ */
+export const mcpIdempotencyKeys = pgTable(
+  "McpIdempotencyKey",
+  {
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    key: text("key").notNull(),
+    tool: text("tool").notNull(),
+    argsHash: text("argsHash").notNull(),
+    response: jsonb("response"),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.key] }),
+    index("McpIdempotencyKey_createdAt_idx").on(table.createdAt),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   titles: many(titles),
   lists: many(lists),
@@ -642,3 +820,8 @@ export type ListItemWithTitleRelations = typeof listItems.$inferSelect & {
 export type TitleWithRelations = Title & {
   listItems: (typeof listItems.$inferSelect & { list: List })[];
 };
+export type McpOAuthClientRow = typeof mcpOAuthClients.$inferSelect;
+export type McpOAuthAuthorizationCodeRow = typeof mcpOAuthAuthorizationCodes.$inferSelect;
+export type McpOAuthGrantRow = typeof mcpOAuthGrants.$inferSelect;
+export type McpPersonalTokenRow = typeof mcpPersonalTokens.$inferSelect;
+export type McpToolCallRow = typeof mcpToolCalls.$inferSelect;

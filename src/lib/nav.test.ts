@@ -40,6 +40,7 @@ describe("isAuthChromePath", () => {
     assert.equal(isAuthChromePath("/registro?callbackUrl=%2F"), true);
     assert.equal(isAuthChromePath("/bienvenida"), true);
     assert.equal(isAuthChromePath("/compartir/resena/abc.def"), true);
+    assert.equal(isAuthChromePath("/oauth/consent?client_id=x"), true);
     assert.equal(isAuthChromePath("/"), false);
     assert.equal(isAuthChromePath("/perfil"), false);
   });

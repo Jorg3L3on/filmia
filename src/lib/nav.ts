@@ -10,7 +10,10 @@ export const isAuthChromePath = (pathname: string) => {
     path.startsWith("/login/") ||
     path.startsWith("/registro/") ||
     path.startsWith("/bienvenida/") ||
-    path.startsWith("/compartir/")
+    path.startsWith("/compartir/") ||
+    // MCP connector consent (FIL-I20): a standalone screen like sign-in.
+    path === "/oauth/consent" ||
+    path === "/conector"
   );
 };
 

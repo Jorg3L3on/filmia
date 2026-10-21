@@ -1,0 +1,548 @@
+[
+  {
+    "name": "whoami",
+    "title": "Quién soy en Filmia",
+    "annotations": {
+      "title": "Quién soy en Filmia",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [],
+    "input_keys": [],
+    "additional_properties": false,
+    "output_keys": [
+      "user",
+      "connection",
+      "platforms",
+      "timezone",
+      "today"
+    ],
+    "meta": {
+      "openai/profile": true
+    }
+  },
+  {
+    "name": "get_tonight",
+    "title": "Hoy en Filmia",
+    "annotations": {
+      "title": "Hoy en Filmia",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [],
+    "input_keys": [
+      "per_lens",
+      "lens"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "computed_at",
+      "lenses"
+    ],
+    "meta": null
+  },
+  {
+    "name": "recommend",
+    "title": "Recomendar qué ver",
+    "annotations": {
+      "title": "Recomendar qué ver",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [],
+    "input_keys": [
+      "platforms",
+      "max_runtime_min",
+      "type",
+      "genre",
+      "limit"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "applied",
+      "results",
+      "total_count"
+    ],
+    "meta": null
+  },
+  {
+    "name": "list_library",
+    "title": "Biblioteca",
+    "annotations": {
+      "title": "Biblioteca",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [],
+    "input_keys": [
+      "status",
+      "platform",
+      "type",
+      "sort",
+      "limit",
+      "cursor"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "items",
+      "limit",
+      "next_cursor",
+      "total_count"
+    ],
+    "meta": null
+  },
+  {
+    "name": "get_title",
+    "title": "Ficha de un título",
+    "annotations": {
+      "title": "Ficha de un título",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "id"
+    ],
+    "input_keys": [
+      "id"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "id",
+      "title",
+      "original_title",
+      "type",
+      "year",
+      "runtime_min",
+      "genres",
+      "streaming_on",
+      "poster_url",
+      "url",
+      "status",
+      "my_rating",
+      "watched_on",
+      "in_library",
+      "series_status",
+      "my_review",
+      "overview",
+      "directors",
+      "cast",
+      "imdb_rating",
+      "awards",
+      "where_to_watch",
+      "my_lists"
+    ],
+    "meta": null
+  },
+  {
+    "name": "list_diary",
+    "title": "Diario",
+    "annotations": {
+      "title": "Diario",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [],
+    "input_keys": [
+      "from",
+      "to",
+      "month",
+      "limit",
+      "cursor"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "from",
+      "to",
+      "items",
+      "limit",
+      "next_cursor",
+      "total_count"
+    ],
+    "meta": null
+  },
+  {
+    "name": "list_lists",
+    "title": "Listas",
+    "annotations": {
+      "title": "Listas",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [],
+    "input_keys": [
+      "limit",
+      "cursor"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "items",
+      "limit",
+      "next_cursor",
+      "total_count"
+    ],
+    "meta": null
+  },
+  {
+    "name": "get_list",
+    "title": "Una lista",
+    "annotations": {
+      "title": "Una lista",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "id"
+    ],
+    "input_keys": [
+      "id",
+      "limit",
+      "cursor"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "id",
+      "name",
+      "role",
+      "members",
+      "url",
+      "items",
+      "limit",
+      "next_cursor",
+      "total_count"
+    ],
+    "meta": null
+  },
+  {
+    "name": "get_watch_together",
+    "title": "Qué vemos juntos",
+    "annotations": {
+      "title": "Qué vemos juntos",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "list_id"
+    ],
+    "input_keys": [
+      "list_id",
+      "with",
+      "any_platform",
+      "limit"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "list",
+      "watching",
+      "shared_platforms",
+      "status",
+      "picks"
+    ],
+    "meta": null
+  },
+  {
+    "name": "list_platform_arrivals",
+    "title": "Llegó a tus plataformas",
+    "annotations": {
+      "title": "Llegó a tus plataformas",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [],
+    "input_keys": [
+      "days",
+      "limit",
+      "cursor"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "items",
+      "limit",
+      "next_cursor",
+      "total_count"
+    ],
+    "meta": null
+  },
+  {
+    "name": "list_cinema",
+    "title": "Cartelera de cine",
+    "annotations": {
+      "title": "Cartelera de cine",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [],
+    "input_keys": [
+      "when",
+      "until",
+      "limit",
+      "cursor"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "items",
+      "limit",
+      "next_cursor",
+      "total_count"
+    ],
+    "meta": null
+  },
+  {
+    "name": "search",
+    "title": "Buscar en Filmia",
+    "annotations": {
+      "title": "Buscar en Filmia",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "query"
+    ],
+    "input_keys": [
+      "query"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "results"
+    ],
+    "meta": null
+  },
+  {
+    "name": "fetch",
+    "title": "Abrir un resultado",
+    "annotations": {
+      "title": "Abrir un resultado",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "id"
+    ],
+    "input_keys": [
+      "id"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "id",
+      "title",
+      "text",
+      "url",
+      "metadata"
+    ],
+    "meta": null
+  },
+  {
+    "name": "add_to_library",
+    "title": "Agregar a Quiero ver",
+    "annotations": {
+      "title": "Agregar a Quiero ver",
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "id",
+      "idempotency_key"
+    ],
+    "input_keys": [
+      "id",
+      "status",
+      "note",
+      "idempotency_key"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "title",
+      "status",
+      "newly_added"
+    ],
+    "meta": null
+  },
+  {
+    "name": "set_title_status",
+    "title": "Cambiar el estado",
+    "annotations": {
+      "title": "Cambiar el estado",
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "id",
+      "status"
+    ],
+    "input_keys": [
+      "id",
+      "status"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "title",
+      "status"
+    ],
+    "meta": null
+  },
+  {
+    "name": "mark_seen",
+    "title": "Marcar como vista",
+    "annotations": {
+      "title": "Marcar como vista",
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "required": [
+      "id",
+      "idempotency_key"
+    ],
+    "input_keys": [
+      "id",
+      "watched_on",
+      "rating",
+      "note",
+      "confirm",
+      "idempotency_key"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "title",
+      "watched_on",
+      "rating"
+    ],
+    "meta": null
+  },
+  {
+    "name": "rate_title",
+    "title": "Calificar",
+    "annotations": {
+      "title": "Calificar",
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "id",
+      "rating"
+    ],
+    "input_keys": [
+      "id",
+      "rating",
+      "review",
+      "confirm"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "title",
+      "rating"
+    ],
+    "meta": null
+  },
+  {
+    "name": "create_list",
+    "title": "Crear una lista",
+    "annotations": {
+      "title": "Crear una lista",
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "required": [
+      "name",
+      "idempotency_key"
+    ],
+    "input_keys": [
+      "name",
+      "description",
+      "idempotency_key"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "list"
+    ],
+    "meta": null
+  },
+  {
+    "name": "add_to_list",
+    "title": "Agregar a una lista",
+    "annotations": {
+      "title": "Agregar a una lista",
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "list_id",
+      "id",
+      "idempotency_key"
+    ],
+    "input_keys": [
+      "list_id",
+      "id",
+      "idempotency_key"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "title",
+      "list",
+      "newly_added"
+    ],
+    "meta": null
+  },
+  {
+    "name": "remove_from_list",
+    "title": "Quitar de una lista",
+    "annotations": {
+      "title": "Quitar de una lista",
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "required": [
+      "list_id",
+      "id"
+    ],
+    "input_keys": [
+      "list_id",
+      "id",
+      "confirm"
+    ],
+    "additional_properties": false,
+    "output_keys": [
+      "list",
+      "removed"
+    ],
+    "meta": null
+  }
+]
