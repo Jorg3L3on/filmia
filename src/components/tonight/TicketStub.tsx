@@ -8,12 +8,18 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { MarkWatchedSheet } from "@/components/MarkWatchedSheet";
+import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
 import { PICKS_SAVE_LABEL } from "@/lib/mark-seen";
+import {
+  resolveStubRelease,
+  STUB_HINT_MS,
+  STUB_TAP_SLOP_PX,
+  STUB_TEAR_PX,
+} from "@/lib/tonight/stub-gesture";
 import { focusRing } from "@/lib/ui";
 
-/** Drag past this many px and the perforation tears. */
-export const STUB_TEAR_PX = 60;
+export { STUB_TEAR_PX };
 const STUB_MAX_PX = 96;
 
 type TicketStubProps = {
@@ -21,6 +27,11 @@ type TicketStubProps = {
   titleName: string;
   rating?: number | null;
   review?: string | null;
+  /**
+   * The card's platform (FIL-I21-1): «Vi esto» opens with that chip marked. Leave it
+   * undefined when the card has none, so the sheet starts on NINGUNA and sends nothing.
+   */
+  platform?: Platform | null;
   /** Fires once when the tear commits (light-leak hook). */
   onCommit?: () => void;
   onSaved?: () => void;
@@ -52,6 +63,7 @@ export const TicketStub = ({
   titleName,
   rating = null,
   review = null,
+  platform,
   onCommit,
   onSaved,
   onError,
@@ -62,8 +74,11 @@ export const TicketStub = ({
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [torn, setTorn] = useState(false);
+  // A half-hearted pull (12–59 px) springs back and shows «Arranca hasta el fondo» a moment.
+  const [nudged, setNudged] = useState(false);
+  const nudgeTimer = useRef<number | null>(null);
   const startY = useRef(0);
-  const moved = useRef(false);
+  const travel = useRef(0);
   const armed = useRef(false);
   // A tap fires pointerdown → pointerup before React commits `dragging`; track it in a ref.
   const active = useRef(false);
@@ -73,6 +88,15 @@ export const TicketStub = ({
       armed.current = false;
     }
   }, [open]);
+
+  useEffect(
+    () => () => {
+      if (nudgeTimer.current != null) {
+        window.clearTimeout(nudgeTimer.current);
+      }
+    },
+    [],
+  );
 
   const openSheet = () => {
     onCommit?.();
@@ -97,6 +121,16 @@ export const TicketStub = ({
     armed.current = false;
   };
 
+  /** Spring back and hint for a moment: the pull was too short to tear (visual, iPhone web has no haptics). */
+  const springBack = () => {
+    reset();
+    setNudged(true);
+    if (nudgeTimer.current != null) {
+      window.clearTimeout(nudgeTimer.current);
+    }
+    nudgeTimer.current = window.setTimeout(() => setNudged(false), STUB_HINT_MS);
+  };
+
   const handlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (event.button !== 0 || open) {
       return;
@@ -105,9 +139,10 @@ export const TicketStub = ({
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     startY.current = event.clientY;
-    moved.current = false;
+    travel.current = 0;
     armed.current = false;
     active.current = true;
+    setNudged(false);
     setDragging(true);
   };
 
@@ -120,9 +155,7 @@ export const TicketStub = ({
       return;
     }
     const dy = Math.min(STUB_MAX_PX, Math.max(0, event.clientY - startY.current));
-    if (dy > 4) {
-      moved.current = true;
-    }
+    travel.current = dy;
     const nowArmed = dy >= STUB_TEAR_PX;
     if (nowArmed && !armed.current) {
       haptic(12);
@@ -138,12 +171,25 @@ export const TicketStub = ({
     active.current = false;
     event.stopPropagation();
     setDragging(false);
-    if (!moved.current || armed.current) {
-      haptic(armed.current ? 20 : 0);
-      setOffset(armed.current ? STUB_TEAR_PX + 18 : 0);
+    // Only pointerup decides; a finger slides a few px on every tap, so 12 px still count as one.
+    const release = resolveStubRelease(travel.current);
+    if (release === "tap" || release === "tear") {
+      haptic(release === "tear" ? 20 : 0);
+      setOffset(release === "tear" ? STUB_TEAR_PX + 18 : 0);
       openSheet();
       return;
     }
+    springBack();
+  };
+
+  /** Scroll took over or the finger left the screen: never opens, never stays armed. */
+  const handlePointerCancel = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (!active.current) {
+      return;
+    }
+    active.current = false;
+    event.stopPropagation();
+    setDragging(false);
     reset();
   };
 
@@ -165,7 +211,7 @@ export const TicketStub = ({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
         onKeyDown={handleKeyDown}
         onClick={(event) => event.stopPropagation()}
         data-no-sheet-drag=""
@@ -174,6 +220,7 @@ export const TicketStub = ({
           dragging && "is-dragging",
           progress >= 1 && "is-armed",
           torn && "is-torn",
+          nudged && "is-nudged",
           focusRing,
           className,
         )}
@@ -187,9 +234,13 @@ export const TicketStub = ({
         <EyeIcon />
         <span>Vi esto</span>
       </button>
-      {dragging && offset > 8 ? (
+      {dragging && offset >= STUB_TAP_SLOP_PX ? (
         <span className="ticket-stub-hint" aria-hidden="true">
           {progress >= 1 ? "Suelta para «Vi esto»" : "Arranca el talón"}
+        </span>
+      ) : nudged ? (
+        <span className="ticket-stub-hint is-nudge" aria-hidden="true">
+          Arranca hasta el fondo
         </span>
       ) : null}
       <MarkWatchedSheet
@@ -198,6 +249,7 @@ export const TicketStub = ({
         titleName={titleName}
         rating={rating}
         review={review}
+        platform={platform ?? undefined}
         saveLabel={PICKS_SAVE_LABEL}
         silent
         onClose={() => {

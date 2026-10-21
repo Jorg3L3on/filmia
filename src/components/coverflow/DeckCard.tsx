@@ -358,6 +358,7 @@ export const DeckCard = memo(function DeckCard({
           titleName={title.name}
           rating={title.rating}
           review={title.review}
+          platform={availabilityPlatform ?? undefined}
           onCommit={onStubCommit}
           onSaved={handleStubSaved}
           onError={handleStubError}

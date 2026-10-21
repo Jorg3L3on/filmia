@@ -25,12 +25,16 @@ const run = () => {
   assert(card.includes("useLongPress") && card.includes("onContextMenu"), "Long-press / right-click opens the card menu");
 
   const stub = read("src/components/tonight/TicketStub.tsx");
-  assert(stub.includes("STUB_TEAR_PX = 60") && stub.includes("setPointerCapture") && stub.includes("MarkWatchedSheet"), "Stub tears at 60px and opens Marqué visto");
+  const stubGesture = read("src/lib/tonight/stub-gesture.ts");
+  assert(stubGesture.includes("STUB_TEAR_PX = 60") && stubGesture.includes("STUB_TAP_SLOP_PX = 12") && stub.includes("resolveStubRelease") && stub.includes("setPointerCapture") && stub.includes("MarkWatchedSheet"), "Stub tears at 60px, forgives a 12px slide as a tap (FIL-I21-1) and opens Marqué visto");
+  assert(stub.includes("handlePointerCancel") && !stub.includes("onPointerCancel={handlePointerUp}"), "pointercancel never opens the sheet (FIL-I21-1)");
+  assert(stub.includes("platform={platform ?? undefined}") && read("src/components/coverflow/DeckCard.tsx").includes("platform={availabilityPlatform ?? undefined}"), "«Vi esto» opens with the card's platform marked (FIL-I21-1)");
   assert(stub.includes('type="button"') && stub.includes("onKeyDown"), "Stub is a real button (keyboard + screen reader)");
 
   const css = read("src/app/globals.css");
   assert(css.includes(".ticket-stub") && css.includes(".visto-stamp") && css.includes(".deck-deal") && css.includes(".nav-receive"), "Esta noche motion CSS present");
   assert(css.includes("@keyframes visto-stamp") && css.includes("var(--spring)"), "Stamp uses the spring curve");
+  assert(css.includes(".ticket-stub::before") && css.includes("inset: -7px 0"), "Stub has a 44px touch target (FIL-I21-1)");
 
   const sala = read("src/components/tonight/TonightSala.tsx");
   assert(sala.includes("rankForNow") && sala.includes("keepWildcardLast") && sala.includes("useImpressions"), "Sala ranks with the clock, keeps the comodín last, logs impressions");

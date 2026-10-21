@@ -1904,6 +1904,30 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   color: var(--accent-hover);
 }
 
+/* 44 px touch target over 30 px of boleto: the thumb lands on the pseudo-element (FIL-I21-1). */
+.ticket-stub::before {
+  content: "";
+  position: absolute;
+  inset: -7px 0;
+}
+
+/* Too short to tear: a 2 px rebound tells the thumb to pull further (no haptics on iPhone web). */
+.ticket-stub.is-nudged {
+  animation: stub-nudge 320ms var(--spring) both;
+}
+
+@keyframes stub-nudge {
+  0% {
+    translate: 0 0;
+  }
+  40% {
+    translate: 0 3px;
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+
 .coverflow-card.is-focused .ticket-stub {
   opacity: 1;
   pointer-events: auto;
@@ -1962,6 +1986,11 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   text-shadow: 0 1px 10px rgb(0 0 0 / 0.7);
   animation: fade-up var(--duration-enter) var(--ease-out) backwards;
   pointer-events: none;
+}
+
+.ticket-stub-hint.is-nudge {
+  bottom: -56px;
+  color: var(--accent-tint);
 }
 
 .visto-stamp {
