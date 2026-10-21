@@ -42,7 +42,7 @@ const run = () => {
   const chapterBar = read("src/components/tonight/ChapterBar.tsx");
   assert(chapterBar.includes('role="progressbar"') && chapterBar.includes("quedan ${remaining} esta noche") && chapterBar.includes("carta ${position + 1} de ${count}"), "Chapter bar is a progressbar that says «<lente>, carta i de n; quedan N esta noche»");
   const salaSrc = read("src/components/tonight/TonightSala.tsx");
-  assert(salaSrc.includes("indicator={chapterBar}") && salaSrc.includes("remaining = Math.max(0, cards.length - 1 - resolvedHero)") && salaSrc.includes("positionInLens"), "Hoy renders the chapter bar instead of the dots; «quedan N» = cards left in the whole deck");
+  assert(salaSrc.includes("indicator={chapterBar}") && salaSrc.includes("remaining = Math.max(0, dealt - 1 - resolvedHero)") && salaSrc.includes("positionInLens"), "Hoy renders the chapter bar instead of the dots; «quedan N» = cards left in the whole deck");
   const rail = read("src/components/GenreCoverflow.tsx");
   assert(rail.includes("indicator ? (") && rail.includes("genre-coverflow-dots"), "The rail keeps its dots when no indicator is given (Historial, lists)");
   assert(salaSrc.includes("compact />") && read("src/components/tonight/TonightEyebrow.tsx").includes("tonight-bedtime-fixed") && css.includes(".tonight-bedtime-fixed") && css.includes("max-height: 700px"), "Phone header: bedtime chip in the brand row, eyebrow folded into the rail, SE/mini rule");
@@ -52,6 +52,14 @@ const run = () => {
   assert(metrics.includes("lite && cinematic ? 0 : rotateY"), "Lite sala: neighbours do not rotate");
   const chapterCss = css.slice(css.indexOf("/* --- Hoy: chapters and progress"), css.indexOf("/* Mode toggle"));
   assert(!/filter:\s*blur|backdrop-filter/.test(chapterCss), "Chapter bar and compact header add no filter");
+  // Closing card (FIL-I21-6): one sentinel after the whole deck, never per lens; no footer, no impressions.
+  const closingSala = read("src/components/tonight/TonightSala.tsx");
+  const loopEnd = closingSala.indexOf("const dealtCount = all.length;");
+  assert(loopEnd > 0 && closingSala.indexOf("all.push(closingCardFor(last.slug))") > loopEnd && closingSala.indexOf("for (const lens of lenses)") < loopEnd, "The closing card is pushed once, after the lens loop");
+  assert((closingSala.match(/closingCardFor\(/g) ?? []).length === 1 && closingSala.includes("<TonightClosingEmpty />"), "One closing card; the empty state uses the same card");
+  assert(closingSala.includes("title.closing ? null : pickRefOf(title)"), "useImpressions never logs the closing card");
+  assert(read("src/components/tonight/TonightFooter.tsx").includes("if (title.closing) {\n    // The closing card says everything on its face (FIL-I21-6).\n    return null;"), "The footer paints nothing for the closing card");
+  assert(read("src/components/coverflow/DeckCard.tsx").includes("if (title.closing && sala)") && read("src/components/tonight/TonightClosingCard.tsx").includes("Volver al principio"), "DeckCard renders the closing face with «Volver al principio»");
   const menu = read("src/components/tonight/TonightCardMenu.tsx");
   assert(menu.indexOf("Ahora no") < menu.indexOf("Ver ficha") && menu.indexOf("Ver ficha") < menu.indexOf("Mover a una lista"), "Hoy menu: «Ahora no» first, «Ver ficha» second (FIL-I21-2)");
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { memo, useRef, useState, type CSSProperties } from "react";
 import { MarkSeenEye } from "@/components/MarkSeenEye";
 import { TicketStub } from "@/components/tonight/TicketStub";
+import { ClosingCardContent } from "@/components/tonight/TonightClosingCard";
 import { useTonight } from "@/components/tonight/TonightContext";
 import { flyPosterToProfile } from "@/lib/fly-to-nav";
 import { useLongPress } from "@/lib/motion";
@@ -183,6 +184,41 @@ export const DeckCard = memo(function DeckCard({
     rootRef.current = node;
     registerNode(index, node);
   };
+
+  if (title.closing && sala) {
+    // The closing card (FIL-I21-6): the deck's floor made visible. Same transforms as any
+    // card (face + dim markers), no ficha, no stub, no hold menu.
+    return (
+      <article
+        ref={handleRef}
+        id={`coverflow-item-${title.id}`}
+        role="option"
+        aria-selected={nearFocus}
+        aria-label="Fin del mazo de hoy"
+        className="coverflow-card is-cinematic is-closing absolute inset-0 origin-center"
+        onPointerDown={onPointerDown}
+      >
+        <div
+          data-coverflow-face
+          style={{ "--deal-i": index } as CSSProperties}
+          className="coverflow-card-face closing-card-face relative block h-full overflow-hidden rounded-[22px]"
+          onClick={() => {
+            if (!rootRef.current?.classList.contains("is-focused")) {
+              onSelect(index);
+            }
+          }}
+        >
+          <ClosingCardContent
+            stats={sala.closing}
+            lenses={sala.closing.lenses}
+            onRestart={sala.closing.onRestart}
+            tabbable={nearFocus}
+          />
+          <span data-coverflow-dim className="coverflow-card-dim" aria-hidden />
+        </div>
+      </article>
+    );
+  }
 
   const handleStubSaved = () => {
     setStamped(true);

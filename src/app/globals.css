@@ -2493,6 +2493,131 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   border-color: rgb(240 179 90 / 0.45);
 }
 
+/* --- Carta de cierre (FIL-I21-6) ----------------------------------------
+ * The deck's last card: a glass face with the night's counters and the way out.
+ * ---------------------------------------------------------------------- */
+.closing-card-face {
+  display: flex;
+  box-sizing: border-box;
+  padding: 22px 18px 18px;
+  background: linear-gradient(180deg, rgb(28 34 40 / 0.96), rgb(14 17 20 / 0.98));
+  border: 1px solid rgb(255 255 255 / 0.12);
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.coverflow-card.is-closing.is-focused .closing-card-face {
+  cursor: default;
+}
+
+.closing-card-face.is-standalone {
+  width: min(62vw, 240px);
+  aspect-ratio: 2 / 3;
+  border-radius: 22px;
+  box-shadow: 0 30px 48px rgb(0 0 0 / 0.52);
+  cursor: default;
+}
+
+.closing-card-empty {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 0;
+}
+
+.closing-card-content {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.closing-card-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.closing-card-title {
+  font-size: 1.45rem;
+  font-weight: 600;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.closing-card-counters {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--fog);
+}
+
+.closing-card-counters.is-headline {
+  color: var(--paper);
+}
+
+.closing-card-bar {
+  display: flex;
+  gap: 3px;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.closing-card-bar > span {
+  flex: 1 1 0;
+  height: 2px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.42);
+}
+
+.closing-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.closing-card-primary,
+.closing-card-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  border-radius: 9999px;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.closing-card-primary {
+  border: 0;
+  background: var(--accent);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.closing-card-secondary {
+  height: 34px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  background: rgb(0 0 0 / 0.3);
+  color: var(--paper);
+  font-weight: 500;
+}
+
+.closing-card-link {
+  align-self: center;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--fog);
+  text-decoration: none;
+}
+
+.closing-card-link:hover {
+  color: var(--paper);
+}
+
 /* --- Línea de la noche (FIL-I21-5) ---------------------------------------
  * 2 px track under the chips: start dot, accent fill to where the film ends (scaleX),
  * moon at bedtime, amber dashed tail for up to 30 min of overflow. Transform + opacity only.

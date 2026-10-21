@@ -23,6 +23,10 @@ type TonightFooterProps = {
 export const TonightFooter = ({ title, className }: TonightFooterProps) => {
   const tonight = title.tonight;
   const sala = useTonight();
+  if (title.closing) {
+    // The closing card says everything on its face (FIL-I21-6).
+    return null;
+  }
   const genreNames = (title.genres ?? []).map((genre) => genre.name).filter(Boolean).slice(0, 3);
   const metaParts: string[] = [];
   if (title.year) {

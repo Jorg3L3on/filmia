@@ -2,7 +2,9 @@
 
 import { createContext, useContext } from "react";
 import type { CoverflowTitle } from "@/components/coverflow/types";
+import type { ChapterBarLens } from "@/components/tonight/ChapterBar";
 import type { DayPart } from "@/lib/tonight";
+import type { ClosingStats } from "@/lib/tonight/closing-card";
 
 /** Sala-level handlers the deck cards reach without prop drilling. */
 export type TonightHandlers = {
@@ -21,6 +23,8 @@ export type TonightHandlers = {
   onOpenReco: (title: CoverflowTitle) => void;
   /** «Vi esto» on a recommended card: log it as seen; resolves to an error message or null. */
   markRecoSeen: (title: CoverflowTitle) => Promise<string | null>;
+  /** The closing card (FIL-I21-6): tonight's counters, the chapters and «Volver al principio». */
+  closing: ClosingStats & { lenses: ChapterBarLens[]; onRestart: () => void };
 };
 
 const TonightContext = createContext<TonightHandlers | null>(null);
