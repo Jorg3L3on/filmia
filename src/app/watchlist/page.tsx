@@ -9,6 +9,7 @@ import {
 import { PageHeader } from "@/components/PageHeader";
 import { WatchlistBodySkeleton } from "@/components/PageSkeletons";
 import { WatchlistCartelera } from "@/components/watchlist/WatchlistCartelera";
+import { WatchlistEditingProvider, WatchlistReorderButton } from "@/components/watchlist/WatchlistEditing";
 import { WatchlistFilterRail } from "@/components/watchlist/WatchlistFilterRail";
 import { parseKindFilter, parsePlatformFilters, titleMatchesKind } from "@/lib/catalog-filters";
 import type { CatalogQuery } from "@/lib/catalog-href";
@@ -51,7 +52,22 @@ type WatchlistSearchParams = {
   genre?: string | string[];
 };
 
-const WatchlistHeader = () => <PageHeader title="Quiero ver" />;
+/** Desktop keeps the big page title; the phone folds it into the filter row (FIL-I21-7). */
+const WatchlistHeader = () => (
+  <div className="hidden sm:block">
+    <PageHeader title="Quiero ver" />
+  </div>
+);
+
+/** Phone header: «Quiero ver» with the count beside it, on the row of the round buttons. */
+const WatchlistCompactTitle = ({ count }: { count: number }) => (
+  <h1 className="flex min-w-0 items-baseline gap-2 truncate font-serif text-[1.75rem] leading-none tracking-tight text-paper">
+    Quiero ver
+    <span className="font-sans text-sm font-semibold tabular-nums text-mist" aria-label={`${count} ${count === 1 ? "título" : "títulos"}`}>
+      {count}
+    </span>
+  </h1>
+);
 
 const EMPTY_SIGNALS: WatchlistSignals = {
   reasonsByTitle: new Map(),
@@ -65,7 +81,7 @@ export default function WatchlistPage({
   searchParams: Promise<WatchlistSearchParams>;
 }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 max-sm:-mt-6 max-sm:space-y-1">
       <WatchlistHeader />
       <Suspense fallback={<WatchlistBodySkeleton />}>
         <WatchlistBody searchParams={searchParams} />
@@ -150,10 +166,14 @@ const WatchlistBody = async ({
     genres: genreIds,
   };
 
+  const canReorder = !hasExtraFilters && items.length > 1;
+
   return (
-    <>
+    <WatchlistEditingProvider canReorder={canReorder}>
       <CatalogFilters
         pathname="/watchlist"
+        heading={<WatchlistCompactTitle count={items.length} />}
+        headingActions={<WatchlistReorderButton />}
         kind={kindFilter}
         platforms={platforms}
         sort={sort ?? undefined}
@@ -220,6 +240,6 @@ const WatchlistBody = async ({
           />
         </div>
       )}
-    </>
+    </WatchlistEditingProvider>
   );
 };

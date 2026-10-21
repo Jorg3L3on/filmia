@@ -14,6 +14,7 @@ type WatchlistStickyBarProps = {
   /** 2+ titles but a filter or sort is active. */
   reorderBlocked: boolean;
   onToggleEditing: () => void;
+  className?: string;
 };
 
 /** Count + Reordenar, sticky under the header; the title condenses into it on scroll. */
@@ -24,6 +25,7 @@ export const WatchlistStickyBar = ({
   canReorder,
   reorderBlocked,
   onToggleEditing,
+  className,
 }: WatchlistStickyBarProps) => (
   <div
     data-condensed={condensed || isEditing}
@@ -31,6 +33,7 @@ export const WatchlistStickyBar = ({
       "sticky z-30 -mx-4 flex items-center justify-between gap-3 px-4 py-2 transition-colors duration-[var(--duration-tab)]",
       safeAreaStickyUnderHeaderClass,
       (condensed || isEditing) && "border-b border-line/70 bg-canvas/90 backdrop-blur-md",
+      className,
     )}
   >
     <div className="flex min-w-0 items-baseline">

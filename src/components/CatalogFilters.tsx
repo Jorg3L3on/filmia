@@ -12,6 +12,7 @@ import type { CatalogKindFilter, CatalogQuery, CatalogSort } from "@/lib/catalog
 import type { Platform } from "@/db";
 import type { SeriesStatusFilter } from "@/lib/series";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/cn";
 
 type CatalogFiltersProps = {
   pathname: string;
@@ -39,6 +40,12 @@ type CatalogFiltersProps = {
   leading?: ReactNode;
   /** Page-specific params the Filtros sheet must carry along (Quiero ver rail). */
   extraQuery?: Partial<CatalogQuery>;
+  /**
+   * Phone compact header (FIL-I21-7): the title sits on the Filtros row (with `headingActions`
+   * beside the round Filtros button) and `leading` takes its own row below. Desktop ignores it.
+   */
+  heading?: ReactNode;
+  headingActions?: ReactNode;
 };
 
 export const CatalogFilters = ({
@@ -63,6 +70,8 @@ export const CatalogFilters = ({
   platforms = [],
   leading,
   extraQuery,
+  heading,
+  headingActions,
 }: CatalogFiltersProps) => {
   const {
     applied,
@@ -97,11 +106,25 @@ export const CatalogFilters = ({
     (kindInSheetOnly && kind !== "ALL" ? 1 : 0) -
     (showMinePlatformsChip && minePlatforms ? 1 : 0);
 
+  const compact = Boolean(heading);
+
   return (
     <section className="space-y-1" aria-label="Filtros del catálogo">
-      <div className="flex items-center gap-1.5">
+      <div
+        className={cn(
+          "flex items-center gap-1.5",
+          compact &&
+            "max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto_auto] max-sm:items-center max-sm:gap-x-2 max-sm:gap-y-1",
+        )}
+      >
+        {compact ? (
+          <>
+            <div className="min-w-0 sm:hidden max-sm:[grid-area:1/1]">{heading}</div>
+            {headingActions ? <div className="sm:hidden max-sm:[grid-area:1/2]">{headingActions}</div> : null}
+          </>
+        ) : null}
         {leading ? (
-          <div className="min-w-0 flex-1">{leading}</div>
+          <div className={cn("min-w-0 flex-1", compact && "max-sm:[grid-area:2/1/3/4]")}>{leading}</div>
         ) : showMinePlatformsChip ? (
           <CatalogMinePlatformsChip applied={applied} hrefFor={hrefFor} />
         ) : showKind && showKindChips ? (
@@ -118,19 +141,22 @@ export const CatalogFilters = ({
           />
         ) : null}
 
-        <CatalogFilterSheet
-          open={open}
-          activeCount={activeCount}
-          draft={draft}
-          hasStreamingPlatforms={hasStreamingPlatforms}
-          showKind={showKind}
-          showPlatforms={showPlatforms}
-          onOpen={handleOpen}
-          onClose={handleClose}
-          onClear={handleClear}
-          onApply={handleApply}
-          onDraftChange={setDraft}
-        />
+        <div className={cn("shrink-0", compact && "max-sm:[grid-area:1/3]")}>
+          <CatalogFilterSheet
+            open={open}
+            activeCount={activeCount}
+            draft={draft}
+            hasStreamingPlatforms={hasStreamingPlatforms}
+            showKind={showKind}
+            showPlatforms={showPlatforms}
+            onOpen={handleOpen}
+            onClose={handleClose}
+            onClear={handleClear}
+            onApply={handleApply}
+            onDraftChange={setDraft}
+            compactOnMobile={compact}
+          />
+        </div>
       </div>
     </section>
   );

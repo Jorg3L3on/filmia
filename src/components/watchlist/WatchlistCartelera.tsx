@@ -6,6 +6,7 @@ import { createHistoryEntryStore, readHistoryEntry, writeHistoryEntry } from "@/
 import { WatchlistFicha } from "@/components/watchlist/WatchlistFicha";
 import { WatchlistHeroCompact } from "@/components/watchlist/WatchlistHeroCompact";
 import { WatchlistReorderList } from "@/components/watchlist/WatchlistReorderList";
+import { useWatchlistEditing } from "@/components/watchlist/WatchlistEditing";
 import { WatchlistSheets } from "@/components/watchlist/WatchlistSheets";
 import { WatchlistStage } from "@/components/watchlist/WatchlistStage";
 import { WatchlistStickyBar } from "@/components/watchlist/WatchlistStickyBar";
@@ -56,7 +57,11 @@ export const WatchlistCartelera = ({
   const { value: order, error, isPending, run } = useStickyOptimistic(serverIds, sameOrderedIds);
 
   const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(() => new Set());
-  const [isEditing, setIsEditing] = useState(false);
+  // Reorder mode lives in the page's provider when the compact header owns the button (FIL-I21-7).
+  const sharedEditing = useWatchlistEditing();
+  const [localEditing, setLocalEditing] = useState(false);
+  const isEditing = sharedEditing ? sharedEditing.isEditing : localEditing;
+  const setIsEditing = sharedEditing ? sharedEditing.setIsEditing : setLocalEditing;
   // Back from a ficha reopens the row that was open (read after hydration; this history entry only).
   const [expandedStore] = useState(() => createHistoryEntryStore(EXPANDED_ENTRY));
   const restoredExpandedId = useSyncExternalStore(
@@ -202,6 +207,8 @@ export const WatchlistCartelera = ({
         canReorder={canReorder}
         reorderBlocked={!canReorder && visible.length > 1}
         onToggleEditing={() => setIsEditing((current) => !current)}
+        // The phone header carries the count and «Reordenar»; the bar only shows while editing.
+        className={sharedEditing && !isEditing ? "max-sm:hidden" : undefined}
       />
 
       {isEditing && canReorder ? (

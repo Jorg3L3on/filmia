@@ -46,7 +46,7 @@ export const WatchlistFilterRail = ({ pathname, query, sort, genres, nightEnds }
 
   return (
     <div className="flex min-w-0 items-center gap-1.5">
-      <div className="scrollbar-none flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-0.5" role="group" aria-label="Filtros rápidos">
+      <div className="scrollbar-none filter-rail-fade flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-0.5 max-sm:py-0" role="group" aria-label="Filtros rápidos">
         <CatalogSortSheet
           options={WATCHLIST_SORT_OPTIONS}
           current={sort}

@@ -2493,6 +2493,23 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   border-color: rgb(240 179 90 / 0.45);
 }
 
+/* Quiero ver (FIL-I21-7): the single chip row fades out at its end so it reads as scrollable. */
+.filter-rail-fade {
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  padding-right: 28px;
+  scroll-padding-right: 28px;
+}
+
+/* Phone: the «Mi orden» pill matches the chips' height so the row stays one line of 30 px. */
+@media (max-width: 639px) {
+  .filter-rail-fade > button:first-child {
+    height: 30px;
+    padding-inline: 0.75rem;
+    font-size: 0.75rem;
+  }
+}
+
 /* --- Carta de cierre (FIL-I21-6) ----------------------------------------
  * The deck's last card: a glass face with the night's counters and the way out.
  * ---------------------------------------------------------------------- */
