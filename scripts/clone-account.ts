@@ -1,6 +1,6 @@
 import { config as loadEnv } from "dotenv";
 import { createId } from "@paralleldrive/cuid2";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 loadEnv({ path: ".env.local" });
 loadEnv();
@@ -57,12 +57,14 @@ const main = async () => {
   const sourcePicks = await db.select().from(tonightPicks).where(eq(tonightPicks.userId, source.id));
   const sourceEvents = await db.select().from(pickEvents).where(eq(pickEvents.userId, source.id));
 
-  const titleIds = new Set(sourceTitles.map((row) => row.id));
-  const listIds = new Set(sourceLists.map((row) => row.id));
-
-  const sourceListItems = (await db.select().from(listItems)).filter(
-    (row) => listIds.has(row.listId) && titleIds.has(row.titleId),
-  );
+  // Items hang off the shared Catalog (0017), so every item of the source's own
+  // lists copies as is, including films an editor added that the source never saved.
+  const sourceListItems = sourceLists.length
+    ? await db
+        .select()
+        .from(listItems)
+        .where(inArray(listItems.listId, sourceLists.map((row) => row.id)))
+    : [];
 
   console.log(
     `Origen ${sourceEmail}: ${sourceTitles.length} títulos, ${sourceLists.length} listas, ` +
@@ -85,6 +87,8 @@ const main = async () => {
     }
     return value;
   };
+  // Whatever the source did on its lists, the clone did; other people stay as they are.
+  const asClone = (id: string | null) => (id === source.id ? userId : id);
 
   const passwordHash = await hashPassword(targetPassword);
 
@@ -113,7 +117,8 @@ const main = async () => {
         rows.map((row) => ({
           ...row,
           listId: mapped(listMap, row.listId),
-          titleId: mapped(titleMap, row.titleId),
+          addedByUserId: asClone(row.addedByUserId),
+          chosenByUserId: asClone(row.chosenByUserId),
         })),
       ),
     ),
