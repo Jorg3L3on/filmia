@@ -36,6 +36,7 @@
     "compute:recos": "tsx scripts/compute-recos.ts",
     "preview:decks": "tsx scripts/preview-decks.ts",
     "metrics:recos": "tsx scripts/reco-metrics.ts",
+    "metrics:hoy": "tsx scripts/hoy-metrics.ts",
     "cine:revisar": "tsx scripts/cine.ts revisar",
     "cine:correr": "tsx scripts/cine.ts correr",
     "cine:top": "tsx scripts/cine.ts top",
