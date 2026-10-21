@@ -683,7 +683,10 @@ body {
 }
 
 /* Viewport full-bleed poster wash — behind transparent SiteHeader (not clipped by main).
-   ::before / ::after are the two grade slots (see «Grade slots» below). */
+   ::before / ::after are the two grade slots (see «Grade slots» below).
+   The sala washes (this, the shell grade, haze and floor) carry no `filter: blur`: their
+   stops are pre-smoothed, fitted to the old blur(64/48/16px) at 390×844 (FIL-14), so the
+   phone never re-blurs a full-screen layer while something animates. */
 html[data-que-ver-grade="live"]::before,
 html[data-que-ver-grade="live"]::after {
   content: "";
@@ -693,18 +696,27 @@ html[data-que-ver-grade="live"]::after {
   z-index: 0;
   background:
     radial-gradient(
-      ellipse 95% 70% at 50% 28%,
-      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.42),
-      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.18) 38%,
-      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.06) 58%,
-      transparent 78%
+      ellipse 99.8% 70% at 50% 28%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.313),
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.287) 12%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.23) 25%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.152) 38%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.089) 50%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.044) 62%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.015) 75%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.002) 88%,
+      transparent 100%
     ),
     radial-gradient(
-      ellipse 110% 55% at 50% 100%,
-      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.22),
-      transparent 62%
+      ellipse 110% 66% at 50% 100%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.081),
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.106) 12%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.092) 25%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.057) 38%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.024) 50%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.004) 62%,
+      transparent 75%
     );
-  filter: blur(64px);
   -webkit-mask-image: linear-gradient(
     180deg,
     rgb(0 0 0 / 0.22) 0%,
@@ -744,17 +756,25 @@ html[data-que-ver-grade="live"] body {
   z-index: 0;
   background:
     radial-gradient(
-      ellipse 88% 72% at 50% 40%,
-      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.28),
-      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.1) 48%,
-      transparent 76%
+      ellipse 96.8% 79.2% at 50% 40%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.235),
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.212) 12%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.169) 25%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.119) 38%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.065) 50%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.026) 62%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.002) 75%,
+      transparent 88%
     ),
     radial-gradient(
-      ellipse 110% 60% at 50% 100%,
-      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.16),
-      transparent 60%
+      ellipse 110% 69% at 50% 100%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.07),
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.093) 12%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.076) 25%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.045) 38%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.015) 50%,
+      transparent 62%
     );
-  filter: blur(48px);
   -webkit-mask-image: linear-gradient(
     180deg,
     transparent 0%,
@@ -844,12 +864,17 @@ html[data-que-ver-grade="live"] body {
   position: absolute;
   inset: 0% 2% 8%;
   background: radial-gradient(
-    ellipse 78% 68% at 50% 36%,
-    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.5),
-    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.22) 40%,
-    transparent 74%
+    ellipse 85.8% 71.4% at 50% 36%,
+    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.347),
+    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.323) 12%,
+    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.267) 25%,
+    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.191) 38%,
+    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.115) 50%,
+    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.058) 62%,
+    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.022) 75%,
+    rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.005) 88%,
+    transparent 100%
   );
-  filter: blur(64px);
   opacity: 1;
   animation: que-ver-haze-breath 6.4s ease-in-out infinite;
 }
@@ -864,22 +889,40 @@ html[data-que-ver-grade="live"] body {
   transform: translateX(-50%);
   background:
     radial-gradient(
-      ellipse 70% 55% at 50% 45%,
-      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.62),
-      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.22) 38%,
-      transparent 72%
+      ellipse 80.5% 71.5% at 50% 45%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.472),
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.402) 12%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.279) 25%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.162) 38%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.071) 50%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.014) 62%,
+      rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.001) 75%,
+      transparent 88%
     ),
     radial-gradient(
-      ellipse 45% 40% at 32% 55%,
-      rgb(255 170 90 / 0.26),
-      transparent 70%
+      ellipse 47.2% 50% at 32% 55%,
+      rgb(255 170 90 / 0.182),
+      rgb(255 170 90 / 0.166) 12%,
+      rgb(255 170 90 / 0.131) 25%,
+      rgb(255 170 90 / 0.089) 38%,
+      rgb(255 170 90 / 0.048) 50%,
+      rgb(255 170 90 / 0.018) 62%,
+      rgb(255 170 90 / 0.004) 75%,
+      rgb(255 170 90 / 0.001) 88%,
+      transparent 100%
     ),
     radial-gradient(
-      ellipse 40% 38% at 68% 52%,
-      rgb(120 190 255 / 0.22),
-      transparent 70%
+      ellipse 40% 45.6% at 68% 52%,
+      rgb(120 190 255 / 0.149),
+      rgb(120 190 255 / 0.137) 12%,
+      rgb(120 190 255 / 0.112) 25%,
+      rgb(120 190 255 / 0.079) 38%,
+      rgb(120 190 255 / 0.046) 50%,
+      rgb(120 190 255 / 0.021) 62%,
+      rgb(120 190 255 / 0.006) 75%,
+      rgb(120 190 255 / 0.002) 88%,
+      transparent 100%
     );
-  filter: blur(16px);
   opacity: 1;
 }
 
@@ -1482,17 +1525,8 @@ html[data-que-ver-slot="b"] .que-ver-slot-a > * {
   }
 }
 
-/* Lite sala (useDeckLite): a phone that can't hold the frame rate keeps the light but
-   drops what costs most: the blur on the big washes and every breath. */
-html[data-que-ver-lite][data-que-ver-grade="live"]::before,
-html[data-que-ver-lite][data-que-ver-grade="live"]::after,
-html[data-que-ver-lite] .diario-que-ver-shell[data-que-ver-grade="live"]::before,
-html[data-que-ver-lite] .diario-que-ver-shell[data-que-ver-grade="live"]::after,
-html[data-que-ver-lite] .que-ver-atmosphere-haze,
-html[data-que-ver-lite] .que-ver-atmosphere-floor {
-  filter: none;
-}
-
+/* Lite sala (useDeckLite): a phone that can't hold the frame rate keeps the light (the
+   washes are blur-free for everyone) but drops every breath. */
 html[data-que-ver-lite] .que-ver-atmosphere-grade,
 html[data-que-ver-lite] .que-ver-atmosphere-haze,
 html[data-que-ver-lite] .que-ver-atmosphere-grain,
