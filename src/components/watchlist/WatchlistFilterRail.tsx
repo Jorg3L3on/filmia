@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CatalogSortSheet } from "@/components/catalog-filters/CatalogSortSheet";
 import { catalogBarChipClass } from "@/components/catalog-filters/filter-ui";
 import { ChevronIcon, ClockIcon, LaurelIcon, MoonIcon, TvIcon } from "@/components/watchlist/icons";
@@ -43,10 +43,27 @@ export const WatchlistFilterRail = ({ pathname, query, sort, genres, nightEnds }
         : `${selectedGenres.length} géneros`;
 
   const hrefFor = (patch: Partial<CatalogQuery>) => catalogHref(pathname, { ...query, ...patch });
+  const railRef = useRef<HTMLDivElement>(null);
+
+  // One scrollable row on the phone (FIL-I21-7): keep the active chip in view on arrival.
+  const activeKey = `${query.tonight ? "t" : ""}${query.minePlatforms ? "m" : ""}${query.short ? "s" : ""}${query.awarded ? "a" : ""}${selectedGenres.length > 0 ? "g" : ""}`;
+  useEffect(() => {
+    const rail = railRef.current;
+    const chip = rail?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (!rail || !chip) {
+      return;
+    }
+    const right = chip.offsetLeft + chip.offsetWidth + 28;
+    if (right > rail.scrollLeft + rail.clientWidth) {
+      rail.scrollLeft = right - rail.clientWidth;
+    } else if (chip.offsetLeft < rail.scrollLeft) {
+      rail.scrollLeft = chip.offsetLeft;
+    }
+  }, [activeKey]);
 
   return (
     <div className="flex min-w-0 items-center gap-1.5">
-      <div className="scrollbar-none filter-rail-fade flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-0.5 max-sm:py-0" role="group" aria-label="Filtros rápidos">
+      <div ref={railRef} className="scrollbar-none filter-rail-fade flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-0.5 max-sm:py-0" role="group" aria-label="Filtros rápidos">
         <CatalogSortSheet
           options={WATCHLIST_SORT_OPTIONS}
           current={sort}
