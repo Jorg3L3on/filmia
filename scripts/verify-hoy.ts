@@ -46,6 +46,12 @@ const run = () => {
   const rail = read("src/components/GenreCoverflow.tsx");
   assert(rail.includes("indicator ? (") && rail.includes("genre-coverflow-dots"), "The rail keeps its dots when no indicator is given (Historial, lists)");
   assert(salaSrc.includes("compact />") && read("src/components/tonight/TonightEyebrow.tsx").includes("tonight-bedtime-fixed") && css.includes(".tonight-bedtime-fixed") && css.includes("max-height: 700px"), "Phone header: bedtime chip in the brand row, eyebrow folded into the rail, SE/mini rule");
+  // Asomo (FIL-I21-4): phone neighbours spread ×1.72, no blur at ±1, lite without rotation; no new filter.
+  const metrics = read("src/lib/coverflow-metrics.ts");
+  assert(metrics.includes("COVERFLOW_ASOMO_SPREAD = 1.72") && metrics.includes("distance * 0.14") && metrics.includes("distance * 32") && metrics.includes("distance * 0.3)") && metrics.includes("distance < 1.5 ? 0"), "Asomo numbers: ×1.72, scale 1 − 0.14·d, 32°, brightness 0.70 at ±1, no blur at ±1");
+  assert(metrics.includes("lite && cinematic ? 0 : rotateY"), "Lite sala: neighbours do not rotate");
+  const chapterCss = css.slice(css.indexOf("/* --- Hoy: chapters and progress"), css.indexOf("/* Mode toggle"));
+  assert(!/filter:\s*blur|backdrop-filter/.test(chapterCss), "Chapter bar and compact header add no filter");
   const menu = read("src/components/tonight/TonightCardMenu.tsx");
   assert(menu.indexOf("Ahora no") < menu.indexOf("Ver ficha") && menu.indexOf("Ver ficha") < menu.indexOf("Mover a una lista"), "Hoy menu: «Ahora no» first, «Ver ficha» second (FIL-I21-2)");
 
