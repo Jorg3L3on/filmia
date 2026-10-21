@@ -61,6 +61,7 @@ const CineBody = async ({ searchParams }: { searchParams: Promise<SearchParams> 
         {now.length === 0 && upcoming.length === 0 ? (
           <EmptyState
             variant="buscar"
+            compact
             title="La cartelera llega en la mañana"
             description="Cine se actualiza cada día con lo que está en los cines de México."
           />

@@ -14,6 +14,8 @@ type EmptyStateProps = {
   actionHref?: string;
   actionLabel?: string;
   variant?: EmptyVariant;
+  /** Half the height (FIL-I21-8): for a page that has more below the empty block. */
+  compact?: boolean;
 };
 
 export const EmptyState = ({
@@ -22,6 +24,7 @@ export const EmptyState = ({
   actionHref,
   actionLabel,
   variant = "generic",
+  compact = false,
 }: EmptyStateProps) => {
   const well =
     variant === "watchlist" ||
@@ -34,6 +37,7 @@ export const EmptyState = ({
         "px-4 py-10 text-center",
         well &&
           "rounded-2xl border border-line bg-surface/40 px-6 py-12 sm:px-8",
+        compact && "py-5 sm:py-6 [&>svg]:h-16 [&>p:first-of-type]:mt-3",
       )}
     >
       <EmptyIllustration variant={variant} />

@@ -2510,6 +2510,54 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   }
 }
 
+/* Perfil (FIL-I21-8): the initial in a circle with the app icon's orange → magenta. */
+.perfil-initial {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  margin-top: 2px;
+  background: linear-gradient(135deg, #ff7a45 0%, #ff5c6a 55%, #d8468f 100%);
+  color: #fff;
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow:
+    0 10px 24px -10px rgb(216 70 143 / 0.6),
+    inset 0 0 0 1px rgb(255 255 255 / 0.18);
+}
+
+@media (min-width: 640px) {
+  .perfil-initial {
+    width: 60px;
+    height: 60px;
+    font-size: 1.85rem;
+    margin-top: 6px;
+  }
+}
+
+/* Ficha on the phone (FIL-I21-8): the four-action group sits right under the synopsis and
+   «Ver esta noche» stands alone below it, instead of two bars back to back. */
+@media (max-width: 639px) {
+  .ficha-actions-a {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+  }
+
+  .ficha-actions-a > * + * {
+    margin-top: 0;
+  }
+
+  .ficha-actions-a > [role="group"] {
+    order: -1;
+  }
+}
+
 /* --- Carta de cierre (FIL-I21-6) ----------------------------------------
  * The deck's last card: a glass face with the night's counters and the way out.
  * ---------------------------------------------------------------------- */

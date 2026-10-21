@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import {
   parseAccountEmail,
   parseOptionalDisplayName,
@@ -64,7 +66,11 @@ const run = () => {
   );
 
   console.log("✓ Profile name, email, and password parsers");
-  console.log("All profile checks passed.");
+    // FIL-I21-8: the initial in the icon gradient, name on top, email below (the email's initial without a name).
+  const marquee = readFileSync(path.join(process.cwd(), "src/components/profile/ProfileMarquee.tsx"), "utf8");
+  assert(marquee.includes("perfil-initial") && marquee.includes("(trimmed || email).trim().charAt(0).toUpperCase()") && marquee.includes("{trimmed ? <p"), "Perfil marquee: initial circle, name, email below");
+  assert(readFileSync(path.join(process.cwd(), "src/app/globals.css"), "utf8").includes(".perfil-initial {"), "Perfil initial styled with the icon gradient");
+console.log("All profile checks passed.");
 };
 
 run();

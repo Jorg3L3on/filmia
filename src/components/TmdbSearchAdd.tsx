@@ -28,7 +28,7 @@ import { TmdbSearchForm } from "@/components/tmdb-search/TmdbSearchForm";
 import { useSearchFacts } from "@/components/tmdb-search/useSearchFacts";
 import { useSearchRecents } from "@/components/tmdb-search/useSearchRecents";
 import { useTmdbSearchAdd } from "@/components/tmdb-search/useTmdbSearchAdd";
-import type { StartDirector } from "@/lib/buscar-start";
+import type { StartArrival, StartDirector } from "@/lib/buscar-start";
 import { dockSearch } from "@/lib/dock-search";
 import type { SelectableList } from "@/lib/list-selection";
 import { resolveDirectorQuery, type PersonFilmography } from "@/lib/person-filmography";
@@ -57,6 +57,8 @@ type TmdbSearchAddProps = {
   person?: PersonViewState | null;
   /** Start screen: directors of your Favoritas and 4★+ titles. */
   startDirectors?: StartDirector[];
+  /** «Llegó a tu plataforma» start row (FIL-I21-8). */
+  startArrivals?: StartArrival[];
 };
 
 export const TmdbSearchAdd = ({
@@ -74,6 +76,7 @@ export const TmdbSearchAdd = ({
   initialKind = "ALL",
   person = null,
   startDirectors = [],
+  startArrivals = [],
 }: TmdbSearchAddProps) => {
   const router = useRouter();
   const [start] = useState(() =>
@@ -344,6 +347,8 @@ export const TmdbSearchAdd = ({
             ) : (
               <BuscarStart
                 recents={recents}
+                directors={startDirectors}
+                arrivals={startArrivals}
                 onPickRecent={onQueryChange}
                 onClearRecents={clearRecents}
               />

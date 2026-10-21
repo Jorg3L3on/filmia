@@ -3,8 +3,10 @@ import { cache } from "react";
 import { catalog, db, listItems, lists, titles } from "@/db";
 import { LOVED_RATING, rankFavoriteDirectors, type FavoriteDirector } from "@/lib/favorite-directors";
 import { FAVORITAS_SLUG } from "@/lib/lists";
+import { loadUserPlatformArrivals } from "@/lib/platform-arrivals-store";
 import { getTmdbPersonProfilePath } from "@/lib/tmdb";
 import { parseStoredPeople } from "@/lib/tonight-store";
+import type { Platform } from "@/db";
 
 export type StartDirector = FavoriteDirector & { profilePath: string | null };
 
@@ -50,4 +52,38 @@ export const getFavoriteDirectors = cache(async (userId: string): Promise<StartD
     const photo = photos[index];
     return { ...director, profilePath: photo?.status === "fulfilled" ? photo.value : null };
   });
+});
+
+export type StartArrival = {
+  titleId: string;
+  name: string;
+  platform: Platform;
+  posterPath: string | null;
+  availableSince: string;
+};
+
+const START_ARRIVALS = 6;
+const START_ARRIVALS_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+
+/**
+ * Buscar's start screen (FIL-I21-8): «Llegó a tu plataforma», the Quiero ver titles that just
+ * reached one of your platforms (last two weeks), newest first, with their poster.
+ */
+export const getStartArrivals = cache(async (userId: string): Promise<StartArrival[]> => {
+  const arrivals = (await loadUserPlatformArrivals(userId, new Date(), START_ARRIVALS_WINDOW_MS)).slice(0, START_ARRIVALS);
+  if (arrivals.length === 0) {
+    return [];
+  }
+  const posters = await db
+    .select({ id: catalog.id, posterPath: catalog.posterPath })
+    .from(catalog)
+    .where(inArray(catalog.id, arrivals.map((arrival) => arrival.catalogId)));
+  const posterOf = new Map(posters.map((row) => [row.id, row.posterPath]));
+  return arrivals.map((arrival) => ({
+    titleId: arrival.titleId,
+    name: arrival.name,
+    platform: arrival.platform,
+    posterPath: posterOf.get(arrival.catalogId) ?? null,
+    availableSince: arrival.availableSince.toISOString(),
+  }));
 });

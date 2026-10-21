@@ -53,11 +53,15 @@ export const WatchlistFilterRail = ({ pathname, query, sort, genres, nightEnds }
     if (!rail || !chip) {
       return;
     }
-    const right = chip.offsetLeft + chip.offsetWidth + 28;
-    if (right > rail.scrollLeft + rail.clientWidth) {
-      rail.scrollLeft = right - rail.clientWidth;
-    } else if (chip.offsetLeft < rail.scrollLeft) {
-      rail.scrollLeft = chip.offsetLeft;
+    const railBox = rail.getBoundingClientRect();
+    const chipBox = chip.getBoundingClientRect();
+    // 28 px = the fade at the rail's end (.filter-rail-fade).
+    const overflowRight = chipBox.right + 28 - railBox.right;
+    const overflowLeft = railBox.left - chipBox.left;
+    if (overflowRight > 0) {
+      rail.scrollLeft += overflowRight;
+    } else if (overflowLeft > 0) {
+      rail.scrollLeft -= overflowLeft;
     }
   }, [activeKey]);
 

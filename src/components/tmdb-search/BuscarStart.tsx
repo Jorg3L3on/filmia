@@ -3,7 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
-import type { StartDirector } from "@/lib/buscar-start";
+import { PlatformLogo } from "@/components/PlatformLogo";
+import { PosterImage } from "@/components/PosterImage";
+import type { StartArrival, StartDirector } from "@/lib/buscar-start";
+import { PLATFORM_SERVICE_LABEL } from "@/lib/labels";
 import { cn } from "@/lib/cn";
 import { staggerStyle } from "@/lib/motion";
 import { buildPersonSearchHref } from "@/lib/person-filmography";
@@ -12,6 +15,9 @@ import { focusRing } from "@/lib/ui";
 
 type BuscarStartProps = {
   recents: string[];
+  /** Start rows (FIL-I21-8): always shown when they have data, with or without recents. */
+  directors?: StartDirector[];
+  arrivals?: StartArrival[];
   onPickRecent: (query: string) => void;
   onClearRecents: () => void;
 };
@@ -38,9 +44,13 @@ const DirectorFace = ({ director }: { director: StartDirector }) => {
   );
 };
 
-/** Buscar (Todos) before typing: recent searches on this device. The directors live in the Director tab. */
-export const BuscarStart = ({ recents, onPickRecent, onClearRecents }: BuscarStartProps) => {
-  if (recents.length === 0) {
+/**
+ * Buscar (Todos) before typing: recent searches on this device, then «Directores de tus
+ * favoritas» and «Llegó a tu plataforma» as start rows (FIL-I21-8). The empty card only when
+ * none of the three has anything to show.
+ */
+export const BuscarStart = ({ recents, directors = [], arrivals = [], onPickRecent, onClearRecents }: BuscarStartProps) => {
+  if (recents.length === 0 && directors.length === 0 && arrivals.length === 0) {
     return (
       <EmptyState
         variant="buscar"
@@ -89,9 +99,39 @@ export const BuscarStart = ({ recents, onPickRecent, onClearRecents }: BuscarSta
           </ul>
         </section>
       ) : null}
+      {directors.length > 0 ? <FavoriteDirectors directors={directors} /> : null}
+      {arrivals.length > 0 ? <PlatformArrivalsRow arrivals={arrivals} /> : null}
     </div>
   );
 };
+
+/** «Llegó a tu plataforma»: Quiero ver titles that just reached one of your platforms, one tap to the ficha. */
+export const PlatformArrivalsRow = ({ arrivals }: { arrivals: StartArrival[] }) => (
+  <section aria-labelledby="buscar-llegadas" className="space-y-3">
+    <h2 id="buscar-llegadas" className="text-[11px] font-medium uppercase tracking-[0.2em] text-mist">
+      Llegó a tu plataforma
+    </h2>
+    <ul className="rail rail-fade -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+      {arrivals.map((arrival, index) => (
+        <li key={arrival.titleId} className="person-card-in w-[6.25rem] shrink-0" style={staggerStyle(index)}>
+          <Link
+            href={`/titulos/${arrival.titleId}`}
+            className={cn("group press-scale flex flex-col gap-2 rounded-2xl p-1 text-left", focusRing)}
+          >
+            <span className="relative block overflow-hidden rounded-xl ring-1 ring-white/10">
+              <PosterImage name={arrival.name} posterPath={arrival.posterPath} sizes="100px" tmdbSize="w185" className="rounded-xl" />
+              <span className="absolute right-1.5 top-1.5">
+                <PlatformLogo platform={arrival.platform} size={20} className="rounded-[5px] shadow-[0_2px_8px_rgba(0,0,0,0.4)] ring-1 ring-white/25" />
+              </span>
+            </span>
+            <span className="line-clamp-2 text-xs leading-snug text-paper">{arrival.name}</span>
+            <span className="-mt-1.5 truncate text-[11px] text-mist">{PLATFORM_SERVICE_LABEL[arrival.platform]}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  </section>
+);
 
 /** The Director tab before typing: the directors of your favorites, one tap to their filmography. */
 export const FavoriteDirectors = ({ directors }: { directors: StartDirector[] }) => (
