@@ -17,6 +17,7 @@ import { WatchedBadge } from "@/components/WatchedBadge";
 import { WatchProviderChips } from "@/components/WatchProvidersMx";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { cn } from "@/lib/cn";
+import { focusRing } from "@/lib/ui";
 import {
   COVERFLOW_PAGE_POSTER_SIZES,
   COVERFLOW_SHEET_POSTER_SIZES,
@@ -87,6 +88,8 @@ type DeckCardProps = {
   onOpenMenu?: (title: CoverflowTitle) => void;
   /** IMDb, rating and platform live in the footer chips (Esta noche, lists): keep the poster face clean. */
   chipsInFooter?: boolean;
+  /** The card the deck opened on: its stub may «breathe» once a day (FIL-I21-2). */
+  isOpeningHero?: boolean;
 };
 
 const STAMP_MS = 520;
@@ -106,6 +109,7 @@ export const DeckCard = memo(function DeckCard({
   onStubCommit,
   onOpenMenu,
   chipsInFooter = false,
+  isOpeningHero = false,
 }: DeckCardProps) {
   const sala = useTonight();
   const tonight = title.tonight;
@@ -117,20 +121,28 @@ export const DeckCard = memo(function DeckCard({
   const [stamped, setStamped] = useState(false);
   const rootRef = useRef<HTMLElement | null>(null);
   const [pressing, setPressing] = useState(false);
+  const openMenu = () => {
+    if (isTonight && sala) {
+      sala.onOpenMenu(title);
+    } else {
+      onOpenMenu?.(title);
+    }
+  };
   const longPress = useLongPress(
     () => {
       if (!holdable) {
         return;
       }
       navigator.vibrate?.(12);
-      if (isTonight && sala) {
-        sala.onOpenMenu(title);
-      } else {
-        onOpenMenu?.(title);
-      }
+      openMenu();
     },
     { onPressChange: setPressing },
   );
+  // «···» beside the stub (FIL-I21-2): the hold menu, in plain sight. Hold still works.
+  const menuTab = showStub && holdable;
+  const menuTabLabel = isTonight
+    ? "Más acciones: ahora no, mover a una lista, quitar de Quiero ver"
+    : "Más acciones: mover a otra lista, quitar de la lista";
   const imdbLabel = formatImdbRating(title.imdbRating);
   const availabilityPlatform = primaryAvailabilityPlatform(
     title.flatrateProviders,
@@ -201,6 +213,7 @@ export const DeckCard = memo(function DeckCard({
         isTonight && "is-tonight",
         holdable && "is-holdable",
         showStub && "has-stub",
+        menuTab && "has-menu-tab",
         stamped && "is-stamped",
         pressing && "is-pressing",
       )}
@@ -218,11 +231,7 @@ export const DeckCard = memo(function DeckCard({
         holdable
           ? (event) => {
               event.preventDefault();
-              if (isTonight && sala) {
-                sala.onOpenMenu(title);
-              } else {
-                onOpenMenu?.(title);
-              }
+              openMenu();
             }
           : undefined
       }
@@ -359,11 +368,30 @@ export const DeckCard = memo(function DeckCard({
           rating={title.rating}
           review={title.review}
           platform={availabilityPlatform ?? undefined}
+          breathe={isOpeningHero && isTonight}
           onCommit={onStubCommit}
           onSaved={handleStubSaved}
           onError={handleStubError}
           commitDirectly={isReco && sala ? () => sala.markRecoSeen(title) : undefined}
         />
+      ) : null}
+      {menuTab ? (
+        <button
+          type="button"
+          aria-label={menuTabLabel}
+          aria-haspopup="dialog"
+          data-no-sheet-drag=""
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            openMenu();
+          }}
+          className={cn("ticket-stub-tab", focusRing)}
+        >
+          <span className="ticket-stub-notch is-left" aria-hidden="true" />
+          <span className="ticket-stub-notch is-right" aria-hidden="true" />
+          <MoreDots />
+        </button>
       ) : null}
       {showMarkSeenEye && !title.watched ? (
         <MarkSeenEye
@@ -380,6 +408,14 @@ export const DeckCard = memo(function DeckCard({
     </article>
   );
 });
+
+const MoreDots = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+    <circle cx="5.5" cy="12" r="1.9" />
+    <circle cx="12" cy="12" r="1.9" />
+    <circle cx="18.5" cy="12" r="1.9" />
+  </svg>
+);
 
 const SparkIcon = () => (
   <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true">

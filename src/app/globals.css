@@ -1802,7 +1802,7 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
  * onto the title — and the sala's total height, tuned to clear the tab bar, stays the same.
  */
 .tonight-sala .coverflow-cinematic-stage {
-  --stub-room: 1.75rem;
+  --stub-room: 2.25rem;
   height: calc(min(46dvh, calc(100dvh - 24.5rem)) - var(--stub-room));
   min-height: calc(300px - var(--stub-room));
   max-height: calc(520px - var(--stub-room));
@@ -1870,10 +1870,10 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 .ticket-stub {
   position: absolute;
   left: 50%;
-  bottom: -30px;
+  bottom: -36px;
   z-index: 12;
-  width: 120px;
-  height: 30px;
+  width: 128px;
+  height: 36px;
   border: 0;
   border-top: 1.5px dashed rgb(255 255 255 / 0.42);
   border-radius: 0 0 14px 14px;
@@ -1881,9 +1881,9 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   color: var(--accent-tint);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   display: flex;
   align-items: center;
@@ -1896,22 +1896,40 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   pointer-events: none;
   transition:
     opacity var(--duration-hover) var(--ease-out),
-    box-shadow var(--duration-press) var(--spring),
     border-color var(--duration-press) var(--spring);
+}
+
+/* With the «···» tab beside it the pair (128 + 2 + 42) stays centered under the hero (FIL-I21-2). */
+.coverflow-card.has-menu-tab .ticket-stub {
+  left: calc(50% - 22px);
 }
 
 .ticket-stub svg {
   color: var(--accent-hover);
 }
 
-/* 44 px touch target over 30 px of boleto: the thumb lands on the pseudo-element (FIL-I21-1). */
+/* 44 px touch target over 36 px of boleto: the thumb lands on the pseudo-element (FIL-I21-1). */
 .ticket-stub::before {
   content: "";
   position: absolute;
-  inset: -7px 0;
+  inset: -4px 0;
 }
 
-/* Too short to tear: a 2 px rebound tells the thumb to pull further (no haptics on iPhone web). */
+/* Armed glow: a layer with a fixed shadow fading in by opacity (no box-shadow/filter animation, FIL-I21-2). */
+.ticket-stub-glow {
+  pointer-events: none;
+  position: absolute;
+  inset: -1.5px 0 0;
+  border-radius: 0 0 14px 14px;
+  opacity: 0;
+  box-shadow:
+    0 22px 36px rgb(0 0 0 / 0.55),
+    0 0 0 1.5px rgb(var(--accent-rgb) / 0.6),
+    0 0 24px rgb(var(--accent-rgb) / 0.35);
+  transition: opacity var(--duration-press) var(--ease-out);
+}
+
+/* Too short to tear: a small rebound tells the thumb to pull further (no haptics on iPhone web). */
 .ticket-stub.is-nudged {
   animation: stub-nudge 320ms var(--spring) both;
 }
@@ -1928,7 +1946,63 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   }
 }
 
-.coverflow-card.is-focused .ticket-stub {
+/* First hero of the day: the stub dips 8 px at 1.2 s and comes back, teaching the pull (FIL-I21-2). */
+.coverflow-card.is-focused .ticket-stub.is-breathing {
+  animation: stub-breath 700ms var(--spring) 1200ms both;
+}
+
+@keyframes stub-breath {
+  0% {
+    translate: 0 0;
+  }
+  45% {
+    translate: 0 8px;
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+
+/* «···» tab: 42×36 visible, 44×44 touch, same boleto skin; opens the hold menu (FIL-I21-2). */
+.ticket-stub-tab {
+  position: absolute;
+  left: calc(50% + 44px);
+  bottom: -36px;
+  z-index: 12;
+  width: 42px;
+  height: 36px;
+  border: 0;
+  border-top: 1.5px dashed rgb(255 255 255 / 0.42);
+  border-radius: 0 0 14px 14px;
+  background: rgb(10 12 15 / 0.82);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 14px 28px rgb(0 0 0 / 0.45);
+  cursor: pointer;
+  touch-action: manipulation;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--duration-hover) var(--ease-out),
+    background-color var(--duration-hover) var(--ease-out);
+}
+
+.ticket-stub-tab::before {
+  content: "";
+  position: absolute;
+  inset: -4px -1px;
+}
+
+.ticket-stub-tab:hover {
+  background: rgb(22 26 31 / 0.9);
+}
+
+.coverflow-card.is-focused .ticket-stub,
+.coverflow-card.is-focused .ticket-stub-tab {
   opacity: 1;
   pointer-events: auto;
 }
@@ -1956,10 +2030,24 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 
 .ticket-stub.is-armed {
   border-top-color: rgb(var(--accent-rgb) / 0.9);
-  box-shadow:
-    0 22px 36px rgb(0 0 0 / 0.55),
-    0 0 0 1.5px rgb(var(--accent-rgb) / 0.6),
-    0 0 24px rgb(var(--accent-rgb) / 0.35);
+  animation: stub-arm 260ms var(--spring) both;
+}
+
+.ticket-stub.is-armed .ticket-stub-glow {
+  opacity: 1;
+}
+
+/* Armed: a 2 px rebound (translate, so the inline drag transform is untouched). */
+@keyframes stub-arm {
+  0% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 2px;
+  }
+  100% {
+    translate: 0 0;
+  }
 }
 
 .ticket-stub.is-torn {
@@ -1974,12 +2062,16 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 }
 
 .ticket-stub-hint {
+  /* Inside the poster's lower edge, so a pull never writes over the title below (FIL-I21-2). */
   position: absolute;
   left: 50%;
-  bottom: -80px;
+  bottom: 14px;
   z-index: 12;
   transform: translateX(-50%);
   white-space: nowrap;
+  padding: 5px 11px;
+  border-radius: 9999px;
+  background: rgb(10 12 15 / 0.78);
   font-size: 12px;
   font-weight: 600;
   color: var(--paper);
@@ -1989,7 +2081,6 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 }
 
 .ticket-stub-hint.is-nudge {
-  bottom: -56px;
   color: var(--accent-tint);
 }
 
@@ -2343,6 +2434,8 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 
   .ticket-stub,
   .ticket-stub.is-torn,
+  .ticket-stub-tab,
+  .ticket-stub-glow,
   .ticket-stub-hint,
   .visto-stamp,
   .deck-deal .coverflow-card-face,

@@ -21,6 +21,23 @@ import { focusRing } from "@/lib/ui";
 
 export { STUB_TEAR_PX };
 const STUB_MAX_PX = 96;
+const STUB_BREATH_DELAY_MS = 1200;
+const STUB_BREATH_MS = 700;
+const BREATH_STORAGE_KEY = "filmia:stub-breath";
+
+/** True once per local day: the first hero teaches the pull, the rest stay still. */
+const claimDailyBreath = () => {
+  try {
+    const today = new Date().toDateString();
+    if (window.localStorage.getItem(BREATH_STORAGE_KEY) === today) {
+      return false;
+    }
+    window.localStorage.setItem(BREATH_STORAGE_KEY, today);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 type TicketStubProps = {
   titleId: string;
@@ -32,6 +49,11 @@ type TicketStubProps = {
    * undefined when the card has none, so the sheet starts on NINGUNA and sends nothing.
    */
   platform?: Platform | null;
+  /**
+   * First hero of the day (FIL-I21-2): the stub dips 8 px once at 1.2 s so the pull is taught
+   * without words. Once per day (localStorage), never with prefers-reduced-motion.
+   */
+  breathe?: boolean;
   /** Fires once when the tear commits (light-leak hook). */
   onCommit?: () => void;
   onSaved?: () => void;
@@ -64,6 +86,7 @@ export const TicketStub = ({
   rating = null,
   review = null,
   platform,
+  breathe = false,
   onCommit,
   onSaved,
   onError,
@@ -77,6 +100,7 @@ export const TicketStub = ({
   // A half-hearted pull (12–59 px) springs back and shows «Arranca hasta el fondo» a moment.
   const [nudged, setNudged] = useState(false);
   const nudgeTimer = useRef<number | null>(null);
+  const [breathing, setBreathing] = useState(false);
   const startY = useRef(0);
   const travel = useRef(0);
   const armed = useRef(false);
@@ -97,6 +121,27 @@ export const TicketStub = ({
     },
     [],
   );
+
+  // Once claimed, this instance keeps the claim (StrictMode re-runs the effect in dev).
+  const breathClaimed = useRef(false);
+  useEffect(() => {
+    if (!breathe || prefersReducedMotion()) {
+      return;
+    }
+    if (!breathClaimed.current) {
+      if (!claimDailyBreath()) {
+        return;
+      }
+      breathClaimed.current = true;
+    }
+    // Deferred so the first paint is the resting stub; the CSS delay does the 1.2 s wait.
+    const start = window.setTimeout(() => setBreathing(true), 0);
+    const stop = window.setTimeout(() => setBreathing(false), STUB_BREATH_DELAY_MS + STUB_BREATH_MS);
+    return () => {
+      window.clearTimeout(start);
+      window.clearTimeout(stop);
+    };
+  }, [breathe]);
 
   const openSheet = () => {
     onCommit?.();
@@ -221,6 +266,7 @@ export const TicketStub = ({
           progress >= 1 && "is-armed",
           torn && "is-torn",
           nudged && "is-nudged",
+          breathing && "is-breathing",
           focusRing,
           className,
         )}
@@ -231,6 +277,7 @@ export const TicketStub = ({
       >
         <span className="ticket-stub-notch is-left" aria-hidden="true" />
         <span className="ticket-stub-notch is-right" aria-hidden="true" />
+        <span className="ticket-stub-glow" aria-hidden="true" />
         <EyeIcon />
         <span>Vi esto</span>
       </button>

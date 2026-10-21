@@ -34,7 +34,12 @@ const run = () => {
   const css = read("src/app/globals.css");
   assert(css.includes(".ticket-stub") && css.includes(".visto-stamp") && css.includes(".deck-deal") && css.includes(".nav-receive"), "Esta noche motion CSS present");
   assert(css.includes("@keyframes visto-stamp") && css.includes("var(--spring)"), "Stamp uses the spring curve");
-  assert(css.includes(".ticket-stub::before") && css.includes("inset: -7px 0"), "Stub has a 44px touch target (FIL-I21-1)");
+  assert(css.includes(".ticket-stub::before") && css.includes("inset: -4px 0") && css.includes("height: 36px;\n  border: 0;\n  border-top: 1.5px dashed"), "Stub is 36px visible with a 44px touch target (FIL-I21-1/2)");
+  assert(css.includes(".ticket-stub-tab") && css.includes(".ticket-stub-tab::before") && card.includes("ticket-stub-tab") && card.includes("has-menu-tab"), "«···» tab beside the stub opens the hold menu (FIL-I21-2)");
+  assert(css.includes(".ticket-stub.is-armed .ticket-stub-glow") && !/\.ticket-stub\.is-armed \{[^}]*box-shadow/.test(css), "Armed glow fades a shadow layer by opacity, never animates box-shadow (FIL-I21-2)");
+  assert(stub.includes("claimDailyBreath") && stub.includes("!breathe || prefersReducedMotion()") && stub.includes("!claimDailyBreath()"), "The stub breathes once a day and never with reduced motion (FIL-I21-2)");
+  const menu = read("src/components/tonight/TonightCardMenu.tsx");
+  assert(menu.indexOf("Ahora no") < menu.indexOf("Ver ficha") && menu.indexOf("Ver ficha") < menu.indexOf("Mover a una lista"), "Hoy menu: «Ahora no» first, «Ver ficha» second (FIL-I21-2)");
 
   const sala = read("src/components/tonight/TonightSala.tsx");
   assert(sala.includes("rankForNow") && sala.includes("keepWildcardLast") && sala.includes("useImpressions"), "Sala ranks with the clock, keeps the comodín last, logs impressions");
