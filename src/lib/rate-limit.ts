@@ -23,6 +23,15 @@ export const RATE_LIMITS = {
   /** Opening share links (FIL-I18-3): guessing tokens is pointless, but cheap to cap. */
   joinIp: { name: "join:ip", limit: 30, windowMs: 10 * MINUTE },
   joinAccount: { name: "join:account", limit: 10, windowMs: 10 * MINUTE },
+  /** MCP connector OAuth endpoints, per IP (FIL-I20-1, decisión 5b952a3f). */
+  oauthTokenIp: { name: "oauth:token", limit: 30, windowMs: MINUTE },
+  oauthRegisterIp: { name: "oauth:register", limit: 10, windowMs: 60 * MINUTE },
+  /** Resolving an unknown CIMD URL means fetching it: capped so URLs cannot fill the table. */
+  oauthCimdIp: { name: "oauth:cimd", limit: 20, windowMs: 60 * MINUTE },
+  /** MCP tool calls, per connection (grant or personal token), checked before any query. */
+  mcpConnection: { name: "mcp:connection", limit: 120, windowMs: MINUTE },
+  /** New personal tokens per account (FIL-I20-6). */
+  personalTokenAccount: { name: "mcp:token", limit: 10, windowMs: 60 * MINUTE },
 } as const satisfies Record<string, RateLimitRule>;
 
 export const RATE_LIMIT_MESSAGE = "Demasiados intentos. Espera unos minutos y vuelve a intentarlo.";

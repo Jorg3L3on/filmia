@@ -26,8 +26,8 @@ const EXPECTED: Record<string, Record<string, string>> = {
   "src/app/actions/lists.ts": {
     updateListWithFeedback: "via saveListChanges",
     deleteList: 'requireListAccess(listId, "manage")',
-    addTitleToList: 'requireListAccess(listId, "edit_items")',
-    removeTitleFromList: 'requireListAccess(listId, "edit_items")',
+    addTitleToList: "via addTitleToListFor",
+    removeTitleFromList: "via removeFromListFor",
     toggleTitleInList: 'requireListAccess(listId, "edit_items")',
     moveListItem: 'requireListAccess(listId, "edit_items")',
     reorderList: 'requireListAccess(listId, "edit_items")',
@@ -70,12 +70,23 @@ describe("list actions are guarded", () => {
           assert.ok(bodies.get(name)?.includes("saveListChanges("));
           return;
         }
+        if (needle.startsWith("via ") && needle.endsWith("For")) {
+          // Shared with the MCP tools (FIL-I20-5): the lib function checks the role itself.
+          const helper = needle.slice(4);
+          assert.ok(bodies.get(name)?.includes(`${helper}(await requireUserId(), listId`), `${name} → ${helper}`);
+          assert.match(
+            read("src/lib/list-writes.ts"),
+            new RegExp(`export const ${helper} = [\\s\\S]*?listAccessOrThrow\\(userId, listId, "edit_items"\\)`),
+          );
+          return;
+        }
         assert.ok(bodies.get(name)?.includes(needle), `${name} should call ${needle}`);
       });
     }
   }
 
   it("saveNewList only creates lists owned by the caller", () => {
-    assert.match(read("src/app/actions/lists.ts"), /const saveNewList[\s\S]*?requireUserId\(\)[\s\S]*?userId,/);
+    assert.match(read("src/app/actions/lists.ts"), /const saveNewList[\s\S]*?requireUserId\(\)[\s\S]*?createListFor\(userId,/);
+    assert.match(read("src/lib/list-writes.ts"), /export const createListFor[\s\S]*?insert\(lists\)[\s\S]*?userId,/);
   });
 });
