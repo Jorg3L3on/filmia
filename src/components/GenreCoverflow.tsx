@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import type { DiaryCategory } from "@/lib/diary-picks";
 import { focusRing } from "@/lib/ui";
@@ -10,6 +10,8 @@ type GenreCoverflowProps = {
   activeSlug: string;
   onSelect: (slug: string) => void;
   label?: string;
+  /** Rendered under the names instead of the position dots (Hoy's chapter bar, FIL-I21-3). */
+  indicator?: ReactNode;
 };
 
 const SWIPE_THRESHOLD_PX = 42;
@@ -23,6 +25,7 @@ export const GenreCoverflow = ({
   activeSlug,
   onSelect,
   label = "Categorías de Quiero ver",
+  indicator,
 }: GenreCoverflowProps) => {
   const dragStartX = useRef<number | null>(null);
   const dragDeltaX = useRef(0);
@@ -203,7 +206,9 @@ export const GenreCoverflow = ({
         )}
       </div>
 
-      {categories.length > 1 ? (
+      {indicator ? (
+        indicator
+      ) : categories.length > 1 ? (
         <div className="genre-coverflow-dots" aria-hidden>
           {categories.map((category, index) => (
             <span

@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { GenreCoverflow } from "@/components/GenreCoverflow";
 import { HoyDeckSkeleton } from "@/components/PageSkeletons";
 import type { CoverflowTitle } from "@/components/coverflow/types";
+import { ChapterBar } from "@/components/tonight/ChapterBar";
 import { TonightCardMenu } from "@/components/tonight/TonightCardMenu";
 import { TonightProvider, type TonightHandlers } from "@/components/tonight/TonightContext";
 import { TonightEyebrow } from "@/components/tonight/TonightEyebrow";
@@ -44,6 +45,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     () => decks.lenses.find((lens) => lens.slug === initialSlug)?.slug ?? decks.lenses[0]?.slug ?? "",
   );
   const activeSlugRef = useRef(activeSlug);
+  // The hero's index in the whole deck: the chapter bar fills with it and counts what is left.
+  const [heroIndex, setHeroIndex] = useState<number | null>(null);
   const [focusRequest, setFocusRequest] = useState<{ index: number; seq: number }>();
   // On Back the client mounts fresh: the URL (kept by replaceState) beats the cached server props.
   const [rememberedCard] = useState(() =>
@@ -251,7 +254,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
 
   // The hero's own lens drives the rail; lens + card live in the URL (impressions settle the previous hero first).
   const handleActiveChange = useCallback(
-    (_index: number, title: CoverflowTitle) => {
+    (index: number, title: CoverflowTitle) => {
+      setHeroIndex(index);
       impressions.onHeroChange(pickRefOf(title));
       const slug = title.tonight?.lens;
       if (!slug) {
@@ -278,11 +282,30 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
 
   void STAMP_TO_FLIGHT_MS;
 
+  // Chapters and «quedan N» (FIL-I21-3): where the hero sits in its lens and in the night.
+  const resolvedHero = heroIndex ?? deckIndexOf(cards, rememberedCard) ?? lensStarts.get(activeSlug) ?? 0;
+  const positionInLens = activeLens ? resolvedHero - (lensStarts.get(activeLens.slug) ?? 0) : 0;
+  const remaining = Math.max(0, cards.length - 1 - resolvedHero);
+  const chapterBar =
+    lenses.length > 0 && activeLens ? (
+      <ChapterBar
+        lenses={lenses}
+        activeSlug={activeLens.slug}
+        positionInLens={positionInLens}
+        remaining={remaining}
+        onSelect={goToLens}
+      />
+    ) : null;
+
   return (
     <TonightProvider value={handlers}>
-      <div className="diario-que-ver-shell tonight-sala flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-sm:-mt-1">
-        <div className="shrink-0">
+      <div className="diario-que-ver-shell tonight-sala flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-sm:-mt-5 max-sm:gap-1">
+        {/* Desktop keeps the three rows; the phone folds the eyebrow into the rail (FIL-I21-3). */}
+        <div className="shrink-0 max-sm:hidden">
           <TonightEyebrow now={now} nightEnds={decks.nightEnds} />
+        </div>
+        <div className="sm:hidden">
+          <TonightEyebrow now={now} nightEnds={decks.nightEnds} compact />
         </div>
         {!now ? (
           <HoyDeckSkeleton />
@@ -301,6 +324,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
                 activeSlug={activeLens.slug}
                 onSelect={goToLens}
                 label="Lentes de hoy"
+                indicator={chapterBar}
               />
             </div>
             <div ref={liveRef} className="sr-only" aria-live="polite" aria-atomic="true" />

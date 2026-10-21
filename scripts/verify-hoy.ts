@@ -38,6 +38,14 @@ const run = () => {
   assert(css.includes(".ticket-stub-tab") && css.includes(".ticket-stub-tab::before") && card.includes("ticket-stub-tab") && card.includes("has-menu-tab"), "«···» tab beside the stub opens the hold menu (FIL-I21-2)");
   assert(css.includes(".ticket-stub.is-armed .ticket-stub-glow") && !/\.ticket-stub\.is-armed \{[^}]*box-shadow/.test(css), "Armed glow fades a shadow layer by opacity, never animates box-shadow (FIL-I21-2)");
   assert(stub.includes("claimDailyBreath") && stub.includes("!breathe || prefersReducedMotion()") && stub.includes("!claimDailyBreath()"), "The stub breathes once a day and never with reduced motion (FIL-I21-2)");
+  // Chapters and compact header (FIL-I21-3): the bar replaces the dots in Hoy only; «quedan N» counts the whole deck.
+  const chapterBar = read("src/components/tonight/ChapterBar.tsx");
+  assert(chapterBar.includes('role="progressbar"') && chapterBar.includes("quedan ${remaining} esta noche") && chapterBar.includes("carta ${position + 1} de ${count}"), "Chapter bar is a progressbar that says «<lente>, carta i de n; quedan N esta noche»");
+  const salaSrc = read("src/components/tonight/TonightSala.tsx");
+  assert(salaSrc.includes("indicator={chapterBar}") && salaSrc.includes("remaining = Math.max(0, cards.length - 1 - resolvedHero)") && salaSrc.includes("positionInLens"), "Hoy renders the chapter bar instead of the dots; «quedan N» = cards left in the whole deck");
+  const rail = read("src/components/GenreCoverflow.tsx");
+  assert(rail.includes("indicator ? (") && rail.includes("genre-coverflow-dots"), "The rail keeps its dots when no indicator is given (Historial, lists)");
+  assert(salaSrc.includes("compact />") && read("src/components/tonight/TonightEyebrow.tsx").includes("tonight-bedtime-fixed") && css.includes(".tonight-bedtime-fixed") && css.includes("max-height: 700px"), "Phone header: bedtime chip in the brand row, eyebrow folded into the rail, SE/mini rule");
   const menu = read("src/components/tonight/TonightCardMenu.tsx");
   assert(menu.indexOf("Ahora no") < menu.indexOf("Ver ficha") && menu.indexOf("Ver ficha") < menu.indexOf("Mover a una lista"), "Hoy menu: «Ahora no» first, «Ver ficha» second (FIL-I21-2)");
 
