@@ -25,19 +25,55 @@ const run = () => {
   assert(card.includes("useLongPress") && card.includes("onContextMenu"), "Long-press / right-click opens the card menu");
 
   const stub = read("src/components/tonight/TicketStub.tsx");
-  assert(stub.includes("STUB_TEAR_PX = 60") && stub.includes("setPointerCapture") && stub.includes("MarkWatchedSheet"), "Stub tears at 60px and opens Marqué visto");
+  const stubGesture = read("src/lib/tonight/stub-gesture.ts");
+  assert(stubGesture.includes("STUB_TEAR_PX = 60") && stubGesture.includes("STUB_TAP_SLOP_PX = 12") && stub.includes("resolveStubRelease") && stub.includes("setPointerCapture") && stub.includes("MarkWatchedSheet"), "Stub tears at 60px, forgives a 12px slide as a tap (FIL-I21-1) and opens Marqué visto");
+  assert(stub.includes("handlePointerCancel") && !stub.includes("onPointerCancel={handlePointerUp}"), "pointercancel never opens the sheet (FIL-I21-1)");
+  assert(stub.includes("platform={platform ?? undefined}") && read("src/components/coverflow/DeckCard.tsx").includes("platform={availabilityPlatform ?? undefined}"), "«Vi esto» opens with the card's platform marked (FIL-I21-1)");
   assert(stub.includes('type="button"') && stub.includes("onKeyDown"), "Stub is a real button (keyboard + screen reader)");
 
   const css = read("src/app/globals.css");
   assert(css.includes(".ticket-stub") && css.includes(".visto-stamp") && css.includes(".deck-deal") && css.includes(".nav-receive"), "Esta noche motion CSS present");
   assert(css.includes("@keyframes visto-stamp") && css.includes("var(--spring)"), "Stamp uses the spring curve");
+  assert(css.includes(".ticket-stub::before") && css.includes("inset: -4px 0") && css.includes("height: 36px;\n  border: 0;\n  border-top: 1.5px dashed"), "Stub is 36px visible with a 44px touch target (FIL-I21-1/2)");
+  assert(css.includes(".ticket-stub-tab") && css.includes(".ticket-stub-tab::before") && card.includes("ticket-stub-tab") && card.includes("has-menu-tab"), "«···» tab beside the stub opens the hold menu (FIL-I21-2)");
+  assert(css.includes(".ticket-stub.is-armed .ticket-stub-glow") && !/\.ticket-stub\.is-armed \{[^}]*box-shadow/.test(css), "Armed glow fades a shadow layer by opacity, never animates box-shadow (FIL-I21-2)");
+  assert(stub.includes("claimDailyBreath") && stub.includes("!breathe || prefersReducedMotion()") && stub.includes("!claimDailyBreath()"), "The stub breathes once a day and never with reduced motion (FIL-I21-2)");
+  // Chapters and compact header (FIL-I21-3): the bar replaces the dots in Hoy only; «quedan N» counts the whole deck.
+  const chapterBar = read("src/components/tonight/ChapterBar.tsx");
+  assert(chapterBar.includes('role="progressbar"') && chapterBar.includes("quedan ${remaining} esta noche") && chapterBar.includes("carta ${position + 1} de ${count}"), "Chapter bar is a progressbar that says «<lente>, carta i de n; quedan N esta noche»");
+  const salaSrc = read("src/components/tonight/TonightSala.tsx");
+  assert(salaSrc.includes("indicator={chapterBar}") && salaSrc.includes("remaining = Math.max(0, dealt - 1 - resolvedHero)") && salaSrc.includes("positionInLens"), "Hoy renders the chapter bar instead of the dots; «quedan N» = cards left in the whole deck");
+  const rail = read("src/components/GenreCoverflow.tsx");
+  assert(rail.includes("indicator ? (") && rail.includes("genre-coverflow-dots"), "The rail keeps its dots when no indicator is given (Historial, lists)");
+  assert(salaSrc.includes("compact />") && read("src/components/tonight/TonightEyebrow.tsx").includes("tonight-bedtime-fixed") && css.includes(".tonight-bedtime-fixed") && css.includes("max-height: 700px"), "Phone header: bedtime chip in the brand row, eyebrow folded into the rail, SE/mini rule");
+  // Asomo (FIL-I21-4): phone neighbours spread ×1.72, no blur at ±1, lite without rotation; no new filter.
+  const metrics = read("src/lib/coverflow-metrics.ts");
+  assert(metrics.includes("COVERFLOW_ASOMO_SPREAD = 1.72") && metrics.includes("distance * 0.14") && metrics.includes("distance * 32") && metrics.includes("distance * 0.3)") && metrics.includes("distance < 1.5 ? 0"), "Asomo numbers: ×1.72, scale 1 − 0.14·d, 32°, brightness 0.70 at ±1, no blur at ±1");
+  assert(metrics.includes("lite && cinematic ? 0 : rotateY"), "Lite sala: neighbours do not rotate");
+  const chapterCss = css.slice(css.indexOf("/* --- Hoy: chapters and progress"), css.indexOf("/* Mode toggle"));
+  assert(!/filter:\s*blur|backdrop-filter/.test(chapterCss), "Chapter bar and compact header add no filter");
+  // Closing card (FIL-I21-6): one sentinel after the whole deck, never per lens; no footer, no impressions.
+  const closingSala = read("src/components/tonight/TonightSala.tsx");
+  const loopEnd = closingSala.indexOf("const dealtCount = all.length;");
+  assert(loopEnd > 0 && closingSala.indexOf("all.push(closingCardFor(last.slug))") > loopEnd && closingSala.indexOf("for (const lens of lenses)") < loopEnd, "The closing card is pushed once, after the lens loop");
+  assert((closingSala.match(/closingCardFor\(/g) ?? []).length === 1 && closingSala.includes("<TonightClosingEmpty />"), "One closing card; the empty state uses the same card");
+  assert(closingSala.includes("title.closing ? null : pickRefOf(title)"), "useImpressions never logs the closing card");
+  assert(read("src/components/tonight/TonightFooter.tsx").includes("if (title.closing) {\n    // The closing card says everything on its face (FIL-I21-6).\n    return null;"), "The footer paints nothing for the closing card");
+  assert(read("src/components/coverflow/DeckCard.tsx").includes("if (title.closing && sala)") && read("src/components/tonight/TonightClosingCard.tsx").includes("Volver al principio"), "DeckCard renders the closing face with «Volver al principio»");
+  const menu = read("src/components/tonight/TonightCardMenu.tsx");
+  assert(menu.indexOf("Ahora no") < menu.indexOf("Ver ficha") && menu.indexOf("Ver ficha") < menu.indexOf("Mover a una lista"), "Hoy menu: «Ahora no» first, «Ver ficha» second (FIL-I21-2)");
 
   const sala = read("src/components/tonight/TonightSala.tsx");
   assert(sala.includes("rankForNow") && sala.includes("keepWildcardLast") && sala.includes("useImpressions"), "Sala ranks with the clock, keeps the comodín last, logs impressions");
   assert(sala.includes("Deshacer") && sala.includes("undoMarkWatched"), "Vi esto offers Deshacer");
 
   const footer = read("src/components/tonight/TonightFooter.tsx");
-  assert(footer.includes("tonight-reason") && footer.includes("acaba") && footer.includes("se pasa"), "Footer: reason pill + fit chip copy");
+  const nightLine = read("src/components/tonight/TonightNightLine.tsx");
+  assert(footer.includes("tonight-reason") && footer.includes("nightLineFor") && nightLine.includes("acaba") && nightLine.includes("se pasa"), "Footer: reason pill + the night line draws the fit (FIL-I21-5)");
+  assert(footer.includes('nightLine?.state === "over-long"') && footer.includes("overflowLabel"), "Without a line (overflow > 30 min) the runtime chip carries «se pasa …» in amber; with a line the chip is just the runtime");
+  const nightLineCss = css.slice(css.indexOf("/* --- Línea de la noche"), css.indexOf(".tonight-chip-imdb {"));
+  assert(nightLineCss.includes("transform: scaleX(0)") && nightLineCss.includes("prefers-reduced-motion") && !/transition:\s*(width|left|background)|filter/.test(nightLineCss), "Night line animates transform/opacity only and respects reduced motion");
+  assert(read("src/lib/tonight/night-line.ts").includes("NIGHT_LINE_MAX_OVERFLOW_MINUTES = 30"), "Night line only when it fits or overflows ≤ 30 min");
 
   // Time of day: Esta mañana / tarde / noche; the moon, bedtime chip and fit copy only at night.
   const eyebrow = read("src/components/tonight/TonightEyebrow.tsx");

@@ -5,10 +5,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { markNotTonight, sendTasteFeedback } from "@/app/actions/tonight";
 import { removeFromWatchlist, undoMarkWatched } from "@/app/actions/watchlist";
 import { CoverflowDeck } from "@/components/CoverflowDeck";
-import { EmptyState } from "@/components/EmptyState";
 import { GenreCoverflow } from "@/components/GenreCoverflow";
 import { HoyDeckSkeleton } from "@/components/PageSkeletons";
 import type { CoverflowTitle } from "@/components/coverflow/types";
+import { ChapterBar } from "@/components/tonight/ChapterBar";
+import { TonightClosingEmpty } from "@/components/tonight/TonightClosingCard";
 import { TonightCardMenu } from "@/components/tonight/TonightCardMenu";
 import { TonightProvider, type TonightHandlers } from "@/components/tonight/TonightContext";
 import { TonightEyebrow } from "@/components/tonight/TonightEyebrow";
@@ -21,6 +22,7 @@ import { cn } from "@/lib/cn";
 import { DECK_CARD_PARAM, deckCardFrom, deckIndexOf } from "@/lib/nav-origin";
 import { showToast } from "@/lib/toast";
 import { interleaveBySource } from "@/lib/tonight/compose";
+import { closingCardFor } from "@/lib/tonight/closing-card";
 import { pickRefOf } from "@/lib/tonight/reco-card";
 import { rankForNow, TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import { dayPartOf } from "@/lib/tonight/time";
@@ -40,10 +42,16 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   const now = useTonightClock(decks.nightEnds);
   const dayPart = now ? dayPartOf(now, decks.nightEnds) : "noche";
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
+  // Tonight's counters for the closing card (FIL-I21-6): this session's «Vi esto» and «Ahora no».
+  const [watchedIds, setWatchedIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [notTonightIds, setNotTonightIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [dealtTotal] = useState(() => decks.lenses.reduce((sum, lens) => sum + lens.titles.length, 0));
   const [activeSlug, setActiveSlug] = useState(
     () => decks.lenses.find((lens) => lens.slug === initialSlug)?.slug ?? decks.lenses[0]?.slug ?? "",
   );
   const activeSlugRef = useRef(activeSlug);
+  // The hero's index in the whole deck: the chapter bar fills with it and counts what is left.
+  const [heroIndex, setHeroIndex] = useState<number | null>(null);
   const [focusRequest, setFocusRequest] = useState<{ index: number; seq: number }>();
   // On Back the client mounts fresh: the URL (kept by replaceState) beats the cached server props.
   const [rememberedCard] = useState(() =>
@@ -155,14 +163,20 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
    * queue, so crossing Para ti → Drama is just the next card: same physics, no wall, no remount.
    * The rail follows the hero's lens; tapping a lens jumps the deck to that chapter.
    */
-  const { cards, lensStarts } = useMemo(() => {
+  const { cards, lensStarts, dealt } = useMemo(() => {
     const starts = new Map<string, number>();
     const all: CoverflowTitle[] = [];
     for (const lens of lenses) {
       starts.set(lens.slug, all.length);
       all.push(...(lensCards.get(lens.slug) ?? []));
     }
-    return { cards: all, lensStarts: starts };
+    const dealtCount = all.length;
+    // One closing card after the whole deck, never per lens (FIL-I21-6).
+    const last = lenses[lenses.length - 1];
+    if (last) {
+      all.push(closingCardFor(last.slug));
+    }
+    return { cards: all, lensStarts: starts, dealt: dealtCount };
   }, [lensCards, lenses]);
 
   const activeLens = lenses.find((lens) => lens.slug === activeSlug) ?? lenses[0] ?? null;
@@ -183,10 +197,30 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
       next.delete(titleId);
       return next;
     });
+  const addTo = (set: typeof setWatchedIds, titleId: string) => set((current) => new Set(current).add(titleId));
+  const removeFrom = (set: typeof setWatchedIds, titleId: string) =>
+    set((current) => {
+      const next = new Set(current);
+      next.delete(titleId);
+      return next;
+    });
+
+  const restart = useCallback(
+    () => setFocusRequest((current) => ({ index: 0, seq: (current?.seq ?? 0) + 1 })),
+    [],
+  );
 
   const handlers: TonightHandlers = {
     lens: activeLens?.slug ?? "",
     dayPart,
+    now,
+    closing: {
+      total: dealtTotal,
+      watched: watchedIds.size,
+      notTonight: notTonightIds.size,
+      lenses,
+      onRestart: restart,
+    },
     onWhy: (title) => setWhyTitle(title),
     onOpenMenu: (title) => setMenuTitle(title),
     onOpened: (title) => impressions.push(pickRefOf(title), "opened"),
@@ -197,6 +231,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
       // A recommendation becomes a real title the moment it is seen: undo works on that one.
       const titleId = reco.titleIdOf(title.id) ?? title.id;
       hide(title.id);
+      addTo(setWatchedIds, title.id);
       showToast({
         title: "En tu diario",
         description: title.name,
@@ -205,6 +240,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
           label: "Deshacer",
           onClick: () => {
             unhide(title.id);
+            removeFrom(setWatchedIds, title.id);
             void undoMarkWatched(titleId).catch(() => {
               showToast({ title: "No se pudo deshacer", variant: "error" });
             });
@@ -221,9 +257,11 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   const handleNotTonight = (title: CoverflowTitle) => {
     setMenuTitle(null);
     hide(title.id);
+    addTo(setNotTonightIds, title.id);
     showToast({ title: "Ahora no", description: `${title.name} vuelve en dos semanas.` });
     void markNotTonight(title.id, title.tonight?.lens ?? activeLens?.slug).catch(() => {
       unhide(title.id);
+      removeFrom(setNotTonightIds, title.id);
       showToast({ title: "No se pudo guardar", variant: "error" });
     });
   };
@@ -251,8 +289,10 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
 
   // The hero's own lens drives the rail; lens + card live in the URL (impressions settle the previous hero first).
   const handleActiveChange = useCallback(
-    (_index: number, title: CoverflowTitle) => {
-      impressions.onHeroChange(pickRefOf(title));
+    (index: number, title: CoverflowTitle) => {
+      setHeroIndex(index);
+      // The closing card is not a title: it settles the previous hero and logs nothing (FIL-I21-6).
+      impressions.onHeroChange(title.closing ? null : pickRefOf(title));
       const slug = title.tonight?.lens;
       if (!slug) {
         return;
@@ -278,21 +318,36 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
 
   void STAMP_TO_FLIGHT_MS;
 
+  // Chapters and «quedan N» (FIL-I21-3): where the hero sits in its lens and in the night.
+  const resolvedHero = heroIndex ?? deckIndexOf(cards, rememberedCard) ?? lensStarts.get(activeSlug) ?? 0;
+  // On the closing card the bar reads full and nothing is left (ChapterBar clamps the position).
+  const positionInLens = activeLens ? resolvedHero - (lensStarts.get(activeLens.slug) ?? 0) : 0;
+  const remaining = Math.max(0, dealt - 1 - resolvedHero);
+  const chapterBar =
+    lenses.length > 0 && activeLens ? (
+      <ChapterBar
+        lenses={lenses}
+        activeSlug={activeLens.slug}
+        positionInLens={positionInLens}
+        remaining={remaining}
+        onSelect={goToLens}
+      />
+    ) : null;
+
   return (
     <TonightProvider value={handlers}>
-      <div className="diario-que-ver-shell tonight-sala flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-sm:-mt-1">
-        <div className="shrink-0">
+      <div className="diario-que-ver-shell tonight-sala flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-sm:-mt-5 max-sm:gap-1">
+        {/* Desktop keeps the three rows; the phone folds the eyebrow into the rail (FIL-I21-3). */}
+        <div className="shrink-0 max-sm:hidden">
           <TonightEyebrow now={now} nightEnds={decks.nightEnds} />
+        </div>
+        <div className="sm:hidden">
+          <TonightEyebrow now={now} nightEnds={decks.nightEnds} compact />
         </div>
         {!now ? (
           <HoyDeckSkeleton />
         ) : lenses.length === 0 || !activeLens ? (
-          <EmptyState
-            title="Por hoy, listo"
-            description="Ya no queda nada en el mazo de hoy. Añade títulos a Quiero ver o vuelve mañana."
-            actionHref="/watchlist"
-            actionLabel="Ir a Quiero ver"
-          />
+          <TonightClosingEmpty />
         ) : (
           <div className="diario-que-ver-body flex min-h-0 flex-1 flex-col gap-1.5 sm:gap-3">
             <div className="shrink-0">
@@ -301,6 +356,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
                 activeSlug={activeLens.slug}
                 onSelect={goToLens}
                 label="Lentes de hoy"
+                indicator={chapterBar}
               />
             </div>
             <div ref={liveRef} className="sr-only" aria-live="polite" aria-atomic="true" />

@@ -71,6 +71,17 @@ const run = () => {
   }
   assert(!/ficha-detail-in[^;]*both/.test(css), "ficha-detail-in never uses fill-mode both");
   assert(read("src/components/CatalogFilters.tsx").split("\n").length < 220, "CatalogFilters stays under 220 lines");
+
+  // Compact header on the phone (FIL-I21-7): title + count on the Filtros row, round Reordenar and Filtros, one chip row.
+  const filters = read("src/components/CatalogFilters.tsx");
+  assert(filters.includes("heading?: ReactNode") && filters.includes("headingActions?: ReactNode") && filters.includes("compactOnMobile={compact}") && filters.includes("max-sm:[grid-area:2/1/3/4]"), "CatalogFilters folds the title into the Filtros row and gives the rail its own row on the phone");
+  assert(page.includes("WatchlistEditingProvider") && page.includes("headingActions={<WatchlistReorderButton />}") && page.includes("WatchlistCompactTitle count={items.length}") && page.includes('className="hidden sm:block"'), "Page: compact title with the count, round Reordenar, desktop title untouched");
+  const editing = read("src/components/watchlist/WatchlistEditing.tsx");
+  assert(editing.includes('"Reordenar la lista"') && editing.includes("aria-pressed") && editing.includes("glassIconClass"), "Round Reordenar button with aria");
+  assert(read("src/components/CatalogMoreFilters.tsx").includes('aria-label={') && read("src/components/CatalogMoreFilters.tsx").includes("max-sm:size-8"), "Filtros is a round icon button on the phone, labelled");
+  const cartelera = read("src/components/watchlist/WatchlistCartelera.tsx");
+  assert(cartelera.includes("useWatchlistEditing()") && cartelera.includes('sharedEditing && !isEditing ? "max-sm:hidden"'), "Cartelera shares reorder mode and hides the old count/Reordenar bar on the phone unless editing");
+  assert(read("src/components/watchlist/WatchlistFilterRail.tsx").includes("filter-rail-fade") && css.includes(".filter-rail-fade"), "Single chip row scrolls with a fade at the end");
   assert(read("docs/motion.md").includes("cartelera"), "Motion doc covers the cartelera");
 
   console.log("✓ Quiero ver · La cartelera: premios (0006 + OMDb + backfill), pin «Esta noche» en Hoy, fichas + gestos + escenario");

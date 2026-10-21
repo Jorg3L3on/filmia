@@ -23,6 +23,10 @@ assert(chips.includes("buscar-chip-pill") && chips.includes("DIRECTOR"), "Chips 
 
 const add = read("src/components/TmdbSearchAdd.tsx");
 assert(add.includes("BuscarStart") && add.includes("useSearchRecents"), "Buscar opens on the start screen (Recientes + directors)");
+// FIL-I21-8: the start rows («Directores de tus favoritas», «Llegó a tu plataforma») always show when they have data; the empty card only without any.
+const start = read("src/components/tmdb-search/BuscarStart.tsx");
+assert(start.includes("recents.length === 0 && directors.length === 0 && arrivals.length === 0") && start.includes("<FavoriteDirectors directors={directors} />") && start.includes("<PlatformArrivalsRow arrivals={arrivals} />") && start.includes("Llegó a tu plataforma"), "Buscar start: both rows as start rows, empty card only when nothing");
+assert(add.includes("arrivals={startArrivals}") && read("src/app/buscar/page.tsx").includes("getStartArrivals(userId)") && read("src/lib/buscar-start.ts").includes("loadUserPlatformArrivals"), "Buscar page loads the platform arrivals for the start screen");
 assert(add.includes("DockSearchField") || read("src/components/BottomNav.tsx").includes("DockSearchField") || add.includes("dockSearch"), "FIL-I3's dock field is still wired");
 const shortcuts = read("src/components/tmdb-search/SearchShortcuts.tsx");
 assert(
