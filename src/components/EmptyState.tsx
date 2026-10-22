@@ -13,6 +13,9 @@ type EmptyStateProps = {
   description: string;
   actionHref?: string;
   actionLabel?: string;
+  /** A quieter second way out (FIL-I24-4: «Cambiar hora» beside «Quitar «Esta noche»»). */
+  secondaryHref?: string;
+  secondaryLabel?: string;
   variant?: EmptyVariant;
   /** Half the height (FIL-I21-8): for a page that has more below the empty block. */
   compact?: boolean;
@@ -23,6 +26,8 @@ export const EmptyState = ({
   description,
   actionHref,
   actionLabel,
+  secondaryHref,
+  secondaryLabel,
   variant = "generic",
   compact = false,
 }: EmptyStateProps) => {
@@ -46,9 +51,16 @@ export const EmptyState = ({
         {description}
       </p>
       {actionHref && actionLabel ? (
-        <Button href={actionHref} size="lg" className="mt-6">
-          {actionLabel}
-        </Button>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          <Button href={actionHref} size="lg">
+            {actionLabel}
+          </Button>
+          {secondaryHref && secondaryLabel ? (
+            <Button href={secondaryHref} size="lg" variant="ghost">
+              {secondaryLabel}
+            </Button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

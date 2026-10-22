@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createHistoryEntryStore, readHistoryEntry, writeHistoryEntry } from "@/lib/history-entry";
+import { WatchlistEmpty } from "@/components/watchlist/WatchlistEmpty";
 import { WatchlistFicha } from "@/components/watchlist/WatchlistFicha";
 import { WatchlistHeroCompact } from "@/components/watchlist/WatchlistHeroCompact";
 import { WatchlistReorderList } from "@/components/watchlist/WatchlistReorderList";
@@ -11,15 +11,19 @@ import { WatchlistSheets } from "@/components/watchlist/WatchlistSheets";
 import { WatchlistStage } from "@/components/watchlist/WatchlistStage";
 import { WatchlistStickyBar } from "@/components/watchlist/WatchlistStickyBar";
 import type { FichaView } from "@/components/watchlist/types";
+import { useExpandedFicha } from "@/components/watchlist/useExpandedFicha";
 import { useFichaViews } from "@/components/watchlist/useFichaViews";
 import { useWatchlistActions } from "@/components/watchlist/useWatchlistActions";
 import { useWatchlistKeyboard } from "@/components/watchlist/useWatchlistKeyboard";
+import { catalogHref, type CatalogQuery } from "@/lib/catalog-href";
 import { isNight } from "@/lib/tonight/time";
 import type { NightEnds } from "@/lib/tonight/types";
 import { DESKTOP_QUERY, useMediaQuery } from "@/lib/use-media-query";
 import { useMountedNow } from "@/lib/use-mounted-now";
 import { sameOrderedIds, useStickyOptimistic } from "@/lib/use-optimistic-action";
+import { heroEyebrow, watchlistEmptyState } from "@/lib/watchlist-empty";
 import type { WatchlistFicha as WatchlistFichaRow } from "@/lib/watchlist-ficha";
+import type { WatchlistSort } from "@/lib/watchlist-filters";
 
 type WatchlistCarteleraProps = {
   fichas: WatchlistFichaRow[];
@@ -30,6 +34,15 @@ type WatchlistCarteleraProps = {
   /** «Esta noche» chip: keep only what fits before bedtime (needs the viewer's clock). */
   tonightOnly?: boolean;
   pinnedTitleId?: string | null;
+  /** Active sort: the hero's eyebrow says what the first row is and the ranks step aside (FIL-I24-4). */
+  sort?: WatchlistSort | null;
+  /** Everything applied, so the empty state can name the chip to blame and drop just that one. */
+  query?: CatalogQuery;
+  pathname?: string;
+  /** Name of the single selected genre, for the empty state. */
+  genreName?: string | null;
+  /** «Netflix y Max»: the platforms the list is being filtered to. */
+  platformsLabel?: string | null;
 };
 
 const STAGGER_CAP = 12;
@@ -38,9 +51,6 @@ const STAGGER_CAP = 12;
  * Quiero ver «La cartelera»: compact hero for #1, dense fichas that unfold in
  * place, swipe / long-press actions, Reordenar, and a stage on desktop.
  */
-const EXPANDED_ENTRY = "watchlistExpanded";
-const readExpandedEntry = () => readHistoryEntry(EXPANDED_ENTRY);
-
 export const WatchlistCartelera = ({
   fichas,
   listId,
@@ -48,6 +58,11 @@ export const WatchlistCartelera = ({
   isManualOrder = true,
   tonightOnly = false,
   pinnedTitleId = null,
+  sort = null,
+  query = {},
+  pathname = "/watchlist",
+  genreName = null,
+  platformsLabel = null,
 }: WatchlistCarteleraProps) => {
   const router = useRouter();
   const now = useMountedNow();
@@ -62,20 +77,7 @@ export const WatchlistCartelera = ({
   const [localEditing, setLocalEditing] = useState(false);
   const isEditing = sharedEditing ? sharedEditing.isEditing : localEditing;
   const setIsEditing = sharedEditing ? sharedEditing.setIsEditing : setLocalEditing;
-  // Back from a ficha reopens the row that was open (read after hydration; this history entry only).
-  const [expandedStore] = useState(() => createHistoryEntryStore(EXPANDED_ENTRY));
-  const restoredExpandedId = useSyncExternalStore(
-    expandedStore.subscribe,
-    expandedStore.getSnapshot,
-    expandedStore.getServerSnapshot,
-  );
-  const [touchedExpandedId, setExpandedId] = useState<string | null | undefined>(undefined);
-  const expandedId = touchedExpandedId === undefined ? restoredExpandedId : touchedExpandedId;
-  useEffect(() => {
-    if (touchedExpandedId !== undefined) {
-      writeHistoryEntry(EXPANDED_ENTRY, touchedExpandedId);
-    }
-  }, [touchedExpandedId]);
+  const { expandedId, toggle, close: closeExpanded } = useExpandedFicha();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [stampedId, setStampedId] = useState<string | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(pinnedTitleId);
@@ -161,14 +163,6 @@ export const WatchlistCartelera = ({
     setMenuTarget(null);
     setMarkTarget(ficha);
   }, []);
-  const toggle = useCallback(
-    (ficha: FichaView) =>
-      setExpandedId((current) => {
-        const open = current === undefined ? readExpandedEntry() : current;
-        return open === ficha.id ? null : ficha.id;
-      }),
-    [],
-  );
   const select = useCallback((ficha: FichaView) => setSelectedId(ficha.id), []);
   const openMenu = useCallback((ficha: FichaView) => setMenuTarget(ficha), []);
   const sheetsOpen = Boolean(markTarget || menuTarget || noteTarget);
@@ -185,17 +179,9 @@ export const WatchlistCartelera = ({
     },
   });
 
-  if (visible.length === 0) {
-    return (
-      <p className="rounded-2xl border border-line bg-surface/40 px-4 py-8 text-center text-sm text-fog" role="status">
-        {tonightOnly
-          ? "Nada termina antes de tu hora de dormir. Quita «Esta noche» para ver toda la lista."
-          : "Nada en Quiero ver por ahora."}
-      </p>
-    );
-  }
-
   const canReorder = isManualOrder && visible.length > 1;
+  const ranked = sort === null;
+  const empty = visible.length === 0;
 
   return (
     <div className="relative space-y-4">
@@ -205,19 +191,35 @@ export const WatchlistCartelera = ({
         condensed={condensed}
         isEditing={isEditing}
         canReorder={canReorder}
-        reorderBlocked={!canReorder && visible.length > 1}
+        reorderBlocked={!canReorder && visible.length > 1 ? (sort ? "sort" : "filters") : null}
+        clearSortHref={sort ? catalogHref(pathname, { ...query, sort: null }) : undefined}
         onToggleEditing={() => setIsEditing((current) => !current)}
         // The phone header carries the count and «Reordenar»; the bar only shows while editing.
         className={sharedEditing && !isEditing ? "max-sm:hidden" : undefined}
       />
 
-      {isEditing && canReorder ? (
+      {empty ? (
+        <WatchlistEmpty
+          state={watchlistEmptyState(pathname, query, { genreName, platformsLabel })}
+          now={now}
+          nightEnds={nightEnds}
+          platformsLabel={platformsLabel}
+        />
+      ) : isEditing && canReorder ? (
         <WatchlistReorderList items={visible} isPending={isPending} onMove={actions.move} onReorder={actions.reorder} />
       ) : (
         <div className="lg:flex lg:items-start lg:gap-8">
           <div className="min-w-0 space-y-4 lg:flex-[999_1_560px]">
             {hero ? (
-              <WatchlistHeroCompact key={hero.id} ficha={hero} stamped={stampedId === hero.id} onMarkSeen={openMark} onMenu={openMenu} />
+              <WatchlistHeroCompact
+                key={hero.id}
+                ficha={hero}
+                stamped={stampedId === hero.id}
+                eyebrow={heroEyebrow(sort, hero.platform?.label)}
+                ranked={ranked}
+                onMarkSeen={openMark}
+                onMenu={openMenu}
+              />
             ) : null}
             {rows.length > 0 ? (
               <ol className="space-y-2.5" aria-label="Después">
@@ -233,6 +235,7 @@ export const WatchlistCartelera = ({
                     desktop={isDesktop}
                     // The first folded row may teach the swipe (once a day; the row decides).
                     hint={index === 0 && !isDesktop}
+                    ranked={ranked}
                     onToggle={toggle}
                     onSelect={select}
                     onMarkSeen={openMark}
@@ -266,7 +269,7 @@ export const WatchlistCartelera = ({
         onCloseMark={() => setMarkTarget(null)}
         onWatchedSaved={(ficha) => {
           setMarkTarget(null);
-          setExpandedId(null);
+          closeExpanded();
           actions.onWatchedSaved(ficha);
         }}
         onWatchedError={actions.onWatchedError}

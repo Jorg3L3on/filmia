@@ -16,12 +16,16 @@ import { focusRing, pillActionClass } from "@/lib/ui";
 type WatchlistHeroCompactProps = {
   ficha: FichaView;
   stamped: boolean;
+  /** «Próxima en tu lista», or what the first row is under a sort (FIL-I24-4). */
+  eyebrow: string;
+  /** Manual order: the orange «1». Under a sort the badge lies, so it goes. */
+  ranked: boolean;
   onMarkSeen: (ficha: FichaView) => void;
   onMenu: (ficha: FichaView) => void;
 };
 
 /** #1 keeps its stage: backdrop, bigger poster, two-line synopsis, «Vi esto». */
-export const WatchlistHeroCompact = ({ ficha, stamped, onMarkSeen, onMenu }: WatchlistHeroCompactProps) => {
+export const WatchlistHeroCompact = ({ ficha, stamped, eyebrow, ranked, onMarkSeen, onMenu }: WatchlistHeroCompactProps) => {
   const ambient = usePosterAmbientColor(ficha.posterPath, ficha.posterAmbient);
   const backdropSrc =
     tmdbBackdropUrl(ficha.backdropPath, "w1280") ?? tmdbPosterUrl(ficha.posterPath, "w500");
@@ -77,15 +81,15 @@ export const WatchlistHeroCompact = ({ ficha, stamped, onMarkSeen, onMenu }: Wat
               className="rounded-poster shadow-[0_24px_60px_rgb(var(--que-ver-glow)/0.35),0_12px_28px_rgba(0,0,0,0.6)] transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110"
             />
           </SharedPoster>
-          <span className="absolute -left-2.5 -top-2.5 inline-flex size-9 items-center justify-center rounded-full bg-accent font-serif text-base font-bold text-ink shadow-[0_8px_20px_rgba(0,0,0,0.45)]">
-            1
-          </span>
+          {ranked ? (
+            <span className="absolute -left-2.5 -top-2.5 inline-flex size-9 items-center justify-center rounded-full bg-accent font-serif text-base font-bold text-ink shadow-[0_8px_20px_rgba(0,0,0,0.45)]">
+              1
+            </span>
+          ) : null}
         </Link>
 
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">
-            Próxima en tu lista
-          </p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">{eyebrow}</p>
           <h2 className="mt-1 text-balance font-serif text-[1.65rem] leading-[1.05] text-paper sm:text-4xl">
             <Link href={`/titulos/${ficha.id}`} className={cn("hover:text-accent", focusRing)}>
               {ficha.name}

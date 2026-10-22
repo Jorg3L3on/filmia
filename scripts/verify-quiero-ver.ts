@@ -92,6 +92,17 @@ const run = () => {
   assert(!/\.filter-rail-fade > button:first-child/.test(css), "The old 30 px first-button rule is gone");
   assert(page.includes("minePlatformsInBar") && read("src/components/CatalogFilters.tsx").includes("minePlatformsInBar && minePlatforms ? 1 : 0"), "Filtros badge no longer counts «Mis plataformas» when the rail owns the chip");
   assert(page.includes("applyWatchlistFilters(rawItems, { short: true }).length") && page.includes("applyWatchlistFilters(rawItems, { awarded: true }).length"), "Counts come from applyWatchlistFilters over the whole list");
+
+  // Piezas (FIL-I24-4): truthful eyebrow under a sort, one empty state that names the chip, platform in «Vi esto».
+  assert(exists("src/lib/watchlist-empty.ts") && exists("src/lib/watchlist-empty.test.ts"), "heroEyebrow / watchlistEmptyState live in src/lib with tests");
+  const hero = read("src/components/watchlist/WatchlistHeroCompact.tsx");
+  assert(hero.includes("eyebrow: string") && hero.includes("ranked ? (") && hero.includes("{eyebrow}</p>") && !hero.includes(">Próxima en tu lista<"), "Hero takes its eyebrow and only shows the orange «1» in manual order");
+  assert(fichaRow.includes("sortedRankLabel(rank)") && fichaRow.includes("ranked ? ("), "Rows read «#n en tu orden» under a sort instead of the numeral");
+  assert(cartelera.includes("heroEyebrow(sort, hero.platform?.label)") && cartelera.includes("WatchlistEmpty") && cartelera.includes("watchlistEmptyState(pathname, query"), "Cartelera owns the eyebrow and the single empty state");
+  assert(exists("src/components/watchlist/WatchlistEmpty.tsx") && read("src/components/watchlist/WatchlistEmpty.tsx").includes("Ya pasó tu hora de dormir") && read("src/components/watchlist/WatchlistEmpty.tsx").includes("/perfil#hora-de-dormir"), "«Esta noche» past bedtime says so and offers «Cambiar hora»");
+  assert(!page.includes("MinePlatformsEmpty") && !page.includes('title="Nada con ese filtro"'), "Page no longer renders its own empties: the cartelera does");
+  assert(cartelera.includes('reorderBlocked={!canReorder && visible.length > 1 ? (sort ? "sort" : "filters") : null}'), "Sticky bar says whether a sort or a filter blocks reordering");
+  assert(read("src/components/watchlist/WatchlistSheets.tsx").includes("platform={markTarget?.platform?.platform ?? undefined}"), "«Vi esto» opens with the row's platform");
   assert(read("docs/motion.md").includes("cartelera"), "Motion doc covers the cartelera");
 
   console.log("✓ Quiero ver · La cartelera: premios (0006 + OMDb + backfill), pin «Esta noche» en Hoy, fichas + gestos + escenario");

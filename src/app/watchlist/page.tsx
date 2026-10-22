@@ -1,11 +1,7 @@
 import { Suspense } from "react";
 import { CatalogFilters } from "@/components/CatalogFilters";
 import { EmptyState } from "@/components/EmptyState";
-import {
-  MinePlatformsEmpty,
-  MinePlatformsSetupCta,
-  MissingStreamingDataNote,
-} from "@/components/MinePlatformsNotice";
+import { MinePlatformsSetupCta, MissingStreamingDataNote } from "@/components/MinePlatformsNotice";
 import { PageHeader } from "@/components/PageHeader";
 import { WatchlistBodySkeleton } from "@/components/PageSkeletons";
 import { WatchlistCartelera } from "@/components/watchlist/WatchlistCartelera";
@@ -19,8 +15,8 @@ import {
   getWatchlist,
 } from "@/lib/queries";
 import { scheduleMissingTitleOverviews } from "@/lib/title-overview-schedule";
-import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
-import { catalogHref, parseMinePlatforms } from "@/lib/catalog-href";
+import { formatUserPlatformsList, resolveCatalogAvailability } from "@/lib/streaming-platforms";
+import { parseMinePlatforms } from "@/lib/catalog-href";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
 import { parseNightEnds } from "@/lib/tonight/time";
 import { buildWatchlistFichas, type WatchlistSignals } from "@/lib/watchlist-ficha";
@@ -142,7 +138,7 @@ const WatchlistBody = async ({
   const nightEnds = profile?.nightEnds ?? parseNightEnds(null);
 
   const listId = watchlist?.id ?? "";
-  const clearHref = catalogHref("/watchlist");
+  const genres = genresInList(rawItems);
   const hasExtraFilters =
     kindFilter !== "ALL" ||
     Boolean(seriesStatus) ||
@@ -189,7 +185,7 @@ const WatchlistBody = async ({
             pathname="/watchlist"
             query={railQuery}
             sort={sort}
-            genres={genresInList(rawItems)}
+            genres={genres}
             counts={{
               short: applyWatchlistFilters(rawItems, { short: true }).length,
               awarded: applyWatchlistFilters(rawItems, { awarded: true }).length,
@@ -209,30 +205,8 @@ const WatchlistBody = async ({
         />
       ) : catalog.needsSetup ? (
         <MinePlatformsSetupCta />
-      ) : items.length === 0 && (minePlatforms || platforms.length > 0) ? (
-        <div className="space-y-3">
-          <MissingStreamingDataNote count={catalog.missingCache} />
-          <MinePlatformsEmpty
-            userPlatforms={platforms.length > 0 ? platforms : userPlatforms}
-            actionHref={clearHref}
-            hasFilters={
-              kindFilter !== "ALL" ||
-              Boolean(seriesStatus) ||
-              short ||
-              awarded ||
-              genreIds.length > 0
-            }
-          />
-        </div>
-      ) : items.length === 0 ? (
-        <EmptyState
-          variant="watchlist"
-          title="Nada con ese filtro"
-          description="Prueba otra pestaña o quita filtros."
-          actionHref="/watchlist"
-          actionLabel="Ver todos"
-        />
       ) : (
+        // Empty too (FIL-I24-4): the cartelera keeps the count bar at 0 and names the chip to blame.
         <div className="space-y-4">
           <MissingStreamingDataNote count={catalog.missingCache} />
           <WatchlistCartelera
@@ -242,6 +216,11 @@ const WatchlistBody = async ({
             isManualOrder={!hasExtraFilters}
             tonightOnly={tonight}
             pinnedTitleId={signals.pinnedTitleId}
+            sort={sort}
+            query={railQuery}
+            pathname="/watchlist"
+            genreName={genreIds.length === 1 ? (genres.find((genre) => genre.id === genreIds[0])?.name ?? null) : null}
+            platformsLabel={formatUserPlatformsList(platforms.length > 0 ? platforms : userPlatforms) || null}
           />
         </div>
       )}

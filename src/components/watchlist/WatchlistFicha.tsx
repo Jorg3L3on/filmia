@@ -25,6 +25,7 @@ import { composeHandlers } from "@/lib/compose-handlers";
 import { useLongPress } from "@/lib/motion";
 import { claimOncePerDay } from "@/lib/once-per-day";
 import { UNFOLD_DOCK_GAP_PX, UNFOLD_HEADER_GAP_PX, unfoldScrollDelta } from "@/lib/reveal-unfolded";
+import { sortedRankLabel } from "@/lib/watchlist-empty";
 import { staggerStyle } from "@/lib/motion-style";
 import { isRemoteImage, tmdbBackdropUrl, tmdbPosterUrl } from "@/lib/tmdb";
 import { focusRing, glassRowClass } from "@/lib/ui";
@@ -41,6 +42,8 @@ type WatchlistFichaProps = {
   desktop: boolean;
   /** Eligible for the daily hint (FIL-I24-1): the row slides 24 px right and back to show «Vi esto». */
   hint?: boolean;
+  /** Manual order: the serif numeral on the poster. Under a sort it reads «#n en tu orden» in the meta instead. */
+  ranked?: boolean;
   onToggle: (ficha: FichaView) => void;
   onSelect: (ficha: FichaView) => void;
   onMarkSeen: (ficha: FichaView) => void;
@@ -107,6 +110,7 @@ const WatchlistFichaImpl = ({
   stagger,
   desktop,
   hint = false,
+  ranked = true,
   onToggle,
   onSelect,
   onMarkSeen,
@@ -242,16 +246,20 @@ const WatchlistFichaImpl = ({
                 className="rounded-poster shadow-[0_10px_24px_rgba(0,0,0,0.45)] transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110"
               />
             </SharedPoster>
-            <span className="ficha-rank" aria-hidden="true">
-              {rank}
-            </span>
+            {ranked ? (
+              <span className="ficha-rank" aria-hidden="true">
+                {rank}
+              </span>
+            ) : null}
           </div>
           <div className="min-w-0 flex-1 space-y-1 pt-0.5">
             <span className="ficha-title line-clamp-2 block font-medium text-paper">
               <span className="sr-only">{rank}. </span>
               {ficha.name}
             </span>
-            <span className="block truncate text-xs text-mist">{ficha.meta}</span>
+            <span className="block truncate text-xs text-mist">
+              {ranked ? ficha.meta : `${sortedRankLabel(rank)} · ${ficha.meta}`}
+            </span>
             {ficha.genres.length > 0 ? (
               <span className="block truncate text-xs text-paper/70">{ficha.genres.join(" · ")}</span>
             ) : null}
