@@ -131,7 +131,8 @@ const WatchlistBody = async ({
     applyWatchlistFilters(availableItems, { short, awarded, genreIds }),
     sort,
   );
-  scheduleMissingTitleOverviews(items.map((item) => item.title));
+  // Runtime too (FIL-I24-7): Cortas, «Más cortas primero» and «Esta noche» need it.
+  scheduleMissingTitleOverviews(items.map((item) => item.title), { runtime: true });
 
   const signals = profile ? await loadWatchlistSignals(profile.id, now) : EMPTY_SIGNALS;
   const fichas = buildWatchlistFichas(items, { signals, userPlatforms, now });

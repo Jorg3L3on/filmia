@@ -684,7 +684,8 @@ const fetchTmdbDetails = async (
   };
 };
 
-const loadCachedTmdbDetails = unstable_cache(fetchTmdbDetails, ["tmdb-details", "v1"], {
+// v2: series runtime falls back to the last / next episode aired (FIL-I24-7).
+const loadCachedTmdbDetails = unstable_cache(fetchTmdbDetails, ["tmdb-details", "v2"], {
   revalidate: METADATA_REVALIDATE_SECONDS,
   tags: [TMDB_CACHE_TAG],
 });

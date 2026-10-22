@@ -115,6 +115,12 @@ const run = () => {
   assert(cartelera.includes("const hero = isDesktop ? null : (visible[0] ?? null);") && cartelera.includes("const rows = isDesktop ? visible : visible.slice(1);"), "Desktop renders no WatchlistHeroCompact: the list starts at #1");
   assert(cartelera.includes("lead={isDesktop && index === 0 ? heroEyebrow(sort, ficha.platform?.label) : null}") && fichaRow.includes("lead && ranked ? (") && fichaRow.includes("{lead}</span>"), "Desktop #1 row carries the eyebrow and the orange badge");
   assert(cartelera.includes("useWatchlistKeyboard({") && cartelera.includes("enabled: isDesktop && !isEditing && !sheetsOpen"), "↑↓ / Enter / V keep working on the desktop stage");
+
+  // Después (FIL-I24-7): closing card and runtime in the lazy enrichment.
+  assert(exists("src/components/watchlist/WatchlistClosingCard.tsx") && read("src/components/watchlist/WatchlistClosingCard.tsx").includes("Eso es todo") && read("src/components/watchlist/WatchlistClosingCard.tsx").includes('href="/buscar"'), "Closing card: «Eso es todo», total, fit count, Buscar más / Arriba");
+  assert(cartelera.includes("<WatchlistClosingCard total={visible.length} fitCount={fitCount} />"), "The cartelera closes the list once");
+  assert(read("src/lib/title-extras-core.ts").includes("export const titleNeedsRuntime") && read("src/lib/title-overview-hydrate.ts").includes("runtime && titleNeedsRuntime(title)") && page.includes("{ runtime: true }"), "Quiero ver's lazy enrichment also asks for the runtime");
+  assert(read("src/lib/title-overview-hydrate.ts").includes("OVERVIEW_HYDRATE_LIMIT = 32"), "Same call cap as before");
   assert(read("docs/motion.md").includes("cartelera"), "Motion doc covers the cartelera");
 
   console.log("✓ Quiero ver · La cartelera: premios (0006 + OMDb + backfill), pin «Esta noche» en Hoy, fichas + gestos + escenario");

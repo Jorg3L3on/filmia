@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { WatchlistClosingCard } from "@/components/watchlist/WatchlistClosingCard";
 import { WatchlistEmpty } from "@/components/watchlist/WatchlistEmpty";
 import { WatchlistFicha } from "@/components/watchlist/WatchlistFicha";
 import { WatchlistHeroCompact } from "@/components/watchlist/WatchlistHeroCompact";
@@ -11,6 +12,7 @@ import { WatchlistSheets } from "@/components/watchlist/WatchlistSheets";
 import { WatchlistStage } from "@/components/watchlist/WatchlistStage";
 import { WatchlistStickyBar } from "@/components/watchlist/WatchlistStickyBar";
 import type { FichaView } from "@/components/watchlist/types";
+import { useCondensedBar } from "@/components/watchlist/useCondensedBar";
 import { useExpandedFicha } from "@/components/watchlist/useExpandedFicha";
 import { useFichaViews } from "@/components/watchlist/useFichaViews";
 import { useWatchlistActions } from "@/components/watchlist/useWatchlistActions";
@@ -86,26 +88,12 @@ export const WatchlistCartelera = ({
   const [markTarget, setMarkTarget] = useState<FichaView | null>(null);
   const [menuTarget, setMenuTarget] = useState<FichaView | null>(null);
   const [noteTarget, setNoteTarget] = useState<FichaView | null>(null);
-  const [condensed, setCondensed] = useState(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const { condensed, sentinelRef } = useCondensedBar();
   const timers = useRef<number[]>([]);
 
   useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
   const later = useCallback((fn: () => void, ms: number) => {
     timers.current.push(window.setTimeout(fn, ms));
-  }, []);
-
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel || typeof IntersectionObserver === "undefined") {
-      return;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => setCondensed(Boolean(entry && !entry.isIntersecting && entry.boundingClientRect.top < 0)),
-      { rootMargin: "-56px 0px 0px 0px" },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
   }, []);
 
   const hide = useCallback((id: string) => setHiddenIds((current) => new Set(current).add(id)), []);
@@ -185,6 +173,11 @@ export const WatchlistCartelera = ({
   const canReorder = isManualOrder && visible.length > 1;
   const ranked = sort === null;
   const empty = visible.length === 0;
+  // Closing card (FIL-I24-7): how many fit before bedtime, only at night (fit is null by day).
+  const fitCount =
+    now && isNight(now, nightEnds)
+      ? views.filter((view) => view.fit && view.fit.overflowMinutes === 0 && view.fit.remainingMinutes > 0).length
+      : null;
 
   return (
     <div className="relative space-y-4">
@@ -250,6 +243,7 @@ export const WatchlistCartelera = ({
                 ))}
               </ol>
             ) : null}
+            {visible.length > 1 ? <WatchlistClosingCard total={visible.length} fitCount={fitCount} /> : null}
           </div>
           {isDesktop && selected ? (
             <div className="hidden lg:sticky lg:top-[calc(3.5rem+env(safe-area-inset-top)+1rem)] lg:block lg:w-[400px] lg:shrink-0">

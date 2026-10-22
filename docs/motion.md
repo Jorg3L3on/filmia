@@ -61,6 +61,8 @@ Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` 
 | Pista del swipe `.ficha-swipe-hint` | 620 ms · `--ease-out` · 1.2 s after arrival | Once a day (localStorage) the first folded row slides 24 px right, holds, and returns in 280 ms with «Vi esto» showing under it. Transform only; not with reduced motion, not on an open or stamped row, not on desktop. |
 | Sello `.visto-stamp.is-row` | `--duration-pop` · `--spring` | Same stamp as Hoy at row size; 520 ms later the poster flies to Perfil (`.fly-poster`). |
 | Conteo `.num-ticker-col` | `--duration-morph` · `--ease-out` | Digits roll when a chip changes the count. |
+| Riel A (FIL-I24-3) | static | One native-scrolling row; chips 36 px / 44 touch; while it overflows to the right a 48 px mask fades the end and a «›» disc scrolls 200 px (smooth). No JS on the scroll itself. |
+| Carta de cierre (FIL-I24-7) | — | «Arriba» is a native smooth scroll to 0 (instant with reduced motion). |
 | Título condensado `.cartelera-condensed-title` | `--duration-tab` · `--ease-out` | Appears in the sticky bar once the H1 scrolls away (IntersectionObserver). |
 | Menú / nota / género | `.sheet-rise` | Bottom sheets, never spring. |
 

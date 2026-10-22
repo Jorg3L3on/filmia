@@ -16,6 +16,7 @@ export {
   mergeTitleExtras,
   storedTitleExtras,
   titleExtrasPatch,
+  titleNeedsRuntime,
   titleNeedsTmdbExtras,
   type FetchedTitleExtras,
   type TitleExtrasPatch,
