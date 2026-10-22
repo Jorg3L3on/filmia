@@ -9,6 +9,7 @@ import { SharedPoster } from "@/components/SharedPoster";
 import { LaurelIcon } from "@/components/watchlist/icons";
 import { cn } from "@/lib/cn";
 import { formatRuntime, formatStarScore, TITLE_KIND_LABEL } from "@/lib/labels";
+import { menuVia, type SearchMenuVia } from "@/components/tmdb-search/SearchRowMenu";
 import { useLongPress } from "@/lib/motion";
 import type { SearchResultFacts } from "@/lib/search-result-facts";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
@@ -30,15 +31,15 @@ type SearchResultRowProps = {
   href: string;
   /** Tap: the row is leaving for its ficha (Buscar remembers the query). */
   onOpen?: (result: TmdbCatalogResult) => void;
-  /** Long press / right click: the shortcuts menu, anchored to this row. */
-  onMenu?: (result: TmdbCatalogResult, anchor: DOMRect) => void;
+  /** Long press / right click: the shortcuts menu, anchored to this row; `via` says touch or not. */
+  onMenu?: (result: TmdbCatalogResult, anchor: DOMRect, via: SearchMenuVia) => void;
 };
 
 /** How Buscar wires every row (results, filmographies): where it goes, what holding it does. */
 export type SearchRowWiring = {
   hrefFor: (result: TmdbCatalogResult, titleId: string | null) => string;
   onOpen: (result: TmdbCatalogResult) => void;
-  onMenu: (result: TmdbCatalogResult, anchor: DOMRect) => void;
+  onMenu: (result: TmdbCatalogResult, anchor: DOMRect, via: SearchMenuVia) => void;
   factsFor?: (result: TmdbCatalogResult) => SearchResultFacts | null;
 };
 
@@ -66,14 +67,14 @@ export const SearchResultRow = ({
 }: SearchResultRowProps) => {
   const rowRef = useRef<HTMLAnchorElement>(null);
   const firedRef = useRef(false);
-  const openMenu = () => {
+  const openMenu = (pointerType: string) => {
     const node = rowRef.current;
     if (!onMenu || !node) {
       return;
     }
     firedRef.current = true;
     navigator.vibrate?.(8);
-    onMenu(result, node.getBoundingClientRect());
+    onMenu(result, node.getBoundingClientRect(), menuVia(pointerType));
   };
   const longPress = useLongPress(openMenu);
 
@@ -97,7 +98,7 @@ export const SearchResultRow = ({
           return;
         }
         event.preventDefault();
-        openMenu();
+        openMenu("mouse");
         // A right click never ends in a click: nothing to swallow.
         firedRef.current = false;
       }}

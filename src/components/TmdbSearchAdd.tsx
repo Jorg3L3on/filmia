@@ -177,9 +177,9 @@ export const TmdbSearchAdd = ({
     hrefFor,
     factsFor: rowFactsFor,
     onOpen: () => rememberQuery(),
-    onMenu: (result, anchor) => {
+    onMenu: (result, anchor, via) => {
       rememberQuery();
-      setMenu({ result, anchor });
+      setMenu({ result, anchor, via });
     },
   };
   const openDirector: typeof openPerson = (hit) => {
