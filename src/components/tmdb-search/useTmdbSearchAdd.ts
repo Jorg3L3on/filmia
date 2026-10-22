@@ -93,6 +93,10 @@ export const useTmdbSearchAdd = ({
     isSearching,
     handleSearch,
     handleQueryChange,
+    total,
+    canLoadMore,
+    isLoadingMore,
+    loadMore,
   } = useTmdbDiscoverSearch({
     enabled: configuredTmdb,
     initialQuery,
@@ -209,6 +213,12 @@ export const useTmdbSearchAdd = ({
     isSearching,
     isAdding,
     visibleResults,
+    /** Titles loaded so far (every kind) and how many TMDB has (FIL-I22-4). */
+    loadedCount: results.length,
+    total,
+    canLoadMore,
+    isLoadingMore,
+    loadMore,
     listIdsFor,
     listsError,
     pinnedTitleId,

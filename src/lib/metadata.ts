@@ -5,6 +5,7 @@ import {
   getTmdbExternalIds,
   isTmdbConfigured,
   searchTmdbMulti,
+  searchTmdbMultiPage,
   type TmdbGenre,
   type TmdbKeyword,
   type TmdbPerson,
@@ -69,3 +70,4 @@ export const resolveTitleMetadata = async (
 };
 
 export const searchTmdbCatalog = searchTmdbMulti;
+export const searchTmdbCatalogPage = searchTmdbMultiPage;

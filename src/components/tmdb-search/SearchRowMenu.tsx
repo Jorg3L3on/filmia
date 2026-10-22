@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type PointerEvent, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { SearchResultRowBody, type SearchRowStatus } from "@/components/tmdb-search/SearchResultRow";
 import { cn } from "@/lib/cn";
@@ -9,7 +10,14 @@ import type { TmdbCatalogResult } from "@/lib/tmdb";
 import { diaryDayLabel } from "@/lib/title-preview";
 import { focusRing, glassRowClass } from "@/lib/ui";
 
-export type SearchMenuTarget = { result: TmdbCatalogResult; anchor: DOMRect };
+/** How the menu opened: a touch hold skips the focus ring (FIL-I22-1); mouse, pen and keyboard get it. */
+export type SearchMenuVia = "touch" | "pointer";
+
+export type SearchMenuTarget = { result: TmdbCatalogResult; anchor: DOMRect; via?: SearchMenuVia };
+
+/** `via` for a pointer type (`PointerEvent.pointerType`); a contextmenu or key is «pointer». */
+export const menuVia = (pointerType: string | null | undefined): SearchMenuVia =>
+  pointerType === "touch" ? "touch" : "pointer";
 
 type SearchRowMenuProps = {
   target: SearchMenuTarget | null;
@@ -38,16 +46,17 @@ type SearchRowMenuProps = {
 const MENU_WIDTH = 262;
 const ITEM_HEIGHT = 46;
 const GAP = 10;
-/** The dock and the safe area at the bottom of a phone. */
+/** The dock and the safe area at the bottom of a phone; on /buscar the dock sits at the top, so only the safe area (FIL-I22-7). */
 const BOTTOM_CLEARANCE = 96;
+const BOTTOM_CLEARANCE_DOCK_ON_TOP = 40;
 
 /** Below the row when it fits, above it otherwise; always inside the viewport. */
-const menuPosition = (anchor: DOMRect, items: number): CSSProperties => {
+const menuPosition = (anchor: DOMRect, items: number, bottomClearance: number): CSSProperties => {
   const height = items * ITEM_HEIGHT + 24;
   const viewportHeight = window.innerHeight;
   const below = anchor.bottom + GAP;
   const top =
-    below + height <= viewportHeight - BOTTOM_CLEARANCE
+    below + height <= viewportHeight - bottomClearance
       ? below
       : Math.max(12, anchor.top - GAP - height);
   const left = Math.min(Math.max(12, anchor.left), window.innerWidth - MENU_WIDTH - 12);
@@ -78,12 +87,28 @@ export const SearchRowMenu = ({
   watchlistHint = null,
 }: SearchRowMenuProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const bottomClearance = pathname?.startsWith("/buscar") ? BOTTOM_CLEARANCE_DOCK_ON_TOP : BOTTOM_CLEARANCE;
+  /**
+   * The pointer that went down on the scrim, if any. The hold that opened the
+   * menu ends with a pointerup + click that land on the scrim (it is already
+   * over the row): without a pointerdown of their own they are ignored, so the
+   * menu stays open until a real tap or click outside (FIL-I22-1).
+   */
+  const scrimPointerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!target) {
       return;
     }
-    menuRef.current?.querySelector<HTMLButtonElement>("button:not([disabled])")?.focus({ preventScroll: true });
+    scrimPointerRef.current = null;
+    const panel = menuRef.current;
+    if (target.via === "touch") {
+      // A thumb opened it: no item gets the focus ring; the panel takes focus so Escape still works.
+      panel?.focus({ preventScroll: true });
+    } else {
+      panel?.querySelector<HTMLButtonElement>("button:not([disabled])")?.focus({ preventScroll: true });
+    }
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onClose();
@@ -144,7 +169,23 @@ export const SearchRowMenu = ({
 
   return createPortal(
     <div className="search-menu fixed inset-0 z-[80]">
-      <div className="search-menu-scrim absolute inset-0" aria-hidden="true" onClick={onClose} />
+      <div
+        className="search-menu-scrim absolute inset-0"
+        aria-hidden="true"
+        onPointerDown={(event: PointerEvent) => {
+          scrimPointerRef.current = event.pointerId;
+        }}
+        onPointerCancel={() => {
+          scrimPointerRef.current = null;
+        }}
+        onClick={() => {
+          // Only a click whose pointer began on the scrim closes (not the release of the opening hold).
+          if (scrimPointerRef.current !== null) {
+            scrimPointerRef.current = null;
+            onClose();
+          }
+        }}
+      />
       {lift ? (
         <div
           aria-hidden="true"
@@ -165,9 +206,10 @@ export const SearchRowMenu = ({
       <div
         ref={menuRef}
         role="menu"
+        tabIndex={-1}
         aria-label={`Acciones de ${result.name}`}
-        className="search-menu-panel fixed rounded-[1.375rem] border border-white/14 bg-[rgb(22_26_31/0.94)] p-1.5 shadow-[0_24px_60px_rgb(0_0_0/0.7)] backdrop-blur-xl"
-        style={menuPosition(anchor, items.length - 1)}
+        className="search-menu-panel fixed rounded-[1.375rem] border border-white/14 bg-[rgb(22_26_31/0.94)] p-1.5 shadow-[0_24px_60px_rgb(0_0_0/0.7)] outline-none backdrop-blur-xl"
+        style={menuPosition(anchor, items.length - 1, bottomClearance)}
         onClick={(event) => event.stopPropagation()}
       >
         {items}

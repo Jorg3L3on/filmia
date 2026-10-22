@@ -5,6 +5,7 @@ import {
   countRoles,
   menuRoles,
   parseFilmography,
+  isRealDirectorFor,
   personNameMatchesQuery,
   personRoleLine,
   personYearsLabel,
@@ -226,6 +227,15 @@ describe("person summary copy", () => {
     assert.equal(personRoleLine({ role: "director", movies: 1, series: 0 }), "Director · 1 película");
     assert.equal(personYearsLabel({ from: 2001, to: 2001 }), "2001");
     assert.equal(personYearsLabel(null), null);
+  });
+});
+
+describe("isRealDirectorFor (FIL-I22-5)", () => {
+  it("wants a photo, or the whole name typed", () => {
+    assert.equal(isRealDirectorFor({ name: "David Fincher", profilePath: "/x.jpg" }, "fincher"), true);
+    assert.equal(isRealDirectorFor({ name: "David Fincher", profilePath: null }, "david fincher"), true);
+    assert.equal(isRealDirectorFor({ name: "Stan Severance", profilePath: null }, "severance"), false);
+    assert.equal(isRealDirectorFor({ name: "David Fincher", profilePath: "/x.jpg" }, "severance"), false);
   });
 });
 

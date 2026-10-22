@@ -10,13 +10,20 @@ export const TEST_ISSUER = "https://filmia.test";
 /** Every OAuth/MCP test runs with this public origin, whatever Host a request claims. */
 process.env.AUTH_URL = `${TEST_ISSUER}/`;
 
+/** Today at 12:00Z: day math stays whole, and tokens the bed issues are live for the SDK's own real-clock expiry check. */
+const todayNoonUtc = () => {
+  const now = new Date();
+  now.setUTCHours(12, 0, 0, 0);
+  return now.toISOString();
+};
+
 /**
- * A controllable clock shared by the OAuth deps and the memory store. It starts at the real
- * time: mcp-handler checks `AuthInfo.expiresAt` against `Date.now()`, so a token issued on a
- * fixed past date (the old 2026-10-20) expires for the SDK once the real clock passes its TTL.
+ * A controllable clock shared by the OAuth deps and the memory store. It starts today, not on a
+ * fixed date: `withMcpAuth` compares `authInfo.expiresAt` with the real clock, so a bed frozen in
+ * the past hands out tokens that are already expired once that day goes by (FIL-25).
  */
-export const testClock = (iso?: string) => {
-  let now = iso ? new Date(iso) : new Date();
+export const testClock = (iso = todayNoonUtc()) => {
+  let now = new Date(iso);
   return {
     now: () => new Date(now),
     advance: (ms: number) => {

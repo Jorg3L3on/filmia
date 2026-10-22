@@ -50,8 +50,15 @@ export type CachedSearch = {
   director?: DirectorHit | null;
   /** Director mode: the people found. */
   directors?: DirectorHit[];
+  /** Titles mode (FIL-I22-4): TMDB pages loaded so far, how many there are, and the count of titles. */
+  pages?: number;
+  totalPages?: number;
+  total?: number;
   at: number;
 };
+
+/** TMDB's page size: what «Cargar 20 más» adds (minus the people on the page). */
+export const SEARCH_PAGE_SIZE = 20;
 
 const searchCache = new Map<string, CachedSearch>();
 

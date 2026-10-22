@@ -6,6 +6,7 @@ import { useCineActions } from "@/components/cine/CineActions";
 import { PosterImage } from "@/components/PosterImage";
 import type { CineFilm } from "@/lib/cine";
 import { cn } from "@/lib/cn";
+import { menuVia } from "@/components/tmdb-search/SearchRowMenu";
 import { useLongPress } from "@/lib/motion";
 import { focusRing, posterFrame } from "@/lib/ui";
 
@@ -36,13 +37,13 @@ export const YearTopRow = ({
   const { hrefFor, openMenu } = useCineActions();
   const rowRef = useRef<HTMLAnchorElement>(null);
   const firedRef = useRef(false);
-  const open = () => {
+  const open = (pointerType: string) => {
     if (!rowRef.current) {
       return;
     }
     firedRef.current = true;
     navigator.vibrate?.(8);
-    openMenu(film, rowRef.current.getBoundingClientRect());
+    openMenu(film, rowRef.current.getBoundingClientRect(), menuVia(pointerType));
   };
   const longPress = useLongPress(open);
 
@@ -64,7 +65,7 @@ export const YearTopRow = ({
       }}
       onContextMenu={(event) => {
         event.preventDefault();
-        open();
+        open("mouse");
         firedRef.current = false;
       }}
       {...longPress}

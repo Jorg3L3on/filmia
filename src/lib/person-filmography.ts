@@ -365,6 +365,15 @@ export type DirectorHit = {
 };
 
 /**
+ * The «Ver filmografía» card wants a real person (FIL-I22-5): named by the words
+ * typed and with a photo, or named in full by them. A title like «severance» no
+ * longer conjures a photo-less «Stan Severance».
+ */
+export const isRealDirectorFor = (hit: Pick<DirectorHit, "name" | "profilePath">, query: string) =>
+  personNameMatchesQuery(hit.name, query) &&
+  (hit.profilePath !== null || normalizePersonName(hit.name) === normalizePersonName(query));
+
+/**
  * Director mode: one clear match opens the person view; several (or none that
  * match by name) become cards to pick from; none at all is the empty state.
  */
