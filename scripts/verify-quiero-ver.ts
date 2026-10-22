@@ -110,6 +110,11 @@ const run = () => {
   assert(read("src/components/ListItemOrderControls.tsx").includes('size === "lg" ? "size-11" : "size-8"') && read("src/components/WatchlistCard.tsx").includes('size="lg"') && read("src/components/WatchlistCard.tsx").includes("inline-flex size-11 shrink-0 cursor-grab"), "Reordenar rows: 44×44 arrows and handle");
   assert(/\.ficha-rank \{[^}]*bottom: -10px/.test(css), "Numeral hangs 4 px lower with a denser shadow");
   assert(exists("src/components/PosterImageFallback.tsx") && read("src/components/PosterImageFallback.tsx").includes("onError={() => setBroken(true)}") && read("src/components/PosterImage.tsx").includes("PosterImageFallback"), "A broken poster falls back to the plate with the initial");
+
+  // Escritorio (FIL-I24-6): no compact hero from 1024 px; the list starts at #1 and the stage is the hero.
+  assert(cartelera.includes("const hero = isDesktop ? null : (visible[0] ?? null);") && cartelera.includes("const rows = isDesktop ? visible : visible.slice(1);"), "Desktop renders no WatchlistHeroCompact: the list starts at #1");
+  assert(cartelera.includes("lead={isDesktop && index === 0 ? heroEyebrow(sort, ficha.platform?.label) : null}") && fichaRow.includes("lead && ranked ? (") && fichaRow.includes("{lead}</span>"), "Desktop #1 row carries the eyebrow and the orange badge");
+  assert(cartelera.includes("useWatchlistKeyboard({") && cartelera.includes("enabled: isDesktop && !isEditing && !sheetsOpen"), "↑↓ / Enter / V keep working on the desktop stage");
   assert(read("docs/motion.md").includes("cartelera"), "Motion doc covers the cartelera");
 
   console.log("✓ Quiero ver · La cartelera: premios (0006 + OMDb + backfill), pin «Esta noche» en Hoy, fichas + gestos + escenario");

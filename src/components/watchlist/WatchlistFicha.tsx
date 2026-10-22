@@ -44,6 +44,11 @@ type WatchlistFichaProps = {
   hint?: boolean;
   /** Manual order: the serif numeral on the poster. Under a sort it reads «#n en tu orden» in the meta instead. */
   ranked?: boolean;
+  /**
+   * Desktop #1 (FIL-I24-6): the row carries the hero's eyebrow and, in manual order, the orange
+   * badge instead of the serif numeral. The stage beside the list is the hero.
+   */
+  lead?: string | null;
   onToggle: (ficha: FichaView) => void;
   onSelect: (ficha: FichaView) => void;
   onMarkSeen: (ficha: FichaView) => void;
@@ -111,6 +116,7 @@ const WatchlistFichaImpl = ({
   desktop,
   hint = false,
   ranked = true,
+  lead = null,
   onToggle,
   onSelect,
   onMarkSeen,
@@ -246,13 +252,23 @@ const WatchlistFichaImpl = ({
                 className="rounded-poster shadow-[0_10px_24px_rgba(0,0,0,0.45)] transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110"
               />
             </SharedPoster>
-            {ranked ? (
+            {lead && ranked ? (
+              <span
+                aria-hidden="true"
+                className="absolute -left-2 -top-2 inline-flex size-8 items-center justify-center rounded-full bg-accent font-serif text-sm font-bold text-ink shadow-[0_8px_20px_rgba(0,0,0,0.45)]"
+              >
+                1
+              </span>
+            ) : ranked ? (
               <span className="ficha-rank" aria-hidden="true">
                 {rank}
               </span>
             ) : null}
           </div>
           <div className="min-w-0 flex-1 space-y-1 pt-0.5">
+            {lead ? (
+              <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">{lead}</span>
+            ) : null}
             <span className="ficha-title line-clamp-2 block font-medium text-paper">
               <span className="sr-only">{rank}. </span>
               {ficha.name}

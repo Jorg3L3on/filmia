@@ -141,8 +141,11 @@ export const WatchlistCartelera = ({
   );
   const visibleIds = visible.map((view) => view.id);
   const hiddenInOrder = order.filter((id) => !visibleIds.includes(id));
-  const [hero, ...rows] = visible;
-  const selected = (selectedId && visible.find((view) => view.id === selectedId)) || hero || null;
+  // Desktop (FIL-I24-6): no compact hero; the list starts at #1 and the sticky stage is the hero.
+  const hero = isDesktop ? null : (visible[0] ?? null);
+  const rows = isDesktop ? visible : visible.slice(1);
+  const first = visible[0] ?? null;
+  const selected = (selectedId && visible.find((view) => view.id === selectedId)) || first || null;
 
   const actions = useWatchlistActions({
     listId,
@@ -222,12 +225,13 @@ export const WatchlistCartelera = ({
               />
             ) : null}
             {rows.length > 0 ? (
-              <ol className="space-y-2.5" aria-label="Después">
+              <ol className="space-y-2.5" aria-label={isDesktop ? "Quiero ver" : "Después"}>
                 {rows.map((ficha, index) => (
                   <WatchlistFicha
                     key={ficha.id}
                     ficha={ficha}
-                    rank={index + 2}
+                    rank={isDesktop ? index + 1 : index + 2}
+                    lead={isDesktop && index === 0 ? heroEyebrow(sort, ficha.platform?.label) : null}
                     expanded={expandedId === ficha.id}
                     selected={selected?.id === ficha.id}
                     stamped={stampedId === ficha.id}
