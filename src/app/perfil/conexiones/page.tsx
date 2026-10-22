@@ -47,7 +47,7 @@ const ConnectionsBody = async () => {
   const nowIso = now.toISOString();
 
   return (
-    <div className="space-y-9">
+    <div className="space-y-7">
       <ProfileSection id="url" title="Tu conector">
         <div className={cn(glassRowClass, "space-y-3 p-4")}>
           <p className="text-sm text-fog">Pega esta URL en tu app. Te pedirá entrar a Filmia y aprobar.</p>

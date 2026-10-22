@@ -53,7 +53,8 @@ export const CopyField = ({ value, label }: { value: string; label: string }) =>
       type="button"
       onClick={() => void copy(value, label)}
       className={cn(
-        "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-chrome px-3 text-xs font-medium text-paper hover:bg-chrome-hover",
+        "relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-chrome px-3 text-xs font-medium text-paper hover:bg-chrome-hover",
+        "after:absolute after:inset-x-0 after:-inset-y-1 after:content-['']",
         focusRing,
       )}
     >
@@ -93,7 +94,7 @@ const Activity = ({ items, now }: { items: ActivityItem[]; now: string }) => {
 const Badge = ({ tone, children }: { tone: "success" | "muted" | "accent"; children: string }) => (
   <span
     className={cn(
-      "inline-block rounded-full px-2 py-0.5 text-[11px] font-medium",
+      "inline-block rounded-full px-2 py-0.5 text-xs font-medium",
       tone === "success" && "bg-success-well text-success",
       tone === "accent" && "bg-accent/15 text-accent",
       tone === "muted" && "border border-line text-mist",
@@ -306,7 +307,7 @@ const NewTokenForm = ({ onDone }: { onDone?: () => void }) => {
             <label
               key={value}
               className={cn(
-                "flex h-9 cursor-pointer items-center justify-center rounded-lg text-sm transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent",
+                "relative flex h-9 cursor-pointer items-center justify-center rounded-lg text-sm transition-colors after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent",
                 days === value ? "bg-chrome font-medium text-paper" : "text-fog hover:text-paper",
               )}
             >
@@ -341,7 +342,7 @@ const NewTokenForm = ({ onDone }: { onDone?: () => void }) => {
           {error}
         </p>
       ) : null}
-      <Button type="submit" className="w-full" pending={pending} pendingLabel="Creando…">
+      <Button type="submit" size="lg" className="w-full" pending={pending} pendingLabel="Creando…">
         Crear token
       </Button>
     </form>
