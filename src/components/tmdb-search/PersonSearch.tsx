@@ -203,7 +203,8 @@ export const PersonView = ({
           type="button"
           onClick={onBack}
           className={cn(
-            "press-scale -ml-1 inline-flex max-w-full items-center gap-1 rounded-full px-1 text-sm text-fog hover:text-paper",
+            // On phones the dock's disc is the one «atrás» (FIL-I22-6); the text link stays for desktop.
+            "press-scale -ml-1 hidden max-w-full items-center gap-1 rounded-full px-1 text-sm text-fog hover:text-paper sm:inline-flex",
             focusRing,
           )}
         >

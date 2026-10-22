@@ -12,11 +12,15 @@ export type DockSearchHandlers = {
   submit: () => void;
 };
 
+/** Where the dock's left disc goes while a person opened from a search is on screen (FIL-I22-6). */
+export type DockSearchBack = { href: string; query: string };
+
 export type DockSearchState = {
   query: string;
+  back: DockSearchBack | null;
 };
 
-const INITIAL: DockSearchState = { query: "" };
+const INITIAL: DockSearchState = { query: "", back: null };
 
 let state: DockSearchState = INITIAL;
 let handlers: DockSearchHandlers | null = null;
@@ -58,6 +62,12 @@ export const dockSearch = {
       set({ query });
     }
   },
+  /** The page: a person is open over a search (the disc goes back to its results), or not (null). */
+  setBack: (back: DockSearchBack | null) => {
+    if (state.back?.href !== back?.href) {
+      set({ back });
+    }
+  },
   /** The page mounts; returns the query typed before it was ready ("" if none). */
   register: (next: DockSearchHandlers) => {
     handlers = next;
@@ -79,7 +89,7 @@ export const dockSearch = {
     return pending;
   },
   /** Leaving /buscar: the next visit starts from its own URL. */
-  reset: (query = "") => set({ query }),
+  reset: (query = "") => set({ query, back: null }),
 };
 
 const LAST_TAB_KEY = "filmia:dock-last-tab";

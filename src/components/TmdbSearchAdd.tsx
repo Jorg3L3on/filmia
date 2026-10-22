@@ -275,6 +275,15 @@ export const TmdbSearchAdd = ({
   useEffect(() => {
     dockSearch.syncFromPage(query);
   }, [query]);
+  // A person over a search (FIL-I22-6): the dock's disc becomes the one «atrás» to those results.
+  const backQuery = query.trim();
+  const backHref =
+    personPage && backQuery
+      ? buildSearchHref(backQuery, { watchedDate, watchedDestination: logMode, mode, kind: kindFilter })
+      : null;
+  useEffect(() => {
+    dockSearch.setBack(backHref ? { href: backHref, query: backQuery } : null);
+  }, [backHref, backQuery]);
 
   if (!configured.tmdb) {
     return <TmdbSearchUnavailable />;
