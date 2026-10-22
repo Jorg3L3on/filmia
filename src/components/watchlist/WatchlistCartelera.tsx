@@ -231,6 +231,8 @@ export const WatchlistCartelera = ({
                     stamped={stampedId === ficha.id}
                     stagger={Math.min(index, STAGGER_CAP)}
                     desktop={isDesktop}
+                    // The first folded row may teach the swipe (once a day; the row decides).
+                    hint={index === 0 && !isDesktop}
                     onToggle={toggle}
                     onSelect={select}
                     onMarkSeen={openMark}

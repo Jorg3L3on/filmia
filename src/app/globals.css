@@ -3023,6 +3023,36 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 
 .ficha-row[data-expanded="true"] {
   content-visibility: visible;
+  /* `clip` keeps the rounded corners without making the row a scroll container, so the
+     action row inside can stick to the viewport (FIL-I24-2). */
+  overflow: clip;
+}
+
+/* While the row measures its unfolded height (FIL-I24-2): no transitions, one synchronous layout. */
+.ficha-row.ficha-measuring .ficha-detail,
+.ficha-row.ficha-measuring .ficha-poster,
+.ficha-row.ficha-measuring .ficha-title,
+.ficha-row.ficha-measuring .ficha-backdrop {
+  transition: none !important;
+}
+
+/* The unfolded row's actions stay above the dock while the row is taller than the space left
+   (375×667): sticky inside the row, with a veil so the synopsis never shows through the gaps. */
+@media (max-width: 1023px) {
+  .ficha-actions-sticky {
+    position: sticky;
+    bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 4.75rem);
+    z-index: 1;
+  }
+
+  .ficha-actions-sticky::before {
+    content: "";
+    position: absolute;
+    inset: -28px -12px -12px;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(180deg, transparent, rgb(14 17 20 / 0.85) 36%);
+  }
 }
 
 .ficha-sheet {
@@ -3031,6 +3061,27 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 
 .ficha-row.is-swiping .ficha-sheet {
   transition: none;
+}
+
+/* Daily hint (FIL-I24-1): the folded row slides 24 px right, holds, and comes back in 280 ms,
+   leaving «Vi esto» showing underneath. Transform only; reduced motion never runs it. */
+.ficha-swipe-hint {
+  animation: ficha-swipe-hint 620ms var(--ease-out);
+}
+
+@keyframes ficha-swipe-hint {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  45% {
+    transform: translate3d(24px, 0, 0);
+  }
+  55% {
+    transform: translate3d(24px, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 .ficha-poster {
@@ -3082,7 +3133,7 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 }
 
 .ficha-detail > div {
-  overflow: hidden;
+  overflow: clip;
   min-height: 0;
 }
 
@@ -3241,6 +3292,7 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   }
 
   .ficha-detail-in,
+  .ficha-swipe-hint,
   .ficha-swipe-under.is-armed .ficha-swipe-label {
     animation: none !important;
   }

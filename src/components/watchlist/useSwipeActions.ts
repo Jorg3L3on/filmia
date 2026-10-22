@@ -8,12 +8,33 @@ export const SWIPE_ARM_PX = 60;
 export const SWIPE_MAX_PX = 96;
 /** Below this the gesture has no axis yet; vertical wins and the page scrolls natively. */
 const AXIS_LOCK_PX = 8;
+/** |dx| must beat |dy| by this much to lock the horizontal axis (≈ 56° from vertical). */
+const AXIS_X_BIAS = 1.5;
 
 export type SwipeSide = "right" | "left";
 
 type UseSwipeActionsOptions = {
   enabled?: boolean;
   onCommit: (side: SwipeSide) => void;
+};
+
+/** Capture keeps the moves coming once the finger leaves the row; a pointer the browser no longer tracks throws, which must not end the gesture. */
+const capturePointer = (event: ReactPointerEvent<HTMLElement>) => {
+  try {
+    event.currentTarget.setPointerCapture(event.pointerId);
+  } catch {
+    // Synthetic or already-released pointer: the row still follows the moves it receives.
+  }
+};
+
+const releasePointer = (event: ReactPointerEvent<HTMLElement>) => {
+  try {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  } catch {
+    // Nothing to release.
+  }
 };
 
 const haptic = (ms: number) => {
@@ -65,12 +86,13 @@ export const useSwipeActions = ({ enabled = true, onCommit }: UseSwipeActionsOpt
       if (Math.hypot(dx, dy) < AXIS_LOCK_PX) {
         return;
       }
-      axis.current = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      // Vertical wins unless the finger is clearly going sideways: a 30/24 diagonal scrolls.
+      axis.current = Math.abs(dx) > Math.abs(dy) * AXIS_X_BIAS ? "x" : "y";
       if (axis.current === "y") {
         start.current = null;
         return;
       }
-      event.currentTarget.setPointerCapture(event.pointerId);
+      capturePointer(event);
       moved.current = true;
       setSwiping(true);
     }
@@ -92,12 +114,24 @@ export const useSwipeActions = ({ enabled = true, onCommit }: UseSwipeActionsOpt
     const side = armed.current;
     const wasSwiping = axis.current === "x";
     reset();
-    if (wasSwiping && event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
+    if (wasSwiping) {
+      releasePointer(event);
     }
     if (side) {
       haptic(20);
       onCommit(side);
+    }
+  };
+
+  /** The browser took the pointer (scroll, system gesture): let go without confirming anything. */
+  const onPointerCancel = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!start.current) {
+      return;
+    }
+    const wasSwiping = axis.current === "x";
+    reset();
+    if (wasSwiping) {
+      releasePointer(event);
     }
   };
 
@@ -126,7 +160,7 @@ export const useSwipeActions = ({ enabled = true, onCommit }: UseSwipeActionsOpt
       onPointerDown,
       onPointerMove,
       onPointerUp,
-      onPointerCancel: onPointerUp,
+      onPointerCancel,
     },
   };
 };
