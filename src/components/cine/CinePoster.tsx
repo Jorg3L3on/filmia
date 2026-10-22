@@ -6,6 +6,7 @@ import { useCineActions } from "@/components/cine/CineActions";
 import { PosterImage } from "@/components/PosterImage";
 import type { CineFilm } from "@/lib/cine";
 import { cn } from "@/lib/cn";
+import { menuVia } from "@/components/tmdb-search/SearchRowMenu";
 import { useLongPress } from "@/lib/motion";
 import { focusRing, posterFrame } from "@/lib/ui";
 
@@ -29,14 +30,14 @@ export const CinePoster = ({ film, badge, caption, dim = false, className, sizes
   const firedRef = useRef(false);
   const status = statusOf(film);
 
-  const open = () => {
+  const open = (pointerType: string) => {
     const node = frameRef.current;
     if (!node) {
       return;
     }
     firedRef.current = true;
     navigator.vibrate?.(8);
-    openMenu(film, node.getBoundingClientRect());
+    openMenu(film, node.getBoundingClientRect(), menuVia(pointerType));
   };
   const longPress = useLongPress(open);
 
@@ -56,7 +57,7 @@ export const CinePoster = ({ film, badge, caption, dim = false, className, sizes
         }}
         onContextMenu={(event) => {
           event.preventDefault();
-          open();
+          open("mouse");
           firedRef.current = false;
         }}
         {...longPress}

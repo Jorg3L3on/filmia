@@ -65,6 +65,7 @@ export const SearchListPicker = ({
         pendingId={null}
         onToggle={handleToggle}
         showOpenLink={false}
+        size="md"
       />
 
       <StatusListGroup lists={statusLists} linked={false} />
@@ -77,6 +78,7 @@ export const SearchListPicker = ({
           pendingId={null}
           onToggle={handleToggle}
           showOpenLink={false}
+          size="md"
         />
       ) : (
         <p className="text-sm text-mist">
@@ -105,6 +107,8 @@ export const SearchListPicker = ({
         </Button>
         <Button
           type="button"
+          // «Sin cambios» reads as a quiet ghost, not a dead primary (FIL-I22-7).
+          variant={diff.changed ? "primary" : "ghost"}
           onClick={() => onConfirm(selected)}
           disabled={!diff.changed}
           pending={pending}

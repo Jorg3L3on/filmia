@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { PosterImage } from "@/components/PosterImage";
 import { SearchShortcuts } from "@/components/tmdb-search/SearchShortcuts";
-import type { SearchMenuTarget } from "@/components/tmdb-search/SearchRowMenu";
+import type { SearchMenuTarget, SearchMenuVia } from "@/components/tmdb-search/SearchRowMenu";
 import type { SearchRowStatus } from "@/components/tmdb-search/SearchResultRow";
 import { useTmdbTitleActions } from "@/components/tmdb-search/useTmdbTitleActions";
 import type { CineFilm } from "@/lib/cine";
@@ -18,7 +18,7 @@ import { posterFrame } from "@/lib/ui";
 type CineActionsValue = {
   hrefFor: (film: CineFilm) => string;
   statusOf: (film: CineFilm) => SearchRowStatus;
-  openMenu: (film: CineFilm, anchor: DOMRect) => void;
+  openMenu: (film: CineFilm, anchor: DOMRect, via: SearchMenuVia) => void;
 };
 
 const CineActionsContext = createContext<CineActionsValue | null>(null);
@@ -83,7 +83,7 @@ export const CineActionsProvider = ({
   const value: CineActionsValue = {
     hrefFor: (film) => resultHref(toResult(film), titleIdOf(film.tmdbId)),
     statusOf: (film) => resultStatus(toResult(film)).status,
-    openMenu: (film, anchor) => setMenu({ result: toResult(film), anchor }),
+    openMenu: (film, anchor, via) => setMenu({ result: toResult(film), anchor, via }),
   };
 
   return (

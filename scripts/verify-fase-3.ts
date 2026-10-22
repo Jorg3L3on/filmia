@@ -279,9 +279,10 @@ const run = () => {
   );
   assert(
     read("src/components/EmptyState.tsx").includes('variant === "buscar"') &&
-      read("src/components/tmdb-search/TmdbKindFilterChips.tsx").includes("catalogBarChipClass") &&
+      // FIL-I22-5: Buscar's chips grew to 40 px with their own classes; they keep the tab-transition token.
+      read("src/components/tmdb-search/TmdbKindFilterChips.tsx").includes("tab-transition") &&
       read("src/components/catalog-filters/filter-ui.tsx").includes("tab-transition"),
-    "Buscar empty uses well; kind chips share catalogBarChipClass (tab-transition)",
+    "Buscar empty uses well; kind chips keep the tab-transition token",
   );
 
 

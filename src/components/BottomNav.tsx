@@ -89,36 +89,7 @@ export const BottomNav = () => {
   }, [searchMode]);
 
   if (searchMode) {
-    return (
-      <BottomNavShell placement="top">
-        {/* Results fade out under the field instead of colliding with it. */}
-        <div
-          aria-hidden
-          className="pointer-events-none fixed inset-x-0 top-[calc(3rem+env(safe-area-inset-top))] -z-10 h-[4.25rem] bg-gradient-to-b from-canvas via-canvas/95 to-canvas/0"
-        />
-        <div className="flex items-center gap-2.5">
-          <ViewTransition name="dock-shell" share={DOCK_MORPH} default="none">
-            <Link
-              href={origin.href}
-              transitionTypes={[DOCK_SEARCH_TRANSITION]}
-              aria-label={`Volver a ${origin.label}`}
-              data-nav={origin.icon}
-              className={cn(
-                dockGlassClass,
-                // The glass highlight is a hairline across the top: on a round disc it reads as a stray white line.
-                "before:hidden press-scale relative flex size-[3.375rem] shrink-0 items-center justify-center rounded-full text-paper",
-                focusRing,
-              )}
-            >
-              <NavIcon name={origin.icon} day={origin.icon === "today" ? day : null} />
-            </Link>
-          </ViewTransition>
-          <ViewTransition name="dock-search" share={DOCK_MORPH} default="none">
-            <DockSearchField />
-          </ViewTransition>
-        </div>
-      </BottomNavShell>
-    );
+    return <SearchDock origin={origin} day={day} />;
   }
 
   return (
@@ -201,5 +172,62 @@ export const BottomNav = () => {
         </div>
       </ViewTransition>
     </BottomNavShell>
+  );
+};
+
+/**
+ * The dock on /buscar: [disc back] + [field at the top]. The disc is the tab
+ * you came from, or, while a person opened from a search is on screen, the
+ * one «atrás» to those results (FIL-I22-6).
+ */
+const SearchDock = ({ origin, day }: { origin: (typeof mobileNavItems)[number]; day: number | null }) => {
+  const { back } = useSyncExternalStore(dockSearch.subscribe, dockSearch.getSnapshot, dockSearch.getServerSnapshot);
+  const discClass = cn(
+    dockGlassClass,
+    // The glass highlight is a hairline across the top: on a round disc it reads as a stray white line.
+    "before:hidden press-scale relative flex size-[3.375rem] shrink-0 items-center justify-center rounded-full text-paper",
+    focusRing,
+  );
+  return (
+      <BottomNavShell placement="top">
+        {/* Results fade out under the field instead of colliding with it. */}
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-x-0 top-[calc(3rem+env(safe-area-inset-top))] -z-10 h-[4.25rem] bg-gradient-to-b from-canvas via-canvas/95 to-canvas/0"
+        />
+        <div className="flex items-center gap-2.5">
+          <ViewTransition name="dock-shell" share={DOCK_MORPH} default="none">
+            {back ? (
+              // A person opened from a search (FIL-I22-6): the one «atrás» goes to its results, inside Buscar (no morph).
+              <Link
+                href={back.href}
+                aria-label={`Volver a los resultados de «${back.query}»`}
+                data-nav="search-back"
+                className={discClass}
+              >
+                <span className="relative flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" className="absolute -left-3.5 size-3.5" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="m14 6-6 6 6 6" />
+                  </svg>
+                  <NavIcon name={mobileNavSearch.icon} />
+                </span>
+              </Link>
+            ) : (
+              <Link
+                href={origin.href}
+                transitionTypes={[DOCK_SEARCH_TRANSITION]}
+                aria-label={`Volver a ${origin.label}`}
+                data-nav={origin.icon}
+                className={discClass}
+              >
+                <NavIcon name={origin.icon} day={origin.icon === "today" ? day : null} />
+              </Link>
+            )}
+          </ViewTransition>
+          <ViewTransition name="dock-search" share={DOCK_MORPH} default="none">
+            <DockSearchField />
+          </ViewTransition>
+        </div>
+      </BottomNavShell>
   );
 };

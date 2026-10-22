@@ -11,8 +11,8 @@ import {
 } from "@/lib/search-result-facts";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 
-/** After the first answer, ask again for what the Catalog is still filling: twice, then give up quietly. */
-const RETRY_DELAYS_MS = [2500, 5000];
+/** After the first answer, ask once more for what the Catalog is still filling (~3 s in all), then give up quietly (FIL-I22-4). */
+const RETRY_DELAYS_MS = [2500];
 
 const itemKey = (item: SearchFactsItem) => searchFactsKey(item.kind, item.tmdbId);
 

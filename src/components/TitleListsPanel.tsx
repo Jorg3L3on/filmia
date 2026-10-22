@@ -183,6 +183,7 @@ export const ListChipGroup = ({
   pendingId,
   onToggle,
   showOpenLink = true,
+  size = "sm",
 }: {
   title: string;
   lists: AssignableList[];
@@ -191,6 +192,8 @@ export const ListChipGroup = ({
   onToggle: (listId: string) => void;
   /** «ver» next to included chips; off where the selection is not saved yet. */
   showOpenLink?: boolean;
+  /** md = 36 px chips for a sheet picked with a thumb (Buscar, FIL-I22-5). */
+  size?: "sm" | "md";
 }) => {
   return (
     <div className="space-y-2">
@@ -215,7 +218,8 @@ export const ListChipGroup = ({
                     : `Añadir a ${list.name}`
                 }
                 className={cn(
-                  "press-scale tab-transition min-w-0 max-w-full rounded-full border px-3 py-1.5 text-left text-[11px] font-medium uppercase tracking-[0.14em] [overflow-wrap:anywhere]",
+                  "press-scale tab-transition inline-flex min-w-0 max-w-full items-center rounded-full border text-left text-[11px] font-medium uppercase tracking-[0.14em] [overflow-wrap:anywhere]",
+                  size === "md" ? "min-h-9 px-3.5 py-1.5" : "px-3 py-1.5",
                   focusRing,
                   included
                     ? "border-accent bg-accent text-ink"
