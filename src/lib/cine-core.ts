@@ -140,6 +140,22 @@ export const isPremiereWeek = (mxReleaseDate: string, today: string) => {
   return age >= 0 && age < PREMIERE_TAG_DAYS;
 };
 
+/** «Estreno» stays on a poster this many days after its premiere day («Hoy»). */
+export const PREMIERE_RECENT_DAYS = 3;
+
+/** Poster tag (FIL-I23-4, P3): «Hoy» on the premiere day, «Estreno» up to three days after, else none. */
+export const premiereTag = (mxReleaseDate: string, today: string): "Hoy" | "Estreno" | null => {
+  const age = daysBetween(mxReleaseDate, today);
+  if (age === 0) {
+    return "Hoy";
+  }
+  return age > 0 && age <= PREMIERE_RECENT_DAYS ? "Estreno" : null;
+};
+
+/** Which edges of a horizontal rail hide more content: "", "left", "right" or "left right". */
+export const railFade = (scrollLeft: number, clientWidth: number, scrollWidth: number) =>
+  [scrollLeft > 1 ? "left" : null, scrollLeft + clientWidth < scrollWidth - 1 ? "right" : null].filter(Boolean).join(" ");
+
 const MONTHS_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 const MONTHS_LONG = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",

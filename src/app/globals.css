@@ -4277,6 +4277,34 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   border-right: 1px dashed rgb(var(--cine-rgb) / 0.4);
 }
 
+/* Rail edge fades (FIL-I23, P2): `data-fade` from useRailFade names the edges with more behind them. */
+.cine-fade {
+  --cine-fade-l: 0px;
+  --cine-fade-r: 0px;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 var(--cine-fade-l),
+    #000 calc(100% - var(--cine-fade-r)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 var(--cine-fade-l),
+    #000 calc(100% - var(--cine-fade-r)),
+    transparent
+  );
+}
+
+.cine-fade[data-fade~="left"] {
+  --cine-fade-l: 24px;
+}
+
+.cine-fade[data-fade~="right"] {
+  --cine-fade-r: 24px;
+}
+
 .cine-dot-live {
   width: 0.45rem;
   height: 0.45rem;

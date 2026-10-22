@@ -8,6 +8,8 @@ import {
   judgeCinemaCandidate,
   mergeRelease,
   mxToday,
+  premiereTag,
+  railFade,
   releaseStatusOn,
   staleLabel,
   ticketStub,
@@ -116,6 +118,21 @@ describe("cine calendar", () => {
     assert.equal(isPremiereWeek("2026-10-16", "2026-10-17"), true);
     assert.equal(isPremiereWeek("2026-10-09", "2026-10-17"), false);
     assert.equal(isPremiereWeek("2026-10-22", "2026-10-17"), false);
+  });
+
+  it("says «Hoy» on the premiere day and «Estreno» for three days after (FIL-I23-4)", () => {
+    assert.equal(premiereTag("2026-10-17", "2026-10-17"), "Hoy");
+    assert.equal(premiereTag("2026-10-15", "2026-10-17"), "Estreno");
+    assert.equal(premiereTag("2026-10-14", "2026-10-17"), "Estreno");
+    assert.equal(premiereTag("2026-10-13", "2026-10-17"), null);
+    assert.equal(premiereTag("2026-10-18", "2026-10-17"), null);
+  });
+
+  it("names the rail edges that hide more", () => {
+    assert.equal(railFade(0, 390, 390), "");
+    assert.equal(railFade(0, 390, 900), "right");
+    assert.equal(railFade(200, 390, 900), "left right");
+    assert.equal(railFade(510, 390, 900), "left");
   });
 
   it("groups by Monday-started weeks with a ticket stub", () => {

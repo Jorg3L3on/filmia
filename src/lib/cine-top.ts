@@ -3,7 +3,11 @@
  * year Cine opens on, and the rules of «Tu top 10 de {año}».
  */
 
+import { addDays, formatShortDay, ticketStub } from "@/lib/cine-core";
+
 export const YEAR_TOP_SIZE = 10;
+/** From this many films seen a top is worth making; below it the card nudges. */
+export const YEAR_TOP_MIN_PICKS = 3;
 /** TMDB candidates per year (by vote count); OMDb is asked about each, ≤ 40 calls a year. */
 export const YEAR_TOP_CANDIDATES = 40;
 export const VOTE_FLOOR = 25_000;
@@ -86,4 +90,39 @@ export const yearTopError = (year: number, titleIds: readonly string[], picks: r
     }
   }
   return null;
+};
+
+const PLURAL = new Intl.PluralRules("es-MX");
+
+/** «Has visto 1 película de 2024. Con 3 ya hay top.» / «Has visto 4 películas de 2024. Ordénalas a tu gusto.» */
+export const watchedOfYearCopy = (year: number, count: number) => {
+  const noun = PLURAL.select(count) === "one" ? "película" : "películas";
+  const lead = `Has visto ${count} ${noun} de ${year}.`;
+  return count < 2 ? `${lead} Con ${YEAR_TOP_MIN_PICKS} ya hay top.` : `${lead} Ordénalas a tu gusto.`;
+};
+
+/** The card's button before a top exists: «Empezar mi top» with one or two films, «Armar mi top» from three. */
+export const startTopLabel = (count: number) => (count < YEAR_TOP_MIN_PICKS ? "Empezar mi top" : "Armar mi top");
+
+/**
+ * Older years are computed by the nightly cron, one a run, newest first (FIL-I23-1): the day
+ * `year` gets its turn, counting the missing years ahead of it. Tomorrow when it is next.
+ */
+export const pendingTopDay = (year: number, yearsWithTop: readonly number[], today: string) => {
+  let ahead = 0;
+  for (let other = yearOf(today) - 2; other > year; other -= 1) {
+    if (!yearsWithTop.includes(other)) {
+      ahead += 1;
+    }
+  }
+  return addDays(today, ahead + 1);
+};
+
+/** «mañana» or «el jue 22 oct». */
+export const pendingTopDayLabel = (year: number, yearsWithTop: readonly number[], today: string) => {
+  const day = pendingTopDay(year, yearsWithTop, today);
+  if (day === addDays(today, 1)) {
+    return "mañana";
+  }
+  return `el ${ticketStub(day).weekday.toLowerCase()} ${formatShortDay(day)}`;
 };
