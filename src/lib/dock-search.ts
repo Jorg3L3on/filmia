@@ -18,9 +18,11 @@ export type DockSearchBack = { href: string; query: string };
 export type DockSearchState = {
   query: string;
   back: DockSearchBack | null;
+  /** TMDB is off: the field cannot search (FIL-I22-7). */
+  disabled: boolean;
 };
 
-const INITIAL: DockSearchState = { query: "", back: null };
+const INITIAL: DockSearchState = { query: "", back: null, disabled: false };
 
 let state: DockSearchState = INITIAL;
 let handlers: DockSearchHandlers | null = null;
@@ -87,6 +89,12 @@ export const dockSearch = {
     const pending = focusPending;
     focusPending = false;
     return pending;
+  },
+  /** The page: searching is off (TMDB unavailable) or back on. */
+  setDisabled: (disabled: boolean) => {
+    if (state.disabled !== disabled) {
+      set({ disabled });
+    }
   },
   /** Leaving /buscar: the next visit starts from its own URL. */
   reset: (query = "") => set({ query, back: null }),

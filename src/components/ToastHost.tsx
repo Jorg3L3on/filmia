@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import { SuccessToast } from "@/components/SuccessToast";
 import { cn } from "@/lib/cn";
@@ -17,6 +18,8 @@ export const ToastHost = () => {
     getToasts,
     getToastsSnapshot,
   );
+  // On /buscar the dock sits at the top (FIL-I3): the toast can come down to the safe area (FIL-I22-7).
+  const dockOnTop = usePathname()?.startsWith("/buscar") ?? false;
 
   if (toasts.length === 0) {
     return null;
@@ -25,7 +28,8 @@ export const ToastHost = () => {
   return (
     <div
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] flex flex-col items-center gap-2 sm:bottom-8",
+        "pointer-events-none fixed inset-x-0 flex flex-col items-center gap-2 sm:bottom-8",
+        dockOnTop ? "bottom-[calc(1.5rem+env(safe-area-inset-bottom))]" : "bottom-[calc(5.75rem+env(safe-area-inset-bottom))]",
         safeAreaInsetXPadClass,
         toastLayerClass,
       )}

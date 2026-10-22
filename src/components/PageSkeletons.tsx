@@ -298,7 +298,8 @@ export const SearchResultsSkeleton = ({ count = 6 }: { count?: number }) => (
 
 export const SearchBodySkeleton = ({ label = "Cargando búsqueda" }: SkeletonProps) => (
   <div className="space-y-5" aria-busy="true" aria-label={label}>
-    <ShimmerBlock className="h-12 rounded-xl" />
+    {/* On phones the field lives in the dock: a second grey field under it would be a ghost (FIL-I22-7). */}
+    <ShimmerBlock className="hidden h-12 rounded-xl sm:block" />
     <SearchKindChipsSkeleton />
     <SearchResultsSkeleton />
   </div>

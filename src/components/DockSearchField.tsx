@@ -14,7 +14,7 @@ const fieldGlassClass =
  * page's search (same 280 ms debounce and cache as before).
  */
 export const DockSearchField = () => {
-  const { query } = useSyncExternalStore(
+  const { query, disabled } = useSyncExternalStore(
     dockSearch.subscribe,
     dockSearch.getSnapshot,
     dockSearch.getServerSnapshot,
@@ -41,6 +41,7 @@ export const DockSearchField = () => {
       className={cn(
         fieldGlassClass,
         "dock-field relative flex h-[3.375rem] min-w-0 flex-1 items-center gap-2.5 rounded-full pr-2 pl-4",
+        disabled && "opacity-60",
       )}
     >
       <svg
@@ -61,16 +62,17 @@ export const DockSearchField = () => {
           ref={inputRef}
           value={query}
           onChange={(event) => dockSearch.type(event.target.value)}
+          disabled={disabled}
           placeholder="Películas, series o directores"
           inputMode="search"
           enterKeyHint="search"
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
-          className="w-full min-w-0 bg-transparent text-base text-paper outline-none placeholder:text-mist"
+          className="w-full min-w-0 bg-transparent text-base text-paper outline-none placeholder:text-mist disabled:cursor-not-allowed"
         />
       </label>
-      {query ? (
+      {query && !disabled ? (
         <button
           type="button"
           aria-label="Borrar búsqueda"

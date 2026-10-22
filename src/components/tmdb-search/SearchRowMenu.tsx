@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type CSSProperties, type PointerEvent, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { SearchResultRowBody, type SearchRowStatus } from "@/components/tmdb-search/SearchResultRow";
 import { cn } from "@/lib/cn";
@@ -43,16 +44,17 @@ type SearchRowMenuProps = {
 const MENU_WIDTH = 262;
 const ITEM_HEIGHT = 46;
 const GAP = 10;
-/** The dock and the safe area at the bottom of a phone. */
+/** The dock and the safe area at the bottom of a phone; on /buscar the dock sits at the top, so only the safe area (FIL-I22-7). */
 const BOTTOM_CLEARANCE = 96;
+const BOTTOM_CLEARANCE_DOCK_ON_TOP = 40;
 
 /** Below the row when it fits, above it otherwise; always inside the viewport. */
-const menuPosition = (anchor: DOMRect, items: number): CSSProperties => {
+const menuPosition = (anchor: DOMRect, items: number, bottomClearance: number): CSSProperties => {
   const height = items * ITEM_HEIGHT + 24;
   const viewportHeight = window.innerHeight;
   const below = anchor.bottom + GAP;
   const top =
-    below + height <= viewportHeight - BOTTOM_CLEARANCE
+    below + height <= viewportHeight - bottomClearance
       ? below
       : Math.max(12, anchor.top - GAP - height);
   const left = Math.min(Math.max(12, anchor.left), window.innerWidth - MENU_WIDTH - 12);
@@ -82,6 +84,8 @@ export const SearchRowMenu = ({
   lift,
 }: SearchRowMenuProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const bottomClearance = pathname?.startsWith("/buscar") ? BOTTOM_CLEARANCE_DOCK_ON_TOP : BOTTOM_CLEARANCE;
   /**
    * The pointer that went down on the scrim, if any. The hold that opened the
    * menu ends with a pointerup + click that land on the scrim (it is already
@@ -201,7 +205,7 @@ export const SearchRowMenu = ({
         tabIndex={-1}
         aria-label={`Acciones de ${result.name}`}
         className="search-menu-panel fixed rounded-[1.375rem] border border-white/14 bg-[rgb(22_26_31/0.94)] p-1.5 shadow-[0_24px_60px_rgb(0_0_0/0.7)] outline-none backdrop-blur-xl"
-        style={menuPosition(anchor, items.length - 1)}
+        style={menuPosition(anchor, items.length - 1, bottomClearance)}
         onClick={(event) => event.stopPropagation()}
       >
         {items}
