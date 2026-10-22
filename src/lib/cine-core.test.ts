@@ -9,9 +9,12 @@ import {
   judgeCinemaCandidate,
   mergeRelease,
   mxToday,
+  parseCarteleraOrder,
   premiereTag,
+  premiereWeekStart,
   railFade,
   releaseStatusOn,
+  splitCartelera,
   staleLabel,
   ticketStub,
   weekStart,
@@ -198,5 +201,43 @@ describe("mergeRelease", () => {
     );
     assert.equal(moved.mxReleaseDate, "2026-10-30");
     assert.equal(moved.status, "upcoming");
+  });
+});
+
+describe("cartelera B (FIL-I23-5)", () => {
+  const films = [
+    { id: "wed", mxReleaseDate: "2026-10-21", popularity: 3 },
+    { id: "thu", mxReleaseDate: "2026-10-15", popularity: 9 },
+    { id: "old", mxReleaseDate: "2026-10-08", popularity: 50 },
+    { id: "older", mxReleaseDate: "2026-09-24", popularity: 7 },
+  ];
+
+  it("opens the premiere week on the last Thursday", () => {
+    assert.equal(premiereWeekStart("2026-10-21"), "2026-10-15");
+    assert.equal(premiereWeekStart("2026-10-22"), "2026-10-22");
+    assert.equal(premiereWeekStart("2026-10-18"), "2026-10-15");
+  });
+
+  it("splits this week from the rest, newest first or most popular first", () => {
+    const recent = splitCartelera(films, "2026-10-21");
+    assert.equal(recent.weekStart, "2026-10-15");
+    assert.deepEqual(recent.thisWeek.map((f) => f.id), ["wed", "thu"]);
+    assert.deepEqual(recent.rest.map((f) => f.id), ["old", "older"]);
+    const popular = splitCartelera(films, "2026-10-21", "populares");
+    assert.deepEqual(popular.rest.map((f) => f.id), ["old", "older"]);
+    const popular2 = splitCartelera([...films, { id: "hit", mxReleaseDate: "2026-09-30", popularity: 80 }], "2026-10-21", "populares");
+    assert.deepEqual(popular2.rest.map((f) => f.id), ["hit", "old", "older"]);
+  });
+
+  it("shows no «Esta semana» when nothing premiered in the week", () => {
+    const quiet = splitCartelera(films.filter((f) => f.id === "old" || f.id === "older"), "2026-10-21");
+    assert.deepEqual(quiet.thisWeek, []);
+    assert.equal(quiet.rest.length, 2);
+  });
+
+  it("reads ?orden=", () => {
+    assert.equal(parseCarteleraOrder("populares"), "populares");
+    assert.equal(parseCarteleraOrder(["recientes", "populares"]), "populares");
+    assert.equal(parseCarteleraOrder(undefined), "recientes");
   });
 });

@@ -229,3 +229,36 @@ export const cinemaChipFor = <T extends { status: "now" | "upcoming"; mxReleaseD
   cinema: T | null,
   flatrateCount: number,
 ): T | null => (cinema && flatrateCount === 0 ? cinema : null);
+
+/** Thursday that opened the premiere week `today` falls in (MX premieres land on Thursday). */
+export const premiereWeekStart = (today: string) => {
+  const { weekday } = parts(today);
+  return addDays(today, -((weekday + 3) % 7));
+};
+
+export type CarteleraOrder = "recientes" | "populares";
+
+export const parseCarteleraOrder = (value: unknown): CarteleraOrder => {
+  const raw = Array.isArray(value) ? value.at(-1) : value;
+  return raw === "populares" ? "populares" : "recientes";
+};
+
+/**
+ * Cartelera B (FIL-I23-5): «Esta semana» holds the films that opened in the premiere week in
+ * progress (Thursday to Wednesday); «Siguen en cartelera» the rest, by date or by popularity.
+ */
+export const splitCartelera = <T extends { mxReleaseDate: string; popularity: number }>(
+  films: readonly T[],
+  today: string,
+  order: CarteleraOrder = "recientes",
+) => {
+  const weekStart = premiereWeekStart(today);
+  const weekEnd = addDays(weekStart, 6);
+  const thisWeek = films.filter((film) => film.mxReleaseDate >= weekStart && film.mxReleaseDate <= weekEnd);
+  const rest = films.filter((film) => film.mxReleaseDate < weekStart || film.mxReleaseDate > weekEnd);
+  const sorted =
+    order === "populares"
+      ? [...rest].sort((a, b) => b.popularity - a.popularity || b.mxReleaseDate.localeCompare(a.mxReleaseDate))
+      : [...rest].sort((a, b) => b.mxReleaseDate.localeCompare(a.mxReleaseDate) || b.popularity - a.popularity);
+  return { weekStart, thisWeek, rest: sorted };
+};
