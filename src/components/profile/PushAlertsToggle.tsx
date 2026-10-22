@@ -3,7 +3,7 @@
 import { useEffect, useId, useState, useTransition, type ReactNode } from "react";
 import { deletePushSubscription, savePushSubscription } from "@/app/actions/push";
 import { Button } from "@/components/Button";
-import { ProfileGroup, ProfileRow, ProfileSection } from "@/components/profile/ProfileRows";
+import { ProfileRow } from "@/components/profile/ProfileRows";
 import { currentPushSubscription, ensureServiceWorker, hasServiceWorker } from "@/components/ServiceWorkerRegister";
 import { Sheet, SheetHandle } from "@/components/Sheet";
 import { cn } from "@/lib/cn";
@@ -35,6 +35,7 @@ const readSupport = (): PushSupport => {
  * Perfil «Avisos»: one switch for the Quiero ver pushes on this device, «Llega a tu plataforma»
  * and «Llega a cines» (FIL-I23-2 names both; the model is one switch). On iPhone outside the
  * installed PWA the row says «Cómo instalar» and opens the Safari steps (Safari has no push there).
+ * A row of «Tu Filmia» (FIL-I25-2): what used to be the paragraph under it is the row's hint.
  */
 export const PushAlertsToggle = ({ vapidPublicKey }: PushAlertsToggleProps) => {
   const [support, setSupport] = useState<PushSupport | null>(null);
@@ -130,70 +131,63 @@ export const PushAlertsToggle = ({ vapidPublicKey }: PushAlertsToggleProps) => {
   const canToggle = support === "supported" && status !== "blocked" && status !== "checking";
 
   const needsInstall = support === "ios-needs-install";
-  const hint =
-    support === "unsupported"
-      ? "Este navegador no admite avisos."
-      : status === "blocked"
-        ? "Bloqueaste las notificaciones de Filmia. Actívalas en los ajustes del navegador."
-        : null;
+  const hint = error ? (
+    <span role="alert" className="text-danger">
+      {error}
+    </span>
+  ) : support === "unsupported" ? (
+    "Este navegador no los admite"
+  ) : status === "blocked" ? (
+    "Bloqueados en los ajustes del navegador"
+  ) : (
+    "Llega a tu plataforma · Llega a cines"
+  );
 
   return (
-    <ProfileSection id="avisos" title="Avisos">
-      <ProfileGroup>
-        {needsInstall ? (
-          <ProfileRow
-            icon={<BellIcon />}
-            iconClassName="bg-accent/15 text-accent"
-            label="Avisos de Quiero ver"
-            hint="Solo con Filmia instalada"
-            value={<span className="font-medium text-accent">Cómo instalar</span>}
-            onClick={() => setInstallOpen(true)}
-            ariaLabel="Avisos de Quiero ver: solo con Filmia instalada. Cómo instalar"
-          />
-        ) : (
-          <ProfileRow
-            icon={<BellIcon />}
-            iconClassName="bg-accent/15 text-accent"
-            label="Avisos de Quiero ver"
-            hint="Llega a tu plataforma · Llega a cines"
-            value={
-              canToggle || support === null ? (
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={on}
-                  aria-label="Avisarme cuando algo de Quiero ver llegue a mis plataformas o se estrene en cines"
-                  disabled={!canToggle || isPending}
-                  onClick={on ? turnOff : turnOn}
+    <>
+      {needsInstall ? (
+        <ProfileRow
+          icon={<BellIcon />}
+          iconClassName="bg-accent/15 text-accent"
+          label="Avisos de Quiero ver"
+          hint="Solo con Filmia instalada"
+          value={<span className="font-medium text-accent">Cómo instalar</span>}
+          onClick={() => setInstallOpen(true)}
+          ariaLabel="Avisos de Quiero ver: solo con Filmia instalada. Cómo instalar"
+        />
+      ) : (
+        <ProfileRow
+          icon={<BellIcon />}
+          iconClassName="bg-accent/15 text-accent"
+          label="Avisos de Quiero ver"
+          hint={hint}
+          value={
+            canToggle || support === null ? (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={on}
+                aria-label="Avisarme en este dispositivo cuando algo de Quiero ver llegue a mis plataformas o se estrene en cines"
+                disabled={!canToggle || isPending}
+                onClick={on ? turnOff : turnOn}
+                className={cn(
+                  "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-[background-color] duration-[var(--duration-hover)] ease-[var(--ease-out)] disabled:opacity-50",
+                  "after:absolute after:-inset-2 after:content-['']",
+                  on ? "bg-accent" : "bg-chrome",
+                  focusRing,
+                )}
+              >
+                <span
+                  aria-hidden="true"
                   className={cn(
-                    "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-[background-color] duration-[var(--duration-hover)] ease-[var(--ease-out)] disabled:opacity-50",
-                    on ? "bg-accent" : "bg-chrome",
-                    focusRing,
+                    "inline-block size-6 rounded-full bg-paper shadow transition-transform duration-[var(--duration-hover)] ease-[var(--ease-out)]",
+                    on ? "translate-x-[1.375rem]" : "translate-x-0.5",
                   )}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "inline-block size-6 rounded-full bg-paper shadow transition-transform duration-[var(--duration-hover)] ease-[var(--ease-out)]",
-                      on ? "translate-x-[1.375rem]" : "translate-x-0.5",
-                    )}
-                  />
-                </button>
-              ) : null
-            }
-          />
-        )}
-      </ProfileGroup>
-      {error ? (
-        <p role="alert" className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger">
-          {error}
-        </p>
-      ) : null}
-      {needsInstall ? null : (
-        <p className="text-sm leading-relaxed text-fog">
-          {hint ??
-            "Te avisamos en este dispositivo cuando un título de Quiero ver llega a una de tus plataformas en México o se estrena en cines."}
-        </p>
+                />
+              </button>
+            ) : null
+          }
+        />
       )}
 
       <Sheet open={installOpen} onClose={() => setInstallOpen(false)} labelledBy={installTitleId} align="bottom">
@@ -217,7 +211,7 @@ export const PushAlertsToggle = ({ vapidPublicKey }: PushAlertsToggleProps) => {
           </Button>
         </div>
       </Sheet>
-    </ProfileSection>
+    </>
   );
 };
 

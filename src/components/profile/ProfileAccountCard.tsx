@@ -3,13 +3,13 @@
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { updateAccount, updatePassword, type ProfileActionState } from "@/app/actions/profile";
 import { Button } from "@/components/Button";
+import { LogoutButton } from "@/components/LogoutButton";
 import { PasswordField } from "@/components/PasswordField";
 import {
   CheckIcon,
   GoogleGlyph,
   LockIcon,
   MailIcon,
-  PersonIcon,
   ProfileGroup,
   ProfileRow,
   ProfileSection,
@@ -57,7 +57,10 @@ const useShakeOnError = (attempt: number) => {
   return ref;
 };
 
-/** Perfil «Cuenta»: name, email, password and Google in one card; every edit happens in a sheet. */
+/**
+ * Perfil «Cuenta»: name, email, password and Google in one card, every edit in a sheet, and
+ * Salir as its last row (FIL-I25-2).
+ */
 export const ProfileAccountCard = ({ name, email, hasPassword, googleLinked }: ProfileAccountCardProps) => {
   const [sheetOpen, setSheetOpen] = useState(false);
   // Kept after closing so the sheet keeps its content while it slides away.
@@ -75,7 +78,8 @@ export const ProfileAccountCard = ({ name, email, hasPassword, googleLinked }: P
     <ProfileSection id="cuenta" title="Cuenta">
       <ProfileGroup>
         <ProfileRow
-          icon={<PersonIcon />}
+          icon={(name?.trim() || email).charAt(0).toUpperCase()}
+          iconClassName="perfil-initial-sm"
           label="Nombre"
           value={name ?? <span className="text-mist">Añade tu nombre</span>}
           onClick={() => open("name")}
@@ -117,6 +121,7 @@ export const ProfileAccountCard = ({ name, email, hasPassword, googleLinked }: P
             }
           />
         ) : null}
+        <LogoutButton />
       </ProfileGroup>
 
       <Sheet open={sheetOpen} onClose={close} labelledBy={titleId} align="bottom">

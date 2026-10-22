@@ -2581,12 +2581,12 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 .perfil-initial {
   display: inline-flex;
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+  /* 44 on the phone, as in canvas B (FIL-I25-2). */
+  width: 44px;
+  height: 44px;
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  margin-top: 2px;
   background: linear-gradient(135deg, #ff7a45 0%, #ff5c6a 55%, #d8468f 100%);
   color: #fff;
   font-family: var(--font-fraunces), ui-serif, Georgia, serif;
@@ -2605,6 +2605,16 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
     font-size: 1.85rem;
     margin-top: 6px;
   }
+}
+
+/* The same initial as the row icon of «Nombre» in Cuenta (FIL-I25-2). */
+.perfil-initial-sm {
+  background: linear-gradient(135deg, #ff7a45 0%, #ff5c6a 55%, #d8468f 100%);
+  color: #fff;
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1;
 }
 
 /* Ficha on the phone (FIL-I21-8): the four-action group sits right under the synopsis and

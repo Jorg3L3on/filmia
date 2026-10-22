@@ -1,4 +1,4 @@
-import { ListsIcon, ProfileGroup, ProfileRow, ProfileSection } from "@/components/profile/ProfileRows";
+import { ListsIcon, ProfileRow } from "@/components/profile/ProfileRows";
 import { partitionUserLists } from "@/lib/lists";
 import { countPendingRequestsForOwner } from "@/lib/list-invites";
 import { getLists } from "@/lib/queries";
@@ -18,7 +18,7 @@ export const listsRowSummary = (counts: { fixed: number; custom: number; years: 
 
 /**
  * Perfil «Listas ›» (FIL-I17-3): Cine took the Listas tab, so the hub opens from here. Same
- * `/listas`, same routes; only the way in moved.
+ * `/listas`, same routes; only the way in moved. A row of «Tu Filmia» (FIL-I25-2).
  */
 export const ProfileListsRow = async () => {
   const userId = await requireUserId();
@@ -29,17 +29,5 @@ export const ProfileListsRow = async () => {
   const summary =
     pending > 0 ? `${pending} ${pending === 1 ? "solicitud" : "solicitudes"} · ${listsSummary}` : listsSummary;
 
-  return (
-    <ProfileSection id="listas" title="Listas">
-      <ProfileGroup>
-        <ProfileRow
-          icon={<ListsIcon />}
-          label="Listas"
-          value={summary}
-          href="/listas"
-          ariaLabel={`Listas: ${summary}`}
-        />
-      </ProfileGroup>
-    </ProfileSection>
-  );
+  return <ProfileRow icon={<ListsIcon />} label="Listas" value={summary} href="/listas" ariaLabel={`Listas: ${summary}`} />;
 };

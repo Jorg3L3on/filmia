@@ -53,7 +53,7 @@ export const ProfileDiary = async () => {
     <section aria-labelledby="perfil-diario" className="space-y-4">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h2 id="perfil-diario" className="font-serif text-2xl text-paper">
+          <h2 id="perfil-diario" className="font-serif text-[1.375rem] leading-tight text-paper">
             Tu diario
           </h2>
           <p className="mt-0.5 text-xs text-fog">

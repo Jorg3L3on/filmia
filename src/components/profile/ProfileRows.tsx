@@ -124,13 +124,6 @@ export const WeekendMoonIcon = () => (
   </svg>
 );
 
-export const PersonIcon = () => (
-  <svg {...iconProps}>
-    <circle cx="12" cy="8" r="4" />
-    <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
-  </svg>
-);
-
 export const MailIcon = () => (
   <svg {...iconProps}>
     <rect x="3" y="5" width="18" height="14" rx="2" />
