@@ -57,6 +57,7 @@ export const TmdbSearchResults = ({
                   href={rows.hrefFor(result, titleId)}
                   onOpen={rows.onOpen}
                   onMenu={rows.onMenu}
+                  log={rows.logFor?.(result) ?? null}
                 />
               </li>
             );

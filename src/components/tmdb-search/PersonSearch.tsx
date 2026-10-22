@@ -655,6 +655,7 @@ const WorkByDecade = ({
                     href={rows.hrefFor(entry, titleId)}
                     onOpen={rows.onOpen}
                     onMenu={rows.onMenu}
+                    log={rows.logFor?.(entry) ?? null}
                   />
                 </li>
               );

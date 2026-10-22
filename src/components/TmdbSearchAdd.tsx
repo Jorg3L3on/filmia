@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getFilmographyFacts } from "@/app/actions/search-facts";
@@ -16,7 +17,7 @@ import {
   PersonView,
   type PersonViewState,
 } from "@/components/tmdb-search/PersonSearch";
-import type { SearchRowStatus, SearchRowWiring } from "@/components/tmdb-search/SearchResultRow";
+import type { SearchRowLog, SearchRowStatus, SearchRowWiring } from "@/components/tmdb-search/SearchResultRow";
 import type { SearchMenuTarget } from "@/components/tmdb-search/SearchRowMenu";
 import { SearchShortcuts } from "@/components/tmdb-search/SearchShortcuts";
 import {
@@ -36,8 +37,10 @@ import { FILMOGRAPHY_FACTS_LIMIT } from "@/lib/search-result-facts";
 import { buildSearchHref, liveSearchState, type SearchKind, type SearchMode } from "@/lib/search-session";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import type { UserTmdbEntry } from "@/lib/queries";
-import { lookupTmdbCatalogEntry } from "@/lib/tmdb-search-catalog";
-import { ownedFichaHref, previewFichaHref } from "@/lib/title-preview";
+import { lookupTmdbCatalogEntry, tmdbCatalogKey } from "@/lib/tmdb-search-catalog";
+import { diaryDayLabel, ownedFichaHref, previewFichaHref } from "@/lib/title-preview";
+import { cn } from "@/lib/cn";
+import { focusRing } from "@/lib/ui";
 
 type TmdbSearchAddProps = {
   configured: { tmdb: boolean; omdb: boolean };
@@ -104,6 +107,8 @@ export const TmdbSearchAdd = ({
     setKindFilter,
     isSearching,
     isAdding,
+    pendingKey,
+    pendingAction,
     visibleResults,
     listIdsFor,
     listsError,
@@ -173,9 +178,30 @@ export const TmdbSearchAdd = ({
   });
   const rowFactsFor = shownPerson ? filmographyFactsFor : factsFor;
 
+  // Diario mode (FIL-I22-3): the rows logged during this visit say «Registrada · día».
+  const [loggedKeys, setLoggedKeys] = useState<ReadonlySet<string>>(() => new Set());
+  const logFor = (result: TmdbCatalogResult): SearchRowLog | null => {
+    if (!logMode) {
+      return null;
+    }
+    const key = tmdbCatalogKey(result.tmdbId, result.kind);
+    const { status } = statusOf(result);
+    return {
+      date: watchedDate,
+      logged: loggedKeys.has(key) && status === "watched",
+      pending: pendingKey === key && pendingAction === "watched",
+      onLog: () => {
+        rememberQuery();
+        setLoggedKeys((current) => new Set([...current, key]));
+        handleAdd(result, "watched");
+      },
+    };
+  };
+
   const rows: SearchRowWiring = {
     hrefFor,
     factsFor: rowFactsFor,
+    logFor,
     onOpen: () => rememberQuery(),
     onMenu: (result, anchor, via) => {
       rememberQuery();
@@ -277,6 +303,13 @@ export const TmdbSearchAdd = ({
             />
           </div>
 
+          {logMode ? (
+            <DiaryBand
+              date={watchedDate}
+              exitHref={buildSearchHref(query, { mode, kind: kindFilter })}
+            />
+          ) : null}
+
           {error && (mode === "director" ? directors.length > 0 : visibleResults.length > 0) ? (
             <p role="alert" className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger">
               {error}
@@ -351,6 +384,7 @@ export const TmdbSearchAdd = ({
                 arrivals={startArrivals}
                 onPickRecent={onQueryChange}
                 onClearRecents={clearRecents}
+                logDate={logMode ? watchedDate : undefined}
               />
             )
           ) : null}
@@ -389,3 +423,31 @@ export const TmdbSearchAdd = ({
   );
 };
 
+/**
+ * Diario mode made visible (FIL-I22-3): the day being logged, under the chips,
+ * with ✕ back to the same search outside Diario. 40 px, green like the check.
+ */
+const DiaryBand = ({ date, exitHref }: { date: string | null; exitHref: string }) => (
+  <div
+    role="status"
+    data-diary-band
+    className="flex h-10 items-center gap-2 rounded-full bg-success-well pr-1 pl-3 text-sm text-success"
+  >
+    <svg viewBox="0 0 24 24" className="size-4 shrink-0" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m5 12.5 4.5 4.5 9.5-10" />
+    </svg>
+    <p className="min-w-0 flex-1 truncate">
+      <span className="font-medium">Diario · {diaryDayLabel(date)}</span>
+      <span className="text-success/80"> · toca el check para registrar ese día</span>
+    </p>
+    <Link
+      href={exitHref}
+      aria-label="Salir del modo Diario"
+      className={cn("press-scale flex size-8 shrink-0 items-center justify-center rounded-full text-success hover:bg-success/20", focusRing)}
+    >
+      <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true">
+        <path d="M6 6l12 12M18 6 6 18" />
+      </svg>
+    </Link>
+  </div>
+);
