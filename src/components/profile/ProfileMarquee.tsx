@@ -25,11 +25,12 @@ export const ProfileMarquee = ({ name, email, posterPath }: ProfileMarqueeProps)
         <span className="perfil-initial" aria-hidden="true" data-perfil-initial>
           {initial}
         </span>
-        <div className="min-w-0 flex-1">
+        {/* Desktop (FIL-I25-5): the email moves to the right end, over the right column, instead of leaving half the marquee empty. */}
+        <div className="min-w-0 flex-1 lg:flex lg:items-end lg:justify-between lg:gap-8">
           <h1 className="perfil-name-in font-serif text-[2rem] leading-[1.05] tracking-[-0.01em] text-paper break-words sm:text-[3.25rem]">
             {displayName}
           </h1>
-          {trimmed ? <p className="mt-0.5 truncate text-[13px] text-fog sm:text-sm">{email}</p> : null}
+          {trimmed ? <p className="mt-0.5 truncate text-[13px] text-fog sm:text-sm lg:mt-0 lg:mb-2 lg:shrink-0">{email}</p> : null}
         </div>
       </div>
     </header>
