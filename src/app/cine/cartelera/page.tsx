@@ -6,7 +6,7 @@ import { CinePoster, PremiereTag } from "@/components/cine/CinePoster";
 import { CineGridSkeleton } from "@/components/cine/CineSkeleton";
 import { loadCineActions } from "@/app/cine/cine-data";
 import { getNowShowing } from "@/lib/cine";
-import { formatShortDay, isPremiereWeek, mxToday } from "@/lib/cine-core";
+import { formatShortDay, mxToday, premiereTag } from "@/lib/cine-core";
 
 export const dynamic = "force-dynamic";
 
@@ -40,17 +40,20 @@ const CarteleraGrid = async () => {
         <p className="text-sm text-fog">La cartelera se actualiza cada mañana.</p>
       ) : (
         <ul className="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-5 sm:gap-x-4">
-          {films.map((film, index) => (
-            <li key={film.catalogId} className="min-w-0 stagger-in" style={{ "--stagger": Math.min(index, 14) } as CSSProperties}>
-              <CinePoster
-                film={film}
-                priority={index < 6}
-                sizes="(max-width: 640px) 31vw, 180px"
-                badge={isPremiereWeek(film.mxReleaseDate, today) ? <PremiereTag /> : null}
-                caption={`Desde ${formatShortDay(film.mxReleaseDate)}`}
-              />
-            </li>
-          ))}
+          {films.map((film, index) => {
+            const tag = premiereTag(film.mxReleaseDate, today);
+            return (
+              <li key={film.catalogId} className="min-w-0 stagger-in" style={{ "--stagger": Math.min(index, 14) } as CSSProperties}>
+                <CinePoster
+                  film={film}
+                  priority={index < 6}
+                  sizes="(max-width: 640px) 31vw, 180px"
+                  badge={tag ? <PremiereTag label={tag} /> : null}
+                  caption={`Desde ${formatShortDay(film.mxReleaseDate)}`}
+                />
+              </li>
+            );
+          })}
         </ul>
       )}
     </CineActionsProvider>

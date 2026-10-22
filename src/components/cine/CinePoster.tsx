@@ -87,10 +87,10 @@ export const CinePoster = ({ film, badge, caption, dim = false, className, sizes
   );
 };
 
-/** «Estreno» on a film's first week in theaters. */
-export const PremiereTag = () => (
+/** «Hoy» on the premiere day, «Estreno» for the three days after (premiereTag). */
+export const PremiereTag = ({ label = "Estreno" }: { label?: "Hoy" | "Estreno" }) => (
   <span className="rounded-full bg-cine px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink shadow-[0_0_12px_rgb(var(--cine-rgb)/0.6)]">
-    Estreno
+    {label}
   </span>
 );
 

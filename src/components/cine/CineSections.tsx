@@ -1,23 +1,27 @@
 import { CinePoster, PremiereTag } from "@/components/cine/CinePoster";
 import { CineRail, GhostPoster, railItemClass, TicketStub } from "@/components/cine/CineParts";
+import { FadeRail } from "@/components/cine/FadeRail";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import type { CineFilm, HomeArrival } from "@/lib/cine";
-import { formatShortDay, groupByWeek, isPremiereWeek } from "@/lib/cine-core";
+import { formatShortDay, groupByWeek, premiereTag } from "@/lib/cine-core";
 import { PLATFORM_SERVICE_LABEL } from "@/lib/labels";
 
-/** En cines: the newest premieres first, «Estreno» on their first week. */
+/** En cines: the newest premieres first, «Hoy» on the premiere day and «Estreno» three days after. */
 export const NowShowingRail = ({ films, today }: { films: CineFilm[]; today: string }) => (
   <CineRail label="En cines">
-    {films.map((film, index) => (
-      <div key={film.catalogId} role="listitem" className={railItemClass}>
-        <CinePoster
-          film={film}
-          priority={index < 3}
-          badge={isPremiereWeek(film.mxReleaseDate, today) ? <PremiereTag /> : null}
-          caption={`Desde ${formatShortDay(film.mxReleaseDate)}`}
-        />
-      </div>
-    ))}
+    {films.map((film, index) => {
+      const tag = premiereTag(film.mxReleaseDate, today);
+      return (
+        <div key={film.catalogId} role="listitem" className={railItemClass}>
+          <CinePoster
+            film={film}
+            priority={index < 3}
+            badge={tag ? <PremiereTag label={tag} /> : null}
+            caption={`Desde ${formatShortDay(film.mxReleaseDate)}`}
+          />
+        </div>
+      );
+    })}
   </CineRail>
 );
 
@@ -57,17 +61,21 @@ export const UpcomingTimeline = ({ films, showMonths = true }: { films: CineFilm
                 <TicketStub day={lead} />
                 <span aria-hidden="true" className="w-px flex-1 bg-gradient-to-b from-white/15 to-transparent" />
               </div>
-              <div className="rail -mr-4 flex min-w-0 flex-1 snap-x gap-3 overflow-x-auto overscroll-x-contain pb-1 pr-4 touch-pan-x" role="list" aria-label={`Semana del ${formatShortDay(week.week)}`}>
-                {week.items.map((film) => (
+              <FadeRail
+                label={`Semana del ${formatShortDay(week.week)}`}
+                className="-mr-4 flex min-w-0 flex-1 snap-x gap-3 overflow-x-auto overscroll-x-contain pb-1 pr-4 touch-pan-x"
+              >
+                {week.items.map((film, itemIndex) => (
                   <div key={film.catalogId} role="listitem" className="w-[26vw] max-w-[8.5rem] shrink-0 snap-start sm:w-[8.5rem]">
                     <CinePoster
                       film={film}
+                      priority={index === 0 && itemIndex < 3}
                       sizes="(max-width: 640px) 28vw, 140px"
                       caption={film.mxReleaseDate === lead ? undefined : formatShortDay(film.mxReleaseDate)}
                     />
                   </div>
                 ))}
-              </div>
+              </FadeRail>
             </div>
           </li>
         );
@@ -87,12 +95,13 @@ export const HomeArrivalsRail = ({ films, hasPlatforms }: { films: HomeArrival[]
   }
   return (
     <CineRail label="Ya en casa">
-      {films.map((film) => {
+      {films.map((film, index) => {
         const platform = film.streaming[0];
         return (
           <div key={film.catalogId} role="listitem" className={railItemClass}>
             <CinePoster
               film={film}
+              priority={index < 3}
               dim={hasPlatforms && !film.onMine}
               badge={platform ? <PlatformLogo platform={platform} size={22} className="rounded-md shadow-md" /> : null}
               caption={film.streaming.map((value) => PLATFORM_SERVICE_LABEL[value]).join(" · ")}
