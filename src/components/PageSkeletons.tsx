@@ -34,13 +34,19 @@ export const PageChromeSkeleton = ({
 );
 
 
-export const PosterRailSkeleton = ({ count = 5 }: { count?: number }) => (
-  <div className="rail -mx-4 flex gap-4 overflow-hidden px-4">
+export const PosterRailSkeleton = ({
+  count = 5,
+  itemClassName = "w-[148px] sm:w-[196px]",
+  className = "gap-4",
+}: {
+  count?: number;
+  /** Width of each block, so a skeleton matches its rail (Cine: 117 px posters). */
+  itemClassName?: string;
+  className?: string;
+}) => (
+  <div className={cn("rail -mx-4 flex overflow-hidden px-4", className)}>
     {Array.from({ length: count }, (_, index) => (
-      <ShimmerBlock
-        key={index}
-        className="aspect-[2/3] w-[148px] shrink-0 rounded-poster sm:w-[196px]"
-      />
+      <ShimmerBlock key={index} className={cn("aspect-[2/3] shrink-0 rounded-poster", itemClassName)} />
     ))}
   </div>
 );
@@ -298,7 +304,8 @@ export const SearchResultsSkeleton = ({ count = 6 }: { count?: number }) => (
 
 export const SearchBodySkeleton = ({ label = "Cargando búsqueda" }: SkeletonProps) => (
   <div className="space-y-5" aria-busy="true" aria-label={label}>
-    <ShimmerBlock className="h-12 rounded-xl" />
+    {/* On phones the field lives in the dock: a second grey field under it would be a ghost (FIL-I22-7). */}
+    <ShimmerBlock className="hidden h-12 rounded-xl sm:block" />
     <SearchKindChipsSkeleton />
     <SearchResultsSkeleton />
   </div>

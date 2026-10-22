@@ -37,11 +37,11 @@ export const TmdbSearchForm = ({
     className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-30 hidden bg-canvas/95 py-2 backdrop-blur sm:block"
   >
     <label className="relative block">
-      <span className="sr-only">Buscar títulos en TMDB</span>
+      <span className="sr-only">Buscar películas, series o directores</span>
       <input
         value={query}
         onChange={(event) => onQueryChange(event.target.value)}
-        placeholder="Interestelar, Dune, Severance…"
+        placeholder="Películas, series o directores"
         className={`${fieldClass} border-accent/40 py-3 pr-12 text-base shadow-[0_0_0_3px_rgb(var(--accent-rgb)/0.18)]`}
         autoComplete="off"
         autoFocus

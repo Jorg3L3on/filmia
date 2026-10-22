@@ -3,7 +3,7 @@ import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
 
 /** Chain carteleras (no film deep links: neither chain has a public API). Cinemex opens its app via Universal Links. */
-const CHAINS = [
+export const CHAINS = [
   { name: "Cinépolis", now: "https://cinepolis.com/cartelera", upcoming: "https://cinepolis.com/proximos-estrenos" },
   { name: "Cinemex", now: "https://cinemex.com/cartelera", upcoming: "https://cinemex.com/proximamente" },
 ] as const;

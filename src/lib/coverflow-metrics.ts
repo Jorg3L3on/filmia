@@ -20,6 +20,10 @@ export const COVERFLOW_COAST_FRICTION = 0.9;
 export const COVERFLOW_COAST_MIN_VELOCITY = 0.003;
 export const COVERFLOW_WHEEL_SNAP_MS = 70;
 export const COVERFLOW_VISIBLE_SPAN = 5;
+/** Asomo (FIL-I21-4): the phone's L+R fan spread, tunable ±10 % on the device. */
+export const COVERFLOW_ASOMO_SPREAD = 1.72;
+/** Side room below this is a phone-sized stage: the Asomo numbers apply. */
+export const COVERFLOW_ASOMO_ROOM_MAX = 120;
 export const COVERFLOW_PAGE_POSTER_SIZES =
   "(max-width: 640px) 68vw, (max-width: 1024px) 42vw, 400px";
 export const COVERFLOW_SHEET_POSTER_SIZES = "(max-width: 640px) 36vw, 156px";
@@ -92,22 +96,28 @@ export const getCoverflowCardMetrics = (
   const fittedRoom = Math.max(10, sideRoom);
 
   if (cinematic) {
-    // Soft floating L+R fan: neighbors on both sides rotateY toward center,
-    // scale down, translateZ back, blur + dim (JOR-221 soft-coverflow).
+    // Soft floating L+R fan: neighbors on both sides rotateY toward center, scale down,
+    // translateZ back and dim (JOR-221 soft-coverflow). «Asomo» (FIL-I21-4): on the phone
+    // the ±1 cards spread ×1.72, scale 0.86, turn 32° and keep 70 % brightness with no blur,
+    // so each neighbour peeks ~44 px past the hero at 390 wide instead of 14 px dimmed and
+    // blurred. The hero itself does not change; wider stages keep their ×1.28 fan.
     const spread =
-      fittedRoom * (1 - Math.exp(-distance * 1.12)) * (fittedRoom < 70 ? 1.15 : 1.28);
+      fittedRoom *
+      (1 - Math.exp(-distance * 1.12)) *
+      (fittedRoom < COVERFLOW_ASOMO_ROOM_MAX ? COVERFLOW_ASOMO_SPREAD : 1.28);
     const rotateCap = fittedRoom < 80 ? 40 : 56;
 
     return {
-      rotateY: -side * Math.min(distance * 36, rotateCap),
+      rotateY: -side * Math.min(distance * 32, rotateCap),
       translateX: side * spread,
       translateZ: -Math.min(distance * 96, 260),
       translateY: isActive ? -2 : Math.min(distance * 2.4, 9),
-      scale: 1 - Math.min(distance * 0.155, 0.34),
-      brightness: Math.max(0.38, 1 - distance * 0.24),
+      scale: 1 - Math.min(distance * 0.14, 0.34),
+      brightness: Math.max(0.38, 1 - distance * 0.3),
       opacity: distance > 5.2 ? Math.max(0, 1 - (distance - 5.2) * 1.4) : 1,
-      // Keep side blur modest — strong face blur composites over the hero in 3D.
-      blur: isActive ? 0 : Math.min(distance * 2.1, 5.2),
+      // No blur on the neighbours that peek (±1); ±2 and beyond keep a modest blur
+      // (they sit behind the ±1 cards on the phone anyway).
+      blur: isActive || distance < 1.5 ? 0 : Math.min(distance * 2.1, 5.2),
       zIndex: Math.round(900 - distance * 80),
       isActive,
     };
@@ -161,7 +171,10 @@ export const paintCoverflowCard = (
     }
   };
 
-  const transform = `translate3d(${translateX.toFixed(1)}px, ${metrics.translateY.toFixed(1)}px, ${translateZ.toFixed(1)}px) rotateY(${rotateY.toFixed(2)}deg) scale(${scale.toFixed(4)})`;
+  // Lite sala (FIL-I21-4): the neighbours keep their spread and scale but do not turn, so a
+  // weak phone composites flat layers (translate + scale) instead of 3D-rotated ones.
+  const rotate = lite && cinematic ? 0 : rotateY;
+  const transform = `translate3d(${translateX.toFixed(1)}px, ${metrics.translateY.toFixed(1)}px, ${translateZ.toFixed(1)}px) rotateY(${rotate.toFixed(2)}deg) scale(${scale.toFixed(4)})`;
   write("transform", transform, () => (root.style.transform = transform));
   const opacity = String(metrics.opacity);
   write("opacity", opacity, () => (root.style.opacity = opacity));

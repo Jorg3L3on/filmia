@@ -104,7 +104,10 @@ export const DirectorSuggestion = ({
   </button>
 );
 
-/** Director chip with several (or loose) matches: pick one. */
+/** A homonym TMDB knows nothing about: no photo, no popularity (FIL-I22-7). */
+const isObscure = (director: DirectorHit) => director.profilePath === null && director.popularity < 1;
+
+/** Director chip with several (or loose) matches: pick one; the obscure homonyms go last, in gray. */
 export const DirectorPicker = ({
   directors,
   onOpen,
@@ -118,8 +121,8 @@ export const DirectorPicker = ({
       <p className="text-sm text-mist">{directors.length}</p>
     </header>
     <ul className="space-y-2">
-      {directors.map((director, index) => (
-        <li key={director.id} className="stagger-in" style={staggerStyle(index)}>
+      {[...directors.filter((d) => !isObscure(d)), ...directors.filter(isObscure)].map((director, index) => (
+        <li key={director.id} className="stagger-in" style={staggerStyle(index)} data-director={isObscure(director) ? "obscure" : "known"}>
           <button
             type="button"
             onClick={() => onOpen(director)}
@@ -135,8 +138,10 @@ export const DirectorPicker = ({
               sizes="48px"
             />
             <span className="min-w-0 flex-1">
-              <span className="line-clamp-2 font-medium leading-snug text-paper">{director.name}</span>
-              <span className="block text-sm text-fog">Director</span>
+              <span className={cn("line-clamp-2 font-medium leading-snug", isObscure(director) ? "text-fog" : "text-paper")}>
+                {director.name}
+              </span>
+              <span className="block text-sm text-fog">{isObscure(director) ? "Director · sin foto" : "Director"}</span>
             </span>
             <span className="shrink-0 text-mist" aria-hidden="true">
               ›
@@ -203,7 +208,8 @@ export const PersonView = ({
           type="button"
           onClick={onBack}
           className={cn(
-            "press-scale -ml-1 inline-flex max-w-full items-center gap-1 rounded-full px-1 text-sm text-fog hover:text-paper",
+            // On phones the dock's disc is the one «atrás» (FIL-I22-6); the text link stays for desktop.
+            "press-scale -ml-1 hidden max-w-full items-center gap-1 rounded-full px-1 text-sm text-fog hover:text-paper sm:inline-flex",
             focusRing,
           )}
         >
@@ -345,7 +351,8 @@ const RoleMenu = ({
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          "press-scale inline-flex h-8 items-center gap-1.5 rounded-full border border-accent/50 bg-accent/10 px-3 text-sm text-accent-hover",
+          // 40 px tall (FIL-I22-5): a thumb target, not a label.
+          "press-scale inline-flex h-10 items-center gap-1.5 rounded-full border border-accent/50 bg-accent/10 px-3.5 text-sm text-accent-hover",
           focusRing,
         )}
       >
@@ -373,7 +380,7 @@ const RoleMenu = ({
                 }
               }}
               className={cn(
-                "flex w-full items-center justify-between gap-4 rounded-xl px-3 py-2 text-left text-sm",
+                "flex w-full items-center justify-between gap-4 rounded-xl px-3 py-3 text-left text-sm",
                 option === role ? "bg-white/8 text-paper" : "text-paper/80 hover:bg-white/5",
                 focusRing,
               )}
@@ -513,7 +520,7 @@ const PosterShelf = ({
       </h3>
       <p className="text-[13px] text-fog">{hint}</p>
     </header>
-    <ul className="rail -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+    <ul className="rail rail-fade -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
       {entries.map((entry) => {
         const { titleId, status } = statusOf(entry);
         return (
@@ -655,6 +662,8 @@ const WorkByDecade = ({
                     href={rows.hrefFor(entry, titleId)}
                     onOpen={rows.onOpen}
                     onMenu={rows.onMenu}
+                    log={rows.logFor?.(entry) ?? null}
+                    pinned={titleId !== null && titleId === rows.pinnedTitleId}
                   />
                 </li>
               );

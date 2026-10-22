@@ -27,7 +27,7 @@ const itemClass = cn(
   focusRing,
 );
 
-/** Mantén pulsado el póster: Ver ficha · Ahora no · Mover a una lista · Quitar. */
+/** Mantén pulsado el póster o toca «···»: Ahora no · Ver ficha · Mover a una lista · Quitar. */
 export const TonightCardMenu = ({
   title,
   onClose,
@@ -86,9 +86,7 @@ export const TonightCardMenu = ({
             </div>
           ) : (
           <div role="menu" aria-label={`Acciones de ${title.name}`} className="space-y-0.5 px-3 pb-2 pt-4" data-no-sheet-drag>
-            <Link role="menuitem" href={`/titulos/${title.id}`} onClick={onClose} className={itemClass}>
-              <Icon kind="ficha" /> Ver ficha
-            </Link>
+            {/* «Ahora no» first (FIL-I21-2): the ficha is already a tap away on the poster and the title. */}
             <button type="button" role="menuitem" onClick={() => onNotTonight(title)} className={itemClass}>
               <Icon kind="hand" />
               <span>
@@ -96,6 +94,9 @@ export const TonightCardMenu = ({
                 <span className="block text-xs font-normal text-fog">Se esconde dos semanas y Hoy aprende</span>
               </span>
             </button>
+            <Link role="menuitem" href={`/titulos/${title.id}`} onClick={onClose} className={itemClass}>
+              <Icon kind="ficha" /> Ver ficha
+            </Link>
             <Link role="menuitem" href={`/titulos/${title.id}#listas`} onClick={onClose} className={itemClass}>
               <Icon kind="list" /> Mover a una lista
             </Link>

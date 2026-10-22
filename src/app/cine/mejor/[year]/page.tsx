@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { loadCineActions } from "@/app/cine/cine-data";
-import { BestOfYearList, loadBestOfYear, YearSelector } from "@/components/cine/BestOfYear";
+import { BestOfYearList, loadBestOfYear, SeenOfTop } from "@/components/cine/BestOfYear";
+import { YearSelector } from "@/components/cine/YearSelector";
 import { CineActionsProvider } from "@/components/cine/CineActions";
 import { CineMarquee } from "@/components/cine/CineParts";
 import { CineSkeleton } from "@/components/cine/CineSkeleton";
@@ -45,14 +46,10 @@ const BestOfYearBody = async ({ year }: { year: number }) => {
       pinnedTitleId={actions.pinnedTitleId}
     >
       <div className="space-y-6">
-        <YearSelector year={year} hrefFor={(option) => `/cine/mejor/${option}`} />
-        {data.top.length > 0 ? (
-          <p className="text-sm text-fog">
-            Has visto <span className="font-semibold text-paper">{seen}</span> de {data.top.length}
-          </p>
-        ) : null}
-        <BestOfYearList year={year} top={data.top} watchedIds={data.watchedIds} pending={data.pending} />
-        <YourTopCard year={year} top={data.yours} watched={data.watched} />
+        <YearSelector year={year} today={data.today} hrefTemplate="/cine/mejor/{year}" />
+        {data.top.length > 0 ? <SeenOfTop seen={seen} total={data.top.length} /> : null}
+        <BestOfYearList year={year} top={data.top} watchedIds={data.watchedIds} pending={data.pending} pendingDay={data.pendingDay} />
+        <YourTopCard year={year} top={data.yours} watched={data.watched} past={data.past} topHref={data.top.length > 0 ? `#top-${year}` : null} />
       </div>
     </CineActionsProvider>
   );

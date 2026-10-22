@@ -6,9 +6,11 @@ import { enrichCatalog } from "@/lib/catalog-enrich";
 import {
   addDays,
   GONE_AFTER_DAYS,
+  hasLatinLetters,
   HOME_AFTER_DAYS,
   HOME_LOOKBACK_DAYS,
   judgeCinemaCandidate,
+  readableTitle,
   mergeRelease,
   mxToday,
   type CinemaVerdict,
@@ -19,6 +21,7 @@ import { runPool } from "@/lib/run-pool";
 import {
   discoverTmdbReleaseIds,
   getTmdbMovieReleaseInfo,
+  getTmdbMovieTitle,
   getTmdbNowPlayingIds,
   type TmdbMovieReleaseInfo,
 } from "@/lib/tmdb";
@@ -51,6 +54,47 @@ export const needsEnrichment = (row: Pick<CatalogRow, "overview" | "runtimeMinut
   !row.overview && !row.runtimeMinutes && (!Array.isArray(row.tmdbGenres) || row.tmdbGenres.length === 0);
 
 /**
+ * P4 (FIL-I23-6): a row whose es-MX name has no Latin letters (TMDB fell back to the original
+ * script) gets its en-US title. Names that already read are never touched.
+ */
+export const ensureReadableTitle = async (row: Pick<CatalogRow, "id" | "tmdbId" | "name">): Promise<string | null> => {
+  if (hasLatinLetters(row.name)) {
+    return null;
+  }
+  let enName: string | null = null;
+  try {
+    enName = await getTmdbMovieTitle(row.tmdbId, "en-US");
+  } catch {
+    return null;
+  }
+  const name = readableTitle(row.name, enName);
+  if (name === row.name) {
+    return null;
+  }
+  await db.update(catalog).set({ name, updatedAt: new Date() }).where(eq(catalog.id, row.id));
+  return name;
+};
+
+/** Repair pass over the stored cartelera (any status): how many names were replaced. */
+export const repairUnreadableTitles = async () => {
+  const rows = await db
+    .select({ id: catalog.id, tmdbId: catalog.tmdbId, name: catalog.name })
+    .from(cinemaReleases)
+    .innerJoin(catalog, eq(catalog.id, cinemaReleases.catalogId));
+  let repaired = 0;
+  await runPool(
+    rows.filter((row) => !hasLatinLetters(row.name)),
+    3,
+    async (row) => {
+      if (await ensureReadableTitle(row)) {
+        repaired += 1;
+      }
+    },
+  );
+  return { checked: rows.length, repaired };
+};
+
+/**
  * Materialize a film the cron decided to show: its shared Catalog row (never overwritten) and,
  * within the run's budget, its enrichment. Returns the row and whether it was new.
  */
@@ -66,6 +110,10 @@ export const materializeCatalog = async (
     year: info.year,
     posterPath: info.posterPath,
   });
+  const readable = await ensureReadableTitle(row);
+  if (readable) {
+    row.name = readable;
+  }
   if ((created || needsEnrichment(row)) && budget.left > 0) {
     budget.left -= 1;
     try {

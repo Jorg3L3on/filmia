@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Button } from "@/components/Button";
 import { cn } from "@/lib/cn";
 
@@ -13,7 +14,14 @@ type EmptyStateProps = {
   description: string;
   actionHref?: string;
   actionLabel?: string;
+  /** A quieter second way out (FIL-I24-4: «Cambiar hora» beside «Quitar «Esta noche»»). */
+  secondaryHref?: string;
+  secondaryLabel?: string;
   variant?: EmptyVariant;
+  /** Half the height (FIL-I21-8): for a page that has more below the empty block. */
+  compact?: boolean;
+  /** Instead of the one button: chips that keep searching (Buscar, FIL-I22-5). */
+  actions?: ReactNode;
 };
 
 export const EmptyState = ({
@@ -21,7 +29,11 @@ export const EmptyState = ({
   description,
   actionHref,
   actionLabel,
+  secondaryHref,
+  secondaryLabel,
   variant = "generic",
+  compact = false,
+  actions,
 }: EmptyStateProps) => {
   const well =
     variant === "watchlist" ||
@@ -34,6 +46,7 @@ export const EmptyState = ({
         "px-4 py-10 text-center",
         well &&
           "rounded-2xl border border-line bg-surface/40 px-6 py-12 sm:px-8",
+        compact && "py-5 sm:py-6 [&>svg]:h-16 [&>p:first-of-type]:mt-3",
       )}
     >
       <EmptyIllustration variant={variant} />
@@ -41,10 +54,19 @@ export const EmptyState = ({
       <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fog">
         {description}
       </p>
-      {actionHref && actionLabel ? (
-        <Button href={actionHref} size="lg" className="mt-6">
-          {actionLabel}
-        </Button>
+      {actions ? (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">{actions}</div>
+      ) : actionHref && actionLabel ? (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          <Button href={actionHref} size="lg">
+            {actionLabel}
+          </Button>
+          {secondaryHref && secondaryLabel ? (
+            <Button href={secondaryHref} size="lg" variant="ghost">
+              {secondaryLabel}
+            </Button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

@@ -13,6 +13,8 @@ type CatalogMoreFiltersProps = {
   onClose: () => void;
   onClear: () => void;
   onApply: () => void;
+  /** Phone: a round icon button (the label stays for screen readers); desktop keeps the pill. */
+  compactOnMobile?: boolean;
   children: ReactNode;
 };
 
@@ -23,6 +25,7 @@ export const CatalogMoreFilters = ({
   onClose,
   onClear,
   onApply,
+  compactOnMobile = false,
   children,
 }: CatalogMoreFiltersProps) => {
   const titleId = useId();
@@ -44,12 +47,18 @@ export const CatalogMoreFilters = ({
         className={cn(
           catalogBarButtonClass,
           activeCount > 0 && "border-accent/50 shadow-glow",
+          compactOnMobile && "max-sm:relative max-sm:size-8 max-sm:justify-center max-sm:gap-0 max-sm:px-0 max-sm:before:absolute max-sm:before:-inset-1.5 max-sm:before:content-['']",
         )}
       >
         <FunnelIcon />
-        Filtros
+        <span className={compactOnMobile ? "max-sm:sr-only" : undefined}>Filtros</span>
         {activeCount > 0 ? (
-          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-semibold text-ink">
+          <span
+            className={cn(
+              "inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-semibold text-ink",
+              compactOnMobile && "max-sm:absolute max-sm:-right-1 max-sm:-top-1 max-sm:h-4 max-sm:min-w-4 max-sm:px-1 max-sm:text-[10px]",
+            )}
+          >
             {activeCount}
           </span>
         ) : null}

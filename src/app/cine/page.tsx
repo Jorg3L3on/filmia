@@ -55,12 +55,13 @@ const CineBody = async ({ searchParams }: { searchParams: Promise<SearchParams> 
       <div className="space-y-10 pb-6">
         <div className="space-y-2">
           <CineMarquee />
-          {stale ? <StaleNotice label={stale} href="/cine" /> : null}
+          {stale ? <StaleNotice label={stale} /> : null}
         </div>
 
         {now.length === 0 && upcoming.length === 0 ? (
           <EmptyState
             variant="buscar"
+            compact
             title="La cartelera llega en la mañana"
             description="Cine se actualiza cada día con lo que está en los cines de México."
           />
@@ -71,7 +72,7 @@ const CineBody = async ({ searchParams }: { searchParams: Promise<SearchParams> 
             </CineSection>
 
             <CineSection id="proximamente" title="Próximamente" aside="Las próximas dos semanas" moreHref="/cine/proximamente">
-              <UpcomingTimeline films={upcoming} showMonths={false} />
+              <UpcomingTimeline films={upcoming} showMonths={false} linkWeeks />
             </CineSection>
           </>
         )}

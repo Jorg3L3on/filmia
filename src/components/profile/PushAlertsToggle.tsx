@@ -30,8 +30,9 @@ const readSupport = (): PushSupport => {
 };
 
 /**
- * Perfil «Avisos»: one switch for «Llegó a tu plataforma» on this device. On iPhone outside
- * the installed PWA it explains how to install instead (Safari has no push there).
+ * Perfil «Avisos»: one switch for the Quiero ver pushes on this device, «Llega a tu plataforma»
+ * and «Llega a cines» (FIL-I23-2 names both; the model is one switch). On iPhone outside the
+ * installed PWA it explains how to install instead (Safari has no push there).
  */
 export const PushAlertsToggle = ({ vapidPublicKey }: PushAlertsToggleProps) => {
   const [support, setSupport] = useState<PushSupport | null>(null);
@@ -139,15 +140,15 @@ export const PushAlertsToggle = ({ vapidPublicKey }: PushAlertsToggleProps) => {
         <ProfileRow
           icon={<BellIcon />}
           iconClassName="bg-accent/15 text-accent"
-          label="Llegó a tu plataforma"
-          hint="De Quiero ver a tus plataformas"
+          label="Avisos de Quiero ver"
+          hint="Llega a tu plataforma · Llega a cines"
           value={
             canToggle || support === null ? (
               <button
                 type="button"
                 role="switch"
                 aria-checked={on}
-                aria-label="Avisarme cuando algo de Quiero ver llegue a mis plataformas"
+                aria-label="Avisarme cuando algo de Quiero ver llegue a mis plataformas o se estrene en cines"
                 disabled={!canToggle || isPending}
                 onClick={on ? turnOff : turnOn}
                 className={cn(
@@ -174,7 +175,8 @@ export const PushAlertsToggle = ({ vapidPublicKey }: PushAlertsToggleProps) => {
         </p>
       ) : null}
       <p className="text-sm leading-relaxed text-fog">
-        {hint ?? "Te avisamos en este dispositivo cuando un título de Quiero ver llega a una de tus plataformas en México."}
+        {hint ??
+          "Te avisamos en este dispositivo cuando un título de Quiero ver llega a una de tus plataformas en México o se estrena en cines."}
       </p>
     </ProfileSection>
   );

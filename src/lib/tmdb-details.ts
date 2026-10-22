@@ -50,6 +50,9 @@ export type TmdbTvDetailsPayload = {
   backdrop_path?: string | null;
   overview?: string;
   episode_run_time?: number[];
+  /** Many series leave `episode_run_time` empty; the last aired episode still carries its runtime. */
+  last_episode_to_air?: { runtime?: number | null } | null;
+  next_episode_to_air?: { runtime?: number | null } | null;
   genres?: Array<{ id?: number; name?: string }>;
   keywords?: TmdbKeywordsPayload;
   aggregate_credits?: TmdbCreditsPayload;
@@ -107,16 +110,27 @@ export const parseTmdbGenres = (value: unknown): TmdbGenre[] => {
   return genres;
 };
 
+/** Movies: `runtime`. Series: the episode runtime, from `episode_run_time` or, when TMDB leaves it empty (FIL-I24-7), the last or next episode aired. */
 export const parseTmdbRuntimeMinutes = (data: {
   runtime?: number | null;
   episode_run_time?: number[] | null;
+  last_episode_to_air?: { runtime?: number | null } | null;
+  next_episode_to_air?: { runtime?: number | null } | null;
 }) => {
   if (typeof data.runtime === "number" && data.runtime > 0) {
     return data.runtime;
   }
 
   const episode = data.episode_run_time?.find((value) => value > 0);
-  return episode ?? null;
+  if (episode) {
+    return episode;
+  }
+  for (const aired of [data.last_episode_to_air, data.next_episode_to_air]) {
+    if (typeof aired?.runtime === "number" && aired.runtime > 0) {
+      return aired.runtime;
+    }
+  }
+  return null;
 };
 
 export const parseTmdbKeywords = (payload: TmdbKeywordsPayload | null | undefined): TmdbKeyword[] => {

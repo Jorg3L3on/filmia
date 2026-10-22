@@ -6,6 +6,7 @@ import { findOrCreateCatalog } from "@/lib/catalog";
 import { enrichCatalog } from "@/lib/catalog-enrich";
 import { mxToday } from "@/lib/cine-core";
 import {
+  FIRST_TOP_YEAR,
   rankYearTop,
   voteFloorFor,
   YEAR_TOP_CANDIDATES,
@@ -108,7 +109,15 @@ const lastComputedAt = async (year: number) => {
   return row?.at ?? null;
 };
 
-/** Cron step: this year and last, when missing or a week old. */
+/** Years that have a top stored (any size). */
+export const getYearsWithTop = cache(async () =>
+  (await db.selectDistinct({ year: yearTops.year }).from(yearTops)).map((row) => row.year),
+);
+
+/**
+ * Cron step: this year and last, when missing or a week old; then one older year that has no top
+ * yet, newest first (FIL-I23-1), so «Lo calculamos el {día}» on the pending block holds.
+ */
 export const refreshYearTops = async (now = new Date()) => {
   const year = Number(mxToday(now).slice(0, 4));
   const results: (YearTopSummary | { ok: true; year: number; skipped: "fresh" })[] = [];
@@ -119,6 +128,13 @@ export const refreshYearTops = async (now = new Date()) => {
       continue;
     }
     results.push(await computeYearTop(target, now));
+  }
+  const stored = new Set(await getYearsWithTop());
+  for (let older = year - 2; older >= FIRST_TOP_YEAR; older -= 1) {
+    if (!stored.has(older)) {
+      results.push(await computeYearTop(older, now));
+      break;
+    }
   }
   return results;
 };

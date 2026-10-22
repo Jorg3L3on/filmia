@@ -140,6 +140,22 @@ export const isPremiereWeek = (mxReleaseDate: string, today: string) => {
   return age >= 0 && age < PREMIERE_TAG_DAYS;
 };
 
+/** «Estreno» stays on a poster this many days after its premiere day («Hoy»). */
+export const PREMIERE_RECENT_DAYS = 3;
+
+/** Poster tag (FIL-I23-4, P3): «Hoy» on the premiere day, «Estreno» up to three days after, else none. */
+export const premiereTag = (mxReleaseDate: string, today: string): "Hoy" | "Estreno" | null => {
+  const age = daysBetween(mxReleaseDate, today);
+  if (age === 0) {
+    return "Hoy";
+  }
+  return age > 0 && age <= PREMIERE_RECENT_DAYS ? "Estreno" : null;
+};
+
+/** Which edges of a horizontal rail hide more content: "", "left", "right" or "left right". */
+export const railFade = (scrollLeft: number, clientWidth: number, scrollWidth: number) =>
+  [scrollLeft > 1 ? "left" : null, scrollLeft + clientWidth < scrollWidth - 1 ? "right" : null].filter(Boolean).join(" ");
+
 const MONTHS_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 const MONTHS_LONG = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
@@ -204,3 +220,55 @@ export const staleLabel = (lastRunAt: Date | null, now = new Date()) => {
   }
   return hours < 48 ? `Actualizado hace ${hours} h` : `Actualizado hace ${Math.floor(hours / 24)} días`;
 };
+
+/**
+ * The ficha's theater chip (FIL-I23-3) and badge share one rule: shown while Cine knows the film
+ * is in theaters or coming, hidden once it streams flatrate in MX (the theaters are old news).
+ */
+export const cinemaChipFor = <T extends { status: "now" | "upcoming"; mxReleaseDate: string }>(
+  cinema: T | null,
+  flatrateCount: number,
+): T | null => (cinema && flatrateCount === 0 ? cinema : null);
+
+/** Thursday that opened the premiere week `today` falls in (MX premieres land on Thursday). */
+export const premiereWeekStart = (today: string) => {
+  const { weekday } = parts(today);
+  return addDays(today, -((weekday + 3) % 7));
+};
+
+export type CarteleraOrder = "recientes" | "populares";
+
+export const parseCarteleraOrder = (value: unknown): CarteleraOrder => {
+  const raw = Array.isArray(value) ? value.at(-1) : value;
+  return raw === "populares" ? "populares" : "recientes";
+};
+
+/**
+ * Cartelera B (FIL-I23-5): «Esta semana» holds the films that opened in the premiere week in
+ * progress (Thursday to Wednesday); «Siguen en cartelera» the rest, by date or by popularity.
+ */
+export const splitCartelera = <T extends { mxReleaseDate: string; popularity: number }>(
+  films: readonly T[],
+  today: string,
+  order: CarteleraOrder = "recientes",
+) => {
+  const weekStart = premiereWeekStart(today);
+  const weekEnd = addDays(weekStart, 6);
+  const thisWeek = films.filter((film) => film.mxReleaseDate >= weekStart && film.mxReleaseDate <= weekEnd);
+  const rest = films.filter((film) => film.mxReleaseDate < weekStart || film.mxReleaseDate > weekEnd);
+  const sorted =
+    order === "populares"
+      ? [...rest].sort((a, b) => b.popularity - a.popularity || b.mxReleaseDate.localeCompare(a.mxReleaseDate))
+      : [...rest].sort((a, b) => b.mxReleaseDate.localeCompare(a.mxReleaseDate) || b.popularity - a.popularity);
+  return { weekStart, thisWeek, rest: sorted };
+};
+
+/** A title people here can read: at least one Latin letter (TMDB's es-MX falls back to the original script). */
+export const hasLatinLetters = (name: string | null | undefined) => /\p{Script=Latin}/u.test(name ?? "");
+
+/**
+ * P4 (FIL-I23-6): the name Cine stores for a film whose es-MX title has no Latin letters: the
+ * en-US title when it has them, else the original. A readable stored name is never replaced.
+ */
+export const readableTitle = (stored: string, enName: string | null | undefined) =>
+  hasLatinLetters(stored) ? stored : hasLatinLetters(enName) ? (enName as string).trim() : stored;

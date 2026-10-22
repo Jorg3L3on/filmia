@@ -13,11 +13,44 @@ import {
   todayDateInput,
   type WatchedDatePreset,
 } from "@/lib/dates";
+import { PLATFORM_LABEL } from "@/lib/labels";
 import { WATCHLIST_SAVE_LABEL } from "@/lib/mark-seen";
 import { showToast } from "@/lib/toast";
 import { fieldClass, focusRing } from "@/lib/ui";
 
 const NOTE_MAX = 200;
+
+/** What the folded «Más detalles» row holds: «Hoy · Netflix · nota». */
+const detailsSummary = (
+  preset: WatchedDatePreset,
+  watchedAt: string,
+  platform: Platform | "",
+  note: string,
+) => {
+  const parts = [
+    preset === "today" ? "Hoy" : preset === "yesterday" ? "Ayer" : watchedAt,
+    platform ? PLATFORM_LABEL[platform] : null,
+    note.trim() ? "nota" : null,
+  ].filter(Boolean);
+  return parts.join(" · ");
+};
+
+const ChevronIcon = ({ open }: { open: boolean }) => (
+  <svg
+    viewBox="0 0 24 24"
+    width="14"
+    height="14"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={cn("transition-transform duration-[var(--duration-hover)]", open && "rotate-180")}
+  >
+    <path d="M6 9l6 6 6-6" />
+  </svg>
+);
 
 const DATE_PRESETS: { id: WatchedDatePreset; label: string }[] = [
   { id: "today", label: "Hoy" },
@@ -116,6 +149,11 @@ const MarkWatchedSheetFields = ({
   const [note, setNote] = useState((review ?? "").slice(0, NOTE_MAX));
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | "">(platform ?? "");
   const [platformDirty, setPlatformDirty] = useState(false);
+  // Stars and Guardar first (FIL-I21-8); Fecha, Dónde la vi and Nota fold under «Más detalles»,
+  // open from the start when there is already a note or the date is not today.
+  const [detailsOpen, setDetailsOpen] = useState(
+    Boolean((review ?? "").trim()) || (hasInitialDate && initialWatchedAt !== todayDateInput()),
+  );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -198,85 +236,15 @@ const MarkWatchedSheetFields = ({
       </div>
 
       <div
-        className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-6"
+        className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-5"
         data-no-sheet-drag
       >
-        <fieldset className="min-w-0 space-y-2">
-          <legend className="text-[11px] font-medium uppercase tracking-[0.18em] text-fog">
-            Fecha
-          </legend>
-          <div
-            role="radiogroup"
-            aria-label="Fecha en que la viste"
-            className="grid grid-cols-3 gap-1 rounded-full bg-canvas p-1"
-          >
-            {DATE_PRESETS.map((preset) => {
-              const selected = datePreset === preset.id;
-              return (
-                <button
-                  key={preset.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => handlePreset(preset.id)}
-                  className={cn(
-                    "rounded-full px-2 py-2 text-center text-xs font-medium transition sm:text-sm",
-                    focusRing,
-                    selected ? "bg-accent text-ink" : "text-fog hover:text-paper",
-                  )}
-                >
-                  {preset.label}
-                </button>
-              );
-            })}
-          </div>
-          {datePreset === "custom" ? (
-            <label className="block min-w-0 space-y-1">
-              <span className="sr-only">Elegir fecha</span>
-              <input
-                type="date"
-                value={watchedAt}
-                onChange={(event) => handleCustomDate(event.target.value)}
-                required
-                aria-label="Fecha en que la viste"
-                className={cn(fieldClass, "date-field bg-canvas")}
-              />
-            </label>
-          ) : null}
-        </fieldset>
-
         <div className="space-y-2">
           <p className="text-center text-[11px] font-medium uppercase tracking-[0.18em] text-fog">
             Tu nota
           </p>
           <RatingStars value={value} onChange={setValue} />
         </div>
-
-        <PlatformChips
-          value={selectedPlatform}
-          onChange={(next) => {
-            setSelectedPlatform(next);
-            setPlatformDirty(true);
-          }}
-          hint="Solo para tu registro. Dónde verla hoy se actualiza sola."
-        />
-
-        <label className="block space-y-2">
-          <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-fog">
-            Nota
-          </span>
-          <textarea
-            value={note}
-            onChange={(event) => setNote(event.target.value.slice(0, NOTE_MAX))}
-            maxLength={NOTE_MAX}
-            rows={3}
-            placeholder="Una línea, un spoiler, un veredicto…"
-            className={cn(fieldClass, "resize-none bg-canvas")}
-          />
-          <span className="block text-right text-[11px] text-mist" aria-live="polite">
-            {note.length}/{NOTE_MAX}
-          </span>
-        </label>
 
         {error ? (
           <p role="alert" className="text-sm text-danger">
@@ -303,6 +271,97 @@ const MarkWatchedSheetFields = ({
             {saveLabel}
           </Button>
         </div>
+
+        <button
+          type="button"
+          aria-expanded={detailsOpen}
+          aria-controls={`${titleDomId}-details`}
+          onClick={() => setDetailsOpen((current) => !current)}
+          className={cn(
+            "flex w-full items-center justify-between rounded-xl px-1 py-2 text-left text-sm font-medium text-fog hover:text-paper",
+            focusRing,
+          )}
+        >
+          <span>Más detalles</span>
+          <span className="flex items-center gap-2 text-xs font-normal text-mist">
+            {!detailsOpen ? detailsSummary(datePreset, watchedAt, selectedPlatform, note) : null}
+            <ChevronIcon open={detailsOpen} />
+          </span>
+        </button>
+
+        {detailsOpen ? (
+          <div id={`${titleDomId}-details`} className="space-y-5">
+            <fieldset className="min-w-0 space-y-2">
+              <legend className="text-[11px] font-medium uppercase tracking-[0.18em] text-fog">
+                Fecha
+              </legend>
+              <div
+                role="radiogroup"
+                aria-label="Fecha en que la viste"
+                className="grid grid-cols-3 gap-1 rounded-full bg-canvas p-1"
+              >
+                {DATE_PRESETS.map((preset) => {
+                  const selected = datePreset === preset.id;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => handlePreset(preset.id)}
+                      className={cn(
+                        "rounded-full px-2 py-2 text-center text-xs font-medium transition sm:text-sm",
+                        focusRing,
+                        selected ? "bg-accent text-ink" : "text-fog hover:text-paper",
+                      )}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {datePreset === "custom" ? (
+                <label className="block min-w-0 space-y-1">
+                  <span className="sr-only">Elegir fecha</span>
+                  <input
+                    type="date"
+                    value={watchedAt}
+                    onChange={(event) => handleCustomDate(event.target.value)}
+                    required
+                    aria-label="Fecha en que la viste"
+                    className={cn(fieldClass, "date-field bg-canvas")}
+                  />
+                </label>
+              ) : null}
+            </fieldset>
+
+            <PlatformChips
+              value={selectedPlatform}
+              onChange={(next) => {
+                setSelectedPlatform(next);
+                setPlatformDirty(true);
+              }}
+              hint="Solo para tu registro. Dónde verla hoy se actualiza sola."
+            />
+
+            <label className="block space-y-2">
+              <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-fog">
+                Nota
+              </span>
+              <textarea
+                value={note}
+                onChange={(event) => setNote(event.target.value.slice(0, NOTE_MAX))}
+                maxLength={NOTE_MAX}
+                rows={3}
+                placeholder="Una línea, un spoiler, un veredicto…"
+                className={cn(fieldClass, "resize-none bg-canvas")}
+              />
+              <span className="block text-right text-[11px] text-mist" aria-live="polite">
+                {note.length}/{NOTE_MAX}
+              </span>
+            </label>
+          </div>
+        ) : null}
       </div>
     </Sheet>
   );

@@ -242,6 +242,7 @@ export const CoverflowDeck = ({
                   onStubCommit={chipsInFooter ? handleSlideCommit : undefined}
                   onOpenMenu={cardMenu.openMenu}
                   chipsInFooter={chipsInFooter}
+                  isOpeningHero={index === startIndex}
                 />
               );
             })}

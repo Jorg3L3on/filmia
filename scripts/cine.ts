@@ -8,8 +8,9 @@ import { config as loadEnv } from "dotenv";
  *   npm run cine:correr                  # WRITES: runs the cron steps (TMDB → Catalog + CinemaRelease)
  *   npm run cine:avisos                  # read-only: the «Llega a cines» pushes the cron would send now
  *   npm run cine:top -- --anios=2026,2025 # WRITES: recomputes «Lo mejor del año» (TMDB + OMDb → YearTop)
+ *   npm run cine:titulos                 # WRITES: en-US name for cartelera rows without Latin letters (FIL-I23-6)
  *
- * Both take --env=<path to .env>.
+ * All take --env=<path to .env>. With FILMIA_LOCAL_PG=1 they talk to the local Postgres in DATABASE_URL.
  */
 
 const args = process.argv.slice(2);
@@ -67,6 +68,11 @@ const correr = async () => {
   console.log(`${Math.round((Date.now() - started) / 1000)} s`);
 };
 
+const titulos = async () => {
+  const { repairUnreadableTitles } = await import("../src/lib/cine-store");
+  console.log(JSON.stringify(await repairUnreadableTitles()));
+};
+
 const top = async () => {
   const { computeYearTop } = await import("../src/lib/cine-top-store");
   const years = (flag("anios") ?? String(new Date().getFullYear())).split(",").map(Number);
@@ -88,12 +94,18 @@ const main = async () => {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL no está definida (usa --env=<ruta al .env>).");
   }
+  if (process.env.FILMIA_LOCAL_PG === "1") {
+    const { installLocalPg } = await import("../src/db/local-pg");
+    installLocalPg();
+  }
   if (command === "correr") {
     await correr();
   } else if (command === "avisos") {
     await avisos();
   } else if (command === "top") {
     await top();
+  } else if (command === "titulos") {
+    await titulos();
   } else {
     await revisar();
   }

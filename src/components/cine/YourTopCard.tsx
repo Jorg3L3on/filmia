@@ -25,7 +25,7 @@ import { Button } from "@/components/Button";
 import { ListItemOrderControls } from "@/components/ListItemOrderControls";
 import { PosterImage } from "@/components/PosterImage";
 import { Sheet, SheetHandle } from "@/components/Sheet";
-import { YEAR_TOP_SIZE, yourTopLabel } from "@/lib/cine-top";
+import { startTopLabel, watchedOfYearCopy, YEAR_TOP_SIZE, yourTopLabel } from "@/lib/cine-top";
 import type { UserYearTop, WatchedOfYear } from "@/lib/cine-top-store";
 import { cn } from "@/lib/cn";
 import { showToast } from "@/lib/toast";
@@ -36,10 +36,14 @@ type YourTopCardProps = {
   top: UserYearTop | null;
   /** Movies of `year` the user saw, best-rated first: what the top can hold. */
   watched: WatchedOfYear[];
+  /** A year that is over: nothing new to see in theaters, point at the IMDb top instead. */
+  past?: boolean;
+  /** Where the IMDb top of this year is on the page (null when it is not there yet). */
+  topHref?: string | null;
 };
 
 /** «Tu top 10 de {año}» next to the IMDb top: armar, or the first three and «Editar». */
-export const YourTopCard = ({ year, top, watched }: YourTopCardProps) => {
+export const YourTopCard = ({ year, top, watched, past = false, topHref = null }: YourTopCardProps) => {
   const [open, setOpen] = useState(false);
   const titleId = useId();
   const films = top?.films ?? [];
@@ -50,7 +54,7 @@ export const YourTopCard = ({ year, top, watched }: YourTopCardProps) => {
       <div className="flex items-baseline justify-between gap-3">
         <p className="font-serif text-lg text-paper">{label}</p>
         {top && films.length > 0 ? (
-          <Link href={`/listas/${top.listId}`} className={cn("text-xs text-mist hover:text-paper", focusRing)}>
+          <Link href={`/listas/${top.listId}`} className={cn("-my-3 py-3 text-xs text-mist hover:text-paper", focusRing)}>
             Compartir <span aria-hidden="true">›</span>
           </Link>
         ) : null}
@@ -71,23 +75,27 @@ export const YourTopCard = ({ year, top, watched }: YourTopCardProps) => {
       ) : watched.length === 0 ? (
         <p className="text-sm text-fog">
           Aún no has visto películas de {year}.{" "}
-          <Link href="/cine/cartelera" className={cn("font-medium text-cine", focusRing)}>
-            Mira la cartelera <span aria-hidden="true">›</span>
-          </Link>
+          {past && topHref ? (
+            <a href={topHref} className={cn("font-medium text-cine", focusRing)}>
+              Mira el top de IMDb <span aria-hidden="true">↑</span>
+            </a>
+          ) : (
+            <Link href="/cine/cartelera" className={cn("font-medium text-cine", focusRing)}>
+              Mira la cartelera <span aria-hidden="true">›</span>
+            </Link>
+          )}
         </p>
       ) : (
-        <p className="text-sm text-fog">
-          Has visto {watched.length} {watched.length === 1 ? "película" : "películas"} de {year}. Ordénalas a tu gusto.
-        </p>
+        <p className="text-sm text-fog">{watchedOfYearCopy(year, watched.length)}</p>
       )}
 
       {watched.length > 0 ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className={cn("text-sm font-semibold text-cine hover:opacity-80", focusRing)}
+          className={cn("-my-3 py-3 text-sm font-semibold text-cine hover:opacity-80", focusRing)}
         >
-          {films.length > 0 ? "Editar" : "Armar mi top"} <span aria-hidden="true">›</span>
+          {films.length > 0 ? "Editar" : startTopLabel(watched.length)} <span aria-hidden="true">›</span>
         </button>
       ) : null}
 

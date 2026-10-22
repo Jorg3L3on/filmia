@@ -14,7 +14,7 @@ import {
 } from "@/lib/list-selection";
 import type { UserTmdbEntry } from "@/lib/queries";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
-import { showToast } from "@/lib/toast";
+import { showToast, type ToastPayload } from "@/lib/toast";
 import { PARA_TI_SLUG } from "@/lib/tonight/select";
 import { TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import {
@@ -42,6 +42,8 @@ export type UseTmdbTitleActionsArgs = {
   pinnedTitleId?: string | null;
   /** Buscar shows a failed save inline too. */
   onError?: (message: string | null) => void;
+  /** Replaces the «En Quiero ver» toast for this result (Cine: the premiere day it will warn about). */
+  watchlistToast?: (result: TmdbCatalogResult) => Promise<ToastPayload | null> | ToastPayload | null;
 };
 
 /**
@@ -56,6 +58,7 @@ export const useTmdbTitleActions = ({
   memberships = {},
   pinnedTitleId: initialPinnedTitleId = null,
   onError,
+  watchlistToast,
 }: UseTmdbTitleActionsArgs) => {
   const router = useRouter();
   const [catalog, setCatalog] = useState(() => toTmdbCatalogMap(existing));
@@ -143,10 +146,12 @@ export const useTmdbTitleActions = ({
         watched: outcome.markedWatched || destination === "watched",
       });
       const description = savedInFilmiaCopy(result.name, outcome.created);
+      const custom = destination === "watchlist" && watchlistToast ? await watchlistToast(result) : null;
       showToast(
-        destination === "watchlist"
-          ? { title: "En Quiero ver", description }
-          : { title: "Marcada como vista", description },
+        custom ??
+          (destination === "watchlist"
+            ? { title: "En Quiero ver", description }
+            : { title: "Marcada como vista", description }),
       );
     });
   };

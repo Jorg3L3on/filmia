@@ -61,6 +61,8 @@ export type CoverflowTitle = {
   addedBy?: CoverflowAddedBy;
   /** The viewer never saved this film (a shared list): no «Mover a otra lista». */
   noEntry?: boolean;
+  /** Hoy's closing card at the deck's end (FIL-I21-6): no ficha, no stub, no footer. */
+  closing?: boolean;
 };
 
 export type CoverflowAddedBy = {

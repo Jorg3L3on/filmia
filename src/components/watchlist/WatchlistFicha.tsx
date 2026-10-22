@@ -1,7 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { memo, useState, type CSSProperties, type MouseEvent } from "react";
+import {
+  memo,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { PosterImage } from "@/components/PosterImage";
 import { SharedPoster } from "@/components/SharedPoster";
 import { WatchlistFichaChips } from "@/components/watchlist/WatchlistFichaChips";
@@ -12,7 +21,11 @@ import type { FichaView } from "@/components/watchlist/types";
 import { useSwipeActions } from "@/components/watchlist/useSwipeActions";
 import { ACCENT_RGB } from "@/lib/aura";
 import { cn } from "@/lib/cn";
+import { composeHandlers } from "@/lib/compose-handlers";
 import { useLongPress } from "@/lib/motion";
+import { claimOncePerDay } from "@/lib/once-per-day";
+import { revealUnfoldedRow } from "@/lib/reveal-unfolded";
+import { sortedRankLabel } from "@/lib/watchlist-empty";
 import { staggerStyle } from "@/lib/motion-style";
 import { isRemoteImage, tmdbBackdropUrl, tmdbPosterUrl } from "@/lib/tmdb";
 import { focusRing, glassRowClass } from "@/lib/ui";
@@ -27,6 +40,15 @@ type WatchlistFichaProps = {
   stagger: number;
   /** Desktop: a tap selects for the stage instead of unfolding in place. */
   desktop: boolean;
+  /** Eligible for the daily hint (FIL-I24-1): the row slides 24 px right and back to show «Vi esto». */
+  hint?: boolean;
+  /** Manual order: the serif numeral on the poster. Under a sort it reads «#n en tu orden» in the meta instead. */
+  ranked?: boolean;
+  /**
+   * Desktop #1 (FIL-I24-6): the row carries the hero's eyebrow and, in manual order, the orange
+   * badge instead of the serif numeral. The stage beside the list is the hero.
+   */
+  lead?: string | null;
   onToggle: (ficha: FichaView) => void;
   onSelect: (ficha: FichaView) => void;
   onMarkSeen: (ficha: FichaView) => void;
@@ -34,6 +56,10 @@ type WatchlistFichaProps = {
   onNotTonight: (ficha: FichaView) => void;
   onMenu: (ficha: FichaView) => void;
 };
+
+const HINT_DELAY_MS = 1200;
+/** Once a day the first folded row peeks at «Vi esto» so the swipe is discovered (FIL-I24-1). */
+const SWIPE_HINT_KEY = "filmia:ficha-swipe-hint";
 
 const WatchlistFichaImpl = ({
   ficha,
@@ -43,6 +69,9 @@ const WatchlistFichaImpl = ({
   stamped,
   stagger,
   desktop,
+  hint = false,
+  ranked = true,
+  lead = null,
   onToggle,
   onSelect,
   onMarkSeen,
@@ -64,6 +93,38 @@ const WatchlistFichaImpl = ({
     swipe.markHandled();
     onMenu(ficha);
   });
+  // Opening (not a restored open row, not the desktop stage) scrolls the row above the dock.
+  const rowRef = useRef<HTMLLIElement>(null);
+  const wasExpanded = useRef(expanded);
+  useLayoutEffect(() => {
+    const opened = expanded && !wasExpanded.current;
+    wasExpanded.current = expanded;
+    if (opened && !desktop && rowRef.current) {
+      revealUnfoldedRow(rowRef.current);
+    }
+  }, [desktop, expanded]);
+
+  // Both hooks listen to the same pointer events; spread one after the other and the last wins.
+  const gestures = composeHandlers<ReactPointerEvent<HTMLDivElement>, [typeof swipe.handlers, typeof longPress]>(
+    swipe.handlers,
+    longPress,
+  );
+
+  // The daily hint: 1.2 s after arrival the folded row peeks at «Vi esto» (CSS keyframes, transform
+  // only). Claimed inside the timer so a row that unfolds first, or reduced motion, never spends it.
+  const [hinting, setHinting] = useState(false);
+  useEffect(() => {
+    if (!hint || expanded || stamped) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !claimOncePerDay(SWIPE_HINT_KEY)) {
+        return;
+      }
+      setHinting(true);
+    }, HINT_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [expanded, hint, stamped]);
 
   const backdropSrc = hasOpened
     ? (tmdbBackdropUrl(ficha.backdropPath, "w780") ?? tmdbPosterUrl(ficha.posterPath, "w500"))
@@ -78,6 +139,7 @@ const WatchlistFichaImpl = ({
 
   return (
     <li
+      ref={rowRef}
       data-expanded={expanded}
       data-ficha={ficha.id}
       className={cn(
@@ -102,13 +164,13 @@ const WatchlistFichaImpl = ({
         onMenu(ficha);
       }}
     >
-      <WatchlistSwipeLayer offset={swipe.offset} armed={swipe.armed} />
+      <WatchlistSwipeLayer offset={hinting && !swipe.offset ? 1 : swipe.offset} armed={swipe.armed} />
       <div
-        className="ficha-sheet relative isolate rounded-2xl bg-well"
+        className={cn("ficha-sheet relative isolate rounded-2xl bg-well", hinting && "ficha-swipe-hint")}
         style={swipe.offset ? { transform: `translate3d(${swipe.offset}px, 0, 0)` } : undefined}
-        {...swipe.handlers}
-        {...longPress}
+        {...gestures}
         onClickCapture={swallowAfterGesture}
+        onAnimationEnd={hinting ? () => setHinting(false) : undefined}
       >
         {backdropSrc ? (
           <div className="ficha-backdrop" aria-hidden="true">
@@ -145,16 +207,30 @@ const WatchlistFichaImpl = ({
                 className="rounded-poster shadow-[0_10px_24px_rgba(0,0,0,0.45)] transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110"
               />
             </SharedPoster>
-            <span className="ficha-rank" aria-hidden="true">
-              {rank}
-            </span>
+            {lead && ranked ? (
+              <span
+                aria-hidden="true"
+                className="absolute -left-2 -top-2 inline-flex size-8 items-center justify-center rounded-full bg-accent font-serif text-sm font-bold text-ink shadow-[0_8px_20px_rgba(0,0,0,0.45)]"
+              >
+                1
+              </span>
+            ) : ranked ? (
+              <span className="ficha-rank" aria-hidden="true">
+                {rank}
+              </span>
+            ) : null}
           </div>
           <div className="min-w-0 flex-1 space-y-1 pt-0.5">
+            {lead ? (
+              <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">{lead}</span>
+            ) : null}
             <span className="ficha-title line-clamp-2 block font-medium text-paper">
               <span className="sr-only">{rank}. </span>
               {ficha.name}
             </span>
-            <span className="block truncate text-xs text-mist">{ficha.meta}</span>
+            <span className="block truncate text-xs text-mist">
+              {ranked ? ficha.meta : `${sortedRankLabel(rank)} · ${ficha.meta}`}
+            </span>
             {ficha.genres.length > 0 ? (
               <span className="block truncate text-xs text-paper/70">{ficha.genres.join(" · ")}</span>
             ) : null}

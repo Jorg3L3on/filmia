@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
+import { FadeRail } from "@/components/cine/FadeRail";
 import { ticketStub } from "@/lib/cine-core";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
@@ -39,7 +40,10 @@ export const CineMarquee = ({
     <div className="flex items-end justify-between gap-3">
       <div className="min-w-0">
         {backHref ? (
-          <Link href={backHref} className={cn("mb-1 inline-flex items-center gap-1 text-xs text-mist hover:text-paper", focusRing)}>
+          <Link
+            href={backHref}
+            className={cn("-ml-2 -mt-2 mb-0.5 inline-flex min-h-11 items-center gap-1 rounded-full px-2 text-xs text-mist hover:text-paper", focusRing)}
+          >
             <span aria-hidden="true">‹</span> Cine
           </Link>
         ) : null}
@@ -67,17 +71,18 @@ export const CineSection = ({
   children: ReactNode;
 }) => (
   <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-20 space-y-3.5">
+    {/* P1 (FIL-I23-4): the aside reads whole on a second line; «Ver todo» keeps its place with a 44 px zone. */}
     <div className="flex items-baseline justify-between gap-3">
-      <div className="flex min-w-0 items-baseline gap-2.5">
+      <div className="min-w-0">
         <h2 id={`${id}-h`} className="font-serif text-[1.375rem] leading-tight text-paper">
           {title}
         </h2>
-        {aside ? <span className="truncate text-xs text-mist">{aside}</span> : null}
+        {aside ? <p className="mt-0.5 text-[11px] leading-snug text-mist">{aside}</p> : null}
       </div>
       {moreHref ? (
         <Link
           href={moreHref}
-          className={cn("shrink-0 text-sm font-medium text-cine transition-opacity hover:opacity-80", focusRing)}
+          className={cn("-my-3 shrink-0 py-3 text-sm font-medium text-cine transition-opacity hover:opacity-80", focusRing)}
         >
           {moreLabel} <span aria-hidden="true">›</span>
         </Link>
@@ -98,15 +103,17 @@ export const TicketStub = ({ day, className }: { day: string; className?: string
   );
 };
 
-/** A horizontal poster rail sized for Cine (≈3 posters on a phone). */
+/** «8 estrenos» under a week's stub. */
+export const weekCountLabel = (count: number) => `${count} ${count === 1 ? "estreno" : "estrenos"}`;
+
+/** A horizontal poster rail sized for Cine (≈3 posters on a phone), edges fading where more hides. */
 export const CineRail = ({ label, children }: { label: string; children: ReactNode }) => (
-  <div
-    role="list"
-    aria-label={label}
-    className="rail -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto overscroll-x-contain px-4 pb-1 touch-pan-x sm:gap-4"
+  <FadeRail
+    label={label}
+    className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto overscroll-x-contain px-4 pb-1 touch-pan-x sm:gap-4"
   >
     {children}
-  </div>
+  </FadeRail>
 );
 
 export const railItemClass = "w-[30vw] max-w-[9.5rem] shrink-0 snap-start sm:w-[9.5rem]";
@@ -119,13 +126,14 @@ export const GhostPoster = ({ className }: { className?: string }) => (
   />
 );
 
-/** «Actualizado hace 3 h · Reintentar» when the cron missed a run. */
-export const StaleNotice = ({ label, href }: { label: string; href: string }) => (
+/** The daily cron runs at 10:00 UTC: four in the morning in Mexico City. */
+export const CINE_UPDATE_HOUR_LABEL = "Se actualiza a las 4:00";
+
+/** «Actualizado hace 3 h · Se actualiza a las 4:00» when the cron missed a run (P8: text only, Jorge 21 oct). */
+export const StaleNotice = ({ label }: { label: string }) => (
   <p className="flex items-center gap-2 text-xs text-mist" role="status">
     <span>{label}</span>
     <span aria-hidden="true">·</span>
-    <a href={href} className={cn("font-medium text-cine hover:opacity-80", focusRing)}>
-      Reintentar
-    </a>
+    <span>{CINE_UPDATE_HOUR_LABEL}</span>
   </p>
 );

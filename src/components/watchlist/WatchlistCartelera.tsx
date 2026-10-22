@@ -1,24 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createHistoryEntryStore, readHistoryEntry, writeHistoryEntry } from "@/lib/history-entry";
+import { WatchlistClosingCard } from "@/components/watchlist/WatchlistClosingCard";
+import { WatchlistEmpty } from "@/components/watchlist/WatchlistEmpty";
 import { WatchlistFicha } from "@/components/watchlist/WatchlistFicha";
 import { WatchlistHeroCompact } from "@/components/watchlist/WatchlistHeroCompact";
 import { WatchlistReorderList } from "@/components/watchlist/WatchlistReorderList";
+import { useWatchlistEditing } from "@/components/watchlist/WatchlistEditing";
 import { WatchlistSheets } from "@/components/watchlist/WatchlistSheets";
 import { WatchlistStage } from "@/components/watchlist/WatchlistStage";
 import { WatchlistStickyBar } from "@/components/watchlist/WatchlistStickyBar";
 import type { FichaView } from "@/components/watchlist/types";
+import { useCondensedBar } from "@/components/watchlist/useCondensedBar";
+import { useExpandedFicha } from "@/components/watchlist/useExpandedFicha";
 import { useFichaViews } from "@/components/watchlist/useFichaViews";
 import { useWatchlistActions } from "@/components/watchlist/useWatchlistActions";
 import { useWatchlistKeyboard } from "@/components/watchlist/useWatchlistKeyboard";
+import { catalogHref, type CatalogQuery } from "@/lib/catalog-href";
 import { isNight } from "@/lib/tonight/time";
 import type { NightEnds } from "@/lib/tonight/types";
 import { DESKTOP_QUERY, useMediaQuery } from "@/lib/use-media-query";
 import { useMountedNow } from "@/lib/use-mounted-now";
 import { sameOrderedIds, useStickyOptimistic } from "@/lib/use-optimistic-action";
+import { heroEyebrow, watchlistEmptyState } from "@/lib/watchlist-empty";
 import type { WatchlistFicha as WatchlistFichaRow } from "@/lib/watchlist-ficha";
+import type { WatchlistSort } from "@/lib/watchlist-filters";
 
 type WatchlistCarteleraProps = {
   fichas: WatchlistFichaRow[];
@@ -29,6 +36,15 @@ type WatchlistCarteleraProps = {
   /** «Esta noche» chip: keep only what fits before bedtime (needs the viewer's clock). */
   tonightOnly?: boolean;
   pinnedTitleId?: string | null;
+  /** Active sort: the hero's eyebrow says what the first row is and the ranks step aside (FIL-I24-4). */
+  sort?: WatchlistSort | null;
+  /** Everything applied, so the empty state can name the chip to blame and drop just that one. */
+  query?: CatalogQuery;
+  pathname?: string;
+  /** Name of the single selected genre, for the empty state. */
+  genreName?: string | null;
+  /** «Netflix y Max»: the platforms the list is being filtered to. */
+  platformsLabel?: string | null;
 };
 
 const STAGGER_CAP = 12;
@@ -37,9 +53,6 @@ const STAGGER_CAP = 12;
  * Quiero ver «La cartelera»: compact hero for #1, dense fichas that unfold in
  * place, swipe / long-press actions, Reordenar, and a stage on desktop.
  */
-const EXPANDED_ENTRY = "watchlistExpanded";
-const readExpandedEntry = () => readHistoryEntry(EXPANDED_ENTRY);
-
 export const WatchlistCartelera = ({
   fichas,
   listId,
@@ -47,6 +60,11 @@ export const WatchlistCartelera = ({
   isManualOrder = true,
   tonightOnly = false,
   pinnedTitleId = null,
+  sort = null,
+  query = {},
+  pathname = "/watchlist",
+  genreName = null,
+  platformsLabel = null,
 }: WatchlistCarteleraProps) => {
   const router = useRouter();
   const now = useMountedNow();
@@ -56,21 +74,12 @@ export const WatchlistCartelera = ({
   const { value: order, error, isPending, run } = useStickyOptimistic(serverIds, sameOrderedIds);
 
   const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(() => new Set());
-  const [isEditing, setIsEditing] = useState(false);
-  // Back from a ficha reopens the row that was open (read after hydration; this history entry only).
-  const [expandedStore] = useState(() => createHistoryEntryStore(EXPANDED_ENTRY));
-  const restoredExpandedId = useSyncExternalStore(
-    expandedStore.subscribe,
-    expandedStore.getSnapshot,
-    expandedStore.getServerSnapshot,
-  );
-  const [touchedExpandedId, setExpandedId] = useState<string | null | undefined>(undefined);
-  const expandedId = touchedExpandedId === undefined ? restoredExpandedId : touchedExpandedId;
-  useEffect(() => {
-    if (touchedExpandedId !== undefined) {
-      writeHistoryEntry(EXPANDED_ENTRY, touchedExpandedId);
-    }
-  }, [touchedExpandedId]);
+  // Reorder mode lives in the page's provider when the compact header owns the button (FIL-I21-7).
+  const sharedEditing = useWatchlistEditing();
+  const [localEditing, setLocalEditing] = useState(false);
+  const isEditing = sharedEditing ? sharedEditing.isEditing : localEditing;
+  const setIsEditing = sharedEditing ? sharedEditing.setIsEditing : setLocalEditing;
+  const { expandedId, toggle, close: closeExpanded } = useExpandedFicha();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [stampedId, setStampedId] = useState<string | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(pinnedTitleId);
@@ -79,26 +88,12 @@ export const WatchlistCartelera = ({
   const [markTarget, setMarkTarget] = useState<FichaView | null>(null);
   const [menuTarget, setMenuTarget] = useState<FichaView | null>(null);
   const [noteTarget, setNoteTarget] = useState<FichaView | null>(null);
-  const [condensed, setCondensed] = useState(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const { condensed, sentinelRef } = useCondensedBar();
   const timers = useRef<number[]>([]);
 
   useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
   const later = useCallback((fn: () => void, ms: number) => {
     timers.current.push(window.setTimeout(fn, ms));
-  }, []);
-
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel || typeof IntersectionObserver === "undefined") {
-      return;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => setCondensed(Boolean(entry && !entry.isIntersecting && entry.boundingClientRect.top < 0)),
-      { rootMargin: "-56px 0px 0px 0px" },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
   }, []);
 
   const hide = useCallback((id: string) => setHiddenIds((current) => new Set(current).add(id)), []);
@@ -134,8 +129,11 @@ export const WatchlistCartelera = ({
   );
   const visibleIds = visible.map((view) => view.id);
   const hiddenInOrder = order.filter((id) => !visibleIds.includes(id));
-  const [hero, ...rows] = visible;
-  const selected = (selectedId && visible.find((view) => view.id === selectedId)) || hero || null;
+  // Desktop (FIL-I24-6): no compact hero; the list starts at #1 and the sticky stage is the hero.
+  const hero = isDesktop ? null : (visible[0] ?? null);
+  const rows = isDesktop ? visible : visible.slice(1);
+  const first = visible[0] ?? null;
+  const selected = (selectedId && visible.find((view) => view.id === selectedId)) || first || null;
 
   const actions = useWatchlistActions({
     listId,
@@ -156,14 +154,6 @@ export const WatchlistCartelera = ({
     setMenuTarget(null);
     setMarkTarget(ficha);
   }, []);
-  const toggle = useCallback(
-    (ficha: FichaView) =>
-      setExpandedId((current) => {
-        const open = current === undefined ? readExpandedEntry() : current;
-        return open === ficha.id ? null : ficha.id;
-      }),
-    [],
-  );
   const select = useCallback((ficha: FichaView) => setSelectedId(ficha.id), []);
   const openMenu = useCallback((ficha: FichaView) => setMenuTarget(ficha), []);
   const sheetsOpen = Boolean(markTarget || menuTarget || noteTarget);
@@ -180,17 +170,14 @@ export const WatchlistCartelera = ({
     },
   });
 
-  if (visible.length === 0) {
-    return (
-      <p className="rounded-2xl border border-line bg-surface/40 px-4 py-8 text-center text-sm text-fog" role="status">
-        {tonightOnly
-          ? "Nada termina antes de tu hora de dormir. Quita «Esta noche» para ver toda la lista."
-          : "Nada en Quiero ver por ahora."}
-      </p>
-    );
-  }
-
   const canReorder = isManualOrder && visible.length > 1;
+  const ranked = sort === null;
+  const empty = visible.length === 0;
+  // Closing card (FIL-I24-7): how many fit before bedtime, only at night (fit is null by day).
+  const fitCount =
+    now && isNight(now, nightEnds)
+      ? views.filter((view) => view.fit && view.fit.overflowMinutes === 0 && view.fit.remainingMinutes > 0).length
+      : null;
 
   return (
     <div className="relative space-y-4">
@@ -200,30 +187,52 @@ export const WatchlistCartelera = ({
         condensed={condensed}
         isEditing={isEditing}
         canReorder={canReorder}
-        reorderBlocked={!canReorder && visible.length > 1}
+        reorderBlocked={!canReorder && visible.length > 1 ? (sort ? "sort" : "filters") : null}
+        clearSortHref={sort ? catalogHref(pathname, { ...query, sort: null }) : undefined}
         onToggleEditing={() => setIsEditing((current) => !current)}
+        // The phone header carries the count and «Reordenar»; the bar only shows while editing.
+        className={sharedEditing && !isEditing ? "max-sm:hidden" : undefined}
       />
 
-      {isEditing && canReorder ? (
+      {empty ? (
+        <WatchlistEmpty
+          state={watchlistEmptyState(pathname, query, { genreName, platformsLabel })}
+          now={now}
+          nightEnds={nightEnds}
+          platformsLabel={platformsLabel}
+        />
+      ) : isEditing && canReorder ? (
         <WatchlistReorderList items={visible} isPending={isPending} onMove={actions.move} onReorder={actions.reorder} />
       ) : (
         <div className="lg:flex lg:items-start lg:gap-8">
           <div className="min-w-0 space-y-4 lg:flex-[999_1_560px]">
             {hero ? (
-              <WatchlistHeroCompact key={hero.id} ficha={hero} stamped={stampedId === hero.id} onMarkSeen={openMark} onMenu={openMenu} />
+              <WatchlistHeroCompact
+                key={hero.id}
+                ficha={hero}
+                stamped={stampedId === hero.id}
+                eyebrow={heroEyebrow(sort, hero.platform?.label)}
+                ranked={ranked}
+                onMarkSeen={openMark}
+                onMenu={openMenu}
+              />
             ) : null}
             {rows.length > 0 ? (
-              <ol className="space-y-2.5" aria-label="Después">
+              <ol className="space-y-2.5" aria-label={isDesktop ? "Quiero ver" : "Después"}>
                 {rows.map((ficha, index) => (
                   <WatchlistFicha
                     key={ficha.id}
                     ficha={ficha}
-                    rank={index + 2}
+                    rank={isDesktop ? index + 1 : index + 2}
+                    lead={isDesktop && index === 0 ? heroEyebrow(sort, ficha.platform?.label) : null}
                     expanded={expandedId === ficha.id}
                     selected={selected?.id === ficha.id}
                     stamped={stampedId === ficha.id}
                     stagger={Math.min(index, STAGGER_CAP)}
                     desktop={isDesktop}
+                    // The first folded row may teach the swipe (once a day; the row decides).
+                    hint={index === 0 && !isDesktop}
+                    ranked={ranked}
                     onToggle={toggle}
                     onSelect={select}
                     onMarkSeen={openMark}
@@ -234,6 +243,7 @@ export const WatchlistCartelera = ({
                 ))}
               </ol>
             ) : null}
+            {visible.length > 1 ? <WatchlistClosingCard total={visible.length} fitCount={fitCount} /> : null}
           </div>
           {isDesktop && selected ? (
             <div className="hidden lg:sticky lg:top-[calc(3.5rem+env(safe-area-inset-top)+1rem)] lg:block lg:w-[400px] lg:shrink-0">
@@ -257,7 +267,7 @@ export const WatchlistCartelera = ({
         onCloseMark={() => setMarkTarget(null)}
         onWatchedSaved={(ficha) => {
           setMarkTarget(null);
-          setExpandedId(null);
+          closeExpanded();
           actions.onWatchedSaved(ficha);
         }}
         onWatchedError={actions.onWatchedError}
