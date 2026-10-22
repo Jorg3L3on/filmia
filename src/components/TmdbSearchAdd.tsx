@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { getFilmographyFacts } from "@/app/actions/search-facts";
 import { BackButton } from "@/components/BackButton";
 import { EmptyState } from "@/components/EmptyState";
@@ -16,7 +16,10 @@ import {
   PersonView,
   type PersonViewState,
 } from "@/components/tmdb-search/PersonSearch";
+import { DiaryBand } from "@/components/tmdb-search/DiaryBand";
 import type { SearchRowStatus, SearchRowWiring } from "@/components/tmdb-search/SearchResultRow";
+import { useDiaryRowLog } from "@/components/tmdb-search/useDiaryRowLog";
+import { useDockSearchBridge } from "@/components/tmdb-search/useDockSearchBridge";
 import type { SearchMenuTarget } from "@/components/tmdb-search/SearchRowMenu";
 import { SearchShortcuts } from "@/components/tmdb-search/SearchShortcuts";
 import {
@@ -29,7 +32,6 @@ import { useSearchFacts } from "@/components/tmdb-search/useSearchFacts";
 import { useSearchRecents } from "@/components/tmdb-search/useSearchRecents";
 import { useTmdbSearchAdd } from "@/components/tmdb-search/useTmdbSearchAdd";
 import type { StartArrival, StartDirector } from "@/lib/buscar-start";
-import { dockSearch } from "@/lib/dock-search";
 import type { SelectableList } from "@/lib/list-selection";
 import { resolveDirectorQuery, type PersonFilmography } from "@/lib/person-filmography";
 import { FILMOGRAPHY_FACTS_LIMIT } from "@/lib/search-result-facts";
@@ -104,7 +106,14 @@ export const TmdbSearchAdd = ({
     setKindFilter,
     isSearching,
     isAdding,
+    pendingKey,
+    pendingAction,
     visibleResults,
+    loadedCount,
+    total,
+    canLoadMore,
+    isLoadingMore,
+    loadMore,
     listIdsFor,
     listsError,
     pinnedTitleId,
@@ -173,13 +182,28 @@ export const TmdbSearchAdd = ({
   });
   const rowFactsFor = shownPerson ? filmographyFactsFor : factsFor;
 
+  // Diario mode (FIL-I22-3): the check on each row, and «Registrada · día» once it logged here.
+  const logFor = useDiaryRowLog({
+    enabled: logMode,
+    date: watchedDate,
+    pendingKey,
+    pendingAction,
+    statusOf: (result) => statusOf(result).status,
+    onLog: (result) => {
+      rememberQuery();
+      handleAdd(result, "watched");
+    },
+  });
+
   const rows: SearchRowWiring = {
     hrefFor,
     factsFor: rowFactsFor,
+    logFor,
+    pinnedTitleId,
     onOpen: () => rememberQuery(),
-    onMenu: (result, anchor) => {
+    onMenu: (result, anchor, via) => {
       rememberQuery();
-      setMenu({ result, anchor });
+      setMenu({ result, anchor, via });
     },
   };
   const openDirector: typeof openPerson = (hit) => {
@@ -223,26 +247,17 @@ export const TmdbSearchAdd = ({
     }
   };
 
-  // Mobile: the field lives in the dock (DockSearchField). Mirror the query to
-  // it and take its edits; words typed before this mounted are picked up here.
-  const dockHandlers = useRef({ change: onQueryChange, submit: handleSearch });
-  useEffect(() => {
-    dockHandlers.current = { change: onQueryChange, submit: handleSearch };
+  // Mobile: the field lives in the dock; a person over a search turns its disc into «atrás» (FIL-I22-6).
+  useDockSearchBridge({
+    query,
+    initialQuery: start.query,
+    onQueryChange,
+    onSubmit: handleSearch,
+    backHref:
+      personPage && query.trim()
+        ? buildSearchHref(query, { watchedDate, watchedDestination: logMode, mode, kind: kindFilter })
+        : null,
   });
-  useEffect(() => {
-    const pending = dockSearch.pendingQuery();
-    const unregister = dockSearch.register({
-      change: (value) => dockHandlers.current.change(value),
-      submit: () => dockHandlers.current.submit(),
-    });
-    if (pending && pending !== start.query) {
-      dockHandlers.current.change(pending);
-    }
-    return unregister;
-  }, [start.query]);
-  useEffect(() => {
-    dockSearch.syncFromPage(query);
-  }, [query]);
 
   if (!configured.tmdb) {
     return <TmdbSearchUnavailable />;
@@ -276,6 +291,13 @@ export const TmdbSearchAdd = ({
               onChange={onChip}
             />
           </div>
+
+          {logMode ? (
+            <DiaryBand
+              date={watchedDate}
+              exitHref={buildSearchHref(query, { mode, kind: kindFilter })}
+            />
+          ) : null}
 
           {error && (mode === "director" ? directors.length > 0 : visibleResults.length > 0) ? (
             <p role="alert" className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger">
@@ -329,11 +351,24 @@ export const TmdbSearchAdd = ({
                 error={error}
                 rows={rows}
                 onRetry={handleSearch}
+                kind={kindFilter}
+                loadedCount={loadedCount}
+                total={total}
+                canLoadMore={canLoadMore}
+                isLoadingMore={isLoadingMore}
+                onLoadMore={loadMore}
+                hint={
+                  <p className="text-xs text-mist">Si no aparece, prueba con el título original o un año.</p>
+                }
+                query={settledQuery}
+                onSearchAsDirector={() => changeMode("director")}
+                onDropYear={onQueryChange}
               />
             </>
           )}
 
-          {!hasSearched ? (
+          {/* The start screen leaves as soon as there is text: the skeleton takes its place (FIL-I22-4). */}
+          {!hasSearched && !query.trim() ? (
             mode === "director" ? (
               startDirectors.length > 0 ? (
                 <FavoriteDirectors directors={startDirectors} />
@@ -351,6 +386,7 @@ export const TmdbSearchAdd = ({
                 arrivals={startArrivals}
                 onPickRecent={onQueryChange}
                 onClearRecents={clearRecents}
+                logDate={logMode ? watchedDate : undefined}
               />
             )
           ) : null}
@@ -380,12 +416,6 @@ export const TmdbSearchAdd = ({
       />
 
       <p className="sr-only">{isSearching ? "Buscando" : isAdding ? "Guardando" : ""}</p>
-      {!personPage && mode === "titles" && hasSearched ? (
-        <p className="text-center text-xs text-mist">
-          Si no aparece, prueba con el título original o un año.
-        </p>
-      ) : null}
     </div>
   );
 };
-

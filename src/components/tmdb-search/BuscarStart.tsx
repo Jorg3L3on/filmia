@@ -11,6 +11,7 @@ import { cn } from "@/lib/cn";
 import { staggerStyle } from "@/lib/motion";
 import { buildPersonSearchHref } from "@/lib/person-filmography";
 import { tmdbProfileUrl } from "@/lib/tmdb";
+import { diaryDayLabel } from "@/lib/title-preview";
 import { focusRing } from "@/lib/ui";
 
 type BuscarStartProps = {
@@ -20,6 +21,8 @@ type BuscarStartProps = {
   arrivals?: StartArrival[];
   onPickRecent: (query: string) => void;
   onClearRecents: () => void;
+  /** Diario mode (FIL-I22-3): the day being logged (null = today); undefined outside Diario. */
+  logDate?: string | null;
 };
 
 const initialsOf = (name: string) =>
@@ -49,9 +52,16 @@ const DirectorFace = ({ director }: { director: StartDirector }) => {
  * favoritas» and «Llegó a tu plataforma» as start rows (FIL-I21-8). The empty card only when
  * none of the three has anything to show.
  */
-export const BuscarStart = ({ recents, directors = [], arrivals = [], onPickRecent, onClearRecents }: BuscarStartProps) => {
+export const BuscarStart = ({ recents, directors = [], arrivals = [], onPickRecent, onClearRecents, logDate }: BuscarStartProps) => {
+  const logging = logDate !== undefined;
   if (recents.length === 0 && directors.length === 0 && arrivals.length === 0) {
-    return (
+    return logging ? (
+      <EmptyState
+        variant="buscar"
+        title={`Busca lo que viste el ${diaryDayLabel(logDate)}`}
+        description="Escribe el título y toca el check de la fila: la vista se registra ese día en tu Diario."
+      />
+    ) : (
       <EmptyState
         variant="buscar"
         title="Busca un título"
@@ -62,6 +72,9 @@ export const BuscarStart = ({ recents, directors = [], arrivals = [], onPickRece
 
   return (
     <div className="space-y-8">
+      {logging ? (
+        <p className="font-serif text-xl text-paper">Busca lo que viste el {diaryDayLabel(logDate)}</p>
+      ) : null}
       {recents.length > 0 ? (
         <section aria-labelledby="buscar-recientes" className="space-y-3">
           <div className="flex items-baseline justify-between">
@@ -71,7 +84,8 @@ export const BuscarStart = ({ recents, directors = [], arrivals = [], onPickRece
             <button
               type="button"
               onClick={onClearRecents}
-              className={cn("rounded-md text-xs text-fog hover:text-paper", focusRing)}
+              // A 44 px box around a small word (FIL-I22-5); the negative margin keeps the baseline where it was.
+              className={cn("-my-3 -mr-2 flex h-11 items-center rounded-md px-2 text-xs text-fog hover:text-paper", focusRing)}
             >
               Borrar
             </button>
@@ -83,7 +97,7 @@ export const BuscarStart = ({ recents, directors = [], arrivals = [], onPickRece
                   type="button"
                   onClick={() => onPickRecent(query)}
                   className={cn(
-                    "press-scale flex h-9 max-w-full items-center gap-2 rounded-full border border-line bg-surface/70 px-3.5 text-sm text-paper",
+                    "press-scale flex h-10 max-w-full items-center gap-2 rounded-full border border-line bg-surface/70 px-4 text-sm text-paper",
                     "transition-[border-color,background-color] duration-[var(--duration-hover)] ease-[var(--ease-out)] hover:border-accent/40",
                     focusRing,
                   )}

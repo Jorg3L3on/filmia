@@ -60,7 +60,8 @@ export const useSpringFeedback = () => {
 };
 
 export const useLongPress = (
-  onLongPress: () => void,
+  /** Fires with the pointer's type («touch», «mouse», «pen»): a menu opened by touch skips the focus ring. */
+  onLongPress: (pointerType: string) => void,
   {
     delayMs = 420,
     moveThreshold = 8,
@@ -72,7 +73,7 @@ export const useLongPress = (
     onPressChange?: (pressing: boolean) => void;
   } = {},
 ) => {
-  const pointer = useRef<{ id: number; x: number; y: number; timer: number } | null>(
+  const pointer = useRef<{ id: number; x: number; y: number; type: string; timer: number } | null>(
     null,
   );
 
@@ -92,15 +93,16 @@ export const useLongPress = (
     }
 
     clear();
-    const { pointerId, clientX, clientY } = event;
+    const { pointerId, clientX, clientY, pointerType } = event;
     pointer.current = {
       id: pointerId,
       x: clientX,
       y: clientY,
+      type: pointerType,
       timer: window.setTimeout(() => {
         pointer.current = null;
         onPressChange?.(false);
-        onLongPress();
+        onLongPress(pointerType);
       }, delayMs),
     };
     onPressChange?.(true);

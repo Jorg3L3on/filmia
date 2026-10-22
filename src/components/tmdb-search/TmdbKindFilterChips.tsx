@@ -2,7 +2,6 @@
 
 import { useLayoutEffect, useRef } from "react";
 import { KIND_CHIPS } from "@/lib/catalog-filters";
-import { catalogBarChipClass } from "@/components/catalog-filters/filter-ui";
 import { cn } from "@/lib/cn";
 import { auraPillClass, focusRing } from "@/lib/ui";
 
@@ -72,15 +71,14 @@ export const TmdbKindFilterChips = ({ value, onChange }: TmdbKindFilterChipsProp
             type="button"
             aria-pressed={isCurrent}
             onClick={() => onChange(chip.value)}
-            className={
+            className={cn(
+              // Buscar's chips are 40 px tall (FIL-I22-5): thumbs, not a filter bar; Quiero ver keeps its size.
+              "relative z-10 inline-flex h-10 shrink-0 items-center rounded-full border px-4 text-sm font-medium tab-transition press-scale",
               isCurrent
-                ? cn(
-                    "relative z-10 inline-flex shrink-0 items-center rounded-full border border-transparent px-3 py-1.5 text-xs font-medium text-paper tab-transition press-scale",
-                    focusRing,
-                  )
-                : // Same chip as Quiero ver; only the lit state moved to the sliding pill.
-                  cn(catalogBarChipClass(false), "z-10")
-            }
+                ? "border-transparent text-paper"
+                : "border-white/8 bg-white/[0.04] text-fog hover:bg-white/10 hover:text-paper",
+              focusRing,
+            )}
           >
             {chip.label}
           </button>
