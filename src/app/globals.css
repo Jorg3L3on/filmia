@@ -2493,21 +2493,77 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   border-color: rgb(240 179 90 / 0.45);
 }
 
-/* Quiero ver (FIL-I21-7): the single chip row fades out at its end so it reads as scrollable. */
+/* Quiero ver, riel A «Un riel que se ve» (FIL-I24-3, over FIL-I21-7): one native-scrolling row.
+   While there is more to the right (data-overflow) the end fades over 48 px and a «›» disc sits
+   on it; chips and the sort button are 36 px tall with a 44 px touch area (::before). */
 .filter-rail-fade {
-  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
-  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
-  padding-right: 28px;
-  scroll-padding-right: 28px;
+  padding-right: 4px;
+  scroll-padding-right: 48px;
 }
 
-/* Phone: the «Mi orden» pill matches the chips' height so the row stays one line of 30 px. */
-@media (max-width: 639px) {
-  .filter-rail-fade > button:first-child {
-    height: 30px;
-    padding-inline: 0.75rem;
-    font-size: 0.75rem;
-  }
+.filter-rail-fade[data-overflow="right"] {
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent);
+  padding-right: 48px;
+}
+
+.rail-chip {
+  position: relative;
+  height: 36px;
+  gap: 0.25rem;
+  padding-block: 0;
+  padding-inline: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.rail-chip::before {
+  content: "";
+  position: absolute;
+  inset: -4px 0;
+}
+
+.rail-chip-count {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  opacity: 0.6;
+}
+
+.rail-chip-empty {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.rail-chip-empty:hover {
+  background-color: rgb(255 255 255 / 0.04);
+  color: var(--fog);
+}
+
+.rail-more {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  margin-top: -8px;
+  background-color: rgb(255 255 255 / 0.16);
+  color: var(--paper);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+
+.rail-more > svg {
+  transform: rotate(-90deg);
+}
+
+.rail-more::before {
+  content: "";
+  position: absolute;
+  inset: -14px -10px;
 }
 
 /* Perfil (FIL-I21-8): the initial in a circle with the app icon's orange → magenta. */

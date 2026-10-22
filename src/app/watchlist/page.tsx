@@ -182,6 +182,7 @@ const WatchlistBody = async ({
         seriesStatus={seriesStatus}
         showKindChips={false}
         showSort={false}
+        minePlatformsInBar
         extraQuery={{ tonight, short, awarded, genres: genreIds }}
         leading={
           <WatchlistFilterRail
@@ -189,6 +190,10 @@ const WatchlistBody = async ({
             query={railQuery}
             sort={sort}
             genres={genresInList(rawItems)}
+            counts={{
+              short: applyWatchlistFilters(rawItems, { short: true }).length,
+              awarded: applyWatchlistFilters(rawItems, { awarded: true }).length,
+            }}
             nightEnds={nightEnds}
           />
         }

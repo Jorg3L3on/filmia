@@ -82,6 +82,16 @@ const run = () => {
   const cartelera = read("src/components/watchlist/WatchlistCartelera.tsx");
   assert(cartelera.includes("useWatchlistEditing()") && cartelera.includes('sharedEditing && !isEditing ? "max-sm:hidden"'), "Cartelera shares reorder mode and hides the old count/Reordenar bar on the phone unless editing");
   assert(read("src/components/watchlist/WatchlistFilterRail.tsx").includes("filter-rail-fade") && css.includes(".filter-rail-fade"), "Single chip row scrolls with a fade at the end");
+
+  // Riel A «Un riel que se ve» (FIL-I24-3): 36/44 px chips, counts on Cortas/Premiadas, 48 px fade + disc, one badge.
+  const rail = read("src/components/watchlist/WatchlistFilterRail.tsx");
+  assert(rail.includes("rail-chip") && css.includes(".rail-chip::before") && /\.rail-chip \{[^}]*height: 36px/.test(css), "Rail chips: 36 px visible with a ::before touch area");
+  assert(rail.includes("counts.short") && rail.includes("counts.awarded") && rail.includes("aria-disabled") && rail.includes("rail-chip-empty"), "Cortas / Premiadas carry their counts and go inert at 0");
+  assert(rail.includes("`Orden · ${sortLabel}`") && rail.includes("chevron") && rail.includes('"Mi orden"'), "Sort button: «Mi orden» with a chevron, «Orden · X» when active");
+  assert(rail.includes('data-overflow') && rail.includes("rail-more") && css.includes('.filter-rail-fade[data-overflow="right"]') && css.includes("calc(100% - 48px)"), "48 px fade and «›» disc only while the rail overflows to the right");
+  assert(!/\.filter-rail-fade > button:first-child/.test(css), "The old 30 px first-button rule is gone");
+  assert(page.includes("minePlatformsInBar") && read("src/components/CatalogFilters.tsx").includes("minePlatformsInBar && minePlatforms ? 1 : 0"), "Filtros badge no longer counts «Mis plataformas» when the rail owns the chip");
+  assert(page.includes("applyWatchlistFilters(rawItems, { short: true }).length") && page.includes("applyWatchlistFilters(rawItems, { awarded: true }).length"), "Counts come from applyWatchlistFilters over the whole list");
   assert(read("docs/motion.md").includes("cartelera"), "Motion doc covers the cartelera");
 
   console.log("✓ Quiero ver · La cartelera: premios (0006 + OMDb + backfill), pin «Esta noche» en Hoy, fichas + gestos + escenario");
