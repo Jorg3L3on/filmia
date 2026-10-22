@@ -4,6 +4,7 @@ import {
   addDays,
   cinemaChipFor,
   groupByWeek,
+  hasLatinLetters,
   isGone,
   isPremiereWeek,
   judgeCinemaCandidate,
@@ -13,6 +14,7 @@ import {
   premiereTag,
   premiereWeekStart,
   railFade,
+  readableTitle,
   releaseStatusOn,
   splitCartelera,
   staleLabel,
@@ -239,5 +241,16 @@ describe("cartelera B (FIL-I23-5)", () => {
     assert.equal(parseCarteleraOrder("populares"), "populares");
     assert.equal(parseCarteleraOrder(["recientes", "populares"]), "populares");
     assert.equal(parseCarteleraOrder(undefined), "recientes");
+  });
+});
+
+describe("readable titles (FIL-I23-6, P4)", () => {
+  it("keeps a Latin name and swaps a Devanagari or kana one for the en-US title", () => {
+    assert.equal(hasLatinLetters("Madre siniestra"), true);
+    assert.equal(hasLatinLetters("रामायण"), false);
+    assert.equal(readableTitle("Madre siniestra", "Other Mommy"), "Madre siniestra");
+    assert.equal(readableTitle("रामायण", "Ramayana"), "Ramayana");
+    assert.equal(readableTitle("劇場版 転生したらスライムだった件", null), "劇場版 転生したらスライムだった件");
+    assert.equal(readableTitle("劇場版 転生したらスライムだった件", "転生"), "劇場版 転生したらスライムだった件");
   });
 });

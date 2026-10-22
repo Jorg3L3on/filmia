@@ -262,3 +262,13 @@ export const splitCartelera = <T extends { mxReleaseDate: string; popularity: nu
       : [...rest].sort((a, b) => b.mxReleaseDate.localeCompare(a.mxReleaseDate) || b.popularity - a.popularity);
   return { weekStart, thisWeek, rest: sorted };
 };
+
+/** A title people here can read: at least one Latin letter (TMDB's es-MX falls back to the original script). */
+export const hasLatinLetters = (name: string | null | undefined) => /\p{Script=Latin}/u.test(name ?? "");
+
+/**
+ * P4 (FIL-I23-6): the name Cine stores for a film whose es-MX title has no Latin letters: the
+ * en-US title when it has them, else the original. A readable stored name is never replaced.
+ */
+export const readableTitle = (stored: string, enName: string | null | undefined) =>
+  hasLatinLetters(stored) ? stored : hasLatinLetters(enName) ? (enName as string).trim() : stored;

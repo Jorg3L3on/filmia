@@ -898,6 +898,13 @@ type TmdbMovieReleasePayload = {
   };
 };
 
+/** The movie's title in `language` (en-US for a readable name, FIL-I23-6); null when TMDB has none. */
+export const getTmdbMovieTitle = async (tmdbId: number, language: "en-US"): Promise<string | null> => {
+  const path = `/movie/${tmdbId}`;
+  const data = (await fetchTmdbJson(path, tmdbSearch(path, { language }), { store: false })) as { title?: string };
+  return data.title?.trim() || null;
+};
+
 /** One call: details + every country's release dates. Null for an unknown id. */
 export const getTmdbMovieReleaseInfo = async (tmdbId: number): Promise<TmdbMovieReleaseInfo | null> => {
   const path = `/movie/${tmdbId}`;

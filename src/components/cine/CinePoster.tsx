@@ -80,7 +80,9 @@ export const CinePoster = ({ film, badge, caption, dim = false, className, sizes
             </span>
           ) : null}
         </div>
-        <p className="mt-2 line-clamp-2 text-[13px] font-medium leading-snug text-paper group-hover:text-cine">{film.name}</p>
+        <p title={film.name} className="mt-2 line-clamp-2 text-[13px] font-medium leading-snug text-paper group-hover:text-cine">
+          {film.name}
+        </p>
         {caption ? <p className="mt-0.5 text-xs text-mist">{caption}</p> : null}
       </Link>
     </article>

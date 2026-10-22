@@ -86,7 +86,9 @@ export const YearTopRow = ({
         <PosterImage name={film.name} posterPath={film.posterPath} sizes="44px" tmdbSize="w185" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[15px] font-medium text-paper group-hover:text-cine">{film.name}</p>
+        <p title={film.name} className="truncate text-[15px] font-medium text-paper group-hover:text-cine">
+          {film.name}
+        </p>
         <p className="mt-0.5 flex items-center gap-1.5 text-xs text-mist">
           <span className="rounded bg-imdb px-1 text-[10px] font-bold text-ink">IMDb</span>
           <span className="font-semibold text-paper">{imdbRating.toFixed(1)}</span>
