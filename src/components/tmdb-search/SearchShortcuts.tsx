@@ -33,6 +33,8 @@ type SearchShortcutsProps = {
   onOpenFicha: (href: string) => void;
   /** Lifted copy of the held item; default is the Buscar row. */
   liftFor?: (result: TmdbCatalogResult) => ReactNode;
+  /** Second line under «Quiero ver» for this result (Cine: the premiere day it will warn about). */
+  watchlistHintFor?: (result: TmdbCatalogResult) => string | null;
 };
 
 /**
@@ -60,6 +62,7 @@ export const SearchShortcuts = ({
   onSaveLists,
   onOpenFicha,
   liftFor,
+  watchlistHintFor,
 }: SearchShortcutsProps) => {
   const listsTitleId = useId();
   const held = menu ? statusOf(menu.result) : null;
@@ -89,6 +92,7 @@ export const SearchShortcuts = ({
         onLists={run(onPickLists)}
         onOpenFicha={run((result) => onOpenFicha(hrefFor(result, statusOf(result).titleId)))}
         lift={menu && liftFor ? liftFor(menu.result) : undefined}
+        watchlistHint={menu && watchlistHintFor ? watchlistHintFor(menu.result) : null}
       />
 
       <Sheet

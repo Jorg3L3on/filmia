@@ -1,13 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 import { PosterImage } from "@/components/PosterImage";
+import { currentPushSubscription, hasServiceWorker } from "@/components/ServiceWorkerRegister";
 import { SearchShortcuts } from "@/components/tmdb-search/SearchShortcuts";
 import type { SearchMenuTarget } from "@/components/tmdb-search/SearchRowMenu";
 import type { SearchRowStatus } from "@/components/tmdb-search/SearchResultRow";
 import { useTmdbTitleActions } from "@/components/tmdb-search/useTmdbTitleActions";
 import type { CineFilm } from "@/lib/cine";
+import { mxToday } from "@/lib/cine-core";
+import { watchlistAlertHint, watchlistAlertToast } from "@/lib/cine-visible-alert";
 import type { SelectableList } from "@/lib/list-selection";
 import type { UserTmdbEntry } from "@/lib/queries";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
@@ -43,6 +46,18 @@ const toResult = (film: CineFilm): TmdbCatalogResult => ({
   overview: null,
 });
 
+/** Push on for this account on this device: permission granted and a live subscription. */
+const pushOnThisDevice = async () => {
+  try {
+    if (!hasServiceWorker() || typeof Notification === "undefined" || Notification.permission !== "granted") {
+      return false;
+    }
+    return Boolean(await currentPushSubscription());
+  } catch {
+    return false;
+  }
+};
+
 /**
  * Cine's posters behave like Buscar's results (FIL-I17-4): a tap opens the ficha — yours when
  * the film is in your Filmia, the TMDB preview otherwise — and holding one opens the same
@@ -62,7 +77,30 @@ export const CineActionsProvider = ({
   children: ReactNode;
 }) => {
   const router = useRouter();
-  const actions = useTmdbTitleActions({ existing, lists, memberships, pinnedTitleId });
+  /** The films held so far, so the menu hint and the toast know the premiere day (FIL-I23-2). */
+  const filmsRef = useRef(new Map<number, CineFilm>());
+  const actions = useTmdbTitleActions({
+    existing,
+    lists,
+    memberships,
+    pinnedTitleId,
+    watchlistToast: async (result) => {
+      const film = filmsRef.current.get(result.tmdbId);
+      if (!film) {
+        return null;
+      }
+      const toast = watchlistAlertToast(film, mxToday(), await pushOnThisDevice());
+      if (!toast) {
+        return null;
+      }
+      return {
+        title: toast.title,
+        description: toast.description,
+        durationMs: 6000,
+        ...(toast.needsPush ? { action: { label: "Perfil", onClick: () => router.push("/perfil#avisos") } } : {}),
+      };
+    },
+  });
   const [menu, setMenu] = useState<SearchMenuTarget | null>(null);
   const [listsFor, setListsFor] = useState<TmdbCatalogResult | null>(null);
   const closeMenu = useCallback(() => setMenu(null), []);
@@ -83,7 +121,10 @@ export const CineActionsProvider = ({
   const value: CineActionsValue = {
     hrefFor: (film) => resultHref(toResult(film), titleIdOf(film.tmdbId)),
     statusOf: (film) => resultStatus(toResult(film)).status,
-    openMenu: (film, anchor) => setMenu({ result: toResult(film), anchor }),
+    openMenu: (film, anchor) => {
+      filmsRef.current.set(film.tmdbId, film);
+      setMenu({ result: toResult(film), anchor });
+    },
   };
 
   return (
@@ -109,6 +150,10 @@ export const CineActionsProvider = ({
         onPickLists={setListsFor}
         onSaveLists={actions.handleSaveLists}
         onOpenFicha={(href) => router.push(href)}
+        watchlistHintFor={(result) => {
+          const film = filmsRef.current.get(result.tmdbId);
+          return film ? watchlistAlertHint(film, mxToday()) : null;
+        }}
         liftFor={(result) => (
           <div className={`${posterFrame} h-full shadow-[0_24px_60px_rgb(0_0_0/0.7)]`}>
             <PosterImage name={result.name} posterPath={result.posterPath} ratio="fill" sizes="160px" />
