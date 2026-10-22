@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { createMcpToken, revokeMcpGrant, revokeMcpToken } from "@/app/actions/mcp";
 import { Button } from "@/components/Button";
+import { ChevronIcon } from "@/components/profile/ProfileRows";
 import { cn } from "@/lib/cn";
 import { relativeTimeEs } from "@/lib/relative-time";
 import { TOOL_ERROR_LABEL, toolActivityLabel } from "@/lib/mcp/tool-labels";
@@ -44,14 +45,15 @@ const copy = async (value: string, label: string) => {
   }
 };
 
+/** The whole value, wrapped (FIL-I25-3): a URL you can read before you paste it. Copiar is 36 px in a 44 px box. */
 export const CopyField = ({ value, label }: { value: string; label: string }) => (
-  <div className="flex items-center gap-2 rounded-xl border border-chrome bg-well py-1.5 pr-1.5 pl-3">
-    <code className="min-w-0 flex-1 truncate font-mono text-[13px] text-paper">{value}</code>
+  <div className="flex items-start gap-2 rounded-xl border border-chrome bg-well p-1 pl-3">
+    <code className="min-w-0 flex-1 py-2 font-mono text-[13px] leading-[1.45] break-all text-paper">{value}</code>
     <button
       type="button"
       onClick={() => void copy(value, label)}
       className={cn(
-        "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-chrome px-2.5 text-xs font-medium text-paper hover:bg-chrome-hover",
+        "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-chrome px-3 text-xs font-medium text-paper hover:bg-chrome-hover",
         focusRing,
       )}
     >
@@ -145,7 +147,7 @@ export const ConnectionCard = ({
   };
 
   return (
-    <li className={cn(glassRowClass, "p-4", pending && "opacity-60")}>
+    <li className={cn(glassRowClass, "px-4 pt-4 pb-1", pending && "opacity-60")}>
       <div className="flex items-start gap-3">
         <span
           aria-hidden="true"
@@ -165,32 +167,43 @@ export const ConnectionCard = ({
         </div>
       </div>
 
-      <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+      <dl className="mt-2.5 grid grid-cols-2 gap-2 text-xs">
         <div>
           <dt className="text-mist">Último uso</dt>
           <dd className="text-fog">{lastUsed ? relativeTimeEs(lastUsed, new Date(now)) : "Nunca"}</dd>
         </div>
         <div>
-          <dt className="text-mist">Último whoami</dt>
+          <dt className="text-mist">Última identificación</dt>
           <dd className="text-fog">{lastWhoami ? relativeTimeEs(lastWhoami, new Date(now)) : "—"}</dd>
         </div>
       </dl>
 
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-line/80 pt-3">
+      <div className="mt-2 flex items-center justify-between gap-2 border-t border-line/80 pt-1">
         <button
           type="button"
           aria-expanded={open}
           onClick={() => setOpen((value) => !value)}
-          className={cn("text-sm text-fog hover:text-paper", focusRing)}
+          className={cn("-ml-1 flex h-11 min-w-0 flex-1 items-center gap-1.5 rounded-lg px-1 text-left text-sm text-fog hover:text-paper", focusRing)}
         >
-          {open ? "Ocultar actividad" : `Actividad (${activity.length})`}
+          Actividad ({activity.length})
+          <ChevronIcon className={cn("size-4 shrink-0 text-faint transition-transform duration-[var(--duration-hover)]", open && "rotate-90")} />
         </button>
-        <Button variant="ghost" size="sm" className="text-danger hover:bg-danger-well" onClick={revoke} pending={pending}>
+        <button
+          type="button"
+          onClick={revoke}
+          disabled={pending}
+          aria-busy={pending || undefined}
+          className={cn(
+            "relative inline-flex h-9 shrink-0 items-center rounded-[var(--radius-button)] px-3 text-sm font-medium text-danger hover:bg-danger-well disabled:opacity-60",
+            "after:absolute after:inset-x-0 after:-inset-y-1 after:content-['']",
+            focusRing,
+          )}
+        >
           {kind === "client" ? "Desconectar" : "Revocar"}
-        </Button>
+        </button>
       </div>
       {open ? (
-        <div className="mt-3">
+        <div className="mt-1 pb-3">
           <Activity items={activity} now={now} />
         </div>
       ) : null}
@@ -200,8 +213,32 @@ export const ConnectionCard = ({
 
 const LIFETIMES = [7, 30, 90] as const;
 
+/**
+ * «+ Nuevo token» (FIL-I25-3): folded behind one dashed button once a token exists, so the
+ * form does not weigh as much as the tokens; open from the start when there are none.
+ */
+export const NewTokenDisclosure = ({ defaultOpen }: { defaultOpen: boolean }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  if (open) {
+    return <NewTokenForm onDone={defaultOpen ? undefined : () => setOpen(false)} />;
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => setOpen(true)}
+      aria-expanded={false}
+      className={cn(
+        "flex h-11 w-full items-center justify-center rounded-xl border border-dashed border-white/20 text-sm font-medium text-accent hover:border-accent/50 hover:bg-accent/[0.04]",
+        focusRing,
+      )}
+    >
+      + Nuevo token
+    </button>
+  );
+};
+
 /** Nueva clave: name, lifetime, «Permitir cambios»; the token is shown once. */
-export const NewTokenForm = () => {
+const NewTokenForm = ({ onDone }: { onDone?: () => void }) => {
   const [name, setName] = useState("Cursor");
   const [days, setDays] = useState<(typeof LIFETIMES)[number]>(30);
   const [allowWrite, setAllowWrite] = useState(false);
@@ -235,7 +272,14 @@ export const NewTokenForm = () => {
           )}
           .
         </p>
-        <Button variant="secondary" size="sm" onClick={() => setCreated(null)}>
+        <Button
+          variant="secondary"
+          size="md"
+          onClick={() => {
+            setCreated(null);
+            onDone?.();
+          }}
+        >
           Listo
         </Button>
       </div>
@@ -279,12 +323,13 @@ export const NewTokenForm = () => {
           ))}
         </div>
       </fieldset>
-      <label className="flex cursor-pointer items-start gap-3">
+      {/* The whole row is the target (FIL-I25-3), not the 20 px box. */}
+      <label className="-mx-2 flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-white/[0.03]">
         <input
           type="checkbox"
           checked={allowWrite}
           onChange={(event) => setAllowWrite(event.target.checked)}
-          className="mt-0.5 size-5 shrink-0 accent-[var(--accent)]"
+          className="size-5 shrink-0 accent-[var(--accent)]"
         />
         <span className="space-y-0.5">
           <span className="block text-[15px] text-paper">Permitir cambios</span>

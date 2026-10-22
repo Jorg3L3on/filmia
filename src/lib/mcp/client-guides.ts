@@ -10,6 +10,10 @@ export type ClientGuide = {
   snippet?: string;
 };
 
+/** How a client signs in, in words (FIL-I25-3): no «OAuth» or «token personal» on screen. */
+export const guideAuthLabel = (guide: Pick<ClientGuide, "auth">) =>
+  guide.auth === "oauth" ? "con tu cuenta de Filmia" : "con un token";
+
 export const CLIENT_GUIDES: ClientGuide[] = [
   {
     id: "claude",

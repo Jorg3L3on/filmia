@@ -74,6 +74,11 @@ export const loadMcpConnections = async (userId: string, now = new Date()) => {
   const activityOf = (id: string) =>
     (calls.get(id) ?? []).map((call) => ({ tool: call.tool, ok: call.ok, errorCode: call.errorCode, at: call.createdAt }));
   const lastWhoami = (id: string) => (calls.get(id) ?? []).find((call) => call.tool === "whoami")?.createdAt ?? null;
+  // «Último uso» (FIL-I25-3): lastUsedAt only moves on some paths, so the newest logged call counts too.
+  const lastUsed = (id: string, stored: Date | null) => {
+    const call = calls.get(id)?.[0]?.createdAt ?? null;
+    return stored && (!call || stored > call) ? stored : call;
+  };
 
   const clients: ConnectedClient[] = grants.map(({ grant, client }) => ({
     id: grant.id,
@@ -82,7 +87,7 @@ export const loadMcpConnections = async (userId: string, now = new Date()) => {
     verified: client.isCimd && isTrustedCimdHost(client.id),
     canWrite: grant.allowWrite,
     since: grant.createdAt,
-    lastUsedAt: grant.lastUsedAt,
+    lastUsedAt: lastUsed(grant.id, grant.lastUsedAt),
     lastWhoamiAt: lastWhoami(grant.id),
     activity: activityOf(grant.id),
   }));
@@ -94,7 +99,7 @@ export const loadMcpConnections = async (userId: string, now = new Date()) => {
     canWrite: token.allowWrite,
     createdAt: token.createdAt,
     expiresAt: token.expiresAt,
-    lastUsedAt: token.lastUsedAt,
+    lastUsedAt: lastUsed(token.id, token.lastUsedAt),
     lastWhoamiAt: lastWhoami(token.id),
     activity: activityOf(token.id),
   }));
