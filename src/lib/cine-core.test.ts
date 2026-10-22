@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   addDays,
+  cinemaChipFor,
   groupByWeek,
   isGone,
   isPremiereWeek,
@@ -126,6 +127,13 @@ describe("cine calendar", () => {
     assert.equal(premiereTag("2026-10-14", "2026-10-17"), "Estreno");
     assert.equal(premiereTag("2026-10-13", "2026-10-17"), null);
     assert.equal(premiereTag("2026-10-18", "2026-10-17"), null);
+  });
+
+  it("shows the ficha chip until the film streams in MX (FIL-I23-3)", () => {
+    const now = { status: "now" as const, mxReleaseDate: "2026-10-15" };
+    assert.deepEqual(cinemaChipFor(now, 0), now);
+    assert.equal(cinemaChipFor(now, 2), null);
+    assert.equal(cinemaChipFor(null, 0), null);
   });
 
   it("names the rail edges that hide more", () => {

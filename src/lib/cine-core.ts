@@ -220,3 +220,12 @@ export const staleLabel = (lastRunAt: Date | null, now = new Date()) => {
   }
   return hours < 48 ? `Actualizado hace ${hours} h` : `Actualizado hace ${Math.floor(hours / 24)} días`;
 };
+
+/**
+ * The ficha's theater chip (FIL-I23-3) and badge share one rule: shown while Cine knows the film
+ * is in theaters or coming, hidden once it streams flatrate in MX (the theaters are old news).
+ */
+export const cinemaChipFor = <T extends { status: "now" | "upcoming"; mxReleaseDate: string }>(
+  cinema: T | null,
+  flatrateCount: number,
+): T | null => (cinema && flatrateCount === 0 ? cinema : null);

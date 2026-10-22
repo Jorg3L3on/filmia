@@ -67,6 +67,20 @@ export const premiereDayLabel = (mxReleaseDate: string, today: string) => {
   return `el ${weekday} ${formatShortDay(mxReleaseDate)}`;
 };
 
+const WEEKDAYS_LONG = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+
+/** «hoy», «mañana» or «el jueves»: the ficha pill «te avisamos el jueves» (FIL-I23-3). */
+export const premiereWeekdayLabel = (mxReleaseDate: string, today: string) => {
+  if (mxReleaseDate === today) {
+    return "hoy";
+  }
+  if (mxReleaseDate === addDays(today, 1)) {
+    return "mañana";
+  }
+  const weekday = new Date(`${mxReleaseDate.slice(0, 10)}T12:00:00Z`).getUTCDay();
+  return `el ${WEEKDAYS_LONG[weekday]}`;
+};
+
 export const cinemaArrivalPayload = (arrival: CinemaArrival, today: string): PushPayload => ({
   title: "Llega a cines",
   body: `«${arrival.name}», de tu Quiero ver, se estrena ${premiereDayLabel(arrival.mxReleaseDate, today)}.`,

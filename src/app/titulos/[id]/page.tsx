@@ -34,6 +34,8 @@ import TitleLoading from "./loading";
 import {
   AffinitySlot,
   affinityRowOf,
+  CinemaSlot,
+  titleInWatchlist,
   TitleActionsBlock,
   TitleHeroBlock,
   TitleHeroFallback,
@@ -120,6 +122,7 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
   const listsPromise = getAssignableLists();
   const platformsPromise = getUserStreamingPlatforms();
   const providersPromise = getWatchProvidersForTitle(title);
+  const cinemaPromise = getCinemaRelease(title.catalogId);
   const pinnedPromise = title.watchedAt
     ? Promise.resolve(null)
     : requireUserId().then((userId) => getPinnedTonightTitleId(userId));
@@ -137,6 +140,15 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
       titleName={title.name}
       backdropPath={title.backdropPath}
       extrasPromise={extrasPromise}
+    />
+  );
+  // Cine (FIL-I23-3): the theater chip in the hero, with «te avisamos» when the film is in Quiero ver.
+  const cinema = (
+    <CinemaSlot
+      cinemaPromise={cinemaPromise}
+      providersPromise={providersPromise}
+      inWatchlist={titleInWatchlist(title)}
+      titleName={title.name}
     />
   );
   const relatedPromise = getRelatedTitles(
@@ -157,6 +169,7 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
               extras={storedTitleExtras(title)}
               affinity={affinity}
               trailer={trailer}
+              cinema={cinema}
             />
           }
         >
@@ -165,6 +178,7 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
             extrasPromise={extrasPromise}
             affinity={affinity}
             trailer={trailer}
+            cinema={cinema}
           />
         </Suspense>
         <div className="ficha-body-a space-y-4">
@@ -190,7 +204,7 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
         <TitleProvidersBlock
           providersPromise={providersPromise}
           platformsPromise={platformsPromise}
-          cinemaPromise={getCinemaRelease(title.catalogId)}
+          cinemaPromise={cinemaPromise}
         />
       </Suspense>
 

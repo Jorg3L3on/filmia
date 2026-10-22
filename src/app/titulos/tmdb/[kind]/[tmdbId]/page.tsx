@@ -38,6 +38,7 @@ import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 import {
   AffinitySlot,
   affinityRowOf,
+  CinemaSlot,
   heroProps,
   TitlePeopleBlock,
   TitleProvidersBlock,
@@ -122,6 +123,7 @@ const TitlePreview = async ({
   const listsPromise = getAssignableLists();
   const peoplePromise = resolveTitlePeople(title);
   const providersPromise = getWatchProvidersForTitle(title);
+  const cinemaPromise = getCinemaRelease(title.catalogId);
   const platformsPromise = getUserStreamingPlatforms();
   // «Para ti» (FIL-I9) once the row has its genres, keywords and people (same lookup as the chips).
   const affinity = (
@@ -139,6 +141,8 @@ const TitlePreview = async ({
       extrasPromise={extrasPromise}
     />
   );
+  // Cine (FIL-I23-3): a preview is never in Quiero ver (an owned film redirects to its ficha).
+  const cinema = <CinemaSlot cinemaPromise={cinemaPromise} providersPromise={providersPromise} inWatchlist={false} titleName={title.name} />;
   const relatedPromise = fullPromise.then((full) =>
     getRelatedTitles("", parseStoredTmdbGenres(full.tmdbGenres).map((genre) => genre.id)),
   );
@@ -148,7 +152,7 @@ const TitlePreview = async ({
       <FichaVisit titleId={null} name={title.name} />
       <section className="ficha-head" aria-label={title.name}>
         <FichaTopBar trailing={diaryLog ? <DiaryDayChip log={diaryLog} /> : undefined} />
-        <Suspense fallback={<TitleHero {...heroProps(title, null, { posterKey, imdbPending: pending, affinity, trailer })} />}>
+        <Suspense fallback={<TitleHero {...heroProps(title, null, { posterKey, imdbPending: pending, affinity, trailer, cinema })} />}>
           <PreviewHero
             title={title}
             extrasPromise={extrasPromise}
@@ -157,6 +161,7 @@ const TitlePreview = async ({
             pending={pending}
             affinity={affinity}
             trailer={trailer}
+            cinema={cinema}
           />
         </Suspense>
         <div className="ficha-body-a space-y-4">
@@ -181,7 +186,7 @@ const TitlePreview = async ({
         <TitleProvidersBlock
           providersPromise={providersPromise}
           platformsPromise={platformsPromise}
-          cinemaPromise={getCinemaRelease(title.catalogId)}
+          cinemaPromise={cinemaPromise}
         />
       </Suspense>
 
@@ -201,6 +206,7 @@ const PreviewHero = async ({
   pending,
   affinity,
   trailer,
+  cinema,
 }: {
   title: PreviewTitle;
   extrasPromise: Promise<TmdbTitleExtras>;
@@ -209,11 +215,12 @@ const PreviewHero = async ({
   pending: boolean;
   affinity: ReactNode;
   trailer: ReactNode;
+  cinema: ReactNode;
 }) => {
   const extras = await extrasPromise;
   return (
     <Suspense
-      fallback={<TitleHero {...heroProps(title, extras, { posterKey, imdbPending: pending, affinity, trailer })} />}
+      fallback={<TitleHero {...heroProps(title, extras, { posterKey, imdbPending: pending, affinity, trailer, cinema })} />}
     >
       <PreviewHeroFull
         extras={extras}
@@ -221,6 +228,7 @@ const PreviewHero = async ({
         posterKey={posterKey}
         affinity={affinity}
         trailer={trailer}
+        cinema={cinema}
       />
     </Suspense>
   );
@@ -232,13 +240,15 @@ const PreviewHeroFull = async ({
   posterKey,
   affinity,
   trailer,
+  cinema,
 }: {
   extras: TmdbTitleExtras;
   fullPromise: Promise<PreviewTitle>;
   posterKey: string;
   affinity: ReactNode;
   trailer: ReactNode;
-}) => <TitleHero {...heroProps(await fullPromise, extras, { posterKey, affinity, trailer })} />;
+  cinema: ReactNode;
+}) => <TitleHero {...heroProps(await fullPromise, extras, { posterKey, affinity, trailer, cinema })} />;
 
 const PreviewSynopsis = async ({ extrasPromise }: { extrasPromise: Promise<TmdbTitleExtras> }) => (
   <TitleSynopsis text={(await extrasPromise).overview ?? null} />

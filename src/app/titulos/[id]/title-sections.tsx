@@ -10,6 +10,7 @@ import { TitlePosterRail } from "@/components/TitlePosterRail";
 import { TitleSynopsis } from "@/components/TitleSynopsis";
 import { WatchProvidersMx } from "@/components/WatchProvidersMx";
 import { CinemaBadge } from "@/components/cine/CinemaBadge";
+import { CinemaChip } from "@/components/cine/CinemaChip";
 import { TitleKind } from "@/db";
 import { awardChipLabel } from "@/lib/awards";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
@@ -21,6 +22,7 @@ import type { DiaryLog } from "@/lib/title-preview";
 import { peopleRailItems, type TmdbPerson } from "@/lib/tmdb-people";
 import type { WatchProvidersResult } from "@/lib/watch-providers-cache";
 import type { getCinemaRelease } from "@/lib/cine";
+import { cinemaChipFor, mxToday } from "@/lib/cine-core";
 import type { getAssignableLists, getRelatedTitles, getTitleById, getUserStreamingPlatforms } from "@/lib/queries";
 
 type TitleDetail = NonNullable<Awaited<ReturnType<typeof getTitleById>>>;
@@ -71,6 +73,7 @@ export const heroProps = (
     imdbPending?: boolean;
     affinity?: ReactNode;
     trailer?: ReactNode;
+    cinema?: ReactNode;
   } = {},
 ) => {
   const posterPath = title.posterPath ?? extras?.posterPath ?? null;
@@ -97,6 +100,7 @@ export const heroProps = (
     posterAmbient: title.posterAmbient,
     affinity: options.affinity,
     trailer: options.trailer,
+    cinema: options.cinema,
   };
 };
 
@@ -105,24 +109,67 @@ export const TitleHeroFallback = ({
   extras,
   affinity,
   trailer,
+  cinema,
 }: {
   title: TitleDetail;
   extras?: TmdbTitleExtras | null;
   affinity?: ReactNode;
   trailer?: ReactNode;
-}) => <TitleHero {...heroProps(title, extras, { affinity, trailer })} />;
+  cinema?: ReactNode;
+}) => <TitleHero {...heroProps(title, extras, { affinity, trailer, cinema })} />;
 
 export const TitleHeroBlock = async ({
   title,
   extrasPromise,
   affinity,
   trailer,
+  cinema,
 }: {
   title: TitleDetail;
   extrasPromise: Promise<TmdbTitleExtras | null>;
   affinity?: ReactNode;
   trailer?: ReactNode;
-}) => <TitleHero {...heroProps(title, await extrasPromise, { affinity, trailer })} />;
+  cinema?: ReactNode;
+}) => <TitleHero {...heroProps(title, await extrasPromise, { affinity, trailer, cinema })} />;
+
+/**
+ * The cinema chip in the hero (FIL-I23-3), streamed on its own: «● En cines · Horarios ›» or
+ * «Llega el {día}», gone once the film streams flatrate in MX (same rule as the badge below).
+ */
+export const CinemaSlot = ({
+  cinemaPromise,
+  providersPromise,
+  inWatchlist,
+  titleName,
+}: {
+  cinemaPromise: Promise<CinemaRelease>;
+  providersPromise: Promise<WatchProvidersResult>;
+  inWatchlist: boolean;
+  titleName: string;
+}) => (
+  <Suspense fallback={null}>
+    <CinemaChipBlock cinemaPromise={cinemaPromise} providersPromise={providersPromise} inWatchlist={inWatchlist} titleName={titleName} />
+  </Suspense>
+);
+
+const CinemaChipBlock = async ({
+  cinemaPromise,
+  providersPromise,
+  inWatchlist,
+  titleName,
+}: {
+  cinemaPromise: Promise<CinemaRelease>;
+  providersPromise: Promise<WatchProvidersResult>;
+  inWatchlist: boolean;
+  titleName: string;
+}) => {
+  const [cinema, providers] = await Promise.all([cinemaPromise, providersPromise]);
+  const release = cinemaChipFor(cinema, providers.data?.flatrate.length ?? 0);
+  return release ? <CinemaChip release={release} inWatchlist={inWatchlist} today={mxToday()} titleName={titleName} /> : null;
+};
+
+/** Where the film lives in the user's lists; the hero chip reads `inWatchlist`. */
+export const titleInWatchlist = (title: TitleDetail) => titleMembership(title).inWatchlist;
 
 /** «▶ Tráiler» (FIL-I15-2), streamed on its own so the hero never waits for TMDB /videos. */
 export const TrailerSlot = ({
@@ -291,7 +338,7 @@ export const TitleProvidersBlock = async ({
     cinemaPromise ?? null,
   ]);
   // Once it streams in MX the theaters are old news.
-  const showCinema = cinema && !(watchProvidersResult.data?.flatrate.length);
+  const showCinema = cinemaChipFor(cinema, watchProvidersResult.data?.flatrate.length ?? 0);
 
   const providers = (
     <WatchProvidersMx
@@ -306,7 +353,7 @@ export const TitleProvidersBlock = async ({
   }
   return (
     <div className="space-y-3">
-      <CinemaBadge release={cinema} />
+      <CinemaBadge release={showCinema} />
       {providers}
     </div>
   );
