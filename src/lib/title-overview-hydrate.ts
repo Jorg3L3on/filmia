@@ -1,5 +1,5 @@
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
-import { persistTitleExtras, titleNeedsTmdbExtras, type TitleExtrasRow } from "@/lib/title-extras";
+import { persistTitleExtras, titleNeedsRuntime, titleNeedsTmdbExtras, type TitleExtrasRow } from "@/lib/title-extras";
 import { titleSynopsis } from "@/lib/title-overview";
 import { getTmdbTitleExtras, isTmdbConfigured } from "@/lib/tmdb";
 
@@ -31,14 +31,23 @@ const applyHydratedExtras = <T extends TitleExtrasRow>(
   }
 };
 
+export type HydrateOptions = {
+  /** Also refetch titles whose runtime is still null (Quiero ver, FIL-I24-7). Same cap and cache. */
+  runtime?: boolean;
+};
+
+export const titleNeedsHydration = (title: TitleExtrasRow, { runtime = false }: HydrateOptions = {}) =>
+  titleNeedsTmdbExtras(title) || (runtime && titleNeedsRuntime(title));
+
 export const hydrateMissingTitleOverviews = async <T extends TitleExtrasRow>(
   titleRows: T[],
+  options: HydrateOptions = {},
 ) => {
   if (!isTmdbConfigured()) {
     return titleRows;
   }
 
-  const missing = titleRows.filter(titleNeedsTmdbExtras);
+  const missing = titleRows.filter((title) => titleNeedsHydration(title, options));
   if (missing.length === 0) {
     return titleRows;
   }

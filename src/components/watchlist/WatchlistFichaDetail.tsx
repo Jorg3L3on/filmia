@@ -41,7 +41,7 @@ export const WatchlistFichaDetail = ({
     {ficha.creditParts ? (
       <CreditsLine parts={ficha.creditParts} className="text-xs leading-relaxed text-fog" />
     ) : null}
-    <div className="flex items-center gap-1.5">
+    <div className={cn("flex items-center gap-1.5", compact && "ficha-actions-sticky")}>
       <button
         type="button"
         onClick={onMarkSeen}

@@ -28,6 +28,11 @@ type CatalogFiltersProps = {
   orderOptions?: ReadonlyArray<CatalogOrderOption>;
   /** Bar toggle «En mis plataformas» (takes the left slot instead of kind chips). */
   showMinePlatformsChip?: boolean;
+  /**
+   * «Mis plataformas» already has a chip in `leading` (Quiero ver rail, FIL-I24-3): the Filtros
+   * badge must not count it a second time.
+   */
+  minePlatformsInBar?: boolean;
   showPlatforms?: boolean;
   showSort?: boolean;
   seriesStatus?: SeriesStatusFilter;
@@ -60,6 +65,7 @@ export const CatalogFilters = ({
   showKindChips = true,
   orderOptions = CATALOG_ORDER_OPTIONS,
   showMinePlatformsChip = false,
+  minePlatformsInBar = showMinePlatformsChip,
   showPlatforms = true,
   showSort = true,
   seriesStatus,
@@ -104,7 +110,7 @@ export const CatalogFilters = ({
   const activeCount =
     sheetActiveCount +
     (kindInSheetOnly && kind !== "ALL" ? 1 : 0) -
-    (showMinePlatformsChip && minePlatforms ? 1 : 0);
+    (minePlatformsInBar && minePlatforms ? 1 : 0);
 
   const compact = Boolean(heading);
 

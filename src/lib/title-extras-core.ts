@@ -67,6 +67,13 @@ export const titleNeedsTmdbExtras = (title: TitleExtrasRow) => {
   return !stored.posterPath || !stored.overview || stored.genres.length === 0;
 };
 
+/**
+ * Quiero ver's lazy enrichment (FIL-I24-7) also asks for the runtime: Cortas, «Más cortas
+ * primero» and «Esta noche» have nothing to work with while it is null (series: per episode).
+ */
+export const titleNeedsRuntime = (title: Pick<TitleExtrasRow, "tmdbId" | "runtimeMinutes">) =>
+  Boolean(title.tmdbId) && !(title.runtimeMinutes && title.runtimeMinutes > 0);
+
 export const titleExtrasPatch = (
   current: TitleExtrasRow,
   fetched: FetchedTitleExtras,

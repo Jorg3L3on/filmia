@@ -50,7 +50,7 @@ export const WatchlistReorderRow = ({
       }}
       className={cn(
         glassRowClass,
-        "flex items-center gap-3 px-2 py-2",
+        "flex items-center gap-2 px-1.5 py-2",
         isDragging && "z-30 border-accent/60 shadow-panel",
       )}
     >
@@ -61,7 +61,7 @@ export const WatchlistReorderRow = ({
         {...listeners}
         aria-label={`Arrastrar ${ficha.name}`}
         className={cn(
-          "inline-flex h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-mist hover:text-paper active:cursor-grabbing",
+          "inline-flex size-11 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-mist hover:text-paper active:cursor-grabbing",
           focusRing,
         )}
       >
@@ -86,6 +86,7 @@ export const WatchlistReorderRow = ({
         canMoveUp={canMoveUp}
         canMoveDown={canMoveDown}
         pending={pendingOrder}
+        size="lg"
         onMove={onMove}
       />
     </li>

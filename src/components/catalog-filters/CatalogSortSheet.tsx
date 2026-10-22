@@ -25,6 +25,11 @@ type CatalogSortSheetProps<Id extends string | null> = {
   title?: string;
   /** Bar button text; defaults to the current option's label or «Orden». */
   buttonLabel?: string;
+  /** Quiero ver rail (FIL-I24-3): a chevron says the button opens a sheet. */
+  chevron?: boolean;
+  /** `false` drops the sort glyph (the rail keeps the chip short). */
+  icon?: boolean;
+  buttonClassName?: string;
 };
 
 export const CatalogSortSheet = <Id extends string | null>({
@@ -33,6 +38,9 @@ export const CatalogSortSheet = <Id extends string | null>({
   onSelect,
   title = "Orden",
   buttonLabel,
+  chevron = false,
+  icon = true,
+  buttonClassName,
 }: CatalogSortSheetProps<Id>) => {
   const [open, setOpen] = useState(false);
   const titleId = useId();
@@ -56,12 +64,11 @@ export const CatalogSortSheet = <Id extends string | null>({
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={`${title}: ${label}`}
-        className={cn(
-          catalogBarButtonClass,
-        )}
+        className={cn(catalogBarButtonClass, buttonClassName)}
       >
-        <SortIcon />
+        {icon ? <SortIcon /> : null}
         {label}
+        {chevron ? <ChevronDownIcon /> : null}
       </button>
 
       <Sheet
@@ -134,6 +141,21 @@ const SortIcon = () => (
     aria-hidden="true"
   >
     <path d="M7 5v14M4 16l3 3 3-3M17 19V5M14 8l3-3 3 3" />
+  </svg>
+);
+
+const ChevronDownIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    className="-mr-1 h-3.5 w-3.5 opacity-70"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M6 9l6 6 6-6" />
   </svg>
 );
 

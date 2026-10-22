@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { PosterImageFallback } from "@/components/PosterImageFallback";
 import { PosterPlaceholder } from "@/components/PosterPlaceholder";
 import { cn } from "@/lib/cn";
 import { tmdbPosterUrl } from "@/lib/tmdb";
@@ -47,10 +47,9 @@ export const PosterImage = ({
         className,
       )}
     >
-      <Image
+      <PosterImageFallback
+        name={name}
         src={src}
-        alt={`Poster de ${name}`}
-        fill
         sizes={sizes}
         className="object-cover"
         priority={priority}
@@ -58,6 +57,7 @@ export const PosterImage = ({
         // External posters (TMDB included) skip Vercel Image Optimization: the
         // file size is picked per use through tmdbSize.
         unoptimized={isExternal}
+        placeholderClassName="absolute inset-0 h-full"
       />
     </div>
   );

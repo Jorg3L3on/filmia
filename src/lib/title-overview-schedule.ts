@@ -2,19 +2,21 @@ import { scheduleAfterResponse } from "@/lib/after-response";
 import { isTmdbConfigured } from "@/lib/tmdb";
 import {
   hydrateMissingTitleOverviews,
-  titleNeedsOverviewHydration,
+  titleNeedsHydration,
+  type HydrateOptions,
 } from "@/lib/title-overview-hydrate";
 
 type OverviewTitle = Parameters<typeof hydrateMissingTitleOverviews>[0][number];
 
 export const scheduleMissingTitleOverviews = <T extends OverviewTitle>(
   titleRows: T[],
+  options: HydrateOptions = {},
 ) => {
-  if (!isTmdbConfigured() || !titleRows.some(titleNeedsOverviewHydration)) {
+  if (!isTmdbConfigured() || !titleRows.some((title) => titleNeedsHydration(title, options))) {
     return;
   }
 
   scheduleAfterResponse(async () => {
-    await hydrateMissingTitleOverviews(titleRows);
+    await hydrateMissingTitleOverviews(titleRows, options);
   });
 };

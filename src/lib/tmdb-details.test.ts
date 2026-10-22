@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { parseTmdbDetails, type TmdbTvDetailsPayload } from "./tmdb-details";
+import { parseTmdbDetails, parseTmdbRuntimeMinutes, type TmdbTvDetailsPayload } from "./tmdb-details";
 import { TMDB_CAST_LIMIT } from "./tmdb-people";
 
 const longSeries = (castSize: number): TmdbTvDetailsPayload => ({
@@ -94,5 +94,18 @@ describe("parseTmdbDetails", () => {
 
     assert.ok(rawBytes > 1_000_000, `fixture should be megabytes, got ${rawBytes}`);
     assert.ok(parsedBytes < 100_000, `parsed details should be < 100 KB, got ${parsedBytes}`);
+  });
+});
+
+describe("parseTmdbRuntimeMinutes", () => {
+  it("takes the movie runtime, then the episode runtime", () => {
+    assert.equal(parseTmdbRuntimeMinutes({ runtime: 117 }), 117);
+    assert.equal(parseTmdbRuntimeMinutes({ runtime: 0, episode_run_time: [0, 52] }), 52);
+  });
+
+  it("falls back to the last or next episode aired when episode_run_time is empty (FIL-I24-7)", () => {
+    assert.equal(parseTmdbRuntimeMinutes({ episode_run_time: [], last_episode_to_air: { runtime: 48 } }), 48);
+    assert.equal(parseTmdbRuntimeMinutes({ episode_run_time: [], last_episode_to_air: { runtime: null }, next_episode_to_air: { runtime: 61 } }), 61);
+    assert.equal(parseTmdbRuntimeMinutes({ episode_run_time: [], last_episode_to_air: null }), null);
   });
 });

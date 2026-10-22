@@ -82,6 +82,45 @@ const run = () => {
   const cartelera = read("src/components/watchlist/WatchlistCartelera.tsx");
   assert(cartelera.includes("useWatchlistEditing()") && cartelera.includes('sharedEditing && !isEditing ? "max-sm:hidden"'), "Cartelera shares reorder mode and hides the old count/Reordenar bar on the phone unless editing");
   assert(read("src/components/watchlist/WatchlistFilterRail.tsx").includes("filter-rail-fade") && css.includes(".filter-rail-fade"), "Single chip row scrolls with a fade at the end");
+
+  // Riel A «Un riel que se ve» (FIL-I24-3): 36/44 px chips, counts on Cortas/Premiadas, 48 px fade + disc, one badge.
+  const rail = read("src/components/watchlist/WatchlistFilterRail.tsx");
+  assert(rail.includes("rail-chip") && css.includes(".rail-chip::before") && /\.rail-chip \{[^}]*height: 36px/.test(css), "Rail chips: 36 px visible with a ::before touch area");
+  assert(rail.includes("counts.short") && rail.includes("counts.awarded") && rail.includes("aria-disabled") && rail.includes("rail-chip-empty"), "Cortas / Premiadas carry their counts and go inert at 0");
+  assert(rail.includes("`Orden · ${sortLabel}`") && rail.includes("chevron") && rail.includes('"Mi orden"'), "Sort button: «Mi orden» with a chevron, «Orden · X» when active");
+  assert(rail.includes('data-overflow') && rail.includes("rail-more") && css.includes('.filter-rail-fade[data-overflow="right"]') && css.includes("calc(100% - 48px)"), "48 px fade and «›» disc only while the rail overflows to the right");
+  assert(!/\.filter-rail-fade > button:first-child/.test(css), "The old 30 px first-button rule is gone");
+  assert(page.includes("minePlatformsInBar") && read("src/components/CatalogFilters.tsx").includes("minePlatformsInBar && minePlatforms ? 1 : 0"), "Filtros badge no longer counts «Mis plataformas» when the rail owns the chip");
+  assert(page.includes("applyWatchlistFilters(rawItems, { short: true }).length") && page.includes("applyWatchlistFilters(rawItems, { awarded: true }).length"), "Counts come from applyWatchlistFilters over the whole list");
+
+  // Piezas (FIL-I24-4): truthful eyebrow under a sort, one empty state that names the chip, platform in «Vi esto».
+  assert(exists("src/lib/watchlist-empty.ts") && exists("src/lib/watchlist-empty.test.ts"), "heroEyebrow / watchlistEmptyState live in src/lib with tests");
+  const hero = read("src/components/watchlist/WatchlistHeroCompact.tsx");
+  assert(hero.includes("eyebrow: string") && hero.includes("ranked ? (") && hero.includes("{eyebrow}</p>") && !hero.includes(">Próxima en tu lista<"), "Hero takes its eyebrow and only shows the orange «1» in manual order");
+  assert(fichaRow.includes("sortedRankLabel(rank)") && fichaRow.includes("ranked ? ("), "Rows read «#n en tu orden» under a sort instead of the numeral");
+  assert(cartelera.includes("heroEyebrow(sort, hero.platform?.label)") && cartelera.includes("WatchlistEmpty") && cartelera.includes("watchlistEmptyState(pathname, query"), "Cartelera owns the eyebrow and the single empty state");
+  assert(exists("src/components/watchlist/WatchlistEmpty.tsx") && read("src/components/watchlist/WatchlistEmpty.tsx").includes("Ya pasó tu hora de dormir") && read("src/components/watchlist/WatchlistEmpty.tsx").includes("/perfil#hora-de-dormir"), "«Esta noche» past bedtime says so and offers «Cambiar hora»");
+  assert(!page.includes("MinePlatformsEmpty") && !page.includes('title="Nada con ese filtro"'), "Page no longer renders its own empties: the cartelera does");
+  assert(cartelera.includes('reorderBlocked={!canReorder && visible.length > 1 ? (sort ? "sort" : "filters") : null}'), "Sticky bar says whether a sort or a filter blocks reordering");
+  assert(read("src/components/watchlist/WatchlistSheets.tsx").includes("platform={markTarget?.platform?.platform ?? undefined}"), "«Vi esto» opens with the row's platform");
+
+  // Pulido (FIL-I24-5): Reordenar bar, 44 px controls, numeral, 48 px bar, broken poster plate.
+  const bar = read("src/components/watchlist/WatchlistStickyBar.tsx");
+  assert(bar.includes('{isEditing ? "Reordenar" : "Quiero ver"}') && bar.includes("normal-case tracking-normal") && bar.includes("flex h-12 items-center"), "Sticky bar: «Reordenar» title, one quiet hint line, 48 px tall");
+  assert(read("src/components/ListItemOrderControls.tsx").includes('size === "lg" ? "size-11" : "size-8"') && read("src/components/WatchlistCard.tsx").includes('size="lg"') && read("src/components/WatchlistCard.tsx").includes("inline-flex size-11 shrink-0 cursor-grab"), "Reordenar rows: 44×44 arrows and handle");
+  assert(/\.ficha-rank \{[^}]*bottom: -10px/.test(css), "Numeral hangs 4 px lower with a denser shadow");
+  assert(exists("src/components/PosterImageFallback.tsx") && read("src/components/PosterImageFallback.tsx").includes("onError={() => setBroken(true)}") && read("src/components/PosterImage.tsx").includes("PosterImageFallback"), "A broken poster falls back to the plate with the initial");
+
+  // Escritorio (FIL-I24-6): no compact hero from 1024 px; the list starts at #1 and the stage is the hero.
+  assert(cartelera.includes("const hero = isDesktop ? null : (visible[0] ?? null);") && cartelera.includes("const rows = isDesktop ? visible : visible.slice(1);"), "Desktop renders no WatchlistHeroCompact: the list starts at #1");
+  assert(cartelera.includes("lead={isDesktop && index === 0 ? heroEyebrow(sort, ficha.platform?.label) : null}") && fichaRow.includes("lead && ranked ? (") && fichaRow.includes("{lead}</span>"), "Desktop #1 row carries the eyebrow and the orange badge");
+  assert(cartelera.includes("useWatchlistKeyboard({") && cartelera.includes("enabled: isDesktop && !isEditing && !sheetsOpen"), "↑↓ / Enter / V keep working on the desktop stage");
+
+  // Después (FIL-I24-7): closing card and runtime in the lazy enrichment.
+  assert(exists("src/components/watchlist/WatchlistClosingCard.tsx") && read("src/components/watchlist/WatchlistClosingCard.tsx").includes("Eso es todo") && read("src/components/watchlist/WatchlistClosingCard.tsx").includes('href="/buscar"'), "Closing card: «Eso es todo», total, fit count, Buscar más / Arriba");
+  assert(cartelera.includes("<WatchlistClosingCard total={visible.length} fitCount={fitCount} />"), "The cartelera closes the list once");
+  assert(read("src/lib/title-extras-core.ts").includes("export const titleNeedsRuntime") && read("src/lib/title-overview-hydrate.ts").includes("runtime && titleNeedsRuntime(title)") && page.includes("{ runtime: true }"), "Quiero ver's lazy enrichment also asks for the runtime");
+  assert(read("src/lib/title-overview-hydrate.ts").includes("OVERVIEW_HYDRATE_LIMIT = 32"), "Same call cap as before");
   assert(read("docs/motion.md").includes("cartelera"), "Motion doc covers the cartelera");
 
   console.log("✓ Quiero ver · La cartelera: premios (0006 + OMDb + backfill), pin «Esta noche» en Hoy, fichas + gestos + escenario");

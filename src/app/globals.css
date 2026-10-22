@@ -2493,21 +2493,77 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   border-color: rgb(240 179 90 / 0.45);
 }
 
-/* Quiero ver (FIL-I21-7): the single chip row fades out at its end so it reads as scrollable. */
+/* Quiero ver, riel A «Un riel que se ve» (FIL-I24-3, over FIL-I21-7): one native-scrolling row.
+   While there is more to the right (data-overflow) the end fades over 48 px and a «›» disc sits
+   on it; chips and the sort button are 36 px tall with a 44 px touch area (::before). */
 .filter-rail-fade {
-  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
-  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
-  padding-right: 28px;
-  scroll-padding-right: 28px;
+  padding-right: 4px;
+  scroll-padding-right: 48px;
 }
 
-/* Phone: the «Mi orden» pill matches the chips' height so the row stays one line of 30 px. */
-@media (max-width: 639px) {
-  .filter-rail-fade > button:first-child {
-    height: 30px;
-    padding-inline: 0.75rem;
-    font-size: 0.75rem;
-  }
+.filter-rail-fade[data-overflow="right"] {
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent);
+  padding-right: 48px;
+}
+
+.rail-chip {
+  position: relative;
+  height: 36px;
+  gap: 0.25rem;
+  padding-block: 0;
+  padding-inline: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.rail-chip::before {
+  content: "";
+  position: absolute;
+  inset: -4px 0;
+}
+
+.rail-chip-count {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  opacity: 0.6;
+}
+
+.rail-chip-empty {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.rail-chip-empty:hover {
+  background-color: rgb(255 255 255 / 0.04);
+  color: var(--fog);
+}
+
+.rail-more {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  margin-top: -8px;
+  background-color: rgb(255 255 255 / 0.16);
+  color: var(--paper);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+
+.rail-more > svg {
+  transform: rotate(-90deg);
+}
+
+.rail-more::before {
+  content: "";
+  position: absolute;
+  inset: -14px -10px;
 }
 
 /* Perfil (FIL-I21-8): the initial in a circle with the app icon's orange → magenta. */
@@ -3023,6 +3079,36 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 
 .ficha-row[data-expanded="true"] {
   content-visibility: visible;
+  /* `clip` keeps the rounded corners without making the row a scroll container, so the
+     action row inside can stick to the viewport (FIL-I24-2). */
+  overflow: clip;
+}
+
+/* While the row measures its unfolded height (FIL-I24-2): no transitions, one synchronous layout. */
+.ficha-row.ficha-measuring .ficha-detail,
+.ficha-row.ficha-measuring .ficha-poster,
+.ficha-row.ficha-measuring .ficha-title,
+.ficha-row.ficha-measuring .ficha-backdrop {
+  transition: none !important;
+}
+
+/* The unfolded row's actions stay above the dock while the row is taller than the space left
+   (375×667): sticky inside the row, with a veil so the synopsis never shows through the gaps. */
+@media (max-width: 1023px) {
+  .ficha-actions-sticky {
+    position: sticky;
+    bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 4.75rem);
+    z-index: 1;
+  }
+
+  .ficha-actions-sticky::before {
+    content: "";
+    position: absolute;
+    inset: -28px -12px -12px;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(180deg, transparent, rgb(14 17 20 / 0.85) 36%);
+  }
 }
 
 .ficha-sheet {
@@ -3031,6 +3117,27 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 
 .ficha-row.is-swiping .ficha-sheet {
   transition: none;
+}
+
+/* Daily hint (FIL-I24-1): the folded row slides 24 px right, holds, and comes back in 280 ms,
+   leaving «Vi esto» showing underneath. Transform only; reduced motion never runs it. */
+.ficha-swipe-hint {
+  animation: ficha-swipe-hint 620ms var(--ease-out);
+}
+
+@keyframes ficha-swipe-hint {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  45% {
+    transform: translate3d(24px, 0, 0);
+  }
+  55% {
+    transform: translate3d(24px, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 .ficha-poster {
@@ -3042,17 +3149,21 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   width: 84px;
 }
 
+/* The serif numeral hangs 4 px lower than before (FIL-I24-5) with a denser shadow, so it
+   sits on the poster's bottom edge instead of over the title on the artwork. */
 .ficha-rank {
   position: absolute;
   left: -2px;
-  bottom: -6px;
+  bottom: -10px;
   font-family: var(--font-fraunces);
   font-weight: 700;
   font-size: 1.875rem;
   line-height: 1;
   color: var(--canvas);
-  -webkit-text-stroke: 1.2px rgb(255 255 255 / 0.75);
-  text-shadow: 0 4px 12px rgb(0 0 0 / 0.6);
+  -webkit-text-stroke: 1.2px rgb(255 255 255 / 0.8);
+  text-shadow:
+    0 2px 6px rgb(0 0 0 / 0.85),
+    0 6px 16px rgb(0 0 0 / 0.7);
   pointer-events: none;
 }
 
@@ -3082,7 +3193,7 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 }
 
 .ficha-detail > div {
-  overflow: hidden;
+  overflow: clip;
   min-height: 0;
 }
 
@@ -3241,6 +3352,7 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   }
 
   .ficha-detail-in,
+  .ficha-swipe-hint,
   .ficha-swipe-under.is-armed .ficha-swipe-label {
     animation: none !important;
   }

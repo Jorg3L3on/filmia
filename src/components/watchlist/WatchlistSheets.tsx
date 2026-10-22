@@ -46,6 +46,9 @@ export const WatchlistSheets = ({
       titleName={markTarget?.name ?? ""}
       rating={markTarget?.rating ?? null}
       review={markTarget?.review ?? null}
+      // The row's platform preselects «Dónde la vi» (FIL-I24-4, like Hoy since FIL-I21-1);
+      // undefined when it has none, so the sheet starts on «Ninguna» and sends nothing.
+      platform={markTarget?.platform?.platform ?? undefined}
       silent
       onClose={onCloseMark}
       onSaved={() => {
