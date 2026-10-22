@@ -195,9 +195,12 @@ export const SearchResultRowBody = ({
 };
 
 /**
- * Row A's data line: IMDb · Para ti (or your rating) · laurel · platform in plain text. Nothing without
- * data (the ficha says «Aún sin calificación»; a row stays quiet). While the
- * Catalog fills, two pills hold the line's height so nothing jumps.
+ * Row A's data line, in two lines since FIL-I22-2 (línea A «Dos renglones»):
+ * (1) IMDb · «Para ti» or your rating; (2) laurel + the whole award · platform.
+ * A line only when it has something, so a row grows 16 px per line and
+ * nothing is ever cut mid-word («1 Ós»). Nothing without data (the ficha says
+ * «Aún sin calificación»; a row stays quiet). While the Catalog fills, two
+ * pills hold one line's height so nothing jumps.
  */
 const SearchFactsLine = ({ facts }: { facts: SearchResultFacts | null }) => {
   if (!facts) {
@@ -211,20 +214,21 @@ const SearchFactsLine = ({ facts }: { facts: SearchResultFacts | null }) => {
       </span>
     );
   }
-  const bits: ReactNode[] = [];
+  const first: ReactNode[] = [];
+  const second: ReactNode[] = [];
   if (facts.imdbRating != null) {
-    bits.push(<ImdbBadge key="imdb" rating={facts.imdbRating} compact />);
+    first.push(<ImdbBadge key="imdb" rating={facts.imdbRating} compact />);
   }
   // «Para ti» (FIL-I9): a watched film shows your rating, never a prediction.
   if (facts.watched?.rating != null) {
-    bits.push(
+    first.push(
       <span key="mine" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-semibold text-star">
         ★ {formatStarScore(facts.watched.rating)}
         <span className="font-normal text-fog">tu nota</span>
       </span>,
     );
   } else if (facts.affinity) {
-    bits.push(
+    first.push(
       <AffinityChip
         key="affinity"
         level={facts.affinity.level}
@@ -235,7 +239,7 @@ const SearchFactsLine = ({ facts }: { facts: SearchResultFacts | null }) => {
     );
   }
   if (facts.awardLabel) {
-    bits.push(
+    second.push(
       <span key="award" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs text-star">
         <LaurelIcon />
         {facts.awardLabel}
@@ -243,26 +247,34 @@ const SearchFactsLine = ({ facts }: { facts: SearchResultFacts | null }) => {
     );
   }
   if (facts.platform) {
-    bits.push(
+    second.push(
       <span key="platform" className="min-w-0 truncate text-xs text-paper/75">
         {facts.platform}
       </span>,
     );
   }
-  if (bits.length === 0) {
+  if (first.length === 0 && second.length === 0) {
     return null;
   }
   return (
-    <span className="flex h-4 min-w-0 items-center gap-1.5 overflow-hidden">
-      {bits.map((bit, index) => (
-        <span key={index} className={cn("inline-flex items-center gap-1.5", index === bits.length - 1 ? "min-w-0" : "shrink-0")}>
-          {index > 0 ? <span className="text-xs text-faint" aria-hidden="true">·</span> : null}
-          {bit}
-        </span>
-      ))}
+    <span className="block" data-search-facts={second.length > 0 ? "2" : "1"}>
+      {first.length > 0 ? <FactsRow bits={first} /> : null}
+      {second.length > 0 ? <FactsRow bits={second} /> : null}
     </span>
   );
 };
+
+/** One 16 px line of facts, « · » between them; only the last one may truncate. */
+const FactsRow = ({ bits }: { bits: ReactNode[] }) => (
+  <span className="flex h-4 min-w-0 items-center gap-1.5 overflow-hidden">
+    {bits.map((bit, index) => (
+      <span key={index} className={cn("inline-flex items-center gap-1.5", index === bits.length - 1 ? "min-w-0" : "shrink-0")}>
+        {index > 0 ? <span className="text-xs text-faint" aria-hidden="true">·</span> : null}
+        {bit}
+      </span>
+    ))}
+  </span>
+);
 
 /** «En Quiero ver» (accent) or «La viste» (success): where it already is. */
 const LibraryPill = ({ status }: { status: Exclude<SearchRowStatus, null> }) => (
