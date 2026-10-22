@@ -33,6 +33,8 @@ type TitleHeroProps = {
   affinity?: ReactNode;
   /** «▶ Tráiler» (FIL-I15): streamed, first chip under the title; nothing when TMDB has none. */
   trailer?: ReactNode;
+  /** «● En cines · Horarios ›» / «Llega el jue 22 oct» (FIL-I23-3): streamed, right after the trailer. */
+  cinema?: ReactNode;
 };
 
 const ambientStyle = (posterAmbient: string | null | undefined) =>
@@ -65,6 +67,7 @@ export const TitleHero = ({
   posterAmbient,
   affinity,
   trailer,
+  cinema,
 }: TitleHeroProps) => {
   const restBits = [runtimeLabel, kindLabel, genreLabel].filter(Boolean);
 
@@ -122,6 +125,7 @@ export const TitleHero = ({
           style={{ "--i": 3 } as CSSProperties}
         >
           {trailer}
+          {cinema}
           {imdbRating != null && imdbHref ? (
             <a
               href={imdbHref}
@@ -145,12 +149,11 @@ export const TitleHero = ({
               <span className="shimmer inline-block h-7 w-[4.75rem] rounded-full" aria-hidden="true" />
               <span className="shimmer inline-block h-7 w-32 rounded-full" aria-hidden="true" />
             </>
-          ) : (
-            <span className="liquid-glass liquid-glass-pill relative inline-flex h-7 items-center rounded-full px-2.5 text-xs text-fog">
-              Aún sin calificación en IMDb
-            </span>
-          )}
+          ) : null}
           {affinity}
+          {imdbRating == null && !imdbPending ? (
+            <span className="text-[11px] leading-none text-mist">Aún sin calificación en IMDb</span>
+          ) : null}
           {awardLabel ? (
             <span className="inline-flex h-7 max-w-full items-center gap-1 truncate rounded-full border border-star/35 bg-star/10 px-2.5 text-xs font-medium text-star">
               <LaurelIcon />

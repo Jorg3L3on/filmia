@@ -23,6 +23,8 @@ export type CineFilm = {
   posterPath: string | null;
   mxReleaseDate: string;
   status: CinemaReleaseStatus;
+  /** TMDB popularity at the last cron run: «Populares» in the cartelera sorts by it. */
+  popularity: number;
   /** Platforms (ours) the film streams flatrate on in MX, in TMDB's order. */
   streaming: Platform[];
 };
@@ -36,6 +38,7 @@ const filmColumns = {
   posterPath: catalog.posterPath,
   mxReleaseDate: cinemaReleases.mxReleaseDate,
   status: cinemaReleases.status,
+  popularity: cinemaReleases.popularity,
   watchProvidersMx: catalog.watchProvidersMx,
 };
 
@@ -57,6 +60,7 @@ const toFilm = (row: FilmRow): CineFilm => ({
   posterPath: row.posterPath,
   mxReleaseDate: row.mxReleaseDate,
   status: row.status === "now" || row.status === "upcoming" ? row.status : "gone",
+  popularity: row.popularity,
   streaming: streamingPlatformsOf(row.watchProvidersMx),
 });
 

@@ -3,8 +3,12 @@ import { describe, it } from "node:test";
 import {
   defaultTopYear,
   parseTopYear,
+  pendingTopDay,
+  pendingTopDayLabel,
   rankYearTop,
+  startTopLabel,
   voteFloorFor,
+  watchedOfYearCopy,
   yearTopError,
   yourTopLabel,
   type YearTopPick,
@@ -42,6 +46,23 @@ describe("top year", () => {
     assert.equal(parseTopYear("2024", "2026-10-17"), 2024);
     assert.equal(parseTopYear("2031", "2026-10-17"), 2026);
     assert.equal(parseTopYear("abc", "2026-10-17"), 2026);
+  });
+
+  it("counts what you saw in singular or plural and nudges until three (FIL-I23-1)", () => {
+    assert.equal(watchedOfYearCopy(2024, 1), "Has visto 1 película de 2024. Con 3 ya hay top.");
+    assert.equal(watchedOfYearCopy(2024, 2), "Has visto 2 películas de 2024. Ordénalas a tu gusto.");
+    assert.equal(watchedOfYearCopy(2024, 7), "Has visto 7 películas de 2024. Ordénalas a tu gusto.");
+    assert.equal(startTopLabel(1), "Empezar mi top");
+    assert.equal(startTopLabel(2), "Empezar mi top");
+    assert.equal(startTopLabel(3), "Armar mi top");
+  });
+
+  it("dates a pending older top by the missing years ahead of it, one a night", () => {
+    const today = "2026-10-21";
+    assert.equal(pendingTopDay(2024, [2026, 2025], today), "2026-10-22");
+    assert.equal(pendingTopDay(2018, [2026, 2025, 2024, 2020], today), "2026-10-26");
+    assert.equal(pendingTopDayLabel(2024, [2026, 2025], today), "mañana");
+    assert.equal(pendingTopDayLabel(2018, [2026, 2025, 2024, 2020], today), "el lun 26 oct");
   });
 
   it("names a short top by its size", () => {

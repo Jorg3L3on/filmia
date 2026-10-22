@@ -41,6 +41,7 @@
     "cine:correr": "tsx scripts/cine.ts correr",
     "cine:top": "tsx scripts/cine.ts top",
     "cine:avisos": "tsx scripts/cine.ts avisos",
+    "cine:titulos": "tsx scripts/cine.ts titulos",
     "test:db": "TEST_DATABASE_URL=${TEST_DATABASE_URL:-postgresql://localhost:5432/filmia_test} tsx --test --test-concurrency=4 \"src/**/*.test.ts\"",
     "test:db:setup": "bash scripts/setup-test-db.sh"
   },

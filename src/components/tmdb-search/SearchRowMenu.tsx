@@ -39,6 +39,8 @@ type SearchRowMenuProps = {
   onOpenFicha: () => void;
   /** What lifts over the blur instead of the Buscar row (Cine lifts the held poster). */
   lift?: ReactNode;
+  /** Second line under «Quiero ver» (Cine: «Te avisamos el jue 22 oct» for an upcoming film). */
+  watchlistHint?: string | null;
 };
 
 const MENU_WIDTH = 262;
@@ -82,6 +84,7 @@ export const SearchRowMenu = ({
   onLists,
   onOpenFicha,
   lift,
+  watchlistHint = null,
 }: SearchRowMenuProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -132,6 +135,7 @@ export const SearchRowMenu = ({
     <MenuItem
       key="watchlist"
       label={inWatchlist ? "En Quiero ver" : "Quiero ver"}
+      hint={watched ? null : watchlistHint}
       icon={<BookmarkIcon filled={inWatchlist} />}
       disabled={inWatchlist || watched}
       onSelect={onWatchlist}
@@ -217,12 +221,14 @@ export const SearchRowMenu = ({
 
 const MenuItem = ({
   label,
+  hint = null,
   icon,
   tone,
   disabled = false,
   onSelect,
 }: {
   label: string;
+  hint?: string | null;
   icon: ReactNode;
   tone?: "accent" | "success" | "muted";
   disabled?: boolean;
@@ -241,7 +247,10 @@ const MenuItem = ({
       focusRing,
     )}
   >
-    <span className="truncate">{label}</span>
+    <span className="min-w-0 flex-1">
+      <span className="block truncate">{label}</span>
+      {hint ? <span className="block truncate text-[11px] leading-tight text-success">{hint}</span> : null}
+    </span>
     {icon}
   </button>
 );

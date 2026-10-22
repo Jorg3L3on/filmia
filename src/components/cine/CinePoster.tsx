@@ -72,24 +72,36 @@ export const CinePoster = ({ film, badge, caption, dim = false, className, sizes
           {status ? (
             <span
               className={cn(
-                "absolute right-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold backdrop-blur-md",
+                "absolute right-1.5 top-1.5 inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold backdrop-blur-md",
                 status === "watched" ? "bg-success/85 text-ink" : "bg-ink/70 text-accent-hover",
               )}
             >
+              {status === "watchlist" && film.status === "upcoming" ? <BellGlyph /> : null}
               {status === "watched" ? "Vista" : "Quiero ver"}
             </span>
           ) : null}
         </div>
-        <p className="mt-2 line-clamp-2 text-[13px] font-medium leading-snug text-paper group-hover:text-cine">{film.name}</p>
+        <p title={film.name} className="mt-2 line-clamp-2 text-[13px] font-medium leading-snug text-paper group-hover:text-cine">
+          {film.name}
+        </p>
         {caption ? <p className="mt-0.5 text-xs text-mist">{caption}</p> : null}
       </Link>
     </article>
   );
 };
 
-/** «Estreno» on a film's first week in theaters. */
-export const PremiereTag = () => (
+/** «Hoy» on the premiere day, «Estreno» for the three days after (premiereTag). */
+export const PremiereTag = ({ label = "Estreno" }: { label?: "Hoy" | "Estreno" }) => (
   <span className="rounded-full bg-cine px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink shadow-[0_0_12px_rgb(var(--cine-rgb)/0.6)]">
-    Estreno
+    {label}
   </span>
+);
+
+/** On an upcoming film in Quiero ver: the corner says it will warn you («Llega a cines»). */
+const BellGlyph = () => (
+  <svg viewBox="0 0 24 24" className="size-2.5" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <title>te avisamos</title>
+    <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+  </svg>
 );

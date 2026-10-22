@@ -4,6 +4,7 @@ import {
   cinemaPayloadsForUser,
   MAX_CINEMA_PUSHES_PER_USER,
   premiereDayLabel,
+  premiereWeekdayLabel,
   selectCinemaArrivals,
   type CinemaAlertCandidate,
 } from "./cine-alerts";
@@ -75,5 +76,13 @@ describe("cinema push payloads", () => {
     assert.equal(payloads.length, 1);
     assert.equal(payloads[0]?.url, "/cine/proximamente");
     assert.match(payloads[0]?.title ?? "", /^4 de Quiero ver/);
+  });
+});
+
+describe("premiereWeekdayLabel", () => {
+  it("says hoy, mañana or the weekday", () => {
+    assert.equal(premiereWeekdayLabel("2026-10-17", TODAY), "hoy");
+    assert.equal(premiereWeekdayLabel("2026-10-18", TODAY), "mañana");
+    assert.equal(premiereWeekdayLabel("2026-10-22", TODAY), "el jueves");
   });
 });
