@@ -1,6 +1,6 @@
 "use server";
 
-import { metadataServicesConfigured, searchTmdbCatalog } from "@/lib/metadata";
+import { metadataServicesConfigured, searchTmdbCatalogPage } from "@/lib/metadata";
 import { requireUserId } from "@/lib/session";
 import {
   isPersonRole,
@@ -15,6 +15,7 @@ import {
   searchTmdbMultiDirectors,
   TMDB_UNAVAILABLE_COPY,
   tmdbErrorMessage,
+  type TmdbCatalogResult,
 } from "@/lib/tmdb";
 
 /** The director whose name is what was typed, for the «Ver filmografía» card. */
@@ -27,22 +28,44 @@ const directorNamed = async (query: string): Promise<DirectorHit | null> => {
   }
 };
 
+/** What one search answers: a page of titles and how far the list goes (FIL-I22-4). */
+export type TmdbDiscoverAnswer = {
+  results: TmdbCatalogResult[];
+  director: DirectorHit | null;
+  error: string | null;
+  page: number;
+  totalPages: number;
+  /** Titles TMDB has for the words, people taken off as far as this page knows. */
+  total: number;
+};
+
+const NO_PAGE = { page: 1, totalPages: 0, total: 0 };
+
 // Each action spends TMDB quota, so it needs a session like any other (FIL-I10-6 L3):
 // Server Functions can be invoked by POSTing to any path, public ones included.
-export const searchTmdbDiscover = async (query: string) => {
+export const searchTmdbDiscover = async (query: string, page = 1): Promise<TmdbDiscoverAnswer> => {
   await requireUserId();
   if (!metadataServicesConfigured().tmdb) {
-    return { results: [], director: null, error: TMDB_UNAVAILABLE_COPY };
+    return { results: [], director: null, error: TMDB_UNAVAILABLE_COPY, ...NO_PAGE };
   }
+  const wanted = Number.isInteger(page) && page > 1 ? Math.min(page, 50) : 1;
 
   try {
-    const [results, director] = await Promise.all([
-      searchTmdbCatalog(query),
-      directorNamed(query),
+    const [found, director] = await Promise.all([
+      searchTmdbCatalogPage(query, wanted),
+      // The director card belongs to the first page only.
+      wanted === 1 ? directorNamed(query) : Promise.resolve(null),
     ]);
-    return { results, director, error: null };
+    return {
+      results: found.results,
+      director,
+      error: null,
+      page: found.page,
+      totalPages: found.totalPages,
+      total: Math.max(found.results.length, found.totalResults - found.people),
+    };
   } catch (error) {
-    return { results: [], director: null, error: tmdbErrorMessage(error) };
+    return { results: [], director: null, error: tmdbErrorMessage(error), ...NO_PAGE };
   }
 };
 

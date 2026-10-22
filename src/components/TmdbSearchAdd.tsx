@@ -110,6 +110,11 @@ export const TmdbSearchAdd = ({
     pendingKey,
     pendingAction,
     visibleResults,
+    loadedCount,
+    total,
+    canLoadMore,
+    isLoadingMore,
+    loadMore,
     listIdsFor,
     listsError,
     pinnedTitleId,
@@ -362,11 +367,21 @@ export const TmdbSearchAdd = ({
                 error={error}
                 rows={rows}
                 onRetry={handleSearch}
+                kind={kindFilter}
+                loadedCount={loadedCount}
+                total={total}
+                canLoadMore={canLoadMore}
+                isLoadingMore={isLoadingMore}
+                onLoadMore={loadMore}
+                hint={
+                  <p className="text-xs text-mist">Si no aparece, prueba con el título original o un año.</p>
+                }
               />
             </>
           )}
 
-          {!hasSearched ? (
+          {/* The start screen leaves as soon as there is text: the skeleton takes its place (FIL-I22-4). */}
+          {!hasSearched && !query.trim() ? (
             mode === "director" ? (
               startDirectors.length > 0 ? (
                 <FavoriteDirectors directors={startDirectors} />
@@ -414,11 +429,6 @@ export const TmdbSearchAdd = ({
       />
 
       <p className="sr-only">{isSearching ? "Buscando" : isAdding ? "Guardando" : ""}</p>
-      {!personPage && mode === "titles" && hasSearched ? (
-        <p className="text-center text-xs text-mist">
-          Si no aparece, prueba con el título original o un año.
-        </p>
-      ) : null}
     </div>
   );
 };

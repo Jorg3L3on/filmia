@@ -1,10 +1,12 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { SearchResultsSkeleton } from "@/components/PageSkeletons";
 import { SearchResultRow, type SearchRowWiring } from "@/components/tmdb-search/SearchResultRow";
 import { WatchlistCountTicker } from "@/components/watchlist/WatchlistCountTicker";
+import type { SearchKind } from "@/lib/search-session";
 import { staggerStyle } from "@/lib/motion";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import type { TmdbCatalogEntry } from "@/lib/tmdb-search-catalog";
@@ -18,6 +20,21 @@ type TmdbSearchResultsProps = {
   error: string | null;
   rows: SearchRowWiring;
   onRetry?: () => void;
+  /** Paging (FIL-I22-4): the chip in force, titles loaded (every kind), titles TMDB has, and the next page. */
+  kind?: SearchKind;
+  loadedCount?: number;
+  total?: number;
+  canLoadMore?: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
+  /** «Si no aparece, prueba…», shown next to the button at the end of the list. */
+  hint?: ReactNode;
+};
+
+/** «11 películas de 16» when a chip filters the list; «16 resultados» otherwise. */
+const KIND_NOUN: Record<Exclude<SearchKind, "ALL">, [string, string]> = {
+  MOVIE: ["película", "películas"],
+  SERIES: ["serie", "series"],
 };
 
 export const TmdbSearchResults = ({
@@ -28,8 +45,17 @@ export const TmdbSearchResults = ({
   error,
   rows,
   onRetry,
+  kind = "ALL",
+  loadedCount = results.length,
+  total = loadedCount,
+  canLoadMore = false,
+  isLoadingMore = false,
+  onLoadMore,
+  hint,
 }: TmdbSearchResultsProps) => {
   if (results.length > 0) {
+    const filtered = kind !== "ALL" && results.length !== loadedCount;
+    const noun = kind !== "ALL" ? KIND_NOUN[kind] : (["resultado", "resultados"] as const);
     return (
       <section className="space-y-3" aria-labelledby="buscar-resultados">
         <header className="flex items-baseline justify-between gap-3">
@@ -37,9 +63,10 @@ export const TmdbSearchResults = ({
             Resultados
           </h2>
           {/* Stays mounted while a new search runs so the digits roll to the new count. */}
-          <p className="flex items-baseline gap-1.5 text-xs text-mist">
+          <p className="flex items-baseline gap-1.5 text-xs text-mist" data-search-count>
             {isSearching ? <span className="buscar-shiny">Buscando…</span> : null}
-            <WatchlistCountTicker count={results.length} singular="resultado" plural="resultados" />
+            <WatchlistCountTicker count={results.length} singular={noun[0]} plural={noun[1]} />
+            {filtered ? <span>{" "}de {loadedCount}</span> : null}
           </p>
         </header>
         <ul className="grid grid-cols-[minmax(0,1fr)] gap-2 lg:grid-cols-2 lg:gap-3">
@@ -63,6 +90,28 @@ export const TmdbSearchResults = ({
             );
           })}
         </ul>
+        <footer className="space-y-3 pt-1" data-search-more>
+          {canLoadMore && onLoadMore ? (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-mist">
+                {loadedCount} de {Math.max(total, loadedCount)}
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={onLoadMore}
+                pending={isLoadingMore}
+                pendingLabel="Cargando…"
+                className="h-11 min-h-11 press-scale"
+              >
+                Cargar 20 más
+              </Button>
+            </div>
+          ) : loadedCount > 1 ? (
+            <p className="text-xs text-mist">{loadedCount} de {loadedCount}</p>
+          ) : null}
+          {hint}
+        </footer>
       </section>
     );
   }

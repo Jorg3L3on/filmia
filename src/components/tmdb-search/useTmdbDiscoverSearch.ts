@@ -6,6 +6,7 @@ import type { DirectorHit } from "@/lib/person-filmography";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import {
   SEARCH_DEBOUNCE_MS,
+  SEARCH_PAGE_SIZE,
   normalizeSearchQuery,
   readSearchCache,
   writeSearchCache,
@@ -47,15 +48,30 @@ export const useTmdbDiscoverSearch = ({
   const [error, setError] = useState<string | null>(initialError);
   const [hasSearched, setHasSearched] = useState(Boolean(initialQuery.trim()));
   const [isSearching, startSearch] = useTransition();
+  /** Words typed that no search has answered yet (the debounce): the list shows a skeleton from the first key (FIL-I22-4). */
+  const [typing, setTyping] = useState(false);
+  /** Titles mode paging (FIL-I22-4): pages loaded, pages TMDB has, titles in all. */
+  const [paging, setPaging] = useState({ pages: 1, totalPages: 0, total: initialResults.length });
+  const [isLoadingMore, startLoadMore] = useTransition();
   const requestIdRef = useRef(0);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settledQueryRef = useRef("");
+  useEffect(() => {
+    settledQueryRef.current = settledQuery;
+  }, [settledQuery]);
 
   const applySearch = useCallback((trimmed: string, value: Omit<CachedSearch, "at">) => {
     setSettledQuery(trimmed);
     setHasSearched(true);
+    setTyping(false);
     setResults(value.results);
     setDirector(value.director ?? null);
     setDirectors(value.directors ?? []);
+    setPaging({
+      pages: value.pages ?? 1,
+      totalPages: value.totalPages ?? 0,
+      total: Math.max(value.total ?? 0, value.results.length),
+    });
     setError(value.error);
   }, []);
 
@@ -86,10 +102,13 @@ export const useTmdbDiscoverSearch = ({
                 error: searchError ?? null,
               }))
             : await searchTmdbDiscover(trimmed).then(
-                ({ results: hits, director: named, error: searchError }) => ({
+                ({ results: hits, director: named, error: searchError, page, totalPages, total }) => ({
                   results: hits,
                   director: named,
                   error: searchError ?? null,
+                  pages: page,
+                  totalPages,
+                  total,
                 }),
               );
         if (requestId !== requestIdRef.current) {
@@ -150,12 +169,50 @@ export const useTmdbDiscoverSearch = ({
       setDirector(null);
       setDirectors([]);
       setHasSearched(false);
+      setTyping(false);
       setError(null);
       onSettled?.("", modeRef.current);
       return;
     }
 
+    setTyping(trimmed !== settledQueryRef.current);
     scheduleSearch(trimmed);
+  };
+
+  /** «Cargar 20 más» (FIL-I22-4): the next TMDB page, appended and kept in the session cache. */
+  const canLoadMore =
+    mode === "titles" && hasSearched && !error && paging.totalPages > paging.pages;
+  const loadMore = () => {
+    const trimmed = settledQueryRef.current;
+    if (!canLoadMore || !trimmed || isLoadingMore) {
+      return;
+    }
+    const nextPage = paging.pages + 1;
+    const requestId = requestIdRef.current;
+    startLoadMore(async () => {
+      const answer = await searchTmdbDiscover(trimmed, nextPage);
+      // A newer search (or a cleared field) took over meanwhile: this page is not its.
+      if (requestId !== requestIdRef.current || answer.error) {
+        return;
+      }
+      const known = new Set(results.map((hit) => `${hit.kind}:${hit.tmdbId}`));
+      const merged = [...results, ...answer.results.filter((hit) => !known.has(`${hit.kind}:${hit.tmdbId}`))];
+      const next = {
+        pages: answer.page,
+        totalPages: answer.totalPages,
+        // People on the new page come off the count; never under what is on screen.
+        total: Math.max(merged.length, paging.total - (SEARCH_PAGE_SIZE - answer.results.length)),
+      };
+      setResults(merged);
+      setPaging(next);
+      const cached = readSearchCache(trimmed, Date.now(), "titles");
+      writeSearchCache(
+        trimmed,
+        { results: merged, error: null, director: cached?.director ?? null, ...next },
+        Date.now(),
+        "titles",
+      );
+    });
   };
 
   /** Titles ⇄ Director: search the same words again in the other mode. */
@@ -182,6 +239,7 @@ export const useTmdbDiscoverSearch = ({
     setDirector(null);
     setDirectors([]);
     setHasSearched(false);
+    setTyping(false);
     setError(null);
   };
 
@@ -196,9 +254,15 @@ export const useTmdbDiscoverSearch = ({
     error,
     setError,
     hasSearched,
-    isSearching,
+    /** True from the first key until the answer lands (debounce included). */
+    isSearching: isSearching || typing,
     handleSearch,
     handleQueryChange,
     reset,
+    /** Paging (FIL-I22-4). */
+    total: paging.total,
+    canLoadMore,
+    isLoadingMore,
+    loadMore,
   };
 };

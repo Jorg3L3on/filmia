@@ -322,12 +322,21 @@ export const searchTmdb = async (
   });
 };
 
-export const searchTmdbMulti = async (
-  query: string,
-): Promise<TmdbCatalogResult[]> => {
+/** One page of `/search/multi`: the titles on it, how many pages TMDB has, and its whole count (people included). */
+export type TmdbMultiPage = {
+  results: TmdbCatalogResult[];
+  page: number;
+  totalPages: number;
+  /** TMDB's `total_results`: titles and people together. */
+  totalResults: number;
+  /** People on this page (so the caller can take them off the count). */
+  people: number;
+};
+
+export const searchTmdbMultiPage = async (query: string, page = 1): Promise<TmdbMultiPage> => {
   const trimmed = query.trim();
   if (!trimmed) {
-    return [];
+    return { results: [], page: 1, totalPages: 0, totalResults: 0, people: 0 };
   }
 
   type MultiResult = {
@@ -344,17 +353,17 @@ export const searchTmdbMulti = async (
     overview?: string;
   };
 
-  const data = await tmdbFetch<{ results: MultiResult[] }>("/search/multi", {
-    query: trimmed,
-  });
+  const data = await tmdbFetch<{
+    results: MultiResult[];
+    page?: number;
+    total_pages?: number;
+    total_results?: number;
+  }>("/search/multi", page > 1 ? { query: trimmed, page: String(page) } : { query: trimmed });
 
   const results: TmdbCatalogResult[] = [];
+  let people = 0;
 
   for (const item of data.results) {
-    if (results.length >= 16) {
-      break;
-    }
-
     if (item.media_type === "movie") {
       const name = item.title?.trim() ?? "";
       if (!name) {
@@ -390,11 +399,26 @@ export const searchTmdbMulti = async (
         overview: item.overview ?? null,
         kind: "SERIES",
       });
+      continue;
+    }
+
+    if (item.media_type === "person") {
+      people += 1;
     }
   }
 
-  return results;
+  return {
+    results,
+    page: data.page ?? page,
+    totalPages: data.total_pages ?? 1,
+    totalResults: data.total_results ?? results.length,
+    people,
+  };
 };
+
+/** The first page of titles (FIL-I22-4 pages through `searchTmdbMultiPage`). */
+export const searchTmdbMulti = async (query: string): Promise<TmdbCatalogResult[]> =>
+  (await searchTmdbMultiPage(query)).results;
 
 export type TmdbDiscoverSort = "popularity.desc" | "vote_count.desc" | "vote_average.desc";
 
