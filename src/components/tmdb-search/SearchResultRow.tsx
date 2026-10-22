@@ -47,6 +47,8 @@ type SearchResultRowProps = {
   onMenu?: (result: TmdbCatalogResult, anchor: DOMRect, via: SearchMenuVia) => void;
   /** Diario mode: the check that logs this row on the day (FIL-I22-3). */
   log?: SearchRowLog | null;
+  /** Tonight's pin (FIL-I22-5): the row says «Esta noche» without opening the menu. */
+  pinned?: boolean;
 };
 
 /** How Buscar wires every row (results, filmographies): where it goes, what holding it does. */
@@ -57,6 +59,8 @@ export type SearchRowWiring = {
   factsFor?: (result: TmdbCatalogResult) => SearchResultFacts | null;
   /** Diario mode: the check for each row (null outside Diario). */
   logFor?: (result: TmdbCatalogResult) => SearchRowLog | null;
+  /** The title pinned for tonight, so its row says «Esta noche». */
+  pinnedTitleId?: string | null;
 };
 
 const sameTitle = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -81,6 +85,7 @@ export const SearchResultRow = ({
   onOpen,
   onMenu,
   log = null,
+  pinned = false,
 }: SearchResultRowProps) => {
   const rowRef = useRef<HTMLAnchorElement>(null);
   const firedRef = useRef(false);
@@ -146,6 +151,7 @@ export const SearchResultRow = ({
         status={status}
         facts={facts}
         loggedOn={log?.logged ? log.date : undefined}
+        pinned={pinned}
         chevron={!log}
         morph
       />
@@ -192,9 +198,10 @@ export const SearchResultRowBody = ({
   status = null,
   facts = null,
   loggedOn,
+  pinned = false,
   chevron = true,
   morph = false,
-}: Pick<SearchResultRowProps, "result" | "titleId" | "detail" | "status" | "facts"> & {
+}: Pick<SearchResultRowProps, "result" | "titleId" | "detail" | "status" | "facts" | "pinned"> & {
   /** Diario: the day this row was just logged on (null = today); the pill says «Registrada · día». */
   loggedOn?: string | null;
   /** The trailing chevron; Diario rows put their check button there instead. */
@@ -238,6 +245,8 @@ export const SearchResultRowBody = ({
         <SearchFactsLine facts={facts} />
         {loggedOn !== undefined ? (
           <LibraryPill status="watched" label={`Registrada · ${diaryDayLabel(loggedOn)}`} />
+        ) : pinned ? (
+          <TonightPill />
         ) : status ? (
           <LibraryPill status={status} />
         ) : null}
@@ -339,6 +348,19 @@ const FactsRow = ({ bits }: { bits: ReactNode[] }) => (
         {bit}
       </span>
     ))}
+  </span>
+);
+
+/** «Esta noche» (FIL-I22-5): the row knows it is pinned for tonight, moon and all. */
+const TonightPill = () => (
+  <span
+    data-search-pinned
+    className="mt-0.5 inline-flex h-6 items-center gap-1.5 rounded-full bg-accent/15 px-2.5 text-xs font-medium text-accent-hover"
+  >
+    <svg viewBox="0 0 24 24" className="size-3" fill="currentColor" stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5Z" />
+    </svg>
+    Esta noche
   </span>
 );
 

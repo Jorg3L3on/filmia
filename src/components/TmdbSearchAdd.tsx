@@ -207,6 +207,7 @@ export const TmdbSearchAdd = ({
     hrefFor,
     factsFor: rowFactsFor,
     logFor,
+    pinnedTitleId,
     onOpen: () => rememberQuery(),
     onMenu: (result, anchor, via) => {
       rememberQuery();
@@ -376,6 +377,9 @@ export const TmdbSearchAdd = ({
                 hint={
                   <p className="text-xs text-mist">Si no aparece, prueba con el título original o un año.</p>
                 }
+                query={settledQuery}
+                onSearchAsDirector={() => changeMode("director")}
+                onDropYear={onQueryChange}
               />
             </>
           )}

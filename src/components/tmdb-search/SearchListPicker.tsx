@@ -65,6 +65,7 @@ export const SearchListPicker = ({
         pendingId={null}
         onToggle={handleToggle}
         showOpenLink={false}
+        size="md"
       />
 
       <StatusListGroup lists={statusLists} linked={false} />
@@ -77,6 +78,7 @@ export const SearchListPicker = ({
           pendingId={null}
           onToggle={handleToggle}
           showOpenLink={false}
+          size="md"
         />
       ) : (
         <p className="text-sm text-mist">

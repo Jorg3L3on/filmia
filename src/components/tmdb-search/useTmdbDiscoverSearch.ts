@@ -49,7 +49,8 @@ export const useTmdbDiscoverSearch = ({
   const [hasSearched, setHasSearched] = useState(Boolean(initialQuery.trim()));
   const [isSearching, startSearch] = useTransition();
   /** Words typed that no search has answered yet (the debounce): the list shows a skeleton from the first key (FIL-I22-4). */
-  const [typing, setTyping] = useState(false);
+  // A direct `?q=` load has words and no answer yet: skeleton from the first paint, not «Nada con esa búsqueda».
+  const [typing, setTyping] = useState(enabled && Boolean(initialQuery.trim()) && initialResults.length === 0);
   /** Titles mode paging (FIL-I22-4): pages loaded, pages TMDB has, titles in all. */
   const [paging, setPaging] = useState({ pages: 1, totalPages: 0, total: initialResults.length });
   const [isLoadingMore, startLoadMore] = useTransition();

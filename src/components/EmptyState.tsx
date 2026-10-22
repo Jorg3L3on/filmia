@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Button } from "@/components/Button";
 import { cn } from "@/lib/cn";
 
@@ -16,6 +17,8 @@ type EmptyStateProps = {
   variant?: EmptyVariant;
   /** Half the height (FIL-I21-8): for a page that has more below the empty block. */
   compact?: boolean;
+  /** Instead of the one button: chips that keep searching (Buscar, FIL-I22-5). */
+  actions?: ReactNode;
 };
 
 export const EmptyState = ({
@@ -25,6 +28,7 @@ export const EmptyState = ({
   actionLabel,
   variant = "generic",
   compact = false,
+  actions,
 }: EmptyStateProps) => {
   const well =
     variant === "watchlist" ||
@@ -45,7 +49,9 @@ export const EmptyState = ({
       <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fog">
         {description}
       </p>
-      {actionHref && actionLabel ? (
+      {actions ? (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">{actions}</div>
+      ) : actionHref && actionLabel ? (
         <Button href={actionHref} size="lg" className="mt-6">
           {actionLabel}
         </Button>

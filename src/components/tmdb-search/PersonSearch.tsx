@@ -345,7 +345,8 @@ const RoleMenu = ({
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          "press-scale inline-flex h-8 items-center gap-1.5 rounded-full border border-accent/50 bg-accent/10 px-3 text-sm text-accent-hover",
+          // 40 px tall (FIL-I22-5): a thumb target, not a label.
+          "press-scale inline-flex h-10 items-center gap-1.5 rounded-full border border-accent/50 bg-accent/10 px-3.5 text-sm text-accent-hover",
           focusRing,
         )}
       >
@@ -373,7 +374,7 @@ const RoleMenu = ({
                 }
               }}
               className={cn(
-                "flex w-full items-center justify-between gap-4 rounded-xl px-3 py-2 text-left text-sm",
+                "flex w-full items-center justify-between gap-4 rounded-xl px-3 py-3 text-left text-sm",
                 option === role ? "bg-white/8 text-paper" : "text-paper/80 hover:bg-white/5",
                 focusRing,
               )}
@@ -656,6 +657,7 @@ const WorkByDecade = ({
                     onOpen={rows.onOpen}
                     onMenu={rows.onMenu}
                     log={rows.logFor?.(entry) ?? null}
+                    pinned={titleId !== null && titleId === rows.pinnedTitleId}
                   />
                 </li>
               );

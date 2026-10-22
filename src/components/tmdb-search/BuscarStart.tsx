@@ -84,7 +84,8 @@ export const BuscarStart = ({ recents, directors = [], arrivals = [], onPickRece
             <button
               type="button"
               onClick={onClearRecents}
-              className={cn("rounded-md text-xs text-fog hover:text-paper", focusRing)}
+              // A 44 px box around a small word (FIL-I22-5); the negative margin keeps the baseline where it was.
+              className={cn("-my-3 -mr-2 flex h-11 items-center rounded-md px-2 text-xs text-fog hover:text-paper", focusRing)}
             >
               Borrar
             </button>
@@ -96,7 +97,7 @@ export const BuscarStart = ({ recents, directors = [], arrivals = [], onPickRece
                   type="button"
                   onClick={() => onPickRecent(query)}
                   className={cn(
-                    "press-scale flex h-9 max-w-full items-center gap-2 rounded-full border border-line bg-surface/70 px-3.5 text-sm text-paper",
+                    "press-scale flex h-10 max-w-full items-center gap-2 rounded-full border border-line bg-surface/70 px-4 text-sm text-paper",
                     "transition-[border-color,background-color] duration-[var(--duration-hover)] ease-[var(--ease-out)] hover:border-accent/40",
                     focusRing,
                   )}

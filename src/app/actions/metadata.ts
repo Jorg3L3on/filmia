@@ -4,7 +4,7 @@ import { metadataServicesConfigured, searchTmdbCatalogPage } from "@/lib/metadat
 import { requireUserId } from "@/lib/session";
 import {
   isPersonRole,
-  personNameMatchesQuery,
+  isRealDirectorFor,
   type DirectorHit,
   type PersonFilmography,
   type PersonRole,
@@ -18,11 +18,11 @@ import {
   type TmdbCatalogResult,
 } from "@/lib/tmdb";
 
-/** The director whose name is what was typed, for the «Ver filmografía» card. */
+/** The director whose name is what was typed, for the «Ver filmografía» card (a real person only, FIL-I22-5). */
 const directorNamed = async (query: string): Promise<DirectorHit | null> => {
   try {
     const hits = await searchTmdbMultiDirectors(query);
-    return hits.find((hit) => personNameMatchesQuery(hit.name, query)) ?? null;
+    return hits.find((hit) => isRealDirectorFor(hit, query)) ?? null;
   } catch {
     return null;
   }
