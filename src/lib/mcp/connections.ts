@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, isNull } from "drizzle-orm";
+import { and, count, desc, eq, gt, isNull } from "drizzle-orm";
 import { db, mcpOAuthClients, mcpOAuthGrants, mcpPersonalTokens } from "@/db";
 import { recentToolCalls } from "@/lib/mcp/activity";
 import { isTrustedCimdHost } from "@/lib/mcp-oauth/clients";
@@ -101,6 +101,31 @@ export const loadMcpConnections = async (userId: string, now = new Date()) => {
 
   return { clients, personal };
 };
+
+/** Perfil's Conexiones row (FIL-I25-1): how many live apps and tokens, without their activity. */
+export const countMcpConnections = async (userId: string, now = new Date()) => {
+  const [[apps], [tokens]] = await Promise.all([
+    db
+      .select({ n: count() })
+      .from(mcpOAuthGrants)
+      .where(
+        and(eq(mcpOAuthGrants.userId, userId), isNull(mcpOAuthGrants.revokedAt), gt(mcpOAuthGrants.refreshExpiresAt, now)),
+      ),
+    db
+      .select({ n: count() })
+      .from(mcpPersonalTokens)
+      .where(
+        and(eq(mcpPersonalTokens.userId, userId), isNull(mcpPersonalTokens.revokedAt), gt(mcpPersonalTokens.expiresAt, now)),
+      ),
+  ]);
+  return { apps: apps?.n ?? 0, tokens: tokens?.n ?? 0 };
+};
+
+/** «1 app · 1 token», or «Nada conectado». */
+export const connectionsRowSummary = ({ apps, tokens }: { apps: number; tokens: number }) =>
+  [apps > 0 ? `${apps} ${apps === 1 ? "app" : "apps"}` : null, tokens > 0 ? `${tokens} ${tokens === 1 ? "token" : "tokens"}` : null]
+    .filter(Boolean)
+    .join(" · ") || "Nada conectado";
 
 /** Revokes one of the user's grants; false when it is not theirs or already revoked. */
 export const revokeUserGrant = async (userId: string, grantId: string, now = new Date()) => {

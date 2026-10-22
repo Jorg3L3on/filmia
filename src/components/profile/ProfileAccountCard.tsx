@@ -77,7 +77,7 @@ export const ProfileAccountCard = ({ name, email, hasPassword, googleLinked }: P
         <ProfileRow
           icon={<PersonIcon />}
           label="Nombre"
-          value={name ?? <span className="text-faint">Añade tu nombre</span>}
+          value={name ?? <span className="text-mist">Añade tu nombre</span>}
           onClick={() => open("name")}
           ariaLabel={name ? `Nombre: ${name}. Cambiar` : "Añadir nombre"}
         />
@@ -226,11 +226,25 @@ const AccountFieldForm = ({
 };
 
 const CURRENT_PASSWORD_ERROR = "La contraseña actual no es correcta.";
+const EMPTY_CURRENT_ERROR = "Escribe tu contraseña actual.";
+const EMPTY_NEXT_ERROR = "Escribe la nueva contraseña.";
+
+/** Empty fields answer inside the sheet (FIL-I25-1): noValidate drops the native bubble. */
+const emptyFieldErrors = (formData: FormData) => ({
+  current: String(formData.get("currentPassword") ?? "") === "" ? EMPTY_CURRENT_ERROR : undefined,
+  next: String(formData.get("newPassword") ?? "") === "" ? EMPTY_NEXT_ERROR : undefined,
+});
+
+type PasswordAttemptState = AttemptState & { empty?: { current?: string; next?: string } };
 
 const PasswordForm = ({ titleId, onDone }: { titleId: string; onDone: () => void }) => {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
-  const [state, action, isPending] = useActionState<AttemptState, FormData>(async (previous, formData) => {
+  const [state, action, isPending] = useActionState<PasswordAttemptState, FormData>(async (previous, formData) => {
+    const empty = emptyFieldErrors(formData);
+    if (empty.current || empty.next) {
+      return { result: null, empty, attempt: previous.attempt + 1 };
+    }
     const result = await updatePassword(previous.result, formData);
     if (result && "ok" in result) {
       showToast({ title: "Contraseña actualizada" });
@@ -241,12 +255,13 @@ const PasswordForm = ({ titleId, onDone }: { titleId: string; onDone: () => void
   }, INITIAL);
   const error = errorOf(state);
   const shakeRef = useShakeOnError(state.attempt);
-  const currentError = error === CURRENT_PASSWORD_ERROR ? error : undefined;
-  const generalError = error && !currentError ? error : null;
+  // An emptied field clears its own message as soon as something is typed in it.
+  const currentError = (current ? undefined : state.empty?.current) ?? (error === CURRENT_PASSWORD_ERROR ? error : undefined);
+  const generalError = (next ? undefined : state.empty?.next) ?? (error && error !== CURRENT_PASSWORD_ERROR ? error : undefined);
   const longEnough = next.length >= 8;
 
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} noValidate className="space-y-4">
       <div className="space-y-1">
         <h2 id={titleId} className="font-serif text-2xl text-paper">
           Cambiar contraseña
@@ -270,7 +285,7 @@ const PasswordForm = ({ titleId, onDone }: { titleId: string; onDone: () => void
           placeholder="Mínimo 8 caracteres"
           value={next}
           onChange={(event) => setNext(event.target.value)}
-          error={generalError ?? undefined}
+          error={generalError}
         >
           <span className={cn("flex items-center gap-1.5 text-xs transition-colors duration-[var(--duration-tab)]", longEnough ? "text-success" : "text-mist")}>
             {longEnough ? <CheckIcon className="size-3.5" /> : null}

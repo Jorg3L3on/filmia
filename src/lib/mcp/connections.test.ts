@@ -12,7 +12,7 @@ import { seeder } from "@/lib/test-support/seed";
 import { createPersonalToken } from "@/lib/mcp-oauth/service";
 import { postgresOAuthStore } from "@/lib/mcp-oauth/store-postgres";
 import { insertToolCall, sweepToolCalls, TOOL_CALL_RETENTION_MS } from "./activity";
-import { loadMcpConnections, revokeUserGrant } from "./connections";
+import { connectionsRowSummary, loadMcpConnections, revokeUserGrant } from "./connections";
 import { defineTool, executeTool } from "./define-tool";
 import { issuePersonalToken } from "./personal-tokens";
 
@@ -140,5 +140,14 @@ describeWithDb("Perfil → Conexiones against the local database (FIL-I20-6)", (
     const left = await db.select().from(mcpToolCalls).where(eq(mcpToolCalls.userId, ana));
     assert.deepEqual(left.map((row) => row.tool), ["whoami"]);
     assert.equal(await revokeUserGrant(leo, "not-a-grant"), false);
+  });
+});
+
+describe("Perfil «Conexiones ›» summary (FIL-I25-1)", () => {
+  it("counts apps and tokens, and says «Nada conectado» with neither", () => {
+    assert.equal(connectionsRowSummary({ apps: 1, tokens: 1 }), "1 app · 1 token");
+    assert.equal(connectionsRowSummary({ apps: 2, tokens: 0 }), "2 apps");
+    assert.equal(connectionsRowSummary({ apps: 0, tokens: 3 }), "3 tokens");
+    assert.equal(connectionsRowSummary({ apps: 0, tokens: 0 }), "Nada conectado");
   });
 });

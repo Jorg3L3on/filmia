@@ -79,7 +79,7 @@ export const PasswordField = ({
         </button>
       </span>
       {error ? (
-        <span id={errorId} className="block text-xs text-danger">
+        <span id={errorId} role="alert" className="block text-xs text-danger">
           {error}
         </span>
       ) : null}

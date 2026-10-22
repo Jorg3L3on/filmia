@@ -65,9 +65,10 @@ export const ProfileRow = ({ icon, iconClassName, label, value, hint, onClick, h
     </>
   );
 
+  // The web on iPhone does not vibrate: the 8 % wash and the 0.98 press are the tap's answer.
   const interactive = cn(
     rowBase,
-    "transition-[background-color] duration-[var(--duration-hover)] ease-[var(--ease-out)] hover:bg-white/[0.04] active:bg-white/[0.06]",
+    "profile-row-press hover:bg-white/[0.04] active:bg-white/[0.08]",
     focusRing,
     "focus-visible:-outline-offset-2",
   );

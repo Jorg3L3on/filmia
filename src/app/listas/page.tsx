@@ -45,6 +45,8 @@ export default function ListsPage() {
     <div className="space-y-8">
       <PageHeader
         title="Listas"
+        backHref="/perfil"
+        backLabel="Volver a Perfil"
         inlineActions
         actions={
           <Link

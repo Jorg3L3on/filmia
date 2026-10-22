@@ -396,6 +396,17 @@ body {
   transform: scale(0.96);
 }
 
+/* Perfil rows (FIL-I25-1): a softer press than .press-scale, since a row is as wide as the card. */
+.profile-row-press {
+  transition:
+    transform var(--duration-press) var(--spring),
+    background-color var(--duration-hover) var(--ease-out);
+}
+
+.profile-row-press:active {
+  transform: scale(0.98);
+}
+
 /* BackButton: the disc of the first paint grows into «‹ origen» once the tab's origin is read. */
 .back-pill-in > span {
   animation: back-pill-label-in var(--duration-enter) var(--ease-out) backwards;
@@ -2933,6 +2944,7 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 
   .card-physics:hover,
   .press-scale:active,
+  .profile-row-press:active,
   .stagger-in,
   .fade-up,
   .fade-up-late,
