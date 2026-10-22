@@ -103,6 +103,13 @@ const run = () => {
   assert(!page.includes("MinePlatformsEmpty") && !page.includes('title="Nada con ese filtro"'), "Page no longer renders its own empties: the cartelera does");
   assert(cartelera.includes('reorderBlocked={!canReorder && visible.length > 1 ? (sort ? "sort" : "filters") : null}'), "Sticky bar says whether a sort or a filter blocks reordering");
   assert(read("src/components/watchlist/WatchlistSheets.tsx").includes("platform={markTarget?.platform?.platform ?? undefined}"), "«Vi esto» opens with the row's platform");
+
+  // Pulido (FIL-I24-5): Reordenar bar, 44 px controls, numeral, 48 px bar, broken poster plate.
+  const bar = read("src/components/watchlist/WatchlistStickyBar.tsx");
+  assert(bar.includes('{isEditing ? "Reordenar" : "Quiero ver"}') && bar.includes("normal-case tracking-normal") && bar.includes("flex h-12 items-center"), "Sticky bar: «Reordenar» title, one quiet hint line, 48 px tall");
+  assert(read("src/components/ListItemOrderControls.tsx").includes('size === "lg" ? "size-11" : "size-8"') && read("src/components/WatchlistCard.tsx").includes('size="lg"') && read("src/components/WatchlistCard.tsx").includes("inline-flex size-11 shrink-0 cursor-grab"), "Reordenar rows: 44×44 arrows and handle");
+  assert(/\.ficha-rank \{[^}]*bottom: -10px/.test(css), "Numeral hangs 4 px lower with a denser shadow");
+  assert(exists("src/components/PosterImageFallback.tsx") && read("src/components/PosterImageFallback.tsx").includes("onError={() => setBroken(true)}") && read("src/components/PosterImage.tsx").includes("PosterImageFallback"), "A broken poster falls back to the plate with the initial");
   assert(read("docs/motion.md").includes("cartelera"), "Motion doc covers the cartelera");
 
   console.log("✓ Quiero ver · La cartelera: premios (0006 + OMDb + backfill), pin «Esta noche» en Hoy, fichas + gestos + escenario");

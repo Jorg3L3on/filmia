@@ -3149,17 +3149,21 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   width: 84px;
 }
 
+/* The serif numeral hangs 4 px lower than before (FIL-I24-5) with a denser shadow, so it
+   sits on the poster's bottom edge instead of over the title on the artwork. */
 .ficha-rank {
   position: absolute;
   left: -2px;
-  bottom: -6px;
+  bottom: -10px;
   font-family: var(--font-fraunces);
   font-weight: 700;
   font-size: 1.875rem;
   line-height: 1;
   color: var(--canvas);
-  -webkit-text-stroke: 1.2px rgb(255 255 255 / 0.75);
-  text-shadow: 0 4px 12px rgb(0 0 0 / 0.6);
+  -webkit-text-stroke: 1.2px rgb(255 255 255 / 0.8);
+  text-shadow:
+    0 2px 6px rgb(0 0 0 / 0.85),
+    0 6px 16px rgb(0 0 0 / 0.7);
   pointer-events: none;
 }
 
