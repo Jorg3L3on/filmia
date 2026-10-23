@@ -49,10 +49,8 @@ export const NightEndsForm = ({ value }: NightEndsFormProps) => {
           ariaLabel={`Viernes y sábado: terminas de ver a las ${nightEnds.weekend}. Cambiar`}
         />
       </ProfileGroup>
-      <p className="text-sm leading-relaxed text-fog">
-        Con esto Hoy te dice si termina a tiempo: «acaba a las 23:19» o «se pasa 14 min». Se guarda al instante.
-      </p>
-      <p className="text-xs text-mist">Las madrugadas (antes de las 06:00) cuentan como la noche anterior.</p>
+      {/* One line (FIL-I25-2); the «madrugadas» rule lives in the sheet, where the hour is picked. */}
+      <p className="text-[13px] text-mist">Así Hoy sabe si una película termina a tiempo.</p>
 
       <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} labelledBy={titleId} align="bottom">
         <div className="flex flex-col px-5 pt-3">

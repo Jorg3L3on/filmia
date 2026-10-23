@@ -16,6 +16,8 @@ type PlatformToggleGridProps = {
   legend?: string;
   /** Which platforms to show, in order (Perfil shows yours first and folds the rest). */
   items?: readonly Platform[];
+  /** Perfil keeps two columns at every width so names never cut (FIL-I25-2/5). */
+  columns?: 2 | "auto";
 };
 
 /** Presentational toggle grid shared by Perfil («Plataformas MX») and the Bienvenida. */
@@ -26,10 +28,11 @@ export const PlatformToggleGrid = ({
   variant = "compact",
   legend = "Plataformas de streaming en México",
   items = PLATFORMS,
+  columns = "auto",
 }: PlatformToggleGridProps) => (
   <fieldset>
     <legend className="sr-only">{legend}</legend>
-    <ul className={cn("grid gap-1.5", variant === "roomy" ? "grid-cols-2 gap-2 sm:grid-cols-3" : "grid-cols-2 sm:grid-cols-3")}>
+    <ul className={cn("grid grid-cols-2 gap-1.5", variant === "roomy" && "gap-2", columns === "auto" && "sm:grid-cols-3")}>
       {items.map((platform, index) => {
         const isSelected = value.includes(platform);
         return (
@@ -50,7 +53,7 @@ export const PlatformToggleGrid = ({
               }
               className={cn(
                 "press-scale flex w-full cursor-pointer items-center gap-2 rounded-xl border text-left text-sm",
-                variant === "roomy" ? "px-3 py-3" : "px-2.5 py-2",
+                variant === "roomy" ? "px-3 py-3" : "min-h-11 px-2.5 py-2",
                 "transition-[color,background-color,border-color,transform,box-shadow] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
                 focusRing,
                 isSelected

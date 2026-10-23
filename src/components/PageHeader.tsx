@@ -36,7 +36,8 @@ export const PageHeader = ({
             aria-label={backLabel}
             className={cn(
               glassIconClass,
-              "group mt-0.5 size-10 hover:text-accent md:mt-1.5",
+              // 40 px disc, 44 px to the touch (FIL-I25-4).
+              "group mt-0.5 size-10 after:absolute after:-inset-0.5 after:content-[''] hover:text-accent md:mt-1.5",
             )}
           >
             <svg

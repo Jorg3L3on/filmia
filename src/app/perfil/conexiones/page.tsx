@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { ProfileBodySkeleton } from "@/components/PageSkeletons";
 import { ProfileSection } from "@/components/profile/ProfileRows";
-import { ConnectionCard, CopyField, NewTokenForm } from "@/components/profile/connections/ConnectionsClient";
-import { CLIENT_GUIDES, fillGuide } from "@/lib/mcp/client-guides";
+import { ConnectionCard, CopyField, NewTokenDisclosure } from "@/components/profile/connections/ConnectionsClient";
+import { CLIENT_GUIDES, fillGuide, guideAuthLabel } from "@/lib/mcp/client-guides";
 import { loadMcpConnections } from "@/lib/mcp/connections";
 import { getMcpResourceUrl, isMcpEnabled, MCP_SERVICE_DOCUMENTATION_PATH } from "@/lib/mcp-oauth/config";
 import { requireUserId } from "@/lib/session";
@@ -47,14 +47,14 @@ const ConnectionsBody = async () => {
   const nowIso = now.toISOString();
 
   return (
-    <div className="space-y-9">
+    <div className="space-y-7">
       <ProfileSection id="url" title="Tu conector">
         <div className={cn(glassRowClass, "space-y-3 p-4")}>
           <p className="text-sm text-fog">Pega esta URL en tu app. Te pedirá entrar a Filmia y aprobar.</p>
           <CopyField value={url} label="URL" />
           <a
             href={MCP_SERVICE_DOCUMENTATION_PATH}
-            className={cn("inline-block text-sm text-accent hover:text-accent-hover", focusRing)}
+            className={cn("-my-1 flex min-h-11 items-center text-sm text-accent hover:text-accent-hover", focusRing)}
           >
             Guía completa del conector →
           </a>
@@ -86,7 +86,7 @@ const ConnectionsBody = async () => {
       </ProfileSection>
 
       <ProfileSection id="tokens" title="Tokens personales" aside={personal.length ? String(personal.length) : undefined}>
-        <p className="text-sm text-mist">Para apps sin inicio de sesión OAuth, como Cursor.</p>
+        <p className="text-sm text-mist">Para apps como Cursor, que no piden tu cuenta.</p>
         {personal.length > 0 ? (
           <ul className="space-y-3">
             {personal.map((token) => (
@@ -105,7 +105,7 @@ const ConnectionsBody = async () => {
             ))}
           </ul>
         ) : null}
-        <NewTokenForm />
+        <NewTokenDisclosure defaultOpen={personal.length === 0} />
       </ProfileSection>
 
       <ProfileSection id="como" title="Cómo conectar">
@@ -115,14 +115,14 @@ const ConnectionsBody = async () => {
               <details className="group">
                 <summary
                   className={cn(
-                    "flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-[15px] text-paper",
+                    "flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[15px] text-paper",
                     focusRing,
                   )}
                 >
                   <span>
                     {guide.name}
                     <span className="ml-2 text-xs text-mist">
-                      {guide.auth === "oauth" ? "inicio de sesión OAuth" : "token personal"}
+                      {guideAuthLabel(guide)}
                     </span>
                   </span>
                   <span aria-hidden="true" className="text-faint transition-transform group-open:rotate-90">

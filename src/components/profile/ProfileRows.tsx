@@ -65,9 +65,10 @@ export const ProfileRow = ({ icon, iconClassName, label, value, hint, onClick, h
     </>
   );
 
+  // The web on iPhone does not vibrate: the 8 % wash and the 0.98 press are the tap's answer.
   const interactive = cn(
     rowBase,
-    "transition-[background-color] duration-[var(--duration-hover)] ease-[var(--ease-out)] hover:bg-white/[0.04] active:bg-white/[0.06]",
+    "profile-row-press hover:bg-white/[0.04] active:bg-white/[0.08]",
     focusRing,
     "focus-visible:-outline-offset-2",
   );
@@ -120,13 +121,6 @@ export const WeekendMoonIcon = () => (
   <svg {...iconProps}>
     <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5Z" />
     <path d="M17 3v3M15.5 4.5h3" />
-  </svg>
-);
-
-export const PersonIcon = () => (
-  <svg {...iconProps}>
-    <circle cx="12" cy="8" r="4" />
-    <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
   </svg>
 );
 

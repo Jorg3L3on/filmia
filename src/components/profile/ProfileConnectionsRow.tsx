@@ -1,5 +1,7 @@
-import { ProfileGroup, ProfileRow, ProfileSection } from "@/components/profile/ProfileRows";
+import { ProfileRow } from "@/components/profile/ProfileRows";
+import { connectionsRowSummary, countMcpConnections } from "@/lib/mcp/connections";
 import { isMcpEnabled } from "@/lib/mcp-oauth/config";
+import { requireUserId } from "@/lib/session";
 
 const PlugIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -7,18 +9,17 @@ const PlugIcon = () => (
   </svg>
 );
 
-/** Perfil «Conexiones ›» (FIL-I20-6): Claude, ChatGPT, Grok, Cursor. Hidden while MCP is off. */
-export const ProfileConnectionsRow = () =>
-  isMcpEnabled() ? (
-    <ProfileSection id="conexiones" title="Conexiones">
-      <ProfileGroup>
-        <ProfileRow
-          icon={<PlugIcon />}
-          label="Conexiones"
-          value="Claude, ChatGPT, Cursor…"
-          href="/perfil/conexiones"
-          ariaLabel="Conexiones con Claude, ChatGPT, Grok y Cursor"
-        />
-      </ProfileGroup>
-    </ProfileSection>
-  ) : null;
+/** Perfil «Conexiones ›» (FIL-I20-6): Claude, ChatGPT, Grok, Cursor. A row of «Tu Filmia»; none while MCP is off. */
+export const ProfileConnectionsRow = async () => {
+  if (!isMcpEnabled()) return null;
+  const summary = connectionsRowSummary(await countMcpConnections(await requireUserId()));
+  return (
+    <ProfileRow
+      icon={<PlugIcon />}
+      label="Conexiones"
+      value={summary}
+      href="/perfil/conexiones"
+      ariaLabel={`Conexiones con Claude, ChatGPT, Grok y Cursor: ${summary}`}
+    />
+  );
+};

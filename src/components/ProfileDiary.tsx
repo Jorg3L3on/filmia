@@ -27,6 +27,9 @@ const localDaysBack = (days: number) => {
   });
 };
 
+/** Buscar in «log as seen on this day» mode: what the strip's empty cells and «Registrar» open. */
+const logTodayHref = (iso: string) => `/buscar?fecha=${iso}&destino=visto`;
+
 const entryDayParts = (watchedAt: Date) => {
   const day = watchedAt.getUTCDate();
   const weekday = WEEKDAY_LABELS_SHORT[WEEKDAY_FROM_GETDAY[watchedAt.getUTCDay()] ?? 0];
@@ -50,21 +53,24 @@ export const ProfileDiary = async () => {
     <section aria-labelledby="perfil-diario" className="space-y-4">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h2 id="perfil-diario" className="font-serif text-2xl text-paper">
+          <h2 id="perfil-diario" className="font-serif text-[1.375rem] leading-tight text-paper">
             Tu diario
           </h2>
           <p className="mt-0.5 text-xs text-fog">
             {weekCount === 1 ? "1 esta semana" : `${weekCount} esta semana`}
           </p>
         </div>
+        {/* Registrar (FIL-I25-1): the strip's «+» for today, the most frequent thing done here; 36 px, 44 to the touch. */}
         <Link
-          href={DIARY_HISTORIAL_PATH}
+          href={logTodayHref(today)}
+          aria-label="Registrar algo visto hoy"
           className={cn(
-            "press-scale inline-flex h-8 items-center gap-1.5 rounded-full border border-chrome bg-well px-3 text-[13px] font-medium text-paper transition-colors duration-[var(--duration-hover)] hover:border-accent/50 hover:text-accent",
+            "press-scale relative inline-flex h-9 items-center gap-1.5 rounded-full border border-chrome bg-well px-3 text-[13px] font-medium text-paper transition-colors duration-[var(--duration-hover)] hover:border-accent/50 hover:text-accent",
+            "after:absolute after:inset-x-0 after:-inset-y-1 after:content-['']",
             focusRing,
           )}
         >
-          <CalendarIcon /> Calendario
+          <PlusIcon size={14} /> Registrar
         </Link>
       </div>
 
@@ -75,7 +81,7 @@ export const ProfileDiary = async () => {
           const primary = titles[0];
           const isToday = iso === today;
           const label = WEEKDAY_LABELS_SHORT[WEEKDAY_FROM_GETDAY[date.getDay()] ?? 0];
-          const href = primary ? `/titulos/${primary.id}` : `/buscar?fecha=${iso}&destino=visto`;
+          const href = primary ? `/titulos/${primary.id}` : logTodayHref(iso);
           return (
             <li key={iso} className="min-w-0">
               <Link
@@ -180,7 +186,7 @@ export const ProfileDiary = async () => {
             })}
           </ul>
           <Link
-            href={`${DIARY_HISTORIAL_PATH}?view=grid`}
+            href={DIARY_HISTORIAL_PATH}
             className={cn(
               "mt-2 flex h-11 w-full items-center justify-center rounded-[var(--radius-button)] border border-chrome text-sm font-medium text-paper tab-transition hover:bg-chrome",
               focusRing,
@@ -201,15 +207,8 @@ export const ProfileDiary = async () => {
 /** Keeps `toDateInput` in the import graph for the UTC-noon convention this strip relies on. */
 void toDateInput;
 
-const CalendarIcon = () => (
-  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
-    <rect x="4.5" y="6" width="15" height="13.5" rx="2" />
-    <path strokeLinecap="round" d="M4.5 10.5h15M8 4.5v3M16 4.5v3" />
-  </svg>
-);
-
-const PlusIcon = () => (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" aria-hidden="true">
+const PlusIcon = ({ size = 16 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" aria-hidden="true">
     <path d="M12 5v14M5 12h14" />
   </svg>
 );

@@ -396,6 +396,17 @@ body {
   transform: scale(0.96);
 }
 
+/* Perfil rows (FIL-I25-1): a softer press than .press-scale, since a row is as wide as the card. */
+.profile-row-press {
+  transition:
+    transform var(--duration-press) var(--spring),
+    background-color var(--duration-hover) var(--ease-out);
+}
+
+.profile-row-press:active {
+  transform: scale(0.98);
+}
+
 /* BackButton: the disc of the first paint grows into «‹ origen» once the tab's origin is read. */
 .back-pill-in > span {
   animation: back-pill-label-in var(--duration-enter) var(--ease-out) backwards;
@@ -2570,12 +2581,12 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 .perfil-initial {
   display: inline-flex;
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+  /* 44 on the phone, as in canvas B (FIL-I25-2). */
+  width: 44px;
+  height: 44px;
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  margin-top: 2px;
   background: linear-gradient(135deg, #ff7a45 0%, #ff5c6a 55%, #d8468f 100%);
   color: #fff;
   font-family: var(--font-fraunces), ui-serif, Georgia, serif;
@@ -2594,6 +2605,16 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
     font-size: 1.85rem;
     margin-top: 6px;
   }
+}
+
+/* The same initial as the row icon of «Nombre» in Cuenta (FIL-I25-2). */
+.perfil-initial-sm {
+  background: linear-gradient(135deg, #ff7a45 0%, #ff5c6a 55%, #d8468f 100%);
+  color: #fff;
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1;
 }
 
 /* Ficha on the phone (FIL-I21-8): the four-action group sits right under the synopsis and
@@ -2933,6 +2954,7 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 
   .card-physics:hover,
   .press-scale:active,
+  .profile-row-press:active,
   .stagger-in,
   .fade-up,
   .fade-up-late,
