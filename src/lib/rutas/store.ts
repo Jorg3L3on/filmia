@@ -301,13 +301,16 @@ export const countActive = async (userId: string) => {
   return rows[0]?.count ?? 0;
 };
 
-/** Has this person ever had a ruta, or been offered the first one? Then Hoy never builds it for them. */
+/**
+ * Has this person ever had a ruta, or been offered the first one? Then Hoy never builds it for
+ * them. Nor while they are still in the Bienvenida: its last step offers it (and its payoff reads Hoy).
+ */
 export const rutasAlreadyOffered = async (userId: string) => {
   const [user, any] = await Promise.all([
-    db.query.users.findFirst({ where: eq(users.id, userId), columns: { rutasOfferedAt: true } }),
+    db.query.users.findFirst({ where: eq(users.id, userId), columns: { rutasOfferedAt: true, onboardedAt: true } }),
     db.query.rutas.findFirst({ where: eq(rutas.userId, userId), columns: { id: true } }),
   ]);
-  return Boolean(user?.rutasOfferedAt || any);
+  return Boolean(user?.rutasOfferedAt || any || !user?.onboardedAt);
 };
 
 export const markRutasOffered = async (userId: string, now = new Date()) => {

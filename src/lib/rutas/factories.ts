@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { catalog, db, listItems, lists, titles, users, type Platform } from "@/db";
+import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { FAVORITAS_SLUG } from "@/lib/lists";
 import {
   collectionRutaDraft,
@@ -13,6 +14,10 @@ import {
   personRutaDraft,
   personSourceKey,
   rankSeeds,
+  TITLE_RUTA_MIN_VOTES,
+  titleSourceKey,
+  TITLE_RUTA_SIZE,
+  titleRutaDraft,
   todayIso,
   type PersonRutaRole,
   type RutaDraft,
@@ -46,7 +51,11 @@ import { fetchMxWatchProviders } from "@/lib/watch-providers";
  * the person has never had a ruta.
  */
 
-export type SeedTitle = SeedCandidate & { people: ThreadPerson[] };
+export type SeedTitle = SeedCandidate & {
+  people: ThreadPerson[];
+  genreIds: number[];
+  posterPath: string | null;
+};
 
 export type FactoryContext = {
   seeds: SeedTitle[];
@@ -81,6 +90,8 @@ export const loadFactoryContext = async (userId: string, now = new Date()): Prom
     favorite: favorite.has(film.id),
     createdAt: title.createdAt,
     people: parseThreadPeople(film.tmdbPeople),
+    genreIds: parseStoredTmdbGenres(film.tmdbGenres).map((genre) => genre.id),
+    posterPath: film.posterPath,
   }));
   return {
     seeds: rankSeeds(all),
@@ -231,23 +242,68 @@ const bestPersonDraft = async (
 // Day one, offers, rebuilding a source
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Desde un título
+// ---------------------------------------------------------------------------
+
 /**
- * The first ruta: the collection of the best seed (favorita > best rated > first added; the
- * first three are tried), else the closest person of the best seed. Null when nothing fits.
+ * «Si te gustó X» (FIL-I26-2): TMDB's recommendations for a film you saw, the unseen ones that
+ * stream on your platforms (any platform when you have none set), in TMDB's order.
+ */
+export const titleDraftForSeed = async (seed: SeedTitle, ctx: FactoryContext): Promise<RutaDraft | null> => {
+  const related = await getTmdbRelated(seed.tmdbId, "MOVIE", "recommendations");
+  const pool = related
+    .filter(
+      (film) =>
+        film.kind === "MOVIE" &&
+        film.voteCount >= TITLE_RUTA_MIN_VOTES &&
+        film.year != null &&
+        film.year <= Number(ctx.today.slice(0, 4)) &&
+        !ctx.seenTmdbIds.has(film.tmdbId),
+    )
+    .slice(0, 14)
+    .map(
+      (film): RutaFilm => ({
+        tmdbId: film.tmdbId,
+        name: film.name,
+        originalName: film.originalName ?? null,
+        year: film.year,
+        releaseDate: null,
+        posterPath: film.posterPath ?? null,
+        backdropPath: film.backdropPath ?? null,
+        overview: film.overview ?? null,
+        voteAverage: film.voteAverage ?? 0,
+        voteCount: film.voteCount,
+        genreIds: film.genreIds,
+      }),
+    );
+  const onMine = ctx.platforms.length > 0 ? await onMyPlatforms(pool, ctx) : null;
+  const kept = onMine ? pool.filter((film) => onMine.has(film.tmdbId)) : pool;
+  return titleRutaDraft(
+    { tmdbId: seed.tmdbId, name: seed.name, genreIds: seed.genreIds },
+    kept.slice(0, TITLE_RUTA_SIZE),
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Day one, offers, rebuilding a source
+// ---------------------------------------------------------------------------
+
+/**
+ * The first ruta from the best seed (favorita > best rated > first added): its collection when it
+ * has one; else five films TMDB pairs with it on your platforms; else its closest person. The
+ * first three seeds get a turn at the collection before anything else.
  */
 export const dayOneDraft = async (ctx: FactoryContext): Promise<RutaDraft | null> => {
   for (const seed of ctx.seeds.slice(0, 3)) {
-    try {
-      const draft = await collectionDraftForSeed(seed, ctx);
-      if (draft) {
-        return draft;
-      }
-    } catch {
-      // Try the next seed.
+    const draft = await collectionDraftForSeed(seed, ctx).catch(() => null);
+    if (draft) {
+      return draft;
     }
   }
   for (const seed of ctx.seeds.slice(0, 2)) {
-    const draft = await bestPersonDraft(seed, ctx, new Set());
+    const draft =
+      (await titleDraftForSeed(seed, ctx).catch(() => null)) ?? (await bestPersonDraft(seed, ctx, new Set()));
     if (draft) {
       return draft;
     }
@@ -373,6 +429,16 @@ export const offerRutas = async (
     usedSeeds.add(best.seed.catalogId);
     push(best.draft);
   }
+
+  // Still room: what TMDB pairs with your seeds, on your platforms.
+  for (const seed of outside) {
+    if (offers.length >= limit) {
+      break;
+    }
+    if (!taken.has(titleSourceKey(seed.tmdbId))) {
+      push(await safely(() => titleDraftForSeed(seed, ctx)));
+    }
+  }
   return offers;
 };
 
@@ -429,6 +495,10 @@ export const draftFromSourceKey = async (userId: string, sourceKey: string): Pro
   if (parsed.kind === "coleccion") {
     return collectionDraftById(parsed.collectionId, ctx, null);
   }
+  if (parsed.kind === "titulo") {
+    const seed = ctx.seeds.find((item) => item.tmdbId === parsed.seedTmdbId);
+    return seed ? titleDraftForSeed(seed, ctx) : null;
+  }
   const draft = await personDraft(parsed.personIds, parsed.role, ctx, null);
   return draft && draft.sourceKey === sourceKey ? draft : null;
 };
@@ -437,4 +507,81 @@ export const draftFromSourceKey = async (userId: string, sourceKey: string): Pro
 export const startRutaFromSource = async (userId: string, sourceKey: string, via: RutaVia) => {
   const draft = await draftFromSourceKey(userId, sourceKey);
   return draft ? createRuta(userId, draft, { via }) : null;
+};
+
+/** A step of the first ruta as the Bienvenida shows it (R6): three posters, the next one lit. */
+export type FirstRutaStep = { name: string; posterPath: string | null; seen: boolean };
+
+export type FirstRutaOffer = RutaOffer & {
+  seed: { name: string; favorite: boolean } | null;
+  steps: FirstRutaStep[];
+  /** The why of the step to watch. */
+  nextWhy: string | null;
+};
+
+export type FirstRutas = {
+  main: FirstRutaOffer | null;
+  /** «O empieza por otra»: up to two, each with what you already carry («llevas 1»). */
+  alternatives: RutaOffer[];
+};
+
+/**
+ * The Bienvenida's last step (FIL-I26-2): the first ruta (as `dayOneDraft` would build it) and two
+ * others, a person's whole filmography first, then «Si te gustó» another seed. Builds nothing.
+ */
+export const firstRutas = async (userId: string): Promise<FirstRutas> => {
+  if (!isTmdbConfigured()) {
+    return { main: null, alternatives: [] };
+  }
+  const ctx = await loadFactoryContext(userId);
+  const main = await dayOneDraft(ctx);
+  const taken = new Set(main ? [main.sourceKey] : []);
+  const mainFilms = new Set(main?.steps.map((step) => step.film.tmdbId) ?? []);
+  const alternatives: RutaOffer[] = [];
+  const push = (draft: RutaDraft | null) => {
+    if (draft && !taken.has(draft.sourceKey) && alternatives.length < 2) {
+      taken.add(draft.sourceKey);
+      alternatives.push(toOffer(draft, ctx));
+    }
+  };
+
+  // The closest island among the seeds (a short filmography you started), one per seed.
+  const persons = (
+    await Promise.all(ctx.seeds.slice(0, 3).map((seed) => bestPersonDraft(seed, ctx, taken).catch(() => null)))
+  ).filter((draft): draft is RutaDraft => Boolean(draft) && !draft!.steps.every((step) => mainFilms.has(step.film.tmdbId)));
+  push(persons.sort((a, b) => personDraftScore(b, ctx) - personDraftScore(a, ctx))[0] ?? null);
+
+  const mainSeed = main?.seedTmdbId ?? null;
+  for (const seed of ctx.seeds.slice(0, 3)) {
+    if (alternatives.length >= 2) {
+      break;
+    }
+    if (seed.tmdbId !== mainSeed) {
+      push(await titleDraftForSeed(seed, ctx).catch(() => null));
+    }
+  }
+  for (const draft of persons) {
+    push(draft);
+  }
+
+  if (!main) {
+    return { main: null, alternatives };
+  }
+  const seed = ctx.seeds.find((item) => item.tmdbId === main.seedTmdbId) ?? null;
+  const nextIndex = main.steps.findIndex((step) => !ctx.seenTmdbIds.has(step.film.tmdbId));
+  // Three posters around the next one: the last seen, the next, the one after it (face down).
+  const from = Math.max(0, nextIndex - 1);
+  return {
+    main: {
+      ...toOffer(main, ctx),
+      seed: seed ? { name: seed.name, favorite: seed.favorite } : null,
+      steps: main.steps.slice(from, from + 3).map((step) => ({
+        name: step.film.name,
+        posterPath: step.film.posterPath,
+        seen: ctx.seenTmdbIds.has(step.film.tmdbId),
+      })),
+      nextWhy: nextIndex >= 0 ? (main.steps[nextIndex]?.why ?? null) : null,
+    },
+    alternatives,
+  };
 };

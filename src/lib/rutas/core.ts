@@ -465,14 +465,62 @@ export const personRutaDraft = (input: PersonRutaInput): RutaDraft | null => {
 export const personSourceKey = (personIds: readonly number[], role: PersonRutaRole) =>
   `persona:${[...personIds].sort((a, b) => a - b).join("+")}:${role}`;
 
+// ---------------------------------------------------------------------------
+// Desde un título (FIL-I26-2)
+// ---------------------------------------------------------------------------
+
+/** «Si te gustó X»: this many films TMDB pairs with the seed, all on the account's platforms. */
+export const TITLE_RUTA_SIZE = 5;
+/** Known enough to recommend (same bar as the recommendation pool). */
+export const TITLE_RUTA_MIN_VOTES = 100;
+
+export const titleSourceKey = (seedTmdbId: number) => `titulo:${seedTmdbId}`;
+
+/**
+ * Five of TMDB's recommendations for a film you saw, in TMDB's order (the closest first). The
+ * caller has already kept only unseen films on your platforms. Each step says what it shares
+ * with the seed: a genre when there is one, else who else watched it.
+ */
+export const titleRutaDraft = (
+  seed: { tmdbId: number; name: string; genreIds: readonly number[] },
+  candidates: readonly RutaFilm[],
+): RutaDraft | null => {
+  const steps = candidates.slice(0, TITLE_RUTA_SIZE);
+  if (steps.length < RUTA_MIN_STEPS) {
+    return null;
+  }
+  const seedGenres = new Set(seed.genreIds);
+  return {
+    kind: "titulo",
+    title: `Si te gustó ${seed.name}`,
+    shortTitle: `Si te gustó ${seed.name}`,
+    reason: `${capitalize(numberWord(steps.length))} películas que van con ${seed.name}, todas en tus plataformas.`,
+    sourceKey: titleSourceKey(seed.tmdbId),
+    seedTmdbId: seed.tmdbId,
+    steps: steps.map((film) => {
+      const shared = film.genreIds.find((id) => seedGenres.has(id) && GENRE_LABEL[id]);
+      return {
+        film,
+        why: shared ? `${GENRE_LABEL[shared]}, como ${seed.name}` : `Quien vio ${seed.name} también vio esta`,
+        hint: personStepHint(film),
+      };
+    }),
+  };
+};
+
 export type ParsedSourceKey =
   | { kind: "coleccion"; collectionId: number }
-  | { kind: "persona"; personIds: number[]; role: PersonRutaRole };
+  | { kind: "persona"; personIds: number[]; role: PersonRutaRole }
+  | { kind: "titulo"; seedTmdbId: number };
 
 export const parseSourceKey = (key: string): ParsedSourceKey | null => {
   const collection = /^coleccion:(\d+)$/.exec(key);
   if (collection) {
     return { kind: "coleccion", collectionId: Number(collection[1]) };
+  }
+  const title = /^titulo:(\d+)$/.exec(key);
+  if (title) {
+    return { kind: "titulo", seedTmdbId: Number(title[1]) };
   }
   const person = /^persona:(\d+(?:\+\d+)?):([a-z]+)$/.exec(key);
   if (person && isPersonRutaRole(person[2])) {

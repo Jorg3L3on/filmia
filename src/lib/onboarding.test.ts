@@ -7,6 +7,7 @@ import {
   MIN_ONBOARDING_TITLES,
   ONBOARDING_STEPS,
   QUICK_PICK_STEP,
+  RUTA_STEP,
   bedtimeCopy,
   countAccountTitles,
   cycleYearPick,
@@ -38,7 +39,7 @@ describe("bienvenida steps", () => {
   it("walks forward and back through the seven steps", () => {
     assert.equal(ONBOARDING_STEPS.length, 7);
     assert.equal(nextStep("intro"), "favorita");
-    assert.equal(nextStep("primera-noche"), null);
+    assert.equal(nextStep("primera-noche"), RUTA_STEP);
     assert.equal(prevStep("intro"), null);
     assert.equal(prevStep("anio"), "favorita");
     assert.equal(stepDirection("favorita", "anio"), "forward");
@@ -90,6 +91,17 @@ describe("tres títulos antes de Hoy (FIL-I11)", () => {
     // Off the film strip: it lights the last hole and keeps the strip at seven.
     assert.equal(stepIndex(QUICK_PICK_STEP), ONBOARDING_STEPS.length - 1);
     assert.equal(stepAnnouncement(QUICK_PICK_STEP), "Antes de entrar: Elige 3 para empezar");
+  });
+
+  it("ends on «Tu primera ruta», off the strip, after the payoff (FIL-I26-2)", () => {
+    assert.equal(nextStep("primera-noche", 3), RUTA_STEP);
+    assert.equal(nextStep(RUTA_STEP), null);
+    assert.equal(prevStep(RUTA_STEP), "primera-noche");
+    assert.equal(stepDirection("primera-noche", RUTA_STEP), "forward");
+    assert.equal(stepIndex(RUTA_STEP), ONBOARDING_STEPS.length - 1);
+    assert.equal(ONBOARDING_STEPS.length, 7);
+    assert.equal(isOnboardingStepId(RUTA_STEP), true);
+    assert.equal(stepAnnouncement(RUTA_STEP), "Antes de entrar: Tu primera ruta");
   });
 
   it("resumes on «Elige 3»", () => {

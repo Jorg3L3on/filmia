@@ -21,6 +21,7 @@ import {
   statusForNewRuta,
   stepStates,
   threadLine,
+  titleRutaDraft,
   type RutaFilm,
 } from "./core";
 import type { TmdbCollectionPayload } from "@/lib/tmdb";
@@ -219,6 +220,33 @@ describe("por persona", () => {
     });
     assert.equal(parseSourceKey("persona:1:guion"), null);
     assert.equal(parseSourceKey("nada"), null);
+  });
+});
+
+describe("desde un título", () => {
+  it("five recommendations in TMDB's order, each with the genre it shares", () => {
+    const candidates = [
+      film(1, 2021, { genreIds: [53] }),
+      film(2, 2018, { genreIds: [28] }),
+      film(3, 2024, { genreIds: [35, 18] }),
+      film(4, 2013, { genreIds: [53] }),
+      film(5, 2019, { genreIds: [80, 53] }),
+      film(6, 2020, { genreIds: [53] }),
+    ];
+    const draft = titleRutaDraft({ tmdbId: 496243, name: "Parásitos", genreIds: [35, 53, 18] }, candidates);
+    assert.ok(draft);
+    assert.equal(draft.kind, "titulo");
+    assert.equal(draft.title, "Si te gustó Parásitos");
+    assert.equal(draft.sourceKey, "titulo:496243");
+    assert.deepEqual(draft.steps.map((step) => step.film.tmdbId), [1, 2, 3, 4, 5]);
+    assert.equal(draft.steps[0]!.why, "Suspenso, como Parásitos");
+    assert.equal(draft.steps[1]!.why, "Quien vio Parásitos también vio esta");
+    assert.equal(draft.steps[2]!.why, "Comedia, como Parásitos");
+    assert.deepEqual(parseSourceKey("titulo:496243"), { kind: "titulo", seedTmdbId: 496243 });
+  });
+
+  it("needs at least three on your platforms", () => {
+    assert.equal(titleRutaDraft({ tmdbId: 1, name: "X", genreIds: [] }, [film(1, 2000), film(2, 2001)]), null);
   });
 });
 

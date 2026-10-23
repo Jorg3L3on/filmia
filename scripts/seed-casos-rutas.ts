@@ -2,30 +2,59 @@ import { config as loadEnv } from "dotenv";
 import { and, eq } from "drizzle-orm";
 
 /**
- * FIL-I26 · «caso Ivan» on a LOCAL database: an account with what Jorge's friend gave on day
- * one (favorita La comunidad del anillo, liked Michael and Project Hail Mary; Netflix, HBO Max,
- * Prime, Disney+), to check rutas and the universe by hand. Refuses any non-local database.
+ * FIL-I26 · test accounts for rutas on a LOCAL database. Refuses any non-local database.
+ *
+ * - `ivan` («caso Ivan»): what Jorge's friend gave on day one (favorita La comunidad del anillo,
+ *   liked Michael and Project Hail Mary; Netflix, HBO Max, Prime, Disney+).
+ * - `parasitos`: a favorita with no TMDB collection (Parásitos), for «Si te gustó…».
+ *
+ * `--bienvenida` leaves the account on the Bienvenida's payoff (not onboarded), so the last step
+ * («Tu primera ruta») can be tried; the email gets a `+bienvenida` suffix.
  *
  *   FILMIA_LOCAL_PG=1 DATABASE_URL=postgresql://jorgeleon@localhost:5432/filmia_fil_i20_local \
- *     npx tsx scripts/seed-caso-ivan.ts [--reset]
+ *     npx tsx scripts/seed-casos-rutas.ts --caso=ivan [--bienvenida] [--reset]
  *
- * Test login: ivan@filmia.local / filmia-ivan
+ * Test login: <caso>[+bienvenida]@filmia.local / filmia-<caso>
  */
 
 loadEnv({ path: ".env.local" });
 loadEnv();
 
-const IVAN_EMAIL = "ivan@filmia.local";
-const IVAN_PASSWORD = "filmia-ivan";
-const IVAN_ID = "cm4ivanfilmia00000000001";
+type Film = { tmdbId: number; name: string; year: number; rating: number; favorite: boolean };
 
-const FILMS = [
-  { tmdbId: 120, name: "El señor de los anillos: La comunidad del anillo", year: 2001, rating: 10, favorite: true },
-  { tmdbId: 936075, name: "Michael", year: 2026, rating: 8, favorite: false },
-  { tmdbId: 687163, name: "Proyecto Fin del Mundo", year: 2026, rating: 8, favorite: false },
-] as const;
+const CASOS: Record<string, { name: string; films: Film[] }> = {
+  ivan: {
+    name: "Ivan",
+    films: [
+      { tmdbId: 120, name: "El señor de los anillos: La comunidad del anillo", year: 2001, rating: 10, favorite: true },
+      { tmdbId: 936075, name: "Michael", year: 2026, rating: 8, favorite: false },
+      { tmdbId: 687163, name: "Proyecto Fin del Mundo", year: 2026, rating: 8, favorite: false },
+    ],
+  },
+  parasitos: {
+    name: "Pari",
+    films: [
+      { tmdbId: 496243, name: "Parásitos", year: 2019, rating: 10, favorite: true },
+      { tmdbId: 244786, name: "Whiplash", year: 2014, rating: 8, favorite: false },
+      { tmdbId: 313369, name: "La La Land", year: 2016, rating: 7, favorite: false },
+    ],
+  },
+};
+
+const flag = (name: string) =>
+  process.argv.find((arg) => arg.startsWith(`--${name}=`))?.split("=").slice(1).join("=");
 
 const main = async () => {
+  const caso = flag("caso") ?? "ivan";
+  const spec = CASOS[caso];
+  if (!spec) {
+    throw new Error(`Caso desconocido: ${caso} (${Object.keys(CASOS).join(", ")}).`);
+  }
+  const bienvenida = process.argv.includes("--bienvenida");
+  const IVAN_EMAIL = `${caso}${bienvenida ? "+bienvenida" : ""}@filmia.local`;
+  const IVAN_PASSWORD = `filmia-${caso}`;
+  const IVAN_ID = `cm4${caso}${bienvenida ? "bv" : ""}filmia`.padEnd(24, "0").slice(0, 24);
+  const FILMS = spec.films;
   const url = process.env.DATABASE_URL ?? "";
   const host = url ? new URL(url).hostname : "";
   if (!["localhost", "127.0.0.1", "::1"].includes(host)) {
@@ -49,11 +78,12 @@ const main = async () => {
     await db.insert(users).values({
       id: IVAN_ID,
       email: IVAN_EMAIL,
-      name: "Ivan",
+      name: spec.name,
       passwordHash: await hashPassword(IVAN_PASSWORD),
       streamingPlatforms: ["NETFLIX", "MAX", "PRIME", "DISNEY"],
       nightEndsAt: { weekday: "23:30", weekend: "01:00" },
-      onboardedAt: new Date(),
+      onboardedAt: bienvenida ? null : new Date(),
+      onboardingStep: bienvenida ? "primera-noche" : null,
     });
   }
   await ensureDefaultLists(IVAN_ID);
