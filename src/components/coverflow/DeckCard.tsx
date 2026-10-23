@@ -360,7 +360,7 @@ export const DeckCard = memo(function DeckCard({
             <PersonAvatar person={title.addedBy} size={20} />
           </span>
         ) : null}
-        {isReco ? (
+        {isReco && !tonight?.ruta ? (
           <span data-deck-reco-badge className={cn("reco-badge", recoSaved && "is-saved")} aria-hidden>
             {recoSaved ? <CheckIcon /> : <SparkIcon />}
             {recoSaved ? "En Quiero ver" : "Recomendada"}

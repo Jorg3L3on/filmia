@@ -2,11 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { parkRuta, rutaAfterWatch } from "@/app/actions/rutas";
 import { markNotTonight, sendTasteFeedback } from "@/app/actions/tonight";
 import { removeFromWatchlist, undoMarkWatched } from "@/app/actions/watchlist";
 import { CoverflowDeck } from "@/components/CoverflowDeck";
 import { GenreCoverflow } from "@/components/GenreCoverflow";
 import { HoyDeckSkeleton } from "@/components/PageSkeletons";
+import { RutaRevealSheet } from "@/components/rutas/RutaRevealSheet";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { ChapterBar } from "@/components/tonight/ChapterBar";
 import { TonightClosingEmpty } from "@/components/tonight/TonightClosingCard";
@@ -26,6 +28,7 @@ import { closingCardFor } from "@/lib/tonight/closing-card";
 import { pickRefOf } from "@/lib/tonight/reco-card";
 import { rankForNow, TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import { dayPartOf } from "@/lib/tonight/time";
+import type { RutaReveal } from "@/lib/rutas/reveal";
 import type { TonightDecks } from "@/lib/tonight-store";
 
 const DEAL_MS = 700;
@@ -61,6 +64,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   const [dealing, setDealing] = useState(() => !rememberedCard);
   const [whyTitle, setWhyTitle] = useState<CoverflowTitle | null>(null);
   const [menuTitle, setMenuTitle] = useState<CoverflowTitle | null>(null);
+  // «Vi esto» on a ruta step (FIL-I26): what flipped, shown once the server has stamped it.
+  const [reveal, setReveal] = useState<RutaReveal | null>(null);
   const liveRef = useRef<HTMLDivElement>(null);
   const timers = useRef<number[]>([]);
   const impressions = useImpressions(activeSlug);
@@ -137,6 +142,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
             leads: card.leads,
             source: card.source,
             reco: card.reco ? { ...card.reco, saved: recoLocal[card.id]?.inWatchlist ?? false } : undefined,
+            ruta: card.ruta ?? undefined,
           },
         })),
       );
@@ -232,6 +238,12 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
       const titleId = reco.titleIdOf(title.id) ?? title.id;
       hide(title.id);
       addTo(setWatchedIds, title.id);
+      const ruta = title.tonight?.ruta;
+      if (ruta) {
+        void rutaAfterWatch(ruta.rutaId, title.id)
+          .then((next) => setReveal(next))
+          .catch(() => undefined);
+      }
       showToast({
         title: "En tu diario",
         description: title.name,
@@ -272,6 +284,21 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     hide(title.id);
     showToast({ title: "No te la volveremos a sugerir", description: title.name });
     void sendTasteFeedback({ catalogId: title.id }, "less_like", title.tonight?.lens ?? activeLens?.slug).catch(() => {
+      unhide(title.id);
+      showToast({ title: "No se pudo guardar", variant: "error" });
+    });
+  };
+
+  /** «Dejar la ruta para después»: the ruta's lens leaves Hoy; the ruta waits with no reminders. */
+  const handleParkRuta = (title: CoverflowTitle) => {
+    const ruta = title.tonight?.ruta;
+    setMenuTitle(null);
+    if (!ruta) {
+      return;
+    }
+    hide(title.id);
+    showToast({ title: "Ruta para después", description: `${ruta.title} te espera en Rutas.` });
+    void parkRuta(ruta.rutaId).catch(() => {
       unhide(title.id);
       showToast({ title: "No se pudo guardar", variant: "error" });
     });
@@ -396,8 +423,10 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
             reco.pin(title);
           }}
           onNotInterested={handleNotInterested}
+          onParkRuta={handleParkRuta}
           saved={menuTitle ? reco.isSaved(menuTitle.id) : false}
         />
+        <RutaRevealSheet reveal={reveal} onClose={() => setReveal(null)} />
       </div>
     </TonightProvider>
   );

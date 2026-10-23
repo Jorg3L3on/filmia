@@ -14,7 +14,7 @@ import {
   type Platform,
   type Title,
 } from "@/db";
-import type { CoverflowTitle, RecoMeta } from "@/components/coverflow/types";
+import type { CoverflowTitle, RecoMeta, RutaCardMeta } from "@/components/coverflow/types";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { flattenTitle } from "@/lib/catalog-core";
 import { withOwnListEntries } from "@/lib/list-items";
@@ -54,6 +54,8 @@ import {
   type TonightTitle,
 } from "@/lib/tonight";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
+import { placeRutaLenses } from "@/lib/rutas/core";
+import { loadRutaLenses } from "@/lib/rutas/hoy";
 
 export const TONIGHT_STALE_MS = 24 * 60 * 60 * 1000;
 export const TONIGHT_EVENTS_WINDOW_DAYS = 30;
@@ -76,6 +78,8 @@ export type TonightCard = CoverflowTitle & {
   /** `reco`: recommended and not in the library, so `id` is the film's catalog id (FIL-I6). */
   source: "queue" | "reco";
   reco: RecoMeta | null;
+  /** The next step of an active ruta (FIL-I26); its lens is the ruta's. */
+  ruta?: RutaCardMeta | null;
 };
 
 export type TonightLensView = {
@@ -714,7 +718,7 @@ export const getTonightDecks = async (
         )
       : freshLenses;
     return {
-      lenses: composeLenses(queueLenses, freshRecos),
+      lenses: await withRutaLenses(userId, composeLenses(queueLenses, freshRecos), freshRecos.length > 0, input.userPlatforms, now),
       nightEnds: input.nightEnds,
       userPlatforms: input.userPlatforms,
       profileSize: result.profileSize,
@@ -804,13 +808,29 @@ export const getTonightDecks = async (
   const recos = await loadRecoEntries(userId, prefs.userPlatforms, events, now);
 
   return {
-    lenses: composeLenses(queueLenses, recos),
+    lenses: await withRutaLenses(userId, composeLenses(queueLenses, recos), recos.length > 0, prefs.userPlatforms, now),
     nightEnds: prefs.nightEnds,
     userPlatforms: prefs.userPlatforms,
     profileSize: 0,
     computedAt: newest ? newest.toISOString() : now.toISOString(),
     queueSize: queueCount,
   };
+};
+
+/** Rutas (FIL-I26) join the deck last; a failure there never costs the person their Hoy. */
+const withRutaLenses = async (
+  userId: string,
+  lenses: TonightLensView[],
+  hasRecos: boolean,
+  userPlatforms: readonly Platform[],
+  now: Date,
+) => {
+  try {
+    const ruta = await loadRutaLenses(userId, userPlatforms, now);
+    return placeRutaLenses(lenses, ruta.lenses, hasRecos, ruta.cardIds);
+  } catch {
+    return lenses;
+  }
 };
 
 const countQueue = async (userId: string) => {
