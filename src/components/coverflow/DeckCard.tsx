@@ -115,10 +115,14 @@ export const DeckCard = memo(function DeckCard({
   const sala = useTonight();
   const tonight = title.tonight;
   const isTonight = Boolean(tonight && sala && cinematic && !compact);
-  const holdable = isTonight || Boolean(onOpenMenu && cinematic && !compact);
-  const showStub = !compact && !title.watched;
+  // A face-down oculta has no hold menu: its sheet would say the name.
+  const holdable =
+    (isTonight || Boolean(onOpenMenu && cinematic && !compact)) && !(tonight?.oculta && !tonight.oculta.flipped);
+  const showStub = !compact && !title.watched && !(tonight?.oculta && !tonight.oculta.flipped);
   const isReco = isTonight && tonight?.source === "reco";
   const recoSaved = Boolean(isReco && tonight?.reco?.saved);
+  // «La oculta» (FIL-I26-3): face down until «Voltear»; no ficha, stub or menu before that.
+  const faceDown = Boolean(isTonight && tonight?.oculta && !tonight.oculta.flipped);
   const [stamped, setStamped] = useState(false);
   const rootRef = useRef<HTMLElement | null>(null);
   const [pressing, setPressing] = useState(false);
@@ -220,6 +224,50 @@ export const DeckCard = memo(function DeckCard({
     );
   }
 
+  if (title.portal && sala) {
+    // A door card (FIL-I26-3, «¿Las viste?»): like the closing card, the face is the message.
+    const portal = title.portal;
+    return (
+      <article
+        ref={handleRef}
+        id={`coverflow-item-${title.id}`}
+        role="option"
+        aria-selected={nearFocus}
+        aria-label={portal.title}
+        className="coverflow-card is-cinematic is-closing absolute inset-0 origin-center"
+        onPointerDown={onPointerDown}
+      >
+        <div
+          data-coverflow-face
+          style={{ "--deal-i": index } as CSSProperties}
+          className="coverflow-card-face closing-card-face relative block h-full overflow-hidden rounded-[22px]"
+          onClick={() => {
+            if (!rootRef.current?.classList.contains("is-focused")) {
+              onSelect(index);
+            }
+          }}
+        >
+          <div className="closing-card-content">
+            <p className="closing-card-eyebrow">{portal.eyebrow}</p>
+            <h2 className="closing-card-title font-serif">{portal.title}</h2>
+            <p className="closing-card-counters">{portal.body}</p>
+            <div className="closing-card-actions">
+              <Link
+                href={portal.href}
+                tabIndex={nearFocus ? 0 : -1}
+                onPointerDown={(event) => event.stopPropagation()}
+                className={cn("closing-card-primary press-scale", focusRing)}
+              >
+                {portal.cta}
+              </Link>
+            </div>
+          </div>
+          <span data-coverflow-dim className="coverflow-card-dim" aria-hidden />
+        </div>
+      </article>
+    );
+  }
+
   const handleStubSaved = () => {
     setStamped(true);
     onMarkedSeen?.(title.id);
@@ -276,11 +324,16 @@ export const DeckCard = memo(function DeckCard({
         // A recommendation has no Title yet: its ficha is the preview by TMDB (FIL-I8).
         href={isReco ? (recoPreviewHref(title) ?? "/") : `/titulos/${title.id}`}
         tabIndex={nearFocus ? 0 : -1}
-        aria-label={`${title.name}${title.year ? ` (${title.year})` : ""}${
+        aria-label={faceDown ? "La oculta, boca abajo" : `${title.name}${title.year ? ` (${title.year})` : ""}${
           availabilityLabel ? ` en ${availabilityLabel}` : ""
         }${isReco ? (recoSaved ? ", ya en Quiero ver" : ", recomendada, no está en Quiero ver") : ""}`}
         onClick={(event) => {
           handleClick(event);
+          if (faceDown) {
+            // Face down the poster opens nothing: «Voltear» is the way in.
+            event.preventDefault();
+            return;
+          }
           if (isReco && !event.defaultPrevented) {
             event.preventDefault();
             sala?.onOpenReco(title);
@@ -308,6 +361,18 @@ export const DeckCard = memo(function DeckCard({
             {poster}
           </SharedPoster>
         )}
+        {faceDown ? (
+          <span className="oculta-face" aria-hidden="true">
+            <span className="oculta-face-frame" />
+            <span className="oculta-face-mark font-serif">?</span>
+            <span className="oculta-face-label">Fuera de tu zona</span>
+            <span className="oculta-face-chips">
+              {title.year ? <span>{title.year}</span> : null}
+              {tonight?.runtimeMinutes ? <span>{tonight.runtimeMinutes} min</span> : null}
+              {availabilityLabel ? <span>{availabilityLabel}</span> : null}
+            </span>
+          </span>
+        ) : null}
         <span data-coverflow-dim className="coverflow-card-dim" aria-hidden />
         <span className="coverflow-card-specular" aria-hidden />
         {holdable ? <span className="coverflow-card-hold" aria-hidden /> : null}
@@ -360,7 +425,7 @@ export const DeckCard = memo(function DeckCard({
             <PersonAvatar person={title.addedBy} size={20} />
           </span>
         ) : null}
-        {isReco && !tonight?.ruta ? (
+        {isReco && !tonight?.ruta && !tonight?.oculta ? (
           <span data-deck-reco-badge className={cn("reco-badge", recoSaved && "is-saved")} aria-hidden>
             {recoSaved ? <CheckIcon /> : <SparkIcon />}
             {recoSaved ? "En Quiero ver" : "Recomendada"}
@@ -397,6 +462,21 @@ export const DeckCard = memo(function DeckCard({
           </div>
         ) : null}
       </Link>
+      {faceDown && sala ? (
+        <button
+          type="button"
+          tabIndex={nearFocus ? 0 : -1}
+          data-no-sheet-drag=""
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            sala.onFlipOculta(title);
+          }}
+          className={cn("oculta-flip", focusRing)}
+        >
+          Voltear
+        </button>
+      ) : null}
       {showStub ? (
         <TicketStub
           titleId={title.id}

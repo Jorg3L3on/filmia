@@ -57,8 +57,12 @@ const run = () => {
   const loopEnd = closingSala.indexOf("const dealtCount = all.length;");
   assert(loopEnd > 0 && closingSala.indexOf("all.push(closingCardFor(last.slug))") > loopEnd && closingSala.indexOf("for (const lens of lenses)") < loopEnd, "The closing card is pushed once, after the lens loop");
   assert((closingSala.match(/closingCardFor\(/g) ?? []).length === 1 && closingSala.includes("<TonightClosingEmpty />"), "One closing card; the empty state uses the same card");
-  assert(closingSala.includes("title.closing ? null : pickRefOf(title)"), "useImpressions never logs the closing card");
-  assert(read("src/components/tonight/TonightFooter.tsx").includes("if (title.closing) {\n    // The closing card says everything on its face (FIL-I21-6).\n    return null;"), "The footer paints nothing for the closing card");
+  assert(
+    closingSala.includes("const unseen = title.closing || title.portal") &&
+      closingSala.includes("unseen ? null : pickRefOf(title)"),
+    "useImpressions never logs the closing card (nor a door card or a face-down oculta)",
+  );
+  assert(read("src/components/tonight/TonightFooter.tsx").includes("if (title.closing || title.portal) {\n    // The closing card (FIL-I21-6) and the door cards (FIL-I26-3) say everything on their face.\n    return null;"), "The footer paints nothing for the closing card (nor a door card)");
   assert(read("src/components/coverflow/DeckCard.tsx").includes("if (title.closing && sala)") && read("src/components/tonight/TonightClosingCard.tsx").includes("Volver al principio"), "DeckCard renders the closing face with «Volver al principio»");
   const menu = read("src/components/tonight/TonightCardMenu.tsx");
   assert(menu.indexOf("Ahora no") < menu.indexOf("Ver ficha") && menu.indexOf("Ver ficha") < menu.indexOf("Mover a una lista"), "Hoy menu: «Ahora no» first, «Ver ficha» second (FIL-I21-2)");

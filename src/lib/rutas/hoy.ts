@@ -1,11 +1,11 @@
-import type { Platform } from "@/db";
+import type { CatalogRow, Platform } from "@/db";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { toCoverflowTitle } from "@/lib/coverflow-title";
 import { parseThreadPeople, rutaLensSlug, TU_RUTA_NAME } from "@/lib/rutas/core";
 import { ensureDayOneRuta } from "@/lib/rutas/factories";
 import { loadRutas, type RutaStepView, type RutaView } from "@/lib/rutas/store";
 import type { TonightCard, TonightLensView } from "@/lib/tonight-store";
-import type { TonightComponents } from "@/lib/tonight/types";
+import type { TonightComponents, TonightReason } from "@/lib/tonight/types";
 import { withTimeout } from "@/lib/with-timeout";
 
 /**
@@ -20,55 +20,65 @@ export const DAY_ONE_BUDGET_MS = 1500;
 /** Rutas have no score: a neutral card the clock can still rank and fit. */
 const NEUTRAL: TonightComponents = { gusto: 0.6, calidad: 0.6, impulso: 0.5, novedad: 0, reposo: 0, fatiga: 1 };
 
+/**
+ * A film of the catalog as a Hoy card. Owned (the person has a `Title`): a queue card on that
+ * title. Not owned: it acts like a recommendation, so «Vi esto» saves it as seen.
+ */
+export const filmCard = (
+  film: CatalogRow,
+  titleId: string | null,
+  userPlatforms: readonly Platform[],
+  reasons: TonightReason[],
+): TonightCard => ({
+  ...toCoverflowTitle(
+    {
+      id: titleId ?? film.id,
+      name: film.name,
+      kind: film.kind,
+      year: film.year,
+      rating: null,
+      posterPath: film.posterPath,
+      platform: null,
+      imdbRating: film.imdbRating,
+      watchedAt: null,
+      review: null,
+      seriesStatus: null,
+      watchProvidersMx: film.watchProvidersMx,
+      tmdbGenres: film.tmdbGenres,
+    },
+    userPlatforms,
+  ),
+  runtimeMinutes: film.runtimeMinutes,
+  components: NEUTRAL,
+  reasons,
+  wildcard: false,
+  pinned: false,
+  posterAmbient: film.posterAmbient,
+  queueNote: null,
+  overview: film.overview,
+  leads: parseThreadPeople(film.tmdbPeople)
+    .filter((person) => person.role === "director")
+    .map((person) => ({ id: person.id, name: person.name, role: "director" as const })),
+  source: titleId ? "queue" : "reco",
+  reco: titleId
+    ? null
+    : {
+        tmdbId: film.tmdbId,
+        seedName: null,
+        sourceKind: "recommendations",
+        originalName: film.originalName,
+        backdropPath: film.backdropPath,
+        overview: film.overview,
+      },
+});
+
 const rutaCard = (view: RutaView, step: RutaStepView, userPlatforms: readonly Platform[]): TonightCard => {
-  const film = step.film;
-  const owned = Boolean(step.titleId);
   const index = view.steps.indexOf(step);
   const after = view.steps.slice(index + 1).find((item) => item.state === "hidden") ?? null;
   return {
-    ...toCoverflowTitle(
-      {
-        id: owned ? step.titleId! : film.id,
-        name: film.name,
-        kind: film.kind,
-        year: film.year,
-        rating: null,
-        posterPath: film.posterPath,
-        platform: null,
-        imdbRating: film.imdbRating,
-        watchedAt: null,
-        review: null,
-        seriesStatus: null,
-        watchProvidersMx: film.watchProvidersMx,
-        tmdbGenres: film.tmdbGenres,
-      },
-      userPlatforms,
-    ),
-    runtimeMinutes: film.runtimeMinutes,
-    components: NEUTRAL,
-    reasons: [
+    ...filmCard(step.film, step.titleId, userPlatforms, [
       { kind: "ruta", text: step.why, detail: view.reason ?? undefined, weight: 1, personal: true },
-    ],
-    wildcard: false,
-    pinned: false,
-    posterAmbient: film.posterAmbient,
-    queueNote: null,
-    overview: film.overview,
-    leads: parseThreadPeople(film.tmdbPeople)
-      .filter((person) => person.role === "director")
-      .map((person) => ({ id: person.id, name: person.name, role: "director" as const })),
-    // A film the person never saved acts like a recommendation: «Vi esto» saves it as seen.
-    source: owned ? "queue" : "reco",
-    reco: owned
-      ? null
-      : {
-          tmdbId: film.tmdbId,
-          seedName: null,
-          sourceKind: "recommendations",
-          originalName: film.originalName,
-          backdropPath: film.backdropPath,
-          overview: film.overview,
-        },
+    ]),
     ruta: {
       rutaId: view.id,
       title: view.title,

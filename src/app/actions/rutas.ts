@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { firstRutas, startRutaFromSource, type FirstRutas } from "@/lib/rutas/factories";
 import { revealAfterWatch, type RutaReveal } from "@/lib/rutas/reveal";
 import { activateRuta as activate, markRutasOffered, parkRuta as park } from "@/lib/rutas/store";
+import { isVisteAnswer } from "@/lib/piezas/core";
+import { flipOculta as flip } from "@/lib/piezas/oculta";
+import { answerViste as answer, type VisteOutcome } from "@/lib/piezas/viste";
 import { requireUserId } from "@/lib/session";
 
 const revalidateRutas = (rutaId?: string) => {
@@ -89,4 +92,27 @@ export const startFirstRuta = async (sourceKey: string): Promise<StartRutaResult
 export const declineFirstRuta = async () => {
   const userId = await requireUserId();
   await markRutasOffered(userId);
+};
+
+/** «Voltear» on today's oculta (FIL-I26-3). */
+export const flipOculta = async (catalogId: string) => {
+  const userId = await requireUserId();
+  return flip(userId, catalogId);
+};
+
+/** One answer of «¿Las viste?»; the last one comes back with what changed. */
+export const answerViste = async (catalogId: string, choice: string): Promise<VisteOutcome> => {
+  const userId = await requireUserId();
+  if (typeof catalogId !== "string" || !isVisteAnswer(choice)) {
+    return { ok: false, error: "Respuesta no válida." };
+  }
+  const outcome = await answer(userId, catalogId, choice);
+  if (outcome.ok) {
+    revalidatePath("/");
+    revalidatePath("/las-viste");
+    if (choice !== "no") {
+      revalidatePath("/perfil");
+    }
+  }
+  return outcome;
 };

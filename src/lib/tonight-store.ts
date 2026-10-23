@@ -14,7 +14,7 @@ import {
   type Platform,
   type Title,
 } from "@/db";
-import type { CoverflowTitle, RecoMeta, RutaCardMeta } from "@/components/coverflow/types";
+import type { CoverflowTitle, OcultaCardMeta, RecoMeta, RutaCardMeta } from "@/components/coverflow/types";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { flattenTitle } from "@/lib/catalog-core";
 import { withOwnListEntries } from "@/lib/list-items";
@@ -54,8 +54,12 @@ import {
   type TonightTitle,
 } from "@/lib/tonight";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
+import { placeOcultaLens } from "@/lib/piezas/core";
+import { loadOcultaLens } from "@/lib/piezas/oculta";
+import { hasVisteSeeds, visteDoorLens, visteStatus } from "@/lib/piezas/viste";
 import { placeRutaLenses } from "@/lib/rutas/core";
 import { loadRutaLenses } from "@/lib/rutas/hoy";
+import { isTmdbConfigured } from "@/lib/tmdb";
 
 export const TONIGHT_STALE_MS = 24 * 60 * 60 * 1000;
 export const TONIGHT_EVENTS_WINDOW_DAYS = 30;
@@ -80,6 +84,8 @@ export type TonightCard = CoverflowTitle & {
   reco: RecoMeta | null;
   /** The next step of an active ruta (FIL-I26); its lens is the ruta's. */
   ruta?: RutaCardMeta | null;
+  /** «La oculta» of the day (FIL-I26-3). */
+  oculta?: OcultaCardMeta | null;
 };
 
 export type TonightLensView = {
@@ -718,7 +724,7 @@ export const getTonightDecks = async (
         )
       : freshLenses;
     return {
-      lenses: await withRutaLenses(userId, composeLenses(queueLenses, freshRecos), freshRecos.length > 0, input.userPlatforms, now),
+      lenses: await withPiezas(userId, composeLenses(queueLenses, freshRecos), freshRecos, input.userPlatforms, now),
       nightEnds: input.nightEnds,
       userPlatforms: input.userPlatforms,
       profileSize: result.profileSize,
@@ -808,7 +814,7 @@ export const getTonightDecks = async (
   const recos = await loadRecoEntries(userId, prefs.userPlatforms, events, now);
 
   return {
-    lenses: await withRutaLenses(userId, composeLenses(queueLenses, recos), recos.length > 0, prefs.userPlatforms, now),
+    lenses: await withPiezas(userId, composeLenses(queueLenses, recos), recos, prefs.userPlatforms, now),
     nightEnds: prefs.nightEnds,
     userPlatforms: prefs.userPlatforms,
     profileSize: 0,
@@ -817,20 +823,45 @@ export const getTonightDecks = async (
   };
 };
 
-/** Rutas (FIL-I26) join the deck last; a failure there never costs the person their Hoy. */
-const withRutaLenses = async (
+/**
+ * FIL-I26 joins the deck after composition: the rutas (first on day one, after Para ti once there
+ * are recommendations), «La oculta» right after them and the door to «¿Las viste?» last. Each is
+ * on its own: a failure there never costs the person their Hoy.
+ */
+const withPiezas = async (
   userId: string,
   lenses: TonightLensView[],
-  hasRecos: boolean,
+  recos: readonly RecoEntry<TonightCard>[],
   userPlatforms: readonly Platform[],
   now: Date,
 ) => {
+  let placed = lenses;
   try {
     const ruta = await loadRutaLenses(userId, userPlatforms, now);
-    return placeRutaLenses(lenses, ruta.lenses, hasRecos, ruta.cardIds);
+    placed = placeRutaLenses(placed, ruta.lenses, recos.length > 0, ruta.cardIds);
   } catch {
-    return lenses;
+    // Hoy without rutas today.
   }
+  try {
+    const deckIds = new Set(placed.flatMap((lens) => lens.titles.map((title) => title.id)));
+    const oculta = await loadOcultaLens(userId, userPlatforms, now, { recos, deckIds });
+    if (oculta) {
+      placed = placeOcultaLens(placed, oculta);
+    }
+  } catch {
+    // No oculta today.
+  }
+  try {
+    if (isTmdbConfigured()) {
+      const [status, seeds] = await Promise.all([visteStatus(userId, now), hasVisteSeeds(userId)]);
+      if (seeds && !status.done) {
+        placed = [...placed, visteDoorLens(status.answered)];
+      }
+    }
+  } catch {
+    // No door today.
+  }
+  return placed;
 };
 
 const countQueue = async (userId: string) => {

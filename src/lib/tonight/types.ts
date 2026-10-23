@@ -127,8 +127,11 @@ export type TonightPickBase = {
   wildcard: boolean;
 };
 
-/** `ruta`: one of the person's active rutas (FIL-I26), placed after composition. */
-export type TonightLensKind = "para-ti" | "genre" | "ruta";
+/**
+ * `ruta`: one of the person's active rutas; `pieza`: «La oculta» or «¿Las viste?» (FIL-I26).
+ * Both are placed after composition.
+ */
+export type TonightLensKind = "para-ti" | "genre" | "ruta" | "pieza";
 
 export type TonightLens = {
   slug: string;

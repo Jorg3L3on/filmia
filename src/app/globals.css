@@ -2202,6 +2202,84 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   pointer-events: auto;
 }
 
+/* «La oculta» (FIL-I26-3): the card face down until «Voltear». Solid, no blur (FIL-14). */
+.oculta-face {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #121820;
+  color: var(--paper);
+}
+
+.oculta-face-frame {
+  position: absolute;
+  inset: 14px;
+  border: 1px dashed rgb(255 255 255 / 0.16);
+  border-radius: 14px;
+}
+
+.oculta-face-mark {
+  font-size: 72px;
+  line-height: 1;
+  color: #4a5d7c;
+}
+
+.oculta-face-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fog);
+}
+
+.oculta-face-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 22px;
+}
+
+.oculta-face-chips span {
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 9999px;
+  padding: 3px 9px;
+  font-size: 11px;
+  color: var(--mist);
+}
+
+.oculta-flip {
+  position: absolute;
+  left: 50%;
+  bottom: -40px;
+  z-index: 12;
+  min-width: 128px;
+  height: 44px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--accent);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transform: translateX(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-hover) var(--ease-out);
+}
+
+.coverflow-card.is-focused .oculta-flip {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .ticket-stub-notch {
   position: absolute;
   top: -5px;

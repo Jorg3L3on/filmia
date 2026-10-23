@@ -21,6 +21,8 @@ export type TonightHandlers = {
   onOpened: (title: CoverflowTitle) => void;
   /** A recommended card (not in the library): open its preview sheet. */
   onOpenReco: (title: CoverflowTitle) => void;
+  /** «Voltear» on today's oculta (FIL-I26-3). */
+  onFlipOculta: (title: CoverflowTitle) => void;
   /** «Vi esto» on a recommended card: log it as seen; resolves to an error message or null. */
   markRecoSeen: (title: CoverflowTitle) => Promise<string | null>;
   /** The closing card (FIL-I21-6): tonight's counters, the chapters and «Volver al principio». */
