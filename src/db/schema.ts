@@ -213,6 +213,16 @@ export const lists = pgTable(
     year: integer("year"),
     /** Shared lists: a link only creates a join request the owner approves. */
     requireApproval: boolean("requireApproval").notNull().default(true),
+    /**
+     * Rutas curadas (FIL-I26-5): a list written as a ruta (order + one note per film), offered to
+     * whoever it fits. Never shown as a list to anyone but its owner.
+     */
+    curated: boolean("curated").notNull().default(false),
+    /** De temporada: offered only inside this window; its rutas end with it. */
+    curatedFrom: date("curatedFrom", { mode: "string" }),
+    curatedUntil: date("curatedUntil", { mode: "string" }),
+    /** TMDB ids of the films it follows («Después de Michael»): a seed among them fits best. */
+    curatedFor: jsonb("curatedFor").notNull().default([]),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),
@@ -772,10 +782,12 @@ export const rutas = pgTable(
     sourceKey: text("sourceKey").notNull(),
     /** The film of the library that led here. */
     seedCatalogId: text("seedCatalogId").references(() => catalog.id, { onDelete: "set null" }),
-    /** `activa` | `espera` | `cerrada`. */
+    /** `activa` | `espera` | `cerrada` | `archivada` (a seasonal one that ran out). */
     status: text("status").notNull(),
     startedAt: timestamp("startedAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
     closedAt: timestamp("closedAt", { precision: 3, mode: "date" }),
+    /** De temporada: past it the ruta is archived in silence (no push, nothing lost). */
+    endsAt: timestamp("endsAt", { precision: 3, mode: "date" }),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
   },
   (table) => [

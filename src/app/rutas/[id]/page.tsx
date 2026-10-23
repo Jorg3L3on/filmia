@@ -26,6 +26,7 @@ const STATUS_EYEBROW: Record<RutaView["status"], string> = {
   activa: "Ruta en Hoy",
   espera: "Ruta en espera",
   cerrada: "Ruta completada",
+  archivada: "Ruta de temporada, guardada",
 };
 
 /** R2 · a ruta: what is behind you, the next one face up, the rest face down with a hint. R4 once complete. */
@@ -86,7 +87,7 @@ const RutaSteps = ({ view, platforms }: { view: RutaView; platforms: readonly Pl
         <span className="font-semibold text-paper">Al terminar:</span> una pantalla de cierre con las dos rutas que se
         abren después. Sin rachas ni recordatorios: la ruta espera lo que haga falta.
       </p>
-      {view.status !== "cerrada" ? (
+      {view.status === "activa" || view.status === "espera" ? (
         <div>
           <RutaStatusAction rutaId={view.id} status={view.status} />
         </div>

@@ -133,6 +133,20 @@ describeWithDb("Rutas · store (FIL-I26-1)", () => {
     assert.equal(closed.length, 1);
   });
 
+  it("a seasonal ruta past its last day is archived in silence (one event, no push), out of Hoy", async () => {
+    const seasonal = await createRuta(userId, { ...draft("e", [4, 5, 7]), sourceKey: "temporada:e", kind: "temporada", endsOn: "2026-10-31" });
+    const [inside] = await loadRutas(userId, { ids: [seasonal.id], now: new Date("2026-11-01T05:00:00Z") });
+    assert.notEqual(inside!.status, "archivada", "still the 31st in Mexico City");
+    const [past] = await loadRutas(userId, { ids: [seasonal.id], now: new Date("2026-11-01T07:00:00Z") });
+    assert.equal(past!.status, "archivada");
+    const archived = await db.query.pickEvents.findMany({
+      where: and(eq(pickEvents.userId, userId), eq(pickEvents.kind, "ruta_archived")),
+    });
+    assert.equal(archived.length, 1);
+    const active = await loadRutas(userId, { statuses: ["activa"], now: new Date("2026-11-01T07:00:00Z") });
+    assert.ok(active.every((view) => view.id !== seasonal.id));
+  });
+
   it("parks and resumes, and resuming respects the two in Hoy", async () => {
     const [b] = await db.query.rutas.findMany({ where: and(eq(rutas.userId, userId), eq(rutas.sourceKey, "coleccion:b")) });
     assert.equal(await parkRuta(userId, b!.id), true);

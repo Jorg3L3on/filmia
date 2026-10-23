@@ -260,7 +260,8 @@ export const getRelatedTitles = cache(async (titleId: string, genreIds: number[]
 export const loadLists = async (userId: string) => {
 
   const rows = await db.query.lists.findMany({
-    where: eq(lists.userId, userId),
+    // Curated lists are rutas (FIL-I26-5): offered as rutas, never listed as lists.
+    where: and(eq(lists.userId, userId), eq(lists.curated, false)),
     with: {
       items: {
         orderBy: [asc(listItems.position)],

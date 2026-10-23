@@ -15,7 +15,8 @@ import type { TmdbCollectionPayload } from "@/lib/tmdb";
 export const RUTA_KINDS = ["coleccion", "persona", "titulo", "curada", "temporada"] as const;
 export type RutaKind = (typeof RUTA_KINDS)[number];
 
-export const RUTA_STATUSES = ["activa", "espera", "cerrada"] as const;
+/** `archivada`: a seasonal ruta whose window closed, put away in silence (FIL-I26-5). */
+export const RUTA_STATUSES = ["activa", "espera", "cerrada", "archivada"] as const;
 export type RutaStatus = (typeof RUTA_STATUSES)[number];
 
 /** Hoy shows at most this many; the rest wait with no reminders. */
@@ -29,7 +30,7 @@ export const ESENCIALES_SIZE = 6;
 /** What counts as a film of someone's work: known enough to have an opinion about. */
 export const PERSON_MIN_VOTES = 50;
 
-export const RUTA_EVENT_KINDS = ["ruta_started", "ruta_step_done", "ruta_closed"] as const;
+export const RUTA_EVENT_KINDS = ["ruta_started", "ruta_step_done", "ruta_closed", "ruta_archived"] as const;
 export type RutaEventKind = (typeof RUTA_EVENT_KINDS)[number];
 
 export const isRutaKind = (value: unknown): value is RutaKind =>
@@ -67,6 +68,8 @@ export type RutaDraft = {
   /** TMDB id of the library film it grew from, when there is one. */
   seedTmdbId: number | null;
   steps: RutaDraftStep[];
+  /** De temporada: the last day it is offered and kept (ISO day, Mexico City). */
+  endsOn?: string | null;
 };
 
 const NUMBER_WORDS: Record<number, string> = {
@@ -408,7 +411,7 @@ const personStepWhy = (
   return genre ? `${genre}, de ${film.year ?? "fecha por confirmar"}` : `De ${film.year ?? "fecha por confirmar"}`;
 };
 
-const personStepHint = (film: RutaFilm) => {
+export const personStepHint = (film: Pick<RutaFilm, "year" | "voteAverage">) => {
   const decade = film.year ? `De los ${Math.floor(film.year / 10) * 10}` : "Sin fecha";
   return film.voteAverage >= 7.5 ? `${decade} · de las que más gustan` : decade;
 };
@@ -509,6 +512,8 @@ export const titleRutaDraft = (
 };
 
 export type ParsedSourceKey =
+  | { kind: "curada"; listId: string }
+  | { kind: "temporada"; catalogId: string; personIds: number[]; role: PersonRutaRole }
   | { kind: "coleccion"; collectionId: number }
   | { kind: "persona"; personIds: number[]; role: PersonRutaRole }
   | { kind: "titulo"; seedTmdbId: number };
@@ -517,6 +522,14 @@ export const parseSourceKey = (key: string): ParsedSourceKey | null => {
   const collection = /^coleccion:(\d+)$/.exec(key);
   if (collection) {
     return { kind: "coleccion", collectionId: Number(collection[1]) };
+  }
+  const curated = /^curada:([a-z0-9]{8,40})$/.exec(key);
+  if (curated) {
+    return { kind: "curada", listId: curated[1]! };
+  }
+  const season = /^temporada:([a-f0-9]{32}):(\d+(?:\+\d+)?):([a-z]+)$/.exec(key);
+  if (season && isPersonRutaRole(season[3])) {
+    return { kind: "temporada", catalogId: season[1]!, personIds: season[2]!.split("+").map(Number), role: season[3] };
   }
   const title = /^titulo:(\d+)$/.exec(key);
   if (title) {
@@ -601,6 +614,15 @@ export const stampChanges = (
   changes.close = !closedAt && rutaProgress(watched).closed;
   return changes;
 };
+
+/**
+ * A seasonal ruta past its last day (Mexico City) and not finished: archived in silence. `endsAt`
+ * is stored as the end of that day in UTC terms, so «now > endsAt» is the test.
+ */
+export const isExpired = (endsAt: Date | null, now: Date) => Boolean(endsAt && now.getTime() > endsAt.getTime());
+
+/** The last moment of an ISO day in Mexico City (UTC−6, no DST since 2022). */
+export const endOfMxDay = (day: string) => new Date(`${day}T23:59:59.999-06:00`);
 
 /** Where a new ruta goes: active while there is room, waiting otherwise. */
 export const statusForNewRuta = (activeCount: number): RutaStatus =>

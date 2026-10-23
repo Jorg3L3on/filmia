@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { firstRutas, startRutaFromSource, type FirstRutas } from "@/lib/rutas/factories";
 import { revealAfterWatch, type RutaReveal } from "@/lib/rutas/reveal";
 import { activateRuta as activate, markRutasOffered, parkRuta as park } from "@/lib/rutas/store";
+import { remindPremiere, type RemindOutcome } from "@/lib/cine-cuenta-store";
 import { isVisteAnswer } from "@/lib/piezas/core";
+import type { RutaStatus } from "@/lib/rutas/core";
 import { flipOculta as flip } from "@/lib/piezas/oculta";
 import { answerViste as answer, type VisteOutcome } from "@/lib/piezas/viste";
 import { requireUserId } from "@/lib/session";
@@ -24,7 +26,7 @@ const revalidateRutas = (rutaId?: string) => {
 };
 
 export type StartRutaResult =
-  | { ok: true; rutaId: string; status: "activa" | "espera" | "cerrada"; created: boolean }
+  | { ok: true; rutaId: string; status: RutaStatus; created: boolean }
   | { ok: false; error: string };
 
 /** Start the ruta of an offer (closing screen, the rutas page). The third waits: Hoy keeps two. */
@@ -139,4 +141,17 @@ export const universoBridge = async (cardId: string): Promise<BridgeReveal | nul
     return null;
   }
   return bridgeAfterWatch(userId, cardId).catch(() => null);
+};
+
+/** «Avísame el día» on a premiere of «Para ti, en sala» (FIL-I26-5). */
+export const remindPremiereAction = async (catalogId: string): Promise<RemindOutcome> => {
+  const userId = await requireUserId();
+  if (typeof catalogId !== "string" || catalogId.length > 64) {
+    return { ok: false, error: "Película no válida." };
+  }
+  const outcome = await remindPremiere(userId, catalogId);
+  if (outcome.ok) {
+    revalidatePath("/cine");
+  }
+  return outcome;
 };

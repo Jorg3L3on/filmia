@@ -14,6 +14,8 @@ import {
 import { scheduleCatalogEnrichment } from "@/lib/catalog-enrich";
 import { catalogIdFor, findOrCreateCatalog } from "@/lib/catalog";
 import {
+  endOfMxDay,
+  isExpired,
   isRutaKind,
   isRutaStatus,
   MAX_ACTIVE_RUTAS,
@@ -55,6 +57,8 @@ export type RutaView = {
   status: RutaStatus;
   startedAt: Date;
   closedAt: Date | null;
+  /** De temporada: archived in silence past this moment. */
+  endsAt: Date | null;
   steps: RutaStepView[];
   progress: RutaProgress;
   /** The latest step marked, else when it started: Hoy shows the freshest ruta first. */
@@ -160,6 +164,7 @@ const toView = (
     status: toStatus(row.status),
     startedAt: row.startedAt,
     closedAt: row.closedAt,
+    endsAt: row.endsAt,
     steps: stepViews,
     progress: rutaProgress(watched),
     lastActivityAt: lastDone && lastDone > row.startedAt ? lastDone : row.startedAt,
@@ -194,8 +199,15 @@ const syncRutas = async (userId: string, views: RutaView[], now: Date): Promise<
   let closedCount = 0;
 
   const synced = views.map((view) => {
-    if (view.status === "cerrada") {
+    if (view.status === "cerrada" || view.status === "archivada") {
       return view;
+    }
+    if (isExpired(view.endsAt, now) && !view.progress.closed) {
+      // A seasonal ruta that ran out: put away in silence, nothing to notify (FIL-I26-5).
+      closedCount += view.status === "activa" ? 1 : 0;
+      queries.push(db.update(rutas).set({ status: "archivada" }).where(eq(rutas.id, view.id)));
+      events.push(rutaEvent(userId, "ruta_archived", view, null, now));
+      return { ...view, status: "archivada" as const };
     }
     const changes = stampChanges(
       view.steps.map((step) => ({
@@ -383,6 +395,7 @@ export const createRuta = async (
       seedCatalogId,
       status,
       startedAt: now,
+      endsAt: draft.endsOn ? endOfMxDay(draft.endsOn) : null,
       createdAt: now,
     })
     .onConflictDoNothing()
@@ -494,7 +507,7 @@ export const countRutasByStatus = async (userId: string): Promise<Record<RutaSta
     .from(rutas)
     .where(eq(rutas.userId, userId))
     .groupBy(rutas.status);
-  const counts: Record<RutaStatus, number> = { activa: 0, espera: 0, cerrada: 0 };
+  const counts: Record<RutaStatus, number> = { activa: 0, espera: 0, cerrada: 0, archivada: 0 };
   for (const row of rows) {
     counts[toStatus(row.status)] += row.count;
   }

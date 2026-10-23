@@ -1,5 +1,5 @@
 {
-  "id": "2fbf91af-0eb2-44e4-bfe4-ab869ac72bb2",
+  "id": "987ceb00-ba12-4201-afd6-0886e953455f",
   "prevId": "9960c3ec-9351-4257-b8fb-f9535f4892b2",
   "version": "7",
   "dialect": "postgresql",
@@ -1002,6 +1002,32 @@
           "primaryKey": false,
           "notNull": true,
           "default": true
+        },
+        "curated": {
+          "name": "curated",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "curatedFrom": {
+          "name": "curatedFrom",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "curatedUntil": {
+          "name": "curatedUntil",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "curatedFor": {
+          "name": "curatedFor",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
         },
         "createdAt": {
           "name": "createdAt",
@@ -2505,6 +2531,12 @@
         },
         "closedAt": {
           "name": "closedAt",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "endsAt": {
+          "name": "endsAt",
           "type": "timestamp (3)",
           "primaryKey": false,
           "notNull": false

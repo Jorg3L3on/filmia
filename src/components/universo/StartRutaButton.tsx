@@ -11,16 +11,18 @@ export const StartRutaButton = ({
   sourceKey,
   label,
   variant = "primary",
+  size = "lg",
 }: {
   sourceKey: string;
   label: string;
   variant?: "primary" | "secondary";
+  size?: "md" | "lg";
 }) => {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   return (
     <Button
-      size="lg"
+      size={size}
       variant={variant}
       pending={pending}
       pendingLabel="Armando la ruta…"

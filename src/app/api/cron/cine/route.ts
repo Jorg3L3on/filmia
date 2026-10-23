@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { notifyCinemaArrivals } from "@/lib/cine-alerts-store";
+import { notifyPremiereReminders } from "@/lib/cine-cuenta-store";
 import { refreshYearTops } from "@/lib/cine-top-store";
 import { applyImcineReleases, backfillPastReleases, refreshCinemaReleases, shouldBackfill } from "@/lib/cine-store";
 import { isTmdbConfigured } from "@/lib/tmdb";
@@ -48,9 +49,11 @@ export const GET = async (request: Request) => {
   const imcine = await step(() => applyImcineReleases());
   // After both date sources settled; a failed push pass must not turn the cron red.
   const alerts = await step(() => notifyCinemaArrivals());
+  // «Avísame el día» (FIL-I26-5): today's premieres someone asked about.
+  const premieres = await step(() => notifyPremiereReminders());
   const backfill = await step(async () =>
     (await shouldBackfill()) ? backfillPastReleases() : { ok: true as const, skipped: "not_due" },
   );
   const yearTop = await step(() => refreshYearTops());
-  return NextResponse.json({ cartelera, imcine, alerts, backfill, yearTop });
+  return NextResponse.json({ cartelera, imcine, alerts, premieres, backfill, yearTop });
 };

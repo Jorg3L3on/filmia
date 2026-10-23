@@ -1,5 +1,7 @@
 import { and, eq } from "drizzle-orm";
-import { catalog, db, listItems, lists, titles, users, type Platform } from "@/db";
+import { catalog, cinemaReleases, db, listItems, lists, titles, users, type Platform } from "@/db";
+import { formatShortDay } from "@/lib/cine-core";
+import { bestCuratedDraft, curatedRutaDraft, loadCuratedLists } from "@/lib/rutas/curadas";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { FAVORITAS_SLUG } from "@/lib/lists";
 import {
@@ -208,11 +210,15 @@ const personCandidates = (seed: SeedTitle): Array<{ ids: number[]; role: PersonR
   return out;
 };
 
-/** A short, partly seen filmography beats a long one: it is an island you can close. */
+const ROLE_BONUS: Record<PersonRutaRole, number> = { director: 8, fotografia: 3, musica: 3, reparto: 0 };
+
+/** A short, partly seen filmography beats a long one: it is an island you can close. Directors first. */
 const personDraftScore = (draft: RutaDraft, ctx: FactoryContext) => {
   const seen = draft.steps.filter((step) => ctx.seenTmdbIds.has(step.film.tmdbId)).length;
   const whole = !draft.title.endsWith("esenciales");
-  return (whole ? 100 : 0) + seen * 10 - draft.steps.length;
+  const parsed = parseSourceKey(draft.sourceKey);
+  const bonus = parsed?.kind === "persona" ? ROLE_BONUS[parsed.role] : 0;
+  return (whole ? 100 : 0) + seen * 10 - draft.steps.length + bonus;
 };
 
 const bestPersonDraft = async (
@@ -364,13 +370,18 @@ const toOffer = (draft: RutaDraft, ctx: FactoryContext): RutaOffer => {
  */
 export const offerRutas = async (
   userId: string,
-  options: { after?: RutaView | null; limit?: number } = {},
+  options: { after?: RutaView | null; limit?: number; curated?: boolean } = {},
 ): Promise<RutaOffer[]> => {
   if (!isTmdbConfigured()) {
     return [];
   }
-  const limit = options.limit ?? 2;
+  // `curated`: the last slot is kept for the best fitting curated ruta, when one fits.
+  const total = options.limit ?? 2;
   const [ctx, used] = await Promise.all([loadFactoryContext(userId), loadSourceKeys(userId)]);
+  const curatedDraft = options.curated
+    ? bestCuratedDraft(await loadCuratedLists(ctx.today), ctx.seeds, ctx.seenTmdbIds, used)
+    : null;
+  const limit = curatedDraft ? total - 1 : total;
   const offers: RutaOffer[] = [];
   const taken = new Set(used);
   const push = (draft: RutaDraft | null) => {
@@ -439,6 +450,9 @@ export const offerRutas = async (
       push(await safely(() => titleDraftForSeed(seed, ctx)));
     }
   }
+  if (curatedDraft && !taken.has(curatedDraft.sourceKey)) {
+    offers.push(toOffer(curatedDraft, ctx));
+  }
   return offers;
 };
 
@@ -499,8 +513,56 @@ export const draftFromSourceKey = async (userId: string, sourceKey: string): Pro
     const seed = ctx.seeds.find((item) => item.tmdbId === parsed.seedTmdbId);
     return seed ? titleDraftForSeed(seed, ctx) : null;
   }
+  if (parsed.kind === "curada") {
+    const [list] = await loadCuratedLists(ctx.today, [parsed.listId]);
+    if (!list) {
+      return null;
+    }
+    const follows = ctx.seeds.find((seed) => seed.watched && list.curatedFor.includes(seed.tmdbId)) ?? null;
+    return curatedRutaDraft(list, ctx.seenTmdbIds, follows);
+  }
+  if (parsed.kind === "temporada") {
+    return seasonDraft(parsed.catalogId, parsed.personIds, parsed.role, ctx);
+  }
   const draft = await personDraft(parsed.personIds, parsed.role, ctx, null);
   return draft && draft.sourceKey === sourceKey ? draft : null;
+};
+
+export const seasonSourceKey = (catalogId: string, personIds: readonly number[], role: PersonRutaRole) =>
+  `temporada:${catalogId}:${[...personIds].sort((a, b) => a - b).join("+")}:${role}`;
+
+/**
+ * «Ruta: antes de verla» (P3): the person behind an upcoming premiere, as a ruta that ends the
+ * day the film opens (archived in silence if it is not finished by then).
+ */
+export const seasonDraft = async (
+  catalogId: string,
+  personIds: readonly number[],
+  role: PersonRutaRole,
+  ctx: FactoryContext,
+): Promise<RutaDraft | null> => {
+  const [release] = await db
+    .select({ name: catalog.name, day: cinemaReleases.mxReleaseDate })
+    .from(cinemaReleases)
+    .innerJoin(catalog, eq(cinemaReleases.catalogId, catalog.id))
+    .where(eq(cinemaReleases.catalogId, catalogId))
+    .limit(1);
+  if (!release || release.day < ctx.today) {
+    return null;
+  }
+  const draft = await personDraft(personIds, role, ctx, null);
+  if (!draft) {
+    return null;
+  }
+  return {
+    ...draft,
+    kind: "temporada",
+    title: `Antes de ${release.name}: ${draft.shortTitle}`,
+    shortTitle: `Antes de ${release.name}`,
+    reason: `${release.name} llega a cines el ${formatShortDay(release.day)}. ${draft.reason}`,
+    sourceKey: seasonSourceKey(catalogId, personIds, role),
+    endsOn: release.day,
+  };
 };
 
 /** Start the ruta of an offer; null when the source no longer makes a ruta. */
@@ -563,6 +625,8 @@ export const firstRutas = async (userId: string): Promise<FirstRutas> => {
   for (const draft of persons) {
     push(draft);
   }
+  // Curated last (colección > persona > título > curada), only when it fits a seed.
+  push(bestCuratedDraft(await loadCuratedLists(ctx.today).catch(() => []), ctx.seeds, ctx.seenTmdbIds, taken));
 
   if (!main) {
     return { main: null, alternatives };

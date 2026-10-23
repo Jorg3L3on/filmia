@@ -49,7 +49,7 @@ export default async function RutasPage() {
 }
 
 const Offers = async ({ userId }: { userId: string }) => {
-  const offers = await offerRutas(userId, { limit: 3 }).catch(() => []);
+  const offers = await offerRutas(userId, { limit: 3, curated: true }).catch(() => []);
   return offers.length > 0 ? (
     <RutaOfferList offers={offers} />
   ) : (

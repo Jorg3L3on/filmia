@@ -119,7 +119,10 @@ export const loadRutaLenses = async (
     }
   }
 
-  const ordered = [...views].sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
+  // Reading stamps the rutas: a seasonal one that just ran out comes back archived and leaves Hoy.
+  const ordered = views
+    .filter((view) => view.status === "activa")
+    .sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
   const lenses: TonightLensView[] = [];
   const cardIds = new Set<string>();
   for (const view of ordered) {
