@@ -80,7 +80,7 @@
     "playwright": "^1.64.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^7"
   },
   "allowScripts": {
     "esbuild@0.18.20": true,
