@@ -430,11 +430,12 @@ const run = () => {
     "Perfil Suspense fallback mirrors loading; no letter avatar",
   );
   assert(
-    read("src/components/LogoutButton.tsx").includes("press-scale") &&
+    // FIL-I25: Salir is a row of Cuenta and rows share .profile-row-press (0.98, softer than press-scale).
+    read("src/components/LogoutButton.tsx").includes("profile-row-press") &&
       read("src/components/LogoutButton.tsx").includes("var(--duration-hover)") &&
       account.includes("press-scale") &&
-      read("src/components/profile/ProfileRows.tsx").includes("var(--duration-hover)"),
-    "Perfil Logout + form submits use press-scale / duration-hover",
+      read("src/components/profile/ProfileRows.tsx").includes("profile-row-press"),
+    "Perfil Logout + form submits use press-scale / profile-row-press",
   );
   assert(
     platforms.includes("press-scale") &&

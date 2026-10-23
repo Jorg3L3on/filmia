@@ -12,7 +12,7 @@ import { seeder } from "@/lib/test-support/seed";
 import { createPersonalToken } from "@/lib/mcp-oauth/service";
 import { postgresOAuthStore } from "@/lib/mcp-oauth/store-postgres";
 import { insertToolCall, sweepToolCalls, TOOL_CALL_RETENTION_MS } from "./activity";
-import { loadMcpConnections, revokeUserGrant } from "./connections";
+import { connectionsRowSummary, countMcpConnections, loadMcpConnections, revokeUserGrant } from "./connections";
 import { defineTool, executeTool } from "./define-tool";
 import { issuePersonalToken } from "./personal-tokens";
 
@@ -134,11 +134,23 @@ describeWithDb("Perfil → Conexiones against the local database (FIL-I20-6)", (
     assert.equal(personal[0]!.canWrite, true);
     assert.deepEqual(personal[0]!.activity.map((call) => call.tool), ["whoami", "get_tonight"]);
     assert.ok(personal[0]!.lastWhoamiAt);
+    // FIL-I25-3: never «Nunca» next to logged calls; the newest call stands in for lastUsedAt.
+    assert.deepEqual(personal[0]!.lastUsedAt, personal[0]!.activity[0]!.at);
+    assert.deepEqual(await countMcpConnections(ana), { apps: 0, tokens: 1 });
     assert.equal((await loadMcpConnections(leo)).personal.length, 0, "never someone else's");
 
     assert.ok((await sweepToolCalls(new Date())) >= 1);
     const left = await db.select().from(mcpToolCalls).where(eq(mcpToolCalls.userId, ana));
     assert.deepEqual(left.map((row) => row.tool), ["whoami"]);
     assert.equal(await revokeUserGrant(leo, "not-a-grant"), false);
+  });
+});
+
+describe("Perfil «Conexiones ›» summary (FIL-I25-1)", () => {
+  it("counts apps and tokens, and says «Nada conectado» with neither", () => {
+    assert.equal(connectionsRowSummary({ apps: 1, tokens: 1 }), "1 app · 1 token");
+    assert.equal(connectionsRowSummary({ apps: 2, tokens: 0 }), "2 apps");
+    assert.equal(connectionsRowSummary({ apps: 0, tokens: 3 }), "3 tokens");
+    assert.equal(connectionsRowSummary({ apps: 0, tokens: 0 }), "Nada conectado");
   });
 });

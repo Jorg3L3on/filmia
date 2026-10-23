@@ -71,9 +71,12 @@ const run = () => {
   assert(marquee.includes("perfil-initial") && marquee.includes("(trimmed || email).trim().charAt(0).toUpperCase()") && marquee.includes("{trimmed ? <p"), "Perfil marquee: initial circle, name, email below");
   assert(readFileSync(path.join(process.cwd(), "src/app/globals.css"), "utf8").includes(".perfil-initial {"), "Perfil initial styled with the icon gradient");
   // FIL-I23-2: the Avisos row names both Quiero ver pushes; the push flow itself is untouched.
+  // FIL-I25-2: it is a row of «Tu Filmia» now, so the old paragraph lives in the row's hint.
   const alerts = readFileSync(path.join(process.cwd(), "src/components/profile/PushAlertsToggle.tsx"), "utf8");
-  assert(alerts.includes('label="Avisos de Quiero ver"') && alerts.includes('hint="Llega a tu plataforma · Llega a cines"'), "Perfil › Avisos names Llega a tu plataforma and Llega a cines");
-  assert(alerts.includes("o se estrena en cines") && alerts.includes("«Agregar a inicio»"), "Perfil › Avisos paragraph names both pushes; iOS install hint stays");
+  assert(alerts.includes('label="Avisos de Quiero ver"') && alerts.includes('"Llega a tu plataforma · Llega a cines"'), "Perfil › Avisos names Llega a tu plataforma and Llega a cines");
+  assert(alerts.includes("o se estrene en cines") && alerts.includes("«Agregar a inicio»"), "Perfil › Avisos switch names both pushes; iOS install steps stay");
+  // FIL-I25-1: on iPhone outside the PWA the row says «Cómo instalar» and opens the steps sheet.
+  assert(alerts.includes("Cómo instalar") && alerts.includes('support === "ios-needs-install"'), "Perfil › Avisos on iPhone Safari: «Cómo instalar» row");
 console.log("All profile checks passed.");
 };
 

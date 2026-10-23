@@ -1,16 +1,12 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { LogoutButton } from "@/components/LogoutButton";
 import { NightEndsForm } from "@/components/NightEndsForm";
 import { ProfileHeaderSkeleton, ProfileBodySkeleton } from "@/components/PageSkeletons";
 import { ProfileDiary } from "@/components/ProfileDiary";
 import { ProfileAccountCard } from "@/components/profile/ProfileAccountCard";
-import { ProfileConnectionsRow } from "@/components/profile/ProfileConnectionsRow";
-import { ProfileListsRow } from "@/components/profile/ProfileListsRow";
 import { ProfileMarquee } from "@/components/profile/ProfileMarquee";
-import { PushAlertsToggle } from "@/components/profile/PushAlertsToggle";
+import { ProfileTuFilmia } from "@/components/profile/ProfileTuFilmia";
 import { StreamingPlatformPicker } from "@/components/StreamingPlatformPicker";
-import { isPushConfigured, vapidPublicKey } from "@/lib/push/web-push";
 import { getCurrentUserProfile, getRecentWatchedTitles } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -50,25 +46,27 @@ const ProfileBody = async () => {
   }
 
   return (
-    <div className="space-y-8 lg:space-y-10">
+    <div className="space-y-7 lg:space-y-10">
       <ProfileMarquee name={profile.name} email={profile.email} posterPath={recent[0]?.posterPath ?? null} />
 
-      <div className="space-y-10 lg:grid lg:grid-cols-[minmax(0,36rem)_minmax(0,1fr)] lg:items-start lg:gap-14 lg:space-y-0">
-        {/* Tu diario stays exactly as it was; only its surroundings changed. */}
-        <ProfileDiary />
-        <div className="space-y-9">
-          <ProfileListsRow />
+      {/*
+        Propuesta B «Secciones a la vista» (FIL-I25-2): Tu diario, Tu Filmia, Hora de dormir,
+        Tus plataformas and Cuenta (Salir is its last row). On the phone one column in that order.
+      */}
+      <div className="space-y-7 lg:grid lg:grid-cols-[minmax(0,36rem)_minmax(0,1fr)] lg:items-start lg:gap-14 lg:space-y-0">
+        <div className="space-y-7">
+          <ProfileDiary />
+          <ProfileTuFilmia />
+        </div>
+        <div className="space-y-7">
           <NightEndsForm value={profile.nightEnds} />
           <StreamingPlatformPicker selected={profile.streamingPlatforms} />
-          <PushAlertsToggle vapidPublicKey={isPushConfigured() ? vapidPublicKey() : null} />
-          <ProfileConnectionsRow />
           <ProfileAccountCard
             name={profile.name}
             email={profile.email}
             hasPassword={profile.hasPassword}
             googleLinked={profile.googleLinked}
           />
-          <LogoutButton />
         </div>
       </div>
     </div>

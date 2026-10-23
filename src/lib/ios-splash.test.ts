@@ -82,7 +82,9 @@ describe("launch wiring", () => {
     assert.match(layout, /axes: \["opsz"\]/);
     const loading = read("src/app/loading.tsx");
     assert.match(loading, /IrisLoader/);
-    assert.match(loading, /HoySkeleton/);
+    // FIL-I25-6: Hoy's skeleton only on `/`; the root boundary is neutral elsewhere.
+    assert.match(loading, /RootLoadingSkeleton/);
+    assert.match(read("src/components/RootLoadingSkeleton.tsx"), /usePathname\(\) === "\/" \? <HoySkeleton \/> : <PageChromeSkeleton \/>/);
     assert.match(loading, /exit="iris-out"/);
     assert.match(read("src/components/launch/LaunchBoot.tsx"), /dataset\.booted/);
     assert.doesNotMatch(read("src/components/launch/IrisLoader.tsx"), /iris-still/);

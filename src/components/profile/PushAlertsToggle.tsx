@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useId, useState, useTransition, type ReactNode } from "react";
 import { deletePushSubscription, savePushSubscription } from "@/app/actions/push";
-import { ProfileGroup, ProfileRow, ProfileSection } from "@/components/profile/ProfileRows";
+import { Button } from "@/components/Button";
+import { ProfileRow } from "@/components/profile/ProfileRows";
 import { currentPushSubscription, ensureServiceWorker, hasServiceWorker } from "@/components/ServiceWorkerRegister";
+import { Sheet, SheetHandle } from "@/components/Sheet";
 import { cn } from "@/lib/cn";
 import { detectPushSupport, urlBase64ToUint8Array, type PushSupport } from "@/lib/push-support";
 import { focusRing } from "@/lib/ui";
@@ -32,13 +34,16 @@ const readSupport = (): PushSupport => {
 /**
  * Perfil «Avisos»: one switch for the Quiero ver pushes on this device, «Llega a tu plataforma»
  * and «Llega a cines» (FIL-I23-2 names both; the model is one switch). On iPhone outside the
- * installed PWA it explains how to install instead (Safari has no push there).
+ * installed PWA the row says «Cómo instalar» and opens the Safari steps (Safari has no push there).
+ * A row of «Tu Filmia» (FIL-I25-2): what used to be the paragraph under it is the row's hint.
  */
 export const PushAlertsToggle = ({ vapidPublicKey }: PushAlertsToggleProps) => {
   const [support, setSupport] = useState<PushSupport | null>(null);
   const [status, setStatus] = useState<Status>("checking");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [installOpen, setInstallOpen] = useState(false);
+  const installTitleId = useId();
 
   useEffect(() => {
     let cancelled = false;
@@ -125,34 +130,49 @@ export const PushAlertsToggle = ({ vapidPublicKey }: PushAlertsToggleProps) => {
   const on = status === "on";
   const canToggle = support === "supported" && status !== "blocked" && status !== "checking";
 
-  const hint =
-    support === "ios-needs-install"
-      ? "En iPhone llegan solo con Filmia instalada: en Safari toca Compartir → «Agregar a inicio» y ábrela desde ahí."
-      : support === "unsupported"
-        ? "Este navegador no admite avisos."
-        : status === "blocked"
-          ? "Bloqueaste las notificaciones de Filmia. Actívalas en los ajustes del navegador."
-          : null;
+  const needsInstall = support === "ios-needs-install";
+  const hint = error ? (
+    <span role="alert" className="text-danger">
+      {error}
+    </span>
+  ) : support === "unsupported" ? (
+    "Este navegador no los admite"
+  ) : status === "blocked" ? (
+    "Bloqueados en los ajustes del navegador"
+  ) : (
+    "Llega a tu plataforma · Llega a cines"
+  );
 
   return (
-    <ProfileSection id="avisos" title="Avisos">
-      <ProfileGroup>
+    <>
+      {needsInstall ? (
         <ProfileRow
           icon={<BellIcon />}
           iconClassName="bg-accent/15 text-accent"
           label="Avisos de Quiero ver"
-          hint="Llega a tu plataforma · Llega a cines"
+          hint="Solo con Filmia instalada"
+          value={<span className="font-medium text-accent">Cómo instalar</span>}
+          onClick={() => setInstallOpen(true)}
+          ariaLabel="Avisos de Quiero ver: solo con Filmia instalada. Cómo instalar"
+        />
+      ) : (
+        <ProfileRow
+          icon={<BellIcon />}
+          iconClassName="bg-accent/15 text-accent"
+          label="Avisos de Quiero ver"
+          hint={hint}
           value={
             canToggle || support === null ? (
               <button
                 type="button"
                 role="switch"
                 aria-checked={on}
-                aria-label="Avisarme cuando algo de Quiero ver llegue a mis plataformas o se estrene en cines"
+                aria-label="Avisarme en este dispositivo cuando algo de Quiero ver llegue a mis plataformas o se estrene en cines"
                 disabled={!canToggle || isPending}
                 onClick={on ? turnOff : turnOn}
                 className={cn(
                   "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-[background-color] duration-[var(--duration-hover)] ease-[var(--ease-out)] disabled:opacity-50",
+                  "after:absolute after:-inset-2 after:content-['']",
                   on ? "bg-accent" : "bg-chrome",
                   focusRing,
                 )}
@@ -168,19 +188,58 @@ export const PushAlertsToggle = ({ vapidPublicKey }: PushAlertsToggleProps) => {
             ) : null
           }
         />
-      </ProfileGroup>
-      {error ? (
-        <p role="alert" className="rounded-xl border border-danger-line bg-danger-well px-3 py-2 text-sm text-danger">
-          {error}
-        </p>
-      ) : null}
-      <p className="text-sm leading-relaxed text-fog">
-        {hint ??
-          "Te avisamos en este dispositivo cuando un título de Quiero ver llega a una de tus plataformas en México o se estrena en cines."}
-      </p>
-    </ProfileSection>
+      )}
+
+      <Sheet open={installOpen} onClose={() => setInstallOpen(false)} labelledBy={installTitleId} align="bottom">
+        <div className="flex flex-col px-5 pt-3">
+          <SheetHandle className="self-center" />
+          <h2 id={installTitleId} className="font-serif text-2xl text-paper">
+            Instala Filmia
+          </h2>
+          <p className="mt-1 text-sm text-fog">En iPhone los avisos llegan solo a la app instalada.</p>
+          <ol className="mt-5 space-y-3">
+            <InstallStep n={1} icon={<ShareIcon />}>
+              En Safari, toca <strong className="font-medium text-paper">Compartir</strong> abajo.
+            </InstallStep>
+            <InstallStep n={2} icon={<AddSquareIcon />}>
+              Elige <strong className="font-medium text-paper">«Agregar a inicio»</strong>.
+            </InstallStep>
+          </ol>
+          <p className="mt-4 text-sm text-mist">Abre Filmia desde el ícono y vuelve aquí para activarlos.</p>
+          <Button size="lg" className="mt-5 w-full press-scale" onClick={() => setInstallOpen(false)}>
+            Entendido
+          </Button>
+        </div>
+      </Sheet>
+    </>
   );
 };
+
+const InstallStep = ({ n, icon, children }: { n: number; icon: ReactNode; children: ReactNode }) => (
+  <li className="flex min-h-14 items-center gap-3 rounded-2xl border border-line bg-well px-4 py-3 text-[15px] text-fog">
+    <span className="font-serif text-xl text-accent tabular-nums" aria-hidden="true">
+      {n}
+    </span>
+    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-chrome text-paper [&_svg]:size-4" aria-hidden="true">
+      {icon}
+    </span>
+    <span className="min-w-0">{children}</span>
+  </li>
+);
+
+const ShareIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M12 3v12M8 7l4-4 4 4" />
+    <path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1" />
+  </svg>
+);
+
+const AddSquareIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <rect x="4" y="4" width="16" height="16" rx="4" />
+    <path d="M12 8v8M8 12h8" />
+  </svg>
+);
 
 const BellIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
