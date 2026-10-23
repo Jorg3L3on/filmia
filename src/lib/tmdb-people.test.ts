@@ -120,6 +120,18 @@ describe("tmdb-people/parseTmdbPeople", () => {
     assert.equal(people.find((person) => person.id === 300)?.role, "director");
   });
 
+  it("adds the composer last, so nothing before it moves (FIL-I26-4)", () => {
+    const withScore = parseTmdbPeople(
+      { ...movieCredits, crew: [...(movieCredits.crew ?? []), { id: 4, name: "Hans Zimmer", job: "Original Music Composer" }] },
+      undefined,
+    );
+    const without = parseTmdbPeople(movieCredits, undefined);
+    assert.deepEqual(withScore.slice(0, without.length), without);
+    assert.deepEqual(withScore.at(-1), { id: 4, name: "Hans Zimmer", role: "composer", profilePath: null });
+    assert.ok(parseStoredTmdbPeople(withScore).some((person) => person.role === "composer"));
+    assert.ok(!peopleRailItems(withScore, "MOVIE").some((item) => item.name === "Hans Zimmer"), "the ficha rail stays as it was");
+  });
+
   it("empty credits give no people", () => {
     assert.deepEqual(parseTmdbPeople(undefined, undefined), []);
     assert.deepEqual(parseTmdbPeople({ cast: [{ id: 0, name: "x" }, { id: 5, name: " " }] }, []), []);

@@ -709,7 +709,8 @@ const fetchTmdbDetails = async (
 };
 
 // v2: series runtime falls back to the last / next episode aired (FIL-I24-7).
-const loadCachedTmdbDetails = unstable_cache(fetchTmdbDetails, ["tmdb-details", "v2"], {
+// v3: people carry the composer (FIL-I26-4).
+const loadCachedTmdbDetails = unstable_cache(fetchTmdbDetails, ["tmdb-details", "v3"], {
   revalidate: METADATA_REVALIDATE_SECONDS,
   tags: [TMDB_CACHE_TAG],
 });

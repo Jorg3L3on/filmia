@@ -647,7 +647,7 @@ export const placeRutaLenses = <L extends { slug: string; kind: string; titles: 
 
 export type ThreadPersonRole = "director" | "dp" | "composer" | "cast";
 
-export type ThreadPerson = { id: number; name: string; role: ThreadPersonRole };
+export type ThreadPerson = { id: number; name: string; role: ThreadPersonRole; profilePath?: string | null };
 
 export type ThreadFilm = { catalogId: string; name: string; people: readonly ThreadPerson[] };
 
@@ -725,7 +725,8 @@ export const parseThreadPeople = (value: unknown): ThreadPerson[] => {
       name &&
       (role === "director" || role === "dp" || role === "composer" || cast)
     ) {
-      people.push({ id, name, role: role as ThreadPersonRole });
+      const profilePath = typeof record.profilePath === "string" && record.profilePath ? record.profilePath : null;
+      people.push({ id, name, role: role as ThreadPersonRole, profilePath });
     }
   }
   return people;

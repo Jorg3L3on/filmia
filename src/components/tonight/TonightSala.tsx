@@ -2,13 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { flipOculta, parkRuta, rutaAfterWatch } from "@/app/actions/rutas";
+import { flipOculta, parkRuta, rutaAfterWatch, universoBridge } from "@/app/actions/rutas";
 import { markNotTonight, sendTasteFeedback } from "@/app/actions/tonight";
 import { removeFromWatchlist, undoMarkWatched } from "@/app/actions/watchlist";
 import { CoverflowDeck } from "@/components/CoverflowDeck";
 import { GenreCoverflow } from "@/components/GenreCoverflow";
 import { HoyDeckSkeleton } from "@/components/PageSkeletons";
 import { RutaRevealSheet } from "@/components/rutas/RutaRevealSheet";
+import { BridgeSheet } from "@/components/universo/BridgeSheet";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { ChapterBar } from "@/components/tonight/ChapterBar";
 import { TonightClosingEmpty } from "@/components/tonight/TonightClosingCard";
@@ -29,6 +30,7 @@ import { pickRefOf } from "@/lib/tonight/reco-card";
 import { rankForNow, TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import { dayPartOf } from "@/lib/tonight/time";
 import type { RutaReveal } from "@/lib/rutas/reveal";
+import type { BridgeReveal } from "@/lib/universo/store";
 import type { TonightDecks } from "@/lib/tonight-store";
 
 const DEAL_MS = 700;
@@ -66,6 +68,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   const [menuTitle, setMenuTitle] = useState<CoverflowTitle | null>(null);
   // «Vi esto» on a ruta step (FIL-I26): what flipped, shown once the server has stamped it.
   const [reveal, setReveal] = useState<RutaReveal | null>(null);
+  // A bridge the film just made in «Tu universo» (FIL-I26-4, U4); ruta steps say it in their reveal.
+  const [bridge, setBridge] = useState<BridgeReveal | null>(null);
   // «Voltear» on the oculta (FIL-I26-3): face up at once, remembered by the server for the day.
   const [flipped, setFlipped] = useState<ReadonlySet<string>>(() => new Set());
   const liveRef = useRef<HTMLDivElement>(null);
@@ -247,6 +251,11 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
       if (ruta) {
         void rutaAfterWatch(ruta.rutaId, title.id)
           .then((next) => setReveal(next))
+          .catch(() => undefined);
+      } else {
+        // A recommendation's id is its catalog id; the server resolves either.
+        void universoBridge(reco.titleIdOf(title.id) ?? title.id)
+          .then((found) => setBridge(found))
           .catch(() => undefined);
       }
       showToast({
@@ -438,6 +447,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
           saved={menuTitle ? reco.isSaved(menuTitle.id) : false}
         />
         <RutaRevealSheet reveal={reveal} onClose={() => setReveal(null)} />
+        <BridgeSheet bridge={bridge} onClose={() => setBridge(null)} />
       </div>
     </TonightProvider>
   );
