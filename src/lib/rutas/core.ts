@@ -4,9 +4,6 @@ import type {
   TmdbCrewCredit,
 } from "@/lib/person-filmography";
 import type { TmdbCollectionPayload } from "@/lib/tmdb";
-import type { RutaOffer } from "@/lib/rutas/factories";
-import { doorLens } from "@/lib/tonight/door-card";
-import type { TonightLensView } from "@/lib/tonight-store";
 
 /**
  * Rutas (FIL-I26): 3–8 films in an order with one line of why per step. This module is pure:
@@ -664,50 +661,6 @@ export const placeRutaLenses = <L extends { slug: string; kind: string; titles: 
     return [...rutaLenses, ...rest];
   }
   return [...rest.slice(0, paraTi + 1), ...rutaLenses, ...rest.slice(paraTi + 1)];
-};
-
-export const RUTAS_DOOR_SLUG = "rutas";
-/**
- * «Empieza una ruta» (FIL-I26): what Hoy says when no ruta is active. A waiting one comes first
- * («te espera»); else the best offer, by name; else a plain invitation. The rutas page starts it.
- */
-export const rutasDoor = (waiting: number, offer: Pick<RutaOffer, "title" | "reason"> | null): TonightLensView =>
-  doorLens(
-    RUTAS_DOOR_SLUG,
-    "Rutas",
-    waiting > 0
-      ? {
-          eyebrow: "Tus rutas",
-          title: waiting === 1 ? "Una ruta te espera" : `${waiting} rutas te esperan`,
-          body: "La dejaste para después. Retómala y vuelve a Hoy, o empieza otra.",
-          cta: "Ver rutas",
-          href: "/rutas",
-        }
-      : offer
-        ? {
-            eyebrow: "Empieza una ruta",
-            title: offer.title,
-            body: offer.reason,
-            cta: "Ver la ruta",
-            href: "/rutas",
-          }
-        : {
-            eyebrow: "Rutas",
-            title: "Empieza una ruta",
-            body: "Una saga o una persona, película a película: cada una que ves destapa la siguiente.",
-            cta: "Ver rutas",
-            href: "/rutas",
-          },
-  );
-
-/**
- * The «Empieza una ruta» door when no ruta is active: right after Para ti, else after the first
- * lens (never ahead of the night's first film), else alone.
- */
-export const placeDoorLens = <L extends { kind: string }>(lenses: readonly L[], door: L): L[] => {
-  const paraTi = lenses.findIndex((lens) => lens.kind === "para-ti");
-  const at = paraTi === -1 ? Math.min(1, lenses.length) : paraTi + 1;
-  return [...lenses.slice(0, at), door, ...lenses.slice(at)];
 };
 
 // ---------------------------------------------------------------------------

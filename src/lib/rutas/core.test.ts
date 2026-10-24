@@ -14,9 +14,7 @@ import {
   personRoleFilms,
   personRutaDraft,
   personSourceKey,
-  placeDoorLens,
   placeRutaLenses,
-  rutasDoor,
   rankSeeds,
   rutaProgress,
   stampChanges,
@@ -298,34 +296,6 @@ describe("Hoy", () => {
     const placed = placeRutaLenses([paraTi, drama], [ruta], true, ids);
     assert.deepEqual(placed.map((item) => item.slug), ["para-ti", "ruta-1", "drama-18"]);
     assert.deepEqual(placed[0]!.titles.map((title) => title.id), ["q1"], "the step leaves Para ti");
-  });
-});
-
-describe("Hoy sin ruta activa", () => {
-  const lens = (slug: string, kind: string) => ({ slug, kind });
-
-  it("the door follows Para ti, else the night's first lens, else stands alone", () => {
-    const door = lens("rutas", "pieza");
-    assert.deepEqual(
-      placeDoorLens([lens("para-ti", "para-ti"), lens("drama-18", "genre")], door).map((item) => item.slug),
-      ["para-ti", "rutas", "drama-18"],
-    );
-    assert.deepEqual(
-      placeDoorLens([lens("drama-18", "genre"), lens("comedia-35", "genre")], door).map((item) => item.slug),
-      ["drama-18", "rutas", "comedia-35"],
-    );
-    assert.deepEqual(placeDoorLens([], door).map((item) => item.slug), ["rutas"]);
-  });
-
-  it("offers, never starts: a waiting ruta first, then the best offer by name, else an invitation", () => {
-    const offer = { title: "El Hobbit, la trilogía", reason: "Tres películas antes de la que ya viste." };
-    const waiting = rutasDoor(1, offer).titles[0]!.portal!;
-    assert.equal(waiting.title, "Una ruta te espera");
-    const offered = rutasDoor(0, offer);
-    assert.equal(offered.kind, "pieza", "a door, not a film to recommend");
-    assert.equal(offered.titles[0]!.portal!.title, "El Hobbit, la trilogía");
-    assert.equal(offered.titles[0]!.portal!.href, "/rutas", "the rutas page starts it, the card does not");
-    assert.equal(rutasDoor(0, null).titles[0]!.portal!.title, "Empieza una ruta");
   });
 });
 

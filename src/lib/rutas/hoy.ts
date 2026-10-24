@@ -1,9 +1,9 @@
 import type { CatalogRow, Platform } from "@/db";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { toCoverflowTitle } from "@/lib/coverflow-title";
-import { parseThreadPeople, rutaLensSlug, rutasDoor, TU_RUTA_NAME } from "@/lib/rutas/core";
-import { ensureDayOneRuta, offerRutas, type RutaOffer } from "@/lib/rutas/factories";
-import { countRutasByStatus, loadRutas, type RutaStepView, type RutaView } from "@/lib/rutas/store";
+import { parseThreadPeople, rutaLensSlug, TU_RUTA_NAME } from "@/lib/rutas/core";
+import { ensureDayOneRuta } from "@/lib/rutas/factories";
+import { loadRutas, type RutaStepView, type RutaView } from "@/lib/rutas/store";
 import type { TonightCard, TonightLensView } from "@/lib/tonight-store";
 import type { TonightComponents, TonightReason } from "@/lib/tonight/types";
 import { withTimeout } from "@/lib/with-timeout";
@@ -96,24 +96,6 @@ export type RutaLenses = {
   lenses: TonightLensView[];
   /** Ids the ruta cards use (title and catalog ids): other lenses drop them. */
   cardIds: Set<string>;
-  /** No active ruta: the door that offers one (never starts it). */
-  door: TonightLensView | null;
-};
-
-/** Hoy never waits long for an offer: past this the door invites without one (TMDB keeps caching). */
-export const RUTAS_DOOR_BUDGET_MS = 800;
-
-const loadRutasDoor = async (userId: string) => {
-  const counts = await countRutasByStatus(userId);
-  if (counts.espera > 0) {
-    return rutasDoor(counts.espera, null);
-  }
-  const offers = offerRutas(userId, { limit: 1 }).catch(() => [] as RutaOffer[]);
-  scheduleAfterResponse(async () => {
-    await offers;
-  });
-  const [offer] = await withTimeout(offers, RUTAS_DOOR_BUDGET_MS, [] as RutaOffer[]);
-  return rutasDoor(0, offer ?? null);
 };
 
 /**
@@ -160,6 +142,5 @@ export const loadRutaLenses = async (
       titles: [card],
     });
   }
-  const door = ordered.length === 0 ? await loadRutasDoor(userId).catch(() => rutasDoor(0, null)) : null;
-  return { lenses, cardIds, door };
+  return { lenses, cardIds };
 };
