@@ -854,7 +854,7 @@ const withPiezas = async (
   try {
     if (isTmdbConfigured()) {
       const [status, seeds] = await Promise.all([visteStatus(userId, now), hasVisteSeeds(userId)]);
-      if (seeds && !status.done) {
+      if (seeds) {
         placed = [...placed, visteDoorLens(status.answered)];
       }
     }

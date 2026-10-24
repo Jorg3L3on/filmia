@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { answerViste } from "@/app/actions/rutas";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { answerViste, moreViste } from "@/app/actions/rutas";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { PosterImage } from "@/components/PosterImage";
 import { cn } from "@/lib/cn";
@@ -18,31 +17,61 @@ const ANSWER_CLASS: Record<VisteAnswer, string> = {
   liked: "border-success/50 bg-success-well text-success",
 };
 
+/** Deal the next three while this many are still left to answer, so there is never a wait. */
+const PREFETCH_AT = 1;
+
 /**
- * The three cards, one at a time: a stack, three buttons of 48 px (no stars, no numbers), and
- * after the third the line that says what changed. «No la vi» offers Quiero ver in one tap.
+ * One card at a time, for as long as the person wants (no daily limit): a stack, three buttons
+ * of 48 px (no stars, no numbers). Every three answered, a line says what changed and the next
+ * three are already there. Leaving the page is the only way out; nothing is lost by stopping.
  */
-export const VisteRitual = ({ cards }: { cards: VisteCard[] }) => {
-  const router = useRouter();
+export const VisteRitual = ({ cards: initial }: { cards: VisteCard[] }) => {
+  const [cards, setCards] = useState(initial);
   const [answers, setAnswers] = useState<Record<string, VisteAnswer>>(() =>
-    Object.fromEntries(cards.flatMap((card) => (card.answer ? [[card.catalogId, card.answer]] : []))),
+    Object.fromEntries(initial.flatMap((card) => (card.answer ? [[card.catalogId, card.answer]] : []))),
   );
   const [summary, setSummary] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [exhausted, setExhausted] = useState(false);
+  const [, startTransition] = useTransition();
+  const dealing = useRef(false);
   const open = cards.filter((card) => !answers[card.catalogId]);
   const current = open[0] ?? null;
-  const position = cards.length - open.length + 1;
+  const answeredCount = Object.keys(answers).length;
 
-  if (cards.length === 0) {
+  // The next three arrive before the last one is answered.
+  useEffect(() => {
+    if (exhausted || dealing.current || open.length > PREFETCH_AT) {
+      return;
+    }
+    dealing.current = true;
+    void moreViste()
+      .then((more) => {
+        if (more.length === 0) {
+          setExhausted(true);
+          return;
+        }
+        setCards((existing) => {
+          const known = new Set(existing.map((card) => card.catalogId));
+          return [...existing, ...more.filter((card) => !known.has(card.catalogId))];
+        });
+      })
+      .catch(() => setExhausted(true))
+      .finally(() => {
+        dealing.current = false;
+      });
+  }, [exhausted, open.length]);
+
+  if (cards.length === 0 && exhausted) {
     return (
       <p className="rounded-2xl border border-line bg-surface px-4 py-5 text-[15px] leading-snug text-fog">
-        Hoy no hay cartas: marca una película como vista y mañana te preguntamos por otras.
+        No hay cartas por ahora: marca una película como vista y te preguntamos por las que van con ella.
       </p>
     );
   }
 
   const answer = (card: VisteCard, choice: VisteAnswer) => {
     setAnswers((currentAnswers) => ({ ...currentAnswers, [card.catalogId]: choice }));
+    setSummary(null);
     startTransition(async () => {
       const outcome = await answerViste(card.catalogId, choice);
       if (!outcome.ok) {
@@ -79,7 +108,6 @@ export const VisteRitual = ({ cards }: { cards: VisteCard[] }) => {
       }
       if (outcome.summary) {
         setSummary(outcome.summary);
-        router.refresh();
       }
     });
   };
@@ -87,21 +115,34 @@ export const VisteRitual = ({ cards }: { cards: VisteCard[] }) => {
   if (!current) {
     return (
       <section aria-live="polite" className="flex flex-col items-center gap-4 rounded-3xl border border-line bg-surface px-5 py-7 text-center">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Listo por hoy</p>
-        <p className="font-serif text-2xl leading-tight text-paper">{summary ?? "Las tres de hoy, respondidas."}</p>
-        <p className="text-[13px] text-fog">Mañana hay otras tres.</p>
-        <Link href="/" className={cn("press-scale mt-1 rounded-xl bg-accent px-6 py-3 text-[14px] font-semibold text-ink", focusRing)}>
-          Volver a Hoy
-        </Link>
+        {exhausted ? (
+          <>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">No quedan más por ahora</p>
+            <p className="font-serif text-2xl leading-tight text-paper">{summary ?? `${answeredCount} respondidas hoy.`}</p>
+            <p className="text-[13px] text-fog">Marca más películas como vistas y aparecerán otras.</p>
+            <Link href="/" className={cn("press-scale mt-1 rounded-xl bg-accent px-6 py-3 text-[14px] font-semibold text-ink", focusRing)}>
+              Volver a Hoy
+            </Link>
+          </>
+        ) : (
+          <p className="text-[14px] text-fog" aria-busy="true">
+            Barajando otras tres…
+          </p>
+        )}
       </section>
     );
   }
 
   return (
-    <section aria-label={`Carta ${position} de ${cards.length}`} className="flex flex-col gap-5">
-      <p className="text-right text-[12px] text-fog" aria-hidden="true">
-        {position} de {cards.length}
-      </p>
+    <section aria-label={current.name} className="flex flex-col gap-5">
+      <div className="flex items-center justify-between gap-3 text-[12px] text-fog">
+        <p aria-live="polite" className={cn("min-w-0 truncate", summary && "text-paper")}>
+          {summary ?? (answeredCount > 0 ? `${answeredCount} ${answeredCount === 1 ? "respondida" : "respondidas"} hoy` : "Las que quieras")}
+        </p>
+        <Link href="/" className={cn("shrink-0 text-accent-hover", focusRing)}>
+          Listo
+        </Link>
+      </div>
       <div className="relative mx-auto h-[330px] w-[220px]">
         {open.slice(1, 3).map((card, index) => (
           <span
@@ -129,7 +170,6 @@ export const VisteRitual = ({ cards }: { cards: VisteCard[] }) => {
           <button
             key={choice}
             type="button"
-            disabled={pending && Boolean(answers[current.catalogId])}
             onClick={() => answer(current, choice)}
             className={cn("press-scale min-h-12 rounded-2xl border px-2 text-[13px] font-semibold leading-tight", ANSWER_CLASS[choice], focusRing)}
           >

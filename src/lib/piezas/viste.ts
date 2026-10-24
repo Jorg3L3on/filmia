@@ -11,7 +11,9 @@ import {
   VISTE_LENS,
   VISTE_NAME,
   VISTE_PATH,
-  VISTE_PER_DAY,
+  rotateSeeds,
+  VISTE_BATCH,
+  VISTE_MAX_SEEDS,
   VISTE_RATING,
   visteLens,
   visteSummary,
@@ -24,8 +26,8 @@ import { getTmdbRelated, isTmdbConfigured } from "@/lib/tmdb";
 import { scheduleTonightRecompute, type TonightCard, type TonightLensView } from "@/lib/tonight-store";
 
 /**
- * «¿Las viste?» (FIL-I26-3, board P2): three films a day you have probably seen, one per seed,
- * answered with three buttons. «La vi» writes a watched title (with an implicit rating Afinidad
+ * «¿Las viste?» (FIL-I26-3, board P2): films you have probably seen, three at a time and as many
+ * as you want (one per seed), answered with three buttons. «La vi» writes a watched title (with an implicit rating Afinidad
  * reads: the only real source of «no me gustó»); «No la vi» writes nothing but the event.
  */
 
@@ -74,11 +76,11 @@ export const hasVisteSeeds = async (userId: string) => {
   return row.length > 0;
 };
 
-/** How far today's three went, for Hoy's door card (no TMDB). */
+/** How many the person answered today, for Hoy's door card (no TMDB). */
 export const visteStatus = async (userId: string, now = new Date()) => {
   const events = await todaysEvents(userId, now);
   const answered = new Set(events.filter((event) => event.kind === "viste_answered").map((event) => event.catalogId));
-  return { answered: answered.size, done: answered.size >= VISTE_PER_DAY };
+  return { answered: answered.size };
 };
 
 const toCard = (film: CatalogRow, seedName: string | null, answer: VisteAnswer | null): VisteCard => ({
@@ -93,33 +95,40 @@ const toCard = (film: CatalogRow, seedName: string | null, answer: VisteAnswer |
   answer,
 });
 
-/**
- * Today's three, dealt on the first visit of the day: TMDB's best known pairings for your top
- * seeds (one per seed), never a film you have or were already asked about.
- */
-export const dealVisteToday = async (userId: string, now = new Date()): Promise<VisteCard[]> => {
-  const events = await todaysEvents(userId, now);
+const cardsOf = async (events: Awaited<ReturnType<typeof todaysEvents>>) => {
   const answers = new Map(
     events.flatMap((event) =>
       event.kind === "viste_answered" && event.catalogId ? [[event.catalogId, answerOfLens(event.lens)] as const] : [],
     ),
   );
-  const dealtToday = events.filter((event) => event.kind === "viste_dealt" && event.catalogId);
-  if (dealtToday.length > 0) {
-    const films = await db.query.catalog.findMany({
-      where: inArray(catalog.id, dealtToday.map((event) => event.catalogId!)),
-    });
-    const byId = new Map(films.map((film) => [film.id, film]));
-    return dealtToday.flatMap((event) => {
+  const dealt = events.filter((event) => event.kind === "viste_dealt" && event.catalogId);
+  if (dealt.length === 0) {
+    return [];
+  }
+  const films = await db.query.catalog.findMany({ where: inArray(catalog.id, dealt.map((event) => event.catalogId!)) });
+  const byId = new Map(films.map((film) => [film.id, film]));
+  return dealt
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    .flatMap((event) => {
       const film = byId.get(event.catalogId!);
       return film ? [toCard(film, seedOfLens(event.lens), answers.get(film.id) ?? null)] : [];
     });
-  }
+};
+
+/**
+ * The next three: TMDB's best known pairings for your seeds (one per seed, the seeds rotating
+ * with each batch so every film of yours gets its turn), never a film you have or were already
+ * asked about. What you answer «La vi» becomes a seed too, so the supply grows as you go.
+ */
+const dealBatch = async (userId: string, now: Date, batchesToday: number): Promise<VisteCard[]> => {
   if (!isTmdbConfigured()) {
     return [];
   }
-
   const ctx = await loadFactoryContext(userId, now);
+  const seeds = ctx.seeds.slice(0, VISTE_MAX_SEEDS);
+  if (seeds.length === 0) {
+    return [];
+  }
   const [owned, asked] = await Promise.all([
     db.query.titles.findMany({ where: eq(titles.userId, userId), with: { catalog: { columns: { tmdbId: true } } }, columns: { id: true } }),
     db
@@ -130,13 +139,15 @@ export const dealVisteToday = async (userId: string, now = new Date()): Promise<
   ]);
   const exclude = new Set<number>([...owned.map((row) => row.catalog.tmdbId), ...asked.map((row) => row.tmdbId)]);
   const year = Number(ctx.today.slice(0, 4));
+  const usable = (film: { kind: string; voteCount: number; year: number | null }) =>
+    film.kind === "MOVIE" && film.voteCount >= VISTE_MIN_VOTES && film.year != null && film.year <= year;
   const perSeed = await Promise.all(
-    ctx.seeds.slice(0, VISTE_PER_DAY).map(async (seed) => ({
-      seedName: seed.name,
-      candidates: (await getTmdbRelated(seed.tmdbId, "MOVIE", "recommendations").catch(() => [])).filter(
-        (film) => film.kind === "MOVIE" && film.voteCount >= VISTE_MIN_VOTES && film.year != null && film.year <= year,
-      ),
-    })),
+    rotateSeeds(seeds, batchesToday).map(async (seed) => {
+      const pages = await Promise.all(
+        [1, 2].map((page) => getTmdbRelated(seed.tmdbId, "MOVIE", "recommendations", page).catch(() => [])),
+      );
+      return { seedName: seed.name, candidates: pages.flat().filter(usable) };
+    }),
   );
   const picks = pickVisteCards(perSeed, exclude);
   const cards: VisteCard[] = [];
@@ -171,13 +182,26 @@ export const dealVisteToday = async (userId: string, now = new Date()): Promise<
   return cards;
 };
 
+/** Today's cards so far, dealing the first three on the first visit of the day. */
+export const dealVisteToday = async (userId: string, now = new Date()): Promise<VisteCard[]> => {
+  const cards = await cardsOf(await todaysEvents(userId, now));
+  return cards.length > 0 ? cards : dealBatch(userId, now, 0);
+};
+
+/** Three more, for as long as the person keeps answering (no daily limit). Empty when none are left. */
+export const dealMoreViste = async (userId: string, now = new Date()): Promise<VisteCard[]> => {
+  const events = await todaysEvents(userId, now);
+  const dealt = events.filter((event) => event.kind === "viste_dealt").length;
+  return dealBatch(userId, now, Math.ceil(dealt / VISTE_BATCH));
+};
+
 export type VisteOutcome =
   | { ok: true; remaining: number; titleId: string | null; summary: string | null }
   | { ok: false; error: string };
 
-/** What today's answers changed: people new to your universe, the rutas they moved. */
+/** What the batch just answered changed: people new to your universe, the rutas they moved. */
 const summaryFor = async (userId: string, now: Date) => {
-  const cards = await dealVisteToday(userId, now);
+  const cards = (await cardsOf(await todaysEvents(userId, now))).slice(-VISTE_BATCH);
   const seen = cards.filter((card) => card.answer === "liked" || card.answer === "meh");
   if (seen.length === 0) {
     return visteSummary({ seen: 0, newPeople: [], rutas: [] });
@@ -262,9 +286,8 @@ export const answerViste = async (
   return { ok: true, remaining, titleId, summary: remaining === 0 ? await summaryFor(userId, now) : null };
 };
 
-/** Hoy's door to today's three (a lens of one card), while any is left to answer. */
+/** Hoy's door to «¿Las viste?» (a lens of one card): always open, no daily limit. */
 export const visteDoorLens = (answered: number): TonightLensView => {
-  const left = VISTE_PER_DAY - answered;
   const card: TonightCard = {
     id: `__${VISTE_LENS}__`,
     name: VISTE_NAME,
@@ -290,8 +313,8 @@ export const visteDoorLens = (answered: number): TonightLensView => {
       title: VISTE_NAME,
       body:
         answered === 0
-          ? "Tres películas que quizá ya viste. La vi y me gustó, la vi y no tanto, o no la vi."
-          : `Te ${left === 1 ? "falta una" : `faltan ${left}`} de hoy.`,
+          ? "Películas que quizá ya viste: la vi y me gustó, la vi y no tanto, o no la vi. Las que quieras."
+          : `Llevas ${answered} hoy. Sigue cuando quieras.`,
       cta: answered === 0 ? "Empezar" : "Seguir",
       href: VISTE_PATH,
     },

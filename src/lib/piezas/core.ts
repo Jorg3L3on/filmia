@@ -2,7 +2,7 @@ import { mxToday } from "@/lib/cine-core";
 
 /**
  * Las piezas pequeñas de Hoy (FIL-I26-3): «La oculta», one film face down per day, and «¿Las
- * viste?», three cards a day answered in ten seconds. Pure: which film, what the hint says, what
+ * viste?», cards dealt three at a time for as long as the person wants, ten seconds each set. Pure: which film, what the hint says, what
  * an answer writes and the line that closes the three. Both remember the day with `PickEvent`s.
  */
 
@@ -11,7 +11,19 @@ export const OCULTA_NAME = "La oculta";
 export const VISTE_LENS = "las-viste";
 export const VISTE_NAME = "¿Las viste?";
 export const VISTE_PATH = "/las-viste";
-export const VISTE_PER_DAY = 3;
+/** Cards are dealt this many at a time; there is no daily limit (Jorge, 2026-10-24). */
+export const VISTE_BATCH = 3;
+/** Seeds a batch draws from; the start rotates with each batch. */
+export const VISTE_MAX_SEEDS = 8;
+
+/** The seeds for the n-th batch of the day: the same list, starting further along each time. */
+export const rotateSeeds = <T>(seeds: readonly T[], batch: number): T[] => {
+  if (seeds.length === 0) {
+    return [];
+  }
+  const start = ((batch % seeds.length) + seeds.length) % seeds.length;
+  return [...seeds.slice(start), ...seeds.slice(0, start)];
+};
 
 export const PIEZA_EVENT_KINDS = [
   "oculta_dealt",
@@ -106,7 +118,7 @@ export type VisteCandidate = { tmdbId: number; voteCount: number };
 export const pickVisteCards = <T extends VisteCandidate>(
   perSeed: ReadonlyArray<{ seedName: string; candidates: readonly T[] }>,
   exclude: ReadonlySet<number>,
-  count = VISTE_PER_DAY,
+  count = VISTE_BATCH,
 ): Array<T & { seedName: string }> => {
   const picked: Array<T & { seedName: string }> = [];
   const taken = new Set(exclude);
@@ -145,7 +157,7 @@ export const visteSummary = (input: {
   rutas: ReadonlyArray<{ shortTitle: string; done: number; total: number }>;
 }) => {
   if (input.seen === 0) {
-    return "Ninguna esta vez. Mañana hay otras tres.";
+    return "Ninguna de estas. Sigue con otras tres.";
   }
   const parts: string[] = [];
   const people = input.newPeople.slice(0, 2);

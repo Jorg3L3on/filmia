@@ -96,7 +96,7 @@ describeWithDb("Piezas · la oculta y ¿las viste? (FIL-I26-3)", () => {
     assert.ok(byCatalog.get(films[4]!.catalogId)?.watchedAt);
     assert.equal(byCatalog.has(films[5]!.catalogId), false);
 
-    assert.deepEqual(await visteStatus(userId, now), { answered: 3, done: true });
+    assert.deepEqual(await visteStatus(userId, now), { answered: 3 });
     const again = await answerViste(userId, films[5]!.catalogId, "liked", now);
     assert.equal(again.ok, false);
     const notDealt = await answerViste(userId, films[3]!.catalogId, "liked", now);
@@ -105,5 +105,28 @@ describeWithDb("Piezas · la oculta y ¿las viste? (FIL-I26-3)", () => {
       where: and(eq(pickEvents.userId, userId), eq(pickEvents.kind, "viste_answered")),
     });
     assert.deepEqual(events.map((event) => event.lens).sort(), ["viste:liked", "viste:meh", "viste:no"]);
+  });
+
+  it("no daily limit: a second batch the same day is answered like the first, its own summary at the end", async () => {
+    const now = day(4);
+    const more = [films[1], films[2], films[3]];
+    for (const [index, film] of more.entries()) {
+      await db.insert(pickEvents).values({
+        id: createId(),
+        userId,
+        titleId: null,
+        catalogId: film!.catalogId,
+        kind: "viste_dealt",
+        lens: "las-viste:Otra",
+        createdAt: new Date(now.getTime() + 1000 + index),
+      });
+    }
+    const first = await answerViste(userId, films[1]!.catalogId, "no", now);
+    assert.ok(first.ok && first.remaining === 2 && first.summary === null);
+    await answerViste(userId, films[2]!.catalogId, "no", now);
+    const last = await answerViste(userId, films[3]!.catalogId, "no", now);
+    assert.ok(last.ok && last.remaining === 0);
+    assert.equal(last.summary, "Ninguna de estas. Sigue con otras tres.", "the summary covers this batch only");
+    assert.deepEqual(await visteStatus(userId, now), { answered: 6 });
   });
 });

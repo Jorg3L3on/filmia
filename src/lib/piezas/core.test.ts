@@ -7,6 +7,7 @@ import {
   pickOculta,
   pickVisteCards,
   placeOcultaLens,
+  rotateSeeds,
   sameMxDay,
   VISTE_RATING,
   visteLens,
@@ -81,6 +82,13 @@ describe("¿Las viste?", () => {
     );
   });
 
+  it("each new batch starts one seed further along, so every film of yours gets a turn", () => {
+    assert.deepEqual(rotateSeeds(["a", "b", "c"], 0), ["a", "b", "c"]);
+    assert.deepEqual(rotateSeeds(["a", "b", "c"], 1), ["b", "c", "a"]);
+    assert.deepEqual(rotateSeeds(["a", "b", "c"], 4), ["b", "c", "a"]);
+    assert.deepEqual(rotateSeeds([], 2), []);
+  });
+
   it("answers are events with what Afinidad reads", () => {
     assert.equal(visteLens("meh"), "viste:meh");
     assert.equal(answerOfLens("viste:liked"), "liked");
@@ -95,6 +103,6 @@ describe("¿Las viste?", () => {
       "Aparecieron Christopher Nolan y Hans Zimmer; Lord & Miller va 2 de 5.",
     );
     assert.equal(visteSummary({ seen: 1, newPeople: [], rutas: [] }), "Una más en tu diario.");
-    assert.equal(visteSummary({ seen: 0, newPeople: [], rutas: [] }), "Ninguna esta vez. Mañana hay otras tres.");
+    assert.equal(visteSummary({ seen: 0, newPeople: [], rutas: [] }), "Ninguna de estas. Sigue con otras tres.");
   });
 });

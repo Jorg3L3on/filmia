@@ -8,7 +8,7 @@ import { remindPremiere, type RemindOutcome } from "@/lib/cine-cuenta-store";
 import { isVisteAnswer } from "@/lib/piezas/core";
 import type { RutaStatus } from "@/lib/rutas/core";
 import { flipOculta as flip } from "@/lib/piezas/oculta";
-import { answerViste as answer, type VisteOutcome } from "@/lib/piezas/viste";
+import { answerViste as answer, dealMoreViste, type VisteCard, type VisteOutcome } from "@/lib/piezas/viste";
 import { requireUserId } from "@/lib/session";
 import {
   bridgeAfterWatch,
@@ -154,4 +154,10 @@ export const remindPremiereAction = async (catalogId: string): Promise<RemindOut
     revalidatePath("/cine");
   }
   return outcome;
+};
+
+/** Three more cards of «¿Las viste?» (no daily limit); empty when none are left. */
+export const moreViste = async (): Promise<VisteCard[]> => {
+  const userId = await requireUserId();
+  return dealMoreViste(userId).catch(() => []);
 };
