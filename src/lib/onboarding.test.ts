@@ -226,6 +226,7 @@ describe("tu primera noche", () => {
     computedAt: new Date().toISOString(),
     queueSize: titles.length,
     recosWarming: false,
+    tally: { watched: [], notTonight: [] },
   });
 
   it("returns the top ranked card with its personal reason and the clock fit", () => {

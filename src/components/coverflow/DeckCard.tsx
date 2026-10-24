@@ -141,9 +141,14 @@ export const DeckCard = memo(function DeckCard({
   );
   // «···» beside the stub (FIL-I21-2): the hold menu, in plain sight. Hold still works.
   const menuTab = showStub && holdable;
-  const menuTabLabel = isTonight
-    ? "Más acciones: ahora no, mover a una lista, quitar de Quiero ver"
-    : "Más acciones: mover a otra lista, quitar de la lista";
+  // Says what TonightCardMenu actually offers for this card: a ruta step, a recommendation or a queue film.
+  const menuTabLabel = !isTonight
+    ? "Más acciones: mover a otra lista, quitar de la lista"
+    : tonight?.ruta
+      ? "Más acciones: ver la ruta, dejarla para después"
+      : isReco
+        ? "Más acciones: ver detalles, Quiero ver, ver esta noche, no me interesa"
+        : "Más acciones: ahora no, mover a una lista, quitar de Quiero ver";
   const imdbLabel = formatImdbRating(title.imdbRating);
   const availabilityPlatform = primaryAvailabilityPlatform(
     title.flatrateProviders,

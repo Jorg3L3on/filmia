@@ -249,20 +249,13 @@ export const agingScore = (
   return { value, reasons };
 };
 
+/**
+ * «Comparten drama y aventura»: the genres two films share. Keywords still weigh in the score, but
+ * TMDB only names them in English («van», «road trip»), so they never reach the Spanish copy.
+ */
 export const sharedFeatureNames = (a: TonightTitle, b: TonightTitle) => {
-  const names: string[] = [];
   const genresB = new Set(b.genres.map((genre) => genre.id));
-  for (const genre of a.genres) {
-    if (genresB.has(genre.id)) {
-      names.push(genre.name.toLowerCase());
-    }
-  }
-  const keywordsB = new Set(b.keywords.map((keyword) => keyword.id));
-  for (const keyword of a.keywords) {
-    if (keywordsB.has(keyword.id)) {
-      names.push(keyword.name.toLowerCase());
-    }
-  }
+  const names = a.genres.filter((genre) => genresB.has(genre.id)).map((genre) => genre.name.toLowerCase());
   return [...new Set(names)].slice(0, 3);
 };
 

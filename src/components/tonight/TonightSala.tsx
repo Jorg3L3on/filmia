@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { parkRuta, rutaAfterWatch, universoBridge } from "@/app/actions/rutas";
-import { markNotTonight, sendTasteFeedback } from "@/app/actions/tonight";
+import { markNotTonight, sendTasteFeedback, undoNotInterested, undoNotTonight } from "@/app/actions/tonight";
 import { removeFromWatchlist, undoMarkWatched } from "@/app/actions/watchlist";
 import { CoverflowDeck } from "@/components/CoverflowDeck";
 import { GenreCoverflow } from "@/components/GenreCoverflow";
@@ -25,7 +25,7 @@ import { cn } from "@/lib/cn";
 import { DECK_CARD_PARAM, deckCardFrom, deckIndexOf } from "@/lib/nav-origin";
 import { showToast } from "@/lib/toast";
 import { interleaveBySource } from "@/lib/tonight/compose";
-import { closingCardFor } from "@/lib/tonight/closing-card";
+import { closingCardFor, tallyCount } from "@/lib/tonight/closing-card";
 import { pickRefOf } from "@/lib/tonight/reco-card";
 import { rankForNow, TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import { dayPartOf } from "@/lib/tonight/time";
@@ -226,8 +226,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     now,
     closing: {
       total: dealtTotal,
-      watched: watchedIds.size,
-      notTonight: notTonightIds.size,
+      watched: tallyCount(decks.tally.watched, watchedIds),
+      notTonight: tallyCount(decks.tally.notTonight, notTonightIds),
       lenses,
       onRestart: restart,
     },
@@ -279,22 +279,58 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     setMenuTitle(null);
     hide(title.id);
     addTo(setNotTonightIds, title.id);
-    showToast({ title: "Ahora no", description: `${title.name} vuelve en dos semanas.` });
-    void markNotTonight(title.id, title.tonight?.lens ?? activeLens?.slug).catch(() => {
-      unhide(title.id);
-      removeFrom(setNotTonightIds, title.id);
-      showToast({ title: "No se pudo guardar", variant: "error" });
+    const saved = markNotTonight(title.id, title.tonight?.lens ?? activeLens?.slug).then(
+      () => true,
+      () => {
+        unhide(title.id);
+        removeFrom(setNotTonightIds, title.id);
+        showToast({ title: "No se pudo guardar", variant: "error" });
+        return false;
+      },
+    );
+    showToast({
+      title: "Ahora no",
+      description: `${title.name} vuelve en dos semanas.`,
+      durationMs: 6000,
+      action: {
+        label: "Deshacer",
+        onClick: () => {
+          unhide(title.id);
+          removeFrom(setNotTonightIds, title.id);
+          // After the save lands, so a quick tap never leaves the skip behind.
+          void saved.then((ok) => (ok ? undoNotTonight(title.id) : undefined)).catch(() => {
+            showToast({ title: "No se pudo deshacer", variant: "error" });
+          });
+        },
+      },
     });
   };
 
-  /** «No me interesa» on a recommendation: gone for good (Menos así) and Hoy learns. */
+  /** «No me interesa» on a recommendation: gone for good (Menos así) and Hoy learns. Deshacer brings it back. */
   const handleNotInterested = (title: CoverflowTitle) => {
     setMenuTitle(null);
     hide(title.id);
-    showToast({ title: "No te la volveremos a sugerir", description: title.name });
-    void sendTasteFeedback({ catalogId: title.id }, "less_like", title.tonight?.lens ?? activeLens?.slug).catch(() => {
-      unhide(title.id);
-      showToast({ title: "No se pudo guardar", variant: "error" });
+    const saved = sendTasteFeedback({ catalogId: title.id }, "less_like", title.tonight?.lens ?? activeLens?.slug).then(
+      () => true,
+      () => {
+        unhide(title.id);
+        showToast({ title: "No se pudo guardar", variant: "error" });
+        return false;
+      },
+    );
+    showToast({
+      title: "No te la volveremos a sugerir",
+      description: title.name,
+      durationMs: 6000,
+      action: {
+        label: "Deshacer",
+        onClick: () => {
+          unhide(title.id);
+          void saved.then((ok) => (ok ? undoNotInterested({ catalogId: title.id }) : undefined)).catch(() => {
+            showToast({ title: "No se pudo deshacer", variant: "error" });
+          });
+        },
+      },
     });
   };
 
@@ -376,7 +412,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     <TonightProvider value={handlers}>
       <div className="diario-que-ver-shell tonight-sala flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-sm:-mt-5 max-sm:gap-1">
         {/* Desktop keeps the three rows; the phone folds the eyebrow into the rail (FIL-I21-3). */}
-        <div className="shrink-0 max-sm:hidden">
+        <div className="tonight-eyebrow-row shrink-0 max-sm:hidden">
           <TonightEyebrow now={now} nightEnds={decks.nightEnds} />
         </div>
         <div className="sm:hidden">

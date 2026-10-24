@@ -16,6 +16,7 @@ import { FICHA_PIN_LENS, SEARCH_PIN_LENS, searchPinBlocker } from "@/lib/tonight
 import { isHHMM, parseNightEnds } from "@/lib/tonight/time";
 import type { PickEventKind } from "@/lib/tonight";
 import {
+  deleteLatestPickEvent,
   isPickEventKind,
   recordPickEvents as persistPickEvents,
   scheduleTonightRecompute,
@@ -50,6 +51,15 @@ export const recordPickEvents = async (events: PickEventInput[]) => {
 export const markNotTonight = async (titleId: string, lens?: string | null) => {
   const userId = await requireUserId();
   await persistPickEvents(userId, [{ titleId, kind: "not_tonight", lens }]);
+  scheduleTonightRecompute(userId);
+  revalidatePath("/");
+  revalidatePath("/watchlist");
+};
+
+/** «Deshacer» on «Ahora no»: the title is back tonight and the ranker forgets the skip. */
+export const undoNotTonight = async (titleId: string) => {
+  const userId = await requireUserId();
+  await deleteLatestPickEvent(userId, "not_tonight", { titleId });
   scheduleTonightRecompute(userId);
   revalidatePath("/");
   revalidatePath("/watchlist");
@@ -165,6 +175,14 @@ export const sendTasteFeedback = async (
 ) => {
   const userId = await requireUserId();
   await persistPickEvents(userId, [{ ...ref, kind, lens }]);
+  scheduleTonightRecompute(userId);
+  revalidatePath("/");
+};
+
+/** «Deshacer» on «No me interesa»: the recommendation may come back and Hoy unlearns the «Menos así». */
+export const undoNotInterested = async (ref: { titleId?: string; catalogId?: string }) => {
+  const userId = await requireUserId();
+  await deleteLatestPickEvent(userId, "less_like", ref);
   scheduleTonightRecompute(userId);
   revalidatePath("/");
 };

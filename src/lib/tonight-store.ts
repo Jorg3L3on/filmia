@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { and, asc, eq, gte, inArray, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, sql, type SQL } from "drizzle-orm";
 import {
   catalog,
   db,
@@ -28,6 +28,7 @@ import {
   toTonightEvents,
 } from "@/lib/tonight/events";
 import { blockedItemIds } from "@/lib/tonight/candidates";
+import { mxToday } from "@/lib/cine-core";
 import { composeLenses, type RecoEntry } from "@/lib/tonight/compose";
 import { refillRecosIfThin } from "@/lib/tonight/reco-refill";
 import { itemVector } from "@/lib/tonight/features";
@@ -102,6 +103,62 @@ export type TonightDecks = {
   queueSize: number;
   /** FIL-26: no recommendation to show yet and the pool is being built; Hoy says so and refreshes. */
   recosWarming: boolean;
+  /** What the closing card counts for tonight, from the server so a reload keeps it. */
+  tally: NightTally;
+};
+
+/**
+ * Tonight from Hoy, per film: each entry is the ids a card may carry for it (its `Title` id and its
+ * catalog id), so the sala adds only the marks of this visit that the server has not counted.
+ */
+export type NightTally = {
+  /** «Vi esto» from Hoy, still watched (Deshacer takes it out). */
+  watched: string[][];
+  /** «Ahora no» (its Deshacer deletes the event). */
+  notTonight: string[][];
+};
+
+const EMPTY_TALLY: NightTally = { watched: [], notTonight: [] };
+
+/** The night the closing card counts starts at 05:00 in Mexico City (UTC−6, no DST). */
+export const nightStartedAt = (now: Date) =>
+  new Date(`${mxToday(new Date(now.getTime() - 5 * 60 * 60 * 1000))}T11:00:00.000Z`);
+
+export const loadNightTally = async (userId: string, now: Date): Promise<NightTally> => {
+  const rows = await db
+    .select({ titleId: pickEvents.titleId, catalogId: pickEvents.catalogId, kind: pickEvents.kind })
+    .from(pickEvents)
+    .where(
+      and(
+        eq(pickEvents.userId, userId),
+        inArray(pickEvents.kind, ["watched", "not_tonight"]),
+        gte(pickEvents.createdAt, nightStartedAt(now)),
+      ),
+    );
+  const films = (kind: string) => {
+    const byCatalog = new Map<string, Set<string>>();
+    for (const row of rows) {
+      if (row.kind !== kind || !row.catalogId) continue;
+      const keys = byCatalog.get(row.catalogId) ?? new Set([row.catalogId]);
+      if (row.titleId) keys.add(row.titleId);
+      byCatalog.set(row.catalogId, keys);
+    }
+    return byCatalog;
+  };
+  const watched = films("watched");
+  const stillWatched =
+    watched.size > 0
+      ? await db
+          .select({ id: titles.id, catalogId: titles.catalogId })
+          .from(titles)
+          .where(
+            and(eq(titles.userId, userId), inArray(titles.catalogId, [...watched.keys()]), isNotNull(titles.watchedAt)),
+          )
+      : [];
+  return {
+    watched: stillWatched.map((row) => [...(watched.get(row.catalogId) ?? []), row.id]),
+    notTonight: [...films("not_tonight").values()].map((keys) => [...keys]),
+  };
 };
 
 type TitleRowWithLists = Title & {
@@ -375,6 +432,32 @@ export type PickEventWrite = {
  * Store feedback by film. A `titleId` is resolved to its `catalogId` (so the event survives the
  * title and still counts for the recommendation of the same film); a bare `catalogId` must exist.
  */
+/**
+ * «Deshacer» on «Ahora no» / «No me interesa»: removes the latest event of that kind for the film
+ * (by the user's title, or by the film when it was a recommendation). True when one was removed.
+ */
+export const deleteLatestPickEvent = async (
+  userId: string,
+  kind: "not_tonight" | "less_like",
+  ref: { titleId?: string; catalogId?: string },
+) => {
+  const film = ref.titleId ? eq(pickEvents.titleId, ref.titleId) : ref.catalogId ? eq(pickEvents.catalogId, ref.catalogId) : null;
+  if (!film) {
+    return false;
+  }
+  const [latest] = await db
+    .select({ id: pickEvents.id })
+    .from(pickEvents)
+    .where(and(eq(pickEvents.userId, userId), eq(pickEvents.kind, kind), film))
+    .orderBy(desc(pickEvents.createdAt))
+    .limit(1);
+  if (!latest) {
+    return false;
+  }
+  await db.delete(pickEvents).where(and(eq(pickEvents.id, latest.id), eq(pickEvents.userId, userId)));
+  return true;
+};
+
 export const recordPickEvents = async (userId: string, events: ReadonlyArray<PickEventWrite>) => {
   if (events.length === 0) {
     return;
@@ -733,6 +816,7 @@ export const getTonightDecks = async (
       computedAt: result.computedAt.toISOString(),
       queueSize: input.queue.length,
       recosWarming: freshWarming,
+      tally: await loadNightTally(userId, now).catch(() => EMPTY_TALLY),
     };
   }
 
@@ -825,6 +909,7 @@ export const getTonightDecks = async (
     computedAt: newest ? newest.toISOString() : now.toISOString(),
     queueSize: queueCount,
     recosWarming,
+    tally: await loadNightTally(userId, now).catch(() => EMPTY_TALLY),
   };
 };
 
