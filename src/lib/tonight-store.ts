@@ -56,7 +56,7 @@ import {
 } from "@/lib/tonight";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
 import { hasVisteSeeds, visteDoorLens, visteStatus } from "@/lib/piezas/viste";
-import { placeRutaLenses } from "@/lib/rutas/core";
+import { placeDoorLens, placeRutaLenses } from "@/lib/rutas/core";
 import { loadRutaLenses } from "@/lib/rutas/hoy";
 import { isTmdbConfigured } from "@/lib/tmdb";
 
@@ -844,6 +844,9 @@ const withPiezas = async (
   try {
     const ruta = await loadRutaLenses(userId, userPlatforms, now);
     placed = placeRutaLenses(placed, ruta.lenses, recos.length > 0, ruta.cardIds);
+    if (ruta.door) {
+      placed = placeDoorLens(placed, ruta.door);
+    }
   } catch {
     // Hoy without rutas today.
   }

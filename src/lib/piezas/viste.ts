@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { and, eq, gte, inArray, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull } from "drizzle-orm";
 import { catalog, db, pickEvents, titles, type CatalogRow } from "@/db";
 import { upsertTitleFromTmdbForUser } from "@/lib/add-title-from-tmdb";
 import { scheduleCatalogEnrichment } from "@/lib/catalog-enrich";
@@ -23,7 +23,8 @@ import { parseThreadPeople } from "@/lib/rutas/core";
 import { loadFactoryContext } from "@/lib/rutas/factories";
 import { loadRutas, loadWatchedFilms } from "@/lib/rutas/store";
 import { getTmdbRelated, isTmdbConfigured } from "@/lib/tmdb";
-import { scheduleTonightRecompute, type TonightCard, type TonightLensView } from "@/lib/tonight-store";
+import { doorLens } from "@/lib/tonight/door-card";
+import { scheduleTonightRecompute, type TonightLensView } from "@/lib/tonight-store";
 
 /**
  * «¿Las viste?» (FIL-I26-3, board P2): films you have probably seen, three at a time and as many
@@ -287,37 +288,14 @@ export const answerViste = async (
 };
 
 /** Hoy's door to «¿Las viste?» (a lens of one card): always open, no daily limit. */
-export const visteDoorLens = (answered: number): TonightLensView => {
-  const card: TonightCard = {
-    id: `__${VISTE_LENS}__`,
-    name: VISTE_NAME,
-    kind: "MOVIE",
-    year: null,
-    rating: null,
-    posterPath: null,
-    platform: null,
-    imdbRating: null,
-    runtimeMinutes: null,
-    components: { gusto: 0.5, calidad: 0.5, impulso: 0, novedad: 0, reposo: 0, fatiga: 1 },
-    reasons: [],
-    wildcard: false,
-    pinned: false,
-    posterAmbient: null,
-    queueNote: null,
-    overview: null,
-    leads: [],
-    source: "queue",
-    reco: null,
-    portal: {
-      eyebrow: "Diez segundos",
-      title: VISTE_NAME,
-      body:
-        answered === 0
-          ? "Películas que quizá ya viste: la vi y me gustó, la vi y no tanto, o no la vi. Las que quieras."
-          : `Llevas ${answered} hoy. Sigue cuando quieras.`,
-      cta: answered === 0 ? "Empezar" : "Seguir",
-      href: VISTE_PATH,
-    },
-  };
-  return { slug: VISTE_LENS, name: VISTE_NAME, kind: "pieza", titles: [card] };
-};
+export const visteDoorLens = (answered: number): TonightLensView =>
+  doorLens(VISTE_LENS, VISTE_NAME, {
+    eyebrow: "Diez segundos",
+    title: VISTE_NAME,
+    body:
+      answered === 0
+        ? "Películas que quizá ya viste: la vi y me gustó, la vi y no tanto, o no la vi. Las que quieras."
+        : `Llevas ${answered} hoy. Sigue cuando quieras.`,
+    cta: answered === 0 ? "Empezar" : "Seguir",
+    href: VISTE_PATH,
+  });
