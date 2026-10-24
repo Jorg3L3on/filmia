@@ -405,12 +405,6 @@ export const DeckCard = memo(function DeckCard({
             <PersonAvatar person={title.addedBy} size={20} />
           </span>
         ) : null}
-        {isReco && !tonight?.ruta ? (
-          <span data-deck-reco-badge className={cn("reco-badge", recoSaved && "is-saved")} aria-hidden>
-            {recoSaved ? <CheckIcon /> : <SparkIcon />}
-            {recoSaved ? "En Quiero ver" : "Recomendada"}
-          </span>
-        ) : null}
         {!cinematic &&
         !compact &&
         title.kind === "SERIES" &&
@@ -498,15 +492,3 @@ const MoreDots = () => (
   </svg>
 );
 
-const SparkIcon = () => (
-  <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true">
-    <path d="M12 2.5c.6 3.9 2.6 5.9 6.5 6.5-3.9.6-5.9 2.6-6.5 6.5-.6-3.9-2.6-5.9-6.5-6.5 3.9-.6 5.9-2.6 6.5-6.5Z" />
-    <path d="M5 15.5c.3 1.8 1.2 2.7 3 3-1.8.3-2.7 1.2-3 3-.3-1.8-1.2-2.7-3-3 1.8-.3 2.7-1.2 3-3Z" />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth={3} aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" d="m5 12.5 4.5 4.5L19 7.5" />
-  </svg>
-);

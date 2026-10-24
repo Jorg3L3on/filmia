@@ -105,9 +105,9 @@ const run = () => {
   const recoMigration = read("drizzle/0011_tonight_recos.sql");
   assert(recoMigration.includes("IF NOT EXISTS") && !/DROP\s+(TABLE|COLUMN)/i.test(recoMigration) && !/SET NOT NULL/i.test(recoMigration), "Migration 0011 is additive and idempotent (live build keeps working)");
 
-  // Recommended cards (FIL-I6-4, FIL-I8): a badge that is not the queue's, its own menu, the ficha preview, no blur.
+  // Recommended cards (FIL-I6-4, FIL-I8): said under the card (no badge over the poster), its own menu, the ficha preview, no blur.
   const deckCard = read("src/components/coverflow/DeckCard.tsx");
-  assert(deckCard.includes("data-deck-reco-badge") && deckCard.includes("recomendada, no está en Quiero ver"), "Recommended card carries a badge and says so to screen readers");
+  assert(!deckCard.includes("reco-badge") && deckCard.includes("recomendada, no está en Quiero ver"), "No «Recomendada» badge over the poster; the card still says so to screen readers");
   assert(deckCard.includes("sala?.onOpenReco(title)") && deckCard.includes("recoPreviewHref") && deckCard.includes("sala.markRecoSeen(title, formData)"), "Tapping a recommendation opens its ficha preview; the stub opens Marqué visto and creates the title with it");
   const salaSource = read("src/components/tonight/TonightSala.tsx");
   assert(read("src/components/tonight/TonightCardMenu.tsx").includes("No me interesa") && !salaSource.includes("RecoPreviewSheet"), "Recommended cards have their own menu; the Buscar preview sheet is gone (FIL-I8)");
@@ -115,7 +115,7 @@ const run = () => {
   const recoActions = read("src/components/tonight/useRecoActions.ts");
   assert(recoActions.includes("localRef.current[cardId]") && recoActions.includes("localRef.current = {"), "Deshacer reads the title id from a ref, not from the render that started the stub's flight");
   assert(read("src/lib/tonight-store.ts").includes("titleId: null,\n          catalogId: event.catalogId"), "Events on a recommendation keep no title, so they stay apart from the queue's");
-  const recoCss = css.slice(css.indexOf(".reco-badge {"), css.indexOf(".tonight-chip {"));
+  const recoCss = css.slice(css.indexOf(".reco-eyebrow {"), css.indexOf(".tonight-chip {"));
   assert(recoCss.includes(".reco-eyebrow") && !/backdrop-filter|filter:\s*blur/.test(recoCss), "Recommended styles use no blur (the sala must stay light)");
 
   // Pure engine sanity.

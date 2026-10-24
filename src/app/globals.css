@@ -2451,36 +2451,7 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   inset: -10px -6px;
 }
 
-/* Recommended card (FIL-I6-4): not in Quiero ver. Solid, no blur: the sala runs on slow phones too. */
-.reco-badge {
-  position: absolute;
-  left: 10px;
-  top: 10px;
-  z-index: 10;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 22px;
-  padding: 0 9px 0 7px;
-  border-radius: 9999px;
-  border: 1px solid rgb(var(--reco-rgb) / 0.55);
-  background: rgb(8 30 28 / 0.92);
-  color: var(--reco);
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.01em;
-  line-height: 1;
-  white-space: nowrap;
-  pointer-events: none;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.45);
-}
-
-.reco-badge.is-saved {
-  border-color: rgb(255 255 255 / 0.25);
-  background: rgb(0 0 0 / 0.85);
-  color: var(--paper);
-}
-
+/* Recommended card (FIL-I6-4): said under the card, not over the poster. No blur: the sala runs on slow phones too. */
 .reco-eyebrow {
   font-size: 11px;
   font-weight: 600;
