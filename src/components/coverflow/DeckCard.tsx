@@ -162,6 +162,7 @@ export const DeckCard = memo(function DeckCard({
       posterPath={title.posterPath}
       priority={nearFocus}
       sizes={posterSizes}
+      responsive
       className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
     />
   );
