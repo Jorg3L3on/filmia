@@ -12,6 +12,7 @@ import {
   clearTitleWatched,
   markTitleWatched,
   removeFromWatchlistById,
+  restoreTitleWatched,
 } from "@/app/actions/watchlist";
 import { MarkWatchedSheet } from "@/components/MarkWatchedSheet";
 import { retargetCurrentNav } from "@/components/NavOriginTracker";
@@ -25,6 +26,7 @@ import type { SelectableList } from "@/lib/list-selection";
 import { useSpringFeedback } from "@/lib/motion";
 import type { AddTitleFromTmdbInput } from "@/lib/add-title-from-tmdb";
 import { handoffKey, writeFichaHandoff } from "@/lib/ficha-handoff";
+import { showDiaryRemovedToast } from "@/lib/diary-undo";
 import { diaryDayLabel, diaryMonthHref, ownedFichaHref, type DiaryLog } from "@/lib/title-preview";
 import { showToast } from "@/lib/toast";
 import { PARA_TI_SLUG } from "@/lib/tonight/select";
@@ -51,6 +53,8 @@ type TitleFichaActionsProps = {
   diaryLog?: DiaryLog | null;
   titleName: string;
   watched: boolean;
+  /** Calendar day `YYYY-MM-DD` already on the entry. Deshacer puts this date back. */
+  watchedAt?: string | null;
   inWatchlist: boolean;
   /** Saved lists (Quiero ver excluded). */
   listCount: number;
@@ -99,6 +103,7 @@ export const TitleFichaActions = ({
   diaryLog = null,
   titleName,
   watched,
+  watchedAt = null,
   inWatchlist,
   listCount,
   rating,
@@ -114,9 +119,19 @@ export const TitleFichaActions = ({
   const [ratingOpen, setRatingOpen] = useState(false);
   const [seenOpen, setSeenOpen] = useState(false);
   const [seenOptimistic, setSeenOptimistic] = useState(false);
+  const [diaryHold, setDiaryHold] = useState<null | "removed" | "restoring">(null);
+  const [seenWatched, setSeenWatched] = useState(watched);
+  if (watched !== seenWatched) {
+    setSeenWatched(watched);
+    if (diaryHold === "removed" && !watched) {
+      setDiaryHold(null);
+    } else if (diaryHold === "restoring" && watched) {
+      setDiaryHold(null);
+    }
+  }
   const [justPinned, setJustPinned] = useState(false);
   const [isPinning, setPinning] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"watched" | "rating" | "watchlist" | null>(null);
+  const [pendingAction, setPendingAction] = useState<"rating" | "watchlist" | null>(null);
   const { value: state, error, run } = useStickyOptimistic(
     { watched, inWatchlist, rating, review, pinned: pinnedTonight },
     sameActionState,
@@ -149,7 +164,8 @@ export const TitleFichaActions = ({
     return snapshot;
   };
 
-  const displayedWatched = state.watched || seenOptimistic;
+  const displayedWatched =
+    diaryHold === "restoring" || (diaryHold !== "removed" && (state.watched || seenOptimistic));
 
   const handlePin = () => {
     if (state.pinned || isPinning) {
@@ -216,22 +232,35 @@ export const TitleFichaActions = ({
   };
 
   const handleToggleWatched = () => {
+    if (diaryHold === "restoring") {
+      return;
+    }
     if (!displayedWatched) {
       setSeenOpen(true);
       return;
     }
+    if (titleId == null || !watchedAt) {
+      return;
+    }
+    const isoDate = watchedAt;
+    const id = titleId;
     setSeenOptimistic(false);
-    setPendingAction("watched");
+    setDiaryHold("removed");
     watchedSpring.trigger();
-    showToast({ title: "Quitada del diario" });
-    run({ ...state, watched: false }, async () => {
-      try {
-        if (titleId != null) {
-          await clearTitleWatched(titleId);
-        }
-      } finally {
-        setPendingAction(null);
-      }
+    const clear = clearTitleWatched(id);
+    showDiaryRemovedToast({
+      clear,
+      restore: () => restoreTitleWatched(id, isoDate),
+      onUndo: () => setDiaryHold("restoring"),
+      onUndoFailed: () => setDiaryHold(null),
+    });
+    void clear.catch((caught) => {
+      setDiaryHold(null);
+      showToast({
+        title: "No se pudo quitar",
+        description: caught instanceof Error ? caught.message : "No se pudo quitar.",
+        variant: "error",
+      });
     });
   };
 
@@ -409,7 +438,7 @@ export const TitleFichaActions = ({
           <button
             type="button"
             onClick={handleToggleWatched}
-            disabled={pendingAction === "watched"}
+            disabled={diaryHold === "restoring"}
             aria-pressed={displayedWatched}
             aria-label={displayedWatched ? "Quitar de visto" : "Marcar como visto"}
             className={cn(
@@ -485,6 +514,7 @@ export const TitleFichaActions = ({
         onClose={() => setSeenOpen(false)}
         onSaved={() => {
           setSeenOptimistic(true);
+          setDiaryHold(null);
           watchedSpring.trigger();
         }}
         onError={() => setSeenOptimistic(false)}

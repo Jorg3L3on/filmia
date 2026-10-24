@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { clearTitleWatched } from "@/app/actions/watchlist";
+import { clearTitleWatched, restoreTitleWatched } from "@/app/actions/watchlist";
 import { Button } from "@/components/Button";
-import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { MarkWatchedSheet } from "@/components/MarkWatchedSheet";
 import { WatchedBadge } from "@/components/WatchedBadge";
 import { ShareButton, ShareIcon } from "@/components/share/ShareButton";
 import type { Platform } from "@/db";
 import { formatWatchedDate, toDateInput } from "@/lib/dates";
+import { showDiaryRemovedToast } from "@/lib/diary-undo";
 import { slugify } from "@/lib/labels";
 import { reviewShareText } from "@/lib/share-card";
 import { showToast } from "@/lib/toast";
@@ -36,6 +36,27 @@ export const FichaWatchedSection = ({
 }: FichaWatchedSectionProps) => {
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
+
+  const handleRemove = () => {
+    const isoDate = toDateInput(watchedAt);
+    setHidden(true);
+    const clear = clearTitleWatched(titleId);
+    showDiaryRemovedToast({
+      clear,
+      restore: () => restoreTitleWatched(titleId, isoDate),
+      onUndo: () => setHidden(false),
+      onUndoFailed: () => setHidden(true),
+    });
+    void clear.catch((caught) => {
+      setHidden(false);
+      const message = caught instanceof Error ? caught.message : "No se pudo quitar.";
+      showToast({
+        title: "No se pudo quitar",
+        description: message,
+        variant: "error",
+      });
+    });
+  };
 
   if (hidden) {
     return null;
@@ -68,27 +89,9 @@ export const FichaWatchedSection = ({
           <ShareIcon className="size-4" />
           Compartir
         </ShareButton>
-        <ConfirmSubmit
-          label="Quitar del diario"
-          confirmMessage="¿Quitar la fecha de visto? Se conservan tu nota y el comentario."
-          action={async () => {
-            setHidden(true);
-            showToast({ title: "Quitada del diario" });
-            try {
-              await clearTitleWatched(titleId);
-            } catch (caught) {
-              setHidden(false);
-              const message =
-                caught instanceof Error ? caught.message : "No se pudo quitar.";
-              showToast({
-                title: "No se pudo quitar",
-                description: message,
-                variant: "error",
-              });
-              throw caught;
-            }
-          }}
-        />
+        <Button type="button" variant="danger" onClick={handleRemove}>
+          Quitar del diario
+        </Button>
       </div>
 
       <MarkWatchedSheet

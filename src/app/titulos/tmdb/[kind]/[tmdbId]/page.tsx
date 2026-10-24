@@ -278,6 +278,7 @@ const PreviewActions = async ({
       diaryLog={diaryLog}
       titleName={title.name}
       watched={false}
+      watchedAt={null}
       inWatchlist={false}
       listCount={0}
       rating={null}

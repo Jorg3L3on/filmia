@@ -1876,6 +1876,56 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   }
 }
 
+/* Centered crystal alert (FIL-I29). Same glass as sheets; fade only, never a rise. */
+.glass-panel.glass-alert {
+  background-color: rgb(16 20 28 / 0.92);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .glass-panel.glass-alert {
+    background-color: rgb(16 20 28 / 0.8);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass-panel.glass-alert {
+    background-color: rgb(24 28 35 / 0.97);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+.confirm-danger {
+  background: linear-gradient(180deg, #ff7d8b, #e5485a);
+  color: #14060a;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    0 10px 24px -8px rgb(255 107 122 / 0.7);
+}
+
+.confirm-fade-in {
+  animation: confirm-fade-in var(--duration-enter) var(--ease-out) backwards;
+}
+
+.confirm-fade-out {
+  animation: confirm-fade-out var(--duration-exit, 240ms) var(--ease-out) forwards;
+}
+
+@keyframes confirm-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes confirm-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
 /* The drag zone owns vertical gestures; inner scrollers are scroll containers, so they still pan. */
 .sheet-drag-zone {
   touch-action: none;
