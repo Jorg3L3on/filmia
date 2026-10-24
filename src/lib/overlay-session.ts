@@ -56,7 +56,7 @@ export type OverlaySessionOptions = {
   env?: OverlayEnv;
 };
 
-const stack: symbol[] = [];
+const sheetStack: symbol[] = [];
 let scrollLocks = 0;
 let savedOverflow: { html: string; body: string } | null = null;
 
@@ -126,7 +126,7 @@ export const openOverlaySession = ({
   const resolved = env ?? browserEnv();
   const { document: doc, window: win } = resolved;
   const id = Symbol("overlay");
-  stack.push(id);
+  sheetStack.push(id);
   lockScroll(doc);
 
   const root = doc.documentElement;
@@ -144,7 +144,7 @@ export const openOverlaySession = ({
   });
 
   const handleKeyDown = (event: KeyboardEvent) => {
-    if (stack[stack.length - 1] !== id) {
+    if (sheetStack[sheetStack.length - 1] !== id) {
       return;
     }
     if (event.key === "Escape") {
@@ -180,15 +180,15 @@ export const openOverlaySession = ({
     }
     released = true;
     win.cancelAnimationFrame(focusFrame);
-    const index = stack.indexOf(id);
+    const index = sheetStack.indexOf(id);
     if (index !== -1) {
-      stack.splice(index, 1);
+      sheetStack.splice(index, 1);
     }
     unlockScroll(doc);
     win.removeEventListener("keydown", handleKeyDown);
     viewport?.removeEventListener("resize", syncKeyboardInset);
     viewport?.removeEventListener("scroll", syncKeyboardInset);
-    if (stack.length === 0) {
+    if (sheetStack.length === 0) {
       root.style.removeProperty("--keyboard-inset");
     }
     if (previouslyFocused && previouslyFocused.isConnected !== false) {
@@ -199,7 +199,7 @@ export const openOverlaySession = ({
 
 /** Test isolation: the lock counter is process-wide. */
 export const resetOverlaySessionForTests = () => {
-  stack.length = 0;
+  sheetStack.length = 0;
   scrollLocks = 0;
   savedOverflow = null;
 };

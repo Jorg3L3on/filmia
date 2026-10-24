@@ -12,6 +12,7 @@ const read = (file: string) => readFileSync(path.join(root, file), "utf8");
 
 const fichaActions = read("src/components/TitleFichaActions.tsx");
 const sheet = read("src/components/Sheet.tsx");
+const overlay = read("src/lib/overlay-session.ts");
 const css = read("src/app/globals.css");
 const ui = read("src/lib/ui.ts");
 const motion = read("src/lib/motion.ts");
@@ -256,7 +257,7 @@ assert(
   "Sheets lift above the iOS keyboard via visualViewport",
 );
 assert(
-  sheet.includes("trapTab") && sheet.includes("previouslyFocused") && sheet.includes("sheetStack"),
+  overlay.includes("trapTab") && overlay.includes("previouslyFocused") && overlay.includes("sheetStack"),
   "Sheets trap focus, restore it on close, and only the topmost reacts to Escape",
 );
 
