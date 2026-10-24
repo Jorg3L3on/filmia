@@ -3,9 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { activateRuta, parkRuta, rutaAfterWatch, startRuta } from "@/app/actions/rutas";
-import { addTitleFromTmdb } from "@/app/actions/titles";
+import { markTmdbTitleWatched } from "@/app/actions/title-preview";
 import { pinTonightFromSearch } from "@/app/actions/tonight";
 import { Button } from "@/components/Button";
+import { MarkWatchedSheet } from "@/components/MarkWatchedSheet";
 import { RutaRevealSheet } from "@/components/rutas/RutaRevealSheet";
 import type { RutaOffer } from "@/lib/rutas/factories";
 import type { RutaReveal, RutaStepCard } from "@/lib/rutas/reveal";
@@ -14,10 +15,14 @@ import { pulseNav } from "@/lib/fly-to-nav";
 import { showToast } from "@/lib/toast";
 import { focusRing } from "@/lib/ui";
 
-/** The next step on the ruta page (R2): «Ver esta noche» or «Ya la vi», which flips the one after. */
+/**
+ * The next step on the ruta page (R2): «Ver esta noche» or «Ya la vi». «Ya la vi» opens the same
+ * Marqué visto sheet as everywhere else (nota, fecha, dónde); once saved, the one after flips.
+ */
 export const RutaStepActions = ({ rutaId, step }: { rutaId: string; step: RutaStepCard }) => {
   const router = useRouter();
-  const [pending, setPending] = useState<"pin" | "seen" | null>(null);
+  const [pending, setPending] = useState<"pin" | null>(null);
+  const [seenOpen, setSeenOpen] = useState(false);
   const [reveal, setReveal] = useState<RutaReveal | null>(null);
   const [, startTransition] = useTransition();
   const film = {
@@ -43,23 +48,17 @@ export const RutaStepActions = ({ rutaId, step }: { rutaId: string; step: RutaSt
     });
   };
 
-  const seen = () => {
-    setPending("seen");
-    startTransition(async () => {
-      const outcome = await addTitleFromTmdb({ ...film, destination: "watched" });
-      if (!outcome.ok) {
-        setPending(null);
-        showToast({ title: "No se pudo guardar", description: outcome.error, variant: "error" });
-        return;
-      }
-      const next = await rutaAfterWatch(rutaId, step.catalogId).catch(() => null);
-      setPending(null);
-      if (next) {
-        setReveal(next);
-      } else {
-        router.refresh();
-      }
-    });
+  const saveSeen = async (formData: FormData) => {
+    const outcome = await markTmdbTitleWatched(film, formData);
+    if (!outcome.ok) {
+      throw new Error(outcome.error);
+    }
+    const next = await rutaAfterWatch(rutaId, step.catalogId).catch(() => null);
+    if (next) {
+      setReveal(next);
+    } else {
+      router.refresh();
+    }
   };
 
   return (
@@ -68,10 +67,19 @@ export const RutaStepActions = ({ rutaId, step }: { rutaId: string; step: RutaSt
         <Button size="sm" onClick={pin} pending={pending === "pin"} disabled={pending != null}>
           Ver esta noche
         </Button>
-        <Button size="sm" variant="secondary" onClick={seen} pending={pending === "seen"} disabled={pending != null}>
+        <Button size="sm" variant="secondary" onClick={() => setSeenOpen(true)} disabled={pending != null}>
           Ya la vi
         </Button>
       </div>
+      <MarkWatchedSheet
+        open={seenOpen}
+        titleId={step.titleId ?? `preview:MOVIE:${step.tmdbId}`}
+        titleName={step.displayName}
+        saveLabel="Guardar en el diario"
+        silent
+        onClose={() => setSeenOpen(false)}
+        submit={saveSeen}
+      />
       <RutaRevealSheet
         reveal={reveal}
         onClose={() => {
