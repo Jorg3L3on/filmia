@@ -150,7 +150,7 @@ One live region (`aria-live="polite"`, `aria-relevant="additions text"`) stays m
 
 The clock lives in the store, so it does not restart when auth chrome swaps. It pauses while the pointer is over the toast, while focus is inside it, while it is pressed, and while the tab is hidden; the 7 s line pauses with the same holds. Hover, focus and press stack: leaving one does not resume if another still holds.
 
-`prefers-reduced-motion`: `.toast-in` / `.toast-out` become a 120 ms opacity fade. No translate, no animated blur. The light line is a transform written from the remaining time, not a CSS animation, so it still tracks the 7 s.
+`prefers-reduced-motion`: `.toast-in` / `.toast-out` become a 120 ms opacity fade. No translate, no animated blur. The progress spinner stops. The light line is a transform written from the remaining time, not a CSS animation, so it still tracks the 7 s.
 
 `prefers-reduced-transparency` and no `backdrop-filter` use a solid `rgb(24 28 35 / .97)`. `prefers-contrast: more` uses `rgb(10 12 15 / .97)` and a 2 px light edge.
 

@@ -879,6 +879,10 @@ html.toast-force-reduce .toast-out {
   filter: none !important;
 }
 
+html.toast-force-reduce .toast-icon-spin .toast-spin {
+  animation: none !important;
+}
+
 /* Coverflow mazo: compositor-only transforms; dim/blur on face overlays. */
 .coverflow-card {
   contain: layout style;
@@ -3391,6 +3395,10 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   .toast-out {
     animation: toast-fade-out 120ms linear both !important;
     filter: none !important;
+  }
+
+  .toast-icon-spin .toast-spin {
+    animation: none !important;
   }
 
   .tab-transition {

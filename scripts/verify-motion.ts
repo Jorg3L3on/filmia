@@ -112,6 +112,10 @@ assert(
   "Reduced-motion toasts fade for 120ms without the travel animation",
 );
 assert(
+  css.includes(".toast-icon-spin .toast-spin {\n    animation: none !important;"),
+  "The progress spinner stops under reduced motion",
+);
+assert(
   !existsSync(path.join(root, "src/components/SuccessToast.tsx")),
   "The flat SuccessToast is gone",
 );
