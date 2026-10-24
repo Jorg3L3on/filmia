@@ -186,6 +186,11 @@ export const TicketStub = ({
       return;
     }
     event.stopPropagation();
+    // The mouse came back with its button already up (released outside the page): that was the release.
+    if (event.pointerType === "mouse" && event.buttons === 0) {
+      finishDrag();
+      return;
+    }
     if (prefersReducedMotion()) {
       return;
     }
@@ -203,8 +208,19 @@ export const TicketStub = ({
     if (!active.current) {
       return;
     }
-    active.current = false;
     event.stopPropagation();
+    finishDrag();
+  };
+
+  /**
+   * Decides a drag by how far it went. Also runs when the release never reaches the stub (let go
+   * outside the page, capture lost): otherwise it stays pulled with «Suelta para…» forever.
+   */
+  const finishDrag = () => {
+    if (!active.current) {
+      return;
+    }
+    active.current = false;
     setDragging(false);
     // Only pointerup decides; a finger slides a few px on every tap, so 12 px still count as one.
     const release = resolveStubRelease(travel.current);
@@ -228,6 +244,26 @@ export const TicketStub = ({
     reset();
   };
 
+  // Capture lost without a pointerup (it also fires after a normal one, when `active` is already off).
+  const handleLostPointerCapture = () => finishDrag();
+
+  // The window lost focus mid-drag: no release will come, spring back.
+  useEffect(() => {
+    if (!dragging) {
+      return;
+    }
+    const cancel = () => {
+      if (!active.current) {
+        return;
+      }
+      active.current = false;
+      setDragging(false);
+      reset();
+    };
+    window.addEventListener("blur", cancel);
+    return () => window.removeEventListener("blur", cancel);
+  }, [dragging]);
+
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "Enter" || event.key === " " || event.key === "ArrowDown") {
       event.preventDefault();
@@ -247,6 +283,7 @@ export const TicketStub = ({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
+        onLostPointerCapture={handleLostPointerCapture}
         onKeyDown={handleKeyDown}
         onClick={(event) => event.stopPropagation()}
         data-no-sheet-drag=""
