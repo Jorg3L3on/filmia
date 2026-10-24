@@ -1410,11 +1410,6 @@ body:has(.diario-que-ver-shell) footer.site-footer {
   }
 }
 
-.tonight-eyebrow-compact {
-  line-height: 1;
-  margin: 0;
-}
-
 /* Phone: two rows before the stage (header 48 + eyebrow/rail/bar ≈ 68 → stage at ~116 px). */
 @media (max-width: 639px) {
   .tonight-sala .genre-coverflow {
@@ -1998,12 +1993,8 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   margin-bottom: var(--stub-room);
 }
 
-/* iPhone SE / mini (≤ 700 px tall): no eyebrow, hero at ~56 % of the stage (292 px tall). */
+/* iPhone SE / mini (≤ 700 px tall): hero at ~56 % of the stage (292 px tall). */
 @media (max-width: 767px) and (max-height: 700px) {
-  .tonight-eyebrow-compact {
-    display: none;
-  }
-
   .tonight-sala .coverflow-cinematic-stage {
     /* 310 px of stage → hero ≈ 180 px (52 % of 343): the night line (26 px) keeps 20 px to the dock. */
     height: calc(310px - var(--stub-room));

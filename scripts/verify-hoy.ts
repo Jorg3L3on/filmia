@@ -81,7 +81,7 @@ const run = () => {
 
   // Time of day: Esta mañana / tarde / noche; the moon, bedtime chip and fit copy only at night.
   const eyebrow = read("src/components/tonight/TonightEyebrow.tsx");
-  assert(eyebrow.includes("DAY_PART_LABEL") && eyebrow.includes('dayPart === "noche"'), "Eyebrow follows the viewer's part of the day; bedtime chip only at night");
+  assert(!eyebrow.includes("DAY_PART_LABEL") && eyebrow.includes('dayPart === "noche"'), "No «Esta noche · fecha» label over the deck; bedtime chip only at night, by the viewer's clock");
   assert(footer.includes("sala?.dayPart") , "Footer hides «acaba / se pasa» by day");
   assert(read("src/lib/tonight/serve.ts").includes("night ? fitReason"), "rankForNow adds the fit reason only at night");
   assert(sala.includes("useTonightClock"), "Sala clock re-evaluates at the next day-part boundary");
