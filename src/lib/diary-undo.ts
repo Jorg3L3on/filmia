@@ -1,3 +1,4 @@
+import { showActionError, retryAfterRevert } from "@/lib/toast-alerts";
 import { dismissToast, showToast } from "@/lib/toast";
 
 /** Copy and timing for «Quitar del diario». The light line stays with FIL-I27. */
@@ -45,6 +46,7 @@ export const showDiaryRemovedToast = ({
   restore,
   onUndo,
   onUndoFailed,
+  poster,
 }: {
   clear: Promise<unknown>;
   restore: () => Promise<unknown>;
@@ -52,17 +54,32 @@ export const showDiaryRemovedToast = ({
   onUndo?: () => void;
   /** Restore itself failed. A failed clear is not this: the entry never left. */
   onUndoFailed?: () => void;
+  poster?: string;
 }) => {
   const id = showToast({
     title: DIARY_REMOVED_TITLE,
     durationMs: DIARY_UNDO_MS,
+    poster,
     action: {
       label: DIARY_UNDO_LABEL,
       onClick: () => {
         onUndo?.();
         void chainDiaryUndo(clear, restore).catch(() => {
           onUndoFailed?.();
-          showToast({ title: DIARY_UNDO_FAILED, variant: "error" });
+          showActionError({
+            title: DIARY_UNDO_FAILED,
+            poster,
+            retry: () =>
+              retryAfterRevert(
+                () => {
+                  onUndo?.();
+                },
+                () => {
+                  onUndoFailed?.();
+                },
+                () => restore(),
+              ),
+          });
         });
       },
     },

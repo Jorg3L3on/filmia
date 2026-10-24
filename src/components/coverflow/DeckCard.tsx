@@ -452,6 +452,7 @@ export const DeckCard = memo(function DeckCard({
           onCommit={onStubCommit}
           onSaved={handleStubSaved}
           onError={handleStubError}
+          toastOnError={false}
           saveSeen={isReco && sala ? (formData) => sala.markRecoSeen(title, formData) : undefined}
         />
       ) : null}

@@ -8,6 +8,7 @@ import { cn } from "@/lib/cn";
 import { isFixedListSlug, isSeriesStatusListSlug, listHref } from "@/lib/lists";
 import { sameIdList, useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { showToast } from "@/lib/toast";
+import { TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { eyebrowClass, focusRing, wellClass } from "@/lib/ui";
 
 export type AssignableList = {
@@ -20,13 +21,16 @@ type TitleListsPanelProps = {
   titleId: string;
   lists: AssignableList[];
   memberListIds: string[];
+  posterPath?: string | null;
 };
 
 export const TitleListsPanel = ({
   titleId,
   lists,
   memberListIds,
+  posterPath = null,
 }: TitleListsPanelProps) => {
+  const poster = toastPoster(posterPath);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const { value: optimisticIds, error, run } = useStickyOptimistic(
     memberListIds,
@@ -47,8 +51,9 @@ export const TitleListsPanel = ({
     const adding = !memberIds.has(listId);
     const list = lists.find((item) => item.id === listId);
     showToast({
-      title: adding ? "En la lista" : "Fuera de la lista",
+      title: adding ? TOAST_COPY.addedList : TOAST_COPY.removedList,
       description: list?.name,
+      poster,
     });
     run(next, async () => {
       try {

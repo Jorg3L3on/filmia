@@ -58,6 +58,8 @@ type TicketStubProps = {
   onCommit?: () => void;
   onSaved?: () => void;
   onError?: (message: string) => void;
+  /** False when the caller already toasts the save error (the Hoy deck). */
+  toastOnError?: boolean;
   /**
    * A recommendation has no title yet: «Marqué visto» creates it with the form, and the stub
    * plays its exit only once that save lands (undo, rutas and Universo need the new title).
@@ -91,6 +93,7 @@ export const TicketStub = ({
   onCommit,
   onSaved,
   onError,
+  toastOnError = true,
   saveSeen,
   className,
 }: TicketStubProps) => {
@@ -326,6 +329,7 @@ export const TicketStub = ({
         platform={platform ?? undefined}
         saveLabel={PICKS_SAVE_LABEL}
         silent
+        toastOnError={toastOnError}
         onClose={() => {
           setOpen(false);
           reset();
