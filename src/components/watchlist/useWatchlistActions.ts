@@ -11,6 +11,7 @@ import {
 import type { FichaView } from "@/components/watchlist/types";
 import { flyPosterToProfile, pulseNav } from "@/lib/fly-to-nav";
 import { tmdbPosterUrl } from "@/lib/tmdb";
+import { reportPickFailure, startWatchedUndo } from "@/lib/alert-retry";
 import { showToast } from "@/lib/toast";
 import { retryAfterRevert, showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { NOT_TONIGHT_DAYS } from "@/lib/tonight/score";
@@ -87,18 +88,12 @@ export const useWatchlistActions = ({
         action: {
           label: "Deshacer",
           onClick: () => {
-            restore(ficha.id);
-            void undoMarkWatched(ficha.id).catch(() => {
-              showActionError({
-                title: TOAST_COPY.couldNotUndo,
-                poster,
-                retry: () =>
-                  retryAfterRevert(
-                    () => restore(ficha.id),
-                    () => hide(ficha.id),
-                    () => undoMarkWatched(ficha.id),
-                  ),
-              });
+            startWatchedUndo({
+              apply: () => restore(ficha.id),
+              revert: () => hide(ficha.id),
+              undo: () => undoMarkWatched(ficha.id),
+              poster,
+              description: ficha.name,
             });
           },
         },
@@ -122,16 +117,7 @@ export const useWatchlistActions = ({
     });
     void markNotTonight(ficha.id, "quiero-ver").catch(() => {
       setSnoozedUntil(ficha.id, null);
-      showActionError({
-        title: TOAST_COPY.couldNotSave,
-        poster,
-        retry: () =>
-          retryAfterRevert(
-            () => setSnoozedUntil(ficha.id, until),
-            () => setSnoozedUntil(ficha.id, null),
-            () => markNotTonight(ficha.id, "quiero-ver"),
-          ),
-      });
+      reportPickFailure(poster);
     });
   };
 
@@ -150,16 +136,7 @@ export const useWatchlistActions = ({
     pulseNav("today");
     void pinTonight(ficha.id).catch(() => {
       setPinnedId(null);
-      showActionError({
-        title: TOAST_COPY.couldNotSave,
-        poster,
-        retry: () =>
-          retryAfterRevert(
-            () => setPinnedId(ficha.id),
-            () => setPinnedId(null),
-            () => pinTonight(ficha.id),
-          ),
-      });
+      reportPickFailure(poster);
     });
   };
 
@@ -197,7 +174,14 @@ export const useWatchlistActions = ({
           retryAfterRevert(
             () => setNote(ficha.id, next),
             () => setNote(ficha.id, ficha.queueNote),
-            () => updateWatchlistNote(ficha.id, formData),
+            async () => {
+              await updateWatchlistNote(ficha.id, formData);
+              showToast({
+                title: next ? TOAST_COPY.noteSaved : TOAST_COPY.noteRemoved,
+                description: ficha.name,
+                poster,
+              });
+            },
           ),
       });
     });

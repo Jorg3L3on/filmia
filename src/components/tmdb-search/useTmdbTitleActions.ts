@@ -15,7 +15,7 @@ import {
 import type { UserTmdbEntry } from "@/lib/queries";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import { showToast, type ToastPayload } from "@/lib/toast";
-import { showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
+import { showActionError, TOAST_COPY, toastPoster, toastWithPoster } from "@/lib/toast-alerts";
 import { PARA_TI_SLUG } from "@/lib/tonight/select";
 import { TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import {
@@ -155,7 +155,7 @@ export const useTmdbTitleActions = ({
       const custom = destination === "watchlist" && watchlistToast ? await watchlistToast(result) : null;
       showToast(
         custom
-          ? { ...custom, poster }
+          ? toastWithPoster(custom, poster)
           : destination === "watchlist"
             ? { title: TOAST_COPY.addedWatchlist, description, poster }
             : { title: TOAST_COPY.markedSeen, description, poster },

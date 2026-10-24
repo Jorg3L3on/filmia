@@ -1,4 +1,4 @@
-import { showActionError, retryAfterRevert } from "@/lib/toast-alerts";
+import { showActionError } from "@/lib/toast-alerts";
 import { dismissToast, showToast } from "@/lib/toast";
 
 /** Copy and timing for «Quitar del diario». The light line stays with FIL-I27. */
@@ -66,19 +66,11 @@ export const showDiaryRemovedToast = ({
         onUndo?.();
         void chainDiaryUndo(clear, restore).catch(() => {
           onUndoFailed?.();
+          // restoreTitleWatched only fills a null watchedAt and throws if the
+          // date is already back. A lost response must not be retried.
           showActionError({
             title: DIARY_UNDO_FAILED,
             poster,
-            retry: () =>
-              retryAfterRevert(
-                () => {
-                  onUndo?.();
-                },
-                () => {
-                  onUndoFailed?.();
-                },
-                () => restore(),
-              ),
           });
         });
       },

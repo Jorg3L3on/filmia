@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { describe, it } from "node:test";
 import { dismissToast, getToasts } from "@/lib/toast";
 import {
@@ -12,6 +13,7 @@ import {
   showActionError,
   showMaybeNetworkError,
   toastPoster,
+  toastWithPoster,
 } from "@/lib/toast-alerts";
 
 const clearToasts = () => {
@@ -76,14 +78,11 @@ describe("Reintentar runs once", () => {
     "quitar del diario",
     "guardar visto",
     "deshacer visto",
-    "ahora no",
-    "fijar esta noche",
     "guardar nota",
     "quitar de Quiero ver",
     "aparcar ruta",
     "agregar a la lista",
     "quitar de la lista",
-    "salir de la lista",
     "decidir solicitud",
   ];
 
@@ -112,6 +111,37 @@ describe("Reintentar runs once", () => {
     });
   }
 
+  it("hides a raw network message when the retry fails", async () => {
+    clearToasts();
+    showActionError({
+      title: TOAST_COPY.couldNotSave,
+      description: "Failed to fetch",
+      retry: async () => {
+        throw new TypeError("Failed to fetch");
+      },
+    });
+    getToasts().at(-1)?.action?.onClick();
+    await flush();
+    const second = getToasts().at(-1);
+    assert.equal(second?.action, undefined);
+    assert.equal(second?.description, TOAST_COPY.retryFailed);
+    clearToasts();
+  });
+
+  it("keeps a caller's poster when the fallback is missing", () => {
+    assert.deepEqual(toastWithPoster({ title: "Añadida a Quiero ver", poster: "/propia.jpg" }, undefined), {
+      title: "Añadida a Quiero ver",
+      poster: "/propia.jpg",
+    });
+    assert.deepEqual(toastWithPoster({ title: "Añadida a Quiero ver" }, "/catalogo.jpg"), {
+      title: "Añadida a Quiero ver",
+      poster: "/catalogo.jpg",
+    });
+    assert.deepEqual(toastWithPoster({ title: "Añadida a Quiero ver" }, undefined), {
+      title: "Añadida a Quiero ver",
+    });
+  });
+
   it("re-applies optimistic state and reverts it when the retry throws", async () => {
     const state: string[] = [];
     await assert.rejects(
@@ -134,19 +164,29 @@ describe("Reintentar runs once", () => {
   });
 });
 
-describe("loose durations", () => {
-  it("leaves durationMs only on the diary undo toast", () => {
-    const files = [
-      "src/components/tonight/TonightSala.tsx",
-      "src/components/watchlist/useWatchlistActions.ts",
-      "src/components/tonight/useRecoActions.ts",
-      "src/components/piezas/VisteRitual.tsx",
-      "src/components/cine/CineActions.tsx",
-      "src/components/share/ShareButton.tsx",
-    ];
-    for (const file of files) {
-      assert.equal(readFileSync(file, "utf8").includes("durationMs:"), false, file);
+const sourceFiles = (dir: string): string[] => {
+  const found: string[] = [];
+  for (const entry of readdirSync(dir)) {
+    const path = join(dir, entry);
+    if (statSync(path).isDirectory()) {
+      found.push(...sourceFiles(path));
+      continue;
     }
+    if (/\.(ts|tsx)$/.test(entry)) {
+      found.push(path);
+    }
+  }
+  return found;
+};
+
+describe("loose durations", () => {
+  it("has no six-second duration override anywhere under src", () => {
+    const needle = "durationMs:" + " 6000";
+    const hits = sourceFiles("src").filter((file) => readFileSync(file, "utf8").includes(needle));
+    assert.deepEqual(hits, []);
+  });
+
+  it("keeps the diary undo at its own 7s", () => {
     assert.match(readFileSync("src/lib/diary-undo.ts", "utf8"), /durationMs: DIARY_UNDO_MS/);
   });
 });

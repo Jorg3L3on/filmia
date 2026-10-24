@@ -5,6 +5,7 @@ import { memo, useRef, useState, type CSSProperties } from "react";
 import { MarkSeenEye } from "@/components/MarkSeenEye";
 import { TicketStub } from "@/components/tonight/TicketStub";
 import { ClosingCardContent } from "@/components/tonight/TonightClosingCard";
+import { deckShowsStub, stubToastsItsOwnError } from "@/components/coverflow/deck-stub";
 import { useTonight } from "@/components/tonight/TonightContext";
 import { flyPosterToProfile } from "@/lib/fly-to-nav";
 import { useLongPress } from "@/lib/motion";
@@ -116,7 +117,7 @@ export const DeckCard = memo(function DeckCard({
   const tonight = title.tonight;
   const isTonight = Boolean(tonight && sala && cinematic && !compact);
   const holdable = isTonight || Boolean(onOpenMenu && cinematic && !compact);
-  const showStub = !compact && !title.watched;
+  const showStub = deckShowsStub(compact, title.watched);
   const isReco = isTonight && tonight?.source === "reco";
   const recoSaved = Boolean(isReco && tonight?.reco?.saved);
   const [stamped, setStamped] = useState(false);
@@ -452,7 +453,7 @@ export const DeckCard = memo(function DeckCard({
           onCommit={onStubCommit}
           onSaved={handleStubSaved}
           onError={handleStubError}
-          toastOnError={false}
+          toastOnError={stubToastsItsOwnError(sala)}
           saveSeen={isReco && sala ? (formData) => sala.markRecoSeen(title, formData) : undefined}
         />
       ) : null}

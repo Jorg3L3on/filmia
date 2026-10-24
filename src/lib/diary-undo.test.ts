@@ -155,7 +155,9 @@ describe("Quitar del diario undo", { concurrency: 1 }, () => {
     await assert.rejects(result);
     await flush();
     assert.equal(failed, 1);
-    assert.equal(getToasts().some((item) => item.title === DIARY_UNDO_FAILED && item.variant === "error"), true);
+    const failedToast = getToasts().find((item) => item.title === DIARY_UNDO_FAILED && item.variant === "error");
+    assert.ok(failedToast);
+    assert.equal(failedToast.action, undefined);
     dismissDiary();
   });
 

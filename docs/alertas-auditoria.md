@@ -18,9 +18,9 @@ Los 7 archivos que el brief no listaba quedan en la zona más afín. El copy es 
 
 ## Regla de «Reintentar»
 
-1. **Seguro.** La operación es idempotente (repetirla deja el mismo estado) y el fallo es un rechazo (`catch`), no un resultado de negocio. El botón re-aplica el estado optimista que el fallo revirtió, ejecuta la operación **una vez** y, si vuelve a fallar, muestra el error sin botón.
-2. **Condicional.** Solo si el fallo es de red de verdad: `TypeError` de `fetch` (`Failed to fetch`, `Load failed`) o `DOMException` `NetworkError`. Un `Error` con mensaje de permiso o validación no lo es.
-3. **Sin acción.** No idempotente, el aviso ya está en la hoja, o el resultado es `{ ok: false, error: string }` **sin** código de estado. No se inventa la distinción leyendo el texto.
+1. **Verificada.** La acción se leyó y repetirla deja el mismo estado. El botón re-aplica el estado optimista, corre **una vez** y, si vuelve a fallar, el aviso no tiene botón. Un fallo de red en ese segundo intento usa el copy fijo «Sigue sin poder hacerse.», no «Failed to fetch».
+2. **Solo red.** La escritura es idempotente, pero el botón aparece únicamente si el fallo es `isNetworkFailure` (`TypeError` de `fetch` o `DOMException` `NetworkError`). Un `Error` de permiso no.
+3. **Sin acción.** No es idempotente, el resultado es `{ ok: false, error: string }` sin estado HTTP, o el aviso ya vive en otro sitio. No se inventa la distinción leyendo el texto.
 
 Un error con «Reintentar» permanece hasta cerrarlo (lo hace el store). Sin acción, el error dura 8 s. El mismo error reemplaza al anterior. «Deshacer» dura 7 s por defecto: se quitan los `durationMs: 6000`. `diary-undo` conserva `durationMs: 7000`.
 
@@ -32,34 +32,42 @@ Estas acciones devuelven `{ ok: false, error: string }` o solo entregan ese text
 
 | Llamada | Por qué no se distingue |
 | --- | --- |
-| `useTmdbTitleActions` 140, 183, 241 | `AddTitleFromTmdbResult` / pin / listas: `{ ok: false, error: string }` |
+| `useTmdbTitleActions` 141, 190, 252 | `AddTitleFromTmdbResult` / pin / listas: `{ ok: false, error: string }` |
 | `useRecoActions` 77, 111 | el mismo resultado |
-| `TonightSala` `onWatchError` (274) | llega un `string` ya armado; la operación y el formulario no están en ese callback |
+| `TonightSala` `onWatchError` (283) | llega un `string` ya armado; la operación y el formulario no están en ese callback |
 | `VisteRitual` 83 y 103 | `outcome.ok` / `saved.ok` con `error: string` |
 | `RemindPremiereButton` 39 | `outcome.error` |
 | `StartRutaButton` 33, `OnboardingFlow` 214, `RutaActions` 131 | `outcome.error` al empezar una ruta (además, empezar no es idempotente) |
 | `RutaActions` 43, `RutaRevealSheet` 46 | `outcome.error` al reservar |
 | `AddTitleToListCta` alta desde TMDB | `{ ok: false, error }` se marca `name: "ActionRejected"` y no lleva botón. Un `throw` de la acción (red) sí: el alta es idempotente |
 
-`MembersPanel` 93 sí se distingue: un `TypeError` de `fetch` ofrece «Reintentar»; `new Error("Ese rol no está disponible…")` o «Eres la persona dueña…» no. El helper es `isNetworkFailure` / `showMaybeNetworkError` en `src/lib/toast-alerts.ts`, con test.
+`MembersPanel` al cambiar un enlace, un rol o un miembro sí se distingue: un `TypeError` de `fetch` ofrece «Reintentar»; `new Error("Ese rol no está disponible…")` o «Eres la persona dueña…» no. `toggleInvite` escribe `disabledAt` a un valor (`setInviteDisabled`): repetirlo deja el enlace en el mismo estado, así que es idempotente y entra en «solo red».
+
+`restoreTitleWatched` no es idempotente. Solo rellena `watchedAt` cuando sigue nulo y, si la fecha ya volvió, lanza «Título no encontrado.». El Deshacer de «Quitada de tu diario» no lleva botón.
 
 ### Errores con «Reintentar» seguro
 
 | Dónde | Operación | Al fallar el reintento |
 | --- | --- | --- |
 | `FichaWatchedSection` | `clearTitleWatched` | revierte `hidden` |
-| `MarkWatchedForm` guardar | `markTitleWatched` | deja el error en la hoja |
-| `MarkWatchedForm` quitar | `clearTitleWatched` | el Deshacer ya se retira si el clear falla |
+| `MarkWatchedForm` guardar | `markTitleWatched` (escribe los mismos campos) | al acertar limpia el error en línea y confirma |
+| `MarkWatchedForm` quitar | `clearTitleWatched` (pone `watchedAt` a nulo) | al acertar limpia el error y vuelve a ofrecer Deshacer |
 | `TitleFichaActions` 272 | `clearTitleWatched` | revierte el hold del diario |
-| `diary-undo` | `restore` del Deshacer | `onUndoFailed` |
-| `useWatchlistActions` deshacer, ahora no, fijar, nota | `undoMarkWatched`, `markNotTonight`, `pinTonight`, `updateWatchlistNote` | revierte snooze, pin, nota o la ficha |
-| `TonightSala` deshacer visto, ahora no, quitar de Quiero ver, deshacer el ahora no, aparcar ruta | las acciones homónimas | revierten `hide` / ids |
-| `AddTitleToListCta` | alta en la lista | `markAdded(false)` y reabre |
-| `useListCardMenu` | `removeTitleFromList` | `onRestore` |
-| `MembersPanel` 317 | `leaveList` | sin botón la segunda vez |
-| `RequestControls` 46 | `decideRequests` | sin botón la segunda vez |
+| `useWatchlistActions` deshacer visto | `undoMarkWatched` | el primer fallo y el segundo dejan la ficha oculta; al acertar confirma «Añadida a Quiero ver» |
+| `useWatchlistActions` nota | `updateWatchlistNote` (escribe la nota) | revierte la nota; al acertar confirma |
+| `TonightSala` deshacer visto | `undoMarkWatched` | igual que en Quiero ver: los dos fallos dejan la carta vista |
+| `TonightSala` quitar de Quiero ver, aparcar ruta | `removeFromWatchlist` (borra), `parkRuta` (solo pasa de activa a espera, no lanza) | revierten `hide`; al acertar confirman |
+| `AddTitleToListCta` | alta con `onConflictDoNothing` | `markAdded(false)` y reabre |
+| `useListCardMenu` | `removeTitleFromList` (borra) | `onRestore` |
+| `RequestControls` 46 | `decideRequests` (el segundo pendiente no cambia nada) | sin botón la segunda vez |
 
-Sin botón, a propósito: `MarkWatchedSheet` (la hoja muestra el error; en el mazo de Hoy el toast lo pone `onWatchError`, así que la hoja no lo repite), `WhySheet`, `TonightSala` «No me interesa» y su Deshacer (la señal de gusto no es idempotente), `TitleFichaActions` «No se puede quitar todavía» (aún no hay fila que borrar), onboarding ×4, `OnboardingFlow`, `ShareButton`, `ConnectionsClient` copiar, `ShareListSheet`, `RequestControls` 78.
+Sin botón, a propósito:
+
+- `restoreTitleWatched` (Deshacer de «Quitada de tu diario»): no es idempotente.
+- `markNotTonight`, `undoNotTonight` y `pinTonight`: insertan o borran un evento de gusto. Repetirlos no es la misma operación.
+- `leaveList`: tras salir, la siguiente llamada falla el acceso. No es idempotente.
+- `MarkWatchedSheet`: llama a `onClose()` antes de guardar, así que un `setError` en línea no se ve y, si se restaurara, quedaría viejo al reabrir la hoja. No se restauró. El fallo lo dice el toast de la hoja (`toastOnError`) o, en Hoy, `sala.onWatchError`. El mazo solo apaga el toast de la hoja cuando `sala?.onWatchError` existe; en listas y Quiero ver `useTonight()` es nulo y el stub sigue visible (`deckShowsStub`), así que la hoja avisa.
+- `WhySheet`, `TonightSala` «No me interesa» y su Deshacer (la señal de gusto no es idempotente), `TitleFichaActions` «No se puede quitar todavía», onboarding ×4, `OnboardingFlow`, `ShareButton`, `ConnectionsClient` copiar, `ShareListSheet`, `RequestControls` 78.
 
 `ConnectionsClient` «Ya no estaba activa.» pasa a **info**, con el mismo texto.
 
