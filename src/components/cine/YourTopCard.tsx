@@ -29,6 +29,7 @@ import { startTopLabel, watchedOfYearCopy, YEAR_TOP_SIZE, yourTopLabel } from "@
 import type { UserYearTop, WatchedOfYear } from "@/lib/cine-top-store";
 import { cn } from "@/lib/cn";
 import { showToast } from "@/lib/toast";
+import { TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { eyebrowClass, focusRing, glassRowClass, posterFrame } from "@/lib/ui";
 
 type YourTopCardProps = {
@@ -175,7 +176,12 @@ const YearTopBuilder = ({
         setError(result.error);
         return;
       }
-      showToast({ title: yourTopLabel(year, picked.length), description: "Guardado en tus listas · Tus años" });
+      const lead = watched.find((film) => film.titleId === picked[0]);
+      showToast({
+        title: TOAST_COPY.topSaved,
+        description: yourTopLabel(year, picked.length),
+        poster: toastPoster(lead?.posterPath),
+      });
       router.refresh();
       onDone();
     });
