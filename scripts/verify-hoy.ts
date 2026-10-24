@@ -100,13 +100,15 @@ const run = () => {
   const recoCron = read("src/app/api/cron/tonight-recos/route.ts");
   assert(recoCron.includes("CRON_SECRET") && recoCron.includes("computeRecosForUser") && read("vercel.json").includes("/api/cron/tonight-recos"), "Recommendation pool has its own authorized nightly cron");
   assert(!store.includes("reco-store") && !store.includes("getTmdbRelated") && !store.includes("discoverTmdb"), "Serving Hoy never calls TMDB for recommendations");
+  const recoRefill = read("src/lib/tonight/reco-refill.ts");
+  assert(recoRefill.includes("scheduleAfterResponse") && recoRefill.includes('await import("@/lib/tonight/reco-store")'), "FIL-26: a missing or used-up pool is rebuilt after the response, never while Hoy is served");
   const recoMigration = read("drizzle/0011_tonight_recos.sql");
   assert(recoMigration.includes("IF NOT EXISTS") && !/DROP\s+(TABLE|COLUMN)/i.test(recoMigration) && !/SET NOT NULL/i.test(recoMigration), "Migration 0011 is additive and idempotent (live build keeps working)");
 
   // Recommended cards (FIL-I6-4, FIL-I8): a badge that is not the queue's, its own menu, the ficha preview, no blur.
   const deckCard = read("src/components/coverflow/DeckCard.tsx");
   assert(deckCard.includes("data-deck-reco-badge") && deckCard.includes("recomendada, no está en Quiero ver"), "Recommended card carries a badge and says so to screen readers");
-  assert(deckCard.includes("sala?.onOpenReco(title)") && deckCard.includes("recoPreviewHref") && deckCard.includes("commitDirectly"), "Tapping a recommendation opens its ficha preview; the stub logs it directly");
+  assert(deckCard.includes("sala?.onOpenReco(title)") && deckCard.includes("recoPreviewHref") && deckCard.includes("sala.markRecoSeen(title, formData)"), "Tapping a recommendation opens its ficha preview; the stub opens Marqué visto and creates the title with it");
   const salaSource = read("src/components/tonight/TonightSala.tsx");
   assert(read("src/components/tonight/TonightCardMenu.tsx").includes("No me interesa") && !salaSource.includes("RecoPreviewSheet"), "Recommended cards have their own menu; the Buscar preview sheet is gone (FIL-I8)");
   assert(salaSource.includes('"opened"') && salaSource.includes("impressions.flush()") && salaSource.includes("adoptFromFichas"), "Opening a recommendation still logs «opened» (reco_open_rate) and Back adopts what its ficha saved");
