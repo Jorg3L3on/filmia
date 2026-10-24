@@ -6,7 +6,8 @@
  * at five itself, so the taste vector does not move.
  */
 
-export type TmdbPersonRole = "director" | "creator" | "dp" | "cast";
+/** `composer`: the original score (FIL-I26-4, «Tu universo»); the ficha rail does not show it. */
+export type TmdbPersonRole = "director" | "creator" | "dp" | "composer" | "cast";
 
 export type TmdbPerson = {
   id: number;
@@ -22,8 +23,10 @@ export type TmdbPerson = {
 
 export const TMDB_CAST_LIMIT = 8;
 export const TMDB_DP_LIMIT = 2;
+export const TMDB_COMPOSER_LIMIT = 1;
 
 const DP_JOB = "Director of Photography";
+const COMPOSER_JOB = "Original Music Composer";
 
 type TmdbCastMember = {
   id?: number;
@@ -143,6 +146,20 @@ export const parseTmdbPeople = (
     }
   }
 
+  // The score (FIL-I26-4): who ties Duna to Interestelar. Last, so nothing above moves.
+  const composers = (credits?.crew ?? [])
+    .filter((member) => jobsOf(member).some((job) => job === COMPOSER_JOB))
+    .sort((a, b) => (b.total_episode_count ?? 0) - (a.total_episode_count ?? 0));
+  let composerCount = 0;
+  for (const member of composers) {
+    if (composerCount >= TMDB_COMPOSER_LIMIT) {
+      break;
+    }
+    if (push(member.id, member.name, { role: "composer", profilePath: cleanPath(member.profile_path) })) {
+      composerCount += 1;
+    }
+  }
+
   return people;
 };
 
@@ -150,7 +167,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 const isRole = (value: unknown): value is TmdbPersonRole =>
-  value === "director" || value === "creator" || value === "dp" || value === "cast";
+  value === "director" || value === "creator" || value === "dp" || value === "composer" || value === "cast";
 
 /** Every stored shape, old (`{id, name, role}`, five cast) and new; junk entries are dropped. */
 export const parseStoredTmdbPeople = (value: unknown): TmdbPerson[] => {

@@ -25,6 +25,8 @@ export type TonightTitle = {
   availableOnMine: boolean;
   watchedAt: Date | null;
   rating: number | null;
+  /** `rating` is a ¿Las viste? answer, not stars the person gave: reasons say «te gustó». */
+  ratingImplied?: boolean;
   review: string | null;
   seriesStatus: SeriesStatus | null;
   seriesSeason: number | null;
@@ -93,7 +95,9 @@ export type ReasonKind =
   /** Recommended, not in your library: «Porque tienes X en Quiero ver» / «Porque le diste 5★ a X». */
   | "reco_seed"
   /** Recommended by genre: no seed, just the genres you keep coming back to. */
-  | "reco_genre";
+  | "reco_genre"
+  /** The next step of one of your rutas (FIL-I26): its line of why. */
+  | "ruta";
 
 export type TonightReason = {
   kind: ReasonKind;
@@ -125,7 +129,11 @@ export type TonightPickBase = {
   wildcard: boolean;
 };
 
-export type TonightLensKind = "para-ti" | "genre";
+/**
+ * `ruta`: one of the person's active rutas; `pieza`: the door to «¿Las viste?» (FIL-I26).
+ * Both are placed after composition.
+ */
+export type TonightLensKind = "para-ti" | "genre" | "ruta" | "pieza";
 
 export type TonightLens = {
   slug: string;
@@ -162,6 +170,8 @@ export type RecoSeed = {
   name: string;
   via: "queue" | "watched";
   rating: number | null;
+  /** The rating is a ¿Las viste? answer: «Porque te gustó X», never «le diste 4★». */
+  ratingImplied?: boolean;
 };
 
 /** A film listed by TMDB (`/recommendations` or `/discover`), before we know more about it. */

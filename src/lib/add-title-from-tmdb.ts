@@ -4,6 +4,7 @@ import { db, listItems, lists, titles, type TitleKind } from "@/db";
 import { findCatalogByTmdb, findOrCreateCatalog } from "@/lib/catalog";
 import { catalogIdOfOwnTitle, catalogIdOfTitle } from "@/lib/list-items";
 import { scheduleCatalogEnrichment } from "@/lib/catalog-enrich";
+import { mxToday } from "@/lib/cine-core";
 import { parseOptionalDate } from "@/lib/form-data";
 import { TITLE_KINDS } from "@/lib/labels";
 import { ensureDefaultLists, WATCHLIST_SLUG } from "@/lib/lists";
@@ -79,8 +80,9 @@ const enqueueInWatchlist = async (userId: string, titleId: string) => {
     .onConflictDoNothing();
 };
 
+/** No date given: today in Mexico at noon UTC, like every diary date (a raw `now` after 18:00 is tomorrow). */
 const resolveWatchedAt = (value?: string | null) =>
-  parseOptionalDate(value ?? null) ?? new Date();
+  parseOptionalDate(value ?? null) ?? (parseOptionalDate(mxToday()) as Date);
 
 const markExistingWatched = async (
   userId: string,

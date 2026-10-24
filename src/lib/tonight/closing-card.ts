@@ -44,6 +44,20 @@ export const closingCardFor = (lastLensSlug: string): CoverflowTitle => ({
 export const isClosingCard = (title: Pick<CoverflowTitle, "id" | "closing"> | null | undefined) =>
   Boolean(title && (title.closing || title.id === CLOSING_CARD_ID));
 
+/**
+ * Tonight's count for the closing card: the films the server counted (each with the ids a card
+ * may carry for it) plus this visit's marks it has not seen yet, so a reload or a refresh never
+ * loses or doubles one.
+ */
+export const tallyCount = (counted: readonly (readonly string[])[], session: ReadonlySet<string>) => {
+  const known = new Set(counted.flat());
+  let extra = 0;
+  for (const id of session) {
+    if (!known.has(id)) extra += 1;
+  }
+  return counted.length + extra;
+};
+
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 /** «10 cartas · 1 vista · 2 «ahora no»», or the consolation line when nothing was seen. */

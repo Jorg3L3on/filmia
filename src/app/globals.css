@@ -1188,20 +1188,19 @@ html[data-que-ver-grade="live"] body {
       rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.015) 50%,
       transparent 62%
     );
-  -webkit-mask-image: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgb(0 0 0 / 0.4) 12%,
-    #000 28%,
-    #000 100%
-  );
-  mask-image: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgb(0 0 0 / 0.4) 12%,
-    #000 28%,
-    #000 100%
-  );
+  /*
+   * Soft on every side, not just the top: the box reaches past the content, and on a wide
+   * screen its left, right and bottom edges showed as straight lines (the floor glow is wider
+   * than the box). The side fade lives in the part that is off screen on a phone.
+   */
+  -webkit-mask-image:
+    linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 0.4) 12%, #000 28%, #000 80%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 0.4) 12%, #000 28%, #000 80%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
+  mask-composite: intersect;
   mix-blend-mode: screen;
 }
 
@@ -1216,23 +1215,18 @@ html[data-que-ver-grade="live"] body {
   inset: -18% -12% -24%;
   z-index: 0;
   overflow: hidden;
-  /* Soft top + bottom edges so grade/vignette never hard-cut under logo or above the footer. */
-  -webkit-mask-image: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgb(0 0 0 / 0.4) 10%,
-    #000 24%,
-    #000 72%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgb(0 0 0 / 0.4) 10%,
-    #000 24%,
-    #000 72%,
-    transparent 100%
-  );
+  /*
+   * Soft on every edge so grade/vignette never hard-cut under the logo, above the footer, or at
+   * the sides of a wide screen (the side fade sits in the part that is off screen on a phone).
+   */
+  -webkit-mask-image:
+    linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 0.4) 10%, #000 24%, #000 72%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 0.4) 10%, #000 24%, #000 72%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+  mask-composite: intersect;
 }
 
 .que-ver-atmosphere-grade {
@@ -1562,6 +1556,8 @@ html[data-que-ver-grade="live"] body {
 .genre-coverflow-active .font-serif {
   display: block;
   overflow: hidden;
+  /* Italic glyphs lean past their box: room at the end so «?» or «f» is not clipped by the ellipsis box. */
+  padding-inline: 0.04em 0.16em;
   font-size: 1.65rem;
   font-style: italic;
   font-weight: 500;
@@ -1804,9 +1800,11 @@ html[data-que-ver-grade="live"] body {
   z-index: 41;
 }
 
-.tonight-eyebrow-compact {
-  line-height: 1;
-  margin: 0;
+/* The phone chip is portaled to body, out of its sm:hidden wrapper: hide it where the eyebrow row shows its own. */
+@media (min-width: 640px) {
+  .tonight-bedtime-fixed {
+    display: none;
+  }
 }
 
 /* Phone: two rows before the stage (header 48 + eyebrow/rail/bar ≈ 68 → stage at ~116 px). */
@@ -1916,6 +1914,18 @@ body:has(.diario-que-ver-shell) header.site-header {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   box-shadow: none;
+}
+
+/*
+ * The glass blur above lives in an @supports block, and the build drops a plain
+ * `backdrop-filter: none` from the rule before: without this the header strip over Hoy's
+ * sala stays blurred and saturated, a band with a hard edge under the logo.
+ */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  body:has(.diario-que-ver-shell) header.site-header {
+    -webkit-backdrop-filter: blur(0);
+    backdrop-filter: blur(0);
+  }
 }
 
 /* Title + meta arm's-length readable over sala grade (solid paper, not fog). */
@@ -2448,10 +2458,11 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   margin-bottom: var(--stub-room);
 }
 
-/* iPhone SE / mini (≤ 700 px tall): no eyebrow, hero at ~56 % of the stage (292 px tall). */
+/* iPhone SE / mini (≤ 700 px tall): hero at ~56 % of the stage (292 px tall). */
 @media (max-width: 767px) and (max-height: 700px) {
-  .tonight-eyebrow-compact {
-    display: none;
+  /* The sala already ends above the dock: main's 6 rem dock padding only made the page scroll ~20 px. */
+  body:has(.tonight-sala) .app-main {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
   }
 
   .tonight-sala .coverflow-cinematic-stage {
@@ -2476,9 +2487,39 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 
 @media (min-width: 768px) {
   .tonight-sala .coverflow-cinematic-stage {
-    height: calc(min(54dvh, calc(100dvh - 20rem)) - var(--stub-room));
-    min-height: calc(340px - var(--stub-room));
+    /* Sized so the night line clears the fold on a 1280×800 screen (no page scroll). */
+    height: calc(min(50dvh, calc(100dvh - 23rem)) - var(--stub-room));
+    min-height: calc(320px - var(--stub-room));
     max-height: calc(580px - var(--stub-room));
+  }
+}
+
+/*
+ * Hoy fits the window: on desktop the top padding halves; everywhere the grade's bottom bleed
+ * stays inside main's padding (it reached ~100 px past the content and made the page scroll).
+ */
+@media (min-width: 640px) {
+  body:has(.tonight-sala) .app-main {
+    padding-top: 1rem;
+  }
+}
+
+.tonight-sala.diario-que-ver-shell[data-que-ver-grade="live"]::before,
+.tonight-sala.diario-que-ver-shell[data-que-ver-grade="live"]::after {
+  bottom: -1.5rem;
+}
+
+/* From 1024 px the rail leaves room beside it: the chip floats there (narrower, it would sit on «Drama ›»). */
+@media (min-width: 1024px) {
+  .tonight-sala .tonight-eyebrow-row {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 3;
+  }
+
+  .tonight-sala .tonight-eyebrow {
+    max-width: none;
   }
 }
 
@@ -2915,36 +2956,7 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   inset: -10px -6px;
 }
 
-/* Recommended card (FIL-I6-4): not in Quiero ver. Solid, no blur: the sala runs on slow phones too. */
-.reco-badge {
-  position: absolute;
-  left: 10px;
-  top: 10px;
-  z-index: 10;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 22px;
-  padding: 0 9px 0 7px;
-  border-radius: 9999px;
-  border: 1px solid rgb(var(--reco-rgb) / 0.55);
-  background: rgb(8 30 28 / 0.92);
-  color: var(--reco);
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.01em;
-  line-height: 1;
-  white-space: nowrap;
-  pointer-events: none;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.45);
-}
-
-.reco-badge.is-saved {
-  border-color: rgb(255 255 255 / 0.25);
-  background: rgb(0 0 0 / 0.85);
-  color: var(--paper);
-}
-
+/* Recommended card (FIL-I6-4): said under the card, not over the poster. No blur: the sala runs on slow phones too. */
 .reco-eyebrow {
   font-size: 11px;
   font-weight: 600;

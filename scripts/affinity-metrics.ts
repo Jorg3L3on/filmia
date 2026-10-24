@@ -7,6 +7,9 @@ import { sql } from "drizzle-orm";
  * and the rating given. Levels are calibrated when «me gustó» (≥7 or Favoritas) goes
  * alta > media > baja. Recalibrate (eval:affinity) once there are enough rated rows.
  *
+ * FIL-I26-3 · and the negatives it learns from: rated watches that are not «me gustó», with how
+ * many came from «¿Las viste?» («La vi, no tanto»), the only real source of them.
+ *
  *   npm run metrics:affinity -- --env=<path to .env> [--days=60]
  */
 
@@ -25,6 +28,10 @@ const main = async () => {
     throw new Error("DATABASE_URL no está definida (usa --env=<ruta al .env>).");
   }
   const days = Number(flag("days") ?? 60);
+  if (process.env.FILMIA_LOCAL_PG === "1") {
+    const { installLocalPg } = await import("../src/db/local-pg");
+    installLocalPg();
+  }
   const { db } = await import("../src/db/index");
   console.log(`Base de datos: ${new URL(process.env.DATABASE_URL).host} (solo lectura)\n`);
 
@@ -64,8 +71,32 @@ const main = async () => {
     liked: number;
     mean_rating: number | null;
   }>;
+  const negatives = await db.execute(sql`
+    select
+      count(*) filter (where not liked)::int as negatives,
+      count(*) filter (where not liked and from_viste)::int as from_viste,
+      count(*) filter (where liked)::int as positives,
+      count(*) filter (where liked and from_viste)::int as positives_viste
+    from (
+      select
+        (t.rating >= 7 or exists (
+          select 1 from "ListItem" li join "List" l on l.id = li."listId"
+          where li."catalogId" = t."catalogId" and l."userId" = t."userId" and l.slug = 'favoritas')) as liked,
+        exists (
+          select 1 from "PickEvent" e
+          where e."userId" = t."userId" and e."catalogId" = t."catalogId"
+            and e.kind = 'viste_answered' and e.lens in ('viste:liked', 'viste:meh')) as from_viste
+      from "Title" t
+      where t."watchedAt" is not null and t.rating is not null
+    ) rated`);
+  const counts = negatives.rows[0] as { negatives: number; from_viste: number; positives: number; positives_viste: number };
+  const printNegatives = () =>
+    console.log(
+      `\nEntrenamiento de Afinidad (vistas calificadas, toda la base): ${counts.positives} «me gustó» (${counts.positives_viste} de ¿Las viste?) · ${counts.negatives} «no me gustó» (${counts.from_viste} de ¿Las viste?).`,
+    );
   if (rows.length === 0) {
     console.log(`Sin eventos affinity_shown en ${days} días.`);
+    printNegatives();
     process.exit(0);
   }
   const order = ["alta", "alta~", "media", "media~", "baja", "baja~"];
@@ -97,6 +128,7 @@ const main = async () => {
         : "aún pocos datos para juzgar (≥10 vistas en alta y media, ≥5 en baja)."
     }`,
   );
+  printNegatives();
   process.exit(0);
 };
 

@@ -15,6 +15,7 @@ import { TitleKind } from "@/db";
 import { awardChipLabel } from "@/lib/awards";
 import { toDateInput } from "@/lib/dates";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
+import { impliedRatingLabel } from "@/lib/piezas/core";
 import { titleListMemberships } from "@/lib/list-membership";
 import { formatRuntime, imdbTitleUrl, TITLE_KIND_LABEL } from "@/lib/labels";
 import { getTmdbTrailer, isTmdbConfigured, tmdbBackdropUrl, type TmdbTitleExtras } from "@/lib/tmdb";
@@ -62,6 +63,7 @@ export type HeroSource = Pick<
   | "imdbId"
   | "awards"
   | "rating"
+  | "impliedRating"
   | "watchedAt"
   | "posterAmbient"
 >;
@@ -97,6 +99,7 @@ export const heroProps = (
     imdbPending: options.imdbPending ?? false,
     awardLabel: awardChipLabel(title.awards),
     rating: title.rating,
+    reaction: title.rating == null ? impliedRatingLabel(title.impliedRating) : null,
     watched: Boolean(title.watchedAt),
     posterAmbient: title.posterAmbient,
     affinity: options.affinity,

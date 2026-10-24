@@ -12,6 +12,7 @@ import {
 } from "react";
 import { finishOnboarding, saveOnboardingStep } from "@/app/actions/onboarding";
 import { logoutUser } from "@/app/actions/auth";
+import { declineFirstRuta, startFirstRuta } from "@/app/actions/rutas";
 import { updateStreamingPlatforms } from "@/app/actions/profile";
 import { Button } from "@/components/Button";
 import { AmbientBackdrop } from "@/components/onboarding/AmbientBackdrop";
@@ -21,6 +22,7 @@ import { FilmStripProgress } from "@/components/onboarding/FilmStripProgress";
 import { IntroStep } from "@/components/onboarding/IntroStep";
 import { PayoffStep } from "@/components/onboarding/PayoffStep";
 import { PlatformsStep } from "@/components/onboarding/PlatformsStep";
+import { RutaStep } from "@/components/onboarding/RutaStep";
 import { WatchlistStep } from "@/components/onboarding/WatchlistStep";
 import { YearStep, type YearTitleRef } from "@/components/onboarding/YearStep";
 import { flowTitleKey, type FlowTitle } from "@/components/onboarding/types";
@@ -28,8 +30,11 @@ import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
 import type { LibraryEntry, SuggestionItem, YearGrid, YearGridItem } from "@/lib/onboarding/load";
 import type { PayoffPayload } from "@/lib/onboarding/payoff";
+import type { FirstRutas } from "@/lib/rutas/factories";
+import { showToast } from "@/lib/toast";
 import {
   QUICK_PICK_STEP,
+  RUTA_STEP,
   countAccountTitles,
   needsQuickPicks,
   nextStep,
@@ -128,6 +133,9 @@ export const OnboardingFlow = ({
   const [suggestions, setSuggestions] = useState<SuggestionItem[] | null>(null);
   const [nightEnds, setNightEnds] = useState<NightEnds>(initialNightEnds);
   const [payoff, setPayoff] = useState<PayoffPayload | null>(null);
+  // «Tu primera ruta» (FIL-I26-2): loaded once on that step; the selected one is what starts.
+  const [firstRutas, setFirstRutas] = useState<FirstRutas | null>(null);
+  const [selectedRuta, setSelectedRuta] = useState<string | null>(null);
   const [isFinishing, startFinish] = useTransition();
   /** Where «Elige 3» was reached from when the person tried to leave early (skip or finish). */
   const [detourFrom, setDetourFrom] = useState<OnboardingStepId | null>(null);
@@ -167,8 +175,12 @@ export const OnboardingFlow = ({
     go(QUICK_PICK_STEP);
   };
 
-  const finish = () => {
+  /** `before` runs first (start or decline the first ruta); it never blocks the way into Hoy. */
+  const finish = (before?: () => Promise<void>) => {
     startFinish(async () => {
+      if (before) {
+        await before().catch(() => null);
+      }
       try {
         const result = await finishOnboarding();
         if (!result.ok) {
@@ -185,12 +197,22 @@ export const OnboardingFlow = ({
   };
 
   /** «Saltar por ahora» and «Entrar a Filmia»: Hoy only with three titles in the account. */
-  const leave = () => {
+  const leave = (before?: () => Promise<void>) => {
     if (resolveLeave(titleCount) === "finish") {
-      finish();
+      finish(before);
       return;
     }
     detour();
+  };
+
+  const startRuta = async () => {
+    if (!selectedRuta) {
+      return;
+    }
+    const outcome = await startFirstRuta(selectedRuta);
+    if (!outcome.ok) {
+      showToast({ title: "No se pudo empezar la ruta", description: outcome.error, variant: "error" });
+    }
   };
 
   const setPlatforms = (next: Platform[]) => {
@@ -210,6 +232,7 @@ export const OnboardingFlow = ({
     noche: true,
     tres: !needsQuickPicks(titleCount),
     "primera-noche": true,
+    ruta: true,
   };
 
   const next = nextStep(step, titleCount);
@@ -227,7 +250,13 @@ export const OnboardingFlow = ({
             ? "Entrar a Filmia"
             : "Siguiente"
         : step === "primera-noche"
-          ? "Entrar a Filmia"
+          ? tmdbConfigured
+            ? "Siguiente"
+            : "Entrar a Filmia"
+          : step === RUTA_STEP
+            ? selectedRuta
+              ? "Empezar esta ruta"
+              : "Entrar a Filmia"
           : step === "noche"
             ? "Listo"
             : answered[step]
@@ -236,6 +265,14 @@ export const OnboardingFlow = ({
 
   const onPrimary = () => {
     if (quickPickBlocked) {
+      return;
+    }
+    if (step === RUTA_STEP) {
+      leave(selectedRuta ? startRuta : undefined);
+      return;
+    }
+    if (step === "primera-noche" && tmdbConfigured && resolveLeave(titleCount) === "finish") {
+      go(RUTA_STEP);
       return;
     }
     if (step === "primera-noche" || (step === QUICK_PICK_STEP && detourFrom)) {
@@ -339,6 +376,16 @@ export const OnboardingFlow = ({
             }}
           />
         );
+      case RUTA_STEP:
+        return (
+          <RutaStep
+            data={firstRutas}
+            onData={setFirstRutas}
+            selected={selectedRuta}
+            onSelect={setSelectedRuta}
+            headingRef={headingRef}
+          />
+        );
       default:
         return null;
     }
@@ -351,8 +398,8 @@ export const OnboardingFlow = ({
       <header className="bienvenida-chrome-top sticky top-0 z-20 px-5 pt-[calc(0.9rem+env(safe-area-inset-top))] pb-3">
         <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-4">
           <FilmStripProgress step={step} />
-          {step !== "intro" && step !== "primera-noche" && step !== QUICK_PICK_STEP ? (
-            <button type="button" onClick={leave} className={cn(btnLink, "text-mist")}>
+          {step !== "intro" && step !== "primera-noche" && step !== QUICK_PICK_STEP && step !== RUTA_STEP ? (
+            <button type="button" onClick={() => leave()} className={cn(btnLink, "text-mist")}>
               Saltar por ahora
             </button>
           ) : null}
@@ -372,7 +419,7 @@ export const OnboardingFlow = ({
         className="bienvenida-chrome-bottom bienvenida-actions sticky bottom-0 z-20 px-5 pt-3 pb-[calc(max(1rem,env(safe-area-inset-bottom))+var(--keyboard-inset,0px))]"
       >
         <div className="mx-auto flex w-full max-w-xl items-center gap-3">
-          {previous && step !== "primera-noche" ? (
+          {previous && step !== "primera-noche" && step !== RUTA_STEP ? (
             <Button variant="ghost" size="lg" onClick={() => go(previous)} aria-label="Paso anterior" className="px-4">
               Atrás
             </Button>
@@ -388,9 +435,21 @@ export const OnboardingFlow = ({
             {primaryLabel}
           </Button>
         </div>
+        {step === RUTA_STEP && selectedRuta ? (
+          <div className="mx-auto mt-2 flex w-full max-w-xl justify-center">
+            <button
+              type="button"
+              onClick={() => leave(() => declineFirstRuta())}
+              disabled={isFinishing}
+              className={cn(btnLink, "min-h-11 px-3 text-sm text-mist")}
+            >
+              Entrar sin ruta
+            </button>
+          </div>
+        ) : null}
         {step === "intro" ? (
           <div className="mx-auto mt-3 flex w-full max-w-xl items-center justify-center gap-4 text-xs">
-            <button type="button" onClick={leave} className={cn(btnLink, "text-mist")}>
+            <button type="button" onClick={() => leave()} className={cn(btnLink, "text-mist")}>
               Saltar por ahora
             </button>
             <span className="text-faint" aria-hidden="true">

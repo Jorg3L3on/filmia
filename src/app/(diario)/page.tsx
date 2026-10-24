@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { EmptyState } from "@/components/EmptyState";
 import { HoySkeleton } from "@/components/PageSkeletons";
+import { RecosRefresher, RecosWarming } from "@/components/tonight/RecosWarming";
 import { TonightSala } from "@/components/tonight/TonightSala";
 import { parseDeckCard } from "@/lib/nav-origin";
 import { TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
@@ -76,6 +77,12 @@ const HoyShell = async ({
     );
   }
 
+  // FIL-26: a deck with no film yet (only «¿Las viste?») while the pool is built says so.
+  const hasFilms = decks.lenses.some((lens) => lens.kind !== "pieza");
+  if (decks.recosWarming && !hasFilms) {
+    return <RecosWarming />;
+  }
+
   if (decks.lenses.length === 0) {
     if (decks.queueSize === 0) {
       return (
@@ -101,6 +108,9 @@ const HoyShell = async ({
   const initialSlug = parseCategorySlug(params[TONIGHT_LENS_PARAM] ?? params.categoria);
 
   return (
-    <TonightSala decks={decks} initialSlug={initialSlug} initialCardId={parseDeckCard(params.carta)} />
+    <>
+      <TonightSala decks={decks} initialSlug={initialSlug} initialCardId={parseDeckCard(params.carta)} />
+      {decks.recosWarming ? <RecosRefresher /> : null}
+    </>
   );
 };

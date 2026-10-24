@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { and, asc, eq, gte, inArray, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, sql, type SQL } from "drizzle-orm";
 import {
   catalog,
   db,
@@ -14,7 +14,7 @@ import {
   type Platform,
   type Title,
 } from "@/db";
-import type { CoverflowTitle, RecoMeta } from "@/components/coverflow/types";
+import type { CoverflowTitle, RecoMeta, RutaCardMeta } from "@/components/coverflow/types";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { flattenTitle } from "@/lib/catalog-core";
 import { withOwnListEntries } from "@/lib/list-items";
@@ -28,7 +28,9 @@ import {
   toTonightEvents,
 } from "@/lib/tonight/events";
 import { blockedItemIds } from "@/lib/tonight/candidates";
+import { mxToday } from "@/lib/cine-core";
 import { composeLenses, type RecoEntry } from "@/lib/tonight/compose";
+import { refillRecosIfThin } from "@/lib/tonight/reco-refill";
 import { itemVector } from "@/lib/tonight/features";
 import { PARA_TI_NAME, PARA_TI_SLUG } from "@/lib/tonight/select";
 import { findPinnedTitleId, PIN_WINDOW_MS, PINNED_REASON } from "@/lib/tonight/pin";
@@ -54,6 +56,10 @@ import {
   type TonightTitle,
 } from "@/lib/tonight";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
+import { hasVisteSeeds, visteDoorLens, visteStatus } from "@/lib/piezas/viste";
+import { placeRutaLenses } from "@/lib/rutas/core";
+import { loadRutaLenses } from "@/lib/rutas/hoy";
+import { isTmdbConfigured } from "@/lib/tmdb";
 
 export const TONIGHT_STALE_MS = 24 * 60 * 60 * 1000;
 export const TONIGHT_EVENTS_WINDOW_DAYS = 30;
@@ -76,6 +82,8 @@ export type TonightCard = CoverflowTitle & {
   /** `reco`: recommended and not in the library, so `id` is the film's catalog id (FIL-I6). */
   source: "queue" | "reco";
   reco: RecoMeta | null;
+  /** The next step of an active ruta (FIL-I26); its lens is the ruta's. */
+  ruta?: RutaCardMeta | null;
 };
 
 export type TonightLensView = {
@@ -93,6 +101,64 @@ export type TonightDecks = {
   computedAt: string;
   /** Watchlist titles exist but none streams on the user's platforms. */
   queueSize: number;
+  /** FIL-26: no recommendation to show yet and the pool is being built; Hoy says so and refreshes. */
+  recosWarming: boolean;
+  /** What the closing card counts for tonight, from the server so a reload keeps it. */
+  tally: NightTally;
+};
+
+/**
+ * Tonight from Hoy, per film: each entry is the ids a card may carry for it (its `Title` id and its
+ * catalog id), so the sala adds only the marks of this visit that the server has not counted.
+ */
+export type NightTally = {
+  /** «Vi esto» from Hoy, still watched (Deshacer takes it out). */
+  watched: string[][];
+  /** «Ahora no» (its Deshacer deletes the event). */
+  notTonight: string[][];
+};
+
+const EMPTY_TALLY: NightTally = { watched: [], notTonight: [] };
+
+/** The night the closing card counts starts at 05:00 in Mexico City (UTC−6, no DST). */
+export const nightStartedAt = (now: Date) =>
+  new Date(`${mxToday(new Date(now.getTime() - 5 * 60 * 60 * 1000))}T11:00:00.000Z`);
+
+export const loadNightTally = async (userId: string, now: Date): Promise<NightTally> => {
+  const rows = await db
+    .select({ titleId: pickEvents.titleId, catalogId: pickEvents.catalogId, kind: pickEvents.kind })
+    .from(pickEvents)
+    .where(
+      and(
+        eq(pickEvents.userId, userId),
+        inArray(pickEvents.kind, ["watched", "not_tonight"]),
+        gte(pickEvents.createdAt, nightStartedAt(now)),
+      ),
+    );
+  const films = (kind: string) => {
+    const byCatalog = new Map<string, Set<string>>();
+    for (const row of rows) {
+      if (row.kind !== kind || !row.catalogId) continue;
+      const keys = byCatalog.get(row.catalogId) ?? new Set([row.catalogId]);
+      if (row.titleId) keys.add(row.titleId);
+      byCatalog.set(row.catalogId, keys);
+    }
+    return byCatalog;
+  };
+  const watched = films("watched");
+  const stillWatched =
+    watched.size > 0
+      ? await db
+          .select({ id: titles.id, catalogId: titles.catalogId })
+          .from(titles)
+          .where(
+            and(eq(titles.userId, userId), inArray(titles.catalogId, [...watched.keys()]), isNotNull(titles.watchedAt)),
+          )
+      : [];
+  return {
+    watched: stillWatched.map((row) => [...(watched.get(row.catalogId) ?? []), row.id]),
+    notTonight: [...films("not_tonight").values()].map((keys) => [...keys]),
+  };
 };
 
 type TitleRowWithLists = Title & {
@@ -201,7 +267,9 @@ export const toTonightTitle = (
     flatrate: providers?.flatrate ?? [],
     availableOnMine,
     watchedAt: row.watchedAt,
-    rating: row.rating,
+    // The engine reads ¿Las viste? answers as ratings; reasons say «te gustó», not stars.
+    rating: row.rating ?? row.impliedRating,
+    ...(row.rating == null && row.impliedRating != null ? { ratingImplied: true } : {}),
     review: row.review,
     seriesStatus: row.seriesStatus,
     seriesSeason: row.seriesSeason,
@@ -364,6 +432,32 @@ export type PickEventWrite = {
  * Store feedback by film. A `titleId` is resolved to its `catalogId` (so the event survives the
  * title and still counts for the recommendation of the same film); a bare `catalogId` must exist.
  */
+/**
+ * «Deshacer» on «Ahora no» / «No me interesa»: removes the latest event of that kind for the film
+ * (by the user's title, or by the film when it was a recommendation). True when one was removed.
+ */
+export const deleteLatestPickEvent = async (
+  userId: string,
+  kind: "not_tonight" | "less_like",
+  ref: { titleId?: string; catalogId?: string },
+) => {
+  const film = ref.titleId ? eq(pickEvents.titleId, ref.titleId) : ref.catalogId ? eq(pickEvents.catalogId, ref.catalogId) : null;
+  if (!film) {
+    return false;
+  }
+  const [latest] = await db
+    .select({ id: pickEvents.id })
+    .from(pickEvents)
+    .where(and(eq(pickEvents.userId, userId), eq(pickEvents.kind, kind), film))
+    .orderBy(desc(pickEvents.createdAt))
+    .limit(1);
+  if (!latest) {
+    return false;
+  }
+  await db.delete(pickEvents).where(and(eq(pickEvents.id, latest.id), eq(pickEvents.userId, userId)));
+  return true;
+};
+
 export const recordPickEvents = async (userId: string, events: ReadonlyArray<PickEventWrite>) => {
   if (events.length === 0) {
     return;
@@ -704,6 +798,7 @@ export const getTonightDecks = async (
     const freshPinnedId = findPinnedTitleId(input.events, now);
     const freshLenses = lensesFromResult(result, rowsById, input.userPlatforms);
     const freshRecos = await loadRecoEntries(userId, input.userPlatforms, input.events, now);
+    const freshWarming = await refillRecosIfThin(userId, freshRecos.length, now).catch(() => false);
     const queueLenses = freshPinnedId
       ? applyPinnedCard(
           freshLenses,
@@ -714,12 +809,14 @@ export const getTonightDecks = async (
         )
       : freshLenses;
     return {
-      lenses: composeLenses(queueLenses, freshRecos),
+      lenses: await withPiezas(userId, composeLenses(queueLenses, freshRecos), freshRecos, input.userPlatforms, now),
       nightEnds: input.nightEnds,
       userPlatforms: input.userPlatforms,
       profileSize: result.profileSize,
       computedAt: result.computedAt.toISOString(),
       queueSize: input.queue.length,
+      recosWarming: freshWarming,
+      tally: await loadNightTally(userId, now).catch(() => EMPTY_TALLY),
     };
   }
 
@@ -802,15 +899,50 @@ export const getTonightDecks = async (
       )
     : lenses;
   const recos = await loadRecoEntries(userId, prefs.userPlatforms, events, now);
+  const recosWarming = await refillRecosIfThin(userId, recos.length, now).catch(() => false);
 
   return {
-    lenses: composeLenses(queueLenses, recos),
+    lenses: await withPiezas(userId, composeLenses(queueLenses, recos), recos, prefs.userPlatforms, now),
     nightEnds: prefs.nightEnds,
     userPlatforms: prefs.userPlatforms,
     profileSize: 0,
     computedAt: newest ? newest.toISOString() : now.toISOString(),
     queueSize: queueCount,
+    recosWarming,
+    tally: await loadNightTally(userId, now).catch(() => EMPTY_TALLY),
   };
+};
+
+/**
+ * FIL-I26 joins the deck after composition: the rutas (first on day one, after Para ti once there
+ * are recommendations) and the door to «¿Las viste?» last. Each is
+ * on its own: a failure there never costs the person their Hoy.
+ */
+const withPiezas = async (
+  userId: string,
+  lenses: TonightLensView[],
+  recos: readonly RecoEntry<TonightCard>[],
+  userPlatforms: readonly Platform[],
+  now: Date,
+) => {
+  let placed = lenses;
+  try {
+    const ruta = await loadRutaLenses(userId, userPlatforms, now);
+    placed = placeRutaLenses(placed, ruta.lenses, recos.length > 0, ruta.cardIds);
+  } catch {
+    // Hoy without rutas today.
+  }
+  try {
+    if (isTmdbConfigured()) {
+      const [status, seeds] = await Promise.all([visteStatus(userId, now), hasVisteSeeds(userId)]);
+      if (seeds) {
+        placed = [...placed, visteDoorLens(status.answered)];
+      }
+    }
+  } catch {
+    // No door today.
+  }
+  return placed;
 };
 
 const countQueue = async (userId: string) => {

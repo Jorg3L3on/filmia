@@ -57,8 +57,12 @@ const run = () => {
   const loopEnd = closingSala.indexOf("const dealtCount = all.length;");
   assert(loopEnd > 0 && closingSala.indexOf("all.push(closingCardFor(last.slug))") > loopEnd && closingSala.indexOf("for (const lens of lenses)") < loopEnd, "The closing card is pushed once, after the lens loop");
   assert((closingSala.match(/closingCardFor\(/g) ?? []).length === 1 && closingSala.includes("<TonightClosingEmpty />"), "One closing card; the empty state uses the same card");
-  assert(closingSala.includes("title.closing ? null : pickRefOf(title)"), "useImpressions never logs the closing card");
-  assert(read("src/components/tonight/TonightFooter.tsx").includes("if (title.closing) {\n    // The closing card says everything on its face (FIL-I21-6).\n    return null;"), "The footer paints nothing for the closing card");
+  assert(
+    closingSala.includes("const unseen = title.closing || title.portal") &&
+      closingSala.includes("unseen ? null : pickRefOf(title)"),
+    "useImpressions never logs the closing card (nor a door card)",
+  );
+  assert(read("src/components/tonight/TonightFooter.tsx").includes("if (title.closing || title.portal) {\n    // The closing card (FIL-I21-6) and the door cards (FIL-I26-3) say everything on their face.\n    return null;"), "The footer paints nothing for the closing card (nor a door card)");
   assert(read("src/components/coverflow/DeckCard.tsx").includes("if (title.closing && sala)") && read("src/components/tonight/TonightClosingCard.tsx").includes("Volver al principio"), "DeckCard renders the closing face with «Volver al principio»");
   const menu = read("src/components/tonight/TonightCardMenu.tsx");
   assert(menu.indexOf("Ahora no") < menu.indexOf("Ver ficha") && menu.indexOf("Ver ficha") < menu.indexOf("Mover a una lista"), "Hoy menu: «Ahora no» first, «Ver ficha» second (FIL-I21-2)");
@@ -77,7 +81,7 @@ const run = () => {
 
   // Time of day: Esta mañana / tarde / noche; the moon, bedtime chip and fit copy only at night.
   const eyebrow = read("src/components/tonight/TonightEyebrow.tsx");
-  assert(eyebrow.includes("DAY_PART_LABEL") && eyebrow.includes('dayPart === "noche"'), "Eyebrow follows the viewer's part of the day; bedtime chip only at night");
+  assert(!eyebrow.includes("DAY_PART_LABEL") && eyebrow.includes('dayPart === "noche"'), "No «Esta noche · fecha» label over the deck; bedtime chip only at night, by the viewer's clock");
   assert(footer.includes("sala?.dayPart") , "Footer hides «acaba / se pasa» by day");
   assert(read("src/lib/tonight/serve.ts").includes("night ? fitReason"), "rankForNow adds the fit reason only at night");
   assert(sala.includes("useTonightClock"), "Sala clock re-evaluates at the next day-part boundary");
@@ -96,20 +100,22 @@ const run = () => {
   const recoCron = read("src/app/api/cron/tonight-recos/route.ts");
   assert(recoCron.includes("CRON_SECRET") && recoCron.includes("computeRecosForUser") && read("vercel.json").includes("/api/cron/tonight-recos"), "Recommendation pool has its own authorized nightly cron");
   assert(!store.includes("reco-store") && !store.includes("getTmdbRelated") && !store.includes("discoverTmdb"), "Serving Hoy never calls TMDB for recommendations");
+  const recoRefill = read("src/lib/tonight/reco-refill.ts");
+  assert(recoRefill.includes("scheduleAfterResponse") && recoRefill.includes('await import("@/lib/tonight/reco-store")'), "FIL-26: a missing or used-up pool is rebuilt after the response, never while Hoy is served");
   const recoMigration = read("drizzle/0011_tonight_recos.sql");
   assert(recoMigration.includes("IF NOT EXISTS") && !/DROP\s+(TABLE|COLUMN)/i.test(recoMigration) && !/SET NOT NULL/i.test(recoMigration), "Migration 0011 is additive and idempotent (live build keeps working)");
 
-  // Recommended cards (FIL-I6-4, FIL-I8): a badge that is not the queue's, its own menu, the ficha preview, no blur.
+  // Recommended cards (FIL-I6-4, FIL-I8): said under the card (no badge over the poster), its own menu, the ficha preview, no blur.
   const deckCard = read("src/components/coverflow/DeckCard.tsx");
-  assert(deckCard.includes("data-deck-reco-badge") && deckCard.includes("recomendada, no está en Quiero ver"), "Recommended card carries a badge and says so to screen readers");
-  assert(deckCard.includes("sala?.onOpenReco(title)") && deckCard.includes("recoPreviewHref") && deckCard.includes("commitDirectly"), "Tapping a recommendation opens its ficha preview; the stub logs it directly");
+  assert(!deckCard.includes("reco-badge") && deckCard.includes("recomendada, no está en Quiero ver"), "No «Recomendada» badge over the poster; the card still says so to screen readers");
+  assert(deckCard.includes("sala?.onOpenReco(title)") && deckCard.includes("recoPreviewHref") && deckCard.includes("sala.markRecoSeen(title, formData)"), "Tapping a recommendation opens its ficha preview; the stub opens Marqué visto and creates the title with it");
   const salaSource = read("src/components/tonight/TonightSala.tsx");
   assert(read("src/components/tonight/TonightCardMenu.tsx").includes("No me interesa") && !salaSource.includes("RecoPreviewSheet"), "Recommended cards have their own menu; the Buscar preview sheet is gone (FIL-I8)");
   assert(salaSource.includes('"opened"') && salaSource.includes("impressions.flush()") && salaSource.includes("adoptFromFichas"), "Opening a recommendation still logs «opened» (reco_open_rate) and Back adopts what its ficha saved");
   const recoActions = read("src/components/tonight/useRecoActions.ts");
   assert(recoActions.includes("localRef.current[cardId]") && recoActions.includes("localRef.current = {"), "Deshacer reads the title id from a ref, not from the render that started the stub's flight");
   assert(read("src/lib/tonight-store.ts").includes("titleId: null,\n          catalogId: event.catalogId"), "Events on a recommendation keep no title, so they stay apart from the queue's");
-  const recoCss = css.slice(css.indexOf(".reco-badge {"), css.indexOf(".tonight-chip {"));
+  const recoCss = css.slice(css.indexOf(".reco-eyebrow {"), css.indexOf(".tonight-chip {"));
   assert(recoCss.includes(".reco-eyebrow") && !/backdrop-filter|filter:\s*blur/.test(recoCss), "Recommended styles use no blur (the sala must stay light)");
 
   // Pure engine sanity.

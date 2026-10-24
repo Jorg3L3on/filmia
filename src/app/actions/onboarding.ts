@@ -24,6 +24,7 @@ import { runPool } from "@/lib/run-pool";
 import { requireUserId } from "@/lib/session";
 import { parseStoredStreamingPlatforms } from "@/lib/streaming-platforms";
 import { computeTonightForUser, getTonightDecks, scheduleTonightRecompute } from "@/lib/tonight-store";
+import { refillRecosIfThin } from "@/lib/tonight/reco-refill";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
 import { refreshWatchProvidersMx } from "@/lib/watch-providers-cache";
 import { withTimeout } from "@/lib/with-timeout";
@@ -356,6 +357,8 @@ export const finishOnboarding = async (): Promise<FinishOnboardingResult> => {
     if (needsQuickPicks(titleCount)) {
       return { ok: false, reason: "needs-titles", titleCount };
     }
+    // FIL-26: the first pool is built now, not at the nightly cron (no-op if the payoff already asked).
+    await refillRecosIfThin(userId, 0).catch(() => false);
   }
   const [user] = await db
     .update(users)
