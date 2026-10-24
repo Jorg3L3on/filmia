@@ -117,7 +117,7 @@ const ZONE_BOARDS: { id: string; label: string; items: ToastItem[] }[] = [
     id: "zona-d",
     label: "Zona (d) · Onboarding, perfil y compartir",
     items: [
-      fixture(9231, "success", "Añadida a Quiero ver", "", { poster: "/filmia-mark.png", count: 3 }),
+      fixture(9231, "success", "Añadida a Quiero ver", "", { count: 3 }),
       fixture(9232, "error", "No se pudo guardar", "Esa película no está en el catálogo.", {
         poster: "/filmia-mark.png",
         durationMs: 8000,
@@ -228,6 +228,17 @@ export const ToastBench = () => {
           }}
         >
           Pila de 3
+        </button>
+        <button
+          type="button"
+          className={btnSecondary}
+          onClick={() => {
+            showToast({ title: "Añadida a Quiero ver", poster: "/posters/dune.jpg" });
+            showToast({ title: "Añadida a Quiero ver", poster: "/posters/aftersun.jpg" });
+            showToast({ title: "Añadida a Quiero ver", poster: "/posters/carta.jpg" });
+          }}
+        >
+          Ráfaga · Dune, Aftersun y Carta
         </button>
         <button
           type="button"

@@ -97,6 +97,25 @@ describe("toast contract", () => {
     assert.equal(getToasts().length, 2);
   });
 
+  it("drops the poster when a burst mixes different films and keeps it when they match", () => {
+    clearToasts();
+    showToast({ title: "Añadida a Quiero ver", poster: "/posters/dune.jpg" });
+    showToast({ title: "Añadida a Quiero ver", poster: "/posters/aftersun.jpg" });
+    showToast({ title: "Añadida a Quiero ver", poster: "/posters/carta.jpg" });
+    assert.equal(getToasts().length, 1);
+    assert.equal(getToasts()[0]?.count, 3);
+    assert.equal(getToasts()[0]?.poster, undefined);
+    assert.equal(getToasts()[0]?.title, "Añadida a Quiero ver");
+
+    clearToasts();
+    showToast({ title: "Añadida a Quiero ver", poster: "/posters/dune.jpg" });
+    showToast({ title: "Añadida a Quiero ver", poster: "/posters/dune.jpg" });
+    assert.equal(getToasts().length, 1);
+    assert.equal(getToasts()[0]?.count, 2);
+    assert.equal(getToasts()[0]?.poster, "/posters/dune.jpg");
+    clearToasts();
+  });
+
   it("groups a burst of the same non-error and never drops an error to do it", () => {
     showToast({ title: "En la lista", description: "Casa", variant: "success" });
     showToast({ title: "En la lista", description: "Casa", variant: "success" });

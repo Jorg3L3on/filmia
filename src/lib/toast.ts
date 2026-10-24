@@ -253,7 +253,17 @@ export const showToast = (payload: ToastPayload) => {
     );
     const existing = items[index];
     if (existing) {
-      const next = materialize(existing.id, payload, existing.count + 1, existing.held);
+      // The burst matches title and description, not the film. A poster that
+      // differs would label the whole count as one of them, so the icon stands in.
+      // The same poster stays: that burst really is one image.
+      const poster =
+        (existing.poster ?? "") === (payload.poster ?? "") ? payload.poster : undefined;
+      const next = materialize(
+        existing.id,
+        { ...payload, poster },
+        existing.count + 1,
+        existing.held,
+      );
       writeAt(index, next);
       return existing.id;
     }

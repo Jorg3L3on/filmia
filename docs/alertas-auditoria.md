@@ -110,6 +110,8 @@ Póster `tmdbPosterUrl(posterPath, "w185")` en cada aviso de película o serie. 
 
 `WatchlistStep` no tenía aviso de acierto. Cada alta usa el mismo título «Añadida a Quiero ver» (sin subtítulo) para que el store las agrupe y muestre la cuenta. Cada baja, «Quitada de Quiero ver». Esas dos llamadas son nuevas: el inventario migrado sigue siendo las 98 de partida, y estos dos aciertos son el único alta.
 
+La agrupación compara variante, título y descripción. No compara el póster. `key` no entra en esa comparación: sigue siendo el reemplazo in-place, en otro camino. Tres altas seguidas, el mismo título, sin subtítulo y con pósteres distintos (Dune, Aftersun, Carta) colapsan en un aviso con `count` 3. En ejecución el póster que quedaba era el de la última, no el de la primera: al agrupar, el store pinta el payload nuevo. Ese póster igual nombra una sola de las tres. Si los pósteres de la ráfaga no coinciden, el aviso queda sin póster y se dibuja el icono de la variante. Si coinciden, se conserva. La firma de `showToast` no cambia.
+
 Los botones de estado («En tu diario», «En Quiero ver» como etiqueta) no son toasts y no se tocan.
 
 ## Checks
