@@ -88,8 +88,9 @@ export const markTitleWatched = async (
   formData?: FormData,
 ) => {
   const userId = await requireUserId();
-  const rating = formData ? parseRating(formData.get("rating")) : undefined;
-  const review = formData ? parseOptionalReview(formData.get("review")) : undefined;
+  // Missing field leaves the column. Present and empty ("") still clears.
+  const rating = formData?.has("rating") ? parseRating(formData.get("rating")) : undefined;
+  const review = formData?.has("review") ? parseOptionalReview(formData.get("review")) : undefined;
   // Only touch «Dónde la vi» when the field was sent; "" (Ninguna) → null.
   const platform = formData?.has("platform")
     ? parsePlatform(formData.get("platform"))
