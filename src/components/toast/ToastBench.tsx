@@ -40,7 +40,7 @@ const FIXTURES: ToastItem[] = [
   fixture(9102, "info", "Nueva temporada", "Estación once · ya está en casa"),
   fixture(9103, "progress", "Importando diario", "12 de 40 fichas", { progress: 0.45 }),
   fixture(9104, "warning", "Sin conexión", "Se guardará cuando vuelva la red"),
-  fixture(9105, "error", "No se pudo guardar", "Reintenta en un momento. Nada se perdió.", {
+  fixture(9105, "error", "No se pudo guardar", "Puedes volver a intentarlo.", {
     action: { label: "Reintentar", onClick: noop },
   }),
 ];
