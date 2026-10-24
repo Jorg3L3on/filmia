@@ -235,7 +235,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     onOpenMenu: (title) => setMenuTitle(title),
     onOpened: (title) => impressions.push(pickRefOf(title), "opened"),
     onOpenReco: openReco,
-    markRecoSeen: (title) => reco.markSeen(title),
+    markRecoSeen: (title, formData) => reco.markSeen(title, formData),
     onWatched: (title) => {
       impressions.push(pickRefOf(title), "watched");
       // A recommendation becomes a real title the moment it is seen: undo works on that one.

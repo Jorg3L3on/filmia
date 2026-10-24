@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState, useTransition } from "react";
+import { markTmdbTitleWatched } from "@/app/actions/title-preview";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { pinTonightFromSearch } from "@/app/actions/tonight";
 import type { SearchAddDestination, SearchPendingAction } from "@/components/tmdb-search/search-actions";
@@ -164,19 +165,24 @@ export const useRecoActions = () => {
     [remember],
   );
 
-  /** «Vi esto» torn from the stub: logs it as seen today; resolves to an error message or null. */
+  /**
+   * «Vi esto» torn from the stub, saved from «Marqué visto» (nota, fecha, dónde): the title is born
+   * watched with that form. Resolves to an error message or null.
+   */
   const markSeen = useCallback(
-    async (card: CoverflowTitle): Promise<string | null> => {
+    async (card: CoverflowTitle, formData: FormData): Promise<string | null> => {
       const result = fromCard(card);
-      const outcome = await addTitleFromTmdb({
-        tmdbId: result.tmdbId,
-        kind: result.kind,
-        name: result.name,
-        originalName: result.originalName,
-        year: result.year,
-        posterPath: result.posterPath,
-        destination: "watched",
-      });
+      const outcome = await markTmdbTitleWatched(
+        {
+          tmdbId: result.tmdbId,
+          kind: result.kind,
+          name: result.name,
+          originalName: result.originalName,
+          year: result.year,
+          posterPath: result.posterPath,
+        },
+        formData,
+      );
       if (!outcome.ok) {
         return outcome.error;
       }

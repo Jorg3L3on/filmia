@@ -59,10 +59,11 @@ type TicketStubProps = {
   onSaved?: () => void;
   onError?: (message: string) => void;
   /**
-   * Log it seen right away instead of opening «Marqué visto» (a recommendation has no title to
-   * rate yet). Resolves to an error message, or null when it saved.
+   * A recommendation has no title yet: «Marqué visto» creates it with the form, and the stub
+   * plays its exit only once that save lands (undo, rutas and Universo need the new title).
+   * Resolves to an error message, or null when it saved.
    */
-  commitDirectly?: () => Promise<string | null>;
+  saveSeen?: (formData: FormData) => Promise<string | null>;
   className?: string;
 };
 
@@ -90,7 +91,7 @@ export const TicketStub = ({
   onCommit,
   onSaved,
   onError,
-  commitDirectly,
+  saveSeen,
   className,
 }: TicketStubProps) => {
   const [open, setOpen] = useState(false);
@@ -146,17 +147,6 @@ export const TicketStub = ({
   const openSheet = () => {
     onCommit?.();
     setTorn(true);
-    if (commitDirectly) {
-      void commitDirectly().then((error) => {
-        if (error) {
-          reset();
-          onError?.(error);
-          return;
-        }
-        onSaved?.();
-      });
-      return;
-    }
     setOpen(true);
   };
 
@@ -305,12 +295,25 @@ export const TicketStub = ({
         }}
         onSaved={() => {
           setOpen(false);
-          onSaved?.();
+          if (!saveSeen) {
+            onSaved?.();
+          }
         }}
         onError={(message) => {
           reset();
           onError?.(message);
         }}
+        submit={
+          saveSeen
+            ? async (formData) => {
+                const error = await saveSeen(formData);
+                if (error) {
+                  throw new Error(error);
+                }
+                onSaved?.();
+              }
+            : undefined
+        }
       />
     </>
   );
