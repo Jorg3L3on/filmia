@@ -5,6 +5,7 @@ import { Sheet, SheetHandle } from "@/components/Sheet";
 import { ToastCard } from "@/components/Toast";
 import { toastContrastSamples } from "@/lib/toast-contrast";
 import { showToast, type ToastItem } from "@/lib/toast";
+import { TOAST_COPY } from "@/lib/toast-alerts";
 import { btnPrimary, btnSecondary, focusRing } from "@/lib/ui";
 
 const noop = () => {};
@@ -117,7 +118,7 @@ const ZONE_BOARDS: { id: string; label: string; items: ToastItem[] }[] = [
     id: "zona-d",
     label: "Zona (d) · Onboarding, perfil y compartir",
     items: [
-      fixture(9231, "success", "Añadida a Quiero ver", "", { poster: "/filmia-mark.png", count: 3 }),
+      fixture(9231, "success", "Añadida a Quiero ver", "", { count: 3 }),
       fixture(9232, "error", "No se pudo guardar", "Esa película no está en el catálogo.", {
         poster: "/filmia-mark.png",
         durationMs: 8000,
@@ -135,21 +136,34 @@ const POSITIONS = [
     id: "movil",
     label: "Móvil · 12 px sobre el dock",
     bottom: "bottom-[5.5rem]",
-    dock: true,
   },
   {
     id: "escritorio",
     label: "Escritorio · 32 px, ancho 420",
     bottom: "bottom-8",
-    dock: false,
   },
   {
     id: "buscar",
     label: "Buscar · dock arriba, 1.5 rem",
     bottom: "bottom-6",
-    dock: false,
   },
 ] as const;
+
+/** Production titles, minus the button label. The fit board renders each one at the page width. */
+const FIT_TITLES = [
+  ...new Set(Object.values(TOAST_COPY).filter((title) => title !== TOAST_COPY.retry)),
+  "No se pudo copiar",
+  "Añadidas a 3 listas",
+];
+
+const FIT_SUBS = [
+  "Aftersun vuelve en dos semanas.",
+  "Puedes volver a intentarlo.",
+  "Hoy ya tiene dos rutas; esta empieza cuando cierres una.",
+  "Deja una para después y vuelve a intentarlo.",
+  "Pégalo donde quieras compartirlo.",
+  "Se está guardando la fecha vista.",
+];
 
 const SHEETS = [
   { id: "listas", title: "Agregar a listas", primary: "Guardar" },
@@ -232,6 +246,17 @@ export const ToastBench = () => {
         <button
           type="button"
           className={btnSecondary}
+          onClick={() => {
+            showToast({ title: "Añadida a Quiero ver", poster: "/posters/dune.jpg" });
+            showToast({ title: "Añadida a Quiero ver", poster: "/posters/aftersun.jpg" });
+            showToast({ title: "Añadida a Quiero ver", poster: "/posters/carta.jpg" });
+          }}
+        >
+          Ráfaga · Dune, Aftersun y Carta
+        </button>
+        <button
+          type="button"
+          className={btnSecondary}
           onClick={() => showToast({ title: "No se pudo guardar", variant: "error" })}
         >
           Mismo error
@@ -269,13 +294,29 @@ export const ToastBench = () => {
                   <ToastCard key={item.id} toast={item} announce={false} />
                 ))}
               </div>
-              {position.dock ? (
-                <div className="absolute inset-x-3 bottom-3 h-16 rounded-full border border-white/15 bg-white/10" />
-              ) : null}
             </div>
           </section>
         ))}
       </div>
+
+      <section id="toast-fit" aria-label="Copy sin elipsis" className="space-y-2">
+        <h2 className="text-sm font-semibold text-paper">Copy real · el título cabe a 375</h2>
+        <div className="flex flex-col gap-2 rounded-[28px] border border-white/10 bg-canvas p-3">
+          {FIT_TITLES.map((title, index) => (
+            <ToastCard
+              key={title}
+              announce={false}
+              toast={fixture(9300 + index, "success", title, index < FIT_SUBS.length ? FIT_SUBS[index] : "", {
+                poster: "/filmia-mark.png",
+                action: { label: "Deshacer", onClick: noop },
+                durationMs: 7000,
+                remainingMs: 7000,
+                held: true,
+              })}
+            />
+          ))}
+        </div>
+      </section>
 
       <section className="space-y-3" aria-labelledby="contraste-avisos">
         <h2 id="contraste-avisos" className="text-sm font-semibold text-paper">

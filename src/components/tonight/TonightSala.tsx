@@ -23,6 +23,7 @@ import { useTonightClock } from "@/components/tonight/useTonightClock";
 import { useNavLabel } from "@/components/NavOriginTracker";
 import { cn } from "@/lib/cn";
 import { DECK_CARD_PARAM, deckCardFrom, deckIndexOf } from "@/lib/nav-origin";
+import { reportPickFailure, startWatchedUndo } from "@/lib/alert-retry";
 import { showToast } from "@/lib/toast";
 import { retryAfterRevert, showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { interleaveBySource } from "@/lib/tonight/compose";
@@ -262,25 +263,18 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
         action: {
           label: "Deshacer",
           onClick: () => {
-            unhide(title.id);
-            removeFrom(setWatchedIds, title.id);
-            void undoMarkWatched(titleId).catch(() => {
-              showActionError({
-                title: TOAST_COPY.couldNotUndo,
-                poster,
-                retry: () =>
-                  retryAfterRevert(
-                    () => {
-                      unhide(title.id);
-                      removeFrom(setWatchedIds, title.id);
-                    },
-                    () => {
-                      hide(title.id);
-                      addTo(setWatchedIds, title.id);
-                    },
-                    () => undoMarkWatched(titleId),
-                  ),
-              });
+            startWatchedUndo({
+              apply: () => {
+                unhide(title.id);
+                removeFrom(setWatchedIds, title.id);
+              },
+              revert: () => {
+                hide(title.id);
+                addTo(setWatchedIds, title.id);
+              },
+              undo: () => undoMarkWatched(titleId),
+              poster,
+              description: title.name,
             });
           },
         },
@@ -307,22 +301,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
       () => {
         unhide(title.id);
         removeFrom(setNotTonightIds, title.id);
-        showActionError({
-          title: TOAST_COPY.couldNotSave,
-          poster,
-          retry: () =>
-            retryAfterRevert(
-              () => {
-                hide(title.id);
-                addTo(setNotTonightIds, title.id);
-              },
-              () => {
-                unhide(title.id);
-                removeFrom(setNotTonightIds, title.id);
-              },
-              () => markNotTonight(title.id, title.tonight?.lens ?? activeLens?.slug),
-            ),
-        });
+        reportPickFailure(poster);
         return false;
       },
     );
@@ -337,22 +316,9 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
           removeFrom(setNotTonightIds, title.id);
           // After the save lands, so a quick tap never leaves the skip behind.
           void saved.then((ok) => (ok ? undoNotTonight(title.id) : undefined)).catch(() => {
-            showActionError({
-              title: TOAST_COPY.couldNotUndo,
-              poster,
-              retry: () =>
-                retryAfterRevert(
-                  () => {
-                    unhide(title.id);
-                    removeFrom(setNotTonightIds, title.id);
-                  },
-                  () => {
-                    hide(title.id);
-                    addTo(setNotTonightIds, title.id);
-                  },
-                  () => undoNotTonight(title.id),
-                ),
-            });
+            hide(title.id);
+            addTo(setNotTonightIds, title.id);
+            showActionError({ title: TOAST_COPY.couldNotUndo, poster });
           });
         },
       },
@@ -415,7 +381,14 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
           retryAfterRevert(
             () => hide(title.id),
             () => unhide(title.id),
-            () => parkRuta(ruta.rutaId),
+            async () => {
+              await parkRuta(ruta.rutaId);
+              showToast({
+                title: TOAST_COPY.routeParked,
+                description: `${ruta.title} te espera en Rutas.`,
+                poster,
+              });
+            },
           ),
       });
     });
@@ -435,7 +408,10 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
           retryAfterRevert(
             () => hide(title.id),
             () => unhide(title.id),
-            () => removeFromWatchlist(title.id),
+            async () => {
+              await removeFromWatchlist(title.id);
+              showToast({ title: TOAST_COPY.removedWatchlist, description: title.name, poster });
+            },
           ),
       });
     });

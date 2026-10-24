@@ -1,4 +1,4 @@
-import { showToast } from "@/lib/toast";
+import { showToast, type ToastPayload } from "@/lib/toast";
 import { tmdbPosterUrl } from "@/lib/tmdb";
 
 /**
@@ -111,7 +111,11 @@ export const showActionError = ({ title, description, poster, retry }: ActionErr
             void Promise.resolve()
               .then(() => retry())
               .catch((caught: unknown) => {
-                const detail = caught instanceof Error && caught.message ? caught.message : description;
+                const detail = isNetworkFailure(caught)
+                  ? TOAST_COPY.retryFailed
+                  : caught instanceof Error && caught.message
+                    ? caught.message
+                    : description;
                 showToast({
                   title,
                   description: detail || TOAST_COPY.retryFailed,
@@ -140,6 +144,17 @@ export const showMaybeNetworkError = (
     return;
   }
   showActionError(options);
+};
+
+/**
+ * Keep a caller's poster. Fill one in only when the caller did not bring its own,
+ * so `{ ...custom, poster }` cannot replace it with `undefined`.
+ */
+export const toastWithPoster = (toast: ToastPayload, poster: string | undefined): ToastPayload => {
+  if (toast.poster || !poster) {
+    return toast;
+  }
+  return { ...toast, poster };
 };
 
 /** Re-apply the optimistic state, run once, and revert if that run throws. */

@@ -580,6 +580,16 @@ body {
   flex: none;
 }
 
+/* Copy and the action stay one row from 640px up. Below that the action drops
+   so the title can use two lines instead of an ellipsis. */
+.toast-body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+}
+
 .toast-icon {
   position: relative;
   display: grid;
@@ -669,7 +679,9 @@ body {
 }
 
 .toast-title {
+  min-width: 0;
   overflow: hidden;
+  overflow-wrap: anywhere;
   color: var(--paper);
   font-size: 14.5px;
   font-weight: 600;
@@ -680,7 +692,9 @@ body {
 }
 
 .toast-sub {
+  min-width: 0;
   overflow: hidden;
+  overflow-wrap: anywhere;
   color: var(--toast-sub);
   font-size: 12.5px;
   line-height: 16px;
@@ -805,6 +819,77 @@ body {
   }
   to {
     transform: rotate(290deg);
+  }
+}
+
+@media (max-width: 639px) {
+  /* A single line stays centered on the icon and the close control.
+     A subtitle, an action row, or a progress bar keeps the lead with the first line. */
+  .toast {
+    align-items: center;
+    gap: 8px;
+  }
+
+  .toast:has(.toast-sub),
+  .toast:has(.toast-action),
+  .toast:has(.toast-progress) {
+    align-items: flex-start;
+  }
+
+  .toast-body {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .toast-poster,
+  .toast-poster img {
+    width: 36px;
+    height: 50px;
+  }
+
+  .toast-title,
+  .toast-sub,
+  .toast-sub-two {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .toast-title,
+  .toast-sub:not(.toast-sub-two) {
+    display: block;
+    overflow: visible;
+    white-space: normal;
+    text-overflow: unset;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: unset;
+  }
+
+  /* Narrower than the desktop clamp, so three lines still bound a long server error. */
+  .toast-sub-two {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    text-overflow: unset;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+
+  .toast-action {
+    height: 28px;
+    align-self: flex-start;
+    gap: 4px;
+    padding: 0 6px;
+  }
+
+  /* 28px painted. 8px above and below reach the 44px touch target. */
+  .toast-action::after {
+    inset: -8px -4px;
+  }
+
+  .toast-light {
+    left: 52px;
   }
 }
 

@@ -9,6 +9,7 @@ import { todayDateInput, toDateInput } from "@/lib/dates";
 import { showDiaryRemovedToast } from "@/lib/diary-undo";
 import { cn } from "@/lib/cn";
 import { showToast } from "@/lib/toast";
+import { completeRetriedSave } from "@/lib/alert-retry";
 import { showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { actionErrorMessage } from "@/lib/use-optimistic-action";
 import { fieldClass } from "@/lib/ui";
@@ -68,7 +69,17 @@ export const MarkWatchedForm = ({
           title: TOAST_COPY.couldNotSave,
           description: message,
           poster,
-          retry: () => markTitleWatched(titleId, formData),
+          retry: () =>
+            completeRetriedSave(
+              () => markTitleWatched(titleId, formData),
+              () => {
+                setError(null);
+                showToast({
+                  title: isEdit ? TOAST_COPY.diaryUpdated : TOAST_COPY.markedSeen,
+                  poster,
+                });
+              },
+            ),
         });
       }
     });
@@ -93,14 +104,18 @@ export const MarkWatchedForm = ({
           title: TOAST_COPY.couldNotRemove,
           description: message,
           poster,
-          retry: async () => {
-            await clearTitleWatched(titleId);
-            showDiaryRemovedToast({
-              clear: Promise.resolve(),
-              restore: () => restoreTitleWatched(titleId, isoDate),
-              poster,
-            });
-          },
+          retry: () =>
+            completeRetriedSave(
+              () => clearTitleWatched(titleId),
+              () => {
+                setError(null);
+                showDiaryRemovedToast({
+                  clear: Promise.resolve(),
+                  restore: () => restoreTitleWatched(titleId, isoDate),
+                  poster,
+                });
+              },
+            ),
         });
       }
     });

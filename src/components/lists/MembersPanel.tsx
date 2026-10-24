@@ -9,8 +9,9 @@ import type { ListRole } from "@/db";
 import { cn } from "@/lib/cn";
 import { personFirstName } from "@/lib/person-avatar";
 import { relativeTimeEs } from "@/lib/relative-time";
+import { reportLeaveFailure, reportMemberChangeFailure } from "@/lib/alert-retry";
 import { showToast } from "@/lib/toast";
-import { showActionError, showMaybeNetworkError, TOAST_COPY } from "@/lib/toast-alerts";
+import { TOAST_COPY } from "@/lib/toast-alerts";
 import { focusRing } from "@/lib/ui";
 
 export type PanelPerson = {
@@ -91,15 +92,11 @@ export const MembersPanel = ({
         after?.();
         router.refresh();
       } catch (caught) {
-        showMaybeNetworkError(caught, {
-          title: TOAST_COPY.couldNotSave,
-          description: caught instanceof Error ? caught.message : undefined,
-          retry: async () => {
-            await action();
-            showToast({ title: done });
-            after?.();
-            router.refresh();
-          },
+        reportMemberChangeFailure(caught, async () => {
+          await action();
+          showToast({ title: done });
+          after?.();
+          router.refresh();
         });
       }
     });
@@ -324,14 +321,7 @@ export const MembersPanel = ({
                       showToast({ title: TOAST_COPY.leftList });
                       router.replace("/listas");
                     } catch {
-                      showActionError({
-                        title: TOAST_COPY.couldNotLeave,
-                        retry: async () => {
-                          await leaveList(listId);
-                          showToast({ title: TOAST_COPY.leftList });
-                          router.replace("/listas");
-                        },
-                      });
+                      reportLeaveFailure();
                     }
                   })
                 }

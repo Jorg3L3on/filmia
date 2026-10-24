@@ -8,6 +8,7 @@ import { ChevronIcon } from "@/components/profile/ProfileRows";
 import { cn } from "@/lib/cn";
 import { relativeTimeEs } from "@/lib/relative-time";
 import { TOOL_ERROR_LABEL, toolActivityLabel } from "@/lib/mcp/tool-labels";
+import { showAlreadyInactive } from "@/lib/alert-retry";
 import { showToast } from "@/lib/toast";
 import { showActionError, TOAST_COPY } from "@/lib/toast-alerts";
 import { fieldClass, focusRing, glassRowClass } from "@/lib/ui";
@@ -157,15 +158,15 @@ export const ConnectionCard = ({
     startTransition(async () => {
       const result = disconnect ? await revokeMcpGrant(id) : await revokeMcpToken(id);
       setConfirming(false);
-      showToast(
-        result.ok
-          ? {
-              title: disconnect ? TOAST_COPY.connectionClosed : TOAST_COPY.tokenRevoked,
-              description: disconnect ? name : undefined,
-              variant: "success",
-            }
-          : { title: TOAST_COPY.alreadyInactive, variant: "info" },
-      );
+      if (result.ok) {
+        showToast({
+          title: disconnect ? TOAST_COPY.connectionClosed : TOAST_COPY.tokenRevoked,
+          description: disconnect ? name : undefined,
+          variant: "success",
+        });
+        return;
+      }
+      showAlreadyInactive();
     });
   };
 
