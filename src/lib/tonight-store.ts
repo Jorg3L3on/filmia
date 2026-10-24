@@ -29,6 +29,7 @@ import {
 } from "@/lib/tonight/events";
 import { blockedItemIds } from "@/lib/tonight/candidates";
 import { composeLenses, type RecoEntry } from "@/lib/tonight/compose";
+import { refillRecosIfThin } from "@/lib/tonight/reco-refill";
 import { itemVector } from "@/lib/tonight/features";
 import { PARA_TI_NAME, PARA_TI_SLUG } from "@/lib/tonight/select";
 import { findPinnedTitleId, PIN_WINDOW_MS, PINNED_REASON } from "@/lib/tonight/pin";
@@ -99,6 +100,8 @@ export type TonightDecks = {
   computedAt: string;
   /** Watchlist titles exist but none streams on the user's platforms. */
   queueSize: number;
+  /** FIL-26: no recommendation to show yet and the pool is being built; Hoy says so and refreshes. */
+  recosWarming: boolean;
 };
 
 type TitleRowWithLists = Title & {
@@ -710,6 +713,7 @@ export const getTonightDecks = async (
     const freshPinnedId = findPinnedTitleId(input.events, now);
     const freshLenses = lensesFromResult(result, rowsById, input.userPlatforms);
     const freshRecos = await loadRecoEntries(userId, input.userPlatforms, input.events, now);
+    const freshWarming = await refillRecosIfThin(userId, freshRecos.length, now).catch(() => false);
     const queueLenses = freshPinnedId
       ? applyPinnedCard(
           freshLenses,
@@ -726,6 +730,7 @@ export const getTonightDecks = async (
       profileSize: result.profileSize,
       computedAt: result.computedAt.toISOString(),
       queueSize: input.queue.length,
+      recosWarming: freshWarming,
     };
   }
 
@@ -808,6 +813,7 @@ export const getTonightDecks = async (
       )
     : lenses;
   const recos = await loadRecoEntries(userId, prefs.userPlatforms, events, now);
+  const recosWarming = await refillRecosIfThin(userId, recos.length, now).catch(() => false);
 
   return {
     lenses: await withPiezas(userId, composeLenses(queueLenses, recos), recos, prefs.userPlatforms, now),
@@ -816,6 +822,7 @@ export const getTonightDecks = async (
     profileSize: 0,
     computedAt: newest ? newest.toISOString() : now.toISOString(),
     queueSize: queueCount,
+    recosWarming,
   };
 };
 
