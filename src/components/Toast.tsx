@@ -94,7 +94,13 @@ const ToastLight = ({ toast }: { toast: ToastItem }) => {
 
 export const ToastCard = ({ toast, phase = "in", onDismiss, announce = true }: ToastCardProps) => {
   const cardRef = useRef<HTMLElement>(null);
-  const dragRef = useRef<{ x: number; y: number; t: number; pointer: number } | null>(null);
+  const dragRef = useRef<{
+    x: number;
+    y: number;
+    t: number;
+    pointer: number;
+    captured: boolean;
+  } | null>(null);
   const ignoreClickRef = useRef(false);
   const blocking = isBlockingToast(toast);
   const undo = isUndoToast(toast);
@@ -114,13 +120,18 @@ export const ToastCard = ({ toast, phase = "in", onDismiss, announce = true }: T
     if (!live || event.button !== 0) {
       return;
     }
+    // A button's click must land on the button. Capturing on pointerdown retargets it to the article.
+    const target = event.target;
+    if (target instanceof Element && target.closest("button")) {
+      return;
+    }
     dragRef.current = {
       x: event.clientX,
       y: event.clientY,
       t: event.timeStamp,
       pointer: event.pointerId,
+      captured: false,
     };
-    event.currentTarget.setPointerCapture(event.pointerId);
     pauseToast(toast.id, "press");
   };
 
@@ -131,8 +142,12 @@ export const ToastCard = ({ toast, phase = "in", onDismiss, announce = true }: T
     }
     const dx = event.clientX - drag.x;
     const dy = event.clientY - drag.y;
-    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dx) < 8) {
-      return;
+    if (!drag.captured) {
+      if (Math.abs(dx) <= 8 || Math.abs(dy) > Math.abs(dx)) {
+        return;
+      }
+      drag.captured = true;
+      event.currentTarget.setPointerCapture(event.pointerId);
     }
     setShift(dx, false);
   };
@@ -143,6 +158,9 @@ export const ToastCard = ({ toast, phase = "in", onDismiss, announce = true }: T
       return;
     }
     dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     resumeToast(toast.id, "press");
     const dx = event.clientX - drag.x;
     const elapsed = event.timeStamp - drag.t;
@@ -162,6 +180,9 @@ export const ToastCard = ({ toast, phase = "in", onDismiss, announce = true }: T
       return;
     }
     dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     resumeToast(toast.id, "press");
     setShift(0, true);
   };
