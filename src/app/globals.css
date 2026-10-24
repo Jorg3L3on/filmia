@@ -1518,6 +1518,18 @@ body:has(.diario-que-ver-shell) header.site-header {
   box-shadow: none;
 }
 
+/*
+ * The glass blur above lives in an @supports block, and the build drops a plain
+ * `backdrop-filter: none` from the rule before: without this the header strip over Hoy's
+ * sala stays blurred and saturated, a band with a hard edge under the logo.
+ */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  body:has(.diario-que-ver-shell) header.site-header {
+    -webkit-backdrop-filter: blur(0);
+    backdrop-filter: blur(0);
+  }
+}
+
 /* Title + meta arm's-length readable over sala grade (solid paper, not fog). */
 .diario-que-ver-shell .deck-footer-watched h2,
 .diario-que-ver-shell .deck-footer-watched h2 a,
