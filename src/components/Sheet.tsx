@@ -61,6 +61,19 @@ const sheetStack: symbol[] = [];
 
 let scrollLocks = 0;
 let savedOverflow: { html: string; body: string } | null = null;
+let sheetPresence = 0;
+
+/** Lets the toast move above an open sheet (FIL-I27). Ref-counted for stacked sheets. */
+const mountSheetPresence = () => {
+  sheetPresence += 1;
+  document.documentElement.setAttribute("data-sheet-open", "");
+  return () => {
+    sheetPresence = Math.max(0, sheetPresence - 1);
+    if (sheetPresence === 0) {
+      document.documentElement.removeAttribute("data-sheet-open");
+    }
+  };
+};
 
 const lockScroll = () => {
   scrollLocks += 1;
@@ -207,6 +220,13 @@ export const Sheet = ({
       }
     };
   }, [open]);
+
+  useEffect(() => {
+    if (!rendered) {
+      return;
+    }
+    return mountSheetPresence();
+  }, [rendered]);
 
   useEffect(() => {
     if (!closing) {

@@ -72,7 +72,8 @@ describe("safe-area tokens (JOR-220)", () => {
     assert.match(safeAreaTabBarPadClass, /safe-area-inset-bottom/);
     assert.match(safeAreaMainPadClass, /safe-area-inset-bottom/);
     assert.match(safeAreaToastBottomClass, /safe-area-inset-bottom/);
-    assert.match(safeAreaToastBottomClass, /5\.75rem/);
+    assert.match(safeAreaToastBottomClass, /4rem\+0\.75rem\+max\(env\(safe-area-inset-bottom\),0\.75rem\)/);
+    assert.match(safeAreaToastBottomClass, /sm:bottom-8/);
     assert.match(safeAreaStickyUnderHeaderClass, /safe-area-inset-top/);
   });
 });

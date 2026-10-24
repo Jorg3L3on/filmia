@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 const assert = (condition: unknown, message: string) => {
@@ -22,7 +22,7 @@ const ratingSheet = read("src/components/RatingSheet.tsx");
 const filtersSheet = read("src/components/CatalogMoreFilters.tsx");
 const markWatched = read("src/components/MarkWatchedSheet.tsx");
 const dayLog = read("src/components/DayLogSheet.tsx");
-const toast = read("src/components/SuccessToast.tsx");
+const toast = read("src/components/Toast.tsx");
 const sharedPoster = read("src/components/SharedPoster.tsx");
 const posterTile = read("src/components/PosterTile.tsx");
 const titleHero = read("src/components/TitleHero.tsx");
@@ -108,8 +108,12 @@ assert(
 );
 assert(!toast.includes("spring-pop"), "Toasts must not use spring-pop");
 assert(
-  toast.includes("reduced ? 20 : 280"),
-  "Toast exit wait matches --duration-toast 280ms",
+  css.includes("toast-fade-in 120ms") && css.includes("toast-fade-out 120ms"),
+  "Reduced-motion toasts fade for 120ms without the travel animation",
+);
+assert(
+  !existsSync(path.join(root, "src/components/SuccessToast.tsx")),
+  "The flat SuccessToast is gone",
 );
 
 assert(
