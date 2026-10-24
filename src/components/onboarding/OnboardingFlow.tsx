@@ -31,7 +31,7 @@ import { cn } from "@/lib/cn";
 import type { LibraryEntry, SuggestionItem, YearGrid, YearGridItem } from "@/lib/onboarding/load";
 import type { PayoffPayload } from "@/lib/onboarding/payoff";
 import type { FirstRutas } from "@/lib/rutas/factories";
-import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY } from "@/lib/toast-alerts";
 import {
   QUICK_PICK_STEP,
   RUTA_STEP,
@@ -211,7 +211,7 @@ export const OnboardingFlow = ({
     }
     const outcome = await startFirstRuta(selectedRuta);
     if (!outcome.ok) {
-      showToast({ title: "No se pudo empezar la ruta", description: outcome.error, variant: "error" });
+      showActionError({ title: TOAST_COPY.couldNotStart, description: outcome.error });
     }
   };
 

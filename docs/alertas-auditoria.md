@@ -39,6 +39,7 @@ Estas acciones devuelven `{ ok: false, error: string }` o solo entregan ese text
 | `RemindPremiereButton` 39 | `outcome.error` |
 | `StartRutaButton` 33, `OnboardingFlow` 214, `RutaActions` 131 | `outcome.error` al empezar una ruta (además, empezar no es idempotente) |
 | `RutaActions` 43, `RutaRevealSheet` 46 | `outcome.error` al reservar |
+| `AddTitleToListCta` alta desde TMDB | `{ ok: false, error }` se marca `name: "ActionRejected"` y no lleva botón. Un `throw` de la acción (red) sí: el alta es idempotente |
 
 `MembersPanel` 93 sí se distingue: un `TypeError` de `fetch` ofrece «Reintentar»; `new Error("Ese rol no está disponible…")` o «Eres la persona dueña…» no. El helper es `isNetworkFailure` / `showMaybeNetworkError` en `src/lib/toast-alerts.ts`, con test.
 
@@ -99,7 +100,7 @@ Póster `tmdbPosterUrl(posterPath, "w185")` en cada aviso de película o serie. 
 | No se pudo {verbo} | igual, y subtítulo «Puedes volver a intentarlo.» si hay botón | — |
 | Título = mensaje del servidor (`MembersPanel` 93, `ShareListSheet` 101) | título fijo «No se pudo…» y el mensaje en el subtítulo | — |
 
-`WatchlistStep` no tenía aviso de acierto. Cada alta usa el mismo título «Añadida a Quiero ver» (sin subtítulo) para que el store las agrupe y muestre la cuenta. Cada baja, «Quitada de Quiero ver».
+`WatchlistStep` no tenía aviso de acierto. Cada alta usa el mismo título «Añadida a Quiero ver» (sin subtítulo) para que el store las agrupe y muestre la cuenta. Cada baja, «Quitada de Quiero ver». Esas dos llamadas son nuevas: el inventario migrado sigue siendo las 98 de partida, y estos dos aciertos son el único alta.
 
 Los botones de estado («En tu diario», «En Quiero ver» como etiqueta) no son toasts y no se tocan.
 

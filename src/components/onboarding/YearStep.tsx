@@ -17,7 +17,7 @@ import {
   yearPickStateOf,
   type YearGridSelection,
 } from "@/lib/onboarding/year-grid";
-import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 
 export type YearTitleRef = { titleId: string | null; createdByFlow: boolean };
 
@@ -103,7 +103,7 @@ const YearStepBody = ({
       ).catch(() => null);
       if (!outcomes) {
         onSelection(current);
-        showToast({ title: "No se pudo guardar", variant: "error" });
+        showActionError({ title: TOAST_COPY.couldNotSave, poster: toastPoster(item.posterPath) });
         return;
       }
       const refs = new Map(titleRefs);

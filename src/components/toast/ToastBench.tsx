@@ -137,9 +137,9 @@ export const ToastBench = () => {
           type="button"
           className={btnSecondary}
           onClick={() => {
-            showToast({ title: "En la lista", description: "Para ver en casa" });
+            showToast({ title: "Añadida a la lista", description: "Para ver en casa" });
             showToast({ title: "Nota guardada", description: "Dune: Parte dos" });
-            showToast({ title: "En Quiero ver", description: "Aftersun" });
+            showToast({ title: "Añadida a Quiero ver", description: "Aftersun" });
           }}
         >
           Pila de 3

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { dismissToast, getToasts } from "@/lib/toast";
 import {
@@ -130,5 +131,22 @@ describe("Reintentar runs once", () => {
       async () => undefined,
     );
     assert.deepEqual(state, ["on", "off", "on"]);
+  });
+});
+
+describe("loose durations", () => {
+  it("leaves durationMs only on the diary undo toast", () => {
+    const files = [
+      "src/components/tonight/TonightSala.tsx",
+      "src/components/watchlist/useWatchlistActions.ts",
+      "src/components/tonight/useRecoActions.ts",
+      "src/components/piezas/VisteRitual.tsx",
+      "src/components/cine/CineActions.tsx",
+      "src/components/share/ShareButton.tsx",
+    ];
+    for (const file of files) {
+      assert.equal(readFileSync(file, "utf8").includes("durationMs:"), false, file);
+    }
+    assert.match(readFileSync("src/lib/diary-undo.ts", "utf8"), /durationMs: DIARY_UNDO_MS/);
   });
 });

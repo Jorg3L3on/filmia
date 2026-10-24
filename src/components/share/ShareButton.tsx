@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY } from "@/lib/toast-alerts";
 
 type ShareButtonProps = {
   /** `/compartir/…` path of the public page (signed on the server). */
@@ -22,9 +23,9 @@ const isAbort = (error: unknown) => error instanceof DOMException && error.name 
 const copyLink = async (url: string) => {
   try {
     await navigator.clipboard.writeText(url);
-    showToast({ title: "Enlace copiado", description: "Pégalo donde quieras compartirlo." });
+    showToast({ title: TOAST_COPY.linkCopied, description: "Pégalo donde quieras compartirlo." });
   } catch {
-    showToast({ title: "No se pudo copiar el enlace", description: url, variant: "error", durationMs: 8000 });
+    showActionError({ title: TOAST_COPY.couldNotCopyLink, description: url });
   }
 };
 

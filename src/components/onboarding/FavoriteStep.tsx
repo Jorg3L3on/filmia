@@ -11,7 +11,7 @@ import type { FlowTitle } from "@/components/onboarding/types";
 import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
-import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { focusRing } from "@/lib/ui";
 
 type FavoriteStepProps = {
@@ -58,7 +58,11 @@ export const FavoriteStep = ({ favorite, onFavorite, tmdbConfigured, headingRef 
       setPendingKey(null);
       if (!outcome.ok) {
         onFavorite(favorite, null);
-        showToast({ title: "No se pudo guardar", description: outcome.error, variant: "error" });
+        showActionError({
+          title: TOAST_COPY.couldNotSave,
+          description: outcome.error,
+          poster: toastPoster(result.posterPath),
+        });
         return;
       }
       onFavorite({ ...optimistic, titleId: outcome.titleId, createdByFlow: outcome.created }, outcome.ambient);
