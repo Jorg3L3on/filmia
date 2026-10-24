@@ -6,7 +6,9 @@ import {
   DIARY_UNDO_FAILED,
   DIARY_UNDO_LABEL,
   DIARY_UNDO_MS,
+  PendingSaveError,
   chainDiaryUndo,
+  clearAfterPendingSave,
   showDiaryRemovedToast,
 } from "@/lib/diary-undo";
 import { dismissToast, getToasts } from "@/lib/toast";
@@ -86,7 +88,52 @@ describe("Quitar del diario undo", { concurrency: 1 }, () => {
     assert.equal(restored, 0);
     assert.equal(failed, 0);
     assert.equal(getToasts().some((item) => item.title === DIARY_UNDO_FAILED), false);
+    assert.equal(getToasts().some((item) => item.title === DIARY_REMOVED_TITLE), false);
     dismissDiary();
+  });
+
+  it("drops the Deshacer toast when the clear fails, and still showed it first", async () => {
+    dismissDiary();
+    let release!: (error: Error) => void;
+    const clear = new Promise<void>((_resolve, reject) => {
+      release = reject;
+    });
+    showDiaryRemovedToast({
+      clear,
+      restore: async () => {
+        throw new Error("no debería restaurar");
+      },
+    });
+    assert.equal(getToasts().some((item) => item.title === DIARY_REMOVED_TITLE), true);
+    release(new Error("No se pudo quitar."));
+    await flush();
+    assert.equal(getToasts().some((item) => item.title === DIARY_REMOVED_TITLE), false);
+    dismissDiary();
+  });
+
+  it("clears only after the in-flight mark, and skips the clear when that mark fails", async () => {
+    const order: string[] = [];
+    let release!: () => void;
+    const save = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const clear = clearAfterPendingSave(save, async () => {
+      order.push("clear");
+    });
+    assert.deepEqual(order, []);
+    release();
+    await clear;
+    assert.deepEqual(order, ["clear"]);
+
+    let skipped = 0;
+    await assert.rejects(
+      clearAfterPendingSave(Promise.reject(new Error("guardar")), async () => {
+        skipped += 1;
+      }),
+      PendingSaveError,
+    );
+    assert.equal(skipped, 0);
+    assert.deepEqual(order, ["clear"]);
   });
 
   it("toasts when the restore itself fails", async () => {
@@ -127,6 +174,10 @@ describe("Quitar del diario undo", { concurrency: 1 }, () => {
     }
     const actions = await readFile("src/components/TitleFichaActions.tsx", "utf8");
     assert.match(actions, /watchedAt\?: string \| null/);
+    assert.match(actions, /clearAfterPendingSave/);
+    assert.match(actions, /No se puede quitar todavía/);
+    const sheet = await readFile("src/components/MarkWatchedSheet.tsx", "utf8");
+    assert.match(sheet, /onSaved\?\.\(watchedAt\)/);
     const caller = await readFile("src/app/titulos/[id]/title-sections.tsx", "utf8");
     assert.match(caller, /watchedAt=\{title\.watchedAt \? toDateInput\(title\.watchedAt\) : null\}/);
   });

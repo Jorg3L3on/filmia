@@ -1,4 +1,4 @@
-import { showToast } from "@/lib/toast";
+import { dismissToast, showToast } from "@/lib/toast";
 
 /** Copy and timing for «Quitar del diario». The light line stays with FIL-I27. */
 export const DIARY_REMOVED_TITLE = "Quitada de tu diario";
@@ -18,6 +18,28 @@ export const chainDiaryUndo = (clear: Promise<unknown>, restore: () => Promise<u
     () => undefined,
   );
 
+/** The mark that just created the diary row failed. Clear must not run. */
+export class PendingSaveError extends Error {
+  constructor() {
+    super("No se pudo quitar.");
+    this.name = "PendingSaveError";
+  }
+}
+
+/**
+ * Runs `clear` only after an in-flight mark settles. The toast can still appear
+ * before that clear finishes. A failed mark rejects and does not clear, so a
+ * later Deshacer cannot restore a row that was never written.
+ */
+export const clearAfterPendingSave = (
+  pendingSave: Promise<unknown> | null | undefined,
+  clear: () => Promise<unknown>,
+) =>
+  (pendingSave ?? Promise.resolve()).then(
+    () => clear(),
+    () => Promise.reject(new PendingSaveError()),
+  );
+
 export const showDiaryRemovedToast = ({
   clear,
   restore,
@@ -31,7 +53,7 @@ export const showDiaryRemovedToast = ({
   /** Restore itself failed. A failed clear is not this: the entry never left. */
   onUndoFailed?: () => void;
 }) => {
-  showToast({
+  const id = showToast({
     title: DIARY_REMOVED_TITLE,
     durationMs: DIARY_UNDO_MS,
     action: {
@@ -45,4 +67,13 @@ export const showDiaryRemovedToast = ({
       },
     },
   });
+  // The toast is already on screen. If the clear never lands, Deshacer would
+  // offer to restore a row that is still there, next to the error toast.
+  void clear.then(
+    () => undefined,
+    () => {
+      dismissToast(id);
+    },
+  );
+  return id;
 };

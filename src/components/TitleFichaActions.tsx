@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useState, type CSSProperties, type ReactNode } from "react";
+import { useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { saveTmdbTitleInLists } from "@/app/actions/lists";
 import { markTmdbTitleWatched, rateTmdbTitle } from "@/app/actions/title-preview";
 import { pinTonightFromFicha, pinTonightFromSearch } from "@/app/actions/tonight";
@@ -26,7 +26,7 @@ import type { SelectableList } from "@/lib/list-selection";
 import { useSpringFeedback } from "@/lib/motion";
 import type { AddTitleFromTmdbInput } from "@/lib/add-title-from-tmdb";
 import { handoffKey, writeFichaHandoff } from "@/lib/ficha-handoff";
-import { showDiaryRemovedToast } from "@/lib/diary-undo";
+import { clearAfterPendingSave, PendingSaveError, showDiaryRemovedToast } from "@/lib/diary-undo";
 import { diaryDayLabel, diaryMonthHref, ownedFichaHref, type DiaryLog } from "@/lib/title-preview";
 import { showToast } from "@/lib/toast";
 import { PARA_TI_SLUG } from "@/lib/tonight/select";
@@ -119,6 +119,8 @@ export const TitleFichaActions = ({
   const [ratingOpen, setRatingOpen] = useState(false);
   const [seenOpen, setSeenOpen] = useState(false);
   const [seenOptimistic, setSeenOptimistic] = useState(false);
+  const [savedDate, setSavedDate] = useState<string | null>(null);
+  const pendingSaveRef = useRef<Promise<unknown> | null>(null);
   const [diaryHold, setDiaryHold] = useState<null | "removed" | "restoring">(null);
   const [seenWatched, setSeenWatched] = useState(watched);
   if (watched !== seenWatched) {
@@ -239,15 +241,21 @@ export const TitleFichaActions = ({
       setSeenOpen(true);
       return;
     }
-    if (titleId == null || !watchedAt) {
+    const isoDate = watchedAt || savedDate;
+    if (titleId == null || !isoDate) {
+      showToast({
+        title: "No se puede quitar todavía",
+        description: "Se está guardando la fecha vista.",
+        variant: "error",
+      });
       return;
     }
-    const isoDate = watchedAt;
     const id = titleId;
+    const pendingSave = pendingSaveRef.current;
     setSeenOptimistic(false);
     setDiaryHold("removed");
     watchedSpring.trigger();
-    const clear = clearTitleWatched(id);
+    const clear = clearAfterPendingSave(pendingSave, () => clearTitleWatched(id));
     showDiaryRemovedToast({
       clear,
       restore: () => restoreTitleWatched(id, isoDate),
@@ -256,6 +264,11 @@ export const TitleFichaActions = ({
     });
     void clear.catch((caught) => {
       setDiaryHold(null);
+      if (caught instanceof PendingSaveError) {
+        setSeenOptimistic(false);
+        return;
+      }
+      setSeenOptimistic(true);
       showToast({
         title: "No se pudo quitar",
         description: caught instanceof Error ? caught.message : "No se pudo quitar.",
@@ -512,23 +525,34 @@ export const TitleFichaActions = ({
         platform={platform}
         saveLabel={state.inWatchlist ? WATCHLIST_SAVE_LABEL : "Guardar en el diario"}
         onClose={() => setSeenOpen(false)}
-        onSaved={() => {
+        onSaved={(isoDate) => {
+          setSavedDate(isoDate);
           setSeenOptimistic(true);
           setDiaryHold(null);
           watchedSpring.trigger();
         }}
         onError={() => setSeenOptimistic(false)}
-        submit={
-          titleId == null
-            ? async (formData) => {
-                const result = await markTmdbTitleWatched(previewSnapshot(), formData);
-                if (!result.ok) {
-                  throw new Error(result.error);
-                }
-                becomeOwned(result.titleId, { watched: true });
+        submit={async (formData) => {
+          const pending = (async () => {
+            if (titleId == null) {
+              const result = await markTmdbTitleWatched(previewSnapshot(), formData);
+              if (!result.ok) {
+                throw new Error(result.error);
               }
-            : undefined
-        }
+              becomeOwned(result.titleId, { watched: true });
+              return;
+            }
+            await markTitleWatched(titleId, formData);
+          })();
+          pendingSaveRef.current = pending;
+          try {
+            await pending;
+          } finally {
+            if (pendingSaveRef.current === pending) {
+              pendingSaveRef.current = null;
+            }
+          }
+        }}
       />
 
       <RatingSheet
