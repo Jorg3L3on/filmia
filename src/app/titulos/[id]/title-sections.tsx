@@ -295,8 +295,14 @@ export const TitleActionsBlock = async ({
       review={title.review ?? null}
       platform={title.platform ?? null}
       pinnedTonight={pinnedTitleId === title.id}
+      posterPath={title.posterPath}
       listsPanel={
-        <TitleListsPanel titleId={title.id} lists={assignableLists} memberListIds={memberListIds} />
+        <TitleListsPanel
+          titleId={title.id}
+          lists={assignableLists}
+          memberListIds={memberListIds}
+          posterPath={title.posterPath}
+        />
       }
     />
   );

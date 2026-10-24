@@ -11,6 +11,7 @@ import {
   GROUP_MAX_USES_MIN,
 } from "@/lib/list-invite-limits";
 import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY } from "@/lib/toast-alerts";
 import { focusRing } from "@/lib/ui";
 
 const optionClass = (selected: boolean) =>
@@ -98,9 +99,9 @@ export const ShareListSheet = ({
 
   const fail = (caught: unknown) => {
     groupLink.current = null;
-    showToast({
-      title: caught instanceof Error ? caught.message : "No se pudo crear el link",
-      variant: "error",
+    showActionError({
+      title: TOAST_COPY.couldNotCreateLink,
+      description: caught instanceof Error && caught.message ? caught.message : "No se pudo crear el enlace.",
     });
   };
 
@@ -127,7 +128,7 @@ export const ShareListSheet = ({
           await navigator.clipboard.writeText(await url);
         }
         showToast({
-          title: "Link copiado",
+          title: TOAST_COPY.linkCopied,
           description: kind === "PERSONAL" ? "Sirve una vez y vence en 7 días." : `Hasta ${maxUses} personas.`,
         });
       } catch (caught) {

@@ -9,6 +9,7 @@ import { Sheet, SheetHandle } from "@/components/Sheet";
 import { pulseNav } from "@/lib/fly-to-nav";
 import type { RutaReveal } from "@/lib/rutas/reveal";
 import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { formatRuntimeShort } from "@/lib/tonight/time";
 
 type RutaRevealSheetProps = {
@@ -42,13 +43,14 @@ export const RutaRevealSheet = ({ reveal, onClose }: RutaRevealSheetProps) => {
         year: next.year,
         posterPath: next.posterPath,
       });
+      const poster = toastPoster(next.posterPath);
       if (!outcome.ok) {
-        showToast({ title: "No se pudo reservar", description: outcome.error, variant: "error" });
+        showActionError({ title: TOAST_COPY.couldNotReserve, description: outcome.error, poster });
         return;
       }
       onClose();
       pulseNav("today");
-      showToast({ title: "Primera en Hoy esta noche", description: next.displayName });
+      showToast({ title: TOAST_COPY.reservedTonight, description: next.displayName, poster });
     });
   };
 

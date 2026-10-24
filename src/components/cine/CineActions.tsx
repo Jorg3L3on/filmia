@@ -96,7 +96,6 @@ export const CineActionsProvider = ({
       return {
         title: toast.title,
         description: toast.description,
-        durationMs: 6000,
         ...(toast.needsPush ? { action: { label: "Perfil", onClick: () => router.push("/perfil#avisos") } } : {}),
       };
     },

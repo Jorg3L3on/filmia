@@ -175,7 +175,7 @@ describe("Quitar del diario undo", { concurrency: 1 }, () => {
     const actions = await readFile("src/components/TitleFichaActions.tsx", "utf8");
     assert.match(actions, /watchedAt\?: string \| null/);
     assert.match(actions, /clearAfterPendingSave/);
-    assert.match(actions, /No se puede quitar todavía/);
+    assert.match(actions, /TOAST_COPY\.stillRemoving/);
     const sheet = await readFile("src/components/MarkWatchedSheet.tsx", "utf8");
     assert.match(sheet, /onSaved\?\.\(watchedAt\)/);
     const caller = await readFile("src/app/titulos/[id]/title-sections.tsx", "utf8");

@@ -15,6 +15,7 @@ import {
   type TmdbListCandidate,
 } from "@/lib/list-add-candidates";
 import { showToast } from "@/lib/toast";
+import { retryAfterRevert, showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { actionErrorMessage } from "@/lib/use-optimistic-action";
 import { fieldClass, focusRing } from "@/lib/ui";
 import {
@@ -100,12 +101,14 @@ export const AddTitleToListCta = ({
   };
 
   /** Optimistic like before: close, toast, write; on failure roll back and reopen. */
-  const runAdd = (keys: string[], name: string, write: () => Promise<void>) => {
+  const runAdd = (keys: string[], name: string, write: () => Promise<void>, posterPath?: string | null) => {
+    const poster = toastPoster(posterPath);
+    const added = () => showToast({ title: TOAST_COPY.addedList, description: name, poster });
     setError(null);
     markAdded(keys, true);
     setPendingId(keys[0]);
     handleClose();
-    showToast({ title: "En la lista", description: name });
+    added();
     startTransition(async () => {
       try {
         await write();
@@ -115,13 +118,36 @@ export const AddTitleToListCta = ({
         setOpen(true);
         const message = actionErrorMessage(caught, "No se pudo agregar el título.");
         setError(message);
-        showToast({ title: "No se pudo agregar", description: message, variant: "error" });
+        const business = caught instanceof Error && caught.name === "ActionRejected";
+        showActionError({
+          title: TOAST_COPY.couldNotAdd,
+          description: message,
+          poster,
+          retry: business
+            ? undefined
+            : async () => {
+            await retryAfterRevert(
+              () => {
+                markAdded(keys, true);
+                setError(null);
+                setOpen(false);
+              },
+              () => {
+                markAdded(keys, false);
+                setPendingId(null);
+                setOpen(true);
+              },
+              write,
+            );
+            added();
+          },
+        });
       }
     });
   };
 
   const handleAdd = (title: AddableListTitle) => {
-    runAdd([title.id], title.name, () => action(title.id));
+    runAdd([title.id], title.name, () => action(title.id), title.posterPath);
   };
 
   const handleAddTmdb = ({ key, result, state, titleId: localId }: TmdbListCandidate) => {
@@ -130,7 +156,7 @@ export const AddTitleToListCta = ({
     }
 
     if (state === "local" && localId) {
-      runAdd([key, localId], result.name, () => action(localId));
+      runAdd([key, localId], result.name, () => action(localId), result.posterPath);
       return;
     }
 
@@ -148,9 +174,11 @@ export const AddTitleToListCta = ({
         posterPath: result.posterPath,
       });
       if (!outcome.ok) {
-        throw new Error(outcome.error);
+        const rejected = new Error(outcome.error);
+        rejected.name = "ActionRejected";
+        throw rejected;
       }
-    });
+    }, result.posterPath);
   };
 
   const buscarHref = trimmedQuery

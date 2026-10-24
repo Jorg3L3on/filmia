@@ -16,6 +16,7 @@ import {
 import { PLATFORM_LABEL } from "@/lib/labels";
 import { WATCHLIST_SAVE_LABEL } from "@/lib/mark-seen";
 import { showToast } from "@/lib/toast";
+import { TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { fieldClass, focusRing } from "@/lib/ui";
 
 const NOTE_MAX = 200;
@@ -75,6 +76,13 @@ type MarkWatchedSheetProps = {
   saveLabel?: string;
   /** Skip the generic «Marcada como vista» toast (the caller shows its own). */
   silent?: boolean;
+  posterPath?: string | null;
+  /**
+   * The mazo already toasts `onWatchError`. Leaving this false avoids a second
+   * error toast on top of that one. Other callers keep the toast: the sheet
+   * has already closed, so the inline error would not be on screen.
+   */
+  toastOnError?: boolean;
   onClose: () => void;
   /** Called with the YYYY-MM-DD the user just confirmed, before the write settles. */
   onSaved?: (watchedAt: string) => void;
@@ -96,6 +104,8 @@ export const MarkWatchedSheet = ({
   platform,
   saveLabel = WATCHLIST_SAVE_LABEL,
   silent = false,
+  posterPath = null,
+  toastOnError = true,
   onClose,
   onSaved,
   onError,
@@ -115,6 +125,8 @@ export const MarkWatchedSheet = ({
       platform={platform}
       saveLabel={saveLabel}
       silent={silent}
+      posterPath={posterPath}
+      toastOnError={toastOnError}
       onClose={onClose}
       onSaved={onSaved}
       onError={onError}
@@ -133,11 +145,14 @@ const MarkWatchedSheetFields = ({
   platform,
   saveLabel = WATCHLIST_SAVE_LABEL,
   silent = false,
+  posterPath = null,
+  toastOnError = true,
   onClose,
   onSaved,
   onError,
   submit,
 }: MarkWatchedSheetProps) => {
+  const poster = toastPoster(posterPath);
   const titleDomId = useId();
   const hasInitialDate = Boolean(initialWatchedAt);
   const [datePreset, setDatePreset] = useState<WatchedDatePreset>(
@@ -182,8 +197,9 @@ const MarkWatchedSheetFields = ({
     onSaved?.(watchedAt);
     if (!silent) {
       showToast({
-        title: hasInitialDate ? "Diario actualizado" : "Marcada como vista",
+        title: hasInitialDate ? TOAST_COPY.diaryUpdated : TOAST_COPY.markedSeen,
         description: titleName,
+        poster,
       });
     }
     startTransition(async () => {
@@ -206,9 +222,15 @@ const MarkWatchedSheetFields = ({
       } catch (caught) {
         const message =
           caught instanceof Error ? caught.message : "No se pudo guardar.";
-        setError(message);
         onError?.(message);
-        showToast({ title: "No se pudo guardar", description: message, variant: "error" });
+        if (toastOnError) {
+          showToast({
+            title: TOAST_COPY.couldNotSave,
+            description: message,
+            variant: "error",
+            poster,
+          });
+        }
       }
     });
   };

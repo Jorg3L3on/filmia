@@ -13,6 +13,7 @@ import type { RutaReveal, RutaStepCard } from "@/lib/rutas/reveal";
 import { cn } from "@/lib/cn";
 import { pulseNav } from "@/lib/fly-to-nav";
 import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { focusRing } from "@/lib/ui";
 
 /**
@@ -39,12 +40,13 @@ export const RutaStepActions = ({ rutaId, step }: { rutaId: string; step: RutaSt
     startTransition(async () => {
       const outcome = await pinTonightFromSearch(film);
       setPending(null);
+      const poster = toastPoster(step.posterPath);
       if (!outcome.ok) {
-        showToast({ title: "No se pudo reservar", description: outcome.error, variant: "error" });
+        showActionError({ title: TOAST_COPY.couldNotReserve, description: outcome.error, poster });
         return;
       }
       pulseNav("today");
-      showToast({ title: "Primera en Hoy esta noche", description: step.displayName });
+      showToast({ title: TOAST_COPY.reservedTonight, description: step.displayName, poster });
     });
   };
 
@@ -77,6 +79,7 @@ export const RutaStepActions = ({ rutaId, step }: { rutaId: string; step: RutaSt
         titleName={step.displayName}
         saveLabel="Guardar en el diario"
         silent
+        posterPath={step.posterPath}
         onClose={() => setSeenOpen(false)}
         submit={saveSeen}
       />
@@ -99,13 +102,13 @@ export const RutaStatusAction = ({ rutaId, status }: { rutaId: string; status: "
     startTransition(async () => {
       if (status === "activa") {
         await parkRuta(rutaId);
-        showToast({ title: "Ruta para después", description: "Sale de Hoy y te espera aquí." });
+        showToast({ title: TOAST_COPY.routeParked, description: "Sale de Hoy y te espera aquí." });
       } else {
         const ok = await activateRuta(rutaId);
         showToast(
           ok
-            ? { title: "De vuelta en Hoy", description: "La verás como una lente más." }
-            : { title: "Hoy ya tiene dos rutas", description: "Deja una para después y vuelve a intentarlo." },
+            ? { title: TOAST_COPY.routeResumed, description: "La verás como una lente más." }
+            : { title: TOAST_COPY.routeBlocked, description: "Deja una para después y vuelve a intentarlo." },
         );
       }
       router.refresh();
@@ -128,11 +131,11 @@ export const RutaOfferList = ({ offers, className }: { offers: RutaOffer[]; clas
       const outcome = await startRuta(offer.sourceKey);
       setPendingKey(null);
       if (!outcome.ok) {
-        showToast({ title: "No se pudo empezar", description: outcome.error, variant: "error" });
+        showActionError({ title: TOAST_COPY.couldNotStart, description: outcome.error });
         return;
       }
       if (outcome.status === "espera") {
-        showToast({ title: "Espera su turno", description: "Hoy ya tiene dos rutas; esta empieza cuando cierres una." });
+        showToast({ title: TOAST_COPY.routeWaiting, description: "Hoy ya tiene dos rutas; esta empieza cuando cierres una." });
       }
       router.push(`/rutas/${outcome.rutaId}`);
     });

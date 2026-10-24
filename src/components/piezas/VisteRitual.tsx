@@ -9,6 +9,7 @@ import { cn } from "@/lib/cn";
 import { VISTE_ANSWER_LABEL, type VisteAnswer } from "@/lib/piezas/core";
 import type { VisteCard } from "@/lib/piezas/viste";
 import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { focusRing } from "@/lib/ui";
 
 const ANSWER_CLASS: Record<VisteAnswer, string> = {
@@ -80,14 +81,19 @@ export const VisteRitual = ({ cards: initial }: { cards: VisteCard[] }) => {
           delete next[card.catalogId];
           return next;
         });
-        showToast({ title: "No se pudo guardar", description: outcome.error, variant: "error" });
+        showActionError({
+          title: TOAST_COPY.couldNotSave,
+          description: outcome.error,
+          poster: toastPoster(card.posterPath),
+        });
         return;
       }
       if (choice === "no") {
+        const poster = toastPoster(card.posterPath);
         showToast({
-          title: "No la viste",
+          title: TOAST_COPY.markedUnseen,
           description: card.name,
-          durationMs: 6000,
+          poster,
           action: {
             label: "Quiero ver",
             onClick: () => {
@@ -99,9 +105,13 @@ export const VisteRitual = ({ cards: initial }: { cards: VisteCard[] }) => {
                 year: card.year,
                 posterPath: card.posterPath,
                 destination: "watchlist",
-              }).then((saved) =>
-                showToast(saved.ok ? { title: "En Quiero ver", description: card.name } : { title: "No se pudo guardar", variant: "error" }),
-              );
+              }).then((saved) => {
+                if (saved.ok) {
+                  showToast({ title: TOAST_COPY.addedWatchlist, description: card.name, poster });
+                  return;
+                }
+                showActionError({ title: TOAST_COPY.couldNotSave, description: saved.error, poster });
+              });
             },
           },
         });

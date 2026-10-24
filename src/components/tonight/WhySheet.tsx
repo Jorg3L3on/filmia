@@ -8,6 +8,7 @@ import { Sheet, SheetHandle } from "@/components/Sheet";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { cn } from "@/lib/cn";
 import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import type { ReasonKind } from "@/lib/tonight";
 
 type WhySheetProps = {
@@ -48,10 +49,12 @@ export const WhySheet = ({ title, lens, onClose }: WhySheetProps) => {
     if (!title) {
       return;
     }
+    const poster = toastPoster(title.posterPath);
     onClose();
     showToast({
-      title: kind === "more_like" ? "Más como esta" : "Menos como esta",
+      title: kind === "more_like" ? TOAST_COPY.affinityNoted : TOAST_COPY.distanceNoted,
       description: "Hoy aprende de ti.",
+      poster,
     });
     startTransition(async () => {
       try {
@@ -61,7 +64,7 @@ export const WhySheet = ({ title, lens, onClose }: WhySheetProps) => {
           lens,
         );
       } catch {
-        showToast({ title: "No se pudo guardar", variant: "error" });
+        showActionError({ title: TOAST_COPY.couldNotSave, poster });
       }
     });
   };

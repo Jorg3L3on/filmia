@@ -9,6 +9,7 @@ import { cn } from "@/lib/cn";
 import { relativeTimeEs } from "@/lib/relative-time";
 import { TOOL_ERROR_LABEL, toolActivityLabel } from "@/lib/mcp/tool-labels";
 import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY } from "@/lib/toast-alerts";
 import { fieldClass, focusRing, glassRowClass } from "@/lib/ui";
 
 /** Client pieces of Perfil → Conexiones (FIL-I20-6). Dates arrive as ISO strings. */
@@ -40,9 +41,15 @@ const KeyIcon = () => (
 const copy = async (value: string, label: string) => {
   try {
     await navigator.clipboard.writeText(value);
-    showToast({ title: `${label} copiado`, variant: "success" });
+    showToast({
+      title: label === "URL" ? TOAST_COPY.linkCopied : `${label} copiado`,
+      variant: "success",
+    });
   } catch {
-    showToast({ title: "No se pudo copiar. Selecciónalo y cópialo a mano.", variant: "error" });
+    showActionError({
+      title: "No se pudo copiar",
+      description: "Selecciónalo y cópialo a mano.",
+    });
   }
 };
 
@@ -152,8 +159,12 @@ export const ConnectionCard = ({
       setConfirming(false);
       showToast(
         result.ok
-          ? { title: disconnect ? `${name} desconectada` : "Token revocado", variant: "success" }
-          : { title: "Ya no estaba activa.", variant: "error" },
+          ? {
+              title: disconnect ? TOAST_COPY.connectionClosed : TOAST_COPY.tokenRevoked,
+              description: disconnect ? name : undefined,
+              variant: "success",
+            }
+          : { title: TOAST_COPY.alreadyInactive, variant: "info" },
       );
     });
   };

@@ -14,6 +14,7 @@ import type { SuggestionItem } from "@/lib/onboarding/load";
 import { MIN_ONBOARDING_TITLES, quickPickRemaining } from "@/lib/onboarding/steps";
 import { PLATFORM_SERVICE_LABEL } from "@/lib/labels";
 import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 
 type WatchlistStepProps = {
   /**
@@ -89,10 +90,18 @@ export const WatchlistStep = ({
       onQueue((current) => current.filter((title) => flowTitleKey(title) !== key));
       startSave(async () => {
         if (existing.titleId) {
-          await removeWatchlistPick(existing.titleId, existing.createdByFlow).catch(() => {
+          const removed = await removeWatchlistPick(existing.titleId, existing.createdByFlow)
+            .then(() => true)
+            .catch(() => false);
+          if (removed) {
+            showToast({ title: TOAST_COPY.removedWatchlist, poster: toastPoster(existing.posterPath) });
+          } else {
             onQueue((current) => [...current, existing]);
-            showToast({ title: "No se pudo quitar", variant: "error" });
-          });
+            showActionError({
+              title: TOAST_COPY.couldNotRemove,
+              poster: toastPoster(existing.posterPath),
+            });
+          }
         }
         setPending((current) => {
           const copy = new Set(current);
@@ -121,9 +130,14 @@ export const WatchlistStep = ({
       });
       if (!outcome.ok) {
         onQueue((current) => current.filter((title) => flowTitleKey(title) !== key));
-        showToast({ title: "No se pudo guardar", description: outcome.error, variant: "error" });
+        showActionError({
+          title: TOAST_COPY.couldNotSave,
+          description: outcome.error,
+          poster: toastPoster(candidate.posterPath),
+        });
         return;
       }
+      showToast({ title: TOAST_COPY.addedWatchlist, poster: toastPoster(candidate.posterPath) });
       onQueue((current) =>
         current.map((title) =>
           flowTitleKey(title) === key ? { ...title, titleId: outcome.titleId, createdByFlow: outcome.created } : title,

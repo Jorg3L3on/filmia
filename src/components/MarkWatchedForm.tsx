@@ -9,6 +9,7 @@ import { todayDateInput, toDateInput } from "@/lib/dates";
 import { showDiaryRemovedToast } from "@/lib/diary-undo";
 import { cn } from "@/lib/cn";
 import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { actionErrorMessage } from "@/lib/use-optimistic-action";
 import { fieldClass } from "@/lib/ui";
 
@@ -19,6 +20,7 @@ type MarkWatchedFormProps = {
   rating?: number | null;
   review?: string | null;
   collapsed?: boolean;
+  posterPath?: string | null;
   onSaved?: () => void;
 };
 
@@ -32,6 +34,7 @@ export const MarkWatchedForm = ({
   rating = null,
   review = null,
   collapsed = false,
+  posterPath = null,
   onSaved,
 }: MarkWatchedFormProps) => {
   // Collapsed lives in a sheet, which has room for the full-size fields.
@@ -43,6 +46,7 @@ export const MarkWatchedForm = ({
   const [isPending, startTransition] = useTransition();
   const [sheetOpen, setSheetOpen] = useState(false);
   const headingId = useId();
+  const poster = toastPoster(posterPath);
 
   const handleSave = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -50,14 +54,22 @@ export const MarkWatchedForm = ({
     setError(null);
     setSheetOpen(false);
     onSaved?.();
-    showToast({ title: isEdit ? "Diario actualizado" : "Marcada como vista" });
+    showToast({
+      title: isEdit ? TOAST_COPY.diaryUpdated : TOAST_COPY.markedSeen,
+      poster,
+    });
     startTransition(async () => {
       try {
         await markTitleWatched(titleId, formData);
       } catch (caught) {
         const message = actionErrorMessage(caught);
         setError(message);
-        showToast({ title: "No se pudo guardar", description: message, variant: "error" });
+        showActionError({
+          title: TOAST_COPY.couldNotSave,
+          description: message,
+          poster,
+          retry: () => markTitleWatched(titleId, formData),
+        });
       }
     });
   };
@@ -69,6 +81,7 @@ export const MarkWatchedForm = ({
     showDiaryRemovedToast({
       clear,
       restore: () => restoreTitleWatched(titleId, isoDate),
+      poster,
     });
     startTransition(async () => {
       try {
@@ -76,7 +89,19 @@ export const MarkWatchedForm = ({
       } catch (caught) {
         const message = actionErrorMessage(caught);
         setError(message);
-        showToast({ title: "No se pudo quitar", description: message, variant: "error" });
+        showActionError({
+          title: TOAST_COPY.couldNotRemove,
+          description: message,
+          poster,
+          retry: async () => {
+            await clearTitleWatched(titleId);
+            showDiaryRemovedToast({
+              clear: Promise.resolve(),
+              restore: () => restoreTitleWatched(titleId, isoDate),
+              poster,
+            });
+          },
+        });
       }
     });
   };

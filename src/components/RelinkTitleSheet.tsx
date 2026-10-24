@@ -13,6 +13,7 @@ import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import { relinkCandidates } from "@/lib/relink-core";
 import { showToast } from "@/lib/toast";
+import { TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import { fieldClass, focusRing } from "@/lib/ui";
 
@@ -124,8 +125,9 @@ const RelinkSheetBody = ({
         return;
       }
       showToast({
-        title: result.changed ? "Ficha cambiada" : "Ya era esta",
+        title: result.changed ? TOAST_COPY.fichaUpdated : TOAST_COPY.fichaConfirmed,
         description: labelFor(selected),
+        poster: toastPoster(selected.posterPath),
       });
       onDone();
     });

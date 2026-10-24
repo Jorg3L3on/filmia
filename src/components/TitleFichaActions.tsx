@@ -29,6 +29,13 @@ import { handoffKey, writeFichaHandoff } from "@/lib/ficha-handoff";
 import { clearAfterPendingSave, PendingSaveError, showDiaryRemovedToast } from "@/lib/diary-undo";
 import { diaryDayLabel, diaryMonthHref, ownedFichaHref, type DiaryLog } from "@/lib/title-preview";
 import { showToast } from "@/lib/toast";
+import {
+  addedToLists,
+  retryAfterRevert,
+  showActionError,
+  TOAST_COPY,
+  toastPoster,
+} from "@/lib/toast-alerts";
 import { PARA_TI_SLUG } from "@/lib/tonight/select";
 import { TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import { focusRing } from "@/lib/ui";
@@ -64,6 +71,7 @@ type TitleFichaActionsProps = {
   platform: Platform | null;
   /** This title is tonight's pin right now. */
   pinnedTonight: boolean;
+  posterPath?: string | null;
   /** The user's lists panel; a preview passes `previewLists` instead (nothing is written until confirmed). */
   listsPanel?: ReactNode;
   previewLists?: SelectableList[];
@@ -110,9 +118,11 @@ export const TitleFichaActions = ({
   review,
   platform,
   pinnedTonight,
+  posterPath = null,
   listsPanel,
   previewLists = [],
 }: TitleFichaActionsProps) => {
+  const poster = toastPoster(posterPath ?? snapshot?.posterPath);
   const router = useRouter();
   const listsPanelId = useId();
   const [listsOpen, setListsOpen] = useState(false);
@@ -183,8 +193,9 @@ export const TitleFichaActions = ({
             throw new Error(result.error);
           }
           showToast({
-            title: "Sale primero en Hoy",
+            title: TOAST_COPY.reservedTonight,
             description: `${titleName} · también en Quiero ver`,
+            poster,
             action: { label: "Ver en Hoy", onClick: () => router.push(HOY_PARA_TI_HREF) },
           });
           becomeOwned(result.titleId, { inWatchlist: true });
@@ -195,8 +206,9 @@ export const TitleFichaActions = ({
           throw new Error(result.error);
         }
         showToast({
-          title: "Sale primero en Hoy",
+          title: TOAST_COPY.reservedTonight,
           description: result.addedToWatchlist ? `${titleName} · también en Quiero ver` : titleName,
+          poster,
           action: { label: "Ver en Hoy", onClick: () => router.push(HOY_PARA_TI_HREF) },
         });
       } finally {
@@ -209,7 +221,11 @@ export const TitleFichaActions = ({
     const next = !state.inWatchlist;
     setPendingAction("watchlist");
     watchlistSpring.trigger();
-    showToast({ title: next ? "En Quiero ver" : "Fuera de Quiero ver" });
+    showToast({
+      title: next ? TOAST_COPY.addedWatchlist : TOAST_COPY.removedWatchlist,
+      description: titleName,
+      poster,
+    });
     run({ ...state, inWatchlist: next }, async () => {
       try {
         if (titleId == null) {
@@ -244,9 +260,10 @@ export const TitleFichaActions = ({
     const isoDate = watchedAt || savedDate;
     if (titleId == null || !isoDate) {
       showToast({
-        title: "No se puede quitar todavía",
-        description: "Se está guardando la fecha vista.",
+        title: TOAST_COPY.stillRemoving,
+        description: TOAST_COPY.stillRemovingDetail,
         variant: "error",
+        poster,
       });
       return;
     }
@@ -261,6 +278,7 @@ export const TitleFichaActions = ({
       restore: () => restoreTitleWatched(id, isoDate),
       onUndo: () => setDiaryHold("restoring"),
       onUndoFailed: () => setDiaryHold(null),
+      poster,
     });
     void clear.catch((caught) => {
       setDiaryHold(null);
@@ -269,10 +287,32 @@ export const TitleFichaActions = ({
         return;
       }
       setSeenOptimistic(true);
-      showToast({
-        title: "No se pudo quitar",
-        description: caught instanceof Error ? caught.message : "No se pudo quitar.",
-        variant: "error",
+      const message = caught instanceof Error ? caught.message : "No se pudo quitar.";
+      showActionError({
+        title: TOAST_COPY.couldNotRemove,
+        description: message,
+        poster,
+        retry: () =>
+          retryAfterRevert(
+            () => {
+              setSeenOptimistic(false);
+              setDiaryHold("removed");
+            },
+            () => {
+              setDiaryHold(null);
+              setSeenOptimistic(true);
+            },
+            async () => {
+              await clearTitleWatched(id);
+              showDiaryRemovedToast({
+                clear: Promise.resolve(),
+                restore: () => restoreTitleWatched(id, isoDate),
+                onUndo: () => setDiaryHold("restoring"),
+                onUndoFailed: () => setDiaryHold(null),
+                poster,
+              });
+            },
+          ),
       });
     });
   };
@@ -280,7 +320,7 @@ export const TitleFichaActions = ({
   const handleSaveRating = (next: { rating: number | null; review: string }) => {
     setPendingAction("rating");
     setRatingOpen(false);
-    showToast({ title: "Nota guardada" });
+    showToast({ title: TOAST_COPY.noteSaved, description: titleName, poster });
     run({ ...state, rating: next.rating, review: next.review || null }, async () => {
       try {
         const formData = new FormData();
@@ -322,8 +362,9 @@ export const TitleFichaActions = ({
         return;
       }
       showToast({
-        title: selectedIds.length === 1 ? "Guardada en tu lista" : `Guardada en ${selectedIds.length} listas`,
+        title: addedToLists(selectedIds.length),
         description: titleName,
+        poster,
       });
       becomeOwned(result.titleId);
     } finally {
@@ -362,7 +403,11 @@ export const TitleFichaActions = ({
           }
           await markTitleWatched(titleId, formData);
         }
-        showToast({ title: "En tu Diario", description: `${titleName} · ${dayLabel}` });
+        showToast({
+          title: TOAST_COPY.addedDiary,
+          description: `${titleName} · ${dayLabel}`,
+          poster,
+        });
         router.push(diaryMonthHref(diaryLog.date));
       } finally {
         setLogging(false);
@@ -523,6 +568,7 @@ export const TitleFichaActions = ({
         rating={state.rating}
         review={state.review}
         platform={platform}
+        posterPath={posterPath ?? snapshot?.posterPath}
         saveLabel={state.inWatchlist ? WATCHLIST_SAVE_LABEL : "Guardar en el diario"}
         onClose={() => setSeenOpen(false)}
         onSaved={(isoDate) => {

@@ -32,6 +32,7 @@ export default async function EditListPage({
             label="Borrar lista"
             confirmLabel="Eliminar lista"
             name={list.name}
+            successToast="Lista eliminada"
             impact={
               itemCount === 0
                 ? "La lista está vacía."
