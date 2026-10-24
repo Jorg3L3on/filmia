@@ -1,12 +1,12 @@
 "use client";
 
 import { useId, useState, useTransition, type FormEvent } from "react";
-import { clearTitleWatched, markTitleWatched } from "@/app/actions/watchlist";
+import { clearTitleWatched, markTitleWatched, restoreTitleWatched } from "@/app/actions/watchlist";
 import { Button } from "@/components/Button";
-import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { RatingStars } from "@/components/RatingStars";
 import { Sheet, SheetHandle } from "@/components/Sheet";
 import { todayDateInput, toDateInput } from "@/lib/dates";
+import { showDiaryRemovedToast } from "@/lib/diary-undo";
 import { cn } from "@/lib/cn";
 import { showToast } from "@/lib/toast";
 import { actionErrorMessage } from "@/lib/use-optimistic-action";
@@ -62,14 +62,21 @@ export const MarkWatchedForm = ({
     });
   };
 
-  const handleClear = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleClear = () => {
+    const isoDate = toDateInput(watchedAt);
     setError(null);
+    const clear = clearTitleWatched(titleId);
+    showDiaryRemovedToast({
+      clear,
+      restore: () => restoreTitleWatched(titleId, isoDate),
+    });
     startTransition(async () => {
       try {
-        await clearTitleWatched(titleId);
+        await clear;
       } catch (caught) {
-        setError(actionErrorMessage(caught));
+        const message = actionErrorMessage(caught);
+        setError(message);
+        showToast({ title: "No se pudo quitar", description: message, variant: "error" });
       }
     });
   };
@@ -140,13 +147,14 @@ export const MarkWatchedForm = ({
       ) : null}
 
       {isEdit ? (
-        <form onSubmit={handleClear}>
-          <ConfirmSubmit
-            label="Quitar del diario"
-            confirmMessage="¿Quitar la fecha de visto? Se conservan tu nota y el comentario."
-            size={isCompact ? "sm" : "md"}
-          />
-        </form>
+        <Button
+          type="button"
+          variant="danger"
+          size={isCompact ? "sm" : "md"}
+          onClick={handleClear}
+        >
+          Quitar del diario
+        </Button>
       ) : null}
     </div>
   );

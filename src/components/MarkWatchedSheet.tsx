@@ -76,7 +76,8 @@ type MarkWatchedSheetProps = {
   /** Skip the generic «Marcada como vista» toast (the caller shows its own). */
   silent?: boolean;
   onClose: () => void;
-  onSaved?: () => void;
+  /** Called with the YYYY-MM-DD the user just confirmed, before the write settles. */
+  onSaved?: (watchedAt: string) => void;
   onError?: (message: string) => void;
   /**
    * Replaces `markTitleWatched(titleId, …)`: the ficha preview (FIL-I8) has no
@@ -178,7 +179,7 @@ const MarkWatchedSheetFields = ({
     }
 
     onClose();
-    onSaved?.();
+    onSaved?.(watchedAt);
     if (!silent) {
       showToast({
         title: hasInitialDate ? "Diario actualizado" : "Marcada como vista",

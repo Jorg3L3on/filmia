@@ -158,4 +158,18 @@ Position: 12 px above the mobile dock (`4rem` dock + `0.75rem` air + the dock's 
 
 ## Reduced motion
 
-`prefers-reduced-motion: reduce` zeroes animations, transitions, and view-transition image pairs.
+`prefers-reduced-motion: reduce` zeroes animations, transitions, and view-transition image pairs. The crystal confirm dialog is opacity-only (no translate), so the collapse stays a fade.
+
+## Alertas · diálogo y Deshacer (FIL-I29)
+
+Direction A «Cristal sala». The toast stays on the current `showToast` API (`durationMs: 7000`, action «Deshacer»). The light line is FIL-I27 and is not part of this dialog.
+
+| Action | Pattern | Why |
+| --- | --- | --- |
+| Borrar lista | `ConfirmDialog` («Eliminar lista») | Deletes the list and its membership. The films stay. Impact («Contiene N títulos») and the note stay in the dialog. |
+| Desconectar una app / Revocar un token | `ConfirmDialog` («Desconectar» / «Revocar») | The credential stops working immediately. |
+| Quitar del diario (ficha, formulario, acciones) | Toast «Quitada de tu diario» + Deshacer 7 s | Only `watchedAt` is cleared. Nota, comentario and plataforma stay. Deshacer calls `restoreTitleWatched` after the clear in flight finishes, and only while `watchedAt` is still null. |
+| Sacar a un miembro / Salir de una lista | Existing sheet | Still `MembersPanel`. Not `window.confirm`. Out of this cut. |
+| Quitar de Quiero ver, quitar de una lista, revocar un link de invitación | No new dialog | Reversible or already immediate. This cut does not confirm them. |
+
+The dialog is centered on the glass sheet material (`.glass-panel.glass-alert`), scrim `rgb(5 6 7 / 0.55)`, safe-area padding, targets at least 44 px. Open and close use `.confirm-fade-in` / `.confirm-fade-out` (opacity only). `prefers-reduced-transparency: reduce` drops the blur and uses a solid fill (`rgb(24 28 35 / 0.97)`). Initial focus is Cancel; Escape cancels; focus returns to the trigger.
