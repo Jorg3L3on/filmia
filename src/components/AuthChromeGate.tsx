@@ -8,7 +8,6 @@ import { isAuthChromePath, isImmersiveFichaPath } from "@/lib/nav";
 type AuthChromeGateProps = {
   header: ReactNode;
   prefetch: ReactNode;
-  footer: ReactNode;
   bottomNav: ReactNode;
   mainClassName: string;
   children: ReactNode;
@@ -18,7 +17,6 @@ type AuthChromeGateProps = {
 export const AuthChromeGate = ({
   header,
   prefetch,
-  footer,
   bottomNav,
   mainClassName,
   children,
@@ -44,7 +42,6 @@ export const AuthChromeGate = ({
       )}
       {prefetch}
       <main className={mainClassName}>{children}</main>
-      {footer}
       {bottomNav}
       <ToastHost />
     </>

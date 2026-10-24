@@ -802,11 +802,6 @@ html[data-que-ver-grade="live"] body {
   mix-blend-mode: screen;
 }
 
-/* Hoy's sala runs to the bottom of the page: no hairline above the desktop footer. */
-body:has(.diario-que-ver-shell) footer.site-footer {
-  border-top-color: transparent;
-}
-
 .diario-que-ver-shell > * {
   position: relative;
   z-index: 1;
