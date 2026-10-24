@@ -1160,6 +1160,8 @@ html[data-que-ver-grade="live"] body {
 .genre-coverflow-active .font-serif {
   display: block;
   overflow: hidden;
+  /* Italic glyphs lean past their box: room at the end so «?» or «f» is not clipped by the ellipsis box. */
+  padding-inline: 0.04em 0.16em;
   font-size: 1.65rem;
   font-style: italic;
   font-weight: 500;
