@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { createMcpToken, revokeMcpGrant, revokeMcpToken } from "@/app/actions/mcp";
 import { Button } from "@/components/Button";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ChevronIcon } from "@/components/profile/ProfileRows";
 import { cn } from "@/lib/cn";
 import { relativeTimeEs } from "@/lib/relative-time";
@@ -131,17 +132,27 @@ export const ConnectionCard = ({
   now,
 }: ConnectionCardProps) => {
   const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
   const initial = Array.from(name)[0]?.toUpperCase() ?? "?";
+  const disconnect = kind === "client";
 
-  const revoke = () => {
-    const what = kind === "client" ? `Desconectar ${name}` : `Revocar el token «${name}»`;
-    if (!window.confirm(`${what}? Deja de funcionar de inmediato.`)) return;
+  const handleAskRevoke = () => {
+    setConfirming(true);
+  };
+
+  const handleCloseRevoke = () => {
+    if (pending) return;
+    setConfirming(false);
+  };
+
+  const handleConfirmRevoke = () => {
     startTransition(async () => {
-      const result = kind === "client" ? await revokeMcpGrant(id) : await revokeMcpToken(id);
+      const result = disconnect ? await revokeMcpGrant(id) : await revokeMcpToken(id);
+      setConfirming(false);
       showToast(
         result.ok
-          ? { title: kind === "client" ? `${name} desconectada` : "Token revocado", variant: "success" }
+          ? { title: disconnect ? `${name} desconectada` : "Token revocado", variant: "success" }
           : { title: "Ya no estaba activa.", variant: "error" },
       );
     });
@@ -191,7 +202,7 @@ export const ConnectionCard = ({
         </button>
         <button
           type="button"
-          onClick={revoke}
+          onClick={handleAskRevoke}
           disabled={pending}
           aria-busy={pending || undefined}
           className={cn(
@@ -200,9 +211,20 @@ export const ConnectionCard = ({
             focusRing,
           )}
         >
-          {kind === "client" ? "Desconectar" : "Revocar"}
+          {disconnect ? "Desconectar" : "Revocar"}
         </button>
       </div>
+      <ConfirmDialog
+        open={confirming}
+        onClose={handleCloseRevoke}
+        glyph="unlink"
+        title={disconnect ? `¿Desconectar ${name}?` : `¿Revocar el token «${name}»?`}
+        description="Deja de funcionar de inmediato."
+        confirmLabel={disconnect ? "Desconectar" : "Revocar"}
+        pending={pending}
+        pendingLabel={disconnect ? "Desconectando…" : "Revocando…"}
+        onConfirm={handleConfirmRevoke}
+      />
       {open ? (
         <div className="mt-1 pb-3">
           <Activity items={activity} now={now} />

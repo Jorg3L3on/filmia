@@ -1,6 +1,7 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { db, listItems, lists, titles, type Platform, type SeriesStatus } from "@/db";
 import { upsertTitleFromTmdbForUser } from "@/lib/add-title-from-tmdb";
+import { isValidIsoDate, isoDateToUtcNoon, toDateInput } from "@/lib/dates";
 import { DomainError } from "@/lib/domain-error";
 import { catalogIdOfOwnTitle, catalogIdOfTitle } from "@/lib/list-items";
 import { ensureDefaultLists, ensureSeriesStatusList, SERIES_STATUS_LIST_SLUGS, WATCHLIST_SLUG } from "@/lib/lists";
@@ -134,6 +135,29 @@ export const markWatchedFor = async (userId: string, titleId: string, input: Mar
 
   revalidate(() => revalidateDiarySurfaces(titleId));
   scheduleTonightRecompute(userId);
+};
+
+/**
+ * Puts a cleared diary date back. Only when `watchedAt` is still null, so a date the
+ * person logged during the undo window is left alone. Does not touch rating, review,
+ * platform, or Quiero ver (unlike `markWatchedFor`).
+ */
+export const restoreWatchedFor = async (userId: string, titleId: string, isoDate: string) => {
+  if (!isValidIsoDate(isoDate)) {
+    throw new DomainError("validation", "La fecha vista no es válida.");
+  }
+  const updated = await db
+    .update(titles)
+    .set({ watchedAt: isoDateToUtcNoon(isoDate) })
+    .where(and(eq(titles.id, titleId), eq(titles.userId, userId), isNull(titles.watchedAt)))
+    .returning({ watchedAt: titles.watchedAt });
+  const watchedAt = updated[0]?.watchedAt;
+  if (!watchedAt) {
+    throw new DomainError("not_found", "Título no encontrado.");
+  }
+  revalidate(() => revalidateDiarySurfaces(titleId));
+  scheduleTonightRecompute(userId);
+  return toDateInput(watchedAt);
 };
 
 /** Sets (or clears, with null) the rating; `review` is only touched when given. */
