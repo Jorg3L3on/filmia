@@ -786,21 +786,25 @@ html[data-que-ver-grade="live"] body {
       rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.015) 50%,
       transparent 62%
     );
-  -webkit-mask-image: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgb(0 0 0 / 0.4) 12%,
-    #000 28%,
-    #000 100%
-  );
-  mask-image: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgb(0 0 0 / 0.4) 12%,
-    #000 28%,
-    #000 100%
-  );
+  /*
+   * Soft on every side, not just the top: the box reaches past the content, and on a wide
+   * screen its left, right and bottom edges showed as straight lines (the floor glow is wider
+   * than the box). The side fade lives in the part that is off screen on a phone.
+   */
+  -webkit-mask-image:
+    linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 0.4) 12%, #000 28%, #000 80%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 0.4) 12%, #000 28%, #000 80%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
+  mask-composite: intersect;
   mix-blend-mode: screen;
+}
+
+/* Hoy's sala runs to the bottom of the page: no hairline above the desktop footer. */
+body:has(.diario-que-ver-shell) footer.site-footer {
+  border-top-color: transparent;
 }
 
 .diario-que-ver-shell > * {
@@ -814,23 +818,18 @@ html[data-que-ver-grade="live"] body {
   inset: -18% -12% -24%;
   z-index: 0;
   overflow: hidden;
-  /* Soft top + bottom edges so grade/vignette never hard-cut under logo or above the footer. */
-  -webkit-mask-image: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgb(0 0 0 / 0.4) 10%,
-    #000 24%,
-    #000 72%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgb(0 0 0 / 0.4) 10%,
-    #000 24%,
-    #000 72%,
-    transparent 100%
-  );
+  /*
+   * Soft on every edge so grade/vignette never hard-cut under the logo, above the footer, or at
+   * the sides of a wide screen (the side fade sits in the part that is off screen on a phone).
+   */
+  -webkit-mask-image:
+    linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 0.4) 10%, #000 24%, #000 72%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 0.4) 10%, #000 24%, #000 72%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+  mask-composite: intersect;
 }
 
 .que-ver-atmosphere-grade {

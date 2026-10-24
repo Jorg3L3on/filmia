@@ -23,7 +23,7 @@ export const AppShell = ({ children }: AppShellProps) => (
       </>
     }
     footer={
-      <footer className="hidden border-t border-line px-4 py-5 text-center text-xs text-mist sm:block">
+      <footer className="site-footer hidden border-t border-line px-4 py-5 text-center text-xs text-mist sm:block">
         Filmia · diario personal · sin scrapers
       </footer>
     }
