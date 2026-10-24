@@ -8,6 +8,7 @@ const personal = (overrides: Partial<UserTitle> = {}): UserTitle => ({
   userId: "u1",
   catalogId: "c1",
   rating: 9,
+  impliedRating: null,
   review: "mine",
   platform: "NETFLIX",
   watchedAt: new Date("2026-10-01T12:00:00.000Z"),

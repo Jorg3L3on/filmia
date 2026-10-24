@@ -141,9 +141,14 @@ export const DeckCard = memo(function DeckCard({
   );
   // «···» beside the stub (FIL-I21-2): the hold menu, in plain sight. Hold still works.
   const menuTab = showStub && holdable;
-  const menuTabLabel = isTonight
-    ? "Más acciones: ahora no, mover a una lista, quitar de Quiero ver"
-    : "Más acciones: mover a otra lista, quitar de la lista";
+  // Says what TonightCardMenu actually offers for this card: a ruta step, a recommendation or a queue film.
+  const menuTabLabel = !isTonight
+    ? "Más acciones: mover a otra lista, quitar de la lista"
+    : tonight?.ruta
+      ? "Más acciones: ver la ruta, dejarla para después"
+      : isReco
+        ? "Más acciones: ver detalles, Quiero ver, ver esta noche, no me interesa"
+        : "Más acciones: ahora no, mover a una lista, quitar de Quiero ver";
   const imdbLabel = formatImdbRating(title.imdbRating);
   const availabilityPlatform = primaryAvailabilityPlatform(
     title.flatrateProviders,
@@ -162,6 +167,7 @@ export const DeckCard = memo(function DeckCard({
       posterPath={title.posterPath}
       priority={nearFocus}
       sizes={posterSizes}
+      responsive
       className="absolute inset-0 h-full w-full rounded-none [aspect-ratio:auto]"
     />
   );
@@ -214,6 +220,50 @@ export const DeckCard = memo(function DeckCard({
             onRestart={sala.closing.onRestart}
             tabbable={nearFocus}
           />
+          <span data-coverflow-dim className="coverflow-card-dim" aria-hidden />
+        </div>
+      </article>
+    );
+  }
+
+  if (title.portal && sala) {
+    // A door card (FIL-I26-3, «¿Las viste?»): like the closing card, the face is the message.
+    const portal = title.portal;
+    return (
+      <article
+        ref={handleRef}
+        id={`coverflow-item-${title.id}`}
+        role="option"
+        aria-selected={nearFocus}
+        aria-label={portal.title}
+        className="coverflow-card is-cinematic is-closing absolute inset-0 origin-center"
+        onPointerDown={onPointerDown}
+      >
+        <div
+          data-coverflow-face
+          style={{ "--deal-i": index } as CSSProperties}
+          className="coverflow-card-face closing-card-face relative block h-full overflow-hidden rounded-[22px]"
+          onClick={() => {
+            if (!rootRef.current?.classList.contains("is-focused")) {
+              onSelect(index);
+            }
+          }}
+        >
+          <div className="closing-card-content">
+            <p className="closing-card-eyebrow">{portal.eyebrow}</p>
+            <h2 className="closing-card-title font-serif">{portal.title}</h2>
+            <p className="closing-card-counters">{portal.body}</p>
+            <div className="closing-card-actions">
+              <Link
+                href={portal.href}
+                tabIndex={nearFocus ? 0 : -1}
+                onPointerDown={(event) => event.stopPropagation()}
+                className={cn("closing-card-primary press-scale", focusRing)}
+              >
+                {portal.cta}
+              </Link>
+            </div>
+          </div>
           <span data-coverflow-dim className="coverflow-card-dim" aria-hidden />
         </div>
       </article>
@@ -360,12 +410,6 @@ export const DeckCard = memo(function DeckCard({
             <PersonAvatar person={title.addedBy} size={20} />
           </span>
         ) : null}
-        {isReco ? (
-          <span data-deck-reco-badge className={cn("reco-badge", recoSaved && "is-saved")} aria-hidden>
-            {recoSaved ? <CheckIcon /> : <SparkIcon />}
-            {recoSaved ? "En Quiero ver" : "Recomendada"}
-          </span>
-        ) : null}
         {!cinematic &&
         !compact &&
         title.kind === "SERIES" &&
@@ -408,7 +452,7 @@ export const DeckCard = memo(function DeckCard({
           onCommit={onStubCommit}
           onSaved={handleStubSaved}
           onError={handleStubError}
-          commitDirectly={isReco && sala ? () => sala.markRecoSeen(title) : undefined}
+          saveSeen={isReco && sala ? (formData) => sala.markRecoSeen(title, formData) : undefined}
         />
       ) : null}
       {menuTab ? (
@@ -453,15 +497,3 @@ const MoreDots = () => (
   </svg>
 );
 
-const SparkIcon = () => (
-  <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true">
-    <path d="M12 2.5c.6 3.9 2.6 5.9 6.5 6.5-3.9.6-5.9 2.6-6.5 6.5-.6-3.9-2.6-5.9-6.5-6.5 3.9-.6 5.9-2.6 6.5-6.5Z" />
-    <path d="M5 15.5c.3 1.8 1.2 2.7 3 3-1.8.3-2.7 1.2-3 3-.3-1.8-1.2-2.7-3-3 1.8-.3 2.7-1.2 3-3Z" />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth={3} aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" d="m5 12.5 4.5 4.5L19 7.5" />
-  </svg>
-);

@@ -20,6 +20,7 @@ export const titleWithoutEntry = (row: CatalogRow) =>
     userId: "",
     catalogId: row.id,
     rating: null,
+    impliedRating: null,
     review: null,
     platform: null,
     watchedAt: null,

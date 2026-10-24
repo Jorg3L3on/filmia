@@ -3,6 +3,11 @@
 import { cn } from "@/lib/cn";
 import type { NightLine } from "@/lib/tonight/night-line";
 
+/** Past this share of the track, a centred «acaba …» label would run into the edge label. */
+const NIGHT_LINE_LABEL_EDGE_PCT = 72;
+/** «un capítulo acaba …» is about twice as wide. */
+const NIGHT_LINE_EPISODE_LABEL_EDGE_PCT = 62;
+
 type TonightNightLineProps = {
   line: NightLine;
   className?: string;
@@ -47,6 +52,12 @@ export const TonightNightLine = ({ line, className }: TonightNightLineProps) => 
   const endPct = fits ? line.endRatio * 100 : 100;
   const bedtimePct = fits ? 100 : line.bedtimeRatio * 100;
   const accentPct = fits ? endPct : bedtimePct;
+  // «acaba 00:58» centred on its mark would sit on the bedtime label when the film ends a few
+  // minutes before it (or on the start time when it is short): flush to that edge instead, and
+  // the moon / the start dot already say what the hidden label would.
+  const edgePct = fits && line.episode ? NIGHT_LINE_EPISODE_LABEL_EDGE_PCT : NIGHT_LINE_LABEL_EDGE_PCT;
+  const endNearBedtime = fits && endPct > edgePct;
+  const endNearStart = fits && endPct < 100 - edgePct;
 
   return (
     <div role="img" aria-label={line.label} className={cn("night-line", !fits && "is-over", className)}>
@@ -62,17 +73,30 @@ export const TonightNightLine = ({ line, className }: TonightNightLineProps) => 
         </span>
       </span>
       <span className="night-line-labels" aria-hidden="true">
-        <span className="night-line-label" style={{ left: 0 }}>
-          {line.startsAt}
-        </span>
+        {endNearStart ? null : (
+          <span className="night-line-label" style={{ left: 0 }}>
+            {line.startsAt}
+          </span>
+        )}
         {fits ? (
           <>
-            <span className="night-line-label is-strong" style={{ left: `${endPct}%`, transform: "translateX(-50%)" }}>
+            <span
+              className="night-line-label is-strong"
+              style={
+                endNearBedtime
+                  ? { right: 0 }
+                  : endNearStart
+                    ? { left: 0 }
+                    : { left: `${endPct}%`, transform: "translateX(-50%)" }
+              }
+            >
               {line.episode ? "un capítulo acaba" : "acaba"} {line.endsAt}
             </span>
-            <span className="night-line-label" style={{ right: 0 }}>
-              {line.bedtimeAt}
-            </span>
+            {endNearBedtime ? null : (
+              <span className="night-line-label" style={{ right: 0 }}>
+                {line.bedtimeAt}
+              </span>
+            )}
           </>
         ) : (
           <>

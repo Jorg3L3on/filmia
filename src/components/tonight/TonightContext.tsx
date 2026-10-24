@@ -22,7 +22,7 @@ export type TonightHandlers = {
   /** A recommended card (not in the library): open its preview sheet. */
   onOpenReco: (title: CoverflowTitle) => void;
   /** «Vi esto» on a recommended card: log it as seen; resolves to an error message or null. */
-  markRecoSeen: (title: CoverflowTitle) => Promise<string | null>;
+  markRecoSeen: (title: CoverflowTitle, formData: FormData) => Promise<string | null>;
   /** The closing card (FIL-I21-6): tonight's counters, the chapters and «Volver al principio». */
   closing: ClosingStats & { lenses: ChapterBarLens[]; onRestart: () => void };
 };

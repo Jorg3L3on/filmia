@@ -249,20 +249,13 @@ export const agingScore = (
   return { value, reasons };
 };
 
+/**
+ * «Comparten drama y aventura»: the genres two films share. Keywords still weigh in the score, but
+ * TMDB only names them in English («van», «road trip»), so they never reach the Spanish copy.
+ */
 export const sharedFeatureNames = (a: TonightTitle, b: TonightTitle) => {
-  const names: string[] = [];
   const genresB = new Set(b.genres.map((genre) => genre.id));
-  for (const genre of a.genres) {
-    if (genresB.has(genre.id)) {
-      names.push(genre.name.toLowerCase());
-    }
-  }
-  const keywordsB = new Set(b.keywords.map((keyword) => keyword.id));
-  for (const keyword of a.keywords) {
-    if (keywordsB.has(keyword.id)) {
-      names.push(keyword.name.toLowerCase());
-    }
-  }
+  const names = a.genres.filter((genre) => genresB.has(genre.id)).map((genre) => genre.name.toLowerCase());
   return [...new Set(names)].slice(0, 3);
 };
 
@@ -289,9 +282,11 @@ export const tasteReasons = (
     reasons.push({
       kind: "taste_anchor",
       text:
-        anchor.anchor.rating != null
-          ? `Porque le diste ${formatStarsCompact(anchor.anchor.rating)} a ${anchor.anchor.name}`
-          : `Porque ${anchor.anchor.name} está en tus Favoritas`,
+        anchor.anchor.ratingImplied
+          ? `Porque te gustó ${anchor.anchor.name}`
+          : anchor.anchor.rating != null
+            ? `Porque le diste ${formatStarsCompact(anchor.anchor.rating)} a ${anchor.anchor.name}`
+            : `Porque ${anchor.anchor.name} está en tus Favoritas`,
       detail: shared.length > 0 ? `Comparten ${joinEs(shared)}` : undefined,
       weight: WEIGHTS.gusto * gusto + anchor.similarity * 0.1,
       personal: true,

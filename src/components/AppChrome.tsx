@@ -8,7 +8,6 @@ export const appMainClassName =
 type AppChromeProps = {
   header: ReactNode;
   prefetch: ReactNode;
-  footer: ReactNode;
   bottomNav: ReactNode;
   children: ReactNode;
 };
@@ -17,14 +16,12 @@ type AppChromeProps = {
 export const AppChrome = ({
   header,
   prefetch,
-  footer,
   bottomNav,
   children,
 }: AppChromeProps) => (
   <AuthChromeGate
     header={header}
     prefetch={prefetch}
-    footer={footer}
     bottomNav={bottomNav}
     mainClassName={appMainClassName}
   >

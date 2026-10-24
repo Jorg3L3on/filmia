@@ -1,4 +1,4 @@
-import { and, count, eq, gte, inArray, max } from "drizzle-orm";
+import { and, count, eq, gte, inArray, max, sql } from "drizzle-orm";
 import { cache } from "react";
 import { catalog, db, listItems, lists, pickEvents, titles, type TitleKind } from "@/db";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
@@ -96,7 +96,8 @@ export const loadAffinityLibrary = async (userId: string, now: Date) => {
       .select({
         id: titles.id,
         catalogId: titles.catalogId,
-        rating: titles.rating,
+        // ¿Las viste? answers count for Afinidad like stars (FIL-I26).
+        rating: sql<number | null>`coalesce(${titles.rating}, ${titles.impliedRating})`,
         watchedAt: titles.watchedAt,
         seriesStatus: titles.seriesStatus,
         createdAt: titles.createdAt,

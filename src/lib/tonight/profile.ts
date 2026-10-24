@@ -13,6 +13,8 @@ export type TasteAnchor = {
   titleId: string;
   name: string;
   rating: number | null;
+  /** A ¿Las viste? «me gustó», not stars: «Porque te gustó X». */
+  ratingImplied?: boolean;
   vector: FeatureVector;
   weight: number;
 };
@@ -168,6 +170,7 @@ export const buildTasteProfile = (
         titleId: title.id,
         name: title.name,
         rating: title.rating,
+        ...(title.ratingImplied ? { ratingImplied: true } : {}),
         vector: itemVec,
         weight,
       });
