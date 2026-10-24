@@ -289,9 +289,11 @@ export const tasteReasons = (
     reasons.push({
       kind: "taste_anchor",
       text:
-        anchor.anchor.rating != null
-          ? `Porque le diste ${formatStarsCompact(anchor.anchor.rating)} a ${anchor.anchor.name}`
-          : `Porque ${anchor.anchor.name} está en tus Favoritas`,
+        anchor.anchor.ratingImplied
+          ? `Porque te gustó ${anchor.anchor.name}`
+          : anchor.anchor.rating != null
+            ? `Porque le diste ${formatStarsCompact(anchor.anchor.rating)} a ${anchor.anchor.name}`
+            : `Porque ${anchor.anchor.name} está en tus Favoritas`,
       detail: shared.length > 0 ? `Comparten ${joinEs(shared)}` : undefined,
       weight: WEIGHTS.gusto * gusto + anchor.similarity * 0.1,
       personal: true,

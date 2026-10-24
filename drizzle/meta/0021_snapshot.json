@@ -2655,6 +2655,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "impliedRating": {
+          "name": "impliedRating",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "review": {
           "name": "review",
           "type": "text",

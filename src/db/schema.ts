@@ -174,6 +174,11 @@ export const titles = pgTable(
       .notNull()
       .references(() => catalog.id),
     rating: integer("rating"),
+    /**
+     * FIL-I26 · ¿Las viste?: what «me gustó» (8) / «no tanto» (4) told the engine. Never shown as
+     * stars, never in averages: `rating` stays the person's own; the engine reads `rating ?? impliedRating`.
+     */
+    impliedRating: integer("impliedRating"),
     review: text("review"),
     platform: platformEnum("platform"),
     watchedAt: timestamp("watchedAt", { precision: 3, mode: "date" }),

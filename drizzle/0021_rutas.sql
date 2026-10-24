@@ -1,5 +1,5 @@
--- Rutas y Universo (FIL-I26): Ruta + RutaPaso, User.rutasOfferedAt, and the curated-ruta columns
--- on List (curated, curatedFrom, curatedUntil, curatedFor). ADDITIVE and idempotent: new tables,
+-- Rutas y Universo (FIL-I26): Ruta + RutaPaso, User.rutasOfferedAt, the curated-ruta columns
+-- on List (curated, curatedFrom, curatedUntil, curatedFor) and Title.impliedRating (¿Las viste?). ADDITIVE and idempotent: new tables,
 -- nullable or defaulted columns. Apply BEFORE deploying the code, after 0020.
 -- Scaffolded with `drizzle-kit generate`, then made idempotent by hand.
 
@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS "RutaPaso" (
 );
 --> statement-breakpoint
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "rutasOfferedAt" timestamp (3);--> statement-breakpoint
+ALTER TABLE "Title" ADD COLUMN IF NOT EXISTS "impliedRating" integer;--> statement-breakpoint
 ALTER TABLE "List" ADD COLUMN IF NOT EXISTS "curated" boolean DEFAULT false NOT NULL;--> statement-breakpoint
 ALTER TABLE "List" ADD COLUMN IF NOT EXISTS "curatedFrom" date;--> statement-breakpoint
 ALTER TABLE "List" ADD COLUMN IF NOT EXISTS "curatedUntil" date;--> statement-breakpoint

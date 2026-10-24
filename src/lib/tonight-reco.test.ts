@@ -250,6 +250,7 @@ describe("tonight/reco", () => {
               name: seedTitle.name,
               via,
               rating: seedTitle.rating,
+              ...(seedTitle.ratingImplied ? { ratingImplied: true } : {}),
             }
           : null,
       },
@@ -319,6 +320,28 @@ describe("tonight/reco", () => {
     assert.ok(texts.includes("Porque le diste 4.5★ a Parasite"));
     assert.equal(texts.filter((text) => text.includes("Parasite")).length, 1);
     assert.equal(pick!.reasons[0]!.kind, "reco_seed", "the seed leads the headline");
+  });
+
+  it("a ¿Las viste? «me gustó» explains as «te gustó», never as stars the person did not give", () => {
+    const seed = title("Gravedad", {
+      name: "Gravedad",
+      genres: [DRAMA],
+      watchedAt: new Date(NOW.getTime() - 30 * DAY),
+      rating: 8,
+      ratingImplied: true,
+    });
+    const profile = buildTasteProfile([seed], [], NOW);
+    const candidate = { ...candidateOf(61, seed, "watched"), catalogId: "cat-61" };
+    const [pick] = scoreRecos({
+      inputs: [{ candidate, title: title("cat-61", { name: "Solaris", genres: [DRAMA] }) }],
+      profile,
+      titlesById: new Map([[seed.id, seed]]),
+      events: [],
+      now: NOW,
+    });
+    const texts = pick!.reasons.map((item) => item.text);
+    assert.ok(texts.includes("Porque te gustó Gravedad"));
+    assert.ok(!texts.some((text) => text.includes("★")));
   });
 
   it("does not explain a pick with a lukewarm watch", () => {

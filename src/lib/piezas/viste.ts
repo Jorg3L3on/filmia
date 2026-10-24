@@ -27,8 +27,8 @@ import { scheduleTonightRecompute, type TonightCard, type TonightLensView } from
 
 /**
  * «¿Las viste?» (FIL-I26-3, board P2): films you have probably seen, three at a time and as many
- * as you want (one per seed), answered with three buttons. «La vi» writes a watched title (with an implicit rating Afinidad
- * reads: the only real source of «no me gustó»); «No la vi» writes nothing but the event.
+ * as you want (one per seed), answered with three buttons. «La vi» writes a watched title (with an implied rating the engine
+ * reads, the only real source of «no me gustó», shown as «Te gustó» / «No tanto», never as stars); «No la vi» writes nothing but the event.
  */
 
 /** Seen by enough people that you probably did too. */
@@ -260,11 +260,11 @@ export const answerViste = async (
       return { ok: false, error: result.error };
     }
     titleId = result.titleId;
-    // Never over a rating the person gave themselves.
+    // The engine's signal, never stars the person chose: `rating` is untouched.
     await db
       .update(titles)
-      .set({ rating: VISTE_RATING[answer] })
-      .where(and(eq(titles.id, titleId), eq(titles.userId, userId), isNull(titles.rating)));
+      .set({ impliedRating: VISTE_RATING[answer] })
+      .where(and(eq(titles.id, titleId), eq(titles.userId, userId)));
     scheduleTonightRecompute(userId);
   }
   await db.insert(pickEvents).values({

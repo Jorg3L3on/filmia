@@ -33,10 +33,14 @@ export const isVisteAnswer = (value: unknown): value is VisteAnswer =>
   VISTE_ANSWERS.includes(value as VisteAnswer);
 
 /**
- * «La vi, me gustó» / «La vi, no tanto» as the rating Afinidad reads (liked = ≥ 7): written only
- * when the film has no rating of the person's own. «No la vi» writes nothing.
+ * «La vi, me gustó» / «La vi, no tanto» as `Title.impliedRating`, what the engine reads when the
+ * person gave no stars (liked = ≥ 7). «No la vi» writes nothing.
  */
 export const VISTE_RATING: Record<Exclude<VisteAnswer, "no">, number> = { liked: 8, meh: 4 };
+
+/** What an implied rating says in the UI instead of stars: «Te gustó» / «No tanto». */
+export const impliedRatingLabel = (impliedRating: number | null | undefined) =>
+  impliedRating == null ? null : impliedRating >= VISTE_RATING.liked ? "Te gustó" : "No tanto";
 
 export const VISTE_ANSWER_LABEL: Record<VisteAnswer, string> = {
   liked: "La vi, me gustó",

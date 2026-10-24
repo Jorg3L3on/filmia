@@ -26,6 +26,8 @@ type TitleHeroProps = {
   imdbPending?: boolean;
   awardLabel?: string | null;
   rating?: number | null;
+  /** «Te gustó» / «No tanto» from ¿Las viste?, when there are no stars of the person's own. */
+  reaction?: string | null;
   watched: boolean;
   /** Catalog.posterAmbient («r g b»): the poster's light on the backdrop. */
   posterAmbient?: string | null;
@@ -63,6 +65,7 @@ export const TitleHero = ({
   imdbPending = false,
   awardLabel,
   rating,
+  reaction = null,
   watched,
   posterAmbient,
   affinity,
@@ -165,6 +168,10 @@ export const TitleHero = ({
               <StarGlyph />
               {formatStarScore(rating)}
               <span className="font-normal text-fog">· Tu nota</span>
+            </span>
+          ) : reaction ? (
+            <span className="liquid-glass liquid-glass-pill relative inline-flex h-7 items-center rounded-full px-2.5 text-xs font-semibold text-paper/90">
+              {reaction}
             </span>
           ) : null}
           {watched ? (

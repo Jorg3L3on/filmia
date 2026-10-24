@@ -10,6 +10,7 @@ import {
 } from "@/lib/dates";
 import { DIARY_HISTORIAL_PATH } from "@/lib/diary-picks";
 import { formatRating, PLATFORM_SERVICE_LABEL } from "@/lib/labels";
+import { impliedRatingLabel } from "@/lib/piezas/core";
 import { getRecentWatchedTitles, getWatchedSince } from "@/lib/queries";
 import { currentAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { focusRing } from "@/lib/ui";
@@ -173,7 +174,9 @@ export const ProfileDiary = async () => {
                     <span className="min-w-0">
                       <span className="block truncate font-serif text-[17px] leading-tight text-paper">{title.name}</span>
                       <span className="mt-0.5 flex items-center gap-1.5 text-xs">
-                        <span className={title.rating != null ? "text-star" : "text-mist"}>{formatRating(title.rating)}</span>
+                        <span className={title.rating != null ? "text-star" : "text-mist"}>
+                          {title.rating == null ? (impliedRatingLabel(title.impliedRating) ?? formatRating(null)) : formatRating(title.rating)}
+                        </span>
                         {platform ? <span className="text-mist">· {PLATFORM_SERVICE_LABEL[platform]}</span> : null}
                       </span>
                       {review ? (

@@ -29,7 +29,7 @@ describeWithDb("¿Las viste? · store (FIL-I26-3)", () => {
 
   const day = (n: number) => new Date(`2026-10-${String(20 + n).padStart(2, "0")}T18:00:00Z`);
 
-  it("answers: «me gustó» and «no tanto» are watched with a rating Afinidad reads, «no la vi» writes nothing", async () => {
+  it("answers: «me gustó» and «no tanto» are watched with an implied rating (never stars), «no la vi» writes nothing", async () => {
     const now = day(4);
     for (const [index, film] of [films[0], films[4], films[5]].entries()) {
       await db.insert(pickEvents).values({
@@ -52,11 +52,16 @@ describeWithDb("¿Las viste? · store (FIL-I26-3)", () => {
     const no = await answerViste(userId, films[5]!.catalogId, "no", now);
     assert.ok(no.ok && no.remaining === 0 && typeof no.summary === "string");
 
-    const own = await db.query.titles.findMany({ where: eq(titles.userId, userId), columns: { catalogId: true, rating: true, watchedAt: true } });
+    const own = await db.query.titles.findMany({
+      where: eq(titles.userId, userId),
+      columns: { catalogId: true, rating: true, impliedRating: true, watchedAt: true },
+    });
     const byCatalog = new Map(own.map((row) => [row.catalogId, row]));
-    assert.equal(byCatalog.get(films[0]!.catalogId)?.rating, 10, "never over the person's own rating");
+    assert.equal(byCatalog.get(films[0]!.catalogId)?.rating, 10, "the person's own stars stay");
+    assert.equal(byCatalog.get(films[0]!.catalogId)?.impliedRating, 8);
     assert.ok(byCatalog.get(films[0]!.catalogId)?.watchedAt);
-    assert.equal(byCatalog.get(films[4]!.catalogId)?.rating, 4);
+    assert.equal(byCatalog.get(films[4]!.catalogId)?.rating, null, "«no tanto» is not two stars");
+    assert.equal(byCatalog.get(films[4]!.catalogId)?.impliedRating, 4);
     assert.ok(byCatalog.get(films[4]!.catalogId)?.watchedAt);
     assert.equal(byCatalog.has(films[5]!.catalogId), false);
 

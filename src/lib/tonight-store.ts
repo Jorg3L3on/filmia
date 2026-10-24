@@ -210,7 +210,9 @@ export const toTonightTitle = (
     flatrate: providers?.flatrate ?? [],
     availableOnMine,
     watchedAt: row.watchedAt,
-    rating: row.rating,
+    // The engine reads ¿Las viste? answers as ratings; reasons say «te gustó», not stars.
+    rating: row.rating ?? row.impliedRating,
+    ...(row.rating == null && row.impliedRating != null ? { ratingImplied: true } : {}),
     review: row.review,
     seriesStatus: row.seriesStatus,
     seriesSeason: row.seriesSeason,

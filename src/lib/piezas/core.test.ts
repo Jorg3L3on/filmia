@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   answerOfLens,
+  impliedRatingLabel,
   pickVisteCards,
   rotateSeeds,
   sameMxDay,
@@ -51,6 +52,12 @@ describe("¿Las viste?", () => {
     assert.equal(answerOfLens("las-viste:PHM"), null);
     assert.ok(VISTE_RATING.liked >= 7, "«me gustó» counts as liked");
     assert.ok(VISTE_RATING.meh < 7, "«no tanto» counts as a negative");
+  });
+
+  it("an answer reads as words, never as stars", () => {
+    assert.equal(impliedRatingLabel(VISTE_RATING.liked), "Te gustó");
+    assert.equal(impliedRatingLabel(VISTE_RATING.meh), "No tanto");
+    assert.equal(impliedRatingLabel(null), null);
   });
 
   it("closes with what changed, only gains", () => {

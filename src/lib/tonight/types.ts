@@ -25,6 +25,8 @@ export type TonightTitle = {
   availableOnMine: boolean;
   watchedAt: Date | null;
   rating: number | null;
+  /** `rating` is a ¿Las viste? answer, not stars the person gave: reasons say «te gustó». */
+  ratingImplied?: boolean;
   review: string | null;
   seriesStatus: SeriesStatus | null;
   seriesSeason: number | null;
@@ -168,6 +170,8 @@ export type RecoSeed = {
   name: string;
   via: "queue" | "watched";
   rating: number | null;
+  /** The rating is a ¿Las viste? answer: «Porque te gustó X», never «le diste 4★». */
+  ratingImplied?: boolean;
 };
 
 /** A film listed by TMDB (`/recommendations` or `/discover`), before we know more about it. */

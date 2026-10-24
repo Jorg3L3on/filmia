@@ -88,7 +88,8 @@ export const loadFactoryContext = async (userId: string, now = new Date()): Prom
     kind: film.kind,
     name: film.name,
     watched: title.watchedAt != null,
-    rating: title.rating,
+    // ¿Las viste? «me gustó» counts as a seed like stars do (FIL-I26).
+    rating: title.rating ?? title.impliedRating,
     favorite: favorite.has(film.id),
     createdAt: title.createdAt,
     people: parseThreadPeople(film.tmdbPeople),
