@@ -54,6 +54,20 @@ type SheetProps = {
 /** Fallback unmount if `animationend` never fires (reduced motion, hidden tab). */
 const EXIT_FALLBACK_MS = 320;
 
+let sheetPresence = 0;
+
+/** Lets the toast move above an open sheet (FIL-I27). Ref-counted for stacked sheets. */
+const mountSheetPresence = () => {
+  sheetPresence += 1;
+  document.documentElement.setAttribute("data-sheet-open", "");
+  return () => {
+    sheetPresence = Math.max(0, sheetPresence - 1);
+    if (sheetPresence === 0) {
+      document.documentElement.removeAttribute("data-sheet-open");
+    }
+  };
+};
+
 export const Sheet = ({
   open,
   onClose,
@@ -93,6 +107,13 @@ export const Sheet = ({
   const closing = rendered && !open;
 
   useOverlayLayer({ open, onClose, panelRef });
+
+  useEffect(() => {
+    if (!rendered) {
+      return;
+    }
+    return mountSheetPresence();
+  }, [rendered]);
 
   useEffect(() => {
     if (!closing) {

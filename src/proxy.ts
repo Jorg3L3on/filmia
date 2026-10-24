@@ -5,6 +5,7 @@ import { isSessionCurrent } from "@/lib/auth/session-version";
 import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
 import { isProxyStaticAsset } from "@/lib/proxy-static";
 import { requestOrigin } from "@/lib/request-origin";
+import { isToastBenchEnabled } from "@/lib/toast";
 
 const LOGIN_PATH = "/login";
 
@@ -33,10 +34,16 @@ export const PUBLIC_PATHS = [
   "/conector",
 ];
 
-export const isPublicPath = (pathname: string) =>
-  PUBLIC_PATHS.some(
+export const isPublicPath = (pathname: string) => {
+  // Dev-only cristal bench. It is not in PUBLIC_PATHS: production still asks for
+  // a session, and the page calls notFound() outside development (FIL-I27-4).
+  if (isToastBenchEnabled() && (pathname === "/alertas-sala" || pathname.startsWith("/alertas-sala/"))) {
+    return true;
+  }
+  return PUBLIC_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
+};
 
 export const proxy = async (request: Request) => {
   const { pathname } = new URL(request.url);

@@ -23,26 +23,24 @@ export const AuthChromeGate = ({
 }: AuthChromeGateProps) => {
   const pathname = usePathname();
 
-  if (isAuthChromePath(pathname)) {
-    return (
-      <>
-        {children}
-        <ToastHost />
-      </>
-    );
-  }
-
   return (
     <>
-      {isImmersiveFichaPath(pathname) ? (
-        // `contents` keeps the header sticky on desktop; on a phone the ficha owns the top.
-        <div className="max-sm:hidden sm:contents">{header}</div>
+      {isAuthChromePath(pathname) ? (
+        children
       ) : (
-        header
+        <>
+          {isImmersiveFichaPath(pathname) ? (
+            // `contents` keeps the header sticky on desktop; on a phone the ficha owns the top.
+            <div className="max-sm:hidden sm:contents">{header}</div>
+          ) : (
+            header
+          )}
+          {prefetch}
+          <main className={mainClassName}>{children}</main>
+          {bottomNav}
+        </>
       )}
-      {prefetch}
-      <main className={mainClassName}>{children}</main>
-      {bottomNav}
+      {/* One host for auth and app chrome, so a toast's timer survives the swap. */}
       <ToastHost />
     </>
   );
