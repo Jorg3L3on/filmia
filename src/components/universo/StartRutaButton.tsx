@@ -5,6 +5,7 @@ import { useTransition } from "react";
 import { startRuta } from "@/app/actions/rutas";
 import { Button } from "@/components/Button";
 import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY } from "@/lib/toast-alerts";
 
 /** Start a ruta by its source and open it; the third one waits (Hoy keeps two). */
 export const StartRutaButton = ({
@@ -30,11 +31,11 @@ export const StartRutaButton = ({
         startTransition(async () => {
           const outcome = await startRuta(sourceKey);
           if (!outcome.ok) {
-            showToast({ title: "No se pudo empezar", description: outcome.error, variant: "error" });
+            showActionError({ title: TOAST_COPY.couldNotStart, description: outcome.error });
             return;
           }
           if (outcome.status === "espera") {
-            showToast({ title: "Espera su turno", description: "Hoy ya tiene dos rutas; esta empieza cuando cierres una." });
+            showToast({ title: TOAST_COPY.routeWaiting, description: "Hoy ya tiene dos rutas; esta empieza cuando cierres una." });
           }
           router.push(`/rutas/${outcome.rutaId}`);
         })

@@ -24,6 +24,7 @@ import { useNavLabel } from "@/components/NavOriginTracker";
 import { cn } from "@/lib/cn";
 import { DECK_CARD_PARAM, deckCardFrom, deckIndexOf } from "@/lib/nav-origin";
 import { showToast } from "@/lib/toast";
+import { retryAfterRevert, showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { interleaveBySource } from "@/lib/tonight/compose";
 import { closingCardFor, tallyCount } from "@/lib/tonight/closing-card";
 import { pickRefOf } from "@/lib/tonight/reco-card";
@@ -253,17 +254,33 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
           .then((found) => setBridge(found))
           .catch(() => undefined);
       }
+      const poster = toastPoster(title.posterPath);
       showToast({
-        title: "En tu diario",
+        title: TOAST_COPY.addedDiary,
         description: title.name,
-        durationMs: 6000,
+        poster,
         action: {
           label: "Deshacer",
           onClick: () => {
             unhide(title.id);
             removeFrom(setWatchedIds, title.id);
             void undoMarkWatched(titleId).catch(() => {
-              showToast({ title: "No se pudo deshacer", variant: "error" });
+              showActionError({
+                title: TOAST_COPY.couldNotUndo,
+                poster,
+                retry: () =>
+                  retryAfterRevert(
+                    () => {
+                      unhide(title.id);
+                      removeFrom(setWatchedIds, title.id);
+                    },
+                    () => {
+                      hide(title.id);
+                      addTo(setWatchedIds, title.id);
+                    },
+                    () => undoMarkWatched(titleId),
+                  ),
+              });
             });
           },
         },
@@ -271,7 +288,12 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     },
     onWatchError: (title, message) => {
       unhide(title.id);
-      showToast({ title: "No se pudo guardar", description: message, variant: "error" });
+      // The message is already a string. The save and its form are not here, so this cannot be retried.
+      showActionError({
+        title: TOAST_COPY.couldNotSave,
+        description: message,
+        poster: toastPoster(title.posterPath),
+      });
     },
   };
 
@@ -279,19 +301,35 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     setMenuTitle(null);
     hide(title.id);
     addTo(setNotTonightIds, title.id);
+    const poster = toastPoster(title.posterPath);
     const saved = markNotTonight(title.id, title.tonight?.lens ?? activeLens?.slug).then(
       () => true,
       () => {
         unhide(title.id);
         removeFrom(setNotTonightIds, title.id);
-        showToast({ title: "No se pudo guardar", variant: "error" });
+        showActionError({
+          title: TOAST_COPY.couldNotSave,
+          poster,
+          retry: () =>
+            retryAfterRevert(
+              () => {
+                hide(title.id);
+                addTo(setNotTonightIds, title.id);
+              },
+              () => {
+                unhide(title.id);
+                removeFrom(setNotTonightIds, title.id);
+              },
+              () => markNotTonight(title.id, title.tonight?.lens ?? activeLens?.slug),
+            ),
+        });
         return false;
       },
     );
     showToast({
-      title: "Ahora no",
+      title: TOAST_COPY.notTonight,
       description: `${title.name} vuelve en dos semanas.`,
-      durationMs: 6000,
+      poster,
       action: {
         label: "Deshacer",
         onClick: () => {
@@ -299,7 +337,22 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
           removeFrom(setNotTonightIds, title.id);
           // After the save lands, so a quick tap never leaves the skip behind.
           void saved.then((ok) => (ok ? undoNotTonight(title.id) : undefined)).catch(() => {
-            showToast({ title: "No se pudo deshacer", variant: "error" });
+            showActionError({
+              title: TOAST_COPY.couldNotUndo,
+              poster,
+              retry: () =>
+                retryAfterRevert(
+                  () => {
+                    unhide(title.id);
+                    removeFrom(setNotTonightIds, title.id);
+                  },
+                  () => {
+                    hide(title.id);
+                    addTo(setNotTonightIds, title.id);
+                  },
+                  () => undoNotTonight(title.id),
+                ),
+            });
           });
         },
       },
@@ -310,24 +363,29 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   const handleNotInterested = (title: CoverflowTitle) => {
     setMenuTitle(null);
     hide(title.id);
+    const poster = toastPoster(title.posterPath);
     const saved = sendTasteFeedback({ catalogId: title.id }, "less_like", title.tonight?.lens ?? activeLens?.slug).then(
       () => true,
       () => {
         unhide(title.id);
-        showToast({ title: "No se pudo guardar", variant: "error" });
+        // A taste signal is not idempotent: a timeout may already have counted.
+        showActionError({
+          title: TOAST_COPY.couldNotSave,
+          poster,
+        });
         return false;
       },
     );
     showToast({
-      title: "No te la volveremos a sugerir",
+      title: TOAST_COPY.neverSuggest,
       description: title.name,
-      durationMs: 6000,
+      poster,
       action: {
         label: "Deshacer",
         onClick: () => {
           unhide(title.id);
           void saved.then((ok) => (ok ? undoNotInterested({ catalogId: title.id }) : undefined)).catch(() => {
-            showToast({ title: "No se pudo deshacer", variant: "error" });
+            showActionError({ title: TOAST_COPY.couldNotUndo, poster });
           });
         },
       },
@@ -341,21 +399,45 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     if (!ruta) {
       return;
     }
+    const poster = toastPoster(title.posterPath);
     hide(title.id);
-    showToast({ title: "Ruta para después", description: `${ruta.title} te espera en Rutas.` });
+    showToast({
+      title: TOAST_COPY.routeParked,
+      description: `${ruta.title} te espera en Rutas.`,
+      poster,
+    });
     void parkRuta(ruta.rutaId).catch(() => {
       unhide(title.id);
-      showToast({ title: "No se pudo guardar", variant: "error" });
+      showActionError({
+        title: TOAST_COPY.couldNotSave,
+        poster,
+        retry: () =>
+          retryAfterRevert(
+            () => hide(title.id),
+            () => unhide(title.id),
+            () => parkRuta(ruta.rutaId),
+          ),
+      });
     });
   };
 
   const handleRemove = (title: CoverflowTitle) => {
     setMenuTitle(null);
+    const poster = toastPoster(title.posterPath);
     hide(title.id);
-    showToast({ title: "Fuera de Quiero ver", description: title.name });
+    showToast({ title: TOAST_COPY.removedWatchlist, description: title.name, poster });
     void removeFromWatchlist(title.id).catch(() => {
       unhide(title.id);
-      showToast({ title: "No se pudo quitar", variant: "error" });
+      showActionError({
+        title: TOAST_COPY.couldNotRemove,
+        poster,
+        retry: () =>
+          retryAfterRevert(
+            () => hide(title.id),
+            () => unhide(title.id),
+            () => removeFromWatchlist(title.id),
+          ),
+      });
     });
   };
 

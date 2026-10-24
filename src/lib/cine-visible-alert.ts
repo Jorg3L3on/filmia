@@ -20,7 +20,7 @@ export const watchlistAlertToast = (
   }
   const day = premiereDayLabel(film.mxReleaseDate, today);
   return {
-    title: "En Quiero ver",
+    title: "Añadida a Quiero ver",
     description: pushOnThisDevice
       ? `«${film.name}» se estrena ${day}. Te avisamos ese día.`
       : `«${film.name}» se estrena ${day}. Enciende los avisos en Perfil para enterarte.`,

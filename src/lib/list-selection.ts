@@ -92,13 +92,13 @@ export const listSelectionToast = (
   const nameOf = (id: string) => lists.find((list) => list.id === id)?.name ?? "la lista";
 
   if (diff.add.length === 1 && diff.remove.length === 0) {
-    return { title: `En ${nameOf(diff.add[0])}`, description: titleName };
+    return { title: `Añadida a ${nameOf(diff.add[0])}`, description: titleName };
   }
   if (diff.add.length > 1 && diff.remove.length === 0) {
-    return { title: `En ${diff.add.length} listas`, description: titleName };
+    return { title: `Añadidas a ${diff.add.length} listas`, description: titleName };
   }
   if (diff.add.length === 0 && diff.remove.length === 1) {
-    return { title: `Fuera de ${nameOf(diff.remove[0])}`, description: titleName };
+    return { title: `Quitada de ${nameOf(diff.remove[0])}`, description: titleName };
   }
   return { title: "Listas actualizadas", description: titleName };
 };

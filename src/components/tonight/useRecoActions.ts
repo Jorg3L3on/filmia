@@ -11,6 +11,7 @@ import { pulseNav } from "@/lib/fly-to-nav";
 import { previewFichaHref } from "@/lib/title-preview";
 import { recoResultOf } from "@/lib/tonight/reco-card";
 import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 
 /** What we learn about a recommended film once the user acts on it during this visit. */
 export type RecoLocal = {
@@ -74,7 +75,11 @@ export const useRecoActions = () => {
         setPending(null);
         if (!outcome.ok) {
           setError(outcome.error);
-          showToast({ title: "No se pudo guardar", description: outcome.error, variant: "error" });
+          showActionError({
+            title: TOAST_COPY.couldNotSave,
+            description: outcome.error,
+            poster: toastPoster(result.posterPath),
+          });
           return;
         }
         remember(card.id, {
@@ -84,8 +89,16 @@ export const useRecoActions = () => {
         });
         showToast(
           destination === "watchlist"
-            ? { title: "En Quiero ver", description: savedInFilmia(result.name, outcome.created) }
-            : { title: "Marcada como vista", description: savedInFilmia(result.name, outcome.created) },
+            ? {
+                title: TOAST_COPY.addedWatchlist,
+                description: savedInFilmia(result.name, outcome.created),
+                poster: toastPoster(result.posterPath),
+              }
+            : {
+                title: TOAST_COPY.markedSeen,
+                description: savedInFilmia(result.name, outcome.created),
+                poster: toastPoster(result.posterPath),
+              },
         );
       });
     },
@@ -108,7 +121,11 @@ export const useRecoActions = () => {
         });
         setPending(null);
         if (!outcome.ok) {
-          showToast({ title: "No se pudo reservar", description: outcome.error, variant: "error" });
+          showActionError({
+            title: TOAST_COPY.couldNotReserve,
+            description: outcome.error,
+            poster: toastPoster(result.posterPath),
+          });
           return;
         }
         remember(card.id, { titleId: outcome.titleId, inWatchlist: true, watched: false });
@@ -116,9 +133,9 @@ export const useRecoActions = () => {
         setJustPinnedId(card.id);
         pulseNav("today");
         showToast({
-          title: "Primera en Hoy esta noche",
+          title: TOAST_COPY.reservedTonight,
           description: savedInFilmia(result.name, outcome.created),
-          durationMs: 6000,
+          poster: toastPoster(result.posterPath),
         });
       });
     },

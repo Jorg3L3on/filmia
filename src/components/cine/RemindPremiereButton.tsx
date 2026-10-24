@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { remindPremiereAction } from "@/app/actions/rutas";
 import { Button } from "@/components/Button";
 import { formatShortDay } from "@/lib/cine-core";
-import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY } from "@/lib/toast-alerts";
 
 /** «Avísame el día»: a push the morning it opens. Without a device, Perfil turns the avisos on. */
 export const RemindPremiereButton = ({ catalogId, reminded, day }: { catalogId: string; reminded: boolean; day: string }) => {
@@ -36,7 +36,7 @@ export const RemindPremiereButton = ({ catalogId, reminded, day }: { catalogId: 
         startTransition(async () => {
           const outcome = await remindPremiereAction(catalogId);
           if (!outcome.ok) {
-            showToast({ title: "No se pudo guardar", description: outcome.error, variant: "error" });
+            showActionError({ title: TOAST_COPY.couldNotSave, description: outcome.error });
             return;
           }
           setNoDevice(!outcome.pushReady);
