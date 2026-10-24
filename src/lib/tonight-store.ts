@@ -14,7 +14,7 @@ import {
   type Platform,
   type Title,
 } from "@/db";
-import type { CoverflowTitle, OcultaCardMeta, RecoMeta, RutaCardMeta } from "@/components/coverflow/types";
+import type { CoverflowTitle, RecoMeta, RutaCardMeta } from "@/components/coverflow/types";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { flattenTitle } from "@/lib/catalog-core";
 import { withOwnListEntries } from "@/lib/list-items";
@@ -54,8 +54,6 @@ import {
   type TonightTitle,
 } from "@/lib/tonight";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
-import { placeOcultaLens } from "@/lib/piezas/core";
-import { loadOcultaLens } from "@/lib/piezas/oculta";
 import { hasVisteSeeds, visteDoorLens, visteStatus } from "@/lib/piezas/viste";
 import { placeRutaLenses } from "@/lib/rutas/core";
 import { loadRutaLenses } from "@/lib/rutas/hoy";
@@ -84,8 +82,6 @@ export type TonightCard = CoverflowTitle & {
   reco: RecoMeta | null;
   /** The next step of an active ruta (FIL-I26); its lens is the ruta's. */
   ruta?: RutaCardMeta | null;
-  /** «La oculta» of the day (FIL-I26-3). */
-  oculta?: OcultaCardMeta | null;
 };
 
 export type TonightLensView = {
@@ -825,7 +821,7 @@ export const getTonightDecks = async (
 
 /**
  * FIL-I26 joins the deck after composition: the rutas (first on day one, after Para ti once there
- * are recommendations), «La oculta» right after them and the door to «¿Las viste?» last. Each is
+ * are recommendations) and the door to «¿Las viste?» last. Each is
  * on its own: a failure there never costs the person their Hoy.
  */
 const withPiezas = async (
@@ -841,15 +837,6 @@ const withPiezas = async (
     placed = placeRutaLenses(placed, ruta.lenses, recos.length > 0, ruta.cardIds);
   } catch {
     // Hoy without rutas today.
-  }
-  try {
-    const deckIds = new Set(placed.flatMap((lens) => lens.titles.map((title) => title.id)));
-    const oculta = await loadOcultaLens(userId, userPlatforms, now, { recos, deckIds });
-    if (oculta) {
-      placed = placeOcultaLens(placed, oculta);
-    }
-  } catch {
-    // No oculta today.
   }
   try {
     if (isTmdbConfigured()) {

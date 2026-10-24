@@ -1,13 +1,11 @@
 import { mxToday } from "@/lib/cine-core";
 
 /**
- * Las piezas pequeñas de Hoy (FIL-I26-3): «La oculta», one film face down per day, and «¿Las
- * viste?», cards dealt three at a time for as long as the person wants, ten seconds each set. Pure: which film, what the hint says, what
- * an answer writes and the line that closes the three. Both remember the day with `PickEvent`s.
+ * «¿Las viste?» (FIL-I26-3): cards dealt three at a time for as long as the person wants, ten
+ * seconds each set. Pure: which films, what an answer writes and the line that closes each set.
+ * The day is remembered with `PickEvent`s.
  */
 
-export const OCULTA_LENS = "la-oculta";
-export const OCULTA_NAME = "La oculta";
 export const VISTE_LENS = "las-viste";
 export const VISTE_NAME = "¿Las viste?";
 export const VISTE_PATH = "/las-viste";
@@ -25,12 +23,7 @@ export const rotateSeeds = <T>(seeds: readonly T[], batch: number): T[] => {
   return [...seeds.slice(start), ...seeds.slice(0, start)];
 };
 
-export const PIEZA_EVENT_KINDS = [
-  "oculta_dealt",
-  "oculta_flipped",
-  "viste_dealt",
-  "viste_answered",
-] as const;
+export const PIEZA_EVENT_KINDS = ["viste_dealt", "viste_answered"] as const;
 export type PiezaEventKind = (typeof PIEZA_EVENT_KINDS)[number];
 
 export const VISTE_ANSWERS = ["liked", "meh", "no"] as const;
@@ -59,51 +52,8 @@ export const answerOfLens = (lens: string | null): VisteAnswer | null => {
   return isVisteAnswer(answer) ? answer : null;
 };
 
-/** Days are Mexico City days, like Cine's: «una al día» turns at local midnight. */
+/** Days are Mexico City days, like Cine's: «hoy» turns at local midnight. */
 export const sameMxDay = (a: Date, b: Date) => mxToday(a) === mxToday(b);
-
-// ---------------------------------------------------------------------------
-// La oculta
-// ---------------------------------------------------------------------------
-
-export type OcultaCandidate = { id: string; gusto: number; calidad: number };
-
-/**
- * The film furthest from your taste that everyone rates well: gusto under the median, the best
- * quality among those (the wildcard Hoy already computes). Films already dealt or in the deck
- * are left out; null when nothing qualifies.
- */
-export const pickOculta = <T extends OcultaCandidate>(pool: readonly T[], exclude: ReadonlySet<string>): T | null => {
-  const open = pool.filter((item) => !exclude.has(item.id));
-  if (open.length === 0) {
-    return null;
-  }
-  const sorted = open.map((item) => item.gusto).sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  const median =
-    sorted.length % 2 === 0 ? ((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2 : (sorted[middle] ?? 0);
-  let best: T | null = null;
-  for (const item of open) {
-    if (item.gusto <= median && (!best || item.calidad > best.calidad)) {
-      best = item;
-    }
-  }
-  return best;
-};
-
-/** What a face-down card may say: the decade and genre, never the name. */
-export const ocultaHint = (film: { year: number | null; genres: readonly string[] }) => {
-  const decade = film.year ? `de los ${Math.floor(film.year / 10) * 10}` : "sin fecha";
-  const genre = film.genres[0];
-  return genre ? `${genre}, ${decade}` : `Una película ${decade}`;
-};
-
-/** The line under it: why this one, without giving it away. */
-export const ocultaDetail = (film: { rating: number | null; seedName: string | null }) => {
-  const quality = film.rating != null && film.rating >= 7 ? `Buena según todos (${film.rating.toFixed(1)})` : "Buena según todos";
-  const seed = film.seedName ? ` Sale de lo que va con ${film.seedName}.` : "";
-  return `${quality}, lejos de lo que sueles ver.${seed}`;
-};
 
 // ---------------------------------------------------------------------------
 // ¿Las viste?
@@ -171,15 +121,4 @@ export const visteSummary = (input: {
     return input.seen === 1 ? "Una más en tu diario." : `${input.seen} más en tu diario.`;
   }
   return `${parts.join("; ")}.`;
-};
-
-/**
- * Where «La oculta» goes in Hoy: right after the rutas, else after Para ti, else first. A small
- * piece next to the big ones, never ahead of your ruta.
- */
-export const placeOcultaLens = <L extends { kind: string }>(lenses: readonly L[], oculta: L): L[] => {
-  const lastRuta = lenses.map((lens) => lens.kind).lastIndexOf("ruta");
-  const paraTi = lenses.findIndex((lens) => lens.kind === "para-ti");
-  const at = lastRuta >= 0 ? lastRuta + 1 : paraTi >= 0 ? paraTi + 1 : 0;
-  return [...lenses.slice(0, at), oculta, ...lenses.slice(at)];
 };

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { flipOculta, parkRuta, rutaAfterWatch, universoBridge } from "@/app/actions/rutas";
+import { parkRuta, rutaAfterWatch, universoBridge } from "@/app/actions/rutas";
 import { markNotTonight, sendTasteFeedback } from "@/app/actions/tonight";
 import { removeFromWatchlist, undoMarkWatched } from "@/app/actions/watchlist";
 import { CoverflowDeck } from "@/components/CoverflowDeck";
@@ -70,8 +70,6 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   const [reveal, setReveal] = useState<RutaReveal | null>(null);
   // A bridge the film just made in «Tu universo» (FIL-I26-4, U4); ruta steps say it in their reveal.
   const [bridge, setBridge] = useState<BridgeReveal | null>(null);
-  // «Voltear» on the oculta (FIL-I26-3): face up at once, remembered by the server for the day.
-  const [flipped, setFlipped] = useState<ReadonlySet<string>>(() => new Set());
   const liveRef = useRef<HTMLDivElement>(null);
   const timers = useRef<number[]>([]);
   const impressions = useImpressions(activeSlug);
@@ -149,15 +147,12 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
             source: card.source,
             reco: card.reco ? { ...card.reco, saved: recoLocal[card.id]?.inWatchlist ?? false } : undefined,
             ruta: card.ruta ?? undefined,
-            oculta: card.oculta
-              ? { ...card.oculta, flipped: card.oculta.flipped || flipped.has(card.id) }
-              : undefined,
           },
         })),
       );
     }
     return map;
-  }, [decks, flipped, hidden, now, recoLocal]);
+  }, [decks, hidden, now, recoLocal]);
 
   const lenses = useMemo(
     () =>
@@ -274,10 +269,6 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
         },
       });
     },
-    onFlipOculta: (title) => {
-      setFlipped((current) => new Set(current).add(title.id));
-      void flipOculta(title.id).catch(() => undefined);
-    },
     onWatchError: (title, message) => {
       unhide(title.id);
       showToast({ title: "No se pudo guardar", description: message, variant: "error" });
@@ -337,8 +328,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     (index: number, title: CoverflowTitle) => {
       setHeroIndex(index);
       // The closing card is not a title: it settles the previous hero and logs nothing (FIL-I21-6).
-      // Neither is a door card, nor an oculta still face down (FIL-I26-3).
-      const unseen = title.closing || title.portal || (title.tonight?.oculta && !title.tonight.oculta.flipped);
+      // Nor is a door card (FIL-I26-3).
+      const unseen = title.closing || title.portal;
       impressions.onHeroChange(unseen ? null : pickRefOf(title));
       const slug = title.tonight?.lens;
       if (!slug) {

@@ -7,7 +7,6 @@ import { activateRuta as activate, markRutasOffered, parkRuta as park } from "@/
 import { remindPremiere, type RemindOutcome } from "@/lib/cine-cuenta-store";
 import { isVisteAnswer } from "@/lib/piezas/core";
 import type { RutaStatus } from "@/lib/rutas/core";
-import { flipOculta as flip } from "@/lib/piezas/oculta";
 import { answerViste as answer, dealMoreViste, type VisteCard, type VisteOutcome } from "@/lib/piezas/viste";
 import { requireUserId } from "@/lib/session";
 import {
@@ -100,12 +99,6 @@ export const startFirstRuta = async (sourceKey: string): Promise<StartRutaResult
 export const declineFirstRuta = async () => {
   const userId = await requireUserId();
   await markRutasOffered(userId);
-};
-
-/** «Voltear» on today's oculta (FIL-I26-3). */
-export const flipOculta = async (catalogId: string) => {
-  const userId = await requireUserId();
-  return flip(userId, catalogId);
 };
 
 /** One answer of «¿Las viste?»; the last one comes back with what changed. */

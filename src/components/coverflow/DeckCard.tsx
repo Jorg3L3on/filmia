@@ -115,14 +115,10 @@ export const DeckCard = memo(function DeckCard({
   const sala = useTonight();
   const tonight = title.tonight;
   const isTonight = Boolean(tonight && sala && cinematic && !compact);
-  // A face-down oculta has no hold menu: its sheet would say the name.
-  const holdable =
-    (isTonight || Boolean(onOpenMenu && cinematic && !compact)) && !(tonight?.oculta && !tonight.oculta.flipped);
-  const showStub = !compact && !title.watched && !(tonight?.oculta && !tonight.oculta.flipped);
+  const holdable = isTonight || Boolean(onOpenMenu && cinematic && !compact);
+  const showStub = !compact && !title.watched;
   const isReco = isTonight && tonight?.source === "reco";
   const recoSaved = Boolean(isReco && tonight?.reco?.saved);
-  // «La oculta» (FIL-I26-3): face down until «Voltear»; no ficha, stub or menu before that.
-  const faceDown = Boolean(isTonight && tonight?.oculta && !tonight.oculta.flipped);
   const [stamped, setStamped] = useState(false);
   const rootRef = useRef<HTMLElement | null>(null);
   const [pressing, setPressing] = useState(false);
@@ -324,16 +320,11 @@ export const DeckCard = memo(function DeckCard({
         // A recommendation has no Title yet: its ficha is the preview by TMDB (FIL-I8).
         href={isReco ? (recoPreviewHref(title) ?? "/") : `/titulos/${title.id}`}
         tabIndex={nearFocus ? 0 : -1}
-        aria-label={faceDown ? "La oculta, boca abajo" : `${title.name}${title.year ? ` (${title.year})` : ""}${
+        aria-label={`${title.name}${title.year ? ` (${title.year})` : ""}${
           availabilityLabel ? ` en ${availabilityLabel}` : ""
         }${isReco ? (recoSaved ? ", ya en Quiero ver" : ", recomendada, no está en Quiero ver") : ""}`}
         onClick={(event) => {
           handleClick(event);
-          if (faceDown) {
-            // Face down the poster opens nothing: «Voltear» is the way in.
-            event.preventDefault();
-            return;
-          }
           if (isReco && !event.defaultPrevented) {
             event.preventDefault();
             sala?.onOpenReco(title);
@@ -361,18 +352,6 @@ export const DeckCard = memo(function DeckCard({
             {poster}
           </SharedPoster>
         )}
-        {faceDown ? (
-          <span className="oculta-face" aria-hidden="true">
-            <span className="oculta-face-frame" />
-            <span className="oculta-face-mark font-serif">?</span>
-            <span className="oculta-face-label">Fuera de tu zona</span>
-            <span className="oculta-face-chips">
-              {title.year ? <span>{title.year}</span> : null}
-              {tonight?.runtimeMinutes ? <span>{tonight.runtimeMinutes} min</span> : null}
-              {availabilityLabel ? <span>{availabilityLabel}</span> : null}
-            </span>
-          </span>
-        ) : null}
         <span data-coverflow-dim className="coverflow-card-dim" aria-hidden />
         <span className="coverflow-card-specular" aria-hidden />
         {holdable ? <span className="coverflow-card-hold" aria-hidden /> : null}
@@ -425,7 +404,7 @@ export const DeckCard = memo(function DeckCard({
             <PersonAvatar person={title.addedBy} size={20} />
           </span>
         ) : null}
-        {isReco && !tonight?.ruta && !tonight?.oculta ? (
+        {isReco && !tonight?.ruta ? (
           <span data-deck-reco-badge className={cn("reco-badge", recoSaved && "is-saved")} aria-hidden>
             {recoSaved ? <CheckIcon /> : <SparkIcon />}
             {recoSaved ? "En Quiero ver" : "Recomendada"}
@@ -462,21 +441,6 @@ export const DeckCard = memo(function DeckCard({
           </div>
         ) : null}
       </Link>
-      {faceDown && sala ? (
-        <button
-          type="button"
-          tabIndex={nearFocus ? 0 : -1}
-          data-no-sheet-drag=""
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={(event) => {
-            event.stopPropagation();
-            sala.onFlipOculta(title);
-          }}
-          className={cn("oculta-flip", focusRing)}
-        >
-          Voltear
-        </button>
-      ) : null}
       {showStub ? (
         <TicketStub
           titleId={title.id}

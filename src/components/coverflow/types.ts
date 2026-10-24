@@ -22,15 +22,6 @@ export type CoverflowTonightMeta = {
   reco?: RecoMeta;
   /** The card is the next step of a ruta (FIL-I26). */
   ruta?: RutaCardMeta;
-  /** «La oculta» (FIL-I26-3): face down until «Voltear». */
-  oculta?: OcultaCardMeta;
-};
-
-/** What a face-down card may say before it is flipped. */
-export type OcultaCardMeta = {
-  hint: string;
-  detail: string;
-  flipped: boolean;
 };
 
 /** A card that is a door, not a film (FIL-I26-3, «¿Las viste?»): its face says where it leads. */

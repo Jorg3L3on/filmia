@@ -128,7 +128,7 @@ export type TonightPickBase = {
 };
 
 /**
- * `ruta`: one of the person's active rutas; `pieza`: «La oculta» or «¿Las viste?» (FIL-I26).
+ * `ruta`: one of the person's active rutas; `pieza`: the door to «¿Las viste?» (FIL-I26).
  * Both are placed after composition.
  */
 export type TonightLensKind = "para-ti" | "genre" | "ruta" | "pieza";

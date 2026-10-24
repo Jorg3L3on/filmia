@@ -6,21 +6,11 @@ import { and, eq } from "drizzle-orm";
 import { db, pickEvents, titles } from "@/db";
 import { closeLocalPg } from "@/db/local-pg";
 import { seeder } from "@/lib/test-support/seed";
-import type { RecoEntry } from "@/lib/tonight/compose";
-import type { TonightCard } from "@/lib/tonight-store";
-import { flipOculta, loadOcultaLens } from "./oculta";
 import { answerViste, visteStatus } from "./viste";
 
 const seed = seeder("piezas");
 
-/** A recommendation as `loadOcultaLens` reads it: an id, a reco seed and the two components. */
-const entry = (catalogId: string, gusto: number, calidad: number) =>
-  ({
-    card: { id: catalogId, reco: { seedName: "Semilla" }, reasons: [] },
-    scored: { pick: { components: { gusto, calidad } } },
-  }) as unknown as RecoEntry<TonightCard>;
-
-describeWithDb("Piezas · la oculta y ¿las viste? (FIL-I26-3)", () => {
+describeWithDb("¿Las viste? · store (FIL-I26-3)", () => {
   let userId = "";
   let films: Array<{ catalogId: string; tmdbId: number }> = [];
 
@@ -38,32 +28,6 @@ describeWithDb("Piezas · la oculta y ¿las viste? (FIL-I26-3)", () => {
   });
 
   const day = (n: number) => new Date(`2026-10-${String(20 + n).padStart(2, "0")}T18:00:00Z`);
-  const pool = () => [entry(films[0]!.catalogId, 0.9, 0.9), entry(films[1]!.catalogId, 0.2, 0.95), entry(films[2]!.catalogId, 0.3, 0.8), entry(films[3]!.catalogId, 0.1, 0.7)];
-  const ocultaOn = async (n: number) =>
-    (await loadOcultaLens(userId, ["MAX"], day(n), { recos: pool(), deckIds: new Set() }))?.titles[0] ?? null;
-
-  it("one a day: the same card all day, face down until flipped", async () => {
-    const first = await ocultaOn(1);
-    assert.equal(first?.id, films[1]!.catalogId);
-    assert.equal(first?.oculta?.flipped, false);
-    assert.equal((await ocultaOn(1))?.id, first?.id, "does not change within the day");
-    assert.equal(await flipOculta(userId, first!.id, day(1)), true);
-    assert.equal((await ocultaOn(1))?.oculta?.flipped, true);
-  });
-
-  it("a different one the next day, never one dealt before, and none once today's is seen", async () => {
-    const second = await ocultaOn(2);
-    assert.equal(second?.id, films[2]!.catalogId);
-    await seed.title(userId, second!.id, { watchedAt: day(2) });
-    assert.equal(await ocultaOn(2), null, "seen today: no oculta until tomorrow");
-    const third = await ocultaOn(3);
-    assert.equal(third?.id, films[3]!.catalogId);
-    assert.notEqual(third?.id, films[1]!.catalogId);
-  });
-
-  it("refuses to flip a card that was never dealt", async () => {
-    assert.equal(await flipOculta(userId, films[5]!.catalogId), false);
-  });
 
   it("answers: «me gustó» and «no tanto» are watched with a rating Afinidad reads, «no la vi» writes nothing", async () => {
     const now = day(4);

@@ -27,22 +27,6 @@ export const TonightFooter = ({ title, className }: TonightFooterProps) => {
     // The closing card (FIL-I21-6) and the door cards (FIL-I26-3) say everything on their face.
     return null;
   }
-  const oculta = tonight?.oculta ?? null;
-  if (oculta && !oculta.flipped) {
-    // Face down: what it may say, never the name (FIL-I26-3, board P1).
-    return (
-      <div className={cn("tonight-footer mx-auto flex w-full max-w-xl flex-col items-center gap-2 text-center", className)}>
-        <div key={`${title.id}-oculta`} className="tonight-title-in space-y-1 px-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">La oculta · una al día</p>
-          <h2 className="tonight-title font-serif text-[1.55rem] font-semibold leading-tight text-paper sm:text-3xl">
-            {oculta.hint}
-          </h2>
-          <p className="mx-auto max-w-sm text-[13px] leading-snug text-paper/80">{oculta.detail}</p>
-        </div>
-        <p className="text-[12px] text-fog">Mañana hay otra. Nunca se acumulan.</p>
-      </div>
-    );
-  }
   const genreNames = (title.genres ?? []).map((genre) => genre.name).filter(Boolean).slice(0, 3);
   const metaParts: string[] = [];
   if (title.year) {
@@ -80,9 +64,7 @@ export const TonightFooter = ({ title, className }: TonightFooterProps) => {
   return (
     <div className={cn("tonight-footer mx-auto flex w-full max-w-xl flex-col items-center gap-2 text-center", className)}>
       <div key={title.id} className="tonight-title-in space-y-1 px-2">
-        {oculta ? (
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">La oculta de hoy</p>
-        ) : ruta ? (
+        {ruta ? (
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">
             Ruta · {ruta.done} de {ruta.total}
             <span className="sr-only">: {ruta.title}</span>
