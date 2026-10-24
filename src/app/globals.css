@@ -1403,6 +1403,13 @@ body:has(.diario-que-ver-shell) footer.site-footer {
   z-index: 41;
 }
 
+/* The phone chip is portaled to body, out of its sm:hidden wrapper: hide it where the eyebrow row shows its own. */
+@media (min-width: 640px) {
+  .tonight-bedtime-fixed {
+    display: none;
+  }
+}
+
 .tonight-eyebrow-compact {
   line-height: 1;
   margin: 0;
