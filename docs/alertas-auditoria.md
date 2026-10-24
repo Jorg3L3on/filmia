@@ -112,6 +112,8 @@ Póster `tmdbPosterUrl(posterPath, "w185")` en cada aviso de película o serie. 
 
 La agrupación compara variante, título y descripción. No compara el póster. `key` no entra en esa comparación: sigue siendo el reemplazo in-place, en otro camino. Tres altas seguidas, el mismo título, sin subtítulo y con pósteres distintos (Dune, Aftersun, Carta) colapsan en un aviso con `count` 3. En ejecución el póster que quedaba era el de la última, no el de la primera: al agrupar, el store pinta el payload nuevo. Ese póster igual nombra una sola de las tres. Si los pósteres de la ráfaga no coinciden, el aviso queda sin póster y se dibuja el icono de la variante. Si coinciden, se conserva. La firma de `showToast` no cambia.
 
+En móvil (menos de 640 px) el título y el subtítulo parten a dos líneas, sin elipsis. El póster baja a 36×50. El botón de la acción queda compacto y pasa a la fila de abajo: al lado del póster y de cerrar, «No te la volveremos a sugerir» no cabe en dos líneas. Desde 640 px el aviso sigue en una fila. El banco mide ese copy en `#toast-fit`.
+
 Los botones de estado («En tu diario», «En Quiero ver» como etiqueta) no son toasts y no se tocan.
 
 ## Checks

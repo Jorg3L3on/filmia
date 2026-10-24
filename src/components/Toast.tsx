@@ -249,30 +249,32 @@ export const ToastCard = ({ toast, phase = "in", onDismiss, announce = true }: T
           </span>
         )}
       </span>
-      <div className="toast-copy">
-        <p className="toast-title">{toast.title}</p>
-        {toast.description ? (
-          <p className={cn("toast-sub", toast.variant === "error" && "toast-sub-two")}>{toast.description}</p>
-        ) : null}
-        {toast.variant === "progress" ? (
-          <span className="toast-progress" aria-hidden="true">
-            <i style={{ width: `${Math.round((toast.progress ?? 0) * 100)}%` }} />
-          </span>
+      <div className="toast-body">
+        <div className="toast-copy">
+          <p className="toast-title">{toast.title}</p>
+          {toast.description ? (
+            <p className={cn("toast-sub", toast.variant === "error" && "toast-sub-two")}>{toast.description}</p>
+          ) : null}
+          {toast.variant === "progress" ? (
+            <span className="toast-progress" aria-hidden="true">
+              <i style={{ width: `${Math.round((toast.progress ?? 0) * 100)}%` }} />
+            </span>
+          ) : null}
+        </div>
+        {toast.action ? (
+          <button
+            type="button"
+            className={cn("toast-action", focusRing)}
+            onClick={() => {
+              toast.action?.onClick();
+              handleDismiss();
+            }}
+          >
+            {undo ? <UndoGlyph /> : null}
+            {toast.action.label}
+          </button>
         ) : null}
       </div>
-      {toast.action ? (
-        <button
-          type="button"
-          className={cn("toast-action", focusRing)}
-          onClick={() => {
-            toast.action?.onClick();
-            handleDismiss();
-          }}
-        >
-          {undo ? <UndoGlyph /> : null}
-          {toast.action.label}
-        </button>
-      ) : null}
       <button
         type="button"
         aria-label="Cerrar aviso"
