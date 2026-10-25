@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { CLOSING_CARD_ID, closingCardFor, closingCopy, isClosingCard } from "./closing-card";
+import { CLOSING_CARD_ID, closingCardFor, closingCopy, isClosingCard, tallyCount } from "./closing-card";
 
 describe("carta de cierre (FIL-I21-6)", () => {
   it("is one sentinel card carrying the last lens", () => {
@@ -23,5 +23,14 @@ describe("carta de cierre (FIL-I21-6)", () => {
       counters: "1 carta · 0 «ahora no»",
     });
     assert.equal(closingCopy({ total: 4, watched: 3, notTonight: 1 }).counters, "4 cartas · 3 vistas · 1 «ahora no»");
+  });
+});
+
+describe("la cuenta de la noche sobrevive a recargar", () => {
+  it("counts what the server saw plus this visit's new marks, never one twice", () => {
+    const counted = [["title-a", "cat-a"], ["cat-b"]];
+    assert.equal(tallyCount(counted, new Set()), 2, "a reload keeps tonight's two");
+    assert.equal(tallyCount(counted, new Set(["title-a", "cat-c"])), 3, "one already counted, one new");
+    assert.equal(tallyCount([], new Set(["cat-c"])), 1);
   });
 });

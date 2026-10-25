@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { cancelMyRequest, decideRequests, dismissMyRequest } from "@/app/actions/list-sharing";
 import { cn } from "@/lib/cn";
 import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY } from "@/lib/toast-alerts";
 import { focusRing } from "@/lib/ui";
 
 const pill = cn(
@@ -29,21 +30,29 @@ export const DecideButtons = ({
   names?: string;
 }) => {
   const [isPending, startTransition] = useTransition();
+  const decided = (decision: "approve" | "reject") =>
+    showToast({
+      title: decision === "approve" ? TOAST_COPY.requestApproved : TOAST_COPY.requestRejected,
+      description:
+        decision === "approve"
+          ? names
+            ? `${names} ya puede${requestIds.length > 1 ? "n" : ""} entrar.`
+            : undefined
+          : undefined,
+    });
   const decide = (decision: "approve" | "reject") =>
     startTransition(async () => {
       try {
         await decideRequests(listId, requestIds, decision);
-        showToast({
-          title: decision === "approve" ? "Aprobado" : "Rechazado",
-          description:
-            decision === "approve"
-              ? names
-                ? `${names} ya puede${requestIds.length > 1 ? "n" : ""} entrar.`
-                : undefined
-              : undefined,
-        });
+        decided(decision);
       } catch {
-        showToast({ title: "No se pudo guardar", variant: "error" });
+        showActionError({
+          title: TOAST_COPY.couldNotSave,
+          retry: async () => {
+            await decideRequests(listId, requestIds, decision);
+            decided(decision);
+          },
+        });
       }
     });
   return (
@@ -75,7 +84,7 @@ export const MyRequestButton = ({ requestId, kind }: { requestId: string; kind: 
             await (kind === "cancel" ? cancelMyRequest(requestId) : dismissMyRequest(requestId));
             setDone(true);
           } catch {
-            showToast({ title: "No se pudo guardar", variant: "error" });
+            showActionError({ title: TOAST_COPY.couldNotSave });
           }
         })
       }

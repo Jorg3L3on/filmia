@@ -56,9 +56,11 @@ const seedReason = (
   const text =
     seed.via === "queue"
       ? `Porque tienes ${seed.name} en Quiero ver`
-      : seed.rating != null
-        ? `Porque le diste ${formatStarsCompact(seed.rating)} a ${seed.name}`
-        : `Porque ${seed.name} está en tus Favoritas`;
+      : seed.ratingImplied
+        ? `Porque te gustó ${seed.name}`
+        : seed.rating != null
+          ? `Porque le diste ${formatStarsCompact(seed.rating)} a ${seed.name}`
+          : `Porque ${seed.name} está en tus Favoritas`;
   const other = titlesById.get(seed.titleId);
   const shared = other ? sharedFeatureNames(title, other) : [];
   return {

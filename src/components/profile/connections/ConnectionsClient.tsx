@@ -3,11 +3,14 @@
 import { useState, useTransition } from "react";
 import { createMcpToken, revokeMcpGrant, revokeMcpToken } from "@/app/actions/mcp";
 import { Button } from "@/components/Button";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ChevronIcon } from "@/components/profile/ProfileRows";
 import { cn } from "@/lib/cn";
 import { relativeTimeEs } from "@/lib/relative-time";
 import { TOOL_ERROR_LABEL, toolActivityLabel } from "@/lib/mcp/tool-labels";
+import { showAlreadyInactive } from "@/lib/alert-retry";
 import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY } from "@/lib/toast-alerts";
 import { fieldClass, focusRing, glassRowClass } from "@/lib/ui";
 
 /** Client pieces of Perfil → Conexiones (FIL-I20-6). Dates arrive as ISO strings. */
@@ -39,9 +42,15 @@ const KeyIcon = () => (
 const copy = async (value: string, label: string) => {
   try {
     await navigator.clipboard.writeText(value);
-    showToast({ title: `${label} copiado`, variant: "success" });
+    showToast({
+      title: label === "URL" ? TOAST_COPY.linkCopied : `${label} copiado`,
+      variant: "success",
+    });
   } catch {
-    showToast({ title: "No se pudo copiar. Selecciónalo y cópialo a mano.", variant: "error" });
+    showActionError({
+      title: "No se pudo copiar",
+      description: "Selecciónalo y cópialo a mano.",
+    });
   }
 };
 
@@ -131,19 +140,33 @@ export const ConnectionCard = ({
   now,
 }: ConnectionCardProps) => {
   const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
   const initial = Array.from(name)[0]?.toUpperCase() ?? "?";
+  const disconnect = kind === "client";
 
-  const revoke = () => {
-    const what = kind === "client" ? `Desconectar ${name}` : `Revocar el token «${name}»`;
-    if (!window.confirm(`${what}? Deja de funcionar de inmediato.`)) return;
+  const handleAskRevoke = () => {
+    setConfirming(true);
+  };
+
+  const handleCloseRevoke = () => {
+    if (pending) return;
+    setConfirming(false);
+  };
+
+  const handleConfirmRevoke = () => {
     startTransition(async () => {
-      const result = kind === "client" ? await revokeMcpGrant(id) : await revokeMcpToken(id);
-      showToast(
-        result.ok
-          ? { title: kind === "client" ? `${name} desconectada` : "Token revocado", variant: "success" }
-          : { title: "Ya no estaba activa.", variant: "error" },
-      );
+      const result = disconnect ? await revokeMcpGrant(id) : await revokeMcpToken(id);
+      setConfirming(false);
+      if (result.ok) {
+        showToast({
+          title: disconnect ? TOAST_COPY.connectionClosed : TOAST_COPY.tokenRevoked,
+          description: disconnect ? name : undefined,
+          variant: "success",
+        });
+        return;
+      }
+      showAlreadyInactive();
     });
   };
 
@@ -191,7 +214,7 @@ export const ConnectionCard = ({
         </button>
         <button
           type="button"
-          onClick={revoke}
+          onClick={handleAskRevoke}
           disabled={pending}
           aria-busy={pending || undefined}
           className={cn(
@@ -200,9 +223,20 @@ export const ConnectionCard = ({
             focusRing,
           )}
         >
-          {kind === "client" ? "Desconectar" : "Revocar"}
+          {disconnect ? "Desconectar" : "Revocar"}
         </button>
       </div>
+      <ConfirmDialog
+        open={confirming}
+        onClose={handleCloseRevoke}
+        glyph="unlink"
+        title={disconnect ? `¿Desconectar ${name}?` : `¿Revocar el token «${name}»?`}
+        description="Deja de funcionar de inmediato."
+        confirmLabel={disconnect ? "Desconectar" : "Revocar"}
+        pending={pending}
+        pendingLabel={disconnect ? "Desconectando…" : "Revocando…"}
+        onConfirm={handleConfirmRevoke}
+      />
       {open ? (
         <div className="mt-1 pb-3">
           <Activity items={activity} now={now} />

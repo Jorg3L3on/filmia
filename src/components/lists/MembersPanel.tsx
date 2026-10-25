@@ -9,7 +9,9 @@ import type { ListRole } from "@/db";
 import { cn } from "@/lib/cn";
 import { personFirstName } from "@/lib/person-avatar";
 import { relativeTimeEs } from "@/lib/relative-time";
+import { reportLeaveFailure, reportMemberChangeFailure } from "@/lib/alert-retry";
 import { showToast } from "@/lib/toast";
+import { TOAST_COPY } from "@/lib/toast-alerts";
 import { focusRing } from "@/lib/ui";
 
 export type PanelPerson = {
@@ -90,7 +92,12 @@ export const MembersPanel = ({
         after?.();
         router.refresh();
       } catch (caught) {
-        showToast({ title: caught instanceof Error ? caught.message : "No se pudo guardar", variant: "error" });
+        reportMemberChangeFailure(caught, async () => {
+          await action();
+          showToast({ title: done });
+          after?.();
+          router.refresh();
+        });
       }
     });
 
@@ -173,7 +180,7 @@ export const MembersPanel = ({
                     onClick={() =>
                       run(
                         () => toggleInvite(listId, invite.id, invite.status === "active"),
-                        invite.status === "active" ? "Link apagado" : "Link prendido",
+                        invite.status === "active" ? TOAST_COPY.linkOff : TOAST_COPY.linkOn,
                       )
                     }
                     className={cn(
@@ -193,7 +200,7 @@ export const MembersPanel = ({
                   <button
                     type="button"
                     disabled={isPending}
-                    onClick={() => run(() => toggleInvite(listId, invite.id, true), "Link revocado")}
+                    onClick={() => run(() => toggleInvite(listId, invite.id, true), TOAST_COPY.linkRevoked)}
                     className={cn("text-sm font-semibold text-danger", focusRing)}
                   >
                     Revocar
@@ -311,10 +318,10 @@ export const MembersPanel = ({
                   startTransition(async () => {
                     try {
                       await leaveList(listId);
-                      showToast({ title: "Saliste de la lista" });
+                      showToast({ title: TOAST_COPY.leftList });
                       router.replace("/listas");
                     } catch {
-                      showToast({ title: "No se pudo salir", variant: "error" });
+                      reportLeaveFailure();
                     }
                   })
                 }

@@ -8,7 +8,6 @@ import { isAuthChromePath, isImmersiveFichaPath } from "@/lib/nav";
 type AuthChromeGateProps = {
   header: ReactNode;
   prefetch: ReactNode;
-  footer: ReactNode;
   bottomNav: ReactNode;
   mainClassName: string;
   children: ReactNode;
@@ -18,34 +17,30 @@ type AuthChromeGateProps = {
 export const AuthChromeGate = ({
   header,
   prefetch,
-  footer,
   bottomNav,
   mainClassName,
   children,
 }: AuthChromeGateProps) => {
   const pathname = usePathname();
 
-  if (isAuthChromePath(pathname)) {
-    return (
-      <>
-        {children}
-        <ToastHost />
-      </>
-    );
-  }
-
   return (
     <>
-      {isImmersiveFichaPath(pathname) ? (
-        // `contents` keeps the header sticky on desktop; on a phone the ficha owns the top.
-        <div className="max-sm:hidden sm:contents">{header}</div>
+      {isAuthChromePath(pathname) ? (
+        children
       ) : (
-        header
+        <>
+          {isImmersiveFichaPath(pathname) ? (
+            // `contents` keeps the header sticky on desktop; on a phone the ficha owns the top.
+            <div className="max-sm:hidden sm:contents">{header}</div>
+          ) : (
+            header
+          )}
+          {prefetch}
+          <main className={mainClassName}>{children}</main>
+          {bottomNav}
+        </>
       )}
-      {prefetch}
-      <main className={mainClassName}>{children}</main>
-      {footer}
-      {bottomNav}
+      {/* One host for auth and app chrome, so a toast's timer survives the swap. */}
       <ToastHost />
     </>
   );

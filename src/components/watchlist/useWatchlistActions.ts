@@ -11,7 +11,9 @@ import {
 import type { FichaView } from "@/components/watchlist/types";
 import { flyPosterToProfile, pulseNav } from "@/lib/fly-to-nav";
 import { tmdbPosterUrl } from "@/lib/tmdb";
+import { reportPickFailure, startWatchedUndo } from "@/lib/alert-retry";
 import { showToast } from "@/lib/toast";
+import { retryAfterRevert, showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { NOT_TONIGHT_DAYS } from "@/lib/tonight/score";
 import { swapAdjacentIds } from "@/lib/use-optimistic-action";
 
@@ -53,7 +55,11 @@ export const useWatchlistActions = ({
 }: UseWatchlistActionsArgs) => {
   const remove = (ficha: FichaView) => {
     hide(ficha.id);
-    showToast({ title: "Fuera de Quiero ver", description: ficha.name });
+    showToast({
+      title: TOAST_COPY.removedWatchlist,
+      description: ficha.name,
+      poster: toastPoster(ficha.posterPath),
+    });
     run(
       order.filter((id) => id !== ficha.id),
       async () => {
@@ -74,16 +80,20 @@ export const useWatchlistActions = ({
       setStampedId(null);
       hide(ficha.id);
       void flyPosterToProfile(posterElement(ficha.id), tmdbPosterUrl(ficha.posterPath, "w185"));
+      const poster = toastPoster(ficha.posterPath);
       showToast({
-        title: "En tu diario",
+        title: TOAST_COPY.addedDiary,
         description: ficha.name,
-        durationMs: 6000,
+        poster,
         action: {
           label: "Deshacer",
           onClick: () => {
-            restore(ficha.id);
-            void undoMarkWatched(ficha.id).catch(() => {
-              showToast({ title: "No se pudo deshacer", variant: "error" });
+            startWatchedUndo({
+              apply: () => restore(ficha.id),
+              revert: () => hide(ficha.id),
+              undo: () => undoMarkWatched(ficha.id),
+              poster,
+              description: ficha.name,
             });
           },
         },
@@ -98,25 +108,35 @@ export const useWatchlistActions = ({
 
   const notTonight = (ficha: FichaView) => {
     const until = new Date(Date.now() + NOT_TONIGHT_DAYS * 24 * 60 * 60 * 1000);
+    const poster = toastPoster(ficha.posterPath);
     setSnoozedUntil(ficha.id, until);
-    showToast({ title: "Ahora no", description: `${ficha.name} vuelve a Hoy en dos semanas.` });
+    showToast({
+      title: TOAST_COPY.notTonight,
+      description: `${ficha.name} vuelve a Hoy en dos semanas.`,
+      poster,
+    });
     void markNotTonight(ficha.id, "quiero-ver").catch(() => {
       setSnoozedUntil(ficha.id, null);
-      showToast({ title: "No se pudo guardar", variant: "error" });
+      reportPickFailure(poster);
     });
   };
 
   const tonight = (ficha: FichaView) => {
+    const poster = toastPoster(ficha.posterPath);
     if (ficha.pinned) {
-      showToast({ title: "Ya es tu elección de esta noche", description: ficha.name });
+      showToast({ title: TOAST_COPY.choiceConfirmed, description: ficha.name, poster });
       return;
     }
     setPinnedId(ficha.id);
-    showToast({ title: "Lista para esta noche", description: `${ficha.name} aparece primera en Hoy.` });
+    showToast({
+      title: TOAST_COPY.reservedTonight,
+      description: `${ficha.name} aparece primera en Hoy.`,
+      poster,
+    });
     pulseNav("today");
     void pinTonight(ficha.id).catch(() => {
       setPinnedId(null);
-      showToast({ title: "No se pudo guardar", variant: "error" });
+      reportPickFailure(poster);
     });
   };
 
@@ -125,7 +145,11 @@ export const useWatchlistActions = ({
       return;
     }
     const nextVisible = [ficha.id, ...visibleIds.filter((id) => id !== ficha.id)];
-    showToast({ title: "Ahora es la primera", description: ficha.name });
+    showToast({
+      title: TOAST_COPY.movedFirst,
+      description: ficha.name,
+      poster: toastPoster(ficha.posterPath),
+    });
     run([...nextVisible, ...hiddenInOrder], () => moveWatchlistItemToTop(ficha.id));
   };
 
@@ -134,10 +158,32 @@ export const useWatchlistActions = ({
     setNote(ficha.id, next);
     const formData = new FormData();
     formData.set("queueNote", next ?? "");
-    showToast({ title: next ? "Nota guardada" : "Nota quitada", description: ficha.name });
+    const poster = toastPoster(ficha.posterPath);
+    showToast({
+      title: next ? TOAST_COPY.noteSaved : TOAST_COPY.noteRemoved,
+      description: ficha.name,
+      poster,
+    });
     void updateWatchlistNote(ficha.id, formData).catch(() => {
       setNote(ficha.id, ficha.queueNote);
-      showToast({ title: "No se pudo guardar la nota", variant: "error" });
+      showActionError({
+        title: TOAST_COPY.couldNotSave,
+        description: "No se pudo guardar la nota.",
+        poster,
+        retry: () =>
+          retryAfterRevert(
+            () => setNote(ficha.id, next),
+            () => setNote(ficha.id, ficha.queueNote),
+            async () => {
+              await updateWatchlistNote(ficha.id, formData);
+              showToast({
+                title: next ? TOAST_COPY.noteSaved : TOAST_COPY.noteRemoved,
+                description: ficha.name,
+                poster,
+              });
+            },
+          ),
+      });
     });
   };
 

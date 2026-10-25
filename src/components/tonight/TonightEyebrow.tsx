@@ -3,37 +3,24 @@
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
-import { DAY_PART_LABEL, dayPartOf, nightEndsLabel } from "@/lib/tonight/time";
+import { dayPartOf, nightEndsLabel } from "@/lib/tonight/time";
 import type { NightEnds } from "@/lib/tonight";
 import { focusRing } from "@/lib/ui";
 
 type TonightEyebrowProps = {
   now: Date | null;
   nightEnds: NightEnds;
-  /** Phone layout: label as the rail's eyebrow, bedtime chip up in the brand row. */
+  /** Phone layout: the bedtime chip up in the brand row. */
   compact?: boolean;
 };
 
-const part = (now: Date, options: Intl.DateTimeFormatOptions) =>
-  now.toLocaleDateString("es-MX", options).replace(/\./g, "").trim();
-
-/** «dom 4 oct» — weekday, day and month without the es-MX «de». */
-const formatDay = (now: Date) =>
-  `${part(now, { weekday: "short" })} ${now.getDate()} ${part(now, { month: "short" })}`;
-
 /**
- * «ESTA TARDE · mar 6 oct» by the viewer's clock; at night the bedtime chip
- * (edited in Perfil) joins it. Before hydration it only says «Hoy».
+ * At night, the bedtime chip «Hasta las 01:00» (edited in Perfil), by the viewer's clock. The
+ * «ESTA NOCHE · vie 23 oct» label it used to sit beside is gone; before hydration nothing renders.
  */
 export const TonightEyebrow = ({ now, nightEnds, compact = false }: TonightEyebrowProps) => {
   const dayPart = now ? dayPartOf(now, nightEnds) : null;
   const bedtime = now ? nightEndsLabel(now, nightEnds) : null;
-  const label = (
-    <>
-      {dayPart ? DAY_PART_LABEL[dayPart] : "Hoy"}
-      {now ? <span className="font-medium tracking-[0.12em] text-fog"> · {formatDay(now)}</span> : null}
-    </>
-  );
   const chip =
     dayPart === "noche" && bedtime ? (
       <Link
@@ -50,30 +37,17 @@ export const TonightEyebrow = ({ now, nightEnds, compact = false }: TonightEyebr
       </Link>
     ) : null;
 
-  if (compact) {
-    // Phone (FIL-I21-3): the chip joins the brand row (fixed over the header) and the label
-    // becomes the rail's eyebrow, so the stage starts two rows down instead of three.
-    // The chip is fixed over the header: portaled to <body> so the sala's stacking context
-    // (isolation: isolate, under the sticky header) cannot hide it. `now` is only set after
-    // hydration, so the chip never renders on the server.
-    return (
-      <>
-        <p className="tonight-eyebrow-compact text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
-          {label}
-        </p>
-        {chip && typeof document !== "undefined" ? createPortal(chip, document.body) : chip}
-      </>
-    );
+  if (!chip) {
+    return null;
   }
 
-  return (
-    <div className="tonight-eyebrow mx-auto flex w-full max-w-lg items-center justify-between gap-3 px-1">
-      <p className="min-w-0 truncate whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
-        {label}
-      </p>
-      {chip}
-    </div>
-  );
+  if (compact) {
+    // Phone (FIL-I21-3): the chip joins the brand row, fixed over the header. Portaled to <body>
+    // so the sala's stacking context (isolation: isolate, under the sticky header) cannot hide it.
+    return typeof document !== "undefined" ? createPortal(chip, document.body) : chip;
+  }
+
+  return <div className="tonight-eyebrow mx-auto flex w-full max-w-lg items-center justify-end gap-3 px-1">{chip}</div>;
 };
 
 const MoonIcon = () => (

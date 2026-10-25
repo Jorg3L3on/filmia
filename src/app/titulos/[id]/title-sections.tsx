@@ -13,7 +13,9 @@ import { CinemaBadge } from "@/components/cine/CinemaBadge";
 import { CinemaChip } from "@/components/cine/CinemaChip";
 import { TitleKind } from "@/db";
 import { awardChipLabel } from "@/lib/awards";
+import { toDateInput } from "@/lib/dates";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
+import { impliedRatingLabel } from "@/lib/piezas/core";
 import { titleListMemberships } from "@/lib/list-membership";
 import { formatRuntime, imdbTitleUrl, TITLE_KIND_LABEL } from "@/lib/labels";
 import { getTmdbTrailer, isTmdbConfigured, tmdbBackdropUrl, type TmdbTitleExtras } from "@/lib/tmdb";
@@ -61,6 +63,7 @@ export type HeroSource = Pick<
   | "imdbId"
   | "awards"
   | "rating"
+  | "impliedRating"
   | "watchedAt"
   | "posterAmbient"
 >;
@@ -96,6 +99,7 @@ export const heroProps = (
     imdbPending: options.imdbPending ?? false,
     awardLabel: awardChipLabel(title.awards),
     rating: title.rating,
+    reaction: title.rating == null ? impliedRatingLabel(title.impliedRating) : null,
     watched: Boolean(title.watchedAt),
     posterAmbient: title.posterAmbient,
     affinity: options.affinity,
@@ -284,14 +288,21 @@ export const TitleActionsBlock = async ({
       diaryLog={diaryLog}
       titleName={title.name}
       watched={Boolean(title.watchedAt)}
+      watchedAt={title.watchedAt ? toDateInput(title.watchedAt) : null}
       inWatchlist={inWatchlist}
       listCount={listCount}
       rating={title.rating}
       review={title.review ?? null}
       platform={title.platform ?? null}
       pinnedTonight={pinnedTitleId === title.id}
+      posterPath={title.posterPath}
       listsPanel={
-        <TitleListsPanel titleId={title.id} lists={assignableLists} memberListIds={memberListIds} />
+        <TitleListsPanel
+          titleId={title.id}
+          lists={assignableLists}
+          memberListIds={memberListIds}
+          posterPath={title.posterPath}
+        />
       }
     />
   );

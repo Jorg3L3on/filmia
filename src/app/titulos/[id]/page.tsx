@@ -213,6 +213,7 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
           titleId={title.id}
           seriesStatus={title.seriesStatus}
           seriesSeason={title.seriesSeason}
+          posterPath={title.posterPath}
         />
       ) : null}
 
@@ -224,6 +225,7 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
           rating={title.rating}
           review={title.review}
           platform={title.platform}
+          posterPath={title.posterPath}
           sharePath={sharePath("resena", title.id)}
         />
       ) : null}

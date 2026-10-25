@@ -21,6 +21,7 @@ const offlineScripts = [
   "verify-quiero-ver.ts",
   "verify-bienvenida.ts",
   "verify-buscar-polish.ts",
+  "verify-toast-fit.ts",
 ];
 
 const tsx = path.join(process.cwd(), "node_modules", ".bin", "tsx");

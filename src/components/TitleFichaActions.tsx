@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useState, type CSSProperties, type ReactNode } from "react";
+import { useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { saveTmdbTitleInLists } from "@/app/actions/lists";
 import { markTmdbTitleWatched, rateTmdbTitle } from "@/app/actions/title-preview";
 import { pinTonightFromFicha, pinTonightFromSearch } from "@/app/actions/tonight";
@@ -12,6 +12,7 @@ import {
   clearTitleWatched,
   markTitleWatched,
   removeFromWatchlistById,
+  restoreTitleWatched,
 } from "@/app/actions/watchlist";
 import { MarkWatchedSheet } from "@/components/MarkWatchedSheet";
 import { retargetCurrentNav } from "@/components/NavOriginTracker";
@@ -25,8 +26,16 @@ import type { SelectableList } from "@/lib/list-selection";
 import { useSpringFeedback } from "@/lib/motion";
 import type { AddTitleFromTmdbInput } from "@/lib/add-title-from-tmdb";
 import { handoffKey, writeFichaHandoff } from "@/lib/ficha-handoff";
+import { clearAfterPendingSave, PendingSaveError, showDiaryRemovedToast } from "@/lib/diary-undo";
 import { diaryDayLabel, diaryMonthHref, ownedFichaHref, type DiaryLog } from "@/lib/title-preview";
 import { showToast } from "@/lib/toast";
+import {
+  addedToLists,
+  retryAfterRevert,
+  showActionError,
+  TOAST_COPY,
+  toastPoster,
+} from "@/lib/toast-alerts";
 import { PARA_TI_SLUG } from "@/lib/tonight/select";
 import { TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import { focusRing } from "@/lib/ui";
@@ -51,6 +60,8 @@ type TitleFichaActionsProps = {
   diaryLog?: DiaryLog | null;
   titleName: string;
   watched: boolean;
+  /** Calendar day `YYYY-MM-DD` already on the entry. Deshacer puts this date back. */
+  watchedAt?: string | null;
   inWatchlist: boolean;
   /** Saved lists (Quiero ver excluded). */
   listCount: number;
@@ -60,6 +71,7 @@ type TitleFichaActionsProps = {
   platform: Platform | null;
   /** This title is tonight's pin right now. */
   pinnedTonight: boolean;
+  posterPath?: string | null;
   /** The user's lists panel; a preview passes `previewLists` instead (nothing is written until confirmed). */
   listsPanel?: ReactNode;
   previewLists?: SelectableList[];
@@ -99,24 +111,39 @@ export const TitleFichaActions = ({
   diaryLog = null,
   titleName,
   watched,
+  watchedAt = null,
   inWatchlist,
   listCount,
   rating,
   review,
   platform,
   pinnedTonight,
+  posterPath = null,
   listsPanel,
   previewLists = [],
 }: TitleFichaActionsProps) => {
+  const poster = toastPoster(posterPath ?? snapshot?.posterPath);
   const router = useRouter();
   const listsPanelId = useId();
   const [listsOpen, setListsOpen] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
   const [seenOpen, setSeenOpen] = useState(false);
   const [seenOptimistic, setSeenOptimistic] = useState(false);
+  const [savedDate, setSavedDate] = useState<string | null>(null);
+  const pendingSaveRef = useRef<Promise<unknown> | null>(null);
+  const [diaryHold, setDiaryHold] = useState<null | "removed" | "restoring">(null);
+  const [seenWatched, setSeenWatched] = useState(watched);
+  if (watched !== seenWatched) {
+    setSeenWatched(watched);
+    if (diaryHold === "removed" && !watched) {
+      setDiaryHold(null);
+    } else if (diaryHold === "restoring" && watched) {
+      setDiaryHold(null);
+    }
+  }
   const [justPinned, setJustPinned] = useState(false);
   const [isPinning, setPinning] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"watched" | "rating" | "watchlist" | null>(null);
+  const [pendingAction, setPendingAction] = useState<"rating" | "watchlist" | null>(null);
   const { value: state, error, run } = useStickyOptimistic(
     { watched, inWatchlist, rating, review, pinned: pinnedTonight },
     sameActionState,
@@ -149,7 +176,8 @@ export const TitleFichaActions = ({
     return snapshot;
   };
 
-  const displayedWatched = state.watched || seenOptimistic;
+  const displayedWatched =
+    diaryHold === "restoring" || (diaryHold !== "removed" && (state.watched || seenOptimistic));
 
   const handlePin = () => {
     if (state.pinned || isPinning) {
@@ -165,8 +193,9 @@ export const TitleFichaActions = ({
             throw new Error(result.error);
           }
           showToast({
-            title: "Sale primero en Hoy",
+            title: TOAST_COPY.reservedTonight,
             description: `${titleName} · también en Quiero ver`,
+            poster,
             action: { label: "Ver en Hoy", onClick: () => router.push(HOY_PARA_TI_HREF) },
           });
           becomeOwned(result.titleId, { inWatchlist: true });
@@ -177,8 +206,9 @@ export const TitleFichaActions = ({
           throw new Error(result.error);
         }
         showToast({
-          title: "Sale primero en Hoy",
+          title: TOAST_COPY.reservedTonight,
           description: result.addedToWatchlist ? `${titleName} · también en Quiero ver` : titleName,
+          poster,
           action: { label: "Ver en Hoy", onClick: () => router.push(HOY_PARA_TI_HREF) },
         });
       } finally {
@@ -191,7 +221,11 @@ export const TitleFichaActions = ({
     const next = !state.inWatchlist;
     setPendingAction("watchlist");
     watchlistSpring.trigger();
-    showToast({ title: next ? "En Quiero ver" : "Fuera de Quiero ver" });
+    showToast({
+      title: next ? TOAST_COPY.addedWatchlist : TOAST_COPY.removedWatchlist,
+      description: titleName,
+      poster,
+    });
     run({ ...state, inWatchlist: next }, async () => {
       try {
         if (titleId == null) {
@@ -216,29 +250,77 @@ export const TitleFichaActions = ({
   };
 
   const handleToggleWatched = () => {
+    if (diaryHold === "restoring") {
+      return;
+    }
     if (!displayedWatched) {
       setSeenOpen(true);
       return;
     }
+    const isoDate = watchedAt || savedDate;
+    if (titleId == null || !isoDate) {
+      showToast({
+        title: TOAST_COPY.stillRemoving,
+        description: TOAST_COPY.stillRemovingDetail,
+        variant: "error",
+        poster,
+      });
+      return;
+    }
+    const id = titleId;
+    const pendingSave = pendingSaveRef.current;
     setSeenOptimistic(false);
-    setPendingAction("watched");
+    setDiaryHold("removed");
     watchedSpring.trigger();
-    showToast({ title: "Quitada del diario" });
-    run({ ...state, watched: false }, async () => {
-      try {
-        if (titleId != null) {
-          await clearTitleWatched(titleId);
-        }
-      } finally {
-        setPendingAction(null);
+    const clear = clearAfterPendingSave(pendingSave, () => clearTitleWatched(id));
+    showDiaryRemovedToast({
+      clear,
+      restore: () => restoreTitleWatched(id, isoDate),
+      onUndo: () => setDiaryHold("restoring"),
+      onUndoFailed: () => setDiaryHold(null),
+      poster,
+    });
+    void clear.catch((caught) => {
+      setDiaryHold(null);
+      if (caught instanceof PendingSaveError) {
+        setSeenOptimistic(false);
+        return;
       }
+      setSeenOptimistic(true);
+      const message = caught instanceof Error ? caught.message : "No se pudo quitar.";
+      showActionError({
+        title: TOAST_COPY.couldNotRemove,
+        description: message,
+        poster,
+        retry: () =>
+          retryAfterRevert(
+            () => {
+              setSeenOptimistic(false);
+              setDiaryHold("removed");
+            },
+            () => {
+              setDiaryHold(null);
+              setSeenOptimistic(true);
+            },
+            async () => {
+              await clearTitleWatched(id);
+              showDiaryRemovedToast({
+                clear: Promise.resolve(),
+                restore: () => restoreTitleWatched(id, isoDate),
+                onUndo: () => setDiaryHold("restoring"),
+                onUndoFailed: () => setDiaryHold(null),
+                poster,
+              });
+            },
+          ),
+      });
     });
   };
 
   const handleSaveRating = (next: { rating: number | null; review: string }) => {
     setPendingAction("rating");
     setRatingOpen(false);
-    showToast({ title: "Nota guardada" });
+    showToast({ title: TOAST_COPY.noteSaved, description: titleName, poster });
     run({ ...state, rating: next.rating, review: next.review || null }, async () => {
       try {
         const formData = new FormData();
@@ -280,8 +362,9 @@ export const TitleFichaActions = ({
         return;
       }
       showToast({
-        title: selectedIds.length === 1 ? "Guardada en tu lista" : `Guardada en ${selectedIds.length} listas`,
+        title: addedToLists(selectedIds.length),
         description: titleName,
+        poster,
       });
       becomeOwned(result.titleId);
     } finally {
@@ -320,7 +403,11 @@ export const TitleFichaActions = ({
           }
           await markTitleWatched(titleId, formData);
         }
-        showToast({ title: "En tu Diario", description: `${titleName} · ${dayLabel}` });
+        showToast({
+          title: TOAST_COPY.addedDiary,
+          description: `${titleName} · ${dayLabel}`,
+          poster,
+        });
         router.push(diaryMonthHref(diaryLog.date));
       } finally {
         setLogging(false);
@@ -409,7 +496,7 @@ export const TitleFichaActions = ({
           <button
             type="button"
             onClick={handleToggleWatched}
-            disabled={pendingAction === "watched"}
+            disabled={diaryHold === "restoring"}
             aria-pressed={displayedWatched}
             aria-label={displayedWatched ? "Quitar de visto" : "Marcar como visto"}
             className={cn(
@@ -481,24 +568,37 @@ export const TitleFichaActions = ({
         rating={state.rating}
         review={state.review}
         platform={platform}
+        posterPath={posterPath ?? snapshot?.posterPath}
         saveLabel={state.inWatchlist ? WATCHLIST_SAVE_LABEL : "Guardar en el diario"}
         onClose={() => setSeenOpen(false)}
-        onSaved={() => {
+        onSaved={(isoDate) => {
+          setSavedDate(isoDate);
           setSeenOptimistic(true);
+          setDiaryHold(null);
           watchedSpring.trigger();
         }}
         onError={() => setSeenOptimistic(false)}
-        submit={
-          titleId == null
-            ? async (formData) => {
-                const result = await markTmdbTitleWatched(previewSnapshot(), formData);
-                if (!result.ok) {
-                  throw new Error(result.error);
-                }
-                becomeOwned(result.titleId, { watched: true });
+        submit={async (formData) => {
+          const pending = (async () => {
+            if (titleId == null) {
+              const result = await markTmdbTitleWatched(previewSnapshot(), formData);
+              if (!result.ok) {
+                throw new Error(result.error);
               }
-            : undefined
-        }
+              becomeOwned(result.titleId, { watched: true });
+              return;
+            }
+            await markTitleWatched(titleId, formData);
+          })();
+          pendingSaveRef.current = pending;
+          try {
+            await pending;
+          } finally {
+            if (pendingSaveRef.current === pending) {
+              pendingSaveRef.current = null;
+            }
+          }
+        }}
       />
 
       <RatingSheet

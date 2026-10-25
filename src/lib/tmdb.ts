@@ -709,7 +709,8 @@ const fetchTmdbDetails = async (
 };
 
 // v2: series runtime falls back to the last / next episode aired (FIL-I24-7).
-const loadCachedTmdbDetails = unstable_cache(fetchTmdbDetails, ["tmdb-details", "v2"], {
+// v3: people carry the composer (FIL-I26-4).
+const loadCachedTmdbDetails = unstable_cache(fetchTmdbDetails, ["tmdb-details", "v3"], {
   revalidate: METADATA_REVALIDATE_SECONDS,
   tags: [TMDB_CACHE_TAG],
 });
@@ -840,6 +841,72 @@ export const getTmdbPersonFilmography = async (
     parseFilmography(credits, role, name),
     { today, roles: countRoles(credits, name, today) },
   );
+};
+
+// ---------------------------------------------------------------------------
+// Rutas (FIL-I26): a film's TMDB collection and a person's credits, raw. The
+// parsing lives in rutas/core.ts. Same 24 h cache as the rest of the metadata.
+// ---------------------------------------------------------------------------
+
+export type TmdbCollectionPartPayload = {
+  id?: number;
+  title?: string;
+  original_title?: string;
+  release_date?: string;
+  poster_path?: string | null;
+  backdrop_path?: string | null;
+  overview?: string;
+  vote_average?: number;
+  vote_count?: number;
+  genre_ids?: number[];
+  adult?: boolean;
+};
+
+export type TmdbCollectionPayload = {
+  id: number;
+  name?: string;
+  parts?: TmdbCollectionPartPayload[];
+};
+
+/** The collection a film belongs to (`belongs_to_collection`), null when none or unknown. */
+export const getTmdbMovieCollectionRef = async (
+  tmdbId: number,
+): Promise<{ id: number; name: string } | null> => {
+  try {
+    const data = await tmdbFetch<{ belongs_to_collection?: { id?: number; name?: string } | null }>(
+      `/movie/${tmdbId}`,
+    );
+    const ref = data.belongs_to_collection;
+    return ref?.id && ref.name?.trim() ? { id: ref.id, name: ref.name.trim() } : null;
+  } catch (error) {
+    if (error instanceof TmdbRequestError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+};
+
+export const getTmdbCollection = async (collectionId: number): Promise<TmdbCollectionPayload | null> => {
+  try {
+    return await tmdbFetch<TmdbCollectionPayload>(`/collection/${collectionId}`);
+  } catch (error) {
+    if (error instanceof TmdbRequestError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+};
+
+/** `/person/:id` + `combined_credits`, the same cached responses the filmography reads. */
+export const getTmdbPersonCredits = async (personId: number) => {
+  const [person, credits] = await Promise.all([
+    tmdbFetch<{ id: number; name?: string; profile_path?: string | null }>(`/person/${personId}`),
+    tmdbFetch<TmdbCombinedCredits>(`/person/${personId}/combined_credits`),
+  ]);
+  return {
+    person: { id: person.id, name: person.name?.trim() || "", profilePath: person.profile_path ?? null },
+    credits,
+  };
 };
 
 // ---------------------------------------------------------------------------

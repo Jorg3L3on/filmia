@@ -76,6 +76,7 @@ export const pickSeeds = (input: {
       name: title.name,
       via,
       rating: title.rating,
+      ...(title.ratingImplied ? { ratingImplied: true } : {}),
     });
   };
 

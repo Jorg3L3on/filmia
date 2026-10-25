@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, or } from "drizzle-orm";
+import { and, eq, gte, inArray, or, sql } from "drizzle-orm";
 import { cache } from "react";
 import { catalog, db, listItems, lists, titles } from "@/db";
 import { LOVED_RATING, rankFavoriteDirectors, type FavoriteDirector } from "@/lib/favorite-directors";
@@ -26,13 +26,18 @@ export const getFavoriteDirectors = cache(async (userId: string): Promise<StartD
   const [favoriteRows, rows] = await Promise.all([
     favoritas,
     db
-      .select({ id: titles.id, catalogId: titles.catalogId, rating: titles.rating, people: catalog.tmdbPeople })
+      .select({
+        id: titles.id,
+        catalogId: titles.catalogId,
+        rating: sql<number | null>`coalesce(${titles.rating}, ${titles.impliedRating})`,
+        people: catalog.tmdbPeople,
+      })
       .from(titles)
       .innerJoin(catalog, eq(catalog.id, titles.catalogId))
       .where(
         and(
           eq(titles.userId, userId),
-          or(gte(titles.rating, LOVED_RATING), inArray(titles.catalogId, favoritas)),
+          or(gte(sql`coalesce(${titles.rating}, ${titles.impliedRating})`, LOVED_RATING), inArray(titles.catalogId, favoritas)),
         ),
       ),
   ]);

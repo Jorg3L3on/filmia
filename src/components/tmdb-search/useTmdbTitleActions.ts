@@ -15,6 +15,7 @@ import {
 import type { UserTmdbEntry } from "@/lib/queries";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import { showToast, type ToastPayload } from "@/lib/toast";
+import { showActionError, TOAST_COPY, toastPoster, toastWithPoster } from "@/lib/toast-alerts";
 import { PARA_TI_SLUG } from "@/lib/tonight/select";
 import { TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import {
@@ -137,7 +138,11 @@ export const useTmdbTitleActions = ({
           removeLocal(result);
         }
         onError?.(outcome.error);
-        showToast({ title: "No se pudo guardar", description: outcome.error, variant: "error" });
+        showActionError({
+          title: TOAST_COPY.couldNotSave,
+          description: outcome.error,
+          poster: toastPoster(result.posterPath),
+        });
         return;
       }
 
@@ -146,12 +151,14 @@ export const useTmdbTitleActions = ({
         watched: outcome.markedWatched || destination === "watched",
       });
       const description = savedInFilmiaCopy(result.name, outcome.created);
+      const poster = toastPoster(result.posterPath);
       const custom = destination === "watchlist" && watchlistToast ? await watchlistToast(result) : null;
       showToast(
-        custom ??
-          (destination === "watchlist"
-            ? { title: "En Quiero ver", description }
-            : { title: "Marcada como vista", description }),
+        custom
+          ? toastWithPoster(custom, poster)
+          : destination === "watchlist"
+            ? { title: TOAST_COPY.addedWatchlist, description, poster }
+            : { title: TOAST_COPY.markedSeen, description, poster },
       );
     });
   };
@@ -180,7 +187,11 @@ export const useTmdbTitleActions = ({
 
       if (!outcome.ok) {
         setTonightError(outcome.error);
-        showToast({ title: "No se pudo reservar", description: outcome.error, variant: "error" });
+        showActionError({
+          title: TOAST_COPY.couldNotReserve,
+          description: outcome.error,
+          poster: toastPoster(result.posterPath),
+        });
         return;
       }
 
@@ -193,9 +204,9 @@ export const useTmdbTitleActions = ({
       setJustPinnedKey(key);
       pulseNav("today");
       showToast({
-        title: "Primera en Hoy esta noche",
+        title: TOAST_COPY.reservedTonight,
         description: savedInFilmiaCopy(result.name, outcome.created),
-        durationMs: 6000,
+        poster: toastPoster(result.posterPath),
         action: { label: "Ver en Hoy", onClick: () => router.push(TONIGHT_PIN_HREF) },
       });
     });
@@ -238,7 +249,11 @@ export const useTmdbTitleActions = ({
 
         if (!outcome.ok) {
           setListsError(outcome.error);
-          showToast({ title: "No se pudo guardar", description: outcome.error, variant: "error" });
+          showActionError({
+            title: TOAST_COPY.couldNotSave,
+            description: outcome.error,
+            poster: toastPoster(result.posterPath),
+          });
           resolve(false);
           return;
         }
@@ -249,9 +264,10 @@ export const useTmdbTitleActions = ({
           inWatchlist: watchlistId ? selectedIds.includes(watchlistId) : Boolean(previous?.inWatchlist),
           watched: Boolean(previous?.watched),
         });
-        showToast(
-          listSelectionToast(lists, diff, savedInFilmiaCopy(result.name, outcome.created)),
-        );
+        showToast({
+          ...listSelectionToast(lists, diff, savedInFilmiaCopy(result.name, outcome.created)),
+          poster: toastPoster(result.posterPath),
+        });
         resolve(true);
       });
     });

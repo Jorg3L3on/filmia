@@ -58,11 +58,14 @@ type TicketStubProps = {
   onCommit?: () => void;
   onSaved?: () => void;
   onError?: (message: string) => void;
+  /** False when the caller already toasts the save error (the Hoy deck). */
+  toastOnError?: boolean;
   /**
-   * Log it seen right away instead of opening «Marqué visto» (a recommendation has no title to
-   * rate yet). Resolves to an error message, or null when it saved.
+   * A recommendation has no title yet: «Marqué visto» creates it with the form, and the stub
+   * plays its exit only once that save lands (undo, rutas and Universo need the new title).
+   * Resolves to an error message, or null when it saved.
    */
-  commitDirectly?: () => Promise<string | null>;
+  saveSeen?: (formData: FormData) => Promise<string | null>;
   className?: string;
 };
 
@@ -90,7 +93,8 @@ export const TicketStub = ({
   onCommit,
   onSaved,
   onError,
-  commitDirectly,
+  toastOnError = true,
+  saveSeen,
   className,
 }: TicketStubProps) => {
   const [open, setOpen] = useState(false);
@@ -146,17 +150,6 @@ export const TicketStub = ({
   const openSheet = () => {
     onCommit?.();
     setTorn(true);
-    if (commitDirectly) {
-      void commitDirectly().then((error) => {
-        if (error) {
-          reset();
-          onError?.(error);
-          return;
-        }
-        onSaved?.();
-      });
-      return;
-    }
     setOpen(true);
   };
 
@@ -196,6 +189,11 @@ export const TicketStub = ({
       return;
     }
     event.stopPropagation();
+    // The mouse came back with its button already up (released outside the page): that was the release.
+    if (event.pointerType === "mouse" && event.buttons === 0) {
+      finishDrag();
+      return;
+    }
     if (prefersReducedMotion()) {
       return;
     }
@@ -213,8 +211,19 @@ export const TicketStub = ({
     if (!active.current) {
       return;
     }
-    active.current = false;
     event.stopPropagation();
+    finishDrag();
+  };
+
+  /**
+   * Decides a drag by how far it went. Also runs when the release never reaches the stub (let go
+   * outside the page, capture lost): otherwise it stays pulled with «Suelta para…» forever.
+   */
+  const finishDrag = () => {
+    if (!active.current) {
+      return;
+    }
+    active.current = false;
     setDragging(false);
     // Only pointerup decides; a finger slides a few px on every tap, so 12 px still count as one.
     const release = resolveStubRelease(travel.current);
@@ -238,6 +247,26 @@ export const TicketStub = ({
     reset();
   };
 
+  // Capture lost without a pointerup (it also fires after a normal one, when `active` is already off).
+  const handleLostPointerCapture = () => finishDrag();
+
+  // The window lost focus mid-drag: no release will come, spring back.
+  useEffect(() => {
+    if (!dragging) {
+      return;
+    }
+    const cancel = () => {
+      if (!active.current) {
+        return;
+      }
+      active.current = false;
+      setDragging(false);
+      reset();
+    };
+    window.addEventListener("blur", cancel);
+    return () => window.removeEventListener("blur", cancel);
+  }, [dragging]);
+
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "Enter" || event.key === " " || event.key === "ArrowDown") {
       event.preventDefault();
@@ -257,6 +286,7 @@ export const TicketStub = ({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
+        onLostPointerCapture={handleLostPointerCapture}
         onKeyDown={handleKeyDown}
         onClick={(event) => event.stopPropagation()}
         data-no-sheet-drag=""
@@ -299,18 +329,32 @@ export const TicketStub = ({
         platform={platform ?? undefined}
         saveLabel={PICKS_SAVE_LABEL}
         silent
+        toastOnError={toastOnError}
         onClose={() => {
           setOpen(false);
           reset();
         }}
         onSaved={() => {
           setOpen(false);
-          onSaved?.();
+          if (!saveSeen) {
+            onSaved?.();
+          }
         }}
         onError={(message) => {
           reset();
           onError?.(message);
         }}
+        submit={
+          saveSeen
+            ? async (formData) => {
+                const error = await saveSeen(formData);
+                if (error) {
+                  throw new Error(error);
+                }
+                onSaved?.();
+              }
+            : undefined
+        }
       />
     </>
   );

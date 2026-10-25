@@ -65,6 +65,33 @@
     0 18px 40px -22px rgb(0 0 0 / 0.72),
     0 32px 80px -36px rgb(var(--accent-rgb) / 0.16);
   --glass-shadow-glow: 0 0 12px -1px rgb(var(--accent-rgb) / 0.8);
+  /* Cristal sala (FIL-I27). --t / --tl are set per toast variant. */
+  --toast-blur: 24px;
+  --toast-sat: 1.7;
+  --toast-bright: .62;
+  --toast-fill: rgb(14 17 22 / .58);
+  --toast-sheen: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.13),
+    rgb(255 255 255 / 0.03) 52%,
+    transparent
+  );
+  --toast-edge: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.7),
+    rgb(255 255 255 / 0.12) 30%,
+    rgb(255 255 255 / 0.05) 62%,
+    rgb(var(--t) / 0.14)
+  );
+  --toast-hilite: inset 0 1px 0 rgb(255 255 255 / 0.32), inset 0 -1px 0 rgb(0 0 0 / 0.32);
+  --toast-shadow:
+    0 1px 2px rgb(0 0 0 / 0.55),
+    0 18px 36px -14px rgb(0 0 0 / 0.85),
+    0 10px 34px -18px rgb(var(--t) / 0.14);
+  /* Subtitle measured at ≥ 4.5:1 on a white ground through the glass (see toast-contrast). */
+  --toast-sub: #e7eaee;
+  --toast-solid: rgb(24 28 35 / 0.97);
+  --toast-solid-contrast: rgb(10 12 15 / 0.97);
 }
 
 @theme inline {
@@ -481,6 +508,466 @@ body {
   animation: toast-out var(--duration-toast) var(--ease-out) both;
 }
 
+/* Cristal sala — one neutral glass, the variant lives in --t / --tl (halo and icon only). */
+.toast {
+  --t: 61 214 140;
+  --tl: 138 240 189;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 22px;
+  color: var(--paper);
+  background:
+    radial-gradient(110px 70px at 30px 50%, rgb(var(--t) / 0.13), transparent 72%),
+    var(--toast-sheen),
+    var(--toast-fill);
+  -webkit-backdrop-filter: blur(var(--toast-blur)) saturate(var(--toast-sat)) brightness(var(--toast-bright));
+  backdrop-filter: blur(var(--toast-blur)) saturate(var(--toast-sat)) brightness(var(--toast-bright));
+  box-shadow: var(--toast-hilite), var(--toast-shadow);
+  touch-action: pan-y;
+}
+
+.toast[data-variant="success"] {
+  --t: 61 214 140;
+  --tl: 138 240 189;
+}
+
+.toast[data-variant="info"] {
+  --t: 226 231 238;
+  --tl: 255 255 255;
+}
+
+.toast[data-variant="progress"] {
+  --t: 255 122 69;
+  --tl: 255 190 160;
+}
+
+.toast[data-variant="warning"] {
+  --t: 240 193 74;
+  --tl: 250 220 140;
+}
+
+.toast[data-variant="error"] {
+  --t: 255 107 122;
+  --tl: 255 168 176;
+}
+
+.toast::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: var(--toast-edge);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.toast-lead {
+  position: relative;
+  flex: none;
+}
+
+/* Copy and the action stay one row from 640px up. Below that the action drops
+   so the title can use two lines instead of an ellipsis. */
+.toast-body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+}
+
+.toast-icon {
+  position: relative;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 999px;
+  color: rgb(var(--tl));
+  background: rgb(8 10 12 / 0.78);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.72);
+}
+
+.toast-icon-spin .toast-spin {
+  position: absolute;
+  inset: 0;
+  width: 36px;
+  height: 36px;
+}
+
+.toast-spin circle {
+  fill: none;
+  stroke: rgb(var(--tl));
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-dasharray: 28 88;
+}
+
+.toast-icon-spin .toast-spin {
+  animation: toast-spin 900ms linear infinite;
+}
+
+.toast-glyph {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.toast-glyph-sm {
+  width: 14px;
+  height: 14px;
+}
+
+.toast-poster {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 60px;
+}
+
+.toast-poster img {
+  width: 40px;
+  height: 60px;
+  border-radius: 6px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.22);
+}
+
+.toast-badge {
+  position: absolute;
+  right: -7px;
+  bottom: -6px;
+  display: grid;
+  width: 19px;
+  height: 19px;
+  place-items: center;
+  border-radius: 999px;
+  color: #08110c;
+  background: rgb(var(--t));
+  box-shadow: 0 0 0 2px rgb(14 17 22 / 0.9);
+}
+
+.toast-badge .toast-glyph {
+  width: 12px;
+  height: 12px;
+  stroke-width: 3;
+}
+
+.toast-copy {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+
+.toast-title {
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--paper);
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.toast-sub {
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--toast-sub);
+  font-size: 12.5px;
+  line-height: 16px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.toast-sub-two {
+  display: -webkit-box;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.toast-action {
+  position: relative;
+  display: inline-flex;
+  height: 32px;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 0 8px;
+  color: var(--accent-tint);
+  background: rgb(8 10 12 / 0.92);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.78),
+    inset 0 1px 0 rgb(255 255 255 / 0.14);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.toast-action::after {
+  content: "";
+  position: absolute;
+  inset: -6px -4px;
+}
+
+.toast-x {
+  position: relative;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  place-items: center;
+  margin-right: -12px;
+  color: var(--paper);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.toast-x-hover {
+  opacity: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .toast:hover .toast-x-hover,
+  .toast:focus-within .toast-x-hover {
+    opacity: 1;
+  }
+}
+
+.toast-count {
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  min-width: 18px;
+  border-radius: 999px;
+  padding: 0 5px;
+  background: rgb(8 10 12 / 0.92);
+  color: var(--paper);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.72);
+}
+
+.toast-light {
+  position: absolute;
+  right: 16px;
+  bottom: 5px;
+  left: 60px;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 1px;
+  background: rgb(255 255 255 / 0.22);
+}
+
+.toast-light > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  background: linear-gradient(90deg, rgb(var(--tl) / 0.55), #fff);
+  box-shadow: 0 0 8px rgb(var(--tl) / 0.9);
+}
+
+.toast-undo {
+  padding-bottom: 14px;
+}
+
+.toast-progress {
+  display: block;
+  height: 4px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.22);
+}
+
+.toast-progress > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffd8c4, #fff);
+}
+
+@keyframes toast-spin {
+  from {
+    transform: rotate(-70deg);
+  }
+  to {
+    transform: rotate(290deg);
+  }
+}
+
+@media (max-width: 639px) {
+  /* A single line stays centered on the icon and the close control.
+     A subtitle, an action row, or a progress bar keeps the lead with the first line. */
+  .toast {
+    align-items: center;
+    gap: 8px;
+  }
+
+  .toast:has(.toast-sub),
+  .toast:has(.toast-action),
+  .toast:has(.toast-progress) {
+    align-items: flex-start;
+  }
+
+  .toast-body {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .toast-poster,
+  .toast-poster img {
+    width: 36px;
+    height: 50px;
+  }
+
+  .toast-title,
+  .toast-sub,
+  .toast-sub-two {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .toast-title,
+  .toast-sub:not(.toast-sub-two) {
+    display: block;
+    overflow: visible;
+    white-space: normal;
+    text-overflow: unset;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: unset;
+  }
+
+  /* Narrower than the desktop clamp, so three lines still bound a long server error. */
+  .toast-sub-two {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    text-overflow: unset;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+
+  .toast-action {
+    height: 28px;
+    align-self: flex-start;
+    gap: 4px;
+    padding: 0 6px;
+  }
+
+  /* 28px painted. 8px above and below reach the 44px touch target. */
+  .toast-action::after {
+    inset: -8px -4px;
+  }
+
+  .toast-light {
+    left: 52px;
+  }
+}
+
+@media (min-width: 640px) {
+  .toast-host .toast {
+    border-radius: 20px;
+  }
+}
+
+/* Sheet or keyboard: sit 12 px under the safe area so the sheet's primary stays clear. */
+html[data-sheet-open] .toast-host,
+.toast-host[data-keyboard="open"] {
+  top: calc(0.75rem + env(safe-area-inset-top));
+  bottom: auto;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .toast {
+    background: var(--toast-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .toast {
+    background: var(--toast-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .toast {
+    background: var(--toast-solid-contrast);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .toast::before {
+    padding: 2px;
+    background: rgb(255 255 255 / 0.92);
+  }
+}
+
+/* Bench previews of the fallbacks. The media queries above are the real switch. */
+.toast-force-solid .toast {
+  background: var(--toast-solid);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.toast-force-contrast .toast {
+  background: var(--toast-solid-contrast);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.toast-force-contrast .toast::before {
+  padding: 2px;
+  background: rgb(255 255 255 / 0.92);
+}
+
+html.toast-force-reduce .toast-in {
+  animation: toast-fade-in 120ms linear both !important;
+  transform: none;
+  filter: none !important;
+}
+
+html.toast-force-reduce .toast-out {
+  animation: toast-fade-out 120ms linear both !important;
+  filter: none !important;
+}
+
+html.toast-force-reduce .toast-icon-spin .toast-spin {
+  animation: none !important;
+}
+
 /* Coverflow mazo: compositor-only transforms; dim/blur on face overlays. */
 .coverflow-card {
   contain: layout style;
@@ -786,20 +1273,19 @@ html[data-que-ver-grade="live"] body {
       rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.015) 50%,
       transparent 62%
     );
-  -webkit-mask-image: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgb(0 0 0 / 0.4) 12%,
-    #000 28%,
-    #000 100%
-  );
-  mask-image: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgb(0 0 0 / 0.4) 12%,
-    #000 28%,
-    #000 100%
-  );
+  /*
+   * Soft on every side, not just the top: the box reaches past the content, and on a wide
+   * screen its left, right and bottom edges showed as straight lines (the floor glow is wider
+   * than the box). The side fade lives in the part that is off screen on a phone.
+   */
+  -webkit-mask-image:
+    linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 0.4) 12%, #000 28%, #000 80%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 0.4) 12%, #000 28%, #000 80%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
+  mask-composite: intersect;
   mix-blend-mode: screen;
 }
 
@@ -814,23 +1300,18 @@ html[data-que-ver-grade="live"] body {
   inset: -18% -12% -24%;
   z-index: 0;
   overflow: hidden;
-  /* Soft top + bottom edges so grade/vignette never hard-cut under logo or above the footer. */
-  -webkit-mask-image: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgb(0 0 0 / 0.4) 10%,
-    #000 24%,
-    #000 72%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgb(0 0 0 / 0.4) 10%,
-    #000 24%,
-    #000 72%,
-    transparent 100%
-  );
+  /*
+   * Soft on every edge so grade/vignette never hard-cut under the logo, above the footer, or at
+   * the sides of a wide screen (the side fade sits in the part that is off screen on a phone).
+   */
+  -webkit-mask-image:
+    linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 0.4) 10%, #000 24%, #000 72%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 0.4) 10%, #000 24%, #000 72%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+  mask-composite: intersect;
 }
 
 .que-ver-atmosphere-grade {
@@ -1160,6 +1641,8 @@ html[data-que-ver-grade="live"] body {
 .genre-coverflow-active .font-serif {
   display: block;
   overflow: hidden;
+  /* Italic glyphs lean past their box: room at the end so «?» or «f» is not clipped by the ellipsis box. */
+  padding-inline: 0.04em 0.16em;
   font-size: 1.65rem;
   font-style: italic;
   font-weight: 500;
@@ -1402,9 +1885,11 @@ html[data-que-ver-grade="live"] body {
   z-index: 41;
 }
 
-.tonight-eyebrow-compact {
-  line-height: 1;
-  margin: 0;
+/* The phone chip is portaled to body, out of its sm:hidden wrapper: hide it where the eyebrow row shows its own. */
+@media (min-width: 640px) {
+  .tonight-bedtime-fixed {
+    display: none;
+  }
 }
 
 /* Phone: two rows before the stage (header 48 + eyebrow/rail/bar ≈ 68 → stage at ~116 px). */
@@ -1514,6 +1999,18 @@ body:has(.diario-que-ver-shell) header.site-header {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   box-shadow: none;
+}
+
+/*
+ * The glass blur above lives in an @supports block, and the build drops a plain
+ * `backdrop-filter: none` from the rule before: without this the header strip over Hoy's
+ * sala stays blurred and saturated, a band with a hard edge under the logo.
+ */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  body:has(.diario-que-ver-shell) header.site-header {
+    -webkit-backdrop-filter: blur(0);
+    backdrop-filter: blur(0);
+  }
 }
 
 /* Title + meta arm's-length readable over sala grade (solid paper, not fog). */
@@ -1876,9 +2373,77 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   }
 }
 
+/* Centered crystal alert (FIL-I29). Same glass as sheets; fade only, never a rise. */
+.glass-panel.glass-alert {
+  background-color: rgb(16 20 28 / 0.92);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .glass-panel.glass-alert {
+    background-color: rgb(16 20 28 / 0.8);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass-panel.glass-alert {
+    background-color: rgb(24 28 35 / 0.97);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+.confirm-danger {
+  background: linear-gradient(180deg, #ff7d8b, #e5485a);
+  color: #14060a;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    0 10px 24px -8px rgb(255 107 122 / 0.7);
+}
+
+.confirm-fade-in {
+  animation: confirm-fade-in var(--duration-enter) var(--ease-out) backwards;
+}
+
+.confirm-fade-out {
+  animation: confirm-fade-out var(--duration-exit, 240ms) var(--ease-out) forwards;
+}
+
+@keyframes confirm-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes confirm-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
 /* The drag zone owns vertical gestures; inner scrollers are scroll containers, so they still pan. */
 .sheet-drag-zone {
   touch-action: none;
+}
+
+@keyframes toast-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes toast-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 @keyframes toast-in {
@@ -1978,10 +2543,11 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   margin-bottom: var(--stub-room);
 }
 
-/* iPhone SE / mini (≤ 700 px tall): no eyebrow, hero at ~56 % of the stage (292 px tall). */
+/* iPhone SE / mini (≤ 700 px tall): hero at ~56 % of the stage (292 px tall). */
 @media (max-width: 767px) and (max-height: 700px) {
-  .tonight-eyebrow-compact {
-    display: none;
+  /* The sala already ends above the dock: main's 6 rem dock padding only made the page scroll ~20 px. */
+  body:has(.tonight-sala) .app-main {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
   }
 
   .tonight-sala .coverflow-cinematic-stage {
@@ -2006,9 +2572,39 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 
 @media (min-width: 768px) {
   .tonight-sala .coverflow-cinematic-stage {
-    height: calc(min(54dvh, calc(100dvh - 20rem)) - var(--stub-room));
-    min-height: calc(340px - var(--stub-room));
+    /* Sized so the night line clears the fold on a 1280×800 screen (no page scroll). */
+    height: calc(min(50dvh, calc(100dvh - 23rem)) - var(--stub-room));
+    min-height: calc(320px - var(--stub-room));
     max-height: calc(580px - var(--stub-room));
+  }
+}
+
+/*
+ * Hoy fits the window: on desktop the top padding halves; everywhere the grade's bottom bleed
+ * stays inside main's padding (it reached ~100 px past the content and made the page scroll).
+ */
+@media (min-width: 640px) {
+  body:has(.tonight-sala) .app-main {
+    padding-top: 1rem;
+  }
+}
+
+.tonight-sala.diario-que-ver-shell[data-que-ver-grade="live"]::before,
+.tonight-sala.diario-que-ver-shell[data-que-ver-grade="live"]::after {
+  bottom: -1.5rem;
+}
+
+/* From 1024 px the rail leaves room beside it: the chip floats there (narrower, it would sit on «Drama ›»). */
+@media (min-width: 1024px) {
+  .tonight-sala .tonight-eyebrow-row {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 3;
+  }
+
+  .tonight-sala .tonight-eyebrow {
+    max-width: none;
   }
 }
 
@@ -2445,36 +3041,7 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   inset: -10px -6px;
 }
 
-/* Recommended card (FIL-I6-4): not in Quiero ver. Solid, no blur: the sala runs on slow phones too. */
-.reco-badge {
-  position: absolute;
-  left: 10px;
-  top: 10px;
-  z-index: 10;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 22px;
-  padding: 0 9px 0 7px;
-  border-radius: 9999px;
-  border: 1px solid rgb(var(--reco-rgb) / 0.55);
-  background: rgb(8 30 28 / 0.92);
-  color: var(--reco);
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.01em;
-  line-height: 1;
-  white-space: nowrap;
-  pointer-events: none;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.45);
-}
-
-.reco-badge.is-saved {
-  border-color: rgb(255 255 255 / 0.25);
-  background: rgb(0 0 0 / 0.85);
-  color: var(--paper);
-}
-
+/* Recommended card (FIL-I6-4): said under the card, not over the poster. No blur: the sala runs on slow phones too. */
 .reco-eyebrow {
   font-size: 11px;
   font-weight: 600;
@@ -2959,12 +3526,26 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   .fade-up,
   .fade-up-late,
   .spring-pop,
-  .sheet-rise,
-  .toast-in,
-  .toast-out {
+  .sheet-rise {
     transform: none;
     filter: none;
     animation: none;
+  }
+
+  /* Toasts still fade, but only 120 ms and with no travel or blur. */
+  .toast-in {
+    animation: toast-fade-in 120ms linear both !important;
+    transform: none;
+    filter: none !important;
+  }
+
+  .toast-out {
+    animation: toast-fade-out 120ms linear both !important;
+    filter: none !important;
+  }
+
+  .toast-icon-spin .toast-spin {
+    animation: none !important;
   }
 
   .tab-transition {

@@ -58,6 +58,13 @@ describe("proxy public paths", () => {
     }
   });
 
+  it("keeps the toast bench off the public list outside development", () => {
+    assert.equal(PUBLIC_PATHS.includes("/alertas-sala"), false);
+    if (process.env.NODE_ENV !== "development") {
+      assert.equal(isPublicPath("/alertas-sala"), false);
+    }
+  });
+
   it("keeps /.well-known inside the proxy matcher", async () => {
     const { config } = await import("./proxy");
     const matcher = new RegExp(`^${config.matcher[0]!.replace("/((?!", "/(?!").replace(").*)", ").*")}$`);

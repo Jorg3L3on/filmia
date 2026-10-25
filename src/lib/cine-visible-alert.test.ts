@@ -13,7 +13,7 @@ describe("«Llega a cines» visible (FIL-I23-2)", () => {
   it("toasts the day, and points at Perfil when push is off on this device", () => {
     const film = { name: "Wildwood", status: "upcoming", mxReleaseDate: "2026-10-29" };
     assert.deepEqual(watchlistAlertToast(film, TODAY, true), {
-      title: "En Quiero ver",
+      title: "Añadida a Quiero ver",
       description: "«Wildwood» se estrena el jue 29 oct. Te avisamos ese día.",
       needsPush: false,
     });

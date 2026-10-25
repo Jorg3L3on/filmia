@@ -1,14 +1,16 @@
 "use client";
 
 import { useId, useState, useTransition, type FormEvent } from "react";
-import { clearTitleWatched, markTitleWatched } from "@/app/actions/watchlist";
+import { clearTitleWatched, markTitleWatched, restoreTitleWatched } from "@/app/actions/watchlist";
 import { Button } from "@/components/Button";
-import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { RatingStars } from "@/components/RatingStars";
 import { Sheet, SheetHandle } from "@/components/Sheet";
 import { todayDateInput, toDateInput } from "@/lib/dates";
+import { showDiaryRemovedToast } from "@/lib/diary-undo";
 import { cn } from "@/lib/cn";
 import { showToast } from "@/lib/toast";
+import { completeRetriedSave } from "@/lib/alert-retry";
+import { showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { actionErrorMessage } from "@/lib/use-optimistic-action";
 import { fieldClass } from "@/lib/ui";
 
@@ -19,6 +21,7 @@ type MarkWatchedFormProps = {
   rating?: number | null;
   review?: string | null;
   collapsed?: boolean;
+  posterPath?: string | null;
   onSaved?: () => void;
 };
 
@@ -32,6 +35,7 @@ export const MarkWatchedForm = ({
   rating = null,
   review = null,
   collapsed = false,
+  posterPath = null,
   onSaved,
 }: MarkWatchedFormProps) => {
   // Collapsed lives in a sheet, which has room for the full-size fields.
@@ -43,6 +47,7 @@ export const MarkWatchedForm = ({
   const [isPending, startTransition] = useTransition();
   const [sheetOpen, setSheetOpen] = useState(false);
   const headingId = useId();
+  const poster = toastPoster(posterPath);
 
   const handleSave = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -50,26 +55,68 @@ export const MarkWatchedForm = ({
     setError(null);
     setSheetOpen(false);
     onSaved?.();
-    showToast({ title: isEdit ? "Diario actualizado" : "Marcada como vista" });
+    showToast({
+      title: isEdit ? TOAST_COPY.diaryUpdated : TOAST_COPY.markedSeen,
+      poster,
+    });
     startTransition(async () => {
       try {
         await markTitleWatched(titleId, formData);
       } catch (caught) {
         const message = actionErrorMessage(caught);
         setError(message);
-        showToast({ title: "No se pudo guardar", description: message, variant: "error" });
+        showActionError({
+          title: TOAST_COPY.couldNotSave,
+          description: message,
+          poster,
+          retry: () =>
+            completeRetriedSave(
+              () => markTitleWatched(titleId, formData),
+              () => {
+                setError(null);
+                showToast({
+                  title: isEdit ? TOAST_COPY.diaryUpdated : TOAST_COPY.markedSeen,
+                  poster,
+                });
+              },
+            ),
+        });
       }
     });
   };
 
-  const handleClear = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleClear = () => {
+    const isoDate = toDateInput(watchedAt);
     setError(null);
+    const clear = clearTitleWatched(titleId);
+    showDiaryRemovedToast({
+      clear,
+      restore: () => restoreTitleWatched(titleId, isoDate),
+      poster,
+    });
     startTransition(async () => {
       try {
-        await clearTitleWatched(titleId);
+        await clear;
       } catch (caught) {
-        setError(actionErrorMessage(caught));
+        const message = actionErrorMessage(caught);
+        setError(message);
+        showActionError({
+          title: TOAST_COPY.couldNotRemove,
+          description: message,
+          poster,
+          retry: () =>
+            completeRetriedSave(
+              () => clearTitleWatched(titleId),
+              () => {
+                setError(null);
+                showDiaryRemovedToast({
+                  clear: Promise.resolve(),
+                  restore: () => restoreTitleWatched(titleId, isoDate),
+                  poster,
+                });
+              },
+            ),
+        });
       }
     });
   };
@@ -140,13 +187,14 @@ export const MarkWatchedForm = ({
       ) : null}
 
       {isEdit ? (
-        <form onSubmit={handleClear}>
-          <ConfirmSubmit
-            label="Quitar del diario"
-            confirmMessage="¿Quitar la fecha de visto? Se conservan tu nota y el comentario."
-            size={isCompact ? "sm" : "md"}
-          />
-        </form>
+        <Button
+          type="button"
+          variant="danger"
+          size={isCompact ? "sm" : "md"}
+          onClick={handleClear}
+        >
+          Quitar del diario
+        </Button>
       ) : null}
     </div>
   );

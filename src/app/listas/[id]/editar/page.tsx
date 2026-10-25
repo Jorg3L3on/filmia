@@ -30,7 +30,9 @@ export default async function EditListPage({
             action={deleteList.bind(null, list.id)}
             redirectHref="/listas"
             label="Borrar lista"
+            confirmLabel="Eliminar lista"
             name={list.name}
+            successToast="Lista eliminada"
             impact={
               itemCount === 0
                 ? "La lista está vacía."

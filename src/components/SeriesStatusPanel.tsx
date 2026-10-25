@@ -13,6 +13,7 @@ import {
 import { SERIES_STATUS_LISTS } from "@/lib/lists";
 import { seriesStatusListSlug } from "@/lib/series-status-lists";
 import { showToast } from "@/lib/toast";
+import { TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { useStickyOptimistic } from "@/lib/use-optimistic-action";
 import {
   eyebrowClass,
@@ -25,6 +26,7 @@ type SeriesStatusPanelProps = {
   titleId: string;
   seriesStatus: SeriesStatus | null;
   seriesSeason: number | null;
+  posterPath?: string | null;
 };
 
 type SeriesState = {
@@ -47,7 +49,9 @@ export const SeriesStatusPanel = ({
   titleId,
   seriesStatus,
   seriesSeason,
+  posterPath = null,
 }: SeriesStatusPanelProps) => {
+  const poster = toastPoster(posterPath);
   const { value, error, run } = useStickyOptimistic(
     { status: seriesStatus, season: seriesSeason },
     sameSeriesState,
@@ -64,8 +68,9 @@ export const SeriesStatusPanel = ({
     setPendingKind("status");
     const listName = statusListName(nextStatus);
     showToast({
-      title: nextStatus ? "Estado de serie actualizado" : "Estado de serie quitado",
+      title: nextStatus ? TOAST_COPY.seriesStatusUpdated : TOAST_COPY.seriesStatusCleared,
       description: listName ? `También en ${listName}` : undefined,
+      poster,
     });
     run(
       {
@@ -84,7 +89,7 @@ export const SeriesStatusPanel = ({
 
   const handleClear = () => {
     setPendingKind("status");
-    showToast({ title: "Estado de serie quitado" });
+    showToast({ title: TOAST_COPY.seriesStatusCleared, poster });
     run({ status: null, season: null }, async () => {
       try {
         await setSeriesStatus(titleId, "NONE");

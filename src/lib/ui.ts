@@ -147,9 +147,13 @@ export const safeAreaTabBarPadClass =
 /** Main column clears fixed BottomNav + home indicator (keep string on AppChrome for F3 verifies). */
 export const safeAreaMainPadClass =
   "pb-[max(6rem,calc(5.5rem+env(safe-area-inset-bottom)))]";
-/** Toasts sit above BottomNav; add inset so home indicator does not clip. */
+/**
+ * Toasts sit 12 px above the h-16 dock (the dock also floats 12 px, or the home
+ * indicator when that is taller). Desktop drops to 32 px. ToastHost inlines the
+ * same string, including the /buscar override.
+ */
 export const safeAreaToastBottomClass =
-  "bottom-[calc(5.75rem+env(safe-area-inset-bottom))] sm:bottom-8";
+  "bottom-[calc(4rem+0.75rem+max(env(safe-area-inset-bottom),0.75rem))] sm:bottom-8";
 /** Sticky under SiteHeader (h-12 / sm:h-14 + notch) — JOR-218. */
 export const safeAreaStickyUnderHeaderClass =
   "top-[calc(3rem+env(safe-area-inset-top))] sm:top-[calc(3.5rem+env(safe-area-inset-top))]";

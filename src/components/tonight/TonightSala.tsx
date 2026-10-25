@@ -2,11 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { markNotTonight, sendTasteFeedback } from "@/app/actions/tonight";
+import { parkRuta, rutaAfterWatch, universoBridge } from "@/app/actions/rutas";
+import { markNotTonight, sendTasteFeedback, undoNotInterested, undoNotTonight } from "@/app/actions/tonight";
 import { removeFromWatchlist, undoMarkWatched } from "@/app/actions/watchlist";
 import { CoverflowDeck } from "@/components/CoverflowDeck";
 import { GenreCoverflow } from "@/components/GenreCoverflow";
 import { HoyDeckSkeleton } from "@/components/PageSkeletons";
+import { RutaRevealSheet } from "@/components/rutas/RutaRevealSheet";
+import { BridgeSheet } from "@/components/universo/BridgeSheet";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { ChapterBar } from "@/components/tonight/ChapterBar";
 import { TonightClosingEmpty } from "@/components/tonight/TonightClosingCard";
@@ -20,12 +23,16 @@ import { useTonightClock } from "@/components/tonight/useTonightClock";
 import { useNavLabel } from "@/components/NavOriginTracker";
 import { cn } from "@/lib/cn";
 import { DECK_CARD_PARAM, deckCardFrom, deckIndexOf } from "@/lib/nav-origin";
+import { reportPickFailure, startWatchedUndo } from "@/lib/alert-retry";
 import { showToast } from "@/lib/toast";
+import { retryAfterRevert, showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { interleaveBySource } from "@/lib/tonight/compose";
-import { closingCardFor } from "@/lib/tonight/closing-card";
+import { closingCardFor, tallyCount } from "@/lib/tonight/closing-card";
 import { pickRefOf } from "@/lib/tonight/reco-card";
 import { rankForNow, TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import { dayPartOf } from "@/lib/tonight/time";
+import type { RutaReveal } from "@/lib/rutas/reveal";
+import type { BridgeReveal } from "@/lib/universo/store";
 import type { TonightDecks } from "@/lib/tonight-store";
 
 const DEAL_MS = 700;
@@ -61,6 +68,10 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   const [dealing, setDealing] = useState(() => !rememberedCard);
   const [whyTitle, setWhyTitle] = useState<CoverflowTitle | null>(null);
   const [menuTitle, setMenuTitle] = useState<CoverflowTitle | null>(null);
+  // «Vi esto» on a ruta step (FIL-I26): what flipped, shown once the server has stamped it.
+  const [reveal, setReveal] = useState<RutaReveal | null>(null);
+  // A bridge the film just made in «Tu universo» (FIL-I26-4, U4); ruta steps say it in their reveal.
+  const [bridge, setBridge] = useState<BridgeReveal | null>(null);
   const liveRef = useRef<HTMLDivElement>(null);
   const timers = useRef<number[]>([]);
   const impressions = useImpressions(activeSlug);
@@ -137,6 +148,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
             leads: card.leads,
             source: card.source,
             reco: card.reco ? { ...card.reco, saved: recoLocal[card.id]?.inWatchlist ?? false } : undefined,
+            ruta: card.ruta ?? undefined,
           },
         })),
       );
@@ -216,8 +228,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     now,
     closing: {
       total: dealtTotal,
-      watched: watchedIds.size,
-      notTonight: notTonightIds.size,
+      watched: tallyCount(decks.tally.watched, watchedIds),
+      notTonight: tallyCount(decks.tally.notTonight, notTonightIds),
       lenses,
       onRestart: restart,
     },
@@ -225,24 +237,44 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     onOpenMenu: (title) => setMenuTitle(title),
     onOpened: (title) => impressions.push(pickRefOf(title), "opened"),
     onOpenReco: openReco,
-    markRecoSeen: (title) => reco.markSeen(title),
+    markRecoSeen: (title, formData) => reco.markSeen(title, formData),
     onWatched: (title) => {
       impressions.push(pickRefOf(title), "watched");
       // A recommendation becomes a real title the moment it is seen: undo works on that one.
       const titleId = reco.titleIdOf(title.id) ?? title.id;
       hide(title.id);
       addTo(setWatchedIds, title.id);
+      const ruta = title.tonight?.ruta;
+      if (ruta) {
+        void rutaAfterWatch(ruta.rutaId, title.id)
+          .then((next) => setReveal(next))
+          .catch(() => undefined);
+      } else {
+        // A recommendation's id is its catalog id; the server resolves either.
+        void universoBridge(reco.titleIdOf(title.id) ?? title.id)
+          .then((found) => setBridge(found))
+          .catch(() => undefined);
+      }
+      const poster = toastPoster(title.posterPath);
       showToast({
-        title: "En tu diario",
+        title: TOAST_COPY.addedDiary,
         description: title.name,
-        durationMs: 6000,
+        poster,
         action: {
           label: "Deshacer",
           onClick: () => {
-            unhide(title.id);
-            removeFrom(setWatchedIds, title.id);
-            void undoMarkWatched(titleId).catch(() => {
-              showToast({ title: "No se pudo deshacer", variant: "error" });
+            startWatchedUndo({
+              apply: () => {
+                unhide(title.id);
+                removeFrom(setWatchedIds, title.id);
+              },
+              revert: () => {
+                hide(title.id);
+                addTo(setWatchedIds, title.id);
+              },
+              undo: () => undoMarkWatched(titleId),
+              poster,
+              description: title.name,
             });
           },
         },
@@ -250,7 +282,12 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     },
     onWatchError: (title, message) => {
       unhide(title.id);
-      showToast({ title: "No se pudo guardar", description: message, variant: "error" });
+      // The message is already a string. The save and its form are not here, so this cannot be retried.
+      showActionError({
+        title: TOAST_COPY.couldNotSave,
+        description: message,
+        poster: toastPoster(title.posterPath),
+      });
     },
   };
 
@@ -258,32 +295,125 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     setMenuTitle(null);
     hide(title.id);
     addTo(setNotTonightIds, title.id);
-    showToast({ title: "Ahora no", description: `${title.name} vuelve en dos semanas.` });
-    void markNotTonight(title.id, title.tonight?.lens ?? activeLens?.slug).catch(() => {
-      unhide(title.id);
-      removeFrom(setNotTonightIds, title.id);
-      showToast({ title: "No se pudo guardar", variant: "error" });
+    const poster = toastPoster(title.posterPath);
+    const saved = markNotTonight(title.id, title.tonight?.lens ?? activeLens?.slug).then(
+      () => true,
+      () => {
+        unhide(title.id);
+        removeFrom(setNotTonightIds, title.id);
+        reportPickFailure(poster);
+        return false;
+      },
+    );
+    showToast({
+      title: TOAST_COPY.notTonight,
+      description: `${title.name} vuelve en dos semanas.`,
+      poster,
+      action: {
+        label: "Deshacer",
+        onClick: () => {
+          unhide(title.id);
+          removeFrom(setNotTonightIds, title.id);
+          // After the save lands, so a quick tap never leaves the skip behind.
+          void saved.then((ok) => (ok ? undoNotTonight(title.id) : undefined)).catch(() => {
+            hide(title.id);
+            addTo(setNotTonightIds, title.id);
+            showActionError({ title: TOAST_COPY.couldNotUndo, poster });
+          });
+        },
+      },
     });
   };
 
-  /** «No me interesa» on a recommendation: gone for good (Menos así) and Hoy learns. */
+  /** «No me interesa» on a recommendation: gone for good (Menos así) and Hoy learns. Deshacer brings it back. */
   const handleNotInterested = (title: CoverflowTitle) => {
     setMenuTitle(null);
     hide(title.id);
-    showToast({ title: "No te la volveremos a sugerir", description: title.name });
-    void sendTasteFeedback({ catalogId: title.id }, "less_like", title.tonight?.lens ?? activeLens?.slug).catch(() => {
+    const poster = toastPoster(title.posterPath);
+    const saved = sendTasteFeedback({ catalogId: title.id }, "less_like", title.tonight?.lens ?? activeLens?.slug).then(
+      () => true,
+      () => {
+        unhide(title.id);
+        // A taste signal is not idempotent: a timeout may already have counted.
+        showActionError({
+          title: TOAST_COPY.couldNotSave,
+          poster,
+        });
+        return false;
+      },
+    );
+    showToast({
+      title: TOAST_COPY.neverSuggest,
+      description: title.name,
+      poster,
+      action: {
+        label: "Deshacer",
+        onClick: () => {
+          unhide(title.id);
+          void saved.then((ok) => (ok ? undoNotInterested({ catalogId: title.id }) : undefined)).catch(() => {
+            showActionError({ title: TOAST_COPY.couldNotUndo, poster });
+          });
+        },
+      },
+    });
+  };
+
+  /** «Dejar la ruta para después»: the ruta's lens leaves Hoy; the ruta waits with no reminders. */
+  const handleParkRuta = (title: CoverflowTitle) => {
+    const ruta = title.tonight?.ruta;
+    setMenuTitle(null);
+    if (!ruta) {
+      return;
+    }
+    const poster = toastPoster(title.posterPath);
+    hide(title.id);
+    showToast({
+      title: TOAST_COPY.routeParked,
+      description: `${ruta.title} te espera en Rutas.`,
+      poster,
+    });
+    void parkRuta(ruta.rutaId).catch(() => {
       unhide(title.id);
-      showToast({ title: "No se pudo guardar", variant: "error" });
+      showActionError({
+        title: TOAST_COPY.couldNotSave,
+        poster,
+        retry: () =>
+          retryAfterRevert(
+            () => hide(title.id),
+            () => unhide(title.id),
+            async () => {
+              await parkRuta(ruta.rutaId);
+              showToast({
+                title: TOAST_COPY.routeParked,
+                description: `${ruta.title} te espera en Rutas.`,
+                poster,
+              });
+            },
+          ),
+      });
     });
   };
 
   const handleRemove = (title: CoverflowTitle) => {
     setMenuTitle(null);
+    const poster = toastPoster(title.posterPath);
     hide(title.id);
-    showToast({ title: "Fuera de Quiero ver", description: title.name });
+    showToast({ title: TOAST_COPY.removedWatchlist, description: title.name, poster });
     void removeFromWatchlist(title.id).catch(() => {
       unhide(title.id);
-      showToast({ title: "No se pudo quitar", variant: "error" });
+      showActionError({
+        title: TOAST_COPY.couldNotRemove,
+        poster,
+        retry: () =>
+          retryAfterRevert(
+            () => hide(title.id),
+            () => unhide(title.id),
+            async () => {
+              await removeFromWatchlist(title.id);
+              showToast({ title: TOAST_COPY.removedWatchlist, description: title.name, poster });
+            },
+          ),
+      });
     });
   };
 
@@ -292,7 +422,9 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     (index: number, title: CoverflowTitle) => {
       setHeroIndex(index);
       // The closing card is not a title: it settles the previous hero and logs nothing (FIL-I21-6).
-      impressions.onHeroChange(title.closing ? null : pickRefOf(title));
+      // Nor is a door card (FIL-I26-3).
+      const unseen = title.closing || title.portal;
+      impressions.onHeroChange(unseen ? null : pickRefOf(title));
       const slug = title.tonight?.lens;
       if (!slug) {
         return;
@@ -338,7 +470,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     <TonightProvider value={handlers}>
       <div className="diario-que-ver-shell tonight-sala flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-sm:-mt-5 max-sm:gap-1">
         {/* Desktop keeps the three rows; the phone folds the eyebrow into the rail (FIL-I21-3). */}
-        <div className="shrink-0 max-sm:hidden">
+        <div className="tonight-eyebrow-row shrink-0 max-sm:hidden">
           <TonightEyebrow now={now} nightEnds={decks.nightEnds} />
         </div>
         <div className="sm:hidden">
@@ -396,8 +528,11 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
             reco.pin(title);
           }}
           onNotInterested={handleNotInterested}
+          onParkRuta={handleParkRuta}
           saved={menuTitle ? reco.isSaved(menuTitle.id) : false}
         />
+        <RutaRevealSheet reveal={reveal} onClose={() => setReveal(null)} />
+        <BridgeSheet bridge={bridge} onClose={() => setBridge(null)} />
       </div>
     </TonightProvider>
   );

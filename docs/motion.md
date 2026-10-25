@@ -9,14 +9,14 @@ Canonical tokens live in `src/app/globals.css` (`:root` + comment block).
 | `--duration-press` | 160 | press-scale |
 | `--duration-tab` | 200 | `.tab-transition` (bottom nav, toggles) |
 | `--duration-hover` | 220 | `.card-physics` hover |
-| `--duration-enter` / `--duration-toast` | 280 | fade-up, toast in/out |
+| `--duration-enter` / `--duration-toast` | 280 | fade-up, toast in/out. Reduced motion: a 120 ms fade, no travel and no blur |
 | `--duration-morph` | 380 | SharedPoster ViewTransition `poster-{id}` |
 | `--duration-stagger` / `--duration-pop` | 420 | `.stagger-in`, `.spring-pop` |
 | `--duration-sheet` | 480 | `.sheet-rise` sheet open |
 
 ## Curves
 
-- **`--ease-out`** — sheets, toasts, tabs, stagger, morph (no overshoot).
+- **`--ease-out`** — sheets, toasts, tabs, stagger, morph (no overshoot). A cancelled toast swipe springs back with `--spring`; that is the only toast use of the spring.
 - **`--spring`** — **only** press / spring-pop / spring-fill (chips, log, rating feedback).
 
 Sheets open with `.sheet-rise` (translateY + ease-out). **Never** `.spring-pop` for sheet open.
@@ -89,7 +89,7 @@ Direction A «Marquesina» (FIL-I5-3, canvas https://claude.ai/artifact/2rSJnRDQ
 | Hora de dormir (hoja) | `.hour-tick` / `.bedtime-moon` | `BedtimeDial`, the Bienvenida drum (beui Wheel Picker); `data-no-sheet-drag` so the drum scrolls instead of closing the sheet. |
 | Campo con foco `.profile-sheet input` | `--duration-tab` · `--ease-out` | Ring grows out from the border (easyui LockInput); invalid fields turn `danger-well`. |
 | Error | 320 ms · `--spring` (WAAPI) | One shake per failed attempt (beui Input). Typed values survive (fields are controlled). Skipped with reduced motion. |
-| Guardar → toast | `press-scale` · `--duration-toast` | «Nombre guardado» / «Correo guardado» / «Contraseña actualizada»; the sheet closes on success. |
+| Guardar → toast | `press-scale` · `--duration-toast` | «Nombre guardado» / «Correo guardado» / «Contraseña actualizada» on the cristal toast; the sheet closes on success. With the sheet open the toast moves to the top. |
 | Plataformas | `press-scale` · `--duration-hover` | Yours first (order fixed at mount), folded to 6; «Ver las 14» unfolds. |
 | Salir | `press-scale` · `--duration-hover` | Danger tokens, exit icon nudges 2 px on hover (beui Animated CTA «slide»); «Saliendo…» with a spinner. |
 
@@ -104,7 +104,7 @@ Direction A «Marquesina» (FIL-I5-3, canvas https://claude.ai/artifact/2rSJnRDQ
 | Persona `.person-card-in` | `--duration-stagger` · `--ease-out` | Person card (photo, name, role line) and the «Ver filmografía» suggestion blur in with `genre-coverflow-title-in`; the filmography rows use `.stagger-in`. Reduced motion: no animation. |
 | Insignia de biblioteca | — | `SearchResultRow` shows a small glass disc: bookmark (En Quiero ver) or check (Vista). Static. |
 | «Dirigida por» → filmografía | `--duration-hover` · `--ease-out` (subrayado) · `--duration-press` · `--spring` (pill) | Hoy's reason pill splits into «Por qué» (spark) + the name as its own link (taller hit area, `.tonight-reason-person::after`); Quiero ver's expanded ficha links each director / creator. Subtle underline that lights on hover / focus (`personLinkClass`). Both open `/buscar?persona=<id>&rol=director`. |
-| «Ver esta noche» `.tonight-pin` | `--duration-press` · `--spring` (press) · `--duration-pop` · `--spring` (luna) | The sheet's one primary action. Pending «Reservando…»; done, the crescent fills with `.spring-pop` only right after the tap (reopening the sheet shows it full, no pop) and the toast «Ver en Hoy» stays 6 s. The sheet never closes on its own. |
+| «Ver esta noche» `.tonight-pin` | `--duration-press` · `--spring` (press) · `--duration-pop` · `--spring` (luna) | The sheet's one primary action. Pending «Reservando…»; done, the crescent fills with `.spring-pop` only right after the tap (reopening the sheet shows it full, no pop) and the toast «Ver en Hoy» passes `durationMs: 6000` (an explicit duration beats the 4 s success default). The sheet never closes on its own. |
 | Fila «Fichas» `SearchResultRow` | `--duration-hover` · `--ease-out` (borde, chevron +2 px) · `press-scale` | FIL-I5-4, direction A: La cartelera's glass row, 56 px poster, serif title, original title in italics, pill «En Quiero ver» / «La viste». |
 | Chips `.buscar-chip-pill` | `--duration-tab` · `--ease-out` | One aura pill slides under the current chip (beui Tabs); placed before paint, animates only after the first placement. Reduced motion: jumps. |
 | Mantener `.search-menu-*` (FIL-I8) | `--duration-pop` · `--spring` | Holding a row (420 ms, `useLongPress`) lifts it (scale 1.025) over a blurred scrim and pops the glass menu from its top-left. Transform/opacity only. Reduced motion: appears in place. |
@@ -135,6 +135,41 @@ React `<ViewTransition name={\`poster-${id}\`} share="morph">` via `SharedPoster
 
 `poster-{id}` must be mounted at most once per page. Where the same title can appear twice (PosterStack, the watchlist stage, the Perfil week strip next to «Últimas entradas»), pass `share={false}` to the secondary occurrence so only one tile owns the morph.
 
+## Alertas (cristal sala, FIL-I27)
+
+One live region (`aria-live="polite"`, `aria-relevant="additions text"`) stays mounted even when nothing is showing. `Alt+T` moves focus to it. A blocking error (an error that does not time out) uses `role="alert"`; other toasts are announced once by the region. Progress ticks do not change the accessible name — only the final title does.
+
+| Variant | Stays |
+| --- | --- |
+| Éxito | 4 s |
+| Info | 5 s |
+| «Deshacer» | 7 s, with a light line that empties over that span |
+| Error with an action, advertencia, progreso | Until dismissed or `updateToast` turns progreso into a finished variant |
+| Error without an action | 8 s |
+| `durationMs` set by the caller | That value, including `0` |
+
+The clock lives in the store, so it does not restart when auth chrome swaps. It pauses while the pointer is over the toast, while focus is inside it, while it is pressed, and while the tab is hidden; the 7 s line pauses with the same holds. Hover, focus and press stack: leaving one does not resume if another still holds.
+
+`prefers-reduced-motion`: `.toast-in` / `.toast-out` become a 120 ms opacity fade. No translate, no animated blur. The progress spinner stops. The light line is a transform written from the remaining time, not a CSS animation, so it still tracks the 7 s.
+
+`prefers-reduced-transparency` and no `backdrop-filter` use a solid `rgb(24 28 35 / .97)`. `prefers-contrast: more` uses `rgb(10 12 15 / .97)` and a 2 px light edge.
+
+Position: 12 px above the mobile dock (`4rem` dock + `0.75rem` air + the dock's own bottom pad / home indicator), 32 px bottom-center from `sm` (width 420). `/buscar` (dock at the top) uses `1.5rem` + the safe area. An open sheet (`html[data-sheet-open]`) or the keyboard (`data-keyboard="open"`) pins the stack 12 px under the top safe area so it does not cover the sheet's primary button. The stack grows upward from the dock. A burst of the same non-error collapses into one toast; errors are never evicted to make room for something else. Swipe dismisses at ≥ 0.11 px/ms or ≥ 45 px; otherwise it springs back. `Esc` dismisses the newest toast when a sheet is not open.
+
 ## Reduced motion
 
-`prefers-reduced-motion: reduce` zeroes animations, transitions, and view-transition image pairs.
+`prefers-reduced-motion: reduce` zeroes animations, transitions, and view-transition image pairs. The crystal confirm dialog is opacity-only (no translate), so the collapse stays a fade.
+
+## Alertas · diálogo y Deshacer (FIL-I29)
+
+Direction A «Cristal sala». The toast stays on the current `showToast` API (`durationMs: 7000`, action «Deshacer»). The light line is FIL-I27 and is not part of this dialog.
+
+| Action | Pattern | Why |
+| --- | --- | --- |
+| Borrar lista | `ConfirmDialog` («Eliminar lista») | Deletes the list and its membership. The films stay. Impact («Contiene N títulos») and the note stay in the dialog. |
+| Desconectar una app / Revocar un token | `ConfirmDialog` («Desconectar» / «Revocar») | The credential stops working immediately. |
+| Quitar del diario (ficha, formulario, acciones) | Toast «Quitada de tu diario» + Deshacer 7 s | Only `watchedAt` is cleared. Nota, comentario and plataforma stay. Deshacer calls `restoreTitleWatched` after the clear in flight finishes, and only while `watchedAt` is still null. |
+| Sacar a un miembro / Salir de una lista | Existing sheet | Still `MembersPanel`. Not `window.confirm`. Out of this cut. |
+| Quitar de Quiero ver, quitar de una lista, revocar un link de invitación | No new dialog | Reversible or already immediate. This cut does not confirm them. |
+
+The dialog is centered on the glass sheet material (`.glass-panel.glass-alert`), scrim `rgb(5 6 7 / 0.55)`, safe-area padding, targets at least 44 px. Open and close use `.confirm-fade-in` / `.confirm-fade-out` (opacity only). `prefers-reduced-transparency: reduce` drops the blur and uses a solid fill (`rgb(24 28 35 / 0.97)`). Initial focus is Cancel; Escape cancels; focus returns to the trigger.

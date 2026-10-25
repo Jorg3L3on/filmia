@@ -1,17 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { clearTitleWatched } from "@/app/actions/watchlist";
+import { clearTitleWatched, restoreTitleWatched } from "@/app/actions/watchlist";
 import { Button } from "@/components/Button";
-import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { MarkWatchedSheet } from "@/components/MarkWatchedSheet";
 import { WatchedBadge } from "@/components/WatchedBadge";
 import { ShareButton, ShareIcon } from "@/components/share/ShareButton";
 import type { Platform } from "@/db";
 import { formatWatchedDate, toDateInput } from "@/lib/dates";
+import { showDiaryRemovedToast } from "@/lib/diary-undo";
 import { slugify } from "@/lib/labels";
 import { reviewShareText } from "@/lib/share-card";
-import { showToast } from "@/lib/toast";
+import { showActionError, TOAST_COPY, toastPoster, retryAfterRevert } from "@/lib/toast-alerts";
 import { buttonClass, wellClass } from "@/lib/ui";
 
 type FichaWatchedSectionProps = {
@@ -21,6 +21,7 @@ type FichaWatchedSectionProps = {
   rating: number | null;
   review: string | null;
   platform: Platform | null;
+  posterPath?: string | null;
   /** Public review page (FIL-I15-5), signed on the server. */
   sharePath: string;
 };
@@ -32,10 +33,48 @@ export const FichaWatchedSection = ({
   rating,
   review,
   platform,
+  posterPath = null,
   sharePath,
 }: FichaWatchedSectionProps) => {
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const poster = toastPoster(posterPath);
+
+  const handleRemove = () => {
+    const isoDate = toDateInput(watchedAt);
+    setHidden(true);
+    const clear = clearTitleWatched(titleId);
+    showDiaryRemovedToast({
+      clear,
+      restore: () => restoreTitleWatched(titleId, isoDate),
+      onUndo: () => setHidden(false),
+      onUndoFailed: () => setHidden(true),
+      poster,
+    });
+    void clear.catch((caught) => {
+      setHidden(false);
+      const message = caught instanceof Error ? caught.message : "No se pudo quitar.";
+      showActionError({
+        title: TOAST_COPY.couldNotRemove,
+        description: message,
+        poster,
+        retry: async () => {
+          await retryAfterRevert(
+            () => setHidden(true),
+            () => setHidden(false),
+            () => clearTitleWatched(titleId),
+          );
+          showDiaryRemovedToast({
+            clear: Promise.resolve(),
+            restore: () => restoreTitleWatched(titleId, isoDate),
+            onUndo: () => setHidden(false),
+            onUndoFailed: () => setHidden(true),
+            poster,
+          });
+        },
+      });
+    });
+  };
 
   if (hidden) {
     return null;
@@ -68,27 +107,9 @@ export const FichaWatchedSection = ({
           <ShareIcon className="size-4" />
           Compartir
         </ShareButton>
-        <ConfirmSubmit
-          label="Quitar del diario"
-          confirmMessage="¿Quitar la fecha de visto? Se conservan tu nota y el comentario."
-          action={async () => {
-            setHidden(true);
-            showToast({ title: "Quitada del diario" });
-            try {
-              await clearTitleWatched(titleId);
-            } catch (caught) {
-              setHidden(false);
-              const message =
-                caught instanceof Error ? caught.message : "No se pudo quitar.";
-              showToast({
-                title: "No se pudo quitar",
-                description: message,
-                variant: "error",
-              });
-              throw caught;
-            }
-          }}
-        />
+        <Button type="button" variant="danger" onClick={handleRemove}>
+          Quitar del diario
+        </Button>
       </div>
 
       <MarkWatchedSheet
@@ -99,6 +120,7 @@ export const FichaWatchedSection = ({
         rating={rating}
         review={review}
         platform={platform}
+        posterPath={posterPath}
         saveLabel="Guardar en el diario"
         onClose={() => setOpen(false)}
         onSaved={() => setOpen(false)}

@@ -22,6 +22,7 @@ import {
   ensureWatchlistFor,
   markWatchedFor,
   removeFromWatchlistFor,
+  restoreWatchedFor,
 } from "@/lib/title-writes";
 import { requireUserId } from "@/lib/session";
 import { scheduleTonightRecompute } from "@/lib/tonight-store";
@@ -88,8 +89,9 @@ export const markTitleWatched = async (
   formData?: FormData,
 ) => {
   const userId = await requireUserId();
-  const rating = formData ? parseRating(formData.get("rating")) : undefined;
-  const review = formData ? parseOptionalReview(formData.get("review")) : undefined;
+  // Missing field leaves the column. Present and empty ("") still clears.
+  const rating = formData?.has("rating") ? parseRating(formData.get("rating")) : undefined;
+  const review = formData?.has("review") ? parseOptionalReview(formData.get("review")) : undefined;
   // Only touch «Dónde la vi» when the field was sent; "" (Ninguna) → null.
   const platform = formData?.has("platform")
     ? parsePlatform(formData.get("platform"))
@@ -156,6 +158,16 @@ export const clearTitleWatched = async (titleId: string) => {
 
   revalidateDiary(titleId);
   scheduleTonightRecompute(userId);
+};
+
+/**
+ * Deshacer of «Quitar del diario». Restores the original calendar day at noon UTC.
+ * Session and ownership are required: the update matches `userId` and only fills a
+ * null `watchedAt`, so it never overwrites a newer date or another person's row.
+ */
+export const restoreTitleWatched = async (titleId: string, isoDate: string) => {
+  const userId = await requireUserId();
+  return restoreWatchedFor(userId, titleId, isoDate);
 };
 
 export const updateWatchlistNote = async (titleId: string, formData: FormData) => {

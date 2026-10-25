@@ -4,6 +4,7 @@ import { CineActionsProvider } from "@/components/cine/CineActions";
 import { CineMarquee, CineSection, StaleNotice } from "@/components/cine/CineParts";
 import { HomeArrivalsRail, NowShowingRail, UpcomingTimeline } from "@/components/cine/CineSections";
 import { CineSkeleton } from "@/components/cine/CineSkeleton";
+import { ParaTiEnSala } from "@/components/cine/ParaTiEnSala";
 import { EmptyState } from "@/components/EmptyState";
 import { loadCineActions } from "@/app/cine/cine-data";
 import { getCineLastRunAt, getHomeArrivals, getNowShowing, getUpcoming } from "@/lib/cine";
@@ -57,6 +58,11 @@ const CineBody = async ({ searchParams }: { searchParams: Promise<SearchParams> 
           <CineMarquee />
           {stale ? <StaleNotice label={stale} /> : null}
         </div>
+
+        {/* FIL-I26-5: only when someone of your universe has a premiere coming. */}
+        <Suspense fallback={null}>
+          <ParaTiEnSala userId={actions.userId} />
+        </Suspense>
 
         {now.length === 0 && upcoming.length === 0 ? (
           <EmptyState

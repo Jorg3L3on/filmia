@@ -141,8 +141,7 @@ export const HoySkeleton = ({ label = "Cargando Hoy" }: SkeletonProps) => (
     aria-busy="true"
     aria-label={label}
   >
-    <div className="mx-auto flex w-full max-w-lg items-center justify-between px-1">
-      <ShimmerBlock className="h-3 w-36 rounded-full" />
+    <div className="mx-auto flex w-full max-w-lg items-center justify-end px-1">
       <ShimmerBlock className="h-7 w-28 rounded-full" />
     </div>
     <HoyDeckSkeleton />

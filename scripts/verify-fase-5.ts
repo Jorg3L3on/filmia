@@ -108,8 +108,9 @@ const run = () => {
   const toastHost = read("src/components/ToastHost.tsx");
   assert(
     toastHost.includes("safe-area-inset-bottom") &&
-      toastHost.includes("calc(5.75rem+env(safe-area-inset-bottom))"),
-    "ToastHost must clear BottomNav + home indicator via calc inset (JOR-220)",
+      toastHost.includes("4rem+0.75rem+max(env(safe-area-inset-bottom),0.75rem)") &&
+      toastHost.includes("calc(1.5rem+env(safe-area-inset-bottom))"),
+    "ToastHost clears the dock by 12px (and the home indicator); /buscar uses the safe area (FIL-I27)",
   );
 
   const authScreen = read("src/components/AuthScreen.tsx");

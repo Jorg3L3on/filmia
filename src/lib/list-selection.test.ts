@@ -73,11 +73,11 @@ describe("list selection copy", () => {
 
   it("names the list in the toast when only one was added or removed", () => {
     assert.deepEqual(listSelectionToast(lists, diffListSelection([], ["n"]), "Dune"), {
-      title: "En Noir de domingo",
+      title: "Añadida a Noir de domingo",
       description: "Dune",
     });
-    assert.equal(listSelectionToast(lists, diffListSelection([], ["n", "f"]), "Dune").title, "En 2 listas");
-    assert.equal(listSelectionToast(lists, diffListSelection(["f"], []), "Dune").title, "Fuera de Favoritas");
+    assert.equal(listSelectionToast(lists, diffListSelection([], ["n", "f"]), "Dune").title, "Añadidas a 2 listas");
+    assert.equal(listSelectionToast(lists, diffListSelection(["f"], []), "Dune").title, "Quitada de Favoritas");
     assert.equal(
       listSelectionToast(lists, diffListSelection(["f"], ["n"]), "Dune").title,
       "Listas actualizadas",

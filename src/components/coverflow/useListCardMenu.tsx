@@ -5,6 +5,7 @@ import { removeTitleFromList } from "@/app/actions/lists";
 import { ListCardMenu } from "@/components/coverflow/ListCardMenu";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { showToast } from "@/lib/toast";
+import { retryAfterRevert, showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 
 /**
  * List deck card menu (hold the hero or tap «⋯»): Ver ficha · Mover · Quitar de la lista.
@@ -31,14 +32,27 @@ export const useListCardMenu = ({
       return;
     }
     setMenuTitle(null);
+    const poster = toastPoster(title.posterPath);
+    const removed = () => showToast({ title: TOAST_COPY.removedList, description: title.name, poster });
     onHide(title.id);
-    showToast({ title: "Fuera de la lista", description: title.name });
+    removed();
     startTransition(async () => {
       try {
         await removeTitleFromList(listId, title.id);
       } catch {
         onRestore(title.id);
-        showToast({ title: "No se pudo quitar", variant: "error" });
+        showActionError({
+          title: TOAST_COPY.couldNotRemove,
+          poster,
+          retry: async () => {
+            await retryAfterRevert(
+              () => onHide(title.id),
+              () => onRestore(title.id),
+              () => removeTitleFromList(listId, title.id),
+            );
+            removed();
+          },
+        });
       }
     });
   };
