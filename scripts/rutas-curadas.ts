@@ -106,7 +106,9 @@ const main = async () => {
       columns: { id: true },
     });
     const listId = existing?.id ?? createId();
+    // List.updatedAt has no DB default in prod (Prisma-era), so every write sets it.
     const values = {
+      updatedAt: new Date(),
       name: ruta.title,
       description: ruta.description ?? null,
       curated: true,
