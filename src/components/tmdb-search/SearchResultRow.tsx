@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useRef, type PointerEvent, type ReactNode } from "react";
 import { AffinityChip } from "@/components/affinity/AffinityChip";
 import { ImdbBadge } from "@/components/ImdbBadge";
+import { PlatformLogo } from "@/components/PlatformLogo";
 import { PosterImage } from "@/components/PosterImage";
 import { SharedPoster } from "@/components/SharedPoster";
 import { LaurelIcon } from "@/components/watchlist/icons";
 import { cn } from "@/lib/cn";
-import { formatRuntime, formatStarScore, TITLE_KIND_LABEL } from "@/lib/labels";
+import { formatRuntime, formatStarScore, PLATFORM_SERVICE_LABEL, TITLE_KIND_LABEL } from "@/lib/labels";
 import { menuVia, type SearchMenuVia } from "@/components/tmdb-search/SearchRowMenu";
 import { useLongPress } from "@/lib/motion";
 import type { SearchResultFacts } from "@/lib/search-result-facts";
@@ -321,7 +322,15 @@ const SearchFactsLine = ({ facts }: { facts: SearchResultFacts | null }) => {
       </span>,
     );
   }
-  if (facts.platform) {
+  // Yours first (FIL-I30-2): the logo and name of the one of your platforms it streams on.
+  if (facts.minePlatform) {
+    second.push(
+      <span key="platform" className="inline-flex min-w-0 items-center gap-1 text-xs text-paper/90">
+        <PlatformLogo platform={facts.minePlatform} size={14} className="rounded-[3px]" />
+        <span className="truncate">{PLATFORM_SERVICE_LABEL[facts.minePlatform]}</span>
+      </span>,
+    );
+  } else if (facts.platform) {
     second.push(
       <span key="platform" className="min-w-0 truncate text-xs text-paper/75">
         {facts.platform}

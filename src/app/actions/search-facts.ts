@@ -1,7 +1,7 @@
 "use server";
 
 import { and, eq, or } from "drizzle-orm";
-import { catalog, db } from "@/db";
+import { catalog, db, users } from "@/db";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import {
   affinityForCatalogRow,
@@ -18,46 +18,108 @@ import {
   FILMOGRAPHY_FACTS_LIMIT,
   PENDING_FACTS,
   pickEnrichmentCandidates,
+  pickProviderCandidates,
   SEARCH_FACTS_LOOKUP_LIMIT,
   searchFactsKey,
   type SearchFactsItem,
   type SearchFactsRow,
   type SearchResultFacts,
 } from "@/lib/search-result-facts";
+import { runPool } from "@/lib/run-pool";
 import { requireUserId } from "@/lib/session";
-import { getTmdbDetails, isTmdbConfigured } from "@/lib/tmdb";
+import { mineAvailability, parseStoredStreamingPlatforms } from "@/lib/streaming-platforms";
+import { getTmdbDetails, getTmdbPersonFilmography, isTmdbConfigured } from "@/lib/tmdb";
+import { isPersonRole, type PersonRole } from "@/lib/person-filmography";
+import { refreshWatchProvidersMx } from "@/lib/watch-providers-cache";
 
 /** 30 enrichments a minute per user, per server instance (OMDb's free tier is ~1,000 a day). */
 const takeEnrichBudget = createEnrichBudget(30, 60_000);
 /** Films being enriched right now on this instance: a second search never queues them twice. */
 const inFlight = new Set<string>();
+/** MX availability (FIL-I30-1): TMDB only, so a wider budget; a big filmography is ~90 calls once. */
+const takeProvidersBudget = createEnrichBudget(300, 60_000);
+const providersInFlight = new Set<string>();
+const PROVIDERS_CONCURRENCY = 16;
 
 const isItem = (value: SearchFactsItem) =>
   Number.isSafeInteger(value?.tmdbId) && value.tmdbId > 0 && TITLE_KINDS.includes(value.kind);
 
-const enrichOne = async ({ tmdbId, kind }: SearchFactsItem) => {
-  const key = searchFactsKey(kind, tmdbId);
+type CatalogSeed = Parameters<typeof findOrCreateCatalog>[0];
+
+/**
+ * The film's Catalog row, created from TMDB's own data, never from what the
+ * client sent: the person's credits when we have them (cached, one call for the
+ * whole work), else the film's details.
+ */
+const catalogRowFor = async ({ tmdbId, kind }: SearchFactsItem, seed?: CatalogSeed) => {
+  const row = await findCatalogByTmdb(tmdbId, kind);
+  if (row) {
+    return row;
+  }
+  const details = seed ?? (await getTmdbDetails(tmdbId, kind));
+  if (!details?.name) {
+    return null;
+  }
+  const created = await findOrCreateCatalog({
+    tmdbId,
+    kind,
+    name: details.name,
+    originalName: details.originalName,
+    year: details.year,
+    posterPath: details.posterPath,
+  });
+  return created.row;
+};
+
+/** Seeds for a person's whole work, from the cached `combined_credits` the view was built from. */
+const personSeeds = async (person: { id: number; role: PersonRole } | undefined) => {
+  const seeds = new Map<string, CatalogSeed>();
+  if (!person || !Number.isSafeInteger(person.id) || person.id <= 0 || !isPersonRole(person.role)) {
+    return seeds;
+  }
   try {
-    let row = await findCatalogByTmdb(tmdbId, kind);
+    const work = await getTmdbPersonFilmography(person.id, person.role);
+    for (const entry of [...work.entries, ...work.upcoming, ...work.others]) {
+      seeds.set(searchFactsKey(entry.kind, entry.tmdbId), {
+        tmdbId: entry.tmdbId,
+        kind: entry.kind,
+        name: entry.name,
+        originalName: entry.originalName,
+        year: entry.year,
+        posterPath: entry.posterPath,
+      });
+    }
+  } catch {
+    // Without seeds, each film falls back to its own details.
+  }
+  return seeds;
+};
+
+const enrichOne = async (item: SearchFactsItem) => {
+  const key = searchFactsKey(item.kind, item.tmdbId);
+  try {
+    const row = await catalogRowFor(item);
     if (!row) {
-      const details = await getTmdbDetails(tmdbId, kind);
-      if (!details?.name) {
-        return;
-      }
-      ({ row } = await findOrCreateCatalog({
-        tmdbId,
-        kind,
-        name: details.name,
-        originalName: details.originalName,
-        year: details.year,
-        posterPath: details.posterPath,
-      }));
+      return;
     }
     await enrichCatalog(row);
   } catch {
     // Best-effort: the row shows what it has; the next search or the ficha tries again.
   } finally {
     inFlight.delete(key);
+  }
+};
+
+const fetchProvidersOne = async (item: SearchFactsItem, seed?: CatalogSeed) => {
+  try {
+    const row = await catalogRowFor(item, seed);
+    if (row) {
+      await refreshWatchProvidersMx(row.id, item.tmdbId, item.kind);
+    }
+  } catch {
+    // Unknown availability stays unknown; the next visit tries again.
+  } finally {
+    providersInFlight.delete(searchFactsKey(item.kind, item.tmdbId));
   }
 };
 
@@ -70,6 +132,7 @@ const enrichOne = async ({ tmdbId, kind }: SearchFactsItem) => {
 const lookupFacts = async (
   items: SearchFactsItem[],
   limit: number,
+  { providers = false, person }: { providers?: boolean; person?: { id: number; role: PersonRole } } = {},
 ): Promise<Record<string, SearchResultFacts>> => {
   const userId = await requireUserId();
   const wanted = items.filter(isItem).slice(0, limit);
@@ -78,7 +141,7 @@ const lookupFacts = async (
   }
 
   // The user's taste (FIL-I9) loads next to the Catalog lookup; it never blocks the IMDb line.
-  const [found, user] = await Promise.all([
+  const [found, user, platforms] = await Promise.all([
     db
       .select({
         id: catalog.id,
@@ -100,12 +163,16 @@ const lookupFacts = async (
       .from(catalog)
       .where(or(...wanted.map((item) => and(eq(catalog.tmdbId, item.tmdbId), eq(catalog.kind, item.kind))))),
     loadUserAffinity(userId).catch(() => null),
+    db.query.users
+      .findFirst({ where: eq(users.id, userId), columns: { streamingPlatforms: true } })
+      .then((row) => parseStoredStreamingPlatforms(row?.streamingPlatforms))
+      .catch(() => []),
   ]);
   const rows = new Map<string, SearchFactsRow>(found.map((row) => [searchFactsKey(row.kind, row.tmdbId), row]));
 
   const facts: Record<string, SearchResultFacts> = {};
   for (const row of found) {
-    const base = factsFromCatalog(row);
+    const base = { ...factsFromCatalog(row), ...mineAvailability(row.watchProvidersMx, platforms) };
     facts[searchFactsKey(row.kind, row.tmdbId)] = user
       ? {
           ...base,
@@ -138,6 +205,38 @@ const lookupFacts = async (
     scheduleAfterResponse(() => Promise.all(queued.map(enrichOne)).then(() => undefined));
   }
 
+  if (providers && platforms.length > 0) {
+    // «En mis plataformas» (FIL-I30-1): a film never checked against TMDB asks for its MX
+    // availability after the response; one going through OMDb above gets it there too.
+    const enriching = (key: string) => inFlight.has(key);
+    const missing = pickProviderCandidates(wanted, rows);
+    const fetchable = missing.filter((item) => {
+      const key = searchFactsKey(item.kind, item.tmdbId);
+      return !enriching(key) && !providersInFlight.has(key);
+    });
+    const fetching = fetchable.slice(0, takeProvidersBudget(userId, fetchable.length));
+    for (const item of fetching) {
+      providersInFlight.add(searchFactsKey(item.kind, item.tmdbId));
+    }
+    for (const item of missing) {
+      const key = searchFactsKey(item.kind, item.tmdbId);
+      if (enriching(key) || providersInFlight.has(key)) {
+        facts[key] = { ...(facts[key] ?? { ...PENDING_FACTS, pending: false }), providersPending: true };
+      }
+    }
+    if (fetching.length > 0) {
+      if (process.env.NODE_ENV === "development") {
+        console.info(`[buscar] tmdb_provider_calls_per_person=${fetching.length}`);
+      }
+      scheduleAfterResponse(async () => {
+        const seeds = await personSeeds(person);
+        await runPool(fetching, PROVIDERS_CONCURRENCY, (item) =>
+          fetchProvidersOne(item, seeds.get(searchFactsKey(item.kind, item.tmdbId))),
+        );
+      });
+    }
+  }
+
   return facts;
 };
 
@@ -149,6 +248,7 @@ export const getSearchResultFacts = async (items: SearchFactsItem[]) =>
  * A person's filmography (FIL-I16-1): the whole work at once, because «Lo
  * esencial» and «Podría gustarte» rank all of it. OMDb stays gradual: the same
  * per-call and per-user budget as Buscar, best-known titles first (the client's order).
+ * It also fetches the MX availability nobody checked yet, for «En mis plataformas» (FIL-I30).
  */
-export const getFilmographyFacts = async (items: SearchFactsItem[]) =>
-  lookupFacts(items, FILMOGRAPHY_FACTS_LIMIT);
+export const getFilmographyFacts = async (items: SearchFactsItem[], person?: { id: number; role: PersonRole }) =>
+  lookupFacts(items, FILMOGRAPHY_FACTS_LIMIT, { providers: true, person });

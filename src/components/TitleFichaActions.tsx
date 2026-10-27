@@ -15,7 +15,6 @@ import {
   restoreTitleWatched,
 } from "@/app/actions/watchlist";
 import { MarkWatchedSheet } from "@/components/MarkWatchedSheet";
-import { retargetCurrentNav } from "@/components/NavOriginTracker";
 import { RatingSheet } from "@/components/RatingSheet";
 import { SearchListPicker } from "@/components/tmdb-search/SearchListPicker";
 import type { Platform } from "@/db";
@@ -27,7 +26,7 @@ import { useSpringFeedback } from "@/lib/motion";
 import type { AddTitleFromTmdbInput } from "@/lib/add-title-from-tmdb";
 import { handoffKey, writeFichaHandoff } from "@/lib/ficha-handoff";
 import { clearAfterPendingSave, PendingSaveError, showDiaryRemovedToast } from "@/lib/diary-undo";
-import { diaryDayLabel, diaryMonthHref, ownedFichaHref, type DiaryLog } from "@/lib/title-preview";
+import { diaryDayLabel, diaryMonthHref, type DiaryLog } from "@/lib/title-preview";
 import { showToast } from "@/lib/toast";
 import {
   addedToLists,
@@ -52,7 +51,7 @@ export type FichaTmdbSnapshot = Pick<
 type TitleFichaActionsProps = {
   /**
    * The user's Title. Null on a ficha preview (FIL-I8): every action first
-   * creates the Title from `snapshot`, then the URL becomes `/titulos/{id}`.
+   * creates the Title from `snapshot`; the ficha stays on screen.
    */
   titleId: string | null;
   snapshot?: FichaTmdbSnapshot;
@@ -155,8 +154,17 @@ export const TitleFichaActions = ({
   const [listsError, setListsError] = useState<string | null>(null);
   const [isSavingLists, setSavingLists] = useState(false);
 
-  /** Preview: the Title now exists, so the ficha becomes the user's own. */
+  // Preview: the Title the first action created. The ficha stays on screen (FIL-I30-5).
+  const [createdTitleId, setCreatedTitleId] = useState<string | null>(null);
+  const ownedTitleId = titleId ?? createdTitleId;
+
+  /**
+   * Preview: the Title now exists, so the next actions act on it. No navigation:
+   * swapping to `/titulos/{id}` re-rendered the whole ficha (its skeletons, scroll
+   * back to the top). The preview URL already opens that ficha on a reload or «atrás».
+   */
   const becomeOwned = (newTitleId: string, learned: { inWatchlist?: boolean; watched?: boolean } = {}) => {
+    setCreatedTitleId(newTitleId);
     if (snapshot) {
       writeFichaHandoff(handoffKey(snapshot.kind, snapshot.tmdbId), {
         titleId: newTitleId,
@@ -164,9 +172,6 @@ export const TitleFichaActions = ({
         watched: Boolean(learned.watched),
       });
     }
-    const href = ownedFichaHref(newTitleId);
-    retargetCurrentNav(href);
-    router.replace(href);
   };
 
   const previewSnapshot = () => {
@@ -187,7 +192,7 @@ export const TitleFichaActions = ({
     setJustPinned(true);
     run({ ...state, pinned: true, inWatchlist: true }, async () => {
       try {
-        if (titleId == null) {
+        if (ownedTitleId == null) {
           const result = await pinTonightFromSearch(previewSnapshot());
           if (!result.ok) {
             throw new Error(result.error);
@@ -201,7 +206,7 @@ export const TitleFichaActions = ({
           becomeOwned(result.titleId, { inWatchlist: true });
           return;
         }
-        const result = await pinTonightFromFicha(titleId);
+        const result = await pinTonightFromFicha(ownedTitleId);
         if (!result.ok) {
           throw new Error(result.error);
         }
@@ -228,7 +233,7 @@ export const TitleFichaActions = ({
     });
     run({ ...state, inWatchlist: next }, async () => {
       try {
-        if (titleId == null) {
+        if (ownedTitleId == null) {
           const result = await addTitleFromTmdb({
             ...previewSnapshot(),
             destination: "watchlist",
@@ -239,9 +244,9 @@ export const TitleFichaActions = ({
           }
           becomeOwned(result.titleId, { inWatchlist: true });
         } else if (next) {
-          await addToWatchlistById(titleId);
+          await addToWatchlistById(ownedTitleId);
         } else {
-          await removeFromWatchlistById(titleId);
+          await removeFromWatchlistById(ownedTitleId);
         }
       } finally {
         setPendingAction(null);
@@ -258,7 +263,7 @@ export const TitleFichaActions = ({
       return;
     }
     const isoDate = watchedAt || savedDate;
-    if (titleId == null || !isoDate) {
+    if (ownedTitleId == null || !isoDate) {
       showToast({
         title: TOAST_COPY.stillRemoving,
         description: TOAST_COPY.stillRemovingDetail,
@@ -267,7 +272,7 @@ export const TitleFichaActions = ({
       });
       return;
     }
-    const id = titleId;
+    const id = ownedTitleId;
     const pendingSave = pendingSaveRef.current;
     setSeenOptimistic(false);
     setDiaryHold("removed");
@@ -328,7 +333,7 @@ export const TitleFichaActions = ({
           formData.set("rating", String(next.rating));
         }
         formData.set("review", next.review);
-        if (titleId == null) {
+        if (ownedTitleId == null) {
           // Nothing to keep: no Title for an empty nota.
           if (next.rating == null && !next.review) {
             return;
@@ -340,7 +345,7 @@ export const TitleFichaActions = ({
           becomeOwned(result.titleId);
           return;
         }
-        await setTitleRating(titleId, formData);
+        await setTitleRating(ownedTitleId, formData);
       } finally {
         setPendingAction(null);
       }
@@ -381,7 +386,7 @@ export const TitleFichaActions = ({
     const dayLabel = diaryDayLabel(diaryLog.date);
     run({ ...state, watched: true, inWatchlist: false }, async () => {
       try {
-        if (titleId == null) {
+        if (ownedTitleId == null) {
           const result = await addTitleFromTmdb({
             ...previewSnapshot(),
             destination: "watched",
@@ -401,7 +406,7 @@ export const TitleFichaActions = ({
           if (diaryLog.date) {
             formData.set("watchedAt", diaryLog.date);
           }
-          await markTitleWatched(titleId, formData);
+          await markTitleWatched(ownedTitleId, formData);
         }
         showToast({
           title: TOAST_COPY.addedDiary,
@@ -563,7 +568,7 @@ export const TitleFichaActions = ({
 
       <MarkWatchedSheet
         open={seenOpen}
-        titleId={titleId ?? `preview:${snapshot?.kind}:${snapshot?.tmdbId}`}
+        titleId={ownedTitleId ?? `preview:${snapshot?.kind}:${snapshot?.tmdbId}`}
         titleName={titleName}
         rating={state.rating}
         review={state.review}
@@ -580,7 +585,7 @@ export const TitleFichaActions = ({
         onError={() => setSeenOptimistic(false)}
         submit={async (formData) => {
           const pending = (async () => {
-            if (titleId == null) {
+            if (ownedTitleId == null) {
               const result = await markTmdbTitleWatched(previewSnapshot(), formData);
               if (!result.ok) {
                 throw new Error(result.error);
@@ -588,7 +593,7 @@ export const TitleFichaActions = ({
               becomeOwned(result.titleId, { watched: true });
               return;
             }
-            await markTitleWatched(titleId, formData);
+            await markTitleWatched(ownedTitleId, formData);
           })();
           pendingSaveRef.current = pending;
           try {
@@ -603,7 +608,7 @@ export const TitleFichaActions = ({
 
       <RatingSheet
         open={ratingOpen}
-        titleId={titleId ?? "preview"}
+        titleId={ownedTitleId ?? "preview"}
         rating={state.rating}
         review={state.review}
         pending={pendingAction === "rating"}

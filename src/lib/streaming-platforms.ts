@@ -285,6 +285,26 @@ export const titleAvailableOnUserPlatforms = (
   );
 };
 
+/**
+ * «En mis plataformas» for one Catalog row (FIL-I30-1): whether it is included
+ * on one of the user's platforms, and which one (TMDB's order). Null when it
+ * was never checked against TMDB or the user saved no platforms: unknown.
+ */
+export const mineAvailability = (
+  watchProvidersMx: unknown,
+  userPlatforms: readonly Platform[],
+): { onMine: boolean | null; minePlatform: Platform | null } => {
+  const data = parseStoredWatchProviders(watchProvidersMx);
+  if (!data || userPlatforms.length === 0) {
+    return { onMine: null, minePlatform: null };
+  }
+  const minePlatform =
+    data.flatrate
+      .map((provider) => matchWatchProviderPlatform(provider))
+      .find((platform): platform is Platform => platform != null && userPlatforms.includes(platform)) ?? null;
+  return { onMine: minePlatform !== null, minePlatform };
+};
+
 export type MinePlatformsFilterResult<T> = {
   visible: T[];
   missingCache: number;
