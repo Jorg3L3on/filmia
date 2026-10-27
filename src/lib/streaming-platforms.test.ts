@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { applyMinePlatformsFilter } from "@/lib/streaming-platforms";
+import { applyMinePlatformsFilter, mineAvailability } from "@/lib/streaming-platforms";
 
 const providers = (...ids: number[]) => ({
   flatrate: ids.map((providerId) => ({ providerId, providerName: "", logoPath: null })),
@@ -46,5 +46,32 @@ describe("applyMinePlatformsFilter", () => {
       ["NETFLIX"],
     );
     assert.deepEqual(visible, []);
+  });
+});
+
+describe("mineAvailability", () => {
+  const offer = (providerId: number, name: string) => ({ providerId, name, logoPath: null, logoUrl: null });
+  const mx = (flatrate: ReturnType<typeof offer>[], rent: ReturnType<typeof offer>[] = []) => ({
+    link: null,
+    flatrate,
+    rent,
+    buy: [],
+  });
+
+  it("is on mine when one of my platforms includes it, naming the first of mine", () => {
+    assert.deepEqual(mineAvailability(mx([offer(8, "Netflix"), offer(337, "Disney Plus")]), ["DISNEY", "NETFLIX"]), {
+      onMine: true,
+      minePlatform: "NETFLIX",
+    });
+  });
+
+  it("is not on mine when it is only for rent or on someone else's platform", () => {
+    assert.deepEqual(mineAvailability(mx([], [offer(8, "Netflix")]), ["NETFLIX"]), { onMine: false, minePlatform: null });
+    assert.deepEqual(mineAvailability(mx([offer(337, "Disney Plus")]), ["NETFLIX"]), { onMine: false, minePlatform: null });
+  });
+
+  it("is unknown when never checked or with no platforms saved", () => {
+    assert.deepEqual(mineAvailability(null, ["NETFLIX"]), { onMine: null, minePlatform: null });
+    assert.deepEqual(mineAvailability(mx([offer(8, "Netflix")]), []), { onMine: null, minePlatform: null });
   });
 });

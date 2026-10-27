@@ -35,6 +35,9 @@ import type { StartArrival, StartDirector } from "@/lib/buscar-start";
 import type { SelectableList } from "@/lib/list-selection";
 import { resolveDirectorQuery, type PersonFilmography } from "@/lib/person-filmography";
 import { FILMOGRAPHY_FACTS_LIMIT } from "@/lib/search-result-facts";
+
+/** The IMDb line at 2.5 s (FIL-I22-4); a big filmography's MX availability gets one more look (FIL-I30-1). */
+const FILMOGRAPHY_RETRY_DELAYS_MS = [2500, 3500];
 import { buildSearchHref, liveSearchState, type SearchKind, type SearchMode } from "@/lib/search-session";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import type { UserTmdbEntry } from "@/lib/queries";
@@ -176,9 +179,12 @@ export const TmdbSearchAdd = ({
     () => (shownPerson ? [...shownPerson.entries].sort((a, b) => b.votes - a.votes) : []),
     [shownPerson],
   );
+  // The person rides along so the server seeds unknown titles from their (cached) credits.
+  const filmographyPerson = shownPerson ? { id: shownPerson.person.id, role: shownPerson.role } : undefined;
   const filmographyFactsFor = useSearchFacts(filmographyItems, {
-    load: getFilmographyFacts,
+    load: (items) => getFilmographyFacts(items, filmographyPerson),
     limit: FILMOGRAPHY_FACTS_LIMIT,
+    retryDelaysMs: FILMOGRAPHY_RETRY_DELAYS_MS,
   });
   const rowFactsFor = shownPerson ? filmographyFactsFor : factsFor;
 

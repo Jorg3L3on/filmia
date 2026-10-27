@@ -407,10 +407,21 @@ const PersonBody = ({
 }) => {
   const factsOf = (entry: FilmographyEntry) => rows.factsFor?.(entry) ?? null;
   const progress = watchProgress(data.entries, (entry) => statusOf(entry).status);
-  // Until the facts settle, the shelves keep their place and are drawn once (FIL-I30-4).
+  // Until the facts settle, the shelves keep their place; then they are drawn once and kept,
+  // so a rating that lands later never swaps a poster (FIL-I30-4).
   const waiting = data.entries.length > 0 && !shelvesSettled(data.entries, factsOf);
-  const essential = waiting ? [] : essentialPicks(data.entries, factsOf);
-  const taste = waiting ? null : tastePicks(data.entries, factsOf);
+  const shelvesKey = `${data.person.id}:${data.role}`;
+  const [shelves, setShelves] = useState<{
+    key: string;
+    essential: FilmographyEntry[];
+    taste: ReturnType<typeof tastePicks>;
+  } | null>(null);
+  if (!waiting && shelves?.key !== shelvesKey) {
+    setShelves({ key: shelvesKey, essential: essentialPicks(data.entries, factsOf), taste: tastePicks(data.entries, factsOf) });
+  }
+  const drawn = !waiting && shelves?.key === shelvesKey ? shelves : null;
+  const essential = drawn?.essential ?? [];
+  const taste = drawn?.taste ?? null;
   const upcoming = upcomingSummary(data.upcoming, todayIso());
 
   return (
