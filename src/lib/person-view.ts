@@ -104,6 +104,29 @@ export const watchProgress = (
   };
 };
 
+/**
+ * «En mis plataformas» (FIL-I30-2): the titles included on one of yours, how
+ * many are still being checked against TMDB, and how many stay unknown.
+ */
+export const mineSplit = (entries: readonly FilmographyEntry[], factsOf: FactsOf) => {
+  const shown: FilmographyEntry[] = [];
+  let checking = 0;
+  let unknown = 0;
+  for (const entry of entries) {
+    const facts = factsOf(entry);
+    if (facts?.onMine) {
+      shown.push(entry);
+    } else if (facts?.onMine === false) {
+      continue;
+    } else if (!facts || facts.pending || facts.providersPending) {
+      checking += 1;
+    } else {
+      unknown += 1;
+    }
+  }
+  return { shown, checking, unknown };
+};
+
 /** The bar draws one mark per title up to this many; past it, proportional segments. */
 export const PROGRESS_MARKS_MAX = 40;
 

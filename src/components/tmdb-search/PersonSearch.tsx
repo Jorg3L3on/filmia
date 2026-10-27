@@ -31,6 +31,7 @@ import {
 import {
   essentialPicks,
   groupByDecade,
+  mineSplit,
   PROGRESS_MARKS_MAX,
   shelvesSettled,
   TASTE_SHELF_TITLE,
@@ -38,6 +39,8 @@ import {
   upcomingSummary,
   watchProgress,
 } from "@/lib/person-view";
+import { personMineFilterOn, setPersonMineFilter } from "@/lib/search-session";
+import type { SearchResultFacts } from "@/lib/search-result-facts";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import { tmdbProfileUrl } from "@/lib/tmdb";
 import { focusRing, glassPanelClass } from "@/lib/ui";
@@ -175,6 +178,8 @@ type PersonViewProps = {
   originBack?: ReactNode;
   /** The role menu: the same person in another role (same page, no new history entry). */
   onSwitchRole?: (role: PersonRole) => void;
+  /** The user saved streaming platforms in Perfil: «En mis plataformas» can filter (FIL-I30-2). */
+  hasPlatforms?: boolean;
 };
 
 /**
@@ -193,6 +198,7 @@ export const PersonView = ({
   onBack,
   originBack = null,
   onSwitchRole,
+  hasPlatforms = false,
 }: PersonViewProps) => {
   const data = !pending && state?.kind === "ready" ? state.data : null;
   const name = pending?.name ?? data?.person.name ?? (state?.kind === "error" ? state.name : null) ?? "";
@@ -245,7 +251,7 @@ export const PersonView = ({
           description="TMDB todavía no tiene créditos de esta persona en este rol."
         />
       ) : (
-        <PersonBody data={state.data} statusOf={statusOf} rows={rows} />
+        <PersonBody data={state.data} statusOf={statusOf} rows={rows} hasPlatforms={hasPlatforms} />
       )}
     </div>
   );
@@ -400,10 +406,12 @@ const PersonBody = ({
   data,
   statusOf,
   rows,
+  hasPlatforms,
 }: {
   data: PersonFilmography;
   statusOf: StatusOf;
   rows: SearchRowWiring;
+  hasPlatforms: boolean;
 }) => {
   const factsOf = (entry: FilmographyEntry) => rows.factsFor?.(entry) ?? null;
   const progress = watchProgress(data.entries, (entry) => statusOf(entry).status);
@@ -461,7 +469,14 @@ const PersonBody = ({
       ) : null}
       {upcoming ? <UpcomingCard summary={upcoming} statusOf={statusOf} rows={rows} /> : null}
       {data.entries.length > 0 ? (
-        <WorkByDecade entries={data.entries} role={data.role} statusOf={statusOf} rows={rows} />
+        <WorkByDecade
+          entries={data.entries}
+          role={data.role}
+          statusOf={statusOf}
+          rows={rows}
+          factsOf={factsOf}
+          hasPlatforms={hasPlatforms}
+        />
       ) : null}
       {data.others.length > 0 ? <OtherAppearances entries={data.others} statusOf={statusOf} rows={rows} /> : null}
     </>
@@ -613,21 +628,34 @@ const KIND_FILTERS: { value: KindFilter; label: string }[] = [
   { value: "SERIES", label: "Series" },
 ];
 
-/** Every title of the work, Buscar's rows grouped by decade, filterable by kind. */
+/** Every title of the work, Buscar's rows grouped by decade, filterable by kind and by your platforms. */
 const WorkByDecade = ({
   entries,
   role,
   statusOf,
   rows,
+  factsOf,
+  hasPlatforms,
 }: {
   entries: FilmographyEntry[];
   role: PersonRole;
   statusOf: StatusOf;
   rows: SearchRowWiring;
+  factsOf: (entry: FilmographyEntry) => SearchResultFacts | null;
+  hasPlatforms: boolean;
 }) => {
   const [kind, setKind] = useState<KindFilter>("ALL");
+  // «En mis plataformas» (FIL-I30-2) stays on from one person to the next.
+  const [mine, setMine] = useState(personMineFilterOn);
+  const toggleMine = () => {
+    setMine(!mine);
+    setPersonMineFilter(!mine);
+  };
   const mixed = entries.some((entry) => entry.kind === "MOVIE") && entries.some((entry) => entry.kind === "SERIES");
-  const shown = kind === "ALL" ? entries : entries.filter((entry) => entry.kind === kind);
+  const ofKind = kind === "ALL" ? entries : entries.filter((entry) => entry.kind === kind);
+  const split = mineSplit(ofKind, factsOf);
+  const filtering = mine && hasPlatforms;
+  const shown = filtering ? split.shown : ofKind;
   const decades = groupByDecade(shown);
   // Where each decade starts in the whole list, for the entrance stagger.
   const starts = decades.map((_, at) => decades.slice(0, at).reduce((sum, group) => sum + group.entries.length, 0));
@@ -636,24 +664,58 @@ const WorkByDecade = ({
     <section className="space-y-3">
       <header className="flex items-baseline justify-between gap-3">
         <h3 className="font-serif text-[21px] leading-tight text-paper">Toda su obra</h3>
-        <p className="text-xs text-mist">{shown.length === 1 ? "1 título" : `${shown.length} títulos`}</p>
+        {mine && !hasPlatforms ? null : (
+          <p className="text-xs text-mist">{shown.length === 1 ? "1 título" : `${shown.length} títulos`}</p>
+        )}
       </header>
-      {mixed ? (
-        <div role="group" aria-label="Tipo" className="flex gap-2">
-          {KIND_FILTERS.map((filter) => (
-            <button
-              key={filter.value}
-              type="button"
-              aria-pressed={kind === filter.value}
-              onClick={() => setKind(filter.value)}
-              className={catalogBarChipClass(kind === filter.value)}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
+      <div role="group" aria-label="Filtros" className="flex flex-wrap gap-2">
+        {mixed
+          ? KIND_FILTERS.map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                aria-pressed={kind === filter.value}
+                onClick={() => setKind(filter.value)}
+                className={catalogBarChipClass(kind === filter.value)}
+              >
+                {filter.label}
+              </button>
+            ))
+          : null}
+        <button type="button" aria-pressed={mine} onClick={toggleMine} className={catalogBarChipClass(mine)}>
+          En mis plataformas
+        </button>
+      </div>
+      {mine && !hasPlatforms ? (
+        <MinePanel
+          title="Aún no eliges tus plataformas"
+          description="Dinos cuáles tienes y aquí verás solo lo que puedes ver hoy."
+          action={
+            <Button href="/perfil#plataformas" variant="secondary">
+              Elegir mis plataformas
+            </Button>
+          }
+        />
       ) : null}
-      {decades.map((group, groupIndex) => (
+      {filtering && (split.checking > 0 || split.unknown > 0) ? (
+        <p aria-live="polite" className="text-xs text-fog">
+          {split.checking > 0
+            ? `Revisando ${split.checking} ${plural(split.checking, "título", "títulos")}…`
+            : `${split.unknown} sin datos de plataformas`}
+        </p>
+      ) : null}
+      {filtering && shown.length === 0 && split.checking === 0 ? (
+        <MinePanel
+          title="Nada de su obra está en tus plataformas hoy"
+          description="Rentar o comprar no cuenta: solo lo incluido en tu suscripción."
+          action={
+            <Button type="button" variant="secondary" onClick={toggleMine}>
+              Ver toda su obra
+            </Button>
+          }
+        />
+      ) : null}
+      {mine && !hasPlatforms ? null : decades.map((group, groupIndex) => (
         <div key={group.decade} className="space-y-2">
           <h4 className="flex items-center gap-2.5 text-xs font-medium tracking-[0.14em] text-faint after:h-px after:flex-1 after:bg-line">
             {group.label}
@@ -686,6 +748,15 @@ const WorkByDecade = ({
     </section>
   );
 };
+
+/** «En mis plataformas» with nothing to list: why, and the way out. */
+const MinePanel = ({ title, description, action }: { title: string; description: string; action: ReactNode }) => (
+  <div className="space-y-3 rounded-2xl border border-line bg-well/60 px-4 py-6 text-center">
+    <h4 className="font-serif text-lg text-paper">{title}</h4>
+    <p className="mx-auto max-w-sm text-sm leading-relaxed text-fog">{description}</p>
+    {action}
+  </div>
+);
 
 /** Rows past this one enter with the last delay: a long filmography never waits seconds. */
 const STAGGER_ROWS = 8;

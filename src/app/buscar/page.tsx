@@ -11,6 +11,7 @@ import { metadataServicesConfigured } from "@/lib/metadata";
 import {
   getAssignableLists,
   getUserListMembershipIndex,
+  getUserStreamingPlatforms,
   getUserTmdbIndex,
 } from "@/lib/queries";
 import { parseOptionalIsoDate } from "@/lib/dates";
@@ -89,7 +90,7 @@ const SearchBody = async ({
     watchedDate != null ||
     (typeof params.destino === "string" && params.destino === "visto");
   const userId = await requireUserId();
-  const [existing, lists, memberships, pinnedTitleId, person, startDirectors, startArrivals] = await Promise.all([
+  const [existing, lists, memberships, pinnedTitleId, person, startDirectors, startArrivals, platforms] = await Promise.all([
     getUserTmdbIndex(),
     getAssignableLists(),
     getUserListMembershipIndex(),
@@ -98,6 +99,7 @@ const SearchBody = async ({
     // The start screen can come back after clearing a search, so load it unless a person is open.
     single(params.persona) ? [] : getFavoriteDirectors(userId).catch(() => []),
     single(params.persona) ? [] : getStartArrivals(userId).catch(() => []),
+    getUserStreamingPlatforms().catch(() => []),
   ]);
 
   return (
@@ -115,6 +117,7 @@ const SearchBody = async ({
       person={person}
       startDirectors={startDirectors}
       startArrivals={startArrivals}
+      hasPlatforms={platforms.length > 0}
     />
   );
 };

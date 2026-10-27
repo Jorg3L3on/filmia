@@ -64,6 +64,8 @@ type TmdbSearchAddProps = {
   startDirectors?: StartDirector[];
   /** «Llegó a tu plataforma» start row (FIL-I21-8). */
   startArrivals?: StartArrival[];
+  /** Saved streaming platforms: a person's work can filter to them (FIL-I30-2). */
+  hasPlatforms?: boolean;
 };
 
 export const TmdbSearchAdd = ({
@@ -82,6 +84,7 @@ export const TmdbSearchAdd = ({
   person = null,
   startDirectors = [],
   startArrivals = [],
+  hasPlatforms = false,
 }: TmdbSearchAddProps) => {
   const router = useRouter();
   const [start] = useState(() =>
@@ -288,6 +291,7 @@ export const TmdbSearchAdd = ({
           onBack={closePerson}
           originBack={<BackButton hideWithoutOrigin hideWhenOriginPath="/buscar" className="-mb-1" />}
           onSwitchRole={switchRole}
+          hasPlatforms={hasPlatforms}
         />
       ) : (
         <>
@@ -324,6 +328,7 @@ export const TmdbSearchAdd = ({
                 backLabel={null}
                 onBack={() => undefined}
                 onSwitchRole={switchRole}
+                hasPlatforms={hasPlatforms}
               />
             ) : directorResolution?.kind === "choose" ? (
               <DirectorPicker directors={directorResolution.hits} onOpen={(hit) => openDirector(hit)} />

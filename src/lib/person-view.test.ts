@@ -4,6 +4,7 @@ import type { FilmographyEntry } from "./person-filmography";
 import {
   essentialPicks,
   groupByDecade,
+  mineSplit,
   releaseDateLabel,
   shelvesSettled,
   tastePicks,
@@ -137,5 +138,22 @@ describe("shelvesSettled", () => {
   it("only counts the best-known titles the view asks about", () => {
     // MINDHUNTER has the fewest votes: past the limit it is never asked about.
     assert.equal(shelvesSettled(work, factsOf, work.length - 1), true);
+  });
+});
+
+describe("mineSplit", () => {
+  it("keeps what is on your platforms and counts what is still being checked or unknown", () => {
+    const answers: Record<number, SearchResultFacts | null> = {
+      550: facts({ onMine: true, minePlatform: "NETFLIX" }),
+      807: facts({ onMine: false }),
+      37799: facts({ onMine: null, providersPending: true }),
+      1949: facts({ onMine: null }),
+      614560: null,
+      67744: facts({ onMine: true, minePlatform: "MAX" }),
+    };
+    const split = mineSplit(work, (item) => answers[item.tmdbId] ?? null);
+    assert.deepEqual(split.shown.map((item) => item.name), ["MINDHUNTER", "El Club de la Pelea"]);
+    assert.equal(split.checking, 2);
+    assert.equal(split.unknown, 1);
   });
 });
