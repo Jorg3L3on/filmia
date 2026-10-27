@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
-import { getFilmographyFacts } from "@/app/actions/search-facts";
+import { useCallback, useState } from "react";
 import { BackButton } from "@/components/BackButton";
 import { EmptyState } from "@/components/EmptyState";
 import { useNavLabel } from "@/components/NavOriginTracker";
@@ -28,16 +27,13 @@ import {
 } from "@/components/tmdb-search/TmdbKindFilterChips";
 import { usePersonFilmography } from "@/components/tmdb-search/usePersonFilmography";
 import { TmdbSearchForm } from "@/components/tmdb-search/TmdbSearchForm";
+import { useFilmographyFacts } from "@/components/tmdb-search/useFilmographyFacts";
 import { useSearchFacts } from "@/components/tmdb-search/useSearchFacts";
 import { useSearchRecents } from "@/components/tmdb-search/useSearchRecents";
 import { useTmdbSearchAdd } from "@/components/tmdb-search/useTmdbSearchAdd";
 import type { StartArrival, StartDirector } from "@/lib/buscar-start";
 import type { SelectableList } from "@/lib/list-selection";
 import { resolveDirectorQuery, type PersonFilmography } from "@/lib/person-filmography";
-import { FILMOGRAPHY_FACTS_LIMIT } from "@/lib/search-result-facts";
-
-/** The IMDb line at 2.5 s (FIL-I22-4); a big filmography's MX availability gets one more look (FIL-I30-1). */
-const FILMOGRAPHY_RETRY_DELAYS_MS = [2500, 3500];
 import { buildSearchHref, liveSearchState, type SearchKind, type SearchMode } from "@/lib/search-session";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import type { UserTmdbEntry } from "@/lib/queries";
@@ -169,8 +165,7 @@ export const TmdbSearchAdd = ({
   const inline = usePersonFilmography(inlinePerson);
   const personPage = person !== null || pendingPerson !== null;
 
-  // FIL-I16-1: the person on screen asks the Catalog about its whole work; the
-  // best-known titles go first, so OMDb's few calls per visit land where they count.
+  // The person on screen asks the Catalog about its whole work (useFilmographyFacts).
   const shownPerson: PersonFilmography | null = personPage
     ? person?.kind === "ready" && !pendingPerson
       ? person.data
@@ -178,17 +173,7 @@ export const TmdbSearchAdd = ({
     : inlinePerson && inline.state?.kind === "ready"
       ? inline.state.data
       : null;
-  const filmographyItems = useMemo(
-    () => (shownPerson ? [...shownPerson.entries].sort((a, b) => b.votes - a.votes) : []),
-    [shownPerson],
-  );
-  // The person rides along so the server seeds unknown titles from their (cached) credits.
-  const filmographyPerson = shownPerson ? { id: shownPerson.person.id, role: shownPerson.role } : undefined;
-  const filmographyFactsFor = useSearchFacts(filmographyItems, {
-    load: (items) => getFilmographyFacts(items, filmographyPerson),
-    limit: FILMOGRAPHY_FACTS_LIMIT,
-    retryDelaysMs: FILMOGRAPHY_RETRY_DELAYS_MS,
-  });
+  const filmographyFactsFor = useFilmographyFacts(shownPerson);
   const rowFactsFor = shownPerson ? filmographyFactsFor : factsFor;
 
   // Diario mode (FIL-I22-3): the check on each row, and «Registrada · día» once it logged here.
