@@ -1,5 +1,5 @@
 import type { FilmographyEntry } from "@/lib/person-filmography";
-import type { SearchResultFacts } from "@/lib/search-result-facts";
+import { FILMOGRAPHY_FACTS_LIMIT, type SearchResultFacts } from "@/lib/search-result-facts";
 import type { AffinityLevel } from "@/lib/tonight/affinity";
 
 /**
@@ -17,6 +17,26 @@ export const ESSENTIAL_MIN = 3;
 /** «Podría gustarte» / «Muy tu estilo»: at most this many, shown from this many. */
 export const TASTE_MAX = 6;
 export const TASTE_MIN = 2;
+
+/**
+ * The shelves are drawn once, when every title the view asks about has its
+ * final answer (FIL-I30-4): the Catalog's first reply, or the one after the
+ * enrichment retry. Drawn earlier, a late IMDb rating or affinity swapped
+ * posters (and the shelf's name) a few seconds in. Only the best-known
+ * `limit` titles are asked about (the client's order), so only they count.
+ */
+export const shelvesSettled = (
+  entries: readonly FilmographyEntry[],
+  factsOf: FactsOf,
+  limit = FILMOGRAPHY_FACTS_LIMIT,
+) =>
+  [...entries]
+    .sort((a, b) => b.votes - a.votes)
+    .slice(0, limit)
+    .every((entry) => {
+      const facts = factsOf(entry);
+      return facts !== null && !facts.pending;
+    });
 
 /** Best IMDb first (ties: the better-known title); watched ones stay in, marked by the card. */
 export const essentialPicks = (entries: readonly FilmographyEntry[], factsOf: FactsOf) => {

@@ -5,6 +5,7 @@ import {
   essentialPicks,
   groupByDecade,
   releaseDateLabel,
+  shelvesSettled,
   tastePicks,
   upcomingSummary,
   watchProgress,
@@ -120,5 +121,21 @@ describe("upcoming", () => {
     assert.equal(upcomingSummary([cliff, { ...cliff, tmdbId: 3 }, bitter], today)?.more, "y 2 más");
     assert.equal(upcomingSummary([], today), null);
     assert.equal(upcomingSummary([bitter], today)?.when, "Sin fecha");
+  });
+});
+
+describe("shelvesSettled", () => {
+  it("waits while any title is unanswered or still filling", () => {
+    assert.equal(shelvesSettled(work, factsOf), false);
+    assert.equal(shelvesSettled(work, (item) => (item === mindhunter ? PENDING_FACTS : facts({}))), false);
+  });
+
+  it("settles once every title has its final answer", () => {
+    assert.equal(shelvesSettled(work, (item) => factsOf(item) ?? facts({})), true);
+  });
+
+  it("only counts the best-known titles the view asks about", () => {
+    // MINDHUNTER has the fewest votes: past the limit it is never asked about.
+    assert.equal(shelvesSettled(work, factsOf, work.length - 1), true);
   });
 });

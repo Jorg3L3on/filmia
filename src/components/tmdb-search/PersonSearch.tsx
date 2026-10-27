@@ -32,6 +32,7 @@ import {
   essentialPicks,
   groupByDecade,
   PROGRESS_MARKS_MAX,
+  shelvesSettled,
   TASTE_SHELF_TITLE,
   tastePicks,
   upcomingSummary,
@@ -406,11 +407,11 @@ const PersonBody = ({
 }) => {
   const factsOf = (entry: FilmographyEntry) => rows.factsFor?.(entry) ?? null;
   const progress = watchProgress(data.entries, (entry) => statusOf(entry).status);
-  const essential = essentialPicks(data.entries, factsOf);
-  const taste = tastePicks(data.entries, factsOf);
+  // Until the facts settle, the shelves keep their place and are drawn once (FIL-I30-4).
+  const waiting = data.entries.length > 0 && !shelvesSettled(data.entries, factsOf);
+  const essential = waiting ? [] : essentialPicks(data.entries, factsOf);
+  const taste = waiting ? null : tastePicks(data.entries, factsOf);
   const upcoming = upcomingSummary(data.upcoming, todayIso());
-  // Until the Catalog's first answer, the shelf keeps its place (nothing jumps when it lands).
-  const waiting = data.entries.length > 0 && data.entries.every((entry) => factsOf(entry)?.pending ?? true);
 
   return (
     <>
