@@ -5,6 +5,7 @@ import {
   factsFromCatalog,
   pickEnrichmentCandidates,
   pickPlatformName,
+  pickProviderCandidates,
   searchFactsKey,
   type SearchFactsRow,
 } from "./search-result-facts";
@@ -36,7 +37,10 @@ describe("factsFromCatalog", () => {
       platform: "Netflix",
       affinity: null,
       watched: null,
+      onMine: null,
+      minePlatform: null,
       pending: false,
+      providersPending: false,
     });
   });
 
@@ -79,6 +83,30 @@ describe("pickEnrichmentCandidates", () => {
   it("does not retry a film OMDb has no rating for yet", () => {
     const rows = new Map([[searchFactsKey("MOVIE", 1), row({ tmdbId: 1, imdbRating: null })]]);
     assert.deepEqual(pickEnrichmentCandidates([{ tmdbId: 1, kind: "MOVIE" }], rows), []);
+  });
+});
+
+describe("pickProviderCandidates", () => {
+  it("takes films with no row or never checked against TMDB, in order, once each, up to the limit", () => {
+    const items = [
+      { tmdbId: 1, kind: "MOVIE" as const },
+      { tmdbId: 2, kind: "MOVIE" as const },
+      { tmdbId: 2, kind: "MOVIE" as const },
+      { tmdbId: 3, kind: "MOVIE" as const },
+      { tmdbId: 4, kind: "SERIES" as const },
+    ];
+    const empty = { link: null, flatrate: [], rent: [], buy: [] };
+    const rows = new Map([
+      [searchFactsKey("MOVIE", 1), row({ tmdbId: 1 })],
+      [searchFactsKey("MOVIE", 3), row({ tmdbId: 3, watchProvidersMx: null })],
+      [searchFactsKey("SERIES", 4), row({ tmdbId: 4, kind: "SERIES", watchProvidersMx: empty })],
+    ]);
+    // 4 was checked and is offered nowhere in MX: known, not a candidate.
+    assert.deepEqual(pickProviderCandidates(items, rows), [
+      { tmdbId: 2, kind: "MOVIE" },
+      { tmdbId: 3, kind: "MOVIE" },
+    ]);
+    assert.deepEqual(pickProviderCandidates(items, rows, 1), [{ tmdbId: 2, kind: "MOVIE" }]);
   });
 });
 

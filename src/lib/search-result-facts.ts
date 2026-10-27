@@ -1,4 +1,4 @@
-import type { TitleKind } from "@/db";
+import type { Platform, TitleKind } from "@/db";
 import type { AffinityLevel } from "@/lib/tonight/affinity";
 import { awardChipLabel } from "@/lib/awards";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
@@ -20,7 +20,16 @@ export type SearchResultFacts = {
   affinity: SearchAffinityChip | null;
   /** A film you watched shows your rating, never a prediction (null = watched, not rated). */
   watched: { rating: number | null } | null;
+  /**
+   * «En mis plataformas» (FIL-I30): included (flatrate, MX) on one of your
+   * platforms. Null = never checked against TMDB, or no platforms saved.
+   */
+  onMine: boolean | null;
+  /** The one of yours it streams on, for the row's logo. */
+  minePlatform: Platform | null;
   pending: boolean;
+  /** The Catalog is fetching its MX availability right now (the shelves do not wait for it). */
+  providersPending: boolean;
 };
 
 /** The row's chip: the level only (the reasons live in the ficha). */
@@ -49,6 +58,8 @@ export const SEARCH_FACTS_LOOKUP_LIMIT = 24;
 export const SEARCH_FACTS_ENRICH_LIMIT = 6;
 /** A filmography asks about its whole work (Brad Pitt: 88); enrichment keeps Buscar's limit. */
 export const FILMOGRAPHY_FACTS_LIMIT = 150;
+/** A filmography fetches the MX availability of its whole work (TMDB, one cheap call each). */
+export const PROVIDERS_FETCH_LIMIT = FILMOGRAPHY_FACTS_LIMIT;
 
 export const PENDING_FACTS: SearchResultFacts = {
   imdbRating: null,
@@ -58,7 +69,10 @@ export const PENDING_FACTS: SearchResultFacts = {
   platform: null,
   affinity: null,
   watched: null,
+  onMine: null,
+  minePlatform: null,
   pending: true,
+  providersPending: false,
 };
 
 /**
@@ -80,7 +94,10 @@ export const factsFromCatalog = (row: SearchFactsRow): SearchResultFacts => ({
   platform: pickPlatformName(row.watchProvidersMx),
   affinity: null,
   watched: null,
+  onMine: null,
+  minePlatform: null,
   pending: false,
+  providersPending: false,
 });
 
 /**
@@ -103,6 +120,35 @@ export const pickEnrichmentCandidates = (
     seen.add(key);
     const row = rows.get(key);
     if (!row || catalogNeedsEnrichment(row)) {
+      picked.push(item);
+      if (picked.length >= limit) {
+        break;
+      }
+    }
+  }
+  return picked;
+};
+
+/**
+ * Which titles get their MX availability fetched now (FIL-I30-1): in the
+ * client's order, those without a Catalog row or never checked against TMDB.
+ * Stale availability still answers; the daily cron refreshes it.
+ */
+export const pickProviderCandidates = (
+  items: readonly SearchFactsItem[],
+  rows: ReadonlyMap<string, SearchFactsRow>,
+  limit = PROVIDERS_FETCH_LIMIT,
+): SearchFactsItem[] => {
+  const seen = new Set<string>();
+  const picked: SearchFactsItem[] = [];
+  for (const item of items) {
+    const key = searchFactsKey(item.kind, item.tmdbId);
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    const row = rows.get(key);
+    if (!row || !parseStoredWatchProviders(row.watchProvidersMx)) {
       picked.push(item);
       if (picked.length >= limit) {
         break;

@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
-import { getFilmographyFacts } from "@/app/actions/search-facts";
+import { useCallback, useState } from "react";
 import { BackButton } from "@/components/BackButton";
 import { EmptyState } from "@/components/EmptyState";
 import { useNavLabel } from "@/components/NavOriginTracker";
@@ -28,13 +27,13 @@ import {
 } from "@/components/tmdb-search/TmdbKindFilterChips";
 import { usePersonFilmography } from "@/components/tmdb-search/usePersonFilmography";
 import { TmdbSearchForm } from "@/components/tmdb-search/TmdbSearchForm";
+import { useFilmographyFacts } from "@/components/tmdb-search/useFilmographyFacts";
 import { useSearchFacts } from "@/components/tmdb-search/useSearchFacts";
 import { useSearchRecents } from "@/components/tmdb-search/useSearchRecents";
 import { useTmdbSearchAdd } from "@/components/tmdb-search/useTmdbSearchAdd";
 import type { StartArrival, StartDirector } from "@/lib/buscar-start";
 import type { SelectableList } from "@/lib/list-selection";
 import { resolveDirectorQuery, type PersonFilmography } from "@/lib/person-filmography";
-import { FILMOGRAPHY_FACTS_LIMIT } from "@/lib/search-result-facts";
 import { buildSearchHref, liveSearchState, type SearchKind, type SearchMode } from "@/lib/search-session";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import type { UserTmdbEntry } from "@/lib/queries";
@@ -61,6 +60,8 @@ type TmdbSearchAddProps = {
   startDirectors?: StartDirector[];
   /** «Llegó a tu plataforma» start row (FIL-I21-8). */
   startArrivals?: StartArrival[];
+  /** Saved streaming platforms: a person's work can filter to them (FIL-I30-2). */
+  hasPlatforms?: boolean;
 };
 
 export const TmdbSearchAdd = ({
@@ -79,6 +80,7 @@ export const TmdbSearchAdd = ({
   person = null,
   startDirectors = [],
   startArrivals = [],
+  hasPlatforms = false,
 }: TmdbSearchAddProps) => {
   const router = useRouter();
   const [start] = useState(() =>
@@ -163,8 +165,7 @@ export const TmdbSearchAdd = ({
   const inline = usePersonFilmography(inlinePerson);
   const personPage = person !== null || pendingPerson !== null;
 
-  // FIL-I16-1: the person on screen asks the Catalog about its whole work; the
-  // best-known titles go first, so OMDb's few calls per visit land where they count.
+  // The person on screen asks the Catalog about its whole work (useFilmographyFacts).
   const shownPerson: PersonFilmography | null = personPage
     ? person?.kind === "ready" && !pendingPerson
       ? person.data
@@ -172,14 +173,7 @@ export const TmdbSearchAdd = ({
     : inlinePerson && inline.state?.kind === "ready"
       ? inline.state.data
       : null;
-  const filmographyItems = useMemo(
-    () => (shownPerson ? [...shownPerson.entries].sort((a, b) => b.votes - a.votes) : []),
-    [shownPerson],
-  );
-  const filmographyFactsFor = useSearchFacts(filmographyItems, {
-    load: getFilmographyFacts,
-    limit: FILMOGRAPHY_FACTS_LIMIT,
-  });
+  const filmographyFactsFor = useFilmographyFacts(shownPerson);
   const rowFactsFor = shownPerson ? filmographyFactsFor : factsFor;
 
   // Diario mode (FIL-I22-3): the check on each row, and «Registrada · día» once it logged here.
@@ -282,6 +276,7 @@ export const TmdbSearchAdd = ({
           onBack={closePerson}
           originBack={<BackButton hideWithoutOrigin hideWhenOriginPath="/buscar" className="-mb-1" />}
           onSwitchRole={switchRole}
+          hasPlatforms={hasPlatforms}
         />
       ) : (
         <>
@@ -318,6 +313,7 @@ export const TmdbSearchAdd = ({
                 backLabel={null}
                 onBack={() => undefined}
                 onSwitchRole={switchRole}
+                hasPlatforms={hasPlatforms}
               />
             ) : directorResolution?.kind === "choose" ? (
               <DirectorPicker directors={directorResolution.hits} onOpen={(hit) => openDirector(hit)} />

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { FichaVisit } from "@/components/FichaVisit";
@@ -49,6 +50,9 @@ import TitleLoading from "./loading";
 
 export const dynamic = "force-dynamic";
 
+/** Sent by Next with every Server Action request (`app-router-headers`). */
+const SERVER_ACTION_HEADER = "next-action";
+
 type PreviewParams = { kind: string; tmdbId: string };
 
 type PreviewPageProps = {
@@ -87,7 +91,10 @@ export default async function TitlePreviewPage({ params, searchParams }: Preview
   const diaryLog = parseDiaryLog(await searchParams);
   const userId = await requireUserId();
   const ownedId = await getOwnedTitleIdByTmdb(userId, parsed.tmdbId, parsed.kind);
-  if (ownedId) {
+  // A visit to a film you have goes to your ficha. The re-render after this
+  // ficha's own action (it just created the Title) stays put: redirecting there
+  // swapped the whole page under the button (FIL-I30-5).
+  if (ownedId && !(await headers()).has(SERVER_ACTION_HEADER)) {
     redirect(ownedFichaHref(ownedId, diaryLog));
   }
 

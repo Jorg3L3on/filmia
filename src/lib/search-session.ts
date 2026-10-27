@@ -114,6 +114,15 @@ export const writeSearchCache = (
   searchCache.set(key, { ...value, at: now });
 };
 
+/** «En mis plataformas» on a person's work (FIL-I30-2): kept from one person to the next, for the visit. */
+let personMineFilter = false;
+
+export const personMineFilterOn = () => personMineFilter;
+
+export const setPersonMineFilter = (on: boolean) => {
+  personMineFilter = on;
+};
+
 export const clearSearchCache = () => {
   searchCache.clear();
 };

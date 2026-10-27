@@ -13,14 +13,21 @@ import type { TmdbCatalogResult } from "@/lib/tmdb";
 
 /** After the first answer, ask once more for what the Catalog is still filling (~3 s in all), then give up quietly (FIL-I22-4). */
 const RETRY_DELAYS_MS = [2500];
+/** The IMDb line settles at the first retry (the person view's shelves wait for it, FIL-I30-4); availability may take another. */
+const PENDING_RETRIES = 1;
 
 const itemKey = (item: SearchFactsItem) => searchFactsKey(item.kind, item.tmdbId);
+
+/** Still filling: its IMDb line, or its MX availability (FIL-I30-1). */
+const isFilling = (facts: SearchResultFacts | undefined) => Boolean(facts && (facts.pending || facts.providersPending));
 
 type FactsSource = {
   /** The server action that answers (Buscar's results, or a whole filmography). */
   load?: (items: SearchFactsItem[]) => Promise<Record<string, SearchResultFacts>>;
   /** How many of `results` to ask about, in order. */
   limit?: number;
+  /** Waits before each retry; a filmography's MX availability (FIL-I30-1) gets a second one. */
+  retryDelaysMs?: readonly number[];
 };
 
 /**
@@ -30,7 +37,7 @@ type FactsSource = {
  */
 export const useSearchFacts = (
   results: readonly Pick<TmdbCatalogResult, "kind" | "tmdbId">[],
-  { load = getSearchResultFacts, limit = SEARCH_FACTS_LOOKUP_LIMIT }: FactsSource = {},
+  { load = getSearchResultFacts, limit = SEARCH_FACTS_LOOKUP_LIMIT, retryDelaysMs = RETRY_DELAYS_MS }: FactsSource = {},
 ) => {
   const [facts, setFacts] = useState<Record<string, SearchResultFacts>>({});
   const [loading, setLoading] = useState<ReadonlySet<string>>(() => new Set());
@@ -51,7 +58,7 @@ export const useSearchFacts = (
   useEffect(() => {
     const ask = items.filter((item) => {
       const known = factsRef.current[itemKey(item)];
-      return !known || known.pending;
+      return !known || isFilling(known);
     });
     if (ask.length === 0) {
       return;
@@ -72,15 +79,20 @@ export const useSearchFacts = (
       if (cancelled) {
         return;
       }
-      const last = attempt >= RETRY_DELAYS_MS.length;
+      const last = attempt >= retryDelaysMs.length;
+      const imdbSettled = attempt >= PENDING_RETRIES || last;
       setFacts((current) => {
         const next = { ...current };
         for (const item of batch) {
           const key = itemKey(item);
           const value = answer[key];
           if (value) {
-            // Out of retries: a row still filling shows what it has, without a skeleton.
-            next[key] = value.pending && last ? { ...value, pending: false } : value;
+            // Out of retries: show what it has, without a skeleton.
+            next[key] = {
+              ...value,
+              pending: value.pending && !imdbSettled,
+              providersPending: value.providersPending && !last,
+            };
           } else if (!next[key]) {
             next[key] = { ...PENDING_FACTS, pending: false };
           }
@@ -94,9 +106,9 @@ export const useSearchFacts = (
         }
         return next;
       });
-      const stillPending = batch.filter((item) => answer[itemKey(item)]?.pending);
+      const stillPending = batch.filter((item) => isFilling(answer[itemKey(item)]));
       if (stillPending.length > 0 && !last) {
-        timers.push(window.setTimeout(() => void run(stillPending, attempt + 1), RETRY_DELAYS_MS[attempt]));
+        timers.push(window.setTimeout(() => void run(stillPending, attempt + 1), retryDelaysMs[attempt]));
       }
     };
 

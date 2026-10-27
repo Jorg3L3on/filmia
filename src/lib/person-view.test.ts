@@ -4,7 +4,9 @@ import type { FilmographyEntry } from "./person-filmography";
 import {
   essentialPicks,
   groupByDecade,
+  mineSplit,
   releaseDateLabel,
+  shelvesSettled,
   tastePicks,
   upcomingSummary,
   watchProgress,
@@ -120,5 +122,38 @@ describe("upcoming", () => {
     assert.equal(upcomingSummary([cliff, { ...cliff, tmdbId: 3 }, bitter], today)?.more, "y 2 más");
     assert.equal(upcomingSummary([], today), null);
     assert.equal(upcomingSummary([bitter], today)?.when, "Sin fecha");
+  });
+});
+
+describe("shelvesSettled", () => {
+  it("waits while any title is unanswered or still filling", () => {
+    assert.equal(shelvesSettled(work, factsOf), false);
+    assert.equal(shelvesSettled(work, (item) => (item === mindhunter ? PENDING_FACTS : facts({}))), false);
+  });
+
+  it("settles once every title has its final answer", () => {
+    assert.equal(shelvesSettled(work, (item) => factsOf(item) ?? facts({})), true);
+  });
+
+  it("only counts the best-known titles the view asks about", () => {
+    // MINDHUNTER has the fewest votes: past the limit it is never asked about.
+    assert.equal(shelvesSettled(work, factsOf, work.length - 1), true);
+  });
+});
+
+describe("mineSplit", () => {
+  it("keeps what is on your platforms and counts what is still being checked or unknown", () => {
+    const answers: Record<number, SearchResultFacts | null> = {
+      550: facts({ onMine: true, minePlatform: "NETFLIX" }),
+      807: facts({ onMine: false }),
+      37799: facts({ onMine: null, providersPending: true }),
+      1949: facts({ onMine: null }),
+      614560: null,
+      67744: facts({ onMine: true, minePlatform: "MAX" }),
+    };
+    const split = mineSplit(work, (item) => answers[item.tmdbId] ?? null);
+    assert.deepEqual(split.shown.map((item) => item.name), ["MINDHUNTER", "El Club de la Pelea"]);
+    assert.equal(split.checking, 2);
+    assert.equal(split.unknown, 1);
   });
 });
