@@ -94,7 +94,7 @@ export const CinePoster = ({
             </span>
           ) : null}
         </div>
-        <p title={film.name} className="mt-2 line-clamp-2 text-[13px] font-medium leading-snug text-paper group-hover:text-cine">
+        <p className="mt-2 text-[13px] font-medium leading-snug text-paper [overflow-wrap:anywhere] group-hover:text-cine">
           {film.name}
         </p>
         <DirectorCredit directors={film.directors} compact={compact} />
