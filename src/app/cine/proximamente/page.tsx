@@ -33,7 +33,7 @@ const Timeline = async () => {
       memberships={actions.memberships}
       pinnedTitleId={actions.pinnedTitleId}
     >
-      <UpcomingTimeline films={films} />
+      <UpcomingTimeline films={films} watchlist={actions.existing} />
     </CineActionsProvider>
   );
 };

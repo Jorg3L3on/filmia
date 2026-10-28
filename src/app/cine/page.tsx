@@ -78,7 +78,7 @@ const CineBody = async ({ searchParams }: { searchParams: Promise<SearchParams> 
             </CineSection>
 
             <CineSection id="proximamente" title="Próximamente" aside="Las próximas dos semanas" moreHref="/cine/proximamente">
-              <UpcomingTimeline films={upcoming} showMonths={false} linkWeeks />
+              <UpcomingTimeline films={upcoming} showMonths={false} linkWeeks watchlist={actions.existing} />
             </CineSection>
           </>
         )}
