@@ -1973,6 +1973,42 @@ header.site-header {
   }
 }
 
+/*
+ * FIL-29: on phones the header floats like the dock — inset from the notch and the sides,
+ * rounded, with its border all around — so its blur never runs into the screen edges. A scrim
+ * keeps the status bar readable over what scrolls above it. Desktop keeps the full-width bar.
+ */
+@media (max-width: 39.999rem) {
+  header.site-header {
+    top: calc(env(safe-area-inset-top) + 0.5rem);
+    margin: calc(env(safe-area-inset-top) + 0.5rem) max(1rem, env(safe-area-inset-right)) 0
+      max(1rem, env(safe-area-inset-left));
+    padding-top: 0;
+    border: 1px solid rgb(255 255 255 / 0.1);
+    border-radius: 1.25rem;
+  }
+
+  header.site-header > div {
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 39;
+    height: calc(env(safe-area-inset-top) + 0.5rem);
+    background: linear-gradient(to bottom, var(--canvas) 55%, rgb(0 0 0 / 0));
+    pointer-events: none;
+  }
+
+  /* Hoy's sala runs under the status bar on purpose. */
+  body:has(.diario-que-ver-shell)::before {
+    content: none;
+  }
+}
+
 ::view-transition-group(app-header),
 ::view-transition-old(app-header),
 ::view-transition-new(app-header) {
