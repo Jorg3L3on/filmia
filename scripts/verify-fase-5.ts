@@ -196,8 +196,8 @@ const run = () => {
 
   // JOR-218 — iPhone final pass (home → ficha → alta / standalone)
   assert(
-    ui.includes('top-[calc(3rem+env(safe-area-inset-top))]') &&
-      ui.includes("sm:top-[calc(3.5rem+env(safe-area-inset-top))]") &&
+    // FIL-29: phones float the header 0.5 rem down at h-12, so both widths sit 3.5 rem down.
+    ui.includes('safeAreaStickyUnderHeaderClass = "top-[calc(3.5rem+env(safe-area-inset-top))]"') &&
       ui.includes("safeAreaInsetXPadClass") &&
       ui.includes("safe-area-inset-left") &&
       ui.includes("safe-area-inset-right"),
@@ -217,12 +217,12 @@ const run = () => {
   );
 
   // Mobile searches from the dock (FIL-I3-3), docked under the h-12 header: the sticky chips sit
-  // under that field (7.25 rem); from sm up the top form is desktop only and they sit flush under the header.
+  // under that field (7.75 rem with the floating header, FIL-29); from sm up the top form is desktop only and they sit flush under the header.
   const buscarAdd = read("src/components/TmdbSearchAdd.tsx");
   assert(
     buscarForm.includes("3.5rem") &&
       buscarAdd.includes("top-[calc(3rem+env(safe-area-inset-top))]") &&
-      buscarAdd.includes("top-[calc(7.25rem+env(safe-area-inset-top))]") &&
+      buscarAdd.includes("top-[calc(7.75rem+env(safe-area-inset-top))]") &&
       !buscarForm.includes("4rem+env(safe-area-inset-top)"),
     "Buscar sticky sits under the docked field on mobile and flush under SiteHeader from sm (JOR-218)",
   );
