@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import { db, listItems, lists, titles, type Platform, type SeriesStatus } from "@/db";
 import { upsertTitleFromTmdbForUser } from "@/lib/add-title-from-tmdb";
 import { isValidIsoDate, isoDateToUtcNoon, toDateInput } from "@/lib/dates";
@@ -12,6 +12,7 @@ import {
   revalidateSeriesSurfaces,
   revalidateWatchlistSurfaces,
 } from "@/lib/revalidate-surfaces";
+import { VISTE_RATING } from "@/lib/piezas/core";
 import { seriesStatusListTransition } from "@/lib/series-status-lists";
 import { scheduleTonightRecompute } from "@/lib/tonight-store";
 import { revalidatePath } from "next/cache";
@@ -172,6 +173,49 @@ export const setRatingFor = async (
     .where(and(eq(titles.id, titleId), eq(titles.userId, userId)))
     .returning({ id: titles.id });
   if (updated.length === 0) throw new DomainError("not_found", "Título no encontrado.");
+  revalidate(() => revalidateRatingSurfaces(titleId));
+  scheduleTonightRecompute(userId);
+};
+
+export type QuickRateAnswer = keyof typeof VISTE_RATING;
+
+/**
+ * FIL-28 · «Me gustó / No tanto» in the «Añadida a tu diario» toast: the engine's implied rating
+ * (8 / 4), written only while the person has no stars of their own (`rating IS NULL`). Returns the
+ * implied rating it replaced, so Deshacer can put it back; `written: false` when stars exist.
+ */
+export const setImpliedRatingFor = async (userId: string, titleOrCatalogId: string, answer: QuickRateAnswer) => {
+  // Hoy's recommendations know their catalog id until «Vi esto» creates the Title.
+  const current = await db.query.titles.findFirst({
+    where: and(eq(titles.userId, userId), or(eq(titles.id, titleOrCatalogId), eq(titles.catalogId, titleOrCatalogId))),
+    columns: { id: true, rating: true, impliedRating: true },
+  });
+  if (!current) throw new DomainError("not_found", "Título no encontrado.");
+  const titleId = current.id;
+  const owned = and(eq(titles.id, titleId), eq(titles.userId, userId));
+  if (current.rating != null) {
+    return { written: false, previous: current.impliedRating };
+  }
+  const updated = await db
+    .update(titles)
+    .set({ impliedRating: VISTE_RATING[answer] })
+    .where(and(owned, isNull(titles.rating)))
+    .returning({ id: titles.id });
+  if (updated.length === 0) {
+    return { written: false, previous: current.impliedRating };
+  }
+  revalidate(() => revalidateRatingSurfaces(titleId));
+  scheduleTonightRecompute(userId);
+  return { written: true, previous: current.impliedRating, titleId };
+};
+
+/** Deshacer of the quick answer: back to what `setImpliedRatingFor` replaced, still only without stars. */
+export const restoreImpliedRatingFor = async (userId: string, titleId: string, previous: number | null) => {
+  // Always the Title id `setImpliedRatingFor` returned.
+  await db
+    .update(titles)
+    .set({ impliedRating: previous })
+    .where(and(eq(titles.id, titleId), eq(titles.userId, userId), isNull(titles.rating)));
   revalidate(() => revalidateRatingSurfaces(titleId));
   scheduleTonightRecompute(userId);
 };

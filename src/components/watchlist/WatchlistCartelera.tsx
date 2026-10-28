@@ -265,10 +265,10 @@ export const WatchlistCartelera = ({
         menuTarget={menuTarget}
         noteTarget={noteTarget}
         onCloseMark={() => setMarkTarget(null)}
-        onWatchedSaved={(ficha) => {
+        onWatchedSaved={(ficha, rating) => {
           setMarkTarget(null);
           closeExpanded();
-          actions.onWatchedSaved(ficha);
+          actions.onWatchedSaved(ficha, rating);
         }}
         onWatchedError={actions.onWatchedError}
         onCloseMenu={() => setMenuTarget(null)}

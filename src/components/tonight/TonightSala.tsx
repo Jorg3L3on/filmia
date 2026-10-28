@@ -46,6 +46,7 @@ import { dayPartOf } from "@/lib/tonight/time";
 import type { RutaReveal } from "@/lib/rutas/reveal";
 import type { BridgeReveal } from "@/lib/universo/store";
 import type { TonightDecks } from "@/lib/tonight-store";
+import { showDiaryToast } from "@/lib/quick-rate-toast";
 
 const DEAL_MS = 700;
 
@@ -307,27 +308,26 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
           .catch(() => undefined);
       }
       const poster = toastPoster(title.posterPath);
-      showToast({
-        title: TOAST_COPY.addedDiary,
+      showDiaryToast({
+        titleId,
         description: title.name,
         poster,
-        action: {
-          label: "Deshacer",
-          onClick: () => {
-            startWatchedUndo({
-              apply: () => {
-                unhide(title.id);
-                removeFrom(setWatchedIds, title.id);
-              },
-              revert: () => {
-                hide(title.id);
-                addTo(setWatchedIds, title.id);
-              },
-              undo: () => undoMarkWatched(titleId),
-              poster,
-              description: title.name,
-            });
-          },
+        // Hoy's `rating` already folds in an implied one: any rating hides the quick answer.
+        rated: title.rating != null,
+        onUndo: () => {
+          startWatchedUndo({
+            apply: () => {
+              unhide(title.id);
+              removeFrom(setWatchedIds, title.id);
+            },
+            revert: () => {
+              hide(title.id);
+              addTo(setWatchedIds, title.id);
+            },
+            undo: () => undoMarkWatched(titleId),
+            poster,
+            description: title.name,
+          });
         },
       });
     },

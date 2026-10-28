@@ -85,7 +85,7 @@ type MarkWatchedSheetProps = {
   toastOnError?: boolean;
   onClose: () => void;
   /** Called with the YYYY-MM-DD the user just confirmed, before the write settles. */
-  onSaved?: (watchedAt: string) => void;
+  onSaved?: (watchedAt: string, rating: number | null) => void;
   onError?: (message: string) => void;
   /**
    * Replaces `markTitleWatched(titleId, …)`: the ficha preview (FIL-I8) has no
@@ -194,7 +194,7 @@ const MarkWatchedSheetFields = ({
     }
 
     onClose();
-    onSaved?.(watchedAt);
+    onSaved?.(watchedAt, value);
     if (!silent) {
       showToast({
         title: hasInitialDate ? TOAST_COPY.diaryUpdated : TOAST_COPY.markedSeen,
