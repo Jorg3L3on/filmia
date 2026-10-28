@@ -200,6 +200,20 @@ export const ToastCard = ({ toast, phase = "in", onDismiss, announce = true }: T
     onDismiss?.();
   };
 
+  const actionButton = toast.action ? (
+    <button
+      type="button"
+      className={cn("toast-action", focusRing)}
+      onClick={() => {
+        toast.action?.onClick();
+        handleDismiss();
+      }}
+    >
+      {undo ? <UndoGlyph /> : null}
+      {toast.action.label}
+    </button>
+  ) : null;
+
   return (
     <article
       ref={cardRef}
@@ -261,19 +275,25 @@ export const ToastCard = ({ toast, phase = "in", onDismiss, announce = true }: T
             </span>
           ) : null}
         </div>
-        {toast.action ? (
-          <button
-            type="button"
-            className={cn("toast-action", focusRing)}
-            onClick={() => {
-              toast.action?.onClick();
-              handleDismiss();
-            }}
-          >
-            {undo ? <UndoGlyph /> : null}
-            {toast.action.label}
-          </button>
-        ) : null}
+        {toast.choices ? (
+          <div className="toast-row">
+            <div className="toast-choices" role="group" aria-label="¿Qué te pareció?">
+              {toast.choices.map((choice) => (
+                <button
+                  key={choice.label}
+                  type="button"
+                  className={cn("toast-choice", focusRing)}
+                  onClick={() => choice.onChoose()}
+                >
+                  {choice.label}
+                </button>
+              ))}
+            </div>
+            {actionButton}
+          </div>
+        ) : (
+          actionButton
+        )}
       </div>
       <button
         type="button"

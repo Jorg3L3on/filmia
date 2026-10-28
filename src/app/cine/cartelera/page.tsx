@@ -7,7 +7,7 @@ import { CinePoster, PremiereTag } from "@/components/cine/CinePoster";
 import { CarteleraSkeleton } from "@/components/cine/CineSkeleton";
 import { loadCineActions } from "@/app/cine/cine-data";
 import { getNowShowing } from "@/lib/cine";
-import { formatShortDay, mxToday, parseCarteleraOrder, premiereTag, splitCartelera, ticketStub } from "@/lib/cine-core";
+import { formatShortDay, mxToday, parseCarteleraOrder, premiereTag, splitCartelera, ticketStub, watchlistFirst } from "@/lib/cine-core";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +37,10 @@ const Cartelera = async ({ searchParams }: { searchParams: Promise<SearchParams>
   const today = mxToday();
   const order = parseCarteleraOrder((await searchParams).orden);
   const [actions, films] = await Promise.all([loadCineActions(), getNowShowing()]);
-  const { weekStart, thisWeek, rest } = splitCartelera(films, today, order);
+  const split = splitCartelera(films, today, order);
+  const { weekStart } = split;
+  const thisWeek = watchlistFirst(split.thisWeek, actions.existing);
+  const rest = watchlistFirst(split.rest, actions.existing);
   const stub = ticketStub(weekStart);
 
   return (

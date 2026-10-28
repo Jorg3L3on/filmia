@@ -22,7 +22,9 @@ import {
   ensureWatchlistFor,
   markWatchedFor,
   removeFromWatchlistFor,
+  restoreImpliedRatingFor,
   restoreWatchedFor,
+  setImpliedRatingFor,
 } from "@/lib/title-writes";
 import { requireUserId } from "@/lib/session";
 import { scheduleTonightRecompute } from "@/lib/tonight-store";
@@ -204,4 +206,23 @@ export const moveWatchlistItemToTop = async (titleId: string) => {
   revalidateWatchlist();
   revalidatePath("/");
   scheduleTonightRecompute(userId);
+};
+
+/** FIL-28: the toast's «Me gustó» / «No tanto». Never touches stars the person already gave. */
+export const quickRateWatched = async (titleId: string, answer: unknown) => {
+  if (answer !== "liked" && answer !== "meh") {
+    throw new Error("Respuesta no válida.");
+  }
+  const userId = await requireUserId();
+  return setImpliedRatingFor(userId, titleId, answer);
+};
+
+/** Deshacer after a quick answer: the implied rating goes back to what it was. */
+export const undoQuickRate = async (titleId: string, previous: unknown) => {
+  const value = previous === null ? null : Number(previous);
+  if (value !== null && !(Number.isInteger(value) && value >= 1 && value <= 10)) {
+    throw new Error("Calificación no válida.");
+  }
+  const userId = await requireUserId();
+  await restoreImpliedRatingFor(userId, titleId, value);
 };

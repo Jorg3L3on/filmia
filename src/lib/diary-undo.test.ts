@@ -179,7 +179,7 @@ describe("Quitar del diario undo", { concurrency: 1 }, () => {
     assert.match(actions, /clearAfterPendingSave/);
     assert.match(actions, /TOAST_COPY\.stillRemoving/);
     const sheet = await readFile("src/components/MarkWatchedSheet.tsx", "utf8");
-    assert.match(sheet, /onSaved\?\.\(watchedAt\)/);
+    assert.match(sheet, /onSaved\?\.\(watchedAt, value\)/);
     const caller = await readFile("src/app/titulos/[id]/title-sections.tsx", "utf8");
     assert.match(caller, /watchedAt=\{title\.watchedAt \? toDateInput\(title\.watchedAt\) : null\}/);
   });

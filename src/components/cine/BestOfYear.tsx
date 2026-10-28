@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { CineSection, GhostPoster } from "@/components/cine/CineParts";
 import { YearSelector } from "@/components/cine/YearSelector";
+import { YearTopMore } from "@/components/cine/YearTopMore";
 import { YearTopRow } from "@/components/cine/YearTopRow";
 import { YourTopCard } from "@/components/cine/YourTopCard";
 import type { CineFilm } from "@/lib/cine";
 import { mxToday } from "@/lib/cine-core";
-import { pendingTopDayLabel, YEAR_TOP_SIZE } from "@/lib/cine-top";
+import { IMDB_YEAR_TOP_SIZE, pendingTopDayLabel } from "@/lib/cine-top";
 import {
   getUserYearTop,
   getWatchedCatalogIds,
@@ -29,9 +30,10 @@ export const yearTopFilm = (film: YearTopFilm): CineFilm => ({
   status: "gone",
   popularity: 0,
   streaming: [],
+  directors: [],
 });
 
-/** What the block and the full page share: the IMDb ten, what you saw of them, your own top. */
+/** What the block and the full page share: the IMDb hundred, what you saw of them, your own top. */
 export const loadBestOfYear = async (userId: string, year: number) => {
   const today = mxToday();
   const top = await getYearTop(year);
@@ -60,7 +62,7 @@ export const loadBestOfYear = async (userId: string, year: number) => {
 
 type BestOfYearData = Awaited<ReturnType<typeof loadBestOfYear>>;
 
-/** «Has visto 3 de 10», or the two ends in words. */
+/** «Has visto 3 de 100», or the two ends in words. */
 export const seenOfTopLabel = (seen: number, total: number) =>
   seen === 0 ? "Ninguna vista todavía" : seen >= total ? "Las viste todas" : null;
 
@@ -82,7 +84,7 @@ const GhostRows = () => (
   <ol aria-hidden="true" className="space-y-1">
     {[1, 2, 3].map((rank) => (
       <li key={rank} className="flex items-center gap-3 py-1.5 pr-2">
-        <span className="w-9 shrink-0 text-right font-serif text-[2.1rem] leading-none tabular-nums text-paper/15">{rank}</span>
+        <span className="w-11 shrink-0 text-right font-serif text-[2.1rem] leading-none tabular-nums text-paper/15">{rank}</span>
         <GhostPoster className="w-11 shrink-0" />
         <span className="flex-1 space-y-2">
           <span className="block h-3 w-3/5 rounded-full bg-white/[0.06]" />
@@ -93,11 +95,14 @@ const GhostRows = () => (
   </ol>
 );
 
+/** The full page shows this many rows at a time. */
+const YEAR_TOP_STEP = 25;
+
 export const BestOfYearList = ({
   year,
   top,
   watchedIds,
-  limit = YEAR_TOP_SIZE,
+  limit = IMDB_YEAR_TOP_SIZE,
   pending,
   pendingDay,
 }: Pick<BestOfYearData, "top" | "watchedIds" | "pending" | "pendingDay"> & { year: number; limit?: number }) => {
@@ -122,19 +127,20 @@ export const BestOfYearList = ({
       </div>
     );
   }
+  const rows = top.slice(0, limit).map((film) => (
+    <li key={film.catalogId}>
+      <YearTopRow
+        rank={film.rank}
+        film={yearTopFilm(film)}
+        imdbRating={film.imdbRating}
+        imdbVotes={film.imdbVotes}
+        watched={watchedIds.has(film.catalogId)}
+      />
+    </li>
+  ));
   return (
     <ol id={`top-${year}`} className="space-y-1">
-      {top.slice(0, limit).map((film) => (
-        <li key={film.catalogId}>
-          <YearTopRow
-            rank={film.rank}
-            film={yearTopFilm(film)}
-            imdbRating={film.imdbRating}
-            imdbVotes={film.imdbVotes}
-            watched={watchedIds.has(film.catalogId)}
-          />
-        </li>
-      ))}
+      {rows.length > YEAR_TOP_STEP ? <YearTopMore step={YEAR_TOP_STEP}>{rows}</YearTopMore> : rows}
     </ol>
   );
 };

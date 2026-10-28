@@ -76,7 +76,8 @@ export const YearTopRow = ({
     >
       <span
         className={cn(
-          "w-9 shrink-0 text-right font-serif text-[2.1rem] leading-none tabular-nums",
+          "w-11 shrink-0 text-right font-serif leading-none tabular-nums",
+          rank < 10 ? "text-[2.1rem]" : rank < 100 ? "text-[1.75rem]" : "text-[1.4rem]",
           rank <= 3 ? "cine-glow text-cine" : "text-paper/35",
         )}
         aria-label={`Número ${rank}`}

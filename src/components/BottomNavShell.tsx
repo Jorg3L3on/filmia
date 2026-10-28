@@ -17,7 +17,7 @@ type BottomNavShellProps = {
 /**
  * Tiny client leaf: floating glass dock frame + blur stale focus on route change.
  * The tab dock floats above the home indicator: max(safe-area-inset-bottom, 0.75rem). The
- * Buscar field sits under the 3 rem header instead (see SiteHeader).
+ * Buscar field sits under the floating header (3.5 rem) instead (see SiteHeader).
  */
 export const BottomNavShell = ({ children, placement = "bottom" }: BottomNavShellProps) => {
   const pathname = usePathname();
@@ -43,7 +43,7 @@ export const BottomNavShell = ({ children, placement = "bottom" }: BottomNavShel
       className={cn(
         "pointer-events-none fixed inset-x-0 z-50 sm:hidden",
         placement === "top"
-          ? "top-[calc(3rem+env(safe-area-inset-top))] pt-2"
+          ? "top-[calc(3.5rem+env(safe-area-inset-top))] pt-2"
           : "bottom-0 pb-[max(env(safe-area-inset-bottom),0.75rem)]",
         safeAreaInsetXPadClass,
       )}

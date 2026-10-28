@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { Browser, Page } from "playwright";
 import { ToastCard } from "@/components/Toast";
 import type { ToastItem, ToastVariant } from "@/lib/toast";
+import { QUICK_RATE_COPY } from "@/lib/quick-rate-toast";
 import { TOAST_COPY, addedToNamedList } from "@/lib/toast-alerts";
 
 const require = createRequire(import.meta.url);
@@ -107,6 +108,20 @@ const pageHtml = () => {
     ),
     card("dynamic", item(5, "success", addedToNamedList(LONG_LIST), "")),
     card(
+      "quick-rate",
+      item(7, "success", TOAST_COPY.addedDiary, "Dune: Parte dos", {
+        poster: PIXEL,
+        action: { label: "Deshacer", onClick: () => {} },
+        choices: [
+          { label: QUICK_RATE_COPY.liked, onChoose: () => {} },
+          { label: QUICK_RATE_COPY.meh, onChoose: () => {} },
+        ],
+        durationMs: 7000,
+        remainingMs: 7000,
+        held: true,
+      }),
+    ),
+    card(
       "progress",
       item(6, "progress", "Importando diario", "12 de 40 fichas", {
         progress: 0.45,
@@ -181,6 +196,8 @@ type Measured = {
   leadMid: number | null;
   toastAlign: string;
   bodyAlign: string;
+  /** FIL-28: every quick answer and the action, inside the card and on one row. */
+  choices: { top: number; bottom: number; left: number; right: number; hitH: number }[];
   bodyDirection: string;
   posterWidth: number | null;
   posterHeight: number | null;
@@ -260,6 +277,19 @@ const MEASURE_JS = `() => {
       leadMid: leadBox ? (leadBox.top + leadBox.bottom) / 2 : null,
       toastAlign: getComputedStyle(toast).alignItems,
       bodyAlign: body ? getComputedStyle(body).alignItems : "",
+      choices: Array.from(scope.querySelectorAll(".toast-choice, .toast-row .toast-action")).map((node) => {
+        const box = node.getBoundingClientRect();
+        const hit = getComputedStyle(node, "::after");
+        const top = parseFloat(hit.top);
+        const bottom = parseFloat(hit.bottom);
+        return {
+          top: box.top,
+          bottom: box.bottom,
+          left: box.left,
+          right: box.right,
+          hitH: box.height - (isFinite(top) ? top : 0) - (isFinite(bottom) ? bottom : 0),
+        };
+      }),
       bodyDirection: body ? getComputedStyle(body).flexDirection : "",
       posterWidth: poster ? poster.getBoundingClientRect().width : null,
       posterHeight: poster ? poster.getBoundingClientRect().height : null,
@@ -416,6 +446,26 @@ const judge = (width: number, rows: Measured[]) => {
     }
   }
 
+  const quick = expectRow("quick-rate");
+  if (quick) {
+    if (quick.choices.length !== 3) {
+      fail("quick-rate", `expected Me gustó, No tanto and Deshacer, got ${quick.choices.length}`);
+    }
+    for (const box of quick.choices) {
+      if (box.left < quick.toastLeft - 0.5 || box.right > quick.toastRight + 0.5) {
+        fail("quick-rate", `a choice escapes the card (${box.left}–${box.right} vs ${quick.toastLeft}–${quick.toastRight})`);
+      }
+      if (box.hitH < 44) {
+        fail("quick-rate", `choice touch height ${box.hitH}`);
+      }
+      if (mobile && box.top < quick.titleBottom - 1) {
+        fail("quick-rate", "a choice is not below the title");
+      }
+    }
+    if (new Set(quick.choices.map((box) => Math.round(box.top))).size > 1) {
+      fail("quick-rate", "Me gustó, No tanto and Deshacer are not on one row");
+    }
+  }
   return failures;
 };
 

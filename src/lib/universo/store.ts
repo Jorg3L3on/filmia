@@ -22,12 +22,14 @@ import { parseStoredStreamingPlatforms } from "@/lib/streaming-platforms";
 import { getTmdbDetails, getTmdbPersonCredits, isTmdbConfigured } from "@/lib/tmdb";
 import { parseStoredTmdbPeople } from "@/lib/tmdb-people";
 import {
+  bridgeRevealOf,
   buildUniverso,
   closestIsland,
   mostBridges,
   newBridge,
   ROLE_LABEL,
   rutaRoleOf,
+  type BridgeReveal,
   type ClosestIsland,
   type Universo,
   type UniversoFilm,
@@ -270,21 +272,7 @@ export const loadUniversoPerson = async (userId: string, key: string): Promise<U
   }
 };
 
-export type BridgeReveal = {
-  personName: string;
-  roleLabel: string;
-  films: string[];
-  line: string;
-  /** Their ruta, to start from the sheet. */
-  ruta: { sourceKey: string; title: string; total: number | null } | null;
-};
-
-const BRIDGE_LINE: Record<ThreadPersonRole, string> = {
-  director: "dirigió",
-  dp: "fotografió",
-  composer: "puso la música de",
-  cast: "sale en",
-};
+export type { BridgeReveal } from "@/lib/universo/core";
 
 /**
  * U4 · after «Vi esto»: did the film just seen make a bridge (someone already in a film of yours
@@ -318,23 +306,6 @@ export const bridgeAfterWatch = async (userId: string, cardId: string): Promise<
     lens: `universo:${found.person.id}`,
     createdAt: new Date(),
   });
-  const names = [seen.name, ...found.with.map((film) => film.name)];
-  const rutaRole = rutaRoleOf(found.person.role) as PersonRutaRole;
   const totals = await loadTotals([{ id: found.person.id, role: found.person.role }]);
-  const total = totals.get(found.person.id) ?? null;
-  const both = names.length === 2 ? "las dos" : `las ${names.length}`;
-  return {
-    personName: found.person.name,
-    roleLabel: ROLE_LABEL[found.person.role].toLowerCase(),
-    films: names,
-    line: `${found.person.name} ${BRIDGE_LINE[found.person.role]} ${both}.${total ? ` Llevas ${names.length} de sus ${total}.` : ""}`,
-    ruta:
-      found.person.role === "cast" && total != null && total > 40
-        ? null
-        : {
-            sourceKey: personSourceKey([found.person.id], rutaRole),
-            title: `Ruta de ${found.person.name}`,
-            total,
-          },
-  };
+  return bridgeRevealOf(seen, found, totals.get(found.person.id) ?? null);
 };

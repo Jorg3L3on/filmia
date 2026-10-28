@@ -727,6 +727,43 @@ body {
   font-weight: 600;
 }
 
+/* FIL-28: «Me gustó / No tanto» next to Deshacer. Quieter than the action: answering is optional. */
+.toast-row {
+  display: flex;
+  min-width: 0;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.toast-choices {
+  display: flex;
+  gap: 6px;
+}
+
+.toast-choice {
+  position: relative;
+  display: inline-flex;
+  height: 32px;
+  flex: none;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0 10px;
+  color: var(--paper);
+  background: rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.22);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.toast-choice::after {
+  content: "";
+  position: absolute;
+  inset: -6px -3px;
+}
+
 .toast-action::after {
   content: "";
   position: absolute;
@@ -886,6 +923,30 @@ body {
   /* 28px painted. 8px above and below reach the 44px touch target. */
   .toast-action::after {
     inset: -8px -4px;
+  }
+
+  .toast:has(.toast-choices) {
+    align-items: flex-start;
+  }
+
+  .toast-row,
+  .toast-choices {
+    gap: 4px;
+  }
+
+  .toast-choice {
+    height: 28px;
+    padding: 0 6px;
+    font-size: 12px;
+  }
+
+  /* Room for the three on one row at 375 px whatever the font metrics: the word says Deshacer. */
+  .toast-row .toast-action .toast-glyph {
+    display: none;
+  }
+
+  .toast-choice::after {
+    inset: -8px -3px;
   }
 
   .toast-light {
@@ -1970,6 +2031,42 @@ header.site-header {
     background: rgb(10 13 20 / 0.55);
     -webkit-backdrop-filter: blur(24px) saturate(120%);
     backdrop-filter: blur(24px) saturate(120%);
+  }
+}
+
+/*
+ * FIL-29: on phones the header floats like the dock — inset from the notch and the sides,
+ * rounded, with its border all around — so its blur never runs into the screen edges. A scrim
+ * keeps the status bar readable over what scrolls above it. Desktop keeps the full-width bar.
+ */
+@media (max-width: 39.999rem) {
+  header.site-header {
+    top: calc(env(safe-area-inset-top) + 0.5rem);
+    margin: calc(env(safe-area-inset-top) + 0.5rem) max(1rem, env(safe-area-inset-right)) 0
+      max(1rem, env(safe-area-inset-left));
+    padding-top: 0;
+    border: 1px solid rgb(255 255 255 / 0.1);
+    border-radius: 1.25rem;
+  }
+
+  header.site-header > div {
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 39;
+    height: calc(env(safe-area-inset-top) + 0.5rem);
+    background: linear-gradient(to bottom, var(--canvas) 55%, rgb(0 0 0 / 0));
+    pointer-events: none;
+  }
+
+  /* Hoy's sala runs under the status bar on purpose. */
+  body:has(.diario-que-ver-shell)::before {
+    content: none;
   }
 }
 
