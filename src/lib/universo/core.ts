@@ -1,4 +1,4 @@
-import { duoName, type ThreadPerson, type ThreadPersonRole } from "@/lib/rutas/core";
+import { duoName, personSourceKey, type PersonRutaRole, type ThreadPerson, type ThreadPersonRole } from "@/lib/rutas/core";
 
 /**
  * «Tu universo» (FIL-I26-4, boards U1–U4): the people of the films you saw. Pure: nodes (one
@@ -289,4 +289,61 @@ export const newBridge = (
     .sort((a, b) => ROLE_RANK[a.person.role] - ROLE_RANK[b.person.role] || b.before.length - a.before.length);
   const pick = candidates[0];
   return pick ? { person: pick.person, with: pick.before } : null;
+};
+
+/** A film of the «Nuevo puente» sheet: enough for its poster and caption. */
+export type BridgeFilm = { name: string; year: number | null; posterPath: string | null; tmdbId: number };
+
+export type BridgeReveal = {
+  personName: string;
+  roleLabel: string;
+  /** For the portrait (FIL-33): the TMDB person and their photo, if TMDB has one. */
+  person: { id: number; profilePath: string | null };
+  /** The film just seen first, then the ones it joins. */
+  films: BridgeFilm[];
+  /** «Dirigió las dos.» / «Sale en las tres.» */
+  line: string;
+  /** «Llevas n de sus N»: null when TMDB's total is unknown. */
+  progress: { seen: number; total: number } | null;
+  /** Their ruta, to start from the sheet. */
+  ruta: { sourceKey: string; title: string; total: number | null } | null;
+};
+
+const BRIDGE_VERB: Record<ThreadPersonRole, string> = {
+  director: "Dirigió",
+  dp: "Fotografió",
+  composer: "Puso la música de",
+  cast: "Sale en",
+};
+
+/** «las dos», «las tres», then digits: «las 5». */
+export const bridgeCountWords = (count: number) => (count === 2 ? "las dos" : count === 3 ? "las tres" : `las ${count}`);
+
+/** Cast with more than this many titles get no ruta from the sheet: «Ver el universo» leads instead. */
+export const BRIDGE_CAST_RUTA_MAX = 40;
+
+/** The sheet's data from a found bridge (`newBridge`) and TMDB's total for the person. Pure. */
+export const bridgeRevealOf = (
+  seen: UniversoFilm,
+  found: { person: ThreadPerson; with: readonly UniversoFilm[] },
+  total: number | null,
+): BridgeReveal => {
+  const { person } = found;
+  const films = [seen, ...found.with].map(({ name, year, posterPath, tmdbId }) => ({ name, year, posterPath, tmdbId }));
+  return {
+    personName: person.name,
+    roleLabel: ROLE_LABEL[person.role].toLowerCase(),
+    person: { id: person.id, profilePath: person.profilePath ?? null },
+    films,
+    line: `${BRIDGE_VERB[person.role]} ${bridgeCountWords(films.length)}.`,
+    progress: total ? { seen: Math.min(films.length, total), total } : null,
+    ruta:
+      person.role === "cast" && total != null && total > BRIDGE_CAST_RUTA_MAX
+        ? null
+        : {
+            sourceKey: personSourceKey([person.id], rutaRoleOf(person.role) as PersonRutaRole),
+            title: `Ruta de ${person.name}`,
+            total,
+          },
+  };
 };

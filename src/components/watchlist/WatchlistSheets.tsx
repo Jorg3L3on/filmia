@@ -10,7 +10,7 @@ type WatchlistSheetsProps = {
   menuTarget: FichaView | null;
   noteTarget: FichaView | null;
   onCloseMark: () => void;
-  onWatchedSaved: (ficha: FichaView) => void;
+  onWatchedSaved: (ficha: FichaView, rating: number | null) => void;
   onWatchedError: (ficha: FichaView) => void;
   onCloseMenu: () => void;
   onTonight: (ficha: FichaView) => void;
@@ -51,8 +51,8 @@ export const WatchlistSheets = ({
       platform={markTarget?.platform?.platform ?? undefined}
       silent
       onClose={onCloseMark}
-      onSaved={() => {
-        if (markTarget) onWatchedSaved(markTarget);
+      onSaved={(_watchedAt, rating) => {
+        if (markTarget) onWatchedSaved(markTarget, rating);
       }}
       onError={() => {
         if (markTarget) onWatchedError(markTarget);

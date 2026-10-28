@@ -16,6 +16,7 @@ import { showToast } from "@/lib/toast";
 import { retryAfterRevert, showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { NOT_TONIGHT_DAYS } from "@/lib/tonight/score";
 import { swapAdjacentIds } from "@/lib/use-optimistic-action";
+import { showDiaryToast } from "@/lib/quick-rate-toast";
 
 /** The VISTO stamp shows this long before the poster flies to Perfil (same as the deck). */
 export const STAMP_MS = 520;
@@ -74,28 +75,26 @@ export const useWatchlistActions = ({
   };
 
   /** `MarkWatchedSheet` already saved: stamp, fly to Perfil, offer Deshacer. */
-  const onWatchedSaved = (ficha: FichaView) => {
+  const onWatchedSaved = (ficha: FichaView, rating: number | null) => {
     setStampedId(ficha.id);
     later(() => {
       setStampedId(null);
       hide(ficha.id);
       void flyPosterToProfile(posterElement(ficha.id), tmdbPosterUrl(ficha.posterPath, "w185"));
       const poster = toastPoster(ficha.posterPath);
-      showToast({
-        title: TOAST_COPY.addedDiary,
+      showDiaryToast({
+        titleId: ficha.id,
         description: ficha.name,
         poster,
-        action: {
-          label: "Deshacer",
-          onClick: () => {
-            startWatchedUndo({
-              apply: () => restore(ficha.id),
-              revert: () => hide(ficha.id),
-              undo: () => undoMarkWatched(ficha.id),
-              poster,
-              description: ficha.name,
-            });
-          },
+        rated: rating != null,
+        onUndo: () => {
+          startWatchedUndo({
+            apply: () => restore(ficha.id),
+            revert: () => hide(ficha.id),
+            undo: () => undoMarkWatched(ficha.id),
+            poster,
+            description: ficha.name,
+          });
         },
       });
     }, STAMP_MS);

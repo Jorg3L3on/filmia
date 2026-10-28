@@ -29,6 +29,7 @@ export const yearTopFilm = (film: YearTopFilm): CineFilm => ({
   status: "gone",
   popularity: 0,
   streaming: [],
+  directors: [],
 });
 
 /** What the block and the full page share: the IMDb ten, what you saw of them, your own top. */

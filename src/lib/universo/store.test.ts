@@ -51,11 +51,13 @@ describeWithDb("Tu universo · store (FIL-I26-4)", () => {
     const duna = await seed.title(userId, films.duna!.catalogId, { watchedAt: new Date(2026, 9, 9) });
     const first = await bridgeAfterWatch(userId, duna);
     assert.equal(first?.personName, "Greig Fraser");
-    assert.deepEqual(first?.films, ["duna", "phm"]);
+    assert.deepEqual(first?.films.map((film) => film.name), ["duna", "phm"]);
+    assert.equal(first?.person.id, 6);
+    assert.deepEqual(first?.films.map((film) => film.tmdbId), [films.duna!.tmdbId, films.phm!.tmdbId]);
     const interestelar = await seed.title(userId, films.interestelar!.catalogId, { watchedAt: new Date(2026, 9, 10) });
     const second = await bridgeAfterWatch(userId, films.interestelar!.catalogId);
     assert.equal(second?.personName, "Hans Zimmer");
-    assert.equal(second?.line, "Hans Zimmer puso la música de las dos.");
+    assert.equal(second?.line, "Puso la música de las dos.");
     assert.equal(await bridgeAfterWatch(userId, interestelar), null, "once per person");
     const { universo } = await loadUniverso(userId, "summary");
     assert.deepEqual(universo.bridges.map((node) => node.name).sort(), ["Greig Fraser", "Hans Zimmer"]);

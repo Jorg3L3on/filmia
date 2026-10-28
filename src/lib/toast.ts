@@ -5,12 +5,20 @@ export type ToastAction = {
   onClick: () => void;
 };
 
+/** A quick answer inside the toast (FIL-28): choosing does not close it. */
+export type ToastChoice = {
+  label: string;
+  onChoose: () => void;
+};
+
 export type ToastPayload = {
   title: string;
   description?: string;
   variant?: ToastVariant;
   /** Optional inline action (e.g. «Deshacer»). */
   action?: ToastAction;
+  /** Optional row of quick answers next to the action («Me gustó» / «No tanto»). */
+  choices?: ToastChoice[];
   /** Override auto-dismiss (ms). `0` is honored. */
   durationMs?: number;
   /**
@@ -33,6 +41,7 @@ export type ToastItem = {
   description?: string;
   variant: ToastVariant;
   action?: ToastAction;
+  choices?: ToastChoice[];
   poster?: string;
   progress?: number;
   /** Identical non-error bursts collapse into one toast and count here. */
@@ -47,7 +56,7 @@ export type ToastItem = {
 
 export type ToastHold = "hover" | "focus" | "press" | "hidden";
 
-/** Sparse update. A present `action` / `description` / `poster` replaces; omit to keep. */
+/** Sparse update. A present `action` / `choices` / `description` / `poster` replaces; omit to keep. */
 export type ToastPatch = Partial<Omit<ToastPayload, "key">>;
 
 const EMPTY: ToastItem[] = [];
@@ -176,6 +185,7 @@ const materialize = (
     description: payload.description,
     variant: payload.variant ?? "success",
     action: payload.action,
+    choices: payload.choices?.length ? payload.choices : undefined,
     poster: payload.poster,
     progress: clampProgress(payload.progress),
     count,
@@ -306,6 +316,7 @@ export const updateToast = (key: string, patch: ToastPatch) => {
     description: "description" in patch ? patch.description : current.description,
     variant,
     action,
+    choices: "choices" in patch ? (patch.choices?.length ? patch.choices : undefined) : current.choices,
     poster: "poster" in patch ? patch.poster : current.poster,
     progress: "progress" in patch ? clampProgress(patch.progress) : current.progress,
     durationMs: timingChanged ? resolved : current.durationMs,

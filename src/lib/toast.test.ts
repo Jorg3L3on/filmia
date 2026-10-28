@@ -239,3 +239,41 @@ describe("toast timer", () => {
     assert.equal(getToasts().length, 0);
   });
 });
+
+describe("toast choices (FIL-28)", () => {
+  afterEach(() => {
+    mock.timers.reset();
+    clearToasts();
+  });
+
+  it("keeps the quick answers, drops them on update and leaves the undo timer running", () => {
+    mock.timers.enable({ apis: ["setTimeout", "Date"] });
+    const chosen: string[] = [];
+    showToast({
+      key: "diario:1",
+      title: "Añadida a tu diario",
+      action: { label: "Deshacer", onClick: () => {} },
+      choices: [
+        { label: "Me gustó", onChoose: () => chosen.push("liked") },
+        { label: "No tanto", onChoose: () => chosen.push("meh") },
+      ],
+    });
+    assert.deepEqual(getToasts()[0]?.choices?.map((choice) => choice.label), ["Me gustó", "No tanto"]);
+    getToasts()[0]?.choices?.[0]?.onChoose();
+    assert.deepEqual(chosen, ["liked"]);
+
+    mock.timers.tick(3000);
+    updateToast("diario:1", { title: "Anotado: te gustó", choices: [] });
+    const [toast] = getToasts();
+    assert.equal(toast?.title, "Anotado: te gustó");
+    assert.equal(toast?.choices, undefined);
+    assert.equal(toast?.action?.label, "Deshacer");
+    mock.timers.tick(4000);
+    assert.equal(getToasts().length, 0, "the 7 s undo window did not restart");
+  });
+
+  it("an empty list draws no row", () => {
+    showToast({ title: "Añadida a tu diario", choices: [] });
+    assert.equal(getToasts()[0]?.choices, undefined);
+  });
+});

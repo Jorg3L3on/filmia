@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ThreadPerson } from "@/lib/rutas/core";
 import {
+  bridgeCountWords,
+  bridgeRevealOf,
   buildUniverso,
   closestIsland,
   isBridge,
@@ -121,5 +123,47 @@ describe("la que más puentes abre", () => {
   it("nothing shared: no answer", () => {
     const candidates = [{ tmdbId: 1, name: "Sola", releaseDate: null, people: [p(30, "X", "director")] }];
     assert.equal(mostBridges(candidates, [FRASER.id], new Set()), null);
+  });
+});
+
+describe("bridgeRevealOf (FIL-33)", () => {
+  const withPoster = (base: UniversoFilm, posterPath: string | null, year: number | null = 2021): UniversoFilm => ({ ...base, posterPath, year });
+  const DUNA = withPoster(film("duna", "Duna", [VILLENEUVE, FRASER, ZIMMER]), "/duna.jpg");
+
+  it("carries posters, the person's photo, the line and the progress", () => {
+    const fraser = { ...FRASER, profilePath: "/fraser.jpg" };
+    const reveal = bridgeRevealOf(DUNA, { person: fraser, with: [withPoster(PHM, "/phm.jpg", 2026)] }, 31);
+    assert.deepEqual(reveal.person, { id: FRASER.id, profilePath: "/fraser.jpg" });
+    assert.deepEqual(reveal.films, [
+      { name: "Duna", year: 2021, posterPath: "/duna.jpg", tmdbId: DUNA.tmdbId },
+      { name: "Proyecto Fin del Mundo", year: 2026, posterPath: "/phm.jpg", tmdbId: PHM.tmdbId },
+    ]);
+    assert.equal(reveal.personName, "Greig Fraser");
+    assert.equal(reveal.roleLabel, "fotografía");
+    assert.equal(reveal.line, "Fotografió las dos.");
+    assert.deepEqual(reveal.progress, { seen: 2, total: 31 });
+    assert.equal(reveal.ruta?.sourceKey, "persona:6:fotografia");
+  });
+
+  it("a person without photo, a missing poster and three or more films", () => {
+    const others = [withPoster(LOTR, null), withPoster(PHM, "/phm.jpg"), withPoster(MICHAEL, "/m.jpg")];
+    const reveal = bridgeRevealOf(DUNA, { person: GOSLING, with: others }, 120);
+    assert.equal(reveal.person.profilePath, null);
+    assert.equal(reveal.films.length, 4);
+    assert.equal(reveal.films[1]?.posterPath, null);
+    assert.equal(reveal.line, "Sale en las 4.");
+    assert.equal(reveal.ruta, null, "cast with more than 40 titles: no ruta");
+    assert.equal(bridgeRevealOf(DUNA, { person: GOSLING, with: others.slice(0, 2) }, 12).line, "Sale en las tres.");
+  });
+
+  it("no total from TMDB: no progress, the ruta stays", () => {
+    const reveal = bridgeRevealOf(DUNA, { person: VILLENEUVE, with: [PHM] }, null);
+    assert.equal(reveal.progress, null);
+    assert.equal(reveal.line, "Dirigió las dos.");
+    assert.ok(reveal.ruta);
+  });
+
+  it("counts in words up to three", () => {
+    assert.deepEqual([2, 3, 5].map(bridgeCountWords), ["las dos", "las tres", "las 5"]);
   });
 });

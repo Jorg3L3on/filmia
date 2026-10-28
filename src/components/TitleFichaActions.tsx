@@ -39,6 +39,7 @@ import { PARA_TI_SLUG } from "@/lib/tonight/select";
 import { TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import { focusRing } from "@/lib/ui";
 import { useStickyOptimistic } from "@/lib/use-optimistic-action";
+import { showDiaryToast } from "@/lib/quick-rate-toast";
 
 const HOY_PARA_TI_HREF = `/?${TONIGHT_LENS_PARAM}=${PARA_TI_SLUG}`;
 
@@ -384,9 +385,11 @@ export const TitleFichaActions = ({
     }
     setLogging(true);
     const dayLabel = diaryDayLabel(diaryLog.date);
+    const rated = state.rating != null;
     run({ ...state, watched: true, inWatchlist: false }, async () => {
       try {
-        if (ownedTitleId == null) {
+        let loggedId = ownedTitleId;
+        if (loggedId == null) {
           const result = await addTitleFromTmdb({
             ...previewSnapshot(),
             destination: "watched",
@@ -395,6 +398,7 @@ export const TitleFichaActions = ({
           if (!result.ok) {
             throw new Error(result.error);
           }
+          loggedId = result.titleId;
           const film = previewSnapshot();
           writeFichaHandoff(handoffKey(film.kind, film.tmdbId), {
             titleId: result.titleId,
@@ -406,12 +410,13 @@ export const TitleFichaActions = ({
           if (diaryLog.date) {
             formData.set("watchedAt", diaryLog.date);
           }
-          await markTitleWatched(ownedTitleId, formData);
+          await markTitleWatched(loggedId, formData);
         }
-        showToast({
-          title: TOAST_COPY.addedDiary,
+        showDiaryToast({
+          titleId: loggedId,
           description: `${titleName} · ${dayLabel}`,
           poster,
+          rated,
         });
         router.push(diaryMonthHref(diaryLog.date));
       } finally {

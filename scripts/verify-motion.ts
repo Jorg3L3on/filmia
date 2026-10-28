@@ -229,7 +229,7 @@ assert(
       field.includes('enterKeyHint="search"') &&
       !field.includes("visualViewport") &&
       dock.includes('placement="top"') &&
-      read("src/components/BottomNavShell.tsx").includes("top-[calc(3rem+env(safe-area-inset-top))]"),
+      read("src/components/BottomNavShell.tsx").includes("top-[calc(3.5rem+env(safe-area-inset-top))]"),
     "Dock field: 16 px input (no iOS zoom), search key, docked under the header (top of the screen, no keyboard riding)",
   );
   assert(topForm.includes("hidden") && topForm.includes("sm:block"), "One field on mobile: the top form is desktop only");

@@ -79,8 +79,7 @@ describe("safe-area tokens (JOR-220)", () => {
 });
 
 describe("iPhone pass tokens (JOR-218)", () => {
-  it("sticky under header matches SiteHeader h-12 / sm:h-14", () => {
-    assert.match(safeAreaStickyUnderHeaderClass, /3rem/);
+  it("sticky under header matches SiteHeader: 0.5rem gap + h-12 on phones (FIL-29), sm:h-14", () => {
     assert.match(safeAreaStickyUnderHeaderClass, /3\.5rem/);
     assert.doesNotMatch(safeAreaStickyUnderHeaderClass, /4rem/);
   });

@@ -4,7 +4,7 @@ import { CineRail, GhostPoster, railItemClass, TicketStub, weekCountLabel } from
 import { FadeRail } from "@/components/cine/FadeRail";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import type { CineFilm, HomeArrival } from "@/lib/cine";
-import { formatShortDay, groupByWeek, premiereTag } from "@/lib/cine-core";
+import { formatShortDay, groupByWeek, premiereTag, watchlistFirst } from "@/lib/cine-core";
 import { cn } from "@/lib/cn";
 import { PLATFORM_SERVICE_LABEL } from "@/lib/labels";
 import { focusRing } from "@/lib/ui";
@@ -42,15 +42,18 @@ export const weekAnchor = (week: string) => `semana-${week}`;
 /**
  * Próximamente: one row per week, a ticket stub with its day and the month as a heading. On
  * /cine (`linkWeeks`) the stub links to its week on /cine/proximamente and carries the count (P6).
+ * Within a week, films on your Quiero ver (`watchlist`, FIL-30) come first.
  */
 export const UpcomingTimeline = ({
   films,
   showMonths = true,
   linkWeeks = false,
+  watchlist = [],
 }: {
   films: CineFilm[];
   showMonths?: boolean;
   linkWeeks?: boolean;
+  watchlist?: Parameters<typeof watchlistFirst>[1];
 }) => {
   if (films.length === 0) {
     return (
@@ -95,12 +98,13 @@ export const UpcomingTimeline = ({
                 label={`Semana del ${formatShortDay(week.week)}`}
                 className="-mr-4 flex min-w-0 flex-1 snap-x gap-3 overflow-x-auto overscroll-x-contain pb-1 pr-4 touch-pan-x"
               >
-                {week.items.map((film, itemIndex) => (
+                {watchlistFirst(week.items, watchlist).map((film, itemIndex) => (
                   <div key={film.catalogId} role="listitem" className="w-[26vw] max-w-[8.5rem] shrink-0 snap-start sm:w-[8.5rem]">
                     <CinePoster
                       film={film}
                       priority={index === 0 && itemIndex < 3}
                       sizes="(max-width: 640px) 28vw, 140px"
+                      compact
                       caption={film.mxReleaseDate === lead ? undefined : formatShortDay(film.mxReleaseDate)}
                     />
                   </div>

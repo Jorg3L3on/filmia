@@ -8,7 +8,7 @@ import { ParaTiEnSala } from "@/components/cine/ParaTiEnSala";
 import { EmptyState } from "@/components/EmptyState";
 import { loadCineActions } from "@/app/cine/cine-data";
 import { getCineLastRunAt, getHomeArrivals, getNowShowing, getUpcoming } from "@/lib/cine";
-import { addDays, mxToday, staleLabel } from "@/lib/cine-core";
+import { addDays, mxToday, staleLabel, watchlistFirst } from "@/lib/cine-core";
 import { parseTopYear } from "@/lib/cine-top";
 import { getUserStreamingPlatforms } from "@/lib/queries";
 
@@ -74,11 +74,11 @@ const CineBody = async ({ searchParams }: { searchParams: Promise<SearchParams> 
         ) : (
           <>
             <CineSection id="en-cines" title="En cines" moreHref="/cine/cartelera">
-              <NowShowingRail films={now} today={today} />
+              <NowShowingRail films={watchlistFirst(now, actions.existing)} today={today} />
             </CineSection>
 
             <CineSection id="proximamente" title="Próximamente" aside="Las próximas dos semanas" moreHref="/cine/proximamente">
-              <UpcomingTimeline films={upcoming} showMonths={false} linkWeeks />
+              <UpcomingTimeline films={upcoming} showMonths={false} linkWeeks watchlist={actions.existing} />
             </CineSection>
           </>
         )}
