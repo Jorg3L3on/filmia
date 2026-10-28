@@ -9,6 +9,7 @@ import {
   upcomingHorizon,
   type CinemaReleaseStatus,
 } from "@/lib/cine-core";
+import { cineDirectorsOf, type CineDirector } from "@/lib/cine-directors";
 import { matchWatchProviderPlatform } from "@/lib/streaming-platforms";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
 
@@ -27,6 +28,8 @@ export type CineFilm = {
   popularity: number;
   /** Platforms (ours) the film streams flatrate on in MX, in TMDB's order. */
   streaming: Platform[];
+  /** From `catalog.tmdbPeople` (FIL-32); empty when the cron has not enriched the film yet. */
+  directors: CineDirector[];
 };
 
 const filmColumns = {
@@ -40,6 +43,7 @@ const filmColumns = {
   status: cinemaReleases.status,
   popularity: cinemaReleases.popularity,
   watchProvidersMx: catalog.watchProvidersMx,
+  tmdbPeople: catalog.tmdbPeople,
 };
 
 export const streamingPlatformsOf = (watchProvidersMx: unknown): Platform[] => {
@@ -62,6 +66,7 @@ const toFilm = (row: FilmRow): CineFilm => ({
   status: row.status === "now" || row.status === "upcoming" ? row.status : "gone",
   popularity: row.popularity,
   streaming: streamingPlatformsOf(row.watchProvidersMx),
+  directors: cineDirectorsOf(row.tmdbPeople),
 });
 
 /** In theaters now, newest premiere first. Films already streaming in MX stay: they are still showing. */

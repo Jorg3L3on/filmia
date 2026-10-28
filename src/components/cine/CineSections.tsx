@@ -101,6 +101,7 @@ export const UpcomingTimeline = ({
                       film={film}
                       priority={index === 0 && itemIndex < 3}
                       sizes="(max-width: 640px) 28vw, 140px"
+                      compact
                       caption={film.mxReleaseDate === lead ? undefined : formatShortDay(film.mxReleaseDate)}
                     />
                   </div>

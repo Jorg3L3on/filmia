@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useRef, type PointerEvent, type ReactNode } from "react";
 import { useCineActions } from "@/components/cine/CineActions";
 import { PosterImage } from "@/components/PosterImage";
+import { TmdbPersonAvatar } from "@/components/TmdbPersonAvatar";
 import type { CineFilm } from "@/lib/cine";
+import { directedByLabel, shortDirectorName } from "@/lib/cine-directors";
 import { cn } from "@/lib/cn";
 import { menuVia } from "@/components/tmdb-search/SearchRowMenu";
 import { useLongPress } from "@/lib/motion";
@@ -21,10 +23,21 @@ type CinePosterProps = {
   className?: string;
   sizes?: string;
   priority?: boolean;
+  /** Próximamente's narrow tiles: the director's avatar drops to 24 px. */
+  compact?: boolean;
 };
 
 /** A Cine poster: tap → ficha, hold (or right click) → the Buscar menu anchored on it. */
-export const CinePoster = ({ film, badge, caption, dim = false, className, sizes = "(max-width: 640px) 34vw, 180px", priority }: CinePosterProps) => {
+export const CinePoster = ({
+  film,
+  badge,
+  caption,
+  dim = false,
+  className,
+  sizes = "(max-width: 640px) 34vw, 180px",
+  priority,
+  compact = false,
+}: CinePosterProps) => {
   const { hrefFor, statusOf, openMenu } = useCineActions();
   const frameRef = useRef<HTMLDivElement>(null);
   const firedRef = useRef(false);
@@ -46,7 +59,7 @@ export const CinePoster = ({ film, badge, caption, dim = false, className, sizes
       <Link
         href={hrefFor(film)}
         prefetch={false}
-        aria-label={`${film.name}${film.year ? ` (${film.year})` : ""}${status === "watched" ? ", vista" : status === "watchlist" ? ", en Quiero ver" : ""}`}
+        aria-label={`${film.name}${film.year ? ` (${film.year})` : ""}${directedByLabel(film.directors)}${status === "watched" ? ", vista" : status === "watchlist" ? ", en Quiero ver" : ""}`}
         className={cn("group block select-none [-webkit-touch-callout:none]", focusRing)}
         onClickCapture={(event) => {
           if (firedRef.current) {
@@ -84,9 +97,39 @@ export const CinePoster = ({ film, badge, caption, dim = false, className, sizes
         <p title={film.name} className="mt-2 line-clamp-2 text-[13px] font-medium leading-snug text-paper group-hover:text-cine">
           {film.name}
         </p>
+        <DirectorCredit directors={film.directors} compact={compact} />
         {caption ? <p className="mt-0.5 text-xs text-mist">{caption}</p> : null}
       </Link>
     </article>
+  );
+};
+
+/**
+ * Option B of FIL-IDEA4: the first director's avatar (a «+N» badge for the
+ * others), «Dirección» and «D. Villeneuve». Part of the tile's link, never a
+ * link of its own; nothing at all when the director is unknown.
+ */
+const DirectorCredit = ({ directors, compact }: { directors: CineFilm["directors"]; compact: boolean }) => {
+  const first = directors[0];
+  if (!first) {
+    return null;
+  }
+  const more = directors.length - 1;
+  return (
+    <div aria-hidden="true" className="mt-1.5 flex min-w-0 items-center gap-1.5">
+      <span className="relative shrink-0">
+        <TmdbPersonAvatar personId={first.id} name={first.name} profilePath={first.profilePath} size={compact ? 24 : 28} />
+        {more > 0 ? (
+          <span className="absolute -bottom-1 -right-1.5 rounded-full bg-chrome px-1 text-[9px] font-semibold leading-[14px] tabular-nums text-paper ring-1 ring-canvas">
+            +{more}
+          </span>
+        ) : null}
+      </span>
+      <span className={cn("min-w-0 leading-tight", more > 0 && "pl-1")}>
+        <span className="block text-[9px] font-semibold uppercase tracking-[0.14em] text-mist">Dirección</span>
+        <span className="block truncate text-[11px] text-fog">{shortDirectorName(first.name)}</span>
+      </span>
+    </div>
   );
 };
 
