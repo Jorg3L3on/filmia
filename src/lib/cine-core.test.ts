@@ -17,6 +17,7 @@ import {
   readableTitle,
   releaseStatusOn,
   splitCartelera,
+  watchlistFirst,
   staleLabel,
   ticketStub,
   weekStart,
@@ -252,5 +253,21 @@ describe("readable titles (FIL-I23-6, P4)", () => {
     assert.equal(readableTitle("रामायण", "Ramayana"), "Ramayana");
     assert.equal(readableTitle("劇場版 転生したらスライムだった件", null), "劇場版 転生したらスライムだった件");
     assert.equal(readableTitle("劇場版 転生したらスライムだった件", "転生"), "劇場版 転生したらスライムだった件");
+  });
+});
+
+describe("watchlistFirst", () => {
+  const films = [{ tmdbId: 1 }, { tmdbId: 2 }, { tmdbId: 3 }, { tmdbId: 4 }];
+  const entry = (tmdbId: number, inWatchlist: boolean, watched = false, kind = "MOVIE") => ({ tmdbId, kind, inWatchlist, watched });
+
+  it("puts Quiero ver films first, both groups in their order", () => {
+    const sorted = watchlistFirst(films, [entry(4, true), entry(2, true), entry(1, false, true)]);
+    assert.deepEqual(sorted.map((f) => f.tmdbId), [2, 4, 1, 3]);
+  });
+
+  it("ignores watched films, series with the same id and an empty Quiero ver", () => {
+    assert.deepEqual(watchlistFirst(films, [entry(3, true, true), entry(4, true, false, "SERIES")]).map((f) => f.tmdbId), [1, 2, 3, 4]);
+    assert.deepEqual(watchlistFirst(films, []).map((f) => f.tmdbId), [1, 2, 3, 4]);
+    assert.deepEqual(watchlistFirst([], [entry(1, true)]), []);
   });
 });

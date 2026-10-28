@@ -60,12 +60,18 @@ export const ParaTiEnSala = async ({ userId }: { userId: string }) => {
               <li key={item.release.catalogId}>
                 <Link
                   href={previewFichaHref("MOVIE", item.release.tmdbId)}
-                  className={cn("flex items-center gap-3 rounded-2xl border border-line px-3 py-2.5", focusRing)}
+                  className={cn("flex items-center gap-3 rounded-2xl border border-line py-2 pl-2 pr-3", focusRing)}
                 >
-                  <span className="w-14 shrink-0 text-center font-serif text-xl text-cine">{Math.max(0, item.days)}</span>
+                  <span className="w-11 shrink-0 overflow-hidden rounded-lg">
+                    <PosterImage name={item.release.name} posterPath={item.release.posterPath} sizes="44px" tmdbSize="w185" />
+                  </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[14px] text-paper">{item.release.name}</span>
                     <span className="block truncate text-[12px] text-fog">{item.reason}</span>
+                  </span>
+                  <span className="shrink-0 text-right">
+                    <span className="block font-serif text-xl leading-none text-cine">{Math.max(0, item.days)}</span>
+                    <span className="block text-[10px] text-mist">{Math.max(0, item.days) === 1 ? "día" : "días"}</span>
                   </span>
                 </Link>
               </li>

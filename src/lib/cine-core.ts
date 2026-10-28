@@ -272,3 +272,19 @@ export const hasLatinLetters = (name: string | null | undefined) => /\p{Script=L
  */
 export const readableTitle = (stored: string, enName: string | null | undefined) =>
   hasLatinLetters(stored) ? stored : hasLatinLetters(enName) ? (enName as string).trim() : stored;
+
+/**
+ * FIL-30: films on your Quiero ver (and not already seen: the badge says «Quiero ver» only then)
+ * go first, each group in its incoming order. Read once on the server, so the list does not jump
+ * while you add or remove a film; the new order shows on the next visit.
+ */
+export const watchlistFirst = <T extends { tmdbId: number }>(
+  films: readonly T[],
+  entries: readonly { tmdbId: number; kind: string; inWatchlist: boolean; watched: boolean }[],
+): T[] => {
+  const wanted = new Set(entries.filter((entry) => entry.kind === "MOVIE" && entry.inWatchlist && !entry.watched).map((entry) => entry.tmdbId));
+  if (wanted.size === 0) {
+    return [...films];
+  }
+  return [...films.filter((film) => wanted.has(film.tmdbId)), ...films.filter((film) => !wanted.has(film.tmdbId))];
+};
