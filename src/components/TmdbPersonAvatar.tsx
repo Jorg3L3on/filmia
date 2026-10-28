@@ -71,8 +71,10 @@ export const TmdbPersonAvatar = ({
       style={{
         ...box,
         fontSize: Math.round(size * 0.36),
-        backgroundColor: `rgb(${view.tint} / 0.22)`,
-        boxShadow: `inset 0 0 0 1px rgb(${view.tint} / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.12)`,
+        // Tinted glass over a solid well: posters behind the 80 px portrait never show through.
+        background: `linear-gradient(rgb(${view.tint} / 0.22), rgb(${view.tint} / 0.22)), var(--well)`,
+        // Tailwind's ring is a box-shadow too: an inline one would erase the affinity ring.
+        ...(ring ? {} : { boxShadow: `inset 0 0 0 1px rgb(${view.tint} / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.12)` }),
       }}
     >
       {view.initials}
