@@ -936,8 +936,13 @@ body {
 
   .toast-choice {
     height: 28px;
-    padding: 0 7px;
+    padding: 0 6px;
     font-size: 12px;
+  }
+
+  /* Room for the three on one row at 375 px whatever the font metrics: the word says Deshacer. */
+  .toast-row .toast-action .toast-glyph {
+    display: none;
   }
 
   .toast-choice::after {
