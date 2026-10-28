@@ -30,7 +30,15 @@ import { reportPickFailure, startWatchedUndo } from "@/lib/alert-retry";
 import { showToast } from "@/lib/toast";
 import { retryAfterRevert, showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { interleaveBySource } from "@/lib/tonight/compose";
-import { NO_LIMIT_ID, pickOptions, TIME_BUDGETS, TONIGHT_BUDGET_PARAM, widerBudget } from "@/lib/tonight/budget";
+import {
+  moodById,
+  NO_LIMIT_ID,
+  pickOptions,
+  TIME_BUDGETS,
+  TONIGHT_BUDGET_PARAM,
+  TONIGHT_MOOD_PARAM,
+  widerBudget,
+} from "@/lib/tonight/budget";
 import { closingCardFor, tallyCount } from "@/lib/tonight/closing-card";
 import { pickRefOf } from "@/lib/tonight/reco-card";
 import { rankForNow, TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
@@ -43,10 +51,33 @@ const DEAL_MS = 700;
 
 const OPTIONS_HEADING = ["", "Una opción para esta noche", "Dos opciones para esta noche", "Tres opciones para esta noche"];
 
-/** `?tengo=`: the time budget survives a trip to a ficha and back (a new night opens without it). */
-const budgetFrom = (search: string) => {
-  const id = new URLSearchParams(search).get(TONIGHT_BUDGET_PARAM);
-  return TIME_BUDGETS.some((budget) => budget.id === id) ? (id as string) : NO_LIMIT_ID;
+type TonightFilterState = { budgetId: string; moodId: string | null };
+
+const NO_FILTERS: TonightFilterState = { budgetId: NO_LIMIT_ID, moodId: null };
+
+/** `?tengo=` and `?animo=`: the filters survive a trip to a ficha and back (a new night opens without them). */
+const filtersFrom = (search: string): TonightFilterState => {
+  const params = new URLSearchParams(search);
+  const budgetId = params.get(TONIGHT_BUDGET_PARAM);
+  return {
+    budgetId: TIME_BUDGETS.some((budget) => budget.id === budgetId) ? (budgetId as string) : NO_LIMIT_ID,
+    moodId: moodById(params.get(TONIGHT_MOOD_PARAM))?.id ?? null,
+  };
+};
+
+/** Writes the filters into `params`, dropping the ones at their default. */
+const writeFilters = (params: URLSearchParams, filters: TonightFilterState) => {
+  if (filters.budgetId === NO_LIMIT_ID) {
+    params.delete(TONIGHT_BUDGET_PARAM);
+  } else {
+    params.set(TONIGHT_BUDGET_PARAM, filters.budgetId);
+  }
+  if (filters.moodId) {
+    params.set(TONIGHT_MOOD_PARAM, filters.moodId);
+  } else {
+    params.delete(TONIGHT_MOOD_PARAM);
+  }
+  return params;
 };
 const STAMP_TO_FLIGHT_MS = 0;
 
@@ -78,11 +109,11 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   );
   // Coming back to a card is not a new deal: no `.deck-deal` replay.
   const [dealing, setDealing] = useState(() => !rememberedCard);
-  // «Tengo» (FIL-I31-1). Client-only like the card: the chips render once the clock has mounted.
-  const [budgetId, setBudgetId] = useState(() =>
-    typeof window === "undefined" ? NO_LIMIT_ID : budgetFrom(window.location.search),
+  // «Tengo» and «Ánimo» (FIL-I31). Client-only like the card: the chips render once the clock has mounted.
+  const [filters, setFilters] = useState(() =>
+    typeof window === "undefined" ? NO_FILTERS : filtersFrom(window.location.search),
   );
-  const budgetRef = useRef(budgetId);
+  const filtersRef = useRef(filters);
   // The hero across both decks, so leaving the three options lands back on the film being looked at.
   const heroIdRef = useRef<string | null>(null);
   const [returnCard, setReturnCard] = useState<string | null>(null);
@@ -449,13 +480,12 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
         return;
       }
       heroIdRef.current = title.id;
-      const budget = budgetRef.current === NO_LIMIT_ID ? "" : `&${TONIGHT_BUDGET_PARAM}=${budgetRef.current}`;
-      // Shallow URL sync: router.replace would refetch the server page mid-swipe.
-      window.history.replaceState(
-        null,
-        "",
-        `/?${TONIGHT_LENS_PARAM}=${encodeURIComponent(slug)}&${DECK_CARD_PARAM}=${encodeURIComponent(title.id)}${budget}`,
+      const params = writeFilters(
+        new URLSearchParams({ [TONIGHT_LENS_PARAM]: slug, [DECK_CARD_PARAM]: title.id }),
+        filtersRef.current,
       );
+      // Shallow URL sync: router.replace would refetch the server page mid-swipe.
+      window.history.replaceState(null, "", `/?${params}`);
       if (slug === activeSlugRef.current) {
         return;
       }
@@ -480,34 +510,39 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   // Only the full deck moves the chapter bar; the three options are not chapters.
   const handleOptionChange = useCallback((_index: number, title: CoverflowTitle) => syncHero(title), [syncHero]);
 
-  const budget = TIME_BUDGETS.find((item) => item.id === budgetId) ?? TIME_BUDGETS[TIME_BUDGETS.length - 1];
+  const budget = TIME_BUDGETS.find((item) => item.id === filters.budgetId) ?? TIME_BUDGETS[TIME_BUDGETS.length - 1];
+  const mood = moodById(filters.moodId);
   const options = useMemo(
     () =>
-      budget.maxRuntimeMin == null
+      budget.maxRuntimeMin == null && !mood
         ? null
         : pickOptions(
             // Films only: the closing card and door cards have no runtime and are not options.
             cards.filter((card) => !card.closing && !card.portal),
-            { maxRuntimeMin: budget.maxRuntimeMin },
+            { maxRuntimeMin: budget.maxRuntimeMin, genres: mood?.genres },
             (card) => card.tonight?.runtimeMinutes,
           ),
-    [budget.maxRuntimeMin, cards],
+    [budget.maxRuntimeMin, cards, mood],
   );
-  const wider = widerBudget(budget.id);
+  const wider = budget.maxRuntimeMin == null ? null : widerBudget(budget.id);
 
-  const chooseBudget = (id: string) => {
-    budgetRef.current = id;
-    setBudgetId(id);
+  const applyFilters = (next: Partial<TonightFilterState>) => {
+    const merged = { ...filtersRef.current, ...next };
+    filtersRef.current = merged;
+    setFilters(merged);
     setReturnCard(heroIdRef.current);
-    const params = new URLSearchParams(window.location.search);
-    if (id === NO_LIMIT_ID) {
-      params.delete(TONIGHT_BUDGET_PARAM);
-    } else {
-      params.set(TONIGHT_BUDGET_PARAM, id);
-    }
-    const query = params.toString();
+    const query = writeFilters(new URLSearchParams(window.location.search), merged).toString();
     window.history.replaceState(null, "", query ? `/?${query}` : "/");
   };
+  const chooseBudget = (budgetId: string) => applyFilters({ budgetId });
+  const chooseMood = (moodId: string | null) => applyFilters({ moodId });
+
+  // «Sin resultados» says which filter left the deck empty.
+  const emptyMessage = !mood
+    ? `Nada de lo de hoy dura ${budget.label} o menos.`
+    : budget.maxRuntimeMin == null
+      ? `Hoy no hay nada para «${mood.label}».`
+      : `Nada para «${mood.label}» en ${budget.label} o menos.`;
 
   void STAMP_TO_FLIGHT_MS;
 
@@ -543,7 +578,13 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
           <TonightClosingEmpty />
         ) : (
           <div className="diario-que-ver-body flex min-h-0 flex-1 flex-col gap-1.5 sm:gap-3">
-            <TonightFilters budgetId={budget.id} onBudget={chooseBudget} className="shrink-0 px-1" />
+            <TonightFilters
+              budgetId={budget.id}
+              onBudget={chooseBudget}
+              moodId={mood?.id ?? null}
+              onMood={chooseMood}
+              className="shrink-0 px-1"
+            />
             {options ? (
               <>
                 <h2 className="shrink-0 px-1 text-sm font-medium text-paper">
@@ -551,7 +592,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
                 </h2>
                 {options.cards.length > 0 ? (
                   <CoverflowDeck
-                    key={`options-${budget.id}`}
+                    key={`options-${budget.id}-${mood?.id ?? ""}`}
                     titles={options.cards}
                     footer="tonight"
                     className="min-h-0 flex-1"
@@ -559,16 +600,23 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
                   />
                 ) : (
                   <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-                    <p className="text-sm text-fog">Nada de lo de hoy dura {budget.label} o menos.</p>
-                    {wider ? (
-                      <button
-                        type="button"
-                        onClick={() => chooseBudget(wider.id)}
-                        className={catalogBarButtonClass}
-                      >
-                        {wider.maxRuntimeMin == null ? "Ver todo" : `Probar con ${wider.label}`}
-                      </button>
-                    ) : null}
+                    <p className="text-sm text-fog">{emptyMessage}</p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {wider ? (
+                        <button
+                          type="button"
+                          onClick={() => chooseBudget(wider.id)}
+                          className={catalogBarButtonClass}
+                        >
+                          {wider.maxRuntimeMin == null ? "Sin límite" : `Probar con ${wider.label}`}
+                        </button>
+                      ) : null}
+                      {mood ? (
+                        <button type="button" onClick={() => chooseMood(null)} className={catalogBarButtonClass}>
+                          Quitar ánimo
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 )}
                 {options.unknownRuntime > 0 ? (

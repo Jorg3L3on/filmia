@@ -1,11 +1,21 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { fitsRuntime, NO_LIMIT_ID, pickOptions, TIME_BUDGETS, widerBudget } from "./budget";
+import {
+  fitsRuntime,
+  foldGenre,
+  matchesGenres,
+  moodById,
+  MOODS,
+  NO_LIMIT_ID,
+  pickOptions,
+  TIME_BUDGETS,
+  widerBudget,
+} from "./budget";
 
 type Card = { id: string; runtime: number | null };
 const card = (id: string, runtime: number | null): Card => ({ id, runtime });
 const runtimeOf = (c: Card) => c.runtime;
-const ids = (cards: Card[]) => cards.map((c) => c.id);
+const ids = (cards: readonly { id: string }[]) => cards.map((c) => c.id);
 
 // Para ti first, then the other lenses: the order the sala deals.
 const deck = [
@@ -69,5 +79,67 @@ describe("time budgets", () => {
     assert.equal(widerBudget("90")?.id, "120");
     assert.equal(widerBudget("180")?.id, NO_LIMIT_ID);
     assert.equal(widerBudget(NO_LIMIT_ID), null);
+  });
+});
+
+type GenreCard = { id: string; runtime: number | null; genres: { name: string }[] };
+const g = (id: string, runtime: number | null, ...names: string[]): GenreCard => ({
+  id,
+  runtime,
+  genres: names.map((name) => ({ name })),
+});
+const moodDeck = [
+  g("drama-largo", 150, "Drama"),
+  g("comedia", 95, "Comedia"),
+  g("terror", 88, "Terror", "Misterio"),
+  g("anime", 85, "Animación", "Familia"),
+  g("serie-scifi", 50, "Sci-Fi & Fantasy", "Drama"),
+  g("docu", null, "Documental"),
+  g("romcom", 100, "Romance", "Comedia"),
+];
+const moodRuntime = (c: GenreCard) => c.runtime;
+
+describe("mood chips (FIL-I31-2)", () => {
+  it("chips read Reír · Tensión · Emocionarme · Ligera · Pensar", () => {
+    assert.deepEqual(
+      MOODS.map((m) => m.label),
+      ["Reír", "Tensión", "Emocionarme", "Ligera", "Pensar"],
+    );
+  });
+
+  it("each mood returns only cards with one of its genres", () => {
+    for (const mood of MOODS) {
+      const picked = pickOptions(moodDeck, { maxRuntimeMin: null, genres: mood.genres }, moodRuntime);
+      for (const card of picked.cards) {
+        assert.ok(matchesGenres(card.genres, mood.genres), `${mood.id}: ${card.id}`);
+      }
+    }
+    const reir = moodById("reir");
+    assert.deepEqual(
+      ids(pickOptions(moodDeck, { maxRuntimeMin: null, genres: reir?.genres }, moodRuntime).cards),
+      ["comedia", "anime", "romcom"],
+    );
+    // TMDB's TV genres come back in English: «Pensar» still finds the series.
+    assert.deepEqual(
+      ids(pickOptions(moodDeck, { maxRuntimeMin: null, genres: moodById("pensar")?.genres }, moodRuntime).cards),
+      ["serie-scifi", "docu"],
+    );
+  });
+
+  it("with a time limit both apply, and only the limit hides unknown runtimes", () => {
+    const both = pickOptions(moodDeck, { maxRuntimeMin: 90, genres: moodById("reir")?.genres }, moodRuntime);
+    assert.deepEqual(ids(both.cards), ["anime"]);
+    assert.equal(both.unknownRuntime, 0);
+    const pensar90 = pickOptions(moodDeck, { maxRuntimeMin: 90, genres: moodById("pensar")?.genres }, moodRuntime);
+    assert.deepEqual(ids(pensar90.cards), ["serie-scifi"]);
+    assert.equal(pensar90.unknownRuntime, 1);
+  });
+
+  it("matchesGenres folds accents and case, needs whole names, and no list matches all", () => {
+    assert.equal(matchesGenres([{ name: "Animación" }], ["animacion"]), true);
+    assert.equal(matchesGenres([{ name: "Ciencia ficción" }], ["Ciencia"]), false);
+    assert.equal(matchesGenres([], ["Drama"]), false);
+    assert.equal(matchesGenres(null, undefined), true);
+    assert.equal(foldGenre(" Bélica "), "belica");
   });
 });

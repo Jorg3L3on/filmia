@@ -21,6 +21,48 @@ export const OPTIONS_COUNT = 3;
 export const fitsRuntime = (runtimeMinutes: number | null | undefined, maxRuntimeMin: number | null | undefined) =>
   maxRuntimeMin == null || (runtimeMinutes != null && runtimeMinutes <= maxRuntimeMin);
 
+export type Mood = { id: string; label: string; genres: readonly string[] };
+
+/**
+ * «Ánimo» (FIL-I31-2, set approved by Jorge 2026-10-28). Names as stored in `Catalog.tmdbGenres`
+ * (TMDB es-MX): movie genres in Spanish plus TMDB's TV-only genres, which come back in English.
+ */
+export const MOODS: readonly Mood[] = [
+  { id: "reir", label: "Reír", genres: ["Comedia", "Animación", "Familia", "Kids"] },
+  {
+    id: "tension",
+    label: "Tensión",
+    genres: ["Suspense", "Terror", "Crimen", "Misterio", "Acción", "Action & Adventure"],
+  },
+  { id: "emocionarme", label: "Emocionarme", genres: ["Drama", "Romance", "Música"] },
+  { id: "ligera", label: "Ligera", genres: ["Comedia", "Aventura", "Animación", "Familia", "Romance", "Kids"] },
+  {
+    id: "pensar",
+    label: "Pensar",
+    genres: ["Documental", "Historia", "Ciencia ficción", "Bélica", "Sci-Fi & Fantasy", "War & Politics"],
+  },
+];
+
+export const moodById = (id: string | null | undefined) => MOODS.find((mood) => mood.id === id) ?? null;
+
+/** Accents and case do not count («Animacion» = «Animación»), like the single `genre` filter. */
+export const foldGenre = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .trim();
+
+/** Any-match: the card has at least one of `genres` (whole names, folded). No list matches all. */
+export const matchesGenres = (
+  cardGenres: readonly { name: string }[] | null | undefined,
+  genres: readonly string[] | null | undefined,
+) => {
+  if (!genres?.length) return true;
+  const wanted = new Set(genres.map(foldGenre));
+  return (cardGenres ?? []).some((genre) => wanted.has(foldGenre(genre.name)));
+};
+
 export type PickedOptions<T> = {
   cards: T[];
   /** Cards left out because their runtime is unknown (they might fit; the sala says how many). */
@@ -28,15 +70,15 @@ export type PickedOptions<T> = {
 };
 
 /**
- * The first `OPTIONS_COUNT` cards of the deck that fit the limit, in deck order (Para ti first,
- * nothing re-ranked). Without a limit the deck comes back unchanged.
+ * The first `OPTIONS_COUNT` cards of the deck that fit the time limit and the mood, in deck order
+ * (Para ti first, nothing re-ranked). With neither the deck comes back unchanged.
  */
-export const pickOptions = <T extends { id: string }>(
+export const pickOptions = <T extends { id: string; genres?: readonly { name: string }[] | null }>(
   deck: readonly T[],
-  { maxRuntimeMin }: { maxRuntimeMin: number | null },
+  { maxRuntimeMin, genres }: { maxRuntimeMin: number | null; genres?: readonly string[] | null },
   runtimeOf: (card: T) => number | null | undefined,
 ): PickedOptions<T> => {
-  if (maxRuntimeMin == null) {
+  if (maxRuntimeMin == null && !genres?.length) {
     return { cards: [...deck], unknownRuntime: 0 };
   }
   const seen = new Set<string>();
@@ -45,8 +87,9 @@ export const pickOptions = <T extends { id: string }>(
   for (const card of deck) {
     if (seen.has(card.id)) continue;
     seen.add(card.id);
+    if (!matchesGenres(card.genres, genres)) continue;
     const runtime = runtimeOf(card);
-    if (runtime == null) {
+    if (maxRuntimeMin != null && runtime == null) {
       unknownRuntime += 1;
       continue;
     }
@@ -63,3 +106,6 @@ export const widerBudget = (id: string): TimeBudget | null => {
 
 /** `?tengo=90` on Hoy, kept by the shallow URL sync like `?lente=` and `?carta=`. */
 export const TONIGHT_BUDGET_PARAM = "tengo";
+
+/** `?animo=reir` on Hoy, next to `?tengo=`. */
+export const TONIGHT_MOOD_PARAM = "animo";
