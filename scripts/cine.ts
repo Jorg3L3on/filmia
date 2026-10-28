@@ -7,7 +7,7 @@ import { config as loadEnv } from "dotenv";
  *   npm run cine:revisar -- --status=now # one status
  *   npm run cine:correr                  # WRITES: runs the cron steps (TMDB → Catalog + CinemaRelease)
  *   npm run cine:avisos                  # read-only: the «Llega a cines» pushes the cron would send now
- *   npm run cine:top -- --anios=2026,2025 # WRITES: recomputes «Lo mejor del año» (TMDB + OMDb → YearTop)
+ *   npm run cine:top -- --anios=2026,2025 [--omdb=500] # WRITES: recomputes «Lo mejor del año» (TMDB + OMDb → YearTop), ≤ --omdb OMDb calls in all
  *   npm run cine:titulos                 # WRITES: en-US name for cartelera rows without Latin letters (FIL-I23-6)
  *
  * All take --env=<path to .env>. With FILMIA_LOCAL_PG=1 they talk to the local Postgres in DATABASE_URL.
@@ -75,10 +75,13 @@ const titulos = async () => {
 
 const top = async () => {
   const { computeYearTop } = await import("../src/lib/cine-top-store");
+  const { YEAR_TOP_OMDB_PER_RUN, YEAR_TOP_OMDB_REFRESH } = await import("../src/lib/cine-top");
   const years = (flag("anios") ?? String(new Date().getFullYear())).split(",").map(Number);
+  const budget = { left: Number(flag("omdb") ?? YEAR_TOP_OMDB_PER_RUN) };
   for (const year of years) {
-    console.log(JSON.stringify(await computeYearTop(year)));
+    console.log(JSON.stringify(await computeYearTop(year, new Date(), budget, YEAR_TOP_OMDB_REFRESH)));
   }
+  console.log(`OMDb: quedan ${budget.left}`);
 };
 
 const avisos = async () => {
