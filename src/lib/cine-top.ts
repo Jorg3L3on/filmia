@@ -1,15 +1,26 @@
 /**
- * Lo mejor del año (FIL-I17-5), the pure half: the IMDb ranking with its vote floor, which
- * year Cine opens on, and the rules of «Tu top 10 de {año}».
+ * Lo mejor del año (FIL-I17-5, 100 since FIL-I32), the pure half: the IMDb ranking with its vote
+ * floor and OMDb budget, which year Cine opens on, and the rules of «Tu top 10 de {año}».
  */
 
 import { addDays, formatShortDay, ticketStub } from "@/lib/cine-core";
 
+/** «Tu top 10 de {año}»: the user's own list. */
 export const YEAR_TOP_SIZE = 10;
+/** «Lo mejor del año · según IMDb»: rows stored per year. */
+export const IMDB_YEAR_TOP_SIZE = 100;
+/** Tops stored before FIL-I32 hold at most this many rows; the cron recomputes them. */
+export const LEGACY_IMDB_TOP_SIZE = 10;
 /** From this many films seen a top is worth making; below it the card nudges. */
 export const YEAR_TOP_MIN_PICKS = 3;
-/** TMDB candidates per year (by vote count); OMDb is asked about each, ≤ 40 calls a year. */
-export const YEAR_TOP_CANDIDATES = 40;
+/** TMDB candidates per year, by vote count (15 discover pages). */
+export const YEAR_TOP_CANDIDATES = 300;
+/** OMDb calls one cron run may spend on tops, all years together (OMDb's free tier is 1000 a day). */
+export const YEAR_TOP_OMDB_PER_RUN = 500;
+/** OMDb calls opening a year without a top may spend (after the response). */
+export const YEAR_TOP_OMDB_ON_DEMAND = 150;
+/** Stored scores re-asked per year, most voted first: only this year and last move. */
+export const YEAR_TOP_OMDB_REFRESH = 100;
 export const VOTE_FLOOR = 25_000;
 /** The year in progress has few votes until mid-year. */
 export const VOTE_FLOOR_EARLY = 10_000;
@@ -25,7 +36,7 @@ const monthOf = (today: string) => Number(today.slice(5, 7));
 export const voteFloorFor = (year: number, today: string) =>
   year === yearOf(today) && monthOf(today) <= 6 ? VOTE_FLOOR_EARLY : VOTE_FLOOR;
 
-/** By IMDb rating, ties to the most voted; only films over the floor; ten at most. */
+/** By IMDb rating, ties to the most voted; only films over the floor; a hundred at most. */
 export const rankYearTop = (candidates: readonly YearTopCandidate[], floor: number): RankedYearTop[] =>
   candidates
     .flatMap((candidate) =>
@@ -35,8 +46,44 @@ export const rankYearTop = (candidates: readonly YearTopCandidate[], floor: numb
     )
     .sort((a, b) => b.imdbRating - a.imdbRating || b.imdbVotes - a.imdbVotes)
     .filter((entry, index, all) => all.findIndex((other) => other.catalogId === entry.catalogId) === index)
-    .slice(0, YEAR_TOP_SIZE)
+    .slice(0, IMDB_YEAR_TOP_SIZE)
     .map((entry, index) => ({ ...entry, rank: index + 1 }));
+
+/**
+ * Which candidates OMDb is asked about this run, in their vote-count order: every one without a
+ * score first, then stored scores to refresh, all within `budget`. `skipped` counts the unscored
+ * ones left for the next run: a year with any is not complete.
+ */
+export const planOmdbCalls = <T extends { imdbRating: number | null; imdbVotes: number | null }>(
+  rows: readonly T[],
+  budget: number,
+  refresh: number,
+) => {
+  const unscored = rows.filter((row) => row.imdbRating == null || row.imdbVotes == null);
+  const scored = rows.filter((row) => row.imdbRating != null && row.imdbVotes != null);
+  const room = Math.max(0, budget);
+  const missing = unscored.slice(0, room);
+  const again = scored.slice(0, Math.max(0, Math.min(refresh, room - missing.length)));
+  return { ask: [...missing, ...again], skipped: unscored.length - missing.length };
+};
+
+/**
+ * Older years the cron works on, in order: those with no top, then those still holding a
+ * pre-FIL-I32 top of ten, newest first within each.
+ */
+export const olderTopYears = (sizes: ReadonlyMap<number, number>, today: string) => {
+  const missing: number[] = [];
+  const legacy: number[] = [];
+  for (let year = yearOf(today) - 2; year >= FIRST_TOP_YEAR; year -= 1) {
+    const size = sizes.get(year) ?? 0;
+    if (size === 0) {
+      missing.push(year);
+    } else if (size <= LEGACY_IMDB_TOP_SIZE) {
+      legacy.push(year);
+    }
+  }
+  return [...missing, ...legacy];
+};
 
 /** Cine opens on this year: until March, last year (this one has barely started). */
 export const defaultTopYear = (today: string) => (monthOf(today) <= 3 ? yearOf(today) - 1 : yearOf(today));
