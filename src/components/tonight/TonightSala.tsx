@@ -16,17 +16,21 @@ import { TonightClosingEmpty } from "@/components/tonight/TonightClosingCard";
 import { TonightCardMenu } from "@/components/tonight/TonightCardMenu";
 import { TonightProvider, type TonightHandlers } from "@/components/tonight/TonightContext";
 import { TonightEyebrow } from "@/components/tonight/TonightEyebrow";
+import { TonightFilters } from "@/components/tonight/TonightFilters";
 import { WhySheet } from "@/components/tonight/WhySheet";
 import { useImpressions } from "@/components/tonight/useImpressions";
 import { useRecoActions } from "@/components/tonight/useRecoActions";
 import { useTonightClock } from "@/components/tonight/useTonightClock";
 import { useNavLabel } from "@/components/NavOriginTracker";
+import { catalogBarButtonClass } from "@/components/catalog-filters/filter-ui";
 import { cn } from "@/lib/cn";
+import { focusRing } from "@/lib/ui";
 import { DECK_CARD_PARAM, deckCardFrom, deckIndexOf } from "@/lib/nav-origin";
 import { reportPickFailure, startWatchedUndo } from "@/lib/alert-retry";
 import { showToast } from "@/lib/toast";
 import { retryAfterRevert, showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { interleaveBySource } from "@/lib/tonight/compose";
+import { NO_LIMIT_ID, pickOptions, TIME_BUDGETS, TONIGHT_BUDGET_PARAM, widerBudget } from "@/lib/tonight/budget";
 import { closingCardFor, tallyCount } from "@/lib/tonight/closing-card";
 import { pickRefOf } from "@/lib/tonight/reco-card";
 import { rankForNow, TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
@@ -36,6 +40,14 @@ import type { BridgeReveal } from "@/lib/universo/store";
 import type { TonightDecks } from "@/lib/tonight-store";
 
 const DEAL_MS = 700;
+
+const OPTIONS_HEADING = ["", "Una opción para esta noche", "Dos opciones para esta noche", "Tres opciones para esta noche"];
+
+/** `?tengo=`: the time budget survives a trip to a ficha and back (a new night opens without it). */
+const budgetFrom = (search: string) => {
+  const id = new URLSearchParams(search).get(TONIGHT_BUDGET_PARAM);
+  return TIME_BUDGETS.some((budget) => budget.id === id) ? (id as string) : NO_LIMIT_ID;
+};
 const STAMP_TO_FLIGHT_MS = 0;
 
 type TonightSalaProps = {
@@ -66,6 +78,14 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   );
   // Coming back to a card is not a new deal: no `.deck-deal` replay.
   const [dealing, setDealing] = useState(() => !rememberedCard);
+  // «Tengo» (FIL-I31-1). Client-only like the card: the chips render once the clock has mounted.
+  const [budgetId, setBudgetId] = useState(() =>
+    typeof window === "undefined" ? NO_LIMIT_ID : budgetFrom(window.location.search),
+  );
+  const budgetRef = useRef(budgetId);
+  // The hero across both decks, so leaving the three options lands back on the film being looked at.
+  const heroIdRef = useRef<string | null>(null);
+  const [returnCard, setReturnCard] = useState<string | null>(null);
   const [whyTitle, setWhyTitle] = useState<CoverflowTitle | null>(null);
   const [menuTitle, setMenuTitle] = useState<CoverflowTitle | null>(null);
   // «Vi esto» on a ruta step (FIL-I26): what flipped, shown once the server has stamped it.
@@ -418,9 +438,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   };
 
   // The hero's own lens drives the rail; lens + card live in the URL (impressions settle the previous hero first).
-  const handleActiveChange = useCallback(
-    (index: number, title: CoverflowTitle) => {
-      setHeroIndex(index);
+  const syncHero = useCallback(
+    (title: CoverflowTitle) => {
       // The closing card is not a title: it settles the previous hero and logs nothing (FIL-I21-6).
       // Nor is a door card (FIL-I26-3).
       const unseen = title.closing || title.portal;
@@ -429,11 +448,13 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
       if (!slug) {
         return;
       }
+      heroIdRef.current = title.id;
+      const budget = budgetRef.current === NO_LIMIT_ID ? "" : `&${TONIGHT_BUDGET_PARAM}=${budgetRef.current}`;
       // Shallow URL sync: router.replace would refetch the server page mid-swipe.
       window.history.replaceState(
         null,
         "",
-        `/?${TONIGHT_LENS_PARAM}=${encodeURIComponent(slug)}&${DECK_CARD_PARAM}=${encodeURIComponent(title.id)}`,
+        `/?${TONIGHT_LENS_PARAM}=${encodeURIComponent(slug)}&${DECK_CARD_PARAM}=${encodeURIComponent(title.id)}${budget}`,
       );
       if (slug === activeSlugRef.current) {
         return;
@@ -447,6 +468,46 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     },
     [impressions, lenses],
   );
+
+  const handleActiveChange = useCallback(
+    (index: number, title: CoverflowTitle) => {
+      setHeroIndex(index);
+      syncHero(title);
+    },
+    [syncHero],
+  );
+
+  // Only the full deck moves the chapter bar; the three options are not chapters.
+  const handleOptionChange = useCallback((_index: number, title: CoverflowTitle) => syncHero(title), [syncHero]);
+
+  const budget = TIME_BUDGETS.find((item) => item.id === budgetId) ?? TIME_BUDGETS[TIME_BUDGETS.length - 1];
+  const options = useMemo(
+    () =>
+      budget.maxRuntimeMin == null
+        ? null
+        : pickOptions(
+            // Films only: the closing card and door cards have no runtime and are not options.
+            cards.filter((card) => !card.closing && !card.portal),
+            { maxRuntimeMin: budget.maxRuntimeMin },
+            (card) => card.tonight?.runtimeMinutes,
+          ),
+    [budget.maxRuntimeMin, cards],
+  );
+  const wider = widerBudget(budget.id);
+
+  const chooseBudget = (id: string) => {
+    budgetRef.current = id;
+    setBudgetId(id);
+    setReturnCard(heroIdRef.current);
+    const params = new URLSearchParams(window.location.search);
+    if (id === NO_LIMIT_ID) {
+      params.delete(TONIGHT_BUDGET_PARAM);
+    } else {
+      params.set(TONIGHT_BUDGET_PARAM, id);
+    }
+    const query = params.toString();
+    window.history.replaceState(null, "", query ? `/?${query}` : "/");
+  };
 
   void STAMP_TO_FLIGHT_MS;
 
@@ -482,27 +543,77 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
           <TonightClosingEmpty />
         ) : (
           <div className="diario-que-ver-body flex min-h-0 flex-1 flex-col gap-1.5 sm:gap-3">
-            <div className="shrink-0">
-              <GenreCoverflow
-                categories={lenses}
-                activeSlug={activeLens.slug}
-                onSelect={goToLens}
-                label="Lentes de hoy"
-                indicator={chapterBar}
-              />
-            </div>
-            <div ref={liveRef} className="sr-only" aria-live="polite" aria-atomic="true" />
-            <div className={cn("flex min-h-0 flex-1 flex-col", dealing && "deck-deal")}>
-              <CoverflowDeck
-                titles={cards}
-                footer="tonight"
-                className="min-h-0 flex-1"
-                // Read on mount only: the remembered card, else the ?lente= chapter, else the top.
-                initialIndex={deckIndexOf(cards, rememberedCard) ?? lensStarts.get(activeSlug) ?? 0}
-                focusRequest={focusRequest}
-                onActiveChange={handleActiveChange}
-              />
-            </div>
+            <TonightFilters budgetId={budget.id} onBudget={chooseBudget} className="shrink-0 px-1" />
+            {options ? (
+              <>
+                <h2 className="shrink-0 px-1 text-sm font-medium text-paper">
+                  {OPTIONS_HEADING[options.cards.length] || "Sin resultados"}
+                </h2>
+                {options.cards.length > 0 ? (
+                  <CoverflowDeck
+                    key={`options-${budget.id}`}
+                    titles={options.cards}
+                    footer="tonight"
+                    className="min-h-0 flex-1"
+                    onActiveChange={handleOptionChange}
+                  />
+                ) : (
+                  <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+                    <p className="text-sm text-fog">Nada de lo de hoy dura {budget.label} o menos.</p>
+                    {wider ? (
+                      <button
+                        type="button"
+                        onClick={() => chooseBudget(wider.id)}
+                        className={catalogBarButtonClass}
+                      >
+                        {wider.maxRuntimeMin == null ? "Ver todo" : `Probar con ${wider.label}`}
+                      </button>
+                    ) : null}
+                  </div>
+                )}
+                {options.unknownRuntime > 0 ? (
+                  <p className="flex shrink-0 items-center justify-center gap-2 px-1 text-xs text-fog">
+                    <span>
+                      Sin duración conocida: {options.unknownRuntime}{" "}
+                      {options.unknownRuntime === 1 ? "título oculto" : "títulos ocultos"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => chooseBudget(NO_LIMIT_ID)}
+                      className={cn("rail-chip rounded-full px-2 font-medium text-paper underline-offset-2 hover:underline", focusRing)}
+                    >
+                      Mostrar todo
+                    </button>
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <div className="shrink-0">
+                  <GenreCoverflow
+                    categories={lenses}
+                    activeSlug={activeLens.slug}
+                    onSelect={goToLens}
+                    label="Lentes de hoy"
+                    indicator={chapterBar}
+                  />
+                </div>
+                <div ref={liveRef} className="sr-only" aria-live="polite" aria-atomic="true" />
+                <div className={cn("flex min-h-0 flex-1 flex-col", dealing && "deck-deal")}>
+                  <CoverflowDeck
+                    titles={cards}
+                    footer="tonight"
+                    className="min-h-0 flex-1"
+                    // Read on mount only: the last hero (back from the options), the remembered card, else the ?lente= chapter, else the top.
+                    initialIndex={
+                      deckIndexOf(cards, returnCard) ?? deckIndexOf(cards, rememberedCard) ?? lensStarts.get(activeSlug) ?? 0
+                    }
+                    focusRequest={focusRequest}
+                    onActiveChange={handleActiveChange}
+                  />
+                </div>
+              </>
+            )}
           </div>
         )}
         <WhySheet

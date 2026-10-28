@@ -2,6 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { catalog, db, titles } from "@/db";
 import type { Platform, TitleKind } from "@/db/schema";
 import { matchWatchProviderPlatform } from "@/lib/streaming-platforms";
+import { fitsRuntime } from "@/lib/tonight/budget";
 import { getTonightDecks, type TonightCard, type TonightDecks } from "@/lib/tonight-store";
 
 /**
@@ -45,9 +46,7 @@ export const filterRecommendations = (decks: TonightDecks, filters: RecommendFil
       if (seen.has(card.id)) continue;
       seen.add(card.id);
       if (filters.kind && card.kind !== filters.kind) continue;
-      if (filters.maxRuntimeMin != null && (card.runtimeMinutes == null || card.runtimeMinutes > filters.maxRuntimeMin)) {
-        continue;
-      }
+      if (!fitsRuntime(card.runtimeMinutes, filters.maxRuntimeMin)) continue;
       if (genre && !(card.genres ?? []).some((item) => fold(item.name).includes(genre))) continue;
       if (platforms.length > 0 && !cardPlatforms(card).some((platform) => platforms.includes(platform))) continue;
       out.push(card);
