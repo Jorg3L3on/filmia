@@ -39,7 +39,7 @@ type ProfileRowProps = {
   /** Second line under the label (e.g. why a row is not editable). */
   hint?: ReactNode;
   onClick?: () => void;
-  /** A row that navigates (Listas ›) instead of opening a sheet. */
+  /** A row that navigates (Conexiones ›) instead of opening a sheet. */
   href?: string;
   ariaLabel?: string;
 };
@@ -102,12 +102,6 @@ const iconProps = {
 export const ChevronIcon = ({ className }: { className?: string }) => (
   <svg {...iconProps} strokeWidth={2} className={className}>
     <path d="m9 6 6 6-6 6" />
-  </svg>
-);
-
-export const ListsIcon = () => (
-  <svg {...iconProps}>
-    <path d="M8 6h12M8 12h12M8 18h8M4 6h.01M4 12h.01M4 18h.01" />
   </svg>
 );
 

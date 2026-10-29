@@ -48,35 +48,44 @@ export const isDiaryPath = (pathname: string) => {
   return path === "/diario" || path.startsWith("/diario/");
 };
 
+/** Quiero ver is pinned inside Listas (FIL-34): its page lights the Listas tab. */
+export const isWatchlistPath = (pathname: string) => {
+  const path = pathOnly(pathname);
+  return path === "/watchlist" || path.startsWith("/watchlist/");
+};
+
 /**
- * Bottom-nav active state: Cine on /cine/*; Perfil on /perfil, Tu diario and the Listas hub,
- * which moved under Perfil when Cine took its tab (FIL-I17).
+ * Bottom-nav active state: Cine on /cine/*; Listas on the hub and on Quiero ver (FIL-34);
+ * Perfil on /perfil and Tu diario.
  */
 export const isMobileNavCurrent = (href: string, pathname: string) => {
   if (href === "/cine") {
     return isCinePath(pathname);
   }
+  if (href === "/listas") {
+    return isListasHubPath(pathname) || isWatchlistPath(pathname);
+  }
   if (href === "/perfil") {
-    return isCurrentPath("/perfil", pathname) || isDiaryPath(pathname) || isListasHubPath(pathname);
+    return isCurrentPath("/perfil", pathname) || isDiaryPath(pathname);
   }
   return isCurrentPath(href, pathname);
 };
 
 export const desktopNavItems = [
   { href: "/", label: "Hoy" },
-  { href: "/watchlist", label: "Quiero ver" },
+  { href: "/listas", label: "Listas" },
   { href: "/buscar", label: "Buscar" },
   { href: "/cine", label: "Cine" },
   { href: "/perfil", label: "Perfil" },
 ] as const;
 
-/** Desktop header tabs light up like the dock: Cine on /cine/*, Perfil on Tu diario and Listas too. */
+/** Desktop header tabs light up like the dock: Cine on /cine/*, Listas on Quiero ver, Perfil on Tu diario. */
 export const isDesktopNavCurrent = (href: string, pathname: string) => isMobileNavCurrent(href, pathname);
 
 /** Bottom tab bar: four tabs around the center Buscar disc. */
 export const mobileNavItems = [
   { href: "/", label: "Hoy", icon: "today" },
-  { href: "/watchlist", label: "Quiero ver", icon: "queue" },
+  { href: "/listas", label: "Listas", icon: "lists" },
   { href: "/cine", label: "Cine", icon: "ticket" },
   { href: "/perfil", label: "Perfil", icon: "profile" },
 ] as const;
@@ -87,7 +96,7 @@ export const mobileNavSearch = { href: "/buscar", label: "Buscar", icon: "search
 /** React transition type of the dock's own taps: the dock ⇄ Buscar field morph. */
 export const DOCK_SEARCH_TRANSITION = "dock-search";
 
-/** Grid column the Buscar disc occupies (between Quiero ver and Cine). */
+/** Grid column the Buscar disc occupies (between Listas and Cine). */
 export const mobileNavSearchSlot = 2;
 
 export type MobileNavIcon =
