@@ -97,7 +97,6 @@ export const useCoverflowEngine = (
   /** Waiting to see if the gesture is a vertical page scroll or a horizontal deck drag. */
   const pendingScrollRef = useRef(false);
   const allowPageScrollRef = useRef(allowPageScroll);
-  allowPageScrollRef.current = allowPageScroll;
   const dragStartIndex = useRef(0);
   const targetIndexRef = useRef(startIndex);
   const displayIndexRef = useRef(startIndex);
@@ -662,6 +661,7 @@ export const useCoverflowEngine = (
     compactRef.current = isSheet;
     cinematicRef.current = cinematic;
     liteRef.current = lite;
+    allowPageScrollRef.current = allowPageScroll;
     // Extra lateral room for soft L+R fan (cinematic); historial/sheet keep prior inset.
     sideRoomRef.current = Math.max(
       8,
