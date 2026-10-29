@@ -46,15 +46,21 @@ describe("isAuthChromePath", () => {
   });
 });
 
-describe("mobile Listas hub", () => {
-  it("lives under Perfil: /listas and /listas/* light Perfil", () => {
+describe("mobile Listas tab", () => {
+  it("is the second tab and lights on /listas/* and Quiero ver (FIL-34)", () => {
     assert.equal(isListasHubPath("/listas/abc"), true);
     assert.equal(isListasHubPath("/tags"), false);
-    assert.equal(isMobileNavCurrent("/perfil", "/listas"), true);
-    assert.equal(isMobileNavCurrent("/perfil", "/listas/abc"), true);
+    assert.equal(mobileNavItems[1]?.href, "/listas");
+    assert.equal(mobileNavItems[1]?.icon, "lists");
+    for (const path of ["/listas", "/listas/abc", "/watchlist", "/watchlist?orden=fecha"]) {
+      assert.equal(isMobileNavCurrent("/listas", path), true, path);
+      assert.equal(isMobileNavCurrent("/perfil", path), false, path);
+    }
+    assert.equal(isMobileNavCurrent("/listas", "/"), false);
+    assert.equal(isMobileNavCurrent("/listas", "/perfil"), false);
     assert.equal(isMobileNavCurrent("/cine", "/listas"), false);
     assert.equal(isMobileNavCurrent("/buscar", "/listas"), false);
-    assert.equal(mobileNavItems.some((item) => (item.href as string) === "/listas"), false);
+    assert.equal(mobileNavItems.some((item) => (item.href as string) === "/watchlist"), false);
   });
 });
 
@@ -62,7 +68,7 @@ describe("mobile Cine tab", () => {
   it("sits after the Buscar disc and lights on /cine/*", () => {
     assert.deepEqual(
       mobileNavItems.map((item) => item.label),
-      ["Hoy", "Quiero ver", "Cine", "Perfil"],
+      ["Hoy", "Listas", "Cine", "Perfil"],
     );
     assert.equal(mobileNavItems[mobileNavSearchSlot]?.href, "/cine");
     assert.equal(isMobileNavCurrent("/cine", "/cine"), true);
@@ -76,7 +82,7 @@ describe("desktop header nav", () => {
   it("ends with a Perfil tab", () => {
     assert.deepEqual(
       desktopNavItems.map((item) => item.label),
-      ["Hoy", "Quiero ver", "Buscar", "Cine", "Perfil"],
+      ["Hoy", "Listas", "Buscar", "Cine", "Perfil"],
     );
   });
 
@@ -86,7 +92,9 @@ describe("desktop header nav", () => {
     assert.equal(isDesktopNavCurrent("/perfil", "/diario?view=grid"), true);
     assert.equal(isDesktopNavCurrent("/perfil", "/"), false);
     assert.equal(isDesktopNavCurrent("/", "/diario"), false);
-    assert.equal(isDesktopNavCurrent("/perfil", "/listas/abc"), true);
+    assert.equal(isDesktopNavCurrent("/perfil", "/listas/abc"), false);
+    assert.equal(isDesktopNavCurrent("/listas", "/listas/abc"), true);
+    assert.equal(isDesktopNavCurrent("/listas", "/watchlist"), true);
     assert.equal(isDesktopNavCurrent("/cine", "/cine/proximamente"), true);
   });
 });

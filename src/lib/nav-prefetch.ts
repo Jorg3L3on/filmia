@@ -2,7 +2,7 @@ import { FICHA_CACHE_LIMIT } from "@/lib/ficha-session";
 
 export const NAV_PREFETCH_HREFS = [
   "/",
-  "/watchlist",
+  "/listas",
   "/buscar",
   "/cine",
   "/perfil",
@@ -11,7 +11,7 @@ export const NAV_PREFETCH_HREFS = [
 /** Soft-nav priority for neighbor warming (mobile-first). */
 export const NAV_PREFETCH_PRIORITY = [
   "/",
-  "/watchlist",
+  "/listas",
   "/buscar",
   "/cine",
   "/perfil",
@@ -71,8 +71,8 @@ const navIndex = (pathname: string) => {
   if (path.startsWith("/cine/")) {
     return NAV_PREFETCH_PRIORITY.indexOf("/cine");
   }
-  if (path === "/listas" || path.startsWith("/listas/")) {
-    return NAV_PREFETCH_PRIORITY.indexOf("/perfil"); // Listas lives under Perfil
+  if (path.startsWith("/listas/") || path === "/watchlist" || path.startsWith("/watchlist/")) {
+    return NAV_PREFETCH_PRIORITY.indexOf("/listas"); // Quiero ver is pinned inside Listas
   }
   return -1;
 };
@@ -198,6 +198,11 @@ export const collectWarmNavHrefs = (
     path,
     NAV_PREFETCH_HREFS.filter((href) => href !== path),
   ).slice(0, Math.max(0, policy.maxNavHrefs));
+
+  // Quiero ver left the dock (FIL-34): from Listas it is the next tap, so it is warmed first.
+  if (path === "/listas" && policy.maxNavHrefs > 0) {
+    navCandidates.unshift("/watchlist");
+  }
 
   for (const href of navCandidates) {
     if (!href || seen.has(href)) {

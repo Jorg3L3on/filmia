@@ -13,6 +13,7 @@ describe("warm nav hrefs", () => {
     assert.deepEqual(
       collectWarmNavHrefs("/watchlist", ["/titulos/a", "/titulos/a", "/watchlist"]),
       [
+        "/listas",
         "/",
         "/buscar",
         "/cine",
@@ -25,7 +26,7 @@ describe("warm nav hrefs", () => {
   it("keeps the five app surfaces", () => {
     assert.deepEqual([...NAV_PREFETCH_HREFS], [
       "/",
-      "/watchlist",
+      "/listas",
       "/buscar",
       "/cine",
       "/perfil",
@@ -45,7 +46,7 @@ describe("warm nav hrefs", () => {
       slow,
     );
     assert.equal(hrefs.length, 1);
-    assert.equal(hrefs[0], "/"); // neighbor of Quiero ver
+    assert.equal(hrefs[0], "/listas"); // Quiero ver sits inside Listas
     assert.ok(!hrefs.includes("/titulos/a"));
   });
 
@@ -59,7 +60,9 @@ describe("warm nav hrefs", () => {
       ["/titulos/a", "/titulos/b"],
       mid,
     );
-    assert.equal(hrefs.filter((h) => !h.startsWith("/titulos/")).length, 3);
+    // Quiero ver rides on top of the 3 tab routes (FIL-34).
+    assert.equal(hrefs[0], "/watchlist");
+    assert.equal(hrefs.filter((h) => !h.startsWith("/titulos/")).length, 4);
     assert.equal(hrefs.filter((h) => h.startsWith("/titulos/")).length, 1);
     assert.ok(hrefs.includes("/titulos/a"));
     assert.ok(!hrefs.includes("/titulos/b"));
@@ -77,10 +80,20 @@ describe("warm nav hrefs", () => {
   });
 
   it("prioritizes soft-nav neighbors of the current surface", () => {
-    assert.deepEqual(prioritizeNavHrefs("/watchlist", ["/", "/perfil", "/buscar"]), [
+    assert.deepEqual(prioritizeNavHrefs("/buscar", ["/", "/perfil", "/listas"]), [
+      "/listas",
       "/",
-      "/buscar",
       "/perfil",
     ]);
+  });
+
+  it("treats Quiero ver as part of the Listas tab (FIL-34)", () => {
+    assert.deepEqual(prioritizeNavHrefs("/watchlist", ["/perfil", "/listas", "/"]), [
+      "/listas",
+      "/",
+      "/perfil",
+    ]);
+    assert.equal(collectWarmNavHrefs("/listas")[0], "/watchlist");
+    assert.ok(!collectWarmNavHrefs("/watchlist").includes("/watchlist"));
   });
 });
