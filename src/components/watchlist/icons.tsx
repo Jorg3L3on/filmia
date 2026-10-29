@@ -114,3 +114,9 @@ export const SortIcon = ({ size = 16 }: { size?: number }) => (
     <path d="M4 7h16M7 12h10M10 17h4" />
   </svg>
 );
+
+export const CloseIcon = ({ size = 14 }: { size?: number }) => (
+  <svg {...base(size)} strokeWidth={2}>
+    <path d="M7 7l10 10M17 7 7 17" />
+  </svg>
+);

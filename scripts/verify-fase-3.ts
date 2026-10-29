@@ -212,8 +212,8 @@ const run = () => {
   assert(
     reorderList.includes("DndContext") &&
       reorderList.includes("reorderList") &&
-      cartelera.includes("isManualOrder"),
-    "Quiero ver Reordenar mode drags/persists and only appears in manual order",
+      cartelera.includes("if (isEditing || !displayIds) return views;"),
+    "Quiero ver Reordenar mode drags/persists on the whole list (filters pause, FIL-I34-3)",
   );
   const ficha = read("src/components/watchlist/WatchlistFicha.tsx");
   assert(
@@ -234,9 +234,9 @@ const run = () => {
     "Quiero ver empty + minePlatforms states use watchlist well empty",
   );
   assert(
-    read("src/app/watchlist/page.tsx").includes("hasExtraFilters") &&
+    read("src/components/watchlist/WatchlistTopBar.tsx").includes("narrowed ? (") &&
       read("src/components/catalog-filters/filter-ui.tsx").includes("tab-transition"),
-    "Quiero ver keeps dense catalog filter chips + filtered count",
+    "Quiero ver keeps the catalog chips for Diario/Listas; its own header says «N de total» (FIL-I34)",
   );
 
   const buscarError = read("src/app/buscar/error.tsx");

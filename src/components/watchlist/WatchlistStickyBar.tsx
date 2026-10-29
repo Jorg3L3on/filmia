@@ -1,92 +1,50 @@
 "use client";
 
-import Link from "next/link";
-import { CheckIcon, ReorderIcon } from "@/components/watchlist/icons";
-import { WatchlistCountTicker } from "@/components/watchlist/WatchlistCountTicker";
+import { CheckIcon } from "@/components/watchlist/icons";
 import { cn } from "@/lib/cn";
-import { pillActionClass, safeAreaStickyUnderHeaderClass } from "@/lib/ui";
+import { pillActionClass } from "@/lib/ui";
 
 type WatchlistStickyBarProps = {
-  count: number;
-  /** The page title scrolled away: show it small here. */
-  condensed: boolean;
-  isEditing: boolean;
-  canReorder: boolean;
-  /** 2+ titles but a filter or sort is active: which one (FIL-I24-4 says it truthfully). */
-  reorderBlocked: "sort" | "filters" | null;
-  /** Href that drops the sort («Mi orden»). */
-  clearSortHref?: string;
-  onToggleEditing: () => void;
+  /** Filters or an order paused while reordering (FIL-I34-3): how many, and the whole list's size. */
+  paused: { filters: number; order: boolean } | null;
+  total: number;
+  onDone: () => void;
   className?: string;
 };
 
-/** Count + Reordenar, sticky under the header; the title condenses into it on scroll. */
-export const WatchlistStickyBar = ({
-  count,
-  condensed,
-  isEditing,
-  canReorder,
-  reorderBlocked,
-  clearSortHref,
-  onToggleEditing,
-  className,
-}: WatchlistStickyBarProps) => (
-  <div
-    data-condensed={condensed || isEditing}
-    className={cn(
-      "sticky z-30 -mx-4 flex h-12 items-center justify-between gap-3 px-4 transition-colors duration-[var(--duration-tab)]",
-      safeAreaStickyUnderHeaderClass,
-      (condensed || isEditing) && "border-b border-line/70 bg-canvas/90 backdrop-blur-md",
-      className,
-    )}
-  >
-    <div className="flex min-w-0 items-baseline">
-      <span className="cartelera-condensed-wrap" aria-hidden={!(condensed || isEditing)}>
-        <span className="cartelera-condensed-title block whitespace-nowrap pr-2 font-serif text-lg font-semibold text-paper">
-          {isEditing ? "Reordenar" : "Quiero ver"}
-        </span>
-      </span>
-      {/* While editing the hint is one quiet 11 px line (FIL-I24-5); otherwise the count, which condenses to «· 8 títulos». */}
-      <p
-        className={cn(
-          "whitespace-nowrap text-[11px] font-semibold text-mist",
-          isEditing ? "normal-case tracking-normal" : "uppercase tracking-[0.2em]",
-        )}
-      >
-        {isEditing ? (
-          "Arrastra o usa las flechas"
-        ) : (
-          <>
-            {condensed ? <span aria-hidden="true">· </span> : null}
-            <WatchlistCountTicker count={count} />
-          </>
-        )}
+const pausedSentence = ({ filters, order }: { filters: number; order: boolean }, total: number) => {
+  const what = [
+    filters > 0 ? (filters === 1 ? "tu filtro" : `tus ${filters} filtros`) : null,
+    order ? "tu orden" : null,
+  ].filter(Boolean);
+  return `Ves toda tu lista (${total}). Al terminar vuelven ${what.join(" y ")}.`;
+};
+
+/**
+ * Reordenar mode (FIL-I24-5, FIL-I34-3): «Reordenar · Mi orden» and «Listo», sticky under the
+ * header. Filters and orders pause while it is on, and the bar says so.
+ */
+export const WatchlistStickyBar = ({ paused, total, onDone, className }: WatchlistStickyBarProps) => (
+  <div className={cn("qv-edit-bar sticky z-30 -mx-4 space-y-2 px-4 pb-2", className)}>
+    <div className="flex h-12 items-center justify-between gap-3">
+      <p className="flex min-w-0 items-baseline gap-2">
+        <span className="font-serif text-[1.75rem] leading-7 text-paper">Reordenar</span>
+        <span className="text-sm font-semibold text-mist">Mi orden</span>
       </p>
-    </div>
-    {canReorder ? (
-      <button
-        type="button"
-        onClick={onToggleEditing}
-        aria-pressed={isEditing}
-        className={isEditing ? pillActionClass.primary : pillActionClass.neutral}
-      >
-        {isEditing ? <CheckIcon /> : <ReorderIcon />}
-        {isEditing ? "Listo" : "Reordenar"}
+      <button type="button" onClick={onDone} aria-pressed className={pillActionClass.primary}>
+        <CheckIcon />
+        Listo
       </button>
-    ) : reorderBlocked === "sort" ? (
-      <p className="text-xs text-mist">
-        Quita el orden para reordenar
-        {clearSortHref ? (
-          <>
-            {" · "}
-            <Link href={clearSortHref} className="text-paper underline-offset-2 hover:underline">
-              Mi orden
-            </Link>
-          </>
-        ) : null}
+    </div>
+    {paused ? (
+      <p role="status" className="qv-note is-paused">
+        <span>
+          <strong className="font-semibold text-paper">{paused.filters > 0 ? "Filtros en pausa." : "Orden en pausa."}</strong>{" "}
+          {pausedSentence(paused, total)}
+        </span>
       </p>
-    ) : reorderBlocked === "filters" ? (
-      <p className="text-xs text-mist">Quita filtros para reordenar</p>
-    ) : null}
+    ) : (
+      <p className="text-[11px] text-mist">Arrastra o usa las flechas</p>
+    )}
   </div>
 );

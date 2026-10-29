@@ -194,26 +194,34 @@ export const DiaryBodySkeleton = ({
 };
 
 /** Rail chips (Esta noche · Mis plataformas · Cortas · Premiadas · Género) + Filtros. */
+/** «Barra de decisión» (FIL-I34): title + count, two round buttons, the scope, three pills. */
 export const WatchlistFiltersSkeleton = () => (
-  <div className="flex items-center gap-1.5 overflow-hidden" aria-hidden="true">
-    {Array.from({ length: 5 }, (_, index) => (
-      <ShimmerBlock key={index} className="h-8 w-24 shrink-0 rounded-full" />
-    ))}
-    <div className="flex-1" />
-    <ShimmerBlock className="h-8 w-20 shrink-0 rounded-full" />
+  <div className="space-y-2.5" aria-hidden="true">
+    <div className="flex items-center gap-2">
+      <ShimmerBlock className="h-7 w-36 rounded-xl" />
+      <ShimmerBlock className="h-3.5 w-10 rounded-full" />
+      <div className="flex-1" />
+      <ShimmerBlock className="size-9 shrink-0 rounded-full" />
+      <ShimmerBlock className="size-9 shrink-0 rounded-full" />
+    </div>
+    <div className="grid h-12 grid-cols-2 gap-1 rounded-full border border-white/10 p-[3px]">
+      <ShimmerBlock className="h-full rounded-full" />
+      <ShimmerBlock className="h-full rounded-full" />
+    </div>
+    <div className="flex gap-2">
+      <ShimmerBlock className="h-9 w-28 rounded-full" />
+      <ShimmerBlock className="h-9 w-20 rounded-full" />
+      <ShimmerBlock className="h-9 w-24 rounded-full" />
+    </div>
   </div>
 );
 
-/** Compact hero for #1 + a stack of fichas. */
+/** Header, then the compact hero for #1 and a stack of fichas. */
 export const WatchlistBodySkeleton = ({
   label = "Cargando Quiero ver",
 }: SkeletonProps) => (
   <div className="space-y-4" aria-busy="true" aria-label={label}>
     <WatchlistFiltersSkeleton />
-    <div className="flex items-center justify-between py-2">
-      <ShimmerBlock className="h-3 w-20 rounded-full" />
-      <ShimmerBlock className="h-10 w-32 rounded-full" />
-    </div>
     <div className="-mx-4 flex gap-4 border-y border-line/60 bg-surface/40 px-4 py-4 sm:mx-0 sm:rounded-card sm:border sm:px-6 sm:py-5">
       <ShimmerBlock className="aspect-[2/3] w-[min(30vw,132px)] shrink-0 rounded-poster" />
       <div className="min-w-0 flex-1 space-y-2.5 pt-1">
@@ -230,7 +238,7 @@ export const WatchlistBodySkeleton = ({
       </div>
     </div>
     <div className="space-y-2.5">
-      {Array.from({ length: 5 }, (_, index) => (
+      {Array.from({ length: 4 }, (_, index) => (
         <div key={index} className={cn(skeletonWellClass, "flex gap-3 p-2.5")}>
           <ShimmerBlock className="aspect-[2/3] w-16 shrink-0 rounded-poster" />
           <div className="min-w-0 flex-1 space-y-2 pt-0.5">

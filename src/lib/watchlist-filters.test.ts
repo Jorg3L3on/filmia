@@ -1,103 +1,167 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { catalogHref } from "@/lib/catalog-href";
 import {
-  applyWatchlistFilters,
-  genresInList,
-  parseFlag,
-  parseGenreIds,
-  parseWatchlistSort,
-  sortWatchlistItems,
-  type WatchlistFilterItem,
+  filterRows,
+  rowMatches,
+  scopeCounts,
+  shuffleWithSeed,
+  sortPillLabel,
+  sortRows,
+  type WatchlistRow,
 } from "@/lib/watchlist-filters";
+import { EMPTY_WATCHLIST_QUERY, type WatchlistQuery } from "@/lib/watchlist-query";
 
-const DRAMA = { id: 18, name: "Drama" };
-const SCIFI = { id: 878, name: "Ciencia ficción" };
-const DOC = { id: 99, name: "Documental" };
+const NOW = Date.parse("2026-10-29T12:00:00Z");
+const DAY = 24 * 60 * 60 * 1000;
+const context = { now: NOW };
 
-const item = (
-  id: string,
-  overrides: Partial<WatchlistFilterItem["title"]> = {},
-  addedAt = "2026-09-01T00:00:00Z",
-): WatchlistFilterItem => ({
-  addedAt,
-  title: {
-    id,
-    name: id,
-    kind: "MOVIE",
-    year: 2000,
-    runtimeMinutes: 120,
-    imdbRating: 7,
-    availableSince: null,
-    awards: null,
-    tmdbGenres: [DRAMA],
-    ...overrides,
-  },
+/** Invented titles only. */
+const row = (id: string, overrides: Partial<WatchlistRow> = {}): WatchlistRow => ({
+  id,
+  name: id,
+  kind: "MOVIE",
+  seriesStatus: null,
+  flatrate: [],
+  rentBuy: [],
+  onMine: false,
+  providersUnknown: false,
+  runtime: 120,
+  year: 2000,
+  imdb: 7,
+  votes: 5000,
+  genres: [18],
+  awarded: false,
+  addedAt: NOW - 60 * DAY,
+  arrivedAt: null,
+  language: "en",
+  snoozed: false,
+  hasNote: false,
+  people: [],
+  ...overrides,
 });
 
-const ITEMS = [
-  item("blade", { name: "Blade Runner", year: 1982, runtimeMinutes: 117, imdbRating: 8.1, availableSince: "2026-10-05T00:00:00Z", awards: "Nominated for 2 Oscars. 13 wins & 21 nominations total", tmdbGenres: [SCIFI, DRAMA] }, "2026-09-01T00:00:00Z"),
-  item("petite", { name: "Petite Maman", year: 2021, runtimeMinutes: 72, imdbRating: 7.3, tmdbGenres: [DRAMA] }, "2026-09-03T00:00:00Z"),
-  item("chimp", { name: "El imperio de los chimpancés", kind: "SERIES", year: 2023, runtimeMinutes: 45, imdbRating: 8.2, availableSince: "2026-10-01T00:00:00Z", tmdbGenres: [DOC] }, "2026-09-02T00:00:00Z"),
-  item("sinnada", { name: "Sin datos", year: null, runtimeMinutes: null, imdbRating: null, tmdbGenres: [] }, "2026-08-01T00:00:00Z"),
+const ROWS: WatchlistRow[] = [
+  row("Fuego lento", { year: 1999, runtime: 86, imdb: 7.5, flatrate: ["MAX"], onMine: true, addedAt: NOW - 2 * DAY, arrivedAt: NOW - 3 * DAY }),
+  row("Los que se quedan", { year: 1998, runtime: 88, imdb: 8.2, flatrate: ["NETFLIX"], onMine: true, awarded: true, language: "es", hasNote: true }),
+  row("Costa de nadie", { kind: "SERIES", seriesStatus: "WATCHING", year: 2023, runtime: 48, imdb: 8.4, votes: 400, rentBuy: ["PRIME"], genres: [9648], people: [77] }),
+  row("Cielo de agosto", { year: 1994, runtime: 152, imdb: null, votes: null, genres: [18, 10749], snoozed: true, addedAt: NOW - 300 * DAY, arrivedAt: NOW - 30 * DAY }),
+  row("Sin datos", { year: null, runtime: null, imdb: null, votes: null, genres: [], language: null }),
 ];
 
-describe("watchlist-filters/parse", () => {
-  it("parses the sort, flags and genre ids", () => {
-    assert.equal(parseWatchlistSort("imdb"), "imdb");
-    assert.equal(parseWatchlistSort(["year", "runtime"]), "runtime");
-    assert.equal(parseWatchlistSort("recent"), null);
-    assert.equal(parseFlag("1"), true);
-    assert.equal(parseFlag("0"), false);
-    assert.deepEqual(parseGenreIds(["18", "878,18", "x"]), [18, 878]);
-    assert.deepEqual(parseGenreIds(undefined), []);
+const q = (patch: Partial<WatchlistQuery>): WatchlistQuery => ({ ...EMPTY_WATCHLIST_QUERY, ...patch });
+const ids = (rows: WatchlistRow[]) => rows.map((item) => item.id);
+const names = (patch: Partial<WatchlistQuery>) => ids(filterRows(ROWS, q(patch), context));
+
+describe("watchlist-filters/scope", () => {
+  it("counts both cells over the whole list", () => {
+    assert.deepEqual(scopeCounts(ROWS), { all: 5, mine: 2 });
+    assert.deepEqual(scopeCounts([]), { all: 0, mine: 0 });
   });
 
-  it("serialises the rail params after the shared ones", () => {
-    assert.equal(
-      catalogHref("/watchlist", { tonight: true, genres: [18, 878], sort: "imdb" }),
-      "/watchlist?sort=imdb&tonight=1&genre=18&genre=878",
-    );
-    assert.equal(catalogHref("/watchlist", { short: true, awarded: true }), "/watchlist?short=1&awarded=1");
-    assert.equal(catalogHref("/watchlist", { minePlatforms: true, platforms: ["NETFLIX"] }), "/watchlist?minePlatforms=1&platform=NETFLIX");
+  it("Mis plataformas keeps what is included on the viewer's platforms", () => {
+    assert.deepEqual(names({ scope: "mine" }), ["Fuego lento", "Los que se quedan"]);
+    assert.equal(names({ scope: "all" }).length, 5);
   });
 });
 
-describe("watchlist-filters/apply", () => {
-  it("Cortas keeps movies under 100 min only", () => {
-    assert.deepEqual(applyWatchlistFilters(ITEMS, { short: true }).map((i) => i.title.id), ["petite"]);
+describe("watchlist-filters/each filter", () => {
+  it("Tipo and series status", () => {
+    assert.deepEqual(names({ kind: "SERIES" }), ["Costa de nadie"]);
+    assert.deepEqual(names({ seriesStatus: "WATCHING" }), ["Costa de nadie"]);
+    assert.equal(names({ seriesStatus: "NONE" }).length, 0);
   });
 
-  it("Premiadas keeps titles with an awards chip", () => {
-    assert.deepEqual(applyWatchlistFilters(ITEMS, { awarded: true }).map((i) => i.title.id), ["blade"]);
+  it("platforms: subscription vs rent or buy", () => {
+    assert.deepEqual(names({ platforms: ["NETFLIX", "MAX"] }), ["Fuego lento", "Los que se quedan"]);
+    assert.deepEqual(names({ platforms: ["PRIME"] }), []);
+    assert.deepEqual(names({ platforms: ["PRIME"], access: "rent" }), ["Costa de nadie"]);
   });
 
-  it("Género is an OR across the chosen ids", () => {
-    assert.deepEqual(applyWatchlistFilters(ITEMS, { genreIds: [878, 99] }).map((i) => i.title.id), ["blade", "chimp"]);
+  it("Cortas: movies under 100 min, never series", () => {
+    assert.deepEqual(names({ short: true }), ["Fuego lento", "Los que se quedan"]);
   });
 
-  it("counts the genres present in the list", () => {
-    assert.deepEqual(genresInList(ITEMS), [
-      { id: 18, name: "Drama", count: 2 },
-      { id: 878, name: "Ciencia ficción", count: 1 },
-      { id: 99, name: "Documental", count: 1 },
-    ]);
+  it("duration and year ranges leave unknown values out", () => {
+    assert.deepEqual(names({ duration: { min: 100, max: 150 } }), []);
+    assert.deepEqual(names({ duration: { min: 150, max: null } }), ["Cielo de agosto"]);
+    assert.deepEqual(names({ duration: { min: null, max: 60 } }), ["Costa de nadie"]);
+    assert.deepEqual(names({ years: { min: 1990, max: 1999 } }), ["Fuego lento", "Los que se quedan", "Cielo de agosto"]);
+    assert.deepEqual(names({ years: { min: null, max: 1997 } }), ["Cielo de agosto"]);
+  });
+
+  it("IMDb minimum and the 1 000 votes floor", () => {
+    assert.deepEqual(names({ imdbMin: 8 }), ["Los que se quedan", "Costa de nadie"]);
+    assert.deepEqual(names({ imdbMin: 8, votesFloor: true }), ["Los que se quedan"]);
+  });
+
+  it("genres OR inside, AND with the rest", () => {
+    assert.deepEqual(names({ genres: [10749, 9648] }), ["Costa de nadie", "Cielo de agosto"]);
+    assert.deepEqual(names({ genres: [18], short: true }), ["Fuego lento", "Los que se quedan"]);
+  });
+
+  it("awarded, added, language, «Ahora no», my note, director", () => {
+    assert.deepEqual(names({ awarded: true }), ["Los que se quedan"]);
+    assert.deepEqual(names({ added: "week" }), ["Fuego lento"]);
+    assert.deepEqual(names({ added: "old" }), ["Cielo de agosto"]);
+    assert.deepEqual(names({ languages: ["es"] }), ["Los que se quedan"]);
+    assert.equal(names({ hideSnoozed: true }).includes("Cielo de agosto"), false);
+    assert.deepEqual(names({ withNote: true }), ["Los que se quedan"]);
+    assert.deepEqual(names({ people: [77] }), ["Costa de nadie"]);
+  });
+
+  it("`except` skips one filter (facets, exits)", () => {
+    const query = q({ scope: "mine", kind: "SERIES" });
+    assert.equal(rowMatches(ROWS[2] as WatchlistRow, query, context), false);
+    assert.equal(rowMatches(ROWS[2] as WatchlistRow, query, context, "scope"), true);
+    assert.equal(rowMatches(ROWS[0] as WatchlistRow, query, context, "kind"), true);
   });
 });
 
-describe("watchlist-filters/sort", () => {
-  const ids = (sort: Parameters<typeof sortWatchlistItems>[1]) =>
-    sortWatchlistItems(ITEMS, sort).map((i) => i.title.id);
+describe("watchlist-filters/orders", () => {
+  const sorted = (patch: Partial<WatchlistQuery>) => ids(sortRows(ROWS, q(patch)));
 
-  it("keeps the manual order when there is no sort", () => {
-    assert.deepEqual(ids(null), ["blade", "petite", "chimp", "sinnada"]);
+  it("Mi orden keeps the manual order", () => {
+    assert.deepEqual(sorted({}), ids(ROWS));
   });
 
-  it("sorts with nulls last", () => {
-    assert.deepEqual(ids("imdb"), ["chimp", "blade", "petite", "sinnada"]);
-    assert.deepEqual(ids("runtime"), ["chimp", "petite", "blade", "sinnada"]);
-    assert.deepEqual(ids("year"), ["blade", "petite", "chimp", "sinnada"]);
-    assert.deepEqual(ids("arrived"), ["blade", "chimp", "petite", "sinnada"]);
-    assert.deepEqual(ids("added"), ["petite", "chimp", "blade", "sinnada"]);
+  it("Más cortas ↑ / Más largas ↓, unknown last both ways", () => {
+    assert.deepEqual(sorted({ sort: "runtime" }), ["Costa de nadie", "Fuego lento", "Los que se quedan", "Cielo de agosto", "Sin datos"]);
+    assert.deepEqual(sorted({ sort: "runtime", dir: "desc" }), ["Cielo de agosto", "Los que se quedan", "Fuego lento", "Costa de nadie", "Sin datos"]);
+  });
+
+  it("Estreno is newest first by default and flips", () => {
+    assert.deepEqual(sorted({ sort: "year" }), ["Costa de nadie", "Fuego lento", "Los que se quedan", "Cielo de agosto", "Sin datos"]);
+    assert.deepEqual(sorted({ sort: "year", dir: "asc" }).slice(0, 2), ["Cielo de agosto", "Los que se quedan"]);
+  });
+
+  it("Mejor valoradas puts 1 000+ votes first", () => {
+    assert.deepEqual(sorted({ sort: "imdb" }), ["Los que se quedan", "Fuego lento", "Costa de nadie", "Cielo de agosto", "Sin datos"]);
+    assert.deepEqual(sorted({ sort: "imdb", dir: "asc" }).slice(0, 2), ["Fuego lento", "Los que se quedan"]);
+  });
+
+  it("Agregadas hace poco and Acaba de llegar", () => {
+    assert.equal(sorted({ sort: "added" })[0], "Fuego lento");
+    assert.equal(sorted({ sort: "added", dir: "asc" })[0], "Cielo de agosto");
+    assert.deepEqual(sorted({ sort: "arrived" }).slice(0, 2), ["Fuego lento", "Cielo de agosto"]);
+  });
+
+  it("Disponibles ahora: on my platforms first, manual order inside", () => {
+    assert.deepEqual(sorted({ sort: "available" }), ["Fuego lento", "Los que se quedan", "Costa de nadie", "Cielo de agosto", "Sin datos"]);
+  });
+
+  it("Aleatoria is stable for a seed and reshuffles with another", () => {
+    const first = sorted({ sort: "random", seed: 12345 });
+    assert.deepEqual(sorted({ sort: "random", seed: 12345 }), first);
+    assert.deepEqual([...first].sort(), [...ids(ROWS)].sort());
+    const many = Array.from({ length: 40 }, (_, index) => `t${index}`);
+    assert.notDeepEqual(shuffleWithSeed(many, 1), shuffleWithSeed(many, 2));
+    assert.deepEqual(shuffleWithSeed(many, 9), shuffleWithSeed(many, 9));
+  });
+
+  it("names the pill by order and direction", () => {
+    assert.equal(sortPillLabel({ sort: null, dir: null }), "Mi orden");
+    assert.equal(sortPillLabel({ sort: "runtime", dir: null }), "Más cortas");
+    assert.equal(sortPillLabel({ sort: "runtime", dir: "desc" }), "Más largas");
+    assert.equal(sortPillLabel({ sort: "random", dir: null }), "Aleatoria");
   });
 });
