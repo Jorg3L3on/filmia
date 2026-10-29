@@ -1,134 +1,115 @@
-import { catalogHref, type CatalogQuery } from "@/lib/catalog-href";
-import type { WatchlistSort } from "@/lib/watchlist-filters";
+import { filterChipLabel, type WatchlistChipNames } from "@/lib/watchlist-chips";
+import type { WatchlistCounter } from "@/lib/watchlist-facets";
+import {
+  activeFilterKeys,
+  clearFilters,
+  effectiveDirection,
+  withoutFilter,
+  type WatchlistFilterKey,
+  type WatchlistQuery,
+} from "@/lib/watchlist-query";
 
 /**
- * Quiero ver, pure helpers for the page's words (FIL-I24-4): the hero's eyebrow under a
- * sort, and the one empty state that names the chip responsible.
+ * Quiero ver, pure helpers for the page's words: the hero's eyebrow under an order
+ * (FIL-I24-4, FIL-I34-3) and the 0-results exits (FIL-I34-5).
  */
 
-/** «Próxima en tu lista» only without a sort; with one, what the first row is. */
-export const heroEyebrow = (sort: WatchlistSort | null, platformLabel?: string | null) => {
-  switch (sort) {
+/** «Próxima en tu lista» in Mi orden; with an order, what the first row is. */
+export const heroEyebrow = (
+  query: Pick<WatchlistQuery, "sort" | "dir">,
+  platformLabel?: string | null,
+) => {
+  const asc = effectiveDirection(query) === "asc";
+  switch (query.sort) {
     case null:
       return "Próxima en tu lista";
     case "imdb":
-      return "Mejor nota de tu lista";
+      return asc ? "La nota más baja de tu lista" : "Mejor nota de tu lista";
     case "runtime":
-      return "La más corta";
+      return asc ? "La más corta" : "La más larga";
     case "year":
-      return "La más antigua";
+      return asc ? "La más antigua" : "La más nueva";
     case "arrived":
+      if (asc) return "La que lleva más tiempo disponible";
       return platformLabel ? `Acaba de llegar a ${platformLabel}` : "Acaba de llegar";
     case "added":
-      return "La última en entrar";
+      return asc ? "La primera que agregaste" : "La última en entrar";
+    case "available":
+      return platformLabel ? `Ya está en ${platformLabel}` : "Disponible ahora";
+    case "random":
+      return "Sorpréndeme: esta";
   }
 };
 
-/** «#3 en tu orden» for the rows while a sort replaces the manual ranks. */
+/** «#3 en tu orden» for the rows while an order replaces the manual ranks. */
 export const sortedRankLabel = (rank: number) => `#${rank} en tu orden`;
 
-export type WatchlistEmptyCulprit =
-  | "tonight"
-  | "minePlatforms"
-  | "platforms"
-  | "short"
-  | "awarded"
-  | "genres"
-  | "kind"
-  | "seriesStatus";
-
-export type WatchlistEmptyState = {
-  culprit: WatchlistEmptyCulprit;
-  /** The chip's name, as the user reads it. */
-  chip: string;
-  /** Href with that one parameter removed. */
-  clearHref: string;
+export type WatchlistExit = {
+  key: WatchlistFilterKey | "scope" | "all";
+  /** «Quitar «Documental»», «Ver Todo», «Limpiar todo». */
+  label: string;
+  count: number;
+  query: WatchlistQuery;
+  /** The exit that brings back the most titles (drawn highlighted). */
+  best: boolean;
 };
 
-const CHIP_NAME: Record<Exclude<WatchlistEmptyCulprit, "genres" | "platforms">, string> = {
-  tonight: "Esta noche",
-  minePlatforms: "Mis plataformas",
-  short: "Cortas",
-  awarded: "Premiadas",
-  kind: "Tipo",
-  seriesStatus: "Estado de la serie",
-};
-
-/** First active chip in this order gets the blame: what the user touched last is usually the narrowest. */
-const CULPRIT_ORDER: WatchlistEmptyCulprit[] = [
-  "tonight",
-  "minePlatforms",
-  "platforms",
-  "short",
-  "awarded",
-  "genres",
-  "kind",
-  "seriesStatus",
-];
-
-const isActive = (query: CatalogQuery, culprit: WatchlistEmptyCulprit) => {
-  switch (culprit) {
-    case "tonight":
-      return Boolean(query.tonight);
-    case "minePlatforms":
-      return Boolean(query.minePlatforms);
-    case "platforms":
-      return (query.platforms?.length ?? 0) > 0;
-    case "short":
-      return Boolean(query.short);
-    case "awarded":
-      return Boolean(query.awarded);
-    case "genres":
-      return (query.genres?.length ?? 0) > 0;
-    case "kind":
-      return Boolean(query.kind) && query.kind !== "ALL";
-    case "seriesStatus":
-      return Boolean(query.seriesStatus);
-  }
-};
-
-const without = (query: CatalogQuery, culprit: WatchlistEmptyCulprit): CatalogQuery => {
-  switch (culprit) {
-    case "tonight":
-      return { ...query, tonight: false };
-    case "minePlatforms":
-      return { ...query, minePlatforms: false };
-    case "platforms":
-      return { ...query, platforms: [] };
-    case "short":
-      return { ...query, short: false };
-    case "awarded":
-      return { ...query, awarded: false };
-    case "genres":
-      return { ...query, genres: [] };
-    case "kind":
-      return { ...query, kind: "ALL" };
-    case "seriesStatus":
-      return { ...query, seriesStatus: null };
-  }
+export type WatchlistEmptyCopy = {
+  title: string;
+  description: string;
 };
 
 /**
- * Which chip empties the list, and the href that removes it. `null` when nothing is active
- * (the list itself is empty). `genreName` names a single selected genre; `platformsLabel` the
- * picked platforms («Netflix y Max»).
+ * The 0-results state: one exit per active filter (and the scope) with how many titles it
+ * brings back, the best one first, then «Limpiar todo» when there is more than one. Exits that
+ * would still show nothing are left out (with many filters they are most of them).
  */
-export const watchlistEmptyState = (
-  pathname: string,
-  query: CatalogQuery,
-  { genreName, platformsLabel }: { genreName?: string | null; platformsLabel?: string | null } = {},
-): WatchlistEmptyState | null => {
-  const culprit = CULPRIT_ORDER.find((candidate) => isActive(query, candidate));
-  if (!culprit) {
-    return null;
+export const watchlistExits = (
+  query: WatchlistQuery,
+  count: WatchlistCounter,
+  names: WatchlistChipNames,
+): WatchlistExit[] => {
+  const exits: Omit<WatchlistExit, "best">[] = activeFilterKeys(query).map((key) => {
+    const next = withoutFilter(query, key);
+    return { key, label: `Quitar «${filterChipLabel(query, key, names)}»`, count: count(next), query: next };
+  });
+  if (query.scope === "mine") {
+    const next: WatchlistQuery = { ...query, scope: "all" };
+    exits.push({ key: "scope", label: "Ver Todo, no solo mis plataformas", count: count(next), query: next });
   }
-  const chip =
-    culprit === "genres"
-      ? (query.genres?.length ?? 0) === 1 && genreName
-        ? genreName
-        : "Género"
-      : culprit === "platforms"
-        ? platformsLabel || "Plataforma"
-        : CHIP_NAME[culprit];
-  return { culprit, chip, clearHref: catalogHref(pathname, without(query, culprit)) };
+  exits.sort((left, right) => right.count - left.count);
+  const ranked = exits.filter((exit) => exit.count > 0).map((exit, index) => ({ ...exit, best: index === 0 }));
+  if (exits.length > 1) {
+    const next = clearFilters(query);
+    ranked.push({ key: "all", label: "Limpiar todo", count: count(next), query: next, best: false });
+  }
+  return ranked;
+};
+
+const COUNT_WORDS = ["", "esa cosa", "las dos cosas", "las tres cosas", "las cuatro cosas", "las cinco cosas"];
+
+/** «Nada con esa mezcla» / «Nada con «Documental»» / «Nada en tus plataformas». */
+export const watchlistEmptyCopy = (
+  query: WatchlistQuery,
+  total: number,
+  names: WatchlistChipNames,
+): WatchlistEmptyCopy => {
+  const keys = activeFilterKeys(query);
+  const of = `Ninguna de tus ${total}`;
+  if (keys.length === 0 && query.scope === "mine") {
+    return {
+      title: "Nada en tus plataformas",
+      description: `${of} está incluida en tus plataformas. Este filtro no cuenta renta ni compra.`,
+    };
+  }
+  const only = keys.length === 1 && query.scope === "all" ? keys[0] : undefined;
+  if (only) {
+    const chip = filterChipLabel(query, only, names);
+    return { title: `Nada con «${chip}»`, description: `${of} cumple con «${chip}».` };
+  }
+  const things = keys.length + (query.scope === "mine" ? 1 : 0);
+  return {
+    title: "Nada con esa mezcla",
+    description: `${of} cumple ${COUNT_WORDS[things] ?? "todo"} a la vez. Quita una y mira cuántas aparecen.`,
+  };
 };

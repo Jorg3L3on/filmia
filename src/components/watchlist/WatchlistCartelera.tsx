@@ -1,9 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { WatchlistClosingCard } from "@/components/watchlist/WatchlistClosingCard";
-import { WatchlistEmpty } from "@/components/watchlist/WatchlistEmpty";
 import { WatchlistFicha } from "@/components/watchlist/WatchlistFicha";
 import { WatchlistHeroCompact } from "@/components/watchlist/WatchlistHeroCompact";
 import { WatchlistReorderList } from "@/components/watchlist/WatchlistReorderList";
@@ -12,39 +11,34 @@ import { WatchlistSheets } from "@/components/watchlist/WatchlistSheets";
 import { WatchlistStage } from "@/components/watchlist/WatchlistStage";
 import { WatchlistStickyBar } from "@/components/watchlist/WatchlistStickyBar";
 import type { FichaView } from "@/components/watchlist/types";
-import { useCondensedBar } from "@/components/watchlist/useCondensedBar";
 import { useExpandedFicha } from "@/components/watchlist/useExpandedFicha";
 import { useFichaViews } from "@/components/watchlist/useFichaViews";
 import { useWatchlistActions } from "@/components/watchlist/useWatchlistActions";
 import { useWatchlistKeyboard } from "@/components/watchlist/useWatchlistKeyboard";
-import { catalogHref, type CatalogQuery } from "@/lib/catalog-href";
 import { isNight } from "@/lib/tonight/time";
 import type { NightEnds } from "@/lib/tonight/types";
+import { safeAreaStickyUnderHeaderClass } from "@/lib/ui";
 import { DESKTOP_QUERY, useMediaQuery } from "@/lib/use-media-query";
 import { useMountedNow } from "@/lib/use-mounted-now";
 import { sameOrderedIds, useStickyOptimistic } from "@/lib/use-optimistic-action";
-import { heroEyebrow, watchlistEmptyState } from "@/lib/watchlist-empty";
+import { heroEyebrow } from "@/lib/watchlist-empty";
 import type { WatchlistFicha as WatchlistFichaRow } from "@/lib/watchlist-ficha";
-import type { WatchlistSort } from "@/lib/watchlist-filters";
+import type { WatchlistQuery } from "@/lib/watchlist-query";
 
 type WatchlistCarteleraProps = {
+  /** The whole list, in its manual order (reordering always works on all of it). */
   fichas: WatchlistFichaRow[];
+  /** What the header's scope, filters and order leave, in that order (FIL-I34). */
+  displayIds?: readonly string[];
   listId: string;
   nightEnds: NightEnds;
-  /** Manual order is only meaningful on the unfiltered, unsorted queue. */
-  isManualOrder?: boolean;
-  /** «Esta noche» chip: keep only what fits before bedtime (needs the viewer's clock). */
-  tonightOnly?: boolean;
   pinnedTitleId?: string | null;
-  /** Active sort: the hero's eyebrow says what the first row is and the ranks step aside (FIL-I24-4). */
-  sort?: WatchlistSort | null;
-  /** Everything applied, so the empty state can name the chip to blame and drop just that one. */
-  query?: CatalogQuery;
-  pathname?: string;
-  /** Name of the single selected genre, for the empty state. */
-  genreName?: string | null;
-  /** «Netflix y Max»: the platforms the list is being filtered to. */
-  platformsLabel?: string | null;
+  /** Active order: the hero's eyebrow says what the first row is and the ranks step aside (FIL-I24-4). */
+  order?: Pick<WatchlistQuery, "sort" | "dir">;
+  /** Nothing left after filtering (the header's exits). */
+  emptyState?: ReactNode;
+  /** Filters or an order paused while reordering. */
+  paused?: { filters: number; order: boolean } | null;
 };
 
 const STAGGER_CAP = 12;
@@ -55,16 +49,13 @@ const STAGGER_CAP = 12;
  */
 export const WatchlistCartelera = ({
   fichas,
+  displayIds,
   listId,
   nightEnds,
-  isManualOrder = true,
-  tonightOnly = false,
   pinnedTitleId = null,
-  sort = null,
-  query = {},
-  pathname = "/watchlist",
-  genreName = null,
-  platformsLabel = null,
+  order: sortQuery = { sort: null, dir: null },
+  emptyState = null,
+  paused = null,
 }: WatchlistCarteleraProps) => {
   const router = useRouter();
   const now = useMountedNow();
@@ -88,7 +79,6 @@ export const WatchlistCartelera = ({
   const [markTarget, setMarkTarget] = useState<FichaView | null>(null);
   const [menuTarget, setMenuTarget] = useState<FichaView | null>(null);
   const [noteTarget, setNoteTarget] = useState<FichaView | null>(null);
-  const { condensed, sentinelRef } = useCondensedBar();
   const timers = useRef<number[]>([]);
 
   useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
@@ -119,14 +109,18 @@ export const WatchlistCartelera = ({
   }, []);
 
   const views = useFichaViews({ order, byId, hiddenIds, now, nightEnds, notes, snoozed, pinnedId });
-  // «Esta noche» only bites at night; by day everything fits and the list stays whole.
-  const visible = useMemo(
-    () =>
-      tonightOnly && now && isNight(now, nightEnds)
-        ? views.filter((view) => view.fit && view.fit.overflowMinutes === 0 && view.fit.remainingMinutes > 0)
-        : views,
-    [nightEnds, now, tonightOnly, views],
-  );
+  const sort = sortQuery.sort;
+  // Reordering shows the whole list with filters paused; otherwise the header's result. In Mi
+  // orden the optimistic order wins (a move shows before the server answers).
+  const visible = useMemo(() => {
+    if (isEditing || !displayIds) return views;
+    if (sort === null) {
+      const shown = new Set(displayIds);
+      return views.filter((view) => shown.has(view.id));
+    }
+    const byView = new Map(views.map((view) => [view.id, view]));
+    return displayIds.flatMap((id) => byView.get(id) ?? []);
+  }, [displayIds, isEditing, sort, views]);
   const visibleIds = visible.map((view) => view.id);
   const hiddenInOrder = order.filter((id) => !visibleIds.includes(id));
   // Desktop (FIL-I24-6): no compact hero; the list starts at #1 and the sticky stage is the hero.
@@ -170,7 +164,7 @@ export const WatchlistCartelera = ({
     },
   });
 
-  const canReorder = isManualOrder && visible.length > 1;
+  const canReorder = views.length > 1;
   const ranked = sort === null;
   const empty = visible.length === 0;
   // Closing card (FIL-I24-7): how many fit before bedtime, only at night (fit is null by day).
@@ -181,26 +175,12 @@ export const WatchlistCartelera = ({
 
   return (
     <div className="relative space-y-4">
-      <div ref={sentinelRef} aria-hidden="true" className="absolute left-0 top-0 h-px w-px" />
-      <WatchlistStickyBar
-        count={visible.length}
-        condensed={condensed}
-        isEditing={isEditing}
-        canReorder={canReorder}
-        reorderBlocked={!canReorder && visible.length > 1 ? (sort ? "sort" : "filters") : null}
-        clearSortHref={sort ? catalogHref(pathname, { ...query, sort: null }) : undefined}
-        onToggleEditing={() => setIsEditing((current) => !current)}
-        // The phone header carries the count and «Reordenar»; the bar only shows while editing.
-        className={sharedEditing && !isEditing ? "max-sm:hidden" : undefined}
-      />
+      {isEditing ? (
+        <WatchlistStickyBar paused={paused} total={views.length} onDone={() => setIsEditing(false)} className={safeAreaStickyUnderHeaderClass} />
+      ) : null}
 
-      {empty ? (
-        <WatchlistEmpty
-          state={watchlistEmptyState(pathname, query, { genreName, platformsLabel })}
-          now={now}
-          nightEnds={nightEnds}
-          platformsLabel={platformsLabel}
-        />
+      {empty && !isEditing ? (
+        emptyState
       ) : isEditing && canReorder ? (
         <WatchlistReorderList items={visible} isPending={isPending} onMove={actions.move} onReorder={actions.reorder} />
       ) : (
@@ -211,7 +191,7 @@ export const WatchlistCartelera = ({
                 key={hero.id}
                 ficha={hero}
                 stamped={stampedId === hero.id}
-                eyebrow={heroEyebrow(sort, hero.platform?.label)}
+                eyebrow={heroEyebrow(sortQuery, hero.platform?.label)}
                 ranked={ranked}
                 onMarkSeen={openMark}
                 onMenu={openMenu}
@@ -224,7 +204,7 @@ export const WatchlistCartelera = ({
                     key={ficha.id}
                     ficha={ficha}
                     rank={isDesktop ? index + 1 : index + 2}
-                    lead={isDesktop && index === 0 ? heroEyebrow(sort, ficha.platform?.label) : null}
+                    lead={isDesktop && index === 0 ? heroEyebrow(sortQuery, ficha.platform?.label) : null}
                     expanded={expandedId === ficha.id}
                     selected={selected?.id === ficha.id}
                     stamped={stampedId === ficha.id}

@@ -17,7 +17,8 @@ export type CatalogOrderIconName =
   | "queue"
   | "sparkle"
   | "hourglass"
-  | "calendar";
+  | "calendar"
+  | "dice";
 
 export type CatalogOrderOption = {
   id: CatalogSort;

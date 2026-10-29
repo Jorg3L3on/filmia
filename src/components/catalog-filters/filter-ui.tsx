@@ -127,6 +127,10 @@ export const CatalogOrderIcon = ({ name }: { name: CatalogOrderIconName }) => {
     );
   }
 
+  if (name === "dice") {
+    return <DiceIcon />;
+  }
+
   if (name === "eye") {
     return (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
@@ -159,3 +163,15 @@ export const CatalogOrderIcon = ({ name }: { name: CatalogOrderIconName }) => {
     </svg>
   );
 };
+
+/** Sorpréndeme / Aleatoria: a die showing five. */
+export const DiceIcon = ({ className = "h-4 w-4" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
+    <rect x="4.5" y="4.5" width="15" height="15" rx="3.5" />
+    <circle cx="9" cy="9" r="1" fill="currentColor" stroke="none" />
+    <circle cx="15" cy="9" r="1" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+    <circle cx="9" cy="15" r="1" fill="currentColor" stroke="none" />
+    <circle cx="15" cy="15" r="1" fill="currentColor" stroke="none" />
+  </svg>
+);
