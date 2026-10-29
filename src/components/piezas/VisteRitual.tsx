@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { answerViste, moreViste } from "@/app/actions/rutas";
+import { answerViste, moreViste } from "@/app/actions/viste";
 import { addTitleFromTmdb } from "@/app/actions/titles";
 import { PosterImage } from "@/components/PosterImage";
 import { cn } from "@/lib/cn";

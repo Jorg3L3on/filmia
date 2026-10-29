@@ -7,17 +7,17 @@ import { runPool } from "@/lib/run-pool";
 import {
   parseThreadPeople,
   personRoleFilms,
-  personSourceKey,
   pickEsenciales,
   PERSON_FULL_MAX,
   todayIso,
-  type PersonRutaRole,
-  type RutaFilm,
+  type PersonFilm,
+  type PersonRole,
   type ThreadPersonRole,
-} from "@/lib/rutas/core";
-import { personDraft, loadFactoryContext } from "@/lib/rutas/factories";
-import { platformLabelOf } from "@/lib/rutas/reveal";
-import { loadSourceKeys, loadWatchedFilms } from "@/lib/rutas/store";
+} from "@/lib/people/core";
+import { loadLibraryContext, loadWatchedFilms, platformLabelOf } from "@/lib/people/store";
+import { personSourceKey } from "@/lib/rutas/core";
+import { personDraft } from "@/lib/rutas/factories";
+import { loadSourceKeys } from "@/lib/rutas/store";
 import { parseStoredStreamingPlatforms } from "@/lib/streaming-platforms";
 import { getTmdbDetails, getTmdbPersonCredits, isTmdbConfigured } from "@/lib/tmdb";
 import { parseStoredTmdbPeople } from "@/lib/tmdb-people";
@@ -154,7 +154,7 @@ const nextFilmOf = async (userId: string, personIds: readonly number[]) => {
     return null;
   }
   try {
-    const ctx = await loadFactoryContext(userId);
+    const ctx = await loadLibraryContext(userId);
     const draft = await withTimeout(personDraft(personIds, "director", ctx, null), TOTAL_BUDGET_MS, null);
     const step = draft?.steps.find((item) => !ctx.seenTmdbIds.has(item.film.tmdbId));
     if (!step) {
@@ -197,7 +197,7 @@ export const loadUniversoPerson = async (userId: string, key: string): Promise<U
     return null;
   }
   const role = node.role;
-  const rutaRole = rutaRoleOf(role) as PersonRutaRole;
+  const rutaRole = rutaRoleOf(role) as PersonRole;
   const base: UniversoPerson = {
     key,
     name: node.name,
@@ -218,14 +218,14 @@ export const loadUniversoPerson = async (userId: string, key: string): Promise<U
   }
   try {
     const [ctx, used, user] = await Promise.all([
-      loadFactoryContext(userId),
+      loadLibraryContext(userId),
       loadSourceKeys(userId),
       db.query.users.findFirst({ where: eq(users.id, userId), columns: { streamingPlatforms: true } }),
     ]);
     const credits = await getTmdbPersonCredits(personIds[0]!);
     const all = personRoleFilms(credits.credits, rutaRole, ctx.today);
     const draft = await personDraft(personIds, rutaRole, ctx, null);
-    const steps: RutaFilm[] = draft?.steps.map((step) => step.film) ?? (all.length <= PERSON_FULL_MAX ? all : pickEsenciales(all, ctx.seenTmdbIds, new Set()));
+    const steps: PersonFilm[] = draft?.steps.map((step) => step.film) ?? (all.length <= PERSON_FULL_MAX ? all : pickEsenciales(all, ctx.seenTmdbIds, new Set()));
     const unseen = steps.filter((film) => !ctx.seenTmdbIds.has(film.tmdbId)).slice(0, 6);
     const candidates = await Promise.all(
       unseen.map(async (film) => {

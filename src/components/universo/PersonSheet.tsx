@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useId, useState, useTransition } from "react";
-import { universoPerson } from "@/app/actions/rutas";
+import { universoPerson } from "@/app/actions/universo";
 import { Button } from "@/components/Button";
 import { ShimmerBlock } from "@/components/PageSkeletons";
 import { Sheet, SheetHandle } from "@/components/Sheet";

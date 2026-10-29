@@ -10,7 +10,7 @@ import {
   type UniversePerson,
 } from "@/lib/cine-cuenta";
 import { isPushConfigured, sendPush, type PushPayload, type PushSendOutcome } from "@/lib/push/web-push";
-import { parseThreadPeople, type PersonRutaRole } from "@/lib/rutas/core";
+import { parseThreadPeople, type PersonRole } from "@/lib/people/core";
 import { seasonSourceKey } from "@/lib/rutas/factories";
 import { loadSourceKeys } from "@/lib/rutas/store";
 import { loadUniversoFilms } from "@/lib/universo/store";
@@ -88,7 +88,7 @@ export const loadCountdowns = async (userId: string, now = new Date()): Promise<
   ]);
   const reminded = new Set(reminders.map((row) => row.catalogId));
   return countdowns.map((item) => {
-    const sourceKey = seasonSourceKey(item.release.catalogId, [item.person.id], rutaRoleOf(item.role) as PersonRutaRole);
+    const sourceKey = seasonSourceKey(item.release.catalogId, [item.person.id], rutaRoleOf(item.role) as PersonRole);
     return { ...item, reminded: reminded.has(item.release.catalogId), season: { sourceKey, started: used.has(sourceKey) } };
   });
 };

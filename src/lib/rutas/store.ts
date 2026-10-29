@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { and, asc, eq, inArray, isNotNull, isNull, notInArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   catalog,
   db,
@@ -481,24 +481,6 @@ export const parkRuta = async (userId: string, rutaId: string) => {
     .returning({ id: rutas.id });
   return updated.length > 0;
 };
-
-/** Watched films of the person (catalog rows), for the thread and the offers. */
-export const loadWatchedFilms = async (userId: string, excludeCatalogIds: readonly string[] = []) => {
-  const rows = await db
-    .select({ title: titles, film: catalog })
-    .from(titles)
-    .innerJoin(catalog, eq(titles.catalogId, catalog.id))
-    .where(
-      and(
-        eq(titles.userId, userId),
-        isNotNull(titles.watchedAt),
-        eq(catalog.kind, "MOVIE"),
-        ...(excludeCatalogIds.length ? [notInArray(catalog.id, [...excludeCatalogIds])] : []),
-      ),
-    );
-  return rows;
-};
-
 
 /** How many rutas the person has in each state (Perfil, Quiero ver); no stamps written. */
 export const countRutasByStatus = async (userId: string): Promise<Record<RutaStatus, number>> => {

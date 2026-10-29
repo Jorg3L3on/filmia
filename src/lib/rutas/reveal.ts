@@ -1,6 +1,5 @@
 import { eq } from "drizzle-orm";
-import { db, users, type CatalogRow, type Platform } from "@/db";
-import { PLATFORM_SERVICE_LABEL } from "@/lib/labels";
+import { db, users, type Platform } from "@/db";
 import {
   filmNameInSaga,
   findThread,
@@ -10,10 +9,10 @@ import {
   threadLine,
   todayIso,
 } from "@/lib/rutas/core";
-import { loadRutas, loadWatchedFilms, type RutaStepView, type RutaView } from "@/lib/rutas/store";
-import { currentAvailabilityPlatform, parseStoredStreamingPlatforms } from "@/lib/streaming-platforms";
+import { loadWatchedFilms, platformLabelOf } from "@/lib/people/store";
+import { loadRutas, type RutaStepView, type RutaView } from "@/lib/rutas/store";
+import { parseStoredStreamingPlatforms } from "@/lib/streaming-platforms";
 import { getTmdbPersonCredits, isTmdbConfigured } from "@/lib/tmdb";
-import { parseStoredWatchProviders } from "@/lib/watch-providers";
 import { withTimeout } from "@/lib/with-timeout";
 
 /** A step as the reveal sheet and the ruta page show it. */
@@ -48,11 +47,6 @@ export type RutaReveal = {
   next: RutaStepCard | null;
   /** «Andrew Lesnie fotografió las dos. Con esta llevas 2 de sus 18.» */
   thread: string | null;
-};
-
-export const platformLabelOf = (film: CatalogRow, userPlatforms: readonly Platform[]) => {
-  const platform = currentAvailabilityPlatform(parseStoredWatchProviders(film.watchProvidersMx), null, userPlatforms);
-  return platform ? PLATFORM_SERVICE_LABEL[platform] : null;
 };
 
 /** A film's name as a ruta says it: a saga's films drop the saga's name. */

@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { parkRuta, rutaAfterWatch, universoBridge } from "@/app/actions/rutas";
+import { parkRuta, rutaAfterWatch } from "@/app/actions/rutas";
+import { universoBridge } from "@/app/actions/universo";
 import { markNotTonight, sendTasteFeedback, undoNotInterested, undoNotTonight } from "@/app/actions/tonight";
 import { removeFromWatchlist, undoMarkWatched } from "@/app/actions/watchlist";
 import { CoverflowDeck } from "@/components/CoverflowDeck";

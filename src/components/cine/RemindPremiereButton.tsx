@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { remindPremiereAction } from "@/app/actions/rutas";
+import { remindPremiereAction } from "@/app/actions/cine";
 import { Button } from "@/components/Button";
 import { formatShortDay } from "@/lib/cine-core";
 import { showActionError, TOAST_COPY } from "@/lib/toast-alerts";

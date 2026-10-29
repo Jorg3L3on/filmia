@@ -1,9 +1,7 @@
-import { and, eq } from "drizzle-orm";
-import { catalog, cinemaReleases, db, listItems, lists, titles, users, type Platform } from "@/db";
+import { eq } from "drizzle-orm";
+import { catalog, cinemaReleases, db } from "@/db";
 import { formatShortDay } from "@/lib/cine-core";
 import { bestCuratedDraft, curatedRutaDraft, loadCuratedLists } from "@/lib/rutas/curadas";
-import { parseStoredTmdbGenres } from "@/lib/diary-picks";
-import { FAVORITAS_SLUG } from "@/lib/lists";
 import {
   collectionRutaDraft,
   duoName,
@@ -15,16 +13,13 @@ import {
   personRoleOfThread,
   personRutaDraft,
   personSourceKey,
-  rankSeeds,
   TITLE_RUTA_MIN_VOTES,
   titleSourceKey,
   TITLE_RUTA_SIZE,
   titleRutaDraft,
-  todayIso,
   type PersonRutaRole,
   type RutaDraft,
   type RutaFilm,
-  type SeedCandidate,
   type ThreadPerson,
 } from "@/lib/rutas/core";
 import {
@@ -36,7 +31,8 @@ import {
   type RutaVia,
   type RutaView,
 } from "@/lib/rutas/store";
-import { parseStoredStreamingPlatforms, titleAvailableOnUserPlatforms } from "@/lib/streaming-platforms";
+import { loadLibraryContext, type LibraryContext, type SeedTitle } from "@/lib/people/store";
+import { titleAvailableOnUserPlatforms } from "@/lib/streaming-platforms";
 import {
   getTmdbCollection,
   getTmdbMovieCollectionRef,
@@ -53,69 +49,18 @@ import { fetchMxWatchProviders } from "@/lib/watch-providers";
  * the person has never had a ruta.
  */
 
-export type SeedTitle = SeedCandidate & {
-  people: ThreadPerson[];
-  genreIds: number[];
-  posterPath: string | null;
-};
-
-export type FactoryContext = {
-  seeds: SeedTitle[];
-  /** TMDB ids of the movies the person has seen: «lo visto cuenta». */
-  seenTmdbIds: Set<number>;
-  platforms: Platform[];
-  today: string;
-};
-
-export const loadFactoryContext = async (userId: string, now = new Date()): Promise<FactoryContext> => {
-  const [rows, favoritas, user] = await Promise.all([
-    db
-      .select({ title: titles, film: catalog })
-      .from(titles)
-      .innerJoin(catalog, eq(titles.catalogId, catalog.id))
-      .where(eq(titles.userId, userId)),
-    db
-      .select({ catalogId: listItems.catalogId })
-      .from(listItems)
-      .innerJoin(lists, eq(listItems.listId, lists.id))
-      .where(and(eq(lists.userId, userId), eq(lists.slug, FAVORITAS_SLUG))),
-    db.query.users.findFirst({ where: eq(users.id, userId), columns: { streamingPlatforms: true } }),
-  ]);
-  const favorite = new Set(favoritas.map((row) => row.catalogId));
-  const all: SeedTitle[] = rows.map(({ title, film }) => ({
-    catalogId: film.id,
-    tmdbId: film.tmdbId,
-    kind: film.kind,
-    name: film.name,
-    watched: title.watchedAt != null,
-    // ¿Las viste? «me gustó» counts as a seed like stars do (FIL-I26).
-    rating: title.rating ?? title.impliedRating,
-    favorite: favorite.has(film.id),
-    createdAt: title.createdAt,
-    people: parseThreadPeople(film.tmdbPeople),
-    genreIds: parseStoredTmdbGenres(film.tmdbGenres).map((genre) => genre.id),
-    posterPath: film.posterPath,
-  }));
-  return {
-    seeds: rankSeeds(all),
-    seenTmdbIds: new Set(all.filter((title) => title.watched && title.kind === "MOVIE").map((title) => title.tmdbId)),
-    platforms: parseStoredStreamingPlatforms(user?.streamingPlatforms),
-    today: todayIso(now),
-  };
-};
-
 // ---------------------------------------------------------------------------
 // Por colección
 // ---------------------------------------------------------------------------
 
-export const collectionDraftForSeed = async (seed: SeedTitle, ctx: FactoryContext): Promise<RutaDraft | null> => {
+export const collectionDraftForSeed = async (seed: SeedTitle, ctx: LibraryContext): Promise<RutaDraft | null> => {
   const ref = await getTmdbMovieCollectionRef(seed.tmdbId);
   return ref ? collectionDraftById(ref.id, ctx, seed) : null;
 };
 
 const collectionDraftById = async (
   collectionId: number,
-  ctx: FactoryContext,
+  ctx: LibraryContext,
   seed: SeedTitle | null,
   context?: string,
 ) => {
@@ -137,7 +82,7 @@ const collectionDraftById = async (
 
 const roleOfPerson = (person: ThreadPerson): PersonRutaRole => personRoleOfThread(person.role);
 
-const onMyPlatforms = async (films: readonly RutaFilm[], ctx: FactoryContext) => {
+const onMyPlatforms = async (films: readonly RutaFilm[], ctx: LibraryContext) => {
   if (ctx.platforms.length === 0) {
     return new Set<number>();
   }
@@ -161,7 +106,7 @@ const onMyPlatforms = async (films: readonly RutaFilm[], ctx: FactoryContext) =>
 export const personDraft = async (
   personIds: readonly number[],
   role: PersonRutaRole,
-  ctx: FactoryContext,
+  ctx: LibraryContext,
   seed: { tmdbId: number; name: string } | null,
 ): Promise<RutaDraft | null> => {
   const credits = await Promise.all(personIds.map((id) => getTmdbPersonCredits(id)));
@@ -214,7 +159,7 @@ const personCandidates = (seed: SeedTitle): Array<{ ids: number[]; role: PersonR
 const ROLE_BONUS: Record<PersonRutaRole, number> = { director: 8, fotografia: 3, musica: 3, reparto: 0 };
 
 /** A short, partly seen filmography beats a long one: it is an island you can close. Directors first. */
-const personDraftScore = (draft: RutaDraft, ctx: FactoryContext) => {
+const personDraftScore = (draft: RutaDraft, ctx: LibraryContext) => {
   const seen = draft.steps.filter((step) => ctx.seenTmdbIds.has(step.film.tmdbId)).length;
   const whole = !draft.title.endsWith("esenciales");
   const parsed = parseSourceKey(draft.sourceKey);
@@ -224,7 +169,7 @@ const personDraftScore = (draft: RutaDraft, ctx: FactoryContext) => {
 
 const bestPersonDraft = async (
   seed: SeedTitle,
-  ctx: FactoryContext,
+  ctx: LibraryContext,
   skip: ReadonlySet<string>,
   limit = 4,
 ): Promise<RutaDraft | null> => {
@@ -257,7 +202,7 @@ const bestPersonDraft = async (
  * «Si te gustó X» (FIL-I26-2): TMDB's recommendations for a film you saw, the unseen ones that
  * stream on your platforms (any platform when you have none set), in TMDB's order.
  */
-export const titleDraftForSeed = async (seed: SeedTitle, ctx: FactoryContext): Promise<RutaDraft | null> => {
+export const titleDraftForSeed = async (seed: SeedTitle, ctx: LibraryContext): Promise<RutaDraft | null> => {
   const related = await getTmdbRelated(seed.tmdbId, "MOVIE", "recommendations");
   const pool = related
     .filter(
@@ -301,7 +246,7 @@ export const titleDraftForSeed = async (seed: SeedTitle, ctx: FactoryContext): P
  * has one; else five films TMDB pairs with it on your platforms; else its closest person. The
  * first three seeds get a turn at the collection before anything else.
  */
-export const dayOneDraft = async (ctx: FactoryContext): Promise<RutaDraft | null> => {
+export const dayOneDraft = async (ctx: LibraryContext): Promise<RutaDraft | null> => {
   for (const seed of ctx.seeds.slice(0, 3)) {
     const draft = await collectionDraftForSeed(seed, ctx).catch(() => null);
     if (draft) {
@@ -326,7 +271,7 @@ export const ensureDayOneRuta = async (userId: string, via: RutaVia): Promise<Cr
   if (!isTmdbConfigured() || (await rutasAlreadyOffered(userId))) {
     return null;
   }
-  const ctx = await loadFactoryContext(userId);
+  const ctx = await loadLibraryContext(userId);
   const draft = await dayOneDraft(ctx);
   if (!draft) {
     // Seen films and still nothing fits: stop trying on every visit (offers still work).
@@ -350,7 +295,7 @@ export type RutaOffer = {
   next: { name: string; year: number | null } | null;
 };
 
-const toOffer = (draft: RutaDraft, ctx: FactoryContext): RutaOffer => {
+const toOffer = (draft: RutaDraft, ctx: LibraryContext): RutaOffer => {
   const seen = draft.steps.filter((step) => ctx.seenTmdbIds.has(step.film.tmdbId));
   const next = draft.steps.find((step) => !ctx.seenTmdbIds.has(step.film.tmdbId));
   return {
@@ -378,7 +323,7 @@ export const offerRutas = async (
   }
   // `curated`: the last slot is kept for the best fitting curated ruta, when one fits.
   const total = options.limit ?? 2;
-  const [ctx, used] = await Promise.all([loadFactoryContext(userId), loadSourceKeys(userId)]);
+  const [ctx, used] = await Promise.all([loadLibraryContext(userId), loadSourceKeys(userId)]);
   const curatedDraft = options.curated
     ? bestCuratedDraft(await loadCuratedLists(ctx.today), ctx.seeds, ctx.seenTmdbIds, used)
     : null;
@@ -465,7 +410,7 @@ export const offerRutas = async (
 const sagaAfter = async (
   after: RutaView,
   lastTmdbId: number,
-  ctx: FactoryContext,
+  ctx: LibraryContext,
   taken: ReadonlySet<string>,
 ): Promise<RutaDraft | null> => {
   const related = await getTmdbRelated(lastTmdbId, "MOVIE", "recommendations");
@@ -506,7 +451,7 @@ export const draftFromSourceKey = async (userId: string, sourceKey: string): Pro
   if (!parsed || !isTmdbConfigured()) {
     return null;
   }
-  const ctx = await loadFactoryContext(userId);
+  const ctx = await loadLibraryContext(userId);
   if (parsed.kind === "coleccion") {
     return collectionDraftById(parsed.collectionId, ctx, null);
   }
@@ -540,7 +485,7 @@ export const seasonDraft = async (
   catalogId: string,
   personIds: readonly number[],
   role: PersonRutaRole,
-  ctx: FactoryContext,
+  ctx: LibraryContext,
 ): Promise<RutaDraft | null> => {
   const [release] = await db
     .select({ name: catalog.name, day: cinemaReleases.mxReleaseDate })
@@ -596,7 +541,7 @@ export const firstRutas = async (userId: string): Promise<FirstRutas> => {
   if (!isTmdbConfigured()) {
     return { main: null, alternatives: [] };
   }
-  const ctx = await loadFactoryContext(userId);
+  const ctx = await loadLibraryContext(userId);
   const main = await dayOneDraft(ctx);
   const taken = new Set(main ? [main.sourceKey] : []);
   const mainFilms = new Set(main?.steps.map((step) => step.film.tmdbId) ?? []);

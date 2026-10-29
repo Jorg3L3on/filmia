@@ -19,9 +19,9 @@ import {
   visteSummary,
   type VisteAnswer,
 } from "@/lib/piezas/core";
-import { parseThreadPeople } from "@/lib/rutas/core";
-import { loadFactoryContext } from "@/lib/rutas/factories";
-import { loadRutas, loadWatchedFilms } from "@/lib/rutas/store";
+import { parseThreadPeople } from "@/lib/people/core";
+import { loadLibraryContext, loadWatchedFilms } from "@/lib/people/store";
+import { loadRutas } from "@/lib/rutas/store";
 import { getTmdbRelated, isTmdbConfigured } from "@/lib/tmdb";
 import { scheduleTonightRecompute, type TonightCard, type TonightLensView } from "@/lib/tonight-store";
 
@@ -124,7 +124,7 @@ const dealBatch = async (userId: string, now: Date, batchesToday: number): Promi
   if (!isTmdbConfigured()) {
     return [];
   }
-  const ctx = await loadFactoryContext(userId, now);
+  const ctx = await loadLibraryContext(userId, now);
   const seeds = ctx.seeds.slice(0, VISTE_MAX_SEEDS);
   if (seeds.length === 0) {
     return [];

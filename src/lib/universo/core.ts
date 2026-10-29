@@ -1,4 +1,5 @@
-import { duoName, personSourceKey, type PersonRutaRole, type ThreadPerson, type ThreadPersonRole } from "@/lib/rutas/core";
+import { duoName, type PersonRole, type ThreadPerson, type ThreadPersonRole } from "@/lib/people/core";
+import { personSourceKey } from "@/lib/rutas/core";
 
 /**
  * «Tu universo» (FIL-I26-4, boards U1–U4): the people of the films you saw. Pure: nodes (one
@@ -341,7 +342,7 @@ export const bridgeRevealOf = (
       person.role === "cast" && total != null && total > BRIDGE_CAST_RUTA_MAX
         ? null
         : {
-            sourceKey: personSourceKey([person.id], rutaRoleOf(person.role) as PersonRutaRole),
+            sourceKey: personSourceKey([person.id], rutaRoleOf(person.role) as PersonRole),
             title: `Ruta de ${person.name}`,
             total,
           },

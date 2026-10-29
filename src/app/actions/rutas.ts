@@ -4,17 +4,8 @@ import { revalidatePath } from "next/cache";
 import { firstRutas, startRutaFromSource, type FirstRutas } from "@/lib/rutas/factories";
 import { revealAfterWatch, type RutaReveal } from "@/lib/rutas/reveal";
 import { activateRuta as activate, markRutasOffered, parkRuta as park } from "@/lib/rutas/store";
-import { remindPremiere, type RemindOutcome } from "@/lib/cine-cuenta-store";
-import { isVisteAnswer } from "@/lib/piezas/core";
 import type { RutaStatus } from "@/lib/rutas/core";
-import { answerViste as answer, dealMoreViste, type VisteCard, type VisteOutcome } from "@/lib/piezas/viste";
 import { requireUserId } from "@/lib/session";
-import {
-  bridgeAfterWatch,
-  loadUniversoPerson,
-  type BridgeReveal,
-  type UniversoPerson,
-} from "@/lib/universo/store";
 
 const revalidateRutas = (rutaId?: string) => {
   revalidatePath("/");
@@ -99,58 +90,4 @@ export const startFirstRuta = async (sourceKey: string): Promise<StartRutaResult
 export const declineFirstRuta = async () => {
   const userId = await requireUserId();
   await markRutasOffered(userId);
-};
-
-/** One answer of «¿Las viste?»; the last one comes back with what changed. */
-export const answerViste = async (catalogId: string, choice: string): Promise<VisteOutcome> => {
-  const userId = await requireUserId();
-  if (typeof catalogId !== "string" || !isVisteAnswer(choice)) {
-    return { ok: false, error: "Respuesta no válida." };
-  }
-  const outcome = await answer(userId, catalogId, choice);
-  if (outcome.ok) {
-    revalidatePath("/");
-    revalidatePath("/las-viste");
-    if (choice !== "no") {
-      revalidatePath("/perfil");
-    }
-  }
-  return outcome;
-};
-
-/** U3 · a person's sheet in «Tu universo». */
-export const universoPerson = async (key: string): Promise<UniversoPerson | null> => {
-  const userId = await requireUserId();
-  if (typeof key !== "string" || !/^\d+(\+\d+)?$/.test(key)) {
-    return null;
-  }
-  return loadUniversoPerson(userId, key).catch(() => null);
-};
-
-/** U4 · after «Vi esto»: the bridge the film just made, once per person. */
-export const universoBridge = async (cardId: string): Promise<BridgeReveal | null> => {
-  const userId = await requireUserId();
-  if (typeof cardId !== "string" || cardId.length > 64) {
-    return null;
-  }
-  return bridgeAfterWatch(userId, cardId).catch(() => null);
-};
-
-/** «Avísame el día» on a premiere of «Para ti, en sala» (FIL-I26-5). */
-export const remindPremiereAction = async (catalogId: string): Promise<RemindOutcome> => {
-  const userId = await requireUserId();
-  if (typeof catalogId !== "string" || catalogId.length > 64) {
-    return { ok: false, error: "Película no válida." };
-  }
-  const outcome = await remindPremiere(userId, catalogId);
-  if (outcome.ok) {
-    revalidatePath("/cine");
-  }
-  return outcome;
-};
-
-/** Three more cards of «¿Las viste?» (no daily limit); empty when none are left. */
-export const moreViste = async (): Promise<VisteCard[]> => {
-  const userId = await requireUserId();
-  return dealMoreViste(userId).catch(() => []);
 };
