@@ -32,18 +32,18 @@ export const QuieroVerPinnedCard = ({
       )}
     >
       <span className="min-w-0 flex-1">
-        <span className="block font-serif text-[1.375rem] leading-tight text-paper">{name}</span>
+        <span className="block truncate font-serif text-[1.375rem] leading-tight text-paper">{name}</span>
         <span className="mt-1 block text-sm tabular-nums text-fog">{countLabel}</span>
       </span>
       {shown.length > 0 ? (
-        <span className="flex shrink-0 -space-x-5" aria-hidden="true">
+        <span className="flex shrink-0 -space-x-6" aria-hidden="true">
           {shown.map((title, index) => (
             <span
               key={title.id}
-              className="relative h-[84px] w-14 overflow-hidden rounded-lg border border-canvas bg-well shadow-[0_8px_18px_rgba(0,0,0,0.45)]"
+              className="relative h-[72px] w-12 overflow-hidden rounded-lg border border-canvas bg-well shadow-[0_8px_18px_rgba(0,0,0,0.45)]"
               style={{ zIndex: shown.length - index }}
             >
-              <PosterImage name={title.name} posterPath={title.posterPath} sizes="56px" className="h-full rounded-none" ratio="fill" />
+              <PosterImage name={title.name} posterPath={title.posterPath} sizes="48px" className="h-full rounded-none" ratio="fill" />
             </span>
           ))}
         </span>
