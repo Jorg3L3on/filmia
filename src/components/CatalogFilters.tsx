@@ -51,6 +51,8 @@ type CatalogFiltersProps = {
    */
   heading?: ReactNode;
   headingActions?: ReactNode;
+  /** Sit in a parent toolbar: no full-width spacer pushing Orden and Filtros to the far edge. */
+  inline?: boolean;
 };
 
 export const CatalogFilters = ({
@@ -78,6 +80,7 @@ export const CatalogFilters = ({
   extraQuery,
   heading,
   headingActions,
+  inline = false,
 }: CatalogFiltersProps) => {
   const {
     applied,
@@ -115,10 +118,11 @@ export const CatalogFilters = ({
   const compact = Boolean(heading);
 
   return (
-    <section className="space-y-1" aria-label="Filtros del catálogo">
+    <section className={inline ? "flex w-fit" : "space-y-1"} aria-label="Filtros del catálogo">
       <div
         className={cn(
-          "flex items-center gap-1.5",
+          "flex items-center gap-2",
+          !inline && "gap-1.5",
           compact &&
             "max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto_auto] max-sm:items-center max-sm:gap-x-2 max-sm:gap-y-1",
         )}
@@ -135,7 +139,7 @@ export const CatalogFilters = ({
           <CatalogMinePlatformsChip applied={applied} hrefFor={hrefFor} />
         ) : showKind && showKindChips ? (
           <CatalogKindChips kind={kind} applied={applied} hrefFor={hrefFor} />
-        ) : (
+        ) : inline ? null : (
           <div className="flex-1" />
         )}
 

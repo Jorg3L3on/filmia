@@ -2631,6 +2631,68 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
  * stage + equal bottom margin) so a height-bound card on short screens never drops the stub
  * onto the title — and the sala's total height, tuned to clear the tab bar, stays the same.
  */
+/*
+ * A list's title, description and actions sit above the mazo. On a phone the stage
+ * takes only the room left above the dock, so the score row is on screen. The card
+ * follows the stage height. If the header is still too tall, main scrolls.
+ */
+@media (max-width: 639px) {
+  body:has(.list-sala) {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  body:has(.list-sala) .app-main {
+    min-height: 0;
+    /* The poster glow is painted past the edges. overflow-y: auto would turn that into a sideways scroll. */
+    overflow-x: clip;
+    overflow-y: auto;
+  }
+
+  .list-sala {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    gap: 0.75rem;
+    /* Side posters and the glow stick out of the column. Clip them here so the page cannot pan sideways. */
+    overflow-x: clip;
+  }
+
+  .list-sala > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0;
+  }
+
+  .list-sala > * {
+    flex-shrink: 0;
+  }
+
+  .list-sala > .list-sala-deck {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    flex-shrink: 1;
+    min-height: 0;
+  }
+
+  .list-sala .diario-que-ver-deck,
+  .list-sala .coverflow-cinematic {
+    min-height: 0;
+  }
+
+  .list-sala .coverflow-cinematic-stage {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 9rem;
+    max-height: none;
+  }
+
+  /* The glow is painted past the stage. Inside the scrolling list that extra box becomes a sideways scroll. */
+  .list-sala .que-ver-atmosphere {
+    inset: 0;
+  }
+}
+
 .tonight-sala .coverflow-cinematic-stage {
   --stub-room: 2.25rem;
   /* The header gave 2 rem back (FIL-I21-3): the stage keeps it. */
@@ -2893,6 +2955,38 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 .coverflow-card.is-focused .ticket-stub-tab {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* The list poster shrinks to clear the dock, so the fixed 172px pair used to
+   stick out past it and the title row ate the taps. Size the pair to the card
+   and paint it above the footer. */
+.list-sala .coverflow-cinematic {
+  z-index: 2;
+}
+
+.list-sala .tonight-footer {
+  position: relative;
+  z-index: 1;
+}
+
+.list-sala .coverflow-card.has-menu-tab {
+  --stub-tab: 42px;
+  --stub-gap: 4px;
+  --stub-w: min(128px, calc(100% - var(--stub-tab) - var(--stub-gap)));
+}
+
+.list-sala .coverflow-card.has-menu-tab .ticket-stub {
+  width: var(--stub-w);
+  left: calc((100% - var(--stub-w) - var(--stub-gap) - var(--stub-tab)) / 2 + var(--stub-w) / 2);
+}
+
+.list-sala .coverflow-card.has-menu-tab .ticket-stub-tab {
+  width: var(--stub-tab);
+  left: calc((100% - var(--stub-w) - var(--stub-gap) - var(--stub-tab)) / 2 + var(--stub-w) + var(--stub-gap));
+}
+
+.list-sala .coverflow-card.has-stub:not(.has-menu-tab) .ticket-stub {
+  width: min(128px, 100%);
 }
 
 .ticket-stub-notch {

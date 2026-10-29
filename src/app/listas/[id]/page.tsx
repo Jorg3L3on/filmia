@@ -161,71 +161,91 @@ const ListDetail = async ({
 
   return (
     // Shell = Hoy's room: the deck tints the page with the hero poster's colour.
-    <div className="diario-que-ver-shell space-y-6">
+    <div className="diario-que-ver-shell list-sala space-y-6">
       <NavLabel label={`Listas · ${list.name}`} />
       <PageHeader
         title={list.name}
         description={list.description ?? undefined}
         backHref="/listas"
         backLabel="Todas las listas"
-        inlineActions
-        actions={
-          <>
-            {automatic || yearTop || !canEditItems ? null : (
-              <AddTitleToListCta
-                action={addAction}
-                titles={availableTitles}
-                listId={list.id}
-                configuredTmdb={configuredTmdb}
-                inListKeys={inListKeys}
-                compact
-              />
-            )}
-            {isOwner && shareRoles.length > 0 ? (
-              <ShareListSheet
-                listId={list.id}
-                listName={list.name}
-                roles={shareRoles}
-                publicShare={
-                  <ShareButton
-                    path={sharePath("lista", list.id)}
-                    title={list.name}
-                    text={listShareText(list.name, list.items.length)}
-                    fileName={`${slugify(list.name) || "lista"}.png`}
-                    ariaLabel="Mandar la vista pública"
-                    className="shrink-0 rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold text-paper"
-                  >
-                    Vista pública
-                  </ShareButton>
-                }
-              />
-            ) : null}
-            {isOwner && shareRoles.length === 0 ? (
+      />
+
+      <div className="flex flex-wrap items-center gap-2">
+        {automatic || yearTop || !canEditItems ? null : (
+          <AddTitleToListCta
+            action={addAction}
+            titles={availableTitles}
+            listId={list.id}
+            configuredTmdb={configuredTmdb}
+            inListKeys={inListKeys}
+            compact
+          />
+        )}
+        {isOwner && shareRoles.length > 0 ? (
+          <ShareListSheet
+            listId={list.id}
+            listName={list.name}
+            roles={shareRoles}
+            compact
+            publicShare={
               <ShareButton
                 path={sharePath("lista", list.id)}
                 title={list.name}
                 text={listShareText(list.name, list.items.length)}
                 fileName={`${slugify(list.name) || "lista"}.png`}
-                ariaLabel="Compartir lista"
-                className={segmentActionCompactClass}
+                ariaLabel="Mandar la vista pública"
+                className="shrink-0 rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold text-paper"
               >
-                <ShareIcon className="size-5" />
-                <SegmentActionTooltip label="Compartir lista" />
+                Vista pública
               </ShareButton>
-            ) : null}
-            {isOwner ? (
-              <Link
-                href={yearTop ? `/cine/mejor/${list.year}` : `/listas/${list.id}/editar`}
-                aria-label={yearTop ? "Editar en Cine" : fixed ? "Editar descripción" : "Editar lista"}
-                className={segmentActionCompactClass}
-              >
-                <PencilIcon className="size-5 group-hover/action:-rotate-12" />
-                <SegmentActionTooltip label={yearTop ? "Editar en Cine" : fixed ? "Editar descripción" : "Editar lista"} />
-              </Link>
-            ) : null}
-          </>
-        }
-      />
+            }
+          />
+        ) : null}
+        {isOwner && shareRoles.length === 0 ? (
+          <ShareButton
+            path={sharePath("lista", list.id)}
+            title={list.name}
+            text={listShareText(list.name, list.items.length)}
+            fileName={`${slugify(list.name) || "lista"}.png`}
+            ariaLabel="Compartir lista"
+            className={segmentActionCompactClass}
+          >
+            <ShareIcon className="size-5" />
+            <SegmentActionTooltip label="Compartir lista" />
+          </ShareButton>
+        ) : null}
+        {isOwner ? (
+          <Link
+            href={yearTop ? `/cine/mejor/${list.year}` : `/listas/${list.id}/editar`}
+            aria-label={yearTop ? "Editar en Cine" : fixed ? "Editar descripción" : "Editar lista"}
+            className={segmentActionCompactClass}
+          >
+            <PencilIcon className="size-5 group-hover/action:-rotate-12" />
+            <SegmentActionTooltip label={yearTop ? "Editar en Cine" : fixed ? "Editar descripción" : "Editar lista"} />
+          </Link>
+        ) : null}
+        {isOwner && shareRoles.length > 0 && !shared ? (
+          <Link
+            href={`/listas/${list.id}/miembros`}
+            aria-label="Miembros y links"
+            className={segmentActionCompactClass}
+          >
+            <PeopleIcon className="size-5" />
+            <SegmentActionTooltip label="Miembros y links" />
+          </Link>
+        ) : null}
+        <CatalogFilters
+          pathname={`/listas/${list.id}`}
+          kind={kindFilter}
+          platforms={platforms}
+          sort={sort ?? undefined}
+          minePlatforms={minePlatforms}
+          hasStreamingPlatforms={userPlatforms.length > 0}
+          seriesStatus={seriesStatus}
+          showKindChips={false}
+          inline
+        />
+      </div>
 
       {shared ? (
         <div className="flex flex-wrap items-center gap-3">
@@ -246,10 +266,6 @@ const ListDetail = async ({
             </span>
           ) : null}
         </div>
-      ) : isOwner && shareRoles.length > 0 ? (
-        <Link href={`/listas/${list.id}/miembros`} className="inline-flex text-sm text-fog hover:text-paper">
-          Miembros y links <span aria-hidden="true">&nbsp;›</span>
-        </Link>
       ) : null}
 
       {together ? (
@@ -281,17 +297,6 @@ const ListDetail = async ({
           requests={requests.map((request) => ({ ...request, listId: list.id, listName: list.name }))}
         />
       ) : null}
-
-      <CatalogFilters
-        pathname={`/listas/${list.id}`}
-        kind={kindFilter}
-        platforms={platforms}
-        sort={sort ?? undefined}
-        minePlatforms={minePlatforms}
-        hasStreamingPlatforms={userPlatforms.length > 0}
-        seriesStatus={seriesStatus}
-        showKindChips={false}
-      />
 
       {list.items.length === 0 ? (
         <>
@@ -331,7 +336,7 @@ const ListDetail = async ({
           actionLabel="Quitar filtros"
         />
       ) : (
-        <div className="space-y-4">
+        <div className="list-sala-deck space-y-4">
           <MissingStreamingDataNote count={catalog.missingCache} />
           <ListTitlesView
             listId={automatic || !canEditItems ? undefined : list.id}
@@ -344,4 +349,22 @@ const ListDetail = async ({
       )}
     </div>
   );
-}
+};
+
+const PeopleIcon = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={className}
+  >
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="3" />
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a3 3 0 0 1 0 5.75" />
+  </svg>
+);
