@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { PosterImage } from "@/components/PosterImage";
 import { RemindPremiereButton } from "@/components/cine/RemindPremiereButton";
-import { StartRutaButton } from "@/components/universo/StartRutaButton";
 import { formatShortDay } from "@/lib/cine-core";
 import { daysLabel } from "@/lib/cine-cuenta";
 import { loadCountdowns } from "@/lib/cine-cuenta-store";
@@ -11,7 +10,7 @@ import { focusRing } from "@/lib/ui";
 
 /**
  * P3 · «Para ti, en sala» (FIL-I26-5): the nearest premiere with someone of your universe behind
- * it, the days left, why it is yours, «Avísame el día» and its ruta to see first. Absent when
+ * it, the days left, why it is yours, and «Avísame el día». Absent when
  * nobody of yours has a premiere coming: never a countdown without a person.
  */
 export const ParaTiEnSala = async ({ userId }: { userId: string }) => {
@@ -42,13 +41,6 @@ export const ParaTiEnSala = async ({ userId }: { userId: string }) => {
           <p className="text-[13px] leading-snug text-paper/85">{hero.reason}.</p>
           <div className="mt-1 flex flex-col gap-2">
             <RemindPremiereButton catalogId={hero.release.catalogId} reminded={hero.reminded} day={hero.release.mxReleaseDate} />
-            {hero.season.started ? (
-              <Link href="/rutas" className={cn("text-[13px] text-accent-hover underline", focusRing)}>
-                Ya tienes su ruta antes de verla
-              </Link>
-            ) : (
-              <StartRutaButton sourceKey={hero.season.sourceKey} label="Ruta: antes de verla" variant="secondary" size="md" />
-            )}
           </div>
         </div>
       </div>

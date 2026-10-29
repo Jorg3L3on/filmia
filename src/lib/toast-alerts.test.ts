@@ -80,7 +80,6 @@ describe("Reintentar runs once", () => {
     "deshacer visto",
     "guardar nota",
     "quitar de Quiero ver",
-    "aparcar ruta",
     "agregar a la lista",
     "quitar de la lista",
     "decidir solicitud",

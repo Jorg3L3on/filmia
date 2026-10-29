@@ -2,6 +2,8 @@
 
 HEAD de partida `8c4c0ee`. El brief contaba 76 en 25 archivos con líneas de antes de FIL-I27/I29. El alcance real, confirmado en ese HEAD, es **cada `showToast(` de producción: 98 llamadas en 32 archivos**. Fuera de la cuenta: `src/lib/toast.test.ts` y el banco `src/components/toast/ToastBench.tsx` (6, solo desarrollo).
 
+FIL-I33 quitó Rutas: sus filas (`StartRutaButton`, `RutaActions`, `RutaRevealSheet`, la ruta del alta y los cuatro avisos de ruta) salieron de esta auditoría; las cuentas de arriba son las de entonces.
+
 Los 7 archivos que el brief no listaba quedan en la zona más afín. El copy es provisional hasta que Jorge lo apruebe. No se tocan «Ahora no» ni «No te la volveremos a sugerir». No se cambia el contrato de `src/lib/toast.ts`.
 
 ## Zonas
@@ -9,9 +11,9 @@ Los 7 archivos que el brief no listaba quedan en la zona más afín. El copy es 
 | Zona | Archivos | Llamadas | De más, asignados aquí |
 | --- | ---: | ---: | --- |
 | (a) Diario / Ficha | 8 | 20 | `src/lib/diary-undo.ts` (el Deshacer de «Quitada de tu diario») |
-| (b) Hoy / Quiero ver | 10 | 50 | `VisteRitual` (¿Las viste?), `StartRutaButton`, `RemindPremiereButton` (estreno → Quiero ver), `RutaActions`, `RutaRevealSheet` |
+| (b) Hoy / Quiero ver | 10 | 50 | `VisteRitual` (¿Las viste?), `RemindPremiereButton` (estreno → Quiero ver) |
 | (c) Listas y compartidas | 7 | 16 | — |
-| (d) Onboarding / Perfil / Compartir | 7 | 12 | `OnboardingFlow` (empezar la ruta al cerrar el alta) |
+| (d) Onboarding / Perfil / Compartir | 7 | 12 | `OnboardingFlow` |
 | Total | 32 | 98 | |
 
 `CineActions` no llama a `showToast`. Mete `durationMs: 6000` en el objeto que `useTmdbTitleActions` muestra: se quita ahí, en la zona (b).
@@ -37,8 +39,6 @@ Estas acciones devuelven `{ ok: false, error: string }` o solo entregan ese text
 | `TonightSala` `onWatchError` (283) | llega un `string` ya armado; la operación y el formulario no están en ese callback |
 | `VisteRitual` 83 y 103 | `outcome.ok` / `saved.ok` con `error: string` |
 | `RemindPremiereButton` 39 | `outcome.error` |
-| `StartRutaButton` 33, `OnboardingFlow` 214, `RutaActions` 131 | `outcome.error` al empezar una ruta (además, empezar no es idempotente) |
-| `RutaActions` 43, `RutaRevealSheet` 46 | `outcome.error` al reservar |
 | `AddTitleToListCta` alta desde TMDB | `{ ok: false, error }` se marca `name: "ActionRejected"` y no lleva botón. Un `throw` de la acción (red) sí: el alta es idempotente |
 
 `MembersPanel` al cambiar un enlace, un rol o un miembro sí se distingue: un `TypeError` de `fetch` ofrece «Reintentar»; `new Error("Ese rol no está disponible…")` o «Eres la persona dueña…» no. `toggleInvite` escribe `disabledAt` a un valor (`setInviteDisabled`): repetirlo deja el enlace en el mismo estado, así que es idempotente y entra en «solo red».
@@ -56,7 +56,7 @@ Estas acciones devuelven `{ ok: false, error: string }` o solo entregan ese text
 | `useWatchlistActions` deshacer visto | `undoMarkWatched` | el primer fallo y el segundo dejan la ficha oculta; al acertar confirma «Añadida a Quiero ver» |
 | `useWatchlistActions` nota | `updateWatchlistNote` (escribe la nota) | revierte la nota; al acertar confirma |
 | `TonightSala` deshacer visto | `undoMarkWatched` | igual que en Quiero ver: los dos fallos dejan la carta vista |
-| `TonightSala` quitar de Quiero ver, aparcar ruta | `removeFromWatchlist` (borra), `parkRuta` (solo pasa de activa a espera, no lanza) | revierten `hide`; al acertar confirman |
+| `TonightSala` quitar de Quiero ver | `removeFromWatchlist` (borra) | revierten `hide`; al acertar confirman |
 | `AddTitleToListCta` | alta con `onConflictDoNothing` | `markAdded(false)` y reabre |
 | `useListCardMenu` | `removeTitleFromList` (borra) | `onRestore` |
 | `RequestControls` 46 | `decideRequests` (el segundo pendiente no cambia nada) | sin botón la segunda vez |
@@ -73,7 +73,7 @@ Sin botón, a propósito:
 
 ## Copy
 
-Póster `tmdbPosterUrl(posterPath, "w185")` en cada aviso de película o serie. Sin path, el icono de la variante. Otra cosa (lista, enlace, persona, ruta, cuenta) no lleva póster y concuerda con su sustantivo.
+Póster `tmdbPosterUrl(posterPath, "w185")` en cada aviso de película o serie. Sin path, el icono de la variante. Otra cosa (lista, enlace, persona, cuenta) no lleva póster y concuerda con su sustantivo.
 
 | Antes | Después | Concordancia |
 | --- | --- | --- |
@@ -92,10 +92,6 @@ Póster `tmdbPosterUrl(posterPath, "w185")` en cada aviso de película o serie. 
 | Ficha cambiada / Ya era esta | Ficha actualizada / Ficha confirmada | ficha |
 | No la viste | Marcada como no vista | película / serie |
 | Más como esta / Menos como esta | Afinidad anotada / Distancia anotada | afinidad / distancia |
-| Ruta para después | Ruta aplazada | ruta |
-| De vuelta en Hoy | Ruta reactivada | ruta |
-| Espera su turno | Ruta en espera | ruta |
-| Hoy ya tiene dos rutas | Ruta no activada | ruta |
 | Tu top N de AÑO (toast) | Top guardado | top. `yourTopLabel` sigue siendo el título de la tarjeta |
 | (borrar lista, hoy no hay texto) | Lista eliminada | lista. El llamador pasa `successToast` |
 | Aprobado / Rechazado | Solicitud aprobada / Solicitud rechazada | solicitud |

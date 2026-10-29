@@ -5,7 +5,6 @@ import { Button } from "@/components/Button";
 import { PosterImage } from "@/components/PosterImage";
 import { Sheet, SheetHandle } from "@/components/Sheet";
 import { TmdbPersonAvatar } from "@/components/TmdbPersonAvatar";
-import { StartRutaButton } from "@/components/universo/StartRutaButton";
 import { staggerStyle } from "@/lib/motion-style";
 import type { BridgeReveal } from "@/lib/universo/store";
 
@@ -36,8 +35,7 @@ export const BridgeSheet = ({ bridge, onClose }: { bridge: BridgeReveal | null; 
           </div>
           {bridge.progress ? <BridgeProgress {...bridge.progress} /> : null}
           <div className="flex flex-col gap-2">
-            {bridge.ruta ? <StartRutaButton sourceKey={bridge.ruta.sourceKey} label="Empezar su ruta" /> : null}
-            <Button href="/perfil/universo" variant={bridge.ruta ? "secondary" : "primary"} size={bridge.ruta ? "md" : "lg"} onClick={onClose}>
+            <Button href="/perfil/universo" variant="primary" size="lg" onClick={onClose}>
               Ver el universo
             </Button>
             <Button variant="ghost" size="md" onClick={onClose}>

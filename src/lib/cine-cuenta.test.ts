@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { ThreadPerson } from "@/lib/rutas/core";
+import type { ThreadPerson } from "@/lib/people/core";
 import { countdownsFor, daysLabel, daysUntil, premierePayload, type UniversePerson } from "./cine-cuenta";
 
 const p = (id: number, name: string, role: ThreadPerson["role"]): ThreadPerson => ({ id, name, role });

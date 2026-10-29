@@ -62,7 +62,7 @@ type TicketStubProps = {
   toastOnError?: boolean;
   /**
    * A recommendation has no title yet: «Marqué visto» creates it with the form, and the stub
-   * plays its exit only once that save lands (undo, rutas and Universo need the new title).
+   * plays its exit only once that save lands (undo and Universo need the new title).
    * Resolves to an error message, or null when it saved.
    */
   saveSeen?: (formData: FormData) => Promise<string | null>;

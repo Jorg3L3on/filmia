@@ -59,17 +59,11 @@ export const TonightFooter = ({ title, className }: TonightFooterProps) => {
   const overflow = nightLine?.state === "over-long";
   const recommended = tonight?.source === "reco";
   const recoSaved = Boolean(recommended && tonight?.reco?.saved);
-  const ruta = tonight?.ruta ?? null;
 
   return (
     <div className={cn("tonight-footer mx-auto flex w-full max-w-xl flex-col items-center gap-2 text-center", className)}>
       <div key={title.id} className="tonight-title-in space-y-1 px-2">
-        {ruta ? (
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">
-            Ruta · {ruta.done} de {ruta.total}
-            <span className="sr-only">: {ruta.title}</span>
-          </p>
-        ) : tonight?.pinned ? (
+        {tonight?.pinned ? (
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">
             Tu elección de esta noche
           </p>
@@ -107,17 +101,7 @@ export const TonightFooter = ({ title, className }: TonightFooterProps) => {
         </p>
       </div>
 
-      {ruta ? (
-        // The why of a ruta step opens the ruta (R2): the steps behind and the ones face down.
-        <Link
-          href={`/rutas/${ruta.rutaId}`}
-          aria-label={`${ruta.title}: ${ruta.why}`}
-          className={cn("tonight-reason press-scale", focusRing)}
-        >
-          <RouteIcon />
-          <span className="truncate">{ruta.why}</span>
-        </Link>
-      ) : headline && headlinePerson ? (
+      {headline && headlinePerson ? (
         // «Dirigida por X»: the spark half still opens «Por qué», the name opens
         // X's filmography in Buscar. Two siblings, so no link inside a button.
         <span className="tonight-reason tonight-reason-split">
@@ -188,14 +172,6 @@ const SparkIcon = () => (
   <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true" className="shrink-0 text-accent-hover">
     <path d="M12 2.5c.6 3.9 2.6 5.9 6.5 6.5-3.9.6-5.9 2.6-6.5 6.5-.6-3.9-2.6-5.9-6.5-6.5 3.9-.6 5.9-2.6 6.5-6.5Z" />
     <path d="M5 15.5c.3 1.8 1.2 2.7 3 3-1.8.3-2.7 1.2-3 3-.3-1.8-1.2-2.7-3-3 1.8-.3 2.7-1.2 3-3Z" />
-  </svg>
-);
-
-const RouteIcon = () => (
-  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" aria-hidden="true" className="shrink-0 text-accent-hover">
-    <circle cx="6" cy="18" r="2" />
-    <circle cx="18" cy="6" r="2" />
-    <path d="M8 18h5a3 3 0 0 0 0-6h-2a3 3 0 0 1 0-6h5" />
   </svg>
 );
 

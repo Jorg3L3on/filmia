@@ -1,4 +1,4 @@
-import type { ThreadPerson, ThreadPersonRole } from "@/lib/rutas/core";
+import type { ThreadPerson, ThreadPersonRole } from "@/lib/people/core";
 import type { PushPayload } from "@/lib/push/web-push";
 
 /**
