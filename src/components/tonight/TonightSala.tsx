@@ -2,14 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { parkRuta, rutaAfterWatch } from "@/app/actions/rutas";
 import { universoBridge } from "@/app/actions/universo";
 import { markNotTonight, sendTasteFeedback, undoNotInterested, undoNotTonight } from "@/app/actions/tonight";
 import { removeFromWatchlist, undoMarkWatched } from "@/app/actions/watchlist";
 import { CoverflowDeck } from "@/components/CoverflowDeck";
 import { GenreCoverflow } from "@/components/GenreCoverflow";
 import { HoyDeckSkeleton } from "@/components/PageSkeletons";
-import { RutaRevealSheet } from "@/components/rutas/RutaRevealSheet";
 import { BridgeSheet } from "@/components/universo/BridgeSheet";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { ChapterBar } from "@/components/tonight/ChapterBar";
@@ -44,7 +42,6 @@ import { closingCardFor, tallyCount } from "@/lib/tonight/closing-card";
 import { pickRefOf } from "@/lib/tonight/reco-card";
 import { rankForNow, TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import { dayPartOf } from "@/lib/tonight/time";
-import type { RutaReveal } from "@/lib/rutas/reveal";
 import type { BridgeReveal } from "@/lib/universo/store";
 import type { TonightDecks } from "@/lib/tonight-store";
 import { showDiaryToast } from "@/lib/quick-rate-toast";
@@ -121,9 +118,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   const [returnCard, setReturnCard] = useState<string | null>(null);
   const [whyTitle, setWhyTitle] = useState<CoverflowTitle | null>(null);
   const [menuTitle, setMenuTitle] = useState<CoverflowTitle | null>(null);
-  // «Vi esto» on a ruta step (FIL-I26): what flipped, shown once the server has stamped it.
-  const [reveal, setReveal] = useState<RutaReveal | null>(null);
-  // A bridge the film just made in «Tu universo» (FIL-I26-4, U4); ruta steps say it in their reveal.
+  // A bridge the film just made in «Tu universo» (FIL-I26-4, U4).
   const [bridge, setBridge] = useState<BridgeReveal | null>(null);
   const liveRef = useRef<HTMLDivElement>(null);
   const timers = useRef<number[]>([]);
@@ -201,7 +196,6 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
             leads: card.leads,
             source: card.source,
             reco: card.reco ? { ...card.reco, saved: recoLocal[card.id]?.inWatchlist ?? false } : undefined,
-            ruta: card.ruta ?? undefined,
           },
         })),
       );
@@ -297,17 +291,10 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
       const titleId = reco.titleIdOf(title.id) ?? title.id;
       hide(title.id);
       addTo(setWatchedIds, title.id);
-      const ruta = title.tonight?.ruta;
-      if (ruta) {
-        void rutaAfterWatch(ruta.rutaId, title.id)
-          .then((next) => setReveal(next))
-          .catch(() => undefined);
-      } else {
-        // A recommendation's id is its catalog id; the server resolves either.
-        void universoBridge(reco.titleIdOf(title.id) ?? title.id)
-          .then((found) => setBridge(found))
-          .catch(() => undefined);
-      }
+      // A recommendation's id is its catalog id; the server resolves either.
+      void universoBridge(reco.titleIdOf(title.id) ?? title.id)
+        .then((found) => setBridge(found))
+        .catch(() => undefined);
       const poster = toastPoster(title.posterPath);
       showDiaryToast({
         titleId,
@@ -407,42 +394,6 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
           });
         },
       },
-    });
-  };
-
-  /** «Dejar la ruta para después»: the ruta's lens leaves Hoy; the ruta waits with no reminders. */
-  const handleParkRuta = (title: CoverflowTitle) => {
-    const ruta = title.tonight?.ruta;
-    setMenuTitle(null);
-    if (!ruta) {
-      return;
-    }
-    const poster = toastPoster(title.posterPath);
-    hide(title.id);
-    showToast({
-      title: TOAST_COPY.routeParked,
-      description: `${ruta.title} te espera en Rutas.`,
-      poster,
-    });
-    void parkRuta(ruta.rutaId).catch(() => {
-      unhide(title.id);
-      showActionError({
-        title: TOAST_COPY.couldNotSave,
-        poster,
-        retry: () =>
-          retryAfterRevert(
-            () => hide(title.id),
-            () => unhide(title.id),
-            async () => {
-              await parkRuta(ruta.rutaId);
-              showToast({
-                title: TOAST_COPY.routeParked,
-                description: `${ruta.title} te espera en Rutas.`,
-                poster,
-              });
-            },
-          ),
-      });
     });
   };
 
@@ -688,10 +639,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
             reco.pin(title);
           }}
           onNotInterested={handleNotInterested}
-          onParkRuta={handleParkRuta}
           saved={menuTitle ? reco.isSaved(menuTitle.id) : false}
         />
-        <RutaRevealSheet reveal={reveal} onClose={() => setReveal(null)} />
         <BridgeSheet bridge={bridge} onClose={() => setBridge(null)} />
       </div>
     </TonightProvider>

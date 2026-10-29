@@ -159,8 +159,6 @@ const FIT_TITLES = [
 const FIT_SUBS = [
   "Aftersun vuelve en dos semanas.",
   "Puedes volver a intentarlo.",
-  "Hoy ya tiene dos rutas; esta empieza cuando cierres una.",
-  "Deja una para después y vuelve a intentarlo.",
   "Pégalo donde quieras compartirlo.",
   "Se está guardando la fecha vista.",
 ];

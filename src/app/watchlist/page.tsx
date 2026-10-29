@@ -3,7 +3,6 @@ import { CatalogFilters } from "@/components/CatalogFilters";
 import { EmptyState } from "@/components/EmptyState";
 import { MinePlatformsSetupCta, MissingStreamingDataNote } from "@/components/MinePlatformsNotice";
 import { PageHeader } from "@/components/PageHeader";
-import { WaitingRutasNote } from "@/components/rutas/WaitingRutasNote";
 import { WatchlistBodySkeleton } from "@/components/PageSkeletons";
 import { WatchlistCartelera } from "@/components/watchlist/WatchlistCartelera";
 import { WatchlistEditingProvider, WatchlistReorderButton } from "@/components/watchlist/WatchlistEditing";
@@ -196,12 +195,6 @@ const WatchlistBody = async ({
           />
         }
       />
-
-      {profile ? (
-        <Suspense fallback={null}>
-          <WaitingRutasNote userId={profile.id} />
-        </Suspense>
-      ) : null}
 
       {rawItems.length === 0 ? (
         <EmptyState

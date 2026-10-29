@@ -20,8 +20,6 @@ export type CoverflowTonightMeta = {
   source?: "queue" | "reco";
   /** Only for `reco`: what to open it with and what led to it. */
   reco?: RecoMeta;
-  /** The card is the next step of a ruta (FIL-I26). */
-  ruta?: RutaCardMeta;
 };
 
 /** A card that is a door, not a film (FIL-I26-3, «¿Las viste?»): its face says where it leads. */
@@ -31,20 +29,6 @@ export type PortalCardMeta = {
   body: string;
   cta: string;
   href: string;
-};
-
-/** What a ruta card says about its ruta: «Tu ruta · 1 de 3», the why, the face-down step after it. */
-export type RutaCardMeta = {
-  rutaId: string;
-  title: string;
-  shortTitle: string;
-  done: number;
-  total: number;
-  /** 1-based position of this step. */
-  step: number;
-  why: string;
-  /** The hint of the face-down step that follows, null when this is the last one. */
-  nextHint: string | null;
 };
 
 /** What a recommended card (not in the library) knows about the film, enough to open its preview. */

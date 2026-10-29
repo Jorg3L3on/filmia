@@ -18,8 +18,6 @@ type TonightCardMenuProps = {
   onSaveReco: (title: CoverflowTitle) => void;
   onPinReco: (title: CoverflowTitle) => void;
   onNotInterested: (title: CoverflowTitle) => void;
-  /** A ruta's step: take the ruta out of Hoy (it waits, nothing is lost). */
-  onParkRuta: (title: CoverflowTitle) => void;
   /** The recommended card is already in Quiero ver (added during this visit). */
   saved?: boolean;
 };
@@ -39,12 +37,10 @@ export const TonightCardMenu = ({
   onSaveReco,
   onPinReco,
   onNotInterested,
-  onParkRuta,
   saved = false,
 }: TonightCardMenuProps) => {
   const headingId = useId();
   const recommended = title?.tonight?.source === "reco";
-  const ruta = title?.tonight?.ruta ?? null;
   return (
     <Sheet
       open={Boolean(title)}
@@ -68,40 +64,7 @@ export const TonightCardMenu = ({
               </h2>
             </div>
           </div>
-          {ruta ? (
-            // A ruta step: no «No me interesa» or «Quitar»; the ruta is the way out (FIL-I26).
-            <div role="menu" aria-label={`Acciones de ${title.name}`} className="space-y-0.5 px-3 pb-2 pt-4" data-no-sheet-drag>
-              <Link role="menuitem" href={`/rutas/${ruta.rutaId}`} onClick={onClose} className={itemClass}>
-                <Icon kind="list" />
-                <span>
-                  Ver la ruta
-                  <span className="block text-xs font-normal text-fog">{ruta.title}</span>
-                </span>
-              </Link>
-              {recommended ? (
-                <>
-                  <button type="button" role="menuitem" onClick={() => onOpenReco(title)} className={itemClass}>
-                    <Icon kind="ficha" /> Ver detalles
-                  </button>
-                  <button type="button" role="menuitem" onClick={() => onPinReco(title)} className={itemClass}>
-                    <Icon kind="moon" /> Ver esta noche
-                  </button>
-                </>
-              ) : (
-                <Link role="menuitem" href={`/titulos/${title.id}`} onClick={onClose} className={itemClass}>
-                  <Icon kind="ficha" /> Ver ficha
-                </Link>
-              )}
-              <span aria-hidden="true" className="mx-3 my-1 block h-px bg-white/8" />
-              <button type="button" role="menuitem" onClick={() => onParkRuta(title)} className={itemClass}>
-                <Icon kind="hand" />
-                <span>
-                  Dejar la ruta para después
-                  <span className="block text-xs font-normal text-fog">Sale de Hoy y espera, sin recordatorios</span>
-                </span>
-              </button>
-            </div>
-          ) : recommended ? (
+          {recommended ? (
             <div role="menu" aria-label={`Acciones de ${title.name}`} className="space-y-0.5 px-3 pb-2 pt-4" data-no-sheet-drag>
               <button type="button" role="menuitem" onClick={() => onOpenReco(title)} className={itemClass}>
                 <Icon kind="ficha" /> Ver detalles

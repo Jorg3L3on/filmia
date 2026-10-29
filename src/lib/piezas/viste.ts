@@ -21,7 +21,6 @@ import {
 } from "@/lib/piezas/core";
 import { parseThreadPeople } from "@/lib/people/core";
 import { loadLibraryContext, loadWatchedFilms } from "@/lib/people/store";
-import { loadRutas } from "@/lib/rutas/store";
 import { getTmdbRelated, isTmdbConfigured } from "@/lib/tmdb";
 import { scheduleTonightRecompute, type TonightCard, type TonightLensView } from "@/lib/tonight-store";
 
@@ -199,12 +198,12 @@ export type VisteOutcome =
   | { ok: true; remaining: number; titleId: string | null; summary: string | null }
   | { ok: false; error: string };
 
-/** What the batch just answered changed: people new to your universe, the rutas they moved. */
+/** What the batch just answered changed: people new to your universe. */
 const summaryFor = async (userId: string, now: Date) => {
   const cards = (await cardsOf(await todaysEvents(userId, now))).slice(-VISTE_BATCH);
   const seen = cards.filter((card) => card.answer === "liked" || card.answer === "meh");
   if (seen.length === 0) {
-    return visteSummary({ seen: 0, newPeople: [], rutas: [] });
+    return visteSummary({ seen: 0, newPeople: [] });
   }
   const seenIds = seen.map((card) => card.catalogId);
   const [films, others] = await Promise.all([
@@ -220,10 +219,7 @@ const summaryFor = async (userId: string, now: Date) => {
       }
     }
   }
-  const rutas = (await loadRutas(userId, { statuses: ["activa", "espera"], now }))
-    .filter((view) => view.steps.some((step) => seenIds.includes(step.catalogId)))
-    .map((view) => ({ shortTitle: view.shortTitle, done: view.progress.done, total: view.progress.total }));
-  return visteSummary({ seen: seen.length, newPeople, rutas });
+  return visteSummary({ seen: seen.length, newPeople });
 };
 
 /** One answer. A film not dealt to this person today is refused. */

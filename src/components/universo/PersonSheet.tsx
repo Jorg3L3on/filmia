@@ -3,17 +3,15 @@
 import Link from "next/link";
 import { useEffect, useId, useState, useTransition } from "react";
 import { universoPerson } from "@/app/actions/universo";
-import { Button } from "@/components/Button";
 import { ShimmerBlock } from "@/components/PageSkeletons";
 import { Sheet, SheetHandle } from "@/components/Sheet";
-import { StartRutaButton } from "@/components/universo/StartRutaButton";
 import { ROLE_LABEL, type UniversoNode } from "@/lib/universo/core";
 import type { UniversoPerson } from "@/lib/universo/store";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
 
 /**
- * U3 · one person of your universe: n de N, bridges, their ruta (whole or «esenciales») and the
+ * U3 · one person of your universe: n de N, bridges, their «esenciales» and the
  * film that opens most bridges. Loaded on open (TMDB, cached).
  */
 export const PersonSheet = ({ node, onClose }: { node: UniversoNode | null; onClose: () => void }) => {
@@ -67,10 +65,10 @@ export const PersonSheet = ({ node, onClose }: { node: UniversoNode | null; onCl
             </div>
           ) : (
             <>
-              {loaded.ruta && !loaded.ruta.whole && loaded.total ? (
+              {loaded.esenciales && loaded.total ? (
                 <p className="text-[14px] leading-snug text-paper/85">
-                  Sus esenciales son {loaded.ruta.size}, no {loaded.total}: {loaded.ruta.names.slice(0, 4).join(", ")}
-                  {loaded.ruta.names.length > 4 ? "…" : "."} Las otras están en su filmografía.
+                  Sus esenciales son {loaded.esenciales.size}, no {loaded.total}: {loaded.esenciales.names.slice(0, 4).join(", ")}
+                  {loaded.esenciales.names.length > 4 ? "…" : "."} Las otras están en su filmografía.
                 </p>
               ) : null}
               {loaded.mostBridges ? (
@@ -89,15 +87,6 @@ export const PersonSheet = ({ node, onClose }: { node: UniversoNode | null; onCl
                 </div>
               ) : null}
               <div className="flex flex-col gap-2">
-                {loaded.ruta ? (
-                  loaded.ruta.started ? (
-                    <Button href="/rutas" variant="secondary" size="lg" onClick={onClose}>
-                      Ya tienes su ruta
-                    </Button>
-                  ) : (
-                    <StartRutaButton sourceKey={loaded.ruta.sourceKey} label={`Empezar «${loaded.ruta.title}»`} />
-                  )
-                ) : null}
                 {loaded.filmographyHref ? (
                   <Link href={loaded.filmographyHref} className={cn("press-scale self-center rounded-xl px-4 py-2.5 text-[14px] text-fog hover:text-paper", focusRing)}>
                     Ver toda su filmografía

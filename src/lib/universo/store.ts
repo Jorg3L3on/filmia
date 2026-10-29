@@ -7,17 +7,14 @@ import { runPool } from "@/lib/run-pool";
 import {
   parseThreadPeople,
   personRoleFilms,
+  personRoleOfThread,
   pickEsenciales,
   PERSON_FULL_MAX,
   todayIso,
   type PersonFilm,
-  type PersonRole,
   type ThreadPersonRole,
 } from "@/lib/people/core";
 import { loadLibraryContext, loadWatchedFilms, platformLabelOf } from "@/lib/people/store";
-import { personSourceKey } from "@/lib/rutas/core";
-import { personDraft } from "@/lib/rutas/factories";
-import { loadSourceKeys } from "@/lib/rutas/store";
 import { parseStoredStreamingPlatforms } from "@/lib/streaming-platforms";
 import { getTmdbDetails, getTmdbPersonCredits, isTmdbConfigured } from "@/lib/tmdb";
 import { parseStoredTmdbPeople } from "@/lib/tmdb-people";
@@ -28,7 +25,6 @@ import {
   mostBridges,
   newBridge,
   ROLE_LABEL,
-  rutaRoleOf,
   type BridgeReveal,
   type ClosestIsland,
   type Universo,
@@ -101,7 +97,7 @@ export const loadTotals = async (people: ReadonlyArray<{ id: number; role: Threa
   const work = runPool(people, TOTALS_CONCURRENCY, async (person) => {
     try {
       const credits = await getTmdbPersonCredits(person.id);
-      totals.set(person.id, personRoleFilms(credits.credits, rutaRoleOf(person.role), today).length);
+      totals.set(person.id, personRoleFilms(credits.credits, personRoleOfThread(person.role), today).length);
     } catch {
       // Unknown: drawn without a ring.
     }
@@ -112,7 +108,7 @@ export const loadTotals = async (people: ReadonlyArray<{ id: number; role: Threa
 
 export type UniversoView = {
   universo: Universo;
-  closest: (ClosestIsland & { next: { name: string; platformLabel: string | null } | null; sourceKey: string; started: boolean }) | null;
+  closest: (ClosestIsland & { next: { name: string; platformLabel: string | null } | null }) | null;
 };
 
 /**
@@ -143,27 +139,39 @@ export const loadUniverso = async (userId: string, scope: "summary" | "full"): P
   if (!closest) {
     return { universo, closest: null };
   }
-  const sourceKey = personSourceKey(closest.node.personIds, "director");
-  const [used, next] = await Promise.all([loadSourceKeys(userId), nextFilmOf(userId, closest.node.personIds)]);
-  return { universo, closest: { ...closest, next, sourceKey, started: used.has(sourceKey) } };
+  const next = await nextFilmOf(userId, closest.node.personIds);
+  return { universo, closest: { ...closest, next } };
 };
 
-/** The next film of a director's ruta (what «cierra la más chica» proposes). */
+/**
+ * The films of a person in one role you would go through: all of them when they are few, their
+ * «esenciales» otherwise (lo visto cuenta). Release order.
+ */
+const personPath = (all: readonly PersonFilm[], seenTmdbIds: ReadonlySet<number>) =>
+  all.length <= PERSON_FULL_MAX ? [...all] : pickEsenciales(all, seenTmdbIds, new Set());
+
+/** The next film of a director you have not seen yet (what «cierra la más chica» proposes). */
 const nextFilmOf = async (userId: string, personIds: readonly number[]) => {
   if (!isTmdbConfigured()) {
     return null;
   }
   try {
-    const ctx = await loadLibraryContext(userId);
-    const draft = await withTimeout(personDraft(personIds, "director", ctx, null), TOTAL_BUDGET_MS, null);
-    const step = draft?.steps.find((item) => !ctx.seenTmdbIds.has(item.film.tmdbId));
-    if (!step) {
+    const [ctx, credits] = await Promise.all([
+      loadLibraryContext(userId),
+      withTimeout(getTmdbPersonCredits(personIds[0]!), TOTAL_BUDGET_MS, null),
+    ]);
+    if (!credits) {
+      return null;
+    }
+    const all = personRoleFilms(credits.credits, "director", ctx.today);
+    const next = personPath(all, ctx.seenTmdbIds).find((film) => !ctx.seenTmdbIds.has(film.tmdbId));
+    if (!next) {
       return null;
     }
     const film = await db.query.catalog.findFirst({
-      where: and(eq(catalog.tmdbId, step.film.tmdbId), eq(catalog.kind, "MOVIE")),
+      where: and(eq(catalog.tmdbId, next.tmdbId), eq(catalog.kind, "MOVIE")),
     });
-    return { name: step.film.name, platformLabel: film ? platformLabelOf(film, ctx.platforms) : null };
+    return { name: next.name, platformLabel: film ? platformLabelOf(film, ctx.platforms) : null };
   } catch {
     return null;
   }
@@ -178,13 +186,13 @@ export type UniversoPerson = {
   count: number;
   total: number | null;
   bridges: number;
-  /** The ruta of this person: whole (≤ 8) or «esenciales». */
-  ruta: { sourceKey: string; title: string; size: number; whole: boolean; started: boolean; names: string[] } | null;
+  /** A long filmography's «esenciales» (more than 8 films): how many and which. */
+  esenciales: { size: number; names: string[] } | null;
   mostBridges: { name: string; people: string[]; platformLabel: string | null; runtime: number | null } | null;
   filmographyHref: string | null;
 };
 
-/** U3 · a person's sheet: how far you are, their ruta and the film that opens most bridges. */
+/** U3 · a person's sheet: how far you are, their esenciales and the film that opens most bridges. */
 export const loadUniversoPerson = async (userId: string, key: string): Promise<UniversoPerson | null> => {
   const personIds = key.split("+").map(Number).filter((id) => Number.isInteger(id) && id > 0);
   if (personIds.length === 0) {
@@ -197,7 +205,7 @@ export const loadUniversoPerson = async (userId: string, key: string): Promise<U
     return null;
   }
   const role = node.role;
-  const rutaRole = rutaRoleOf(role) as PersonRole;
+  const personRole = personRoleOfThread(role);
   const base: UniversoPerson = {
     key,
     name: node.name,
@@ -206,26 +214,24 @@ export const loadUniversoPerson = async (userId: string, key: string): Promise<U
     count: node.count,
     total: null,
     bridges: node.bridge ? node.count - 1 : 0,
-    ruta: null,
+    esenciales: null,
     mostBridges: null,
     filmographyHref:
       role === "composer"
         ? null
-        : buildPersonSearchHref({ personId: personIds[0]!, role: rutaRole as "director" | "fotografia" | "reparto", name: node.name }),
+        : buildPersonSearchHref({ personId: personIds[0]!, role: personRole as "director" | "fotografia" | "reparto", name: node.name }),
   };
   if (!isTmdbConfigured()) {
     return base;
   }
   try {
-    const [ctx, used, user] = await Promise.all([
+    const [ctx, user] = await Promise.all([
       loadLibraryContext(userId),
-      loadSourceKeys(userId),
       db.query.users.findFirst({ where: eq(users.id, userId), columns: { streamingPlatforms: true } }),
     ]);
     const credits = await getTmdbPersonCredits(personIds[0]!);
-    const all = personRoleFilms(credits.credits, rutaRole, ctx.today);
-    const draft = await personDraft(personIds, rutaRole, ctx, null);
-    const steps: PersonFilm[] = draft?.steps.map((step) => step.film) ?? (all.length <= PERSON_FULL_MAX ? all : pickEsenciales(all, ctx.seenTmdbIds, new Set()));
+    const all = personRoleFilms(credits.credits, personRole, ctx.today);
+    const steps = personPath(all, ctx.seenTmdbIds);
     const unseen = steps.filter((film) => !ctx.seenTmdbIds.has(film.tmdbId)).slice(0, 6);
     const candidates = await Promise.all(
       unseen.map(async (film) => {
@@ -248,16 +254,7 @@ export const loadUniversoPerson = async (userId: string, key: string): Promise<U
     return {
       ...base,
       total: all.length,
-      ruta: draft
-        ? {
-            sourceKey: draft.sourceKey,
-            title: draft.title,
-            size: draft.steps.length,
-            whole: all.length <= PERSON_FULL_MAX,
-            started: used.has(draft.sourceKey),
-            names: draft.steps.map((step) => step.film.name),
-          }
-        : null,
+      esenciales: all.length > PERSON_FULL_MAX ? { size: steps.length, names: steps.map((film) => film.name) } : null,
       mostBridges: best
         ? {
             name: best.film.name,
