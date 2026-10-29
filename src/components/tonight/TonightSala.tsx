@@ -108,7 +108,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   );
   // Coming back to a card is not a new deal: no `.deck-deal` replay.
   const [dealing, setDealing] = useState(() => !rememberedCard);
-  // «Tengo» and «Ánimo» (FIL-I31). Client-only like the card: the chips render once the clock has mounted.
+  // «Ánimo» (FIL-I31-2). Client-only like the card: the chips render once the clock has mounted.
   const [filters, setFilters] = useState(() =>
     typeof window === "undefined" ? NO_FILTERS : filtersFrom(window.location.search),
   );
@@ -531,8 +531,6 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
         ) : (
           <div className="diario-que-ver-body flex min-h-0 flex-1 flex-col gap-1.5 sm:gap-3">
             <TonightFilters
-              budgetId={budget.id}
-              onBudget={chooseBudget}
               moodId={mood?.id ?? null}
               onMood={chooseMood}
               className="shrink-0 px-1"

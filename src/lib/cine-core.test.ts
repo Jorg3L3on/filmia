@@ -17,6 +17,7 @@ import {
   readableTitle,
   releaseStatusOn,
   splitCartelera,
+  orderWatchlistCinema,
   watchlistFirst,
   staleLabel,
   ticketStub,
@@ -253,6 +254,24 @@ describe("readable titles (FIL-I23-6, P4)", () => {
     assert.equal(readableTitle("रामायण", "Ramayana"), "Ramayana");
     assert.equal(readableTitle("劇場版 転生したらスライムだった件", null), "劇場版 転生したらスライムだった件");
     assert.equal(readableTitle("劇場版 転生したらスライムだった件", "転生"), "劇場版 転生したらスライムだった件");
+  });
+});
+
+describe("orderWatchlistCinema", () => {
+  const film = (status: string, mxReleaseDate: string) => ({ status, mxReleaseDate });
+
+  it("puts what is in theaters first, then what is not yet", () => {
+    const ordered = orderWatchlistCinema([
+      film("upcoming", "2026-11-12"),
+      film("now", "2026-10-15"),
+      film("upcoming", "2026-10-30"),
+      film("now", "2026-10-22"),
+      film("gone", "2026-09-01"),
+    ]);
+    assert.deepEqual(
+      ordered.map((item) => `${item.status}:${item.mxReleaseDate}`),
+      ["now:2026-10-22", "now:2026-10-15", "upcoming:2026-10-30", "upcoming:2026-11-12", "gone:2026-09-01"],
+    );
   });
 });
 

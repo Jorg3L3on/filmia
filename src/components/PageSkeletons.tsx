@@ -331,7 +331,7 @@ const ProfileGroupSkeleton = ({ rows }: { rows: number }) => (
   </div>
 );
 
-/** Perfil body: Tu diario (week strip + last entries), then bedtime, platforms, Cuenta and Salir. */
+/** Perfil body: Tu diario (week strip + link into the diary), then bedtime, platforms, Cuenta and Salir. */
 export const ProfileBodySkeleton = ({ label = "Cargando perfil" }: SkeletonProps) => (
   <div
     className="space-y-10 lg:grid lg:grid-cols-[minmax(0,36rem)_minmax(0,1fr)] lg:items-start lg:gap-14 lg:space-y-0"
@@ -348,13 +348,6 @@ export const ProfileBodySkeleton = ({ label = "Cargando perfil" }: SkeletonProps
           <ShimmerBlock key={index} className="aspect-[2/3] w-full rounded-lg" />
         ))}
       </div>
-      {Array.from({ length: 3 }, (_, index) => (
-        <div key={index} className="flex items-center gap-3">
-          <ShimmerBlock className="h-10 w-8 rounded-md" />
-          <ShimmerBlock className="h-14 w-10 rounded-md" />
-          <ShimmerBlock className="h-4 w-40 rounded-full" />
-        </div>
-      ))}
       <ShimmerBlock className="h-11 w-full rounded-xl" />
     </div>
     <div className="space-y-9">
