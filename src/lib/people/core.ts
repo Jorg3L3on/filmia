@@ -33,10 +33,10 @@ export type PersonFilm = {
   genreIds: number[];
 };
 
-export const isoDay = (value: string | undefined | null) =>
+const isoDay = (value: string | undefined | null) =>
   value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 
-export const compareRelease = (a: PersonFilm, b: PersonFilm) =>
+const compareRelease = (a: PersonFilm, b: PersonFilm) =>
   (a.releaseDate ?? "9999").localeCompare(b.releaseDate ?? "9999") || a.tmdbId - b.tmdbId;
 
 /** Today as an ISO day, the cut for «released». */

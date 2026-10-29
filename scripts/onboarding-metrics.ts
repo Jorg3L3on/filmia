@@ -3,8 +3,6 @@ import { sql } from "drizzle-orm";
 
 /**
  * FIL-I11-3 · How many titles an account holds when it finishes the Bienvenida. READ-ONLY.
- * FIL-I26-2 · and whether it left with a ruta: started in the Bienvenida, declined («Entrar sin
- * ruta»), or neither (built later by Hoy, or never).
  * Baseline (2026-10-13): 10 of 18 finished with 0 titles. Since FIL-I11 a first finish needs ≥3,
  * so every account onboarded after the deploy should land in «≥3».
  *
@@ -47,13 +45,7 @@ const main = async () => {
     select
       u."onboardedAt" as "onboardedAt",
       (select count(*)::int from "Title" t
-        where t."userId" = u.id and t."createdAt" <= u."onboardedAt" + interval '1 minute') as titles,
-      exists (select 1 from "PickEvent" e
-        where e."userId" = u.id and e.kind = 'ruta_started' and e.lens like 'ruta:%:bienvenida') as "rutaStarted",
-      (u."rutasOfferedAt" is not null and not exists (select 1 from "Ruta" r where r."userId" = u.id)) as "rutaDeclined",
-      (select count(*)::int from "PickEvent" e
-        where e."userId" = u.id and e.kind = 'ruta_step_done'
-          and e."createdAt" <= u."onboardedAt" + interval '7 days') as "stepsWeekOne"
+        where t."userId" = u.id and t."createdAt" <= u."onboardedAt" + interval '1 minute') as titles
     from "User" u
     where u."onboardedAt" is not null
       and u."onboardedAt" > u."createdAt"
@@ -61,20 +53,9 @@ const main = async () => {
       and (${includeQa} or u.email not like '%@filmia.local')
     order by u."onboardedAt"`);
 
-  const rows = (
-    result.rows as Array<{
-      onboardedAt: string | Date;
-      titles: number;
-      rutaStarted: boolean;
-      rutaDeclined: boolean;
-      stepsWeekOne: number;
-    }>
-  ).map((row) => ({
+  const rows = (result.rows as Array<{ onboardedAt: string | Date; titles: number }>).map((row) => ({
     at: new Date(row.onboardedAt),
     titles: Number(row.titles),
-    rutaStarted: Boolean(row.rutaStarted),
-    rutaDeclined: Boolean(row.rutaDeclined),
-    stepsWeekOne: Number(row.stepsWeekOne),
   }));
   if (rows.length === 0) {
     console.log(`Nadie terminó la Bienvenida en ${days} días.`);
@@ -102,16 +83,6 @@ const main = async () => {
     console.log(`| ${group.label} | ${n} | ${zero} | ${few} | ${enough} | ${pct(enough, n)} | ${median} |`);
   }
 
-  console.log("\nRutas (FIL-I26): la primera ruta al terminar la Bienvenida.\n");
-  console.log("| Periodo | Cuentas | Empezaron ruta | Entraron sin ruta | Pasos marcados la 1.ª semana |");
-  console.log("|---|---:|---:|---:|---:|");
-  for (const group of groups) {
-    const n = group.rows.length;
-    const started = group.rows.filter((row) => row.rutaStarted).length;
-    const declined = group.rows.filter((row) => row.rutaDeclined).length;
-    const steps = group.rows.reduce((sum, row) => sum + row.stepsWeekOne, 0);
-    console.log(`| ${group.label} | ${n} | ${started} (${pct(started, n)}) | ${declined} | ${steps} |`);
-  }
   process.exit(0);
 };
 
