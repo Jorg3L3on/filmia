@@ -10,7 +10,7 @@ describe("Recomendaciones sin esperar al cron (FIL-26)", () => {
     assert.equal(needsRecoRefill({ usable: 0, poolComputedAt: null, requestedAt: null, now }), true);
   });
 
-  it("a pool used up minutes after it was built (¿Las viste?, rutas): rebuild, freshness does not hold it back", () => {
+  it("a pool used up minutes after it was built (¿Las viste?): rebuild, freshness does not hold it back", () => {
     assert.equal(needsRecoRefill({ usable: 0, poolComputedAt: ago(5 * 60 * 1000), requestedAt: null, now }), true);
   });
 

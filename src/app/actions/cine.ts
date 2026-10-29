@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { catalog, db, listItems, lists, titles } from "@/db";
 import { mxToday } from "@/lib/cine-core";
 import { FIRST_TOP_YEAR, yearTopError, yearTopName, yearTopSlug } from "@/lib/cine-top";
+import { remindPremiere, type RemindOutcome } from "@/lib/cine-cuenta-store";
 import { requireUserId } from "@/lib/session";
 
 export type SaveYearTopResult = { ok: true; listId: string } | { ok: false; error: string };
@@ -94,4 +95,17 @@ export const saveYearTop = async (year: number, titleIds: string[]): Promise<Sav
   revalidatePath(`/listas/${listId}`);
   revalidatePath("/perfil");
   return { ok: true, listId };
+};
+
+/** «Avísame el día» on a premiere of «Para ti, en sala» (FIL-I26-5). */
+export const remindPremiereAction = async (catalogId: string): Promise<RemindOutcome> => {
+  const userId = await requireUserId();
+  if (typeof catalogId !== "string" || catalogId.length > 64) {
+    return { ok: false, error: "Película no válida." };
+  }
+  const outcome = await remindPremiere(userId, catalogId);
+  if (outcome.ok) {
+    revalidatePath("/cine");
+  }
+  return outcome;
 };

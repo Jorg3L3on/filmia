@@ -1,72 +1,60 @@
-import { EmptyState } from "@/components/EmptyState";
-import { bedtimeFor, formatClock, nightEndsLabel } from "@/lib/tonight/time";
-import type { NightEnds } from "@/lib/tonight/types";
-import type { WatchlistEmptyState } from "@/lib/watchlist-empty";
+"use client";
+
+import { ChevronIcon } from "@/components/watchlist/icons";
+import { cn } from "@/lib/cn";
+import { focusRing } from "@/lib/ui";
+import type { WatchlistEmptyCopy, WatchlistExit } from "@/lib/watchlist-empty";
+import type { WatchlistQuery } from "@/lib/watchlist-query";
 
 type WatchlistEmptyProps = {
-  /** The chip to blame, or null when the list itself is empty. */
-  state: WatchlistEmptyState | null;
-  /** «Esta noche» only: the clock, to tell «nothing fits» from «bedtime is behind you». */
-  now: Date | null;
-  nightEnds: NightEnds;
-  /** «Mis plataformas»: the viewer's platforms, for the description. */
-  platformsLabel?: string | null;
+  copy: WatchlistEmptyCopy;
+  exits: WatchlistExit[];
+  onPick: (query: WatchlistQuery) => void;
 };
 
-/** «Es la 1:52» / «Son las 23:40». */
-const clockSentence = (now: Date) => {
-  const hour = now.getHours() % 12 || 12;
-  return `${hour === 1 ? "Es la" : "Son las"} ${formatClock(now)}`;
-};
+const FilmIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden="true">
+    <rect x="4" y="4" width="16" height="16" rx="2.5" />
+    <path strokeLinecap="round" d="M8 4v16M16 4v16M4 9h4M16 9h4M4 15h4M16 15h4" />
+  </svg>
+);
 
 /**
- * The one empty state of Quiero ver (FIL-I24-4): names the chip responsible and offers to
- * remove just that one. «Esta noche» past bedtime also offers to change the hour.
+ * 0 results (FIL-I34-5): «Nada con esa mezcla» and one exit per active filter with how many
+ * titles it brings back; the best one is highlighted, «Limpiar todo» comes last.
  */
-export const WatchlistEmpty = ({ state, now, nightEnds, platformsLabel }: WatchlistEmptyProps) => {
-  if (!state) {
-    return (
-      <EmptyState
-        variant="watchlist"
-        title="Nada con ese filtro"
-        description="Prueba otra pestaña o quita filtros."
-        actionHref="/watchlist"
-        actionLabel="Ver todos"
-      />
-    );
-  }
-
-  if (state.culprit === "tonight") {
-    const afterBedtime = now !== null && now.getTime() >= bedtimeFor(now, nightEnds).getTime();
-    return (
-      <EmptyState
-        variant="watchlist"
-        title={afterBedtime ? "Ya pasó tu hora de dormir" : "Nada termina antes de tu hora de dormir"}
-        description={
-          afterBedtime && now
-            ? `${clockSentence(now)} y tu noche acaba a las ${nightEndsLabel(now, nightEnds)}.`
-            : "Nada de tu lista cabe antes de la hora que pusiste."
-        }
-        actionHref={state.clearHref}
-        actionLabel="Quitar «Esta noche»"
-        secondaryHref="/perfil#hora-de-dormir"
-        secondaryLabel="Cambiar hora"
-      />
-    );
-  }
-
-  const onPlatforms = state.culprit === "minePlatforms" || state.culprit === "platforms";
-  return (
-    <EmptyState
-      variant="watchlist"
-      title={onPlatforms ? "Nada en tus plataformas" : `Nada con «${state.chip}»`}
-      description={
-        onPlatforms
-          ? `Ningún título de tu lista está incluido en ${platformsLabel || "tus plataformas"}. El filtro no cuenta renta ni compra.`
-          : `Ningún título de tu lista cumple con «${state.chip}».`
-      }
-      actionHref={state.clearHref}
-      actionLabel={`Quitar «${state.chip}»`}
-    />
-  );
-};
+export const WatchlistEmpty = ({ copy, exits, onPick }: WatchlistEmptyProps) => (
+  <section className="flex flex-col items-center px-2 pb-4 pt-8 text-center" aria-labelledby="qv-empty-title">
+    <span className="qv-empty-icon">
+      <FilmIcon />
+    </span>
+    <h2 id="qv-empty-title" className="mt-5 font-serif text-[1.625rem] leading-tight text-paper">
+      {copy.title}
+    </h2>
+    <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-fog">{copy.description}</p>
+    <ul className="mt-6 w-full space-y-2 text-left">
+      {exits.map((exit) => (
+        <li key={exit.key}>
+          <button
+            type="button"
+            onClick={() => onPick(exit.query)}
+            aria-label={`${exit.label}: ${exit.count} ${exit.count === 1 ? "título" : "títulos"}`}
+            className={cn("qv-exit press-scale", focusRing, exit.best && "is-best", exit.key === "all" && "is-quiet")}
+          >
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[0.9375rem] text-paper">{exit.label}</span>
+              {exit.best ? <span className="block text-xs text-mist">el que más recorta</span> : null}
+            </span>
+            <span className="shrink-0 text-xs text-mist">
+              <span className="text-base font-semibold tabular-nums text-paper">{exit.count}</span>{" "}
+              {exit.count === 1 ? "título" : "títulos"}
+            </span>
+            <span className="-rotate-90 text-mist">
+              <ChevronIcon size={14} />
+            </span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  </section>
+);

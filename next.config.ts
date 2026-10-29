@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   // FIL-I10-6 L1: no `x-powered-by`, and CSP / framing / sniffing / referrer headers everywhere.
   poweredByHeader: false,
+  // FIL-I33: Rutas were removed; old links land on Hoy.
+  redirects: async () => [
+    { source: "/rutas", destination: "/", permanent: false },
+    { source: "/rutas/:path*", destination: "/", permanent: false },
+  ],
   headers: async () => [
     { source: "/:path*", headers: securityHeaders(process.env.NODE_ENV !== "production") },
   ],

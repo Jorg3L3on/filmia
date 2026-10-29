@@ -9,6 +9,7 @@ import { Button } from "@/components/Button";
 import { catalogBarChipClass } from "@/components/catalog-filters/filter-ui";
 import { EmptyState } from "@/components/EmptyState";
 import { ImdbBadge } from "@/components/ImdbBadge";
+import { PlatformLogo } from "@/components/PlatformLogo";
 import { SearchResultsSkeleton } from "@/components/PageSkeletons";
 import { PosterImage } from "@/components/PosterImage";
 import {
@@ -17,6 +18,7 @@ import {
   type SearchRowWiring,
 } from "@/components/tmdb-search/SearchResultRow";
 import { cn } from "@/lib/cn";
+import { PLATFORM_SERVICE_LABEL } from "@/lib/labels";
 import { staggerStyle } from "@/lib/motion";
 import {
   menuRoles,
@@ -28,6 +30,7 @@ import {
   type PersonFilmography,
   type PersonRole,
 } from "@/lib/person-filmography";
+import type { SearchResultFacts } from "@/lib/search-result-facts";
 import {
   essentialPicks,
   groupByDecade,
@@ -40,7 +43,6 @@ import {
   watchProgress,
 } from "@/lib/person-view";
 import { personMineFilterOn, setPersonMineFilter } from "@/lib/search-session";
-import type { SearchResultFacts } from "@/lib/search-result-facts";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import { tmdbProfileUrl } from "@/lib/tmdb";
 import { focusRing, glassPanelClass } from "@/lib/ui";
@@ -522,6 +524,25 @@ const WatchProgress = ({
   </section>
 );
 
+/** The shelf's streaming line: your platform with its logo, otherwise the first MX subscription. */
+const ShelfPlatform = ({ facts }: { facts: SearchResultFacts | null }) => {
+  if (!facts || facts.providersPending) {
+    return null;
+  }
+  if (facts.minePlatform) {
+    return (
+      <span className="flex min-w-0 items-center gap-1 text-[11px] text-paper/90">
+        <PlatformLogo platform={facts.minePlatform} size={12} className="rounded-[3px]" />
+        <span className="truncate">{PLATFORM_SERVICE_LABEL[facts.minePlatform]}</span>
+      </span>
+    );
+  }
+  if (!facts.platform) {
+    return null;
+  }
+  return <span className="block truncate text-[11px] text-paper/75">{facts.platform}</span>;
+};
+
 /** A horizontal rail of posters that open their ficha. */
 const PosterShelf = ({
   title,
@@ -567,6 +588,7 @@ const PosterShelf = ({
               />
               <span className="block truncate font-serif text-sm text-paper">{entry.name}</span>
               {meta(entry, status)}
+              <ShelfPlatform facts={rows.factsFor?.(entry) ?? null} />
             </Link>
           </li>
         );

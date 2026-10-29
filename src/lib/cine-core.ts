@@ -278,6 +278,23 @@ export const readableTitle = (stored: string, enName: string | null | undefined)
  * go first, each group in its incoming order. Read once on the server, so the list does not jump
  * while you add or remove a film; the new order shows on the next visit.
  */
+/**
+ * Quiero ver on Cine: films already in theaters first (newest premiere), then the ones
+ * that are not yet (soonest date). Anything else stays at the end.
+ */
+export const orderWatchlistCinema = <T extends { status: string; mxReleaseDate: string }>(films: readonly T[]): T[] => {
+  const rank = (status: string) => (status === "now" ? 0 : status === "upcoming" ? 1 : 2);
+  return [...films].sort((a, b) => {
+    const byStatus = rank(a.status) - rank(b.status);
+    if (byStatus !== 0) {
+      return byStatus;
+    }
+    return a.status === "now"
+      ? b.mxReleaseDate.localeCompare(a.mxReleaseDate)
+      : a.mxReleaseDate.localeCompare(b.mxReleaseDate);
+  });
+};
+
 export const watchlistFirst = <T extends { tmdbId: number }>(
   films: readonly T[],
   entries: readonly { tmdbId: number; kind: string; inWatchlist: boolean; watched: boolean }[],

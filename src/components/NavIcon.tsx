@@ -40,14 +40,11 @@ export const NavIcon = ({
     );
   }
 
-  if (name === "queue") {
+  if (name === "lists") {
+    // Bulleted list: the drawing Perfil's «Listas ›» row used before it became a tab (FIL-34).
     return (
       <svg {...common}>
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M7 4.5h10.5a1 1 0 0 1 1 1V20L12.25 16.5 6 20V5.5a1 1 0 0 1 1-1Z"
-        />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 6h12M8 12h12M8 18h8M4 6h.01M4 12h.01M4 18h.01" />
       </svg>
     );
   }

@@ -11,10 +11,11 @@ import {
 } from "@/components/SegmentAction";
 import { ListsBodySkeleton } from "@/components/PageSkeletons";
 import { mxToday } from "@/lib/cine-core";
-import { listHref, partitionUserLists } from "@/lib/lists";
+import { WATCHLIST_NAME, WATCHLIST_SLUG, listHref, partitionUserLists } from "@/lib/lists";
 import { focusRing } from "@/lib/ui";
 import { getLists } from "@/lib/queries";
 import { AvatarStack } from "@/components/lists/PersonAvatar";
+import { QuieroVerPinnedCard } from "@/components/lists/QuieroVerPinnedCard";
 import { OwnerRequestsNotice, SharedWithMeSection } from "@/components/lists/SharedWithMe";
 import { getPendingRequestsForOwner, getSharedWithMe } from "@/lib/list-invites";
 import { requireUserId } from "@/lib/session";
@@ -45,8 +46,6 @@ export default function ListsPage() {
     <div className="space-y-8">
       <PageHeader
         title="Listas"
-        backHref="/perfil"
-        backLabel="Volver a Perfil"
         inlineActions
         actions={
           <Link
@@ -82,11 +81,19 @@ const ListsBody = async () => {
     getSharedWithMe(userId),
     getPendingRequestsForOwner(userId),
   ]);
-  const { fixed, custom, years } = partitionUserLists(lists);
+  const { fixed: allFixed, custom, years } = partitionUserLists(lists);
+  // Quiero ver is pinned on top (FIL-34), so the rail skips it.
+  const watchlist = allFixed.find((list) => list.slug === WATCHLIST_SLUG);
+  const fixed = allFixed.filter((list) => list !== watchlist);
   const year = Number(mxToday().slice(0, 4));
 
   return (
     <div className="space-y-12">
+      <QuieroVerPinnedCard
+        name={watchlist?.name ?? WATCHLIST_NAME}
+        itemCount={watchlist?._count.items ?? 0}
+        posters={watchlist?.items.map((item) => item.title) ?? []}
+      />
       <OwnerRequestsNotice requests={requests} />
       <section className="space-y-4">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-paper">

@@ -35,7 +35,6 @@ const ICON: Record<ReasonKind, "spark" | "clock" | "hourglass" | "note" | "star"
   pinned: "spark",
   reco_seed: "spark",
   reco_genre: "spark",
-  ruta: "spark",
 };
 
 /** «Por qué esta»: the reasons behind a pick, plus Más así / Menos así. */

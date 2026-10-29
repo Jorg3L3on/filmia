@@ -1,14 +1,16 @@
-import { and, asc, desc, eq, gte, lte, max, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNull, lte, max, ne, or, sql } from "drizzle-orm";
 import { cache } from "react";
-import { catalog, cinemaReleases, db, type Platform } from "@/db";
+import { catalog, cinemaReleases, db, listItems, lists, titles, type Platform } from "@/db";
 import {
   addDays,
   HOME_AFTER_DAYS,
   HOME_LOOKBACK_DAYS,
   mxToday,
+  orderWatchlistCinema,
   upcomingHorizon,
   type CinemaReleaseStatus,
 } from "@/lib/cine-core";
+import { WATCHLIST_SLUG } from "@/lib/lists";
 import { cineDirectorsOf, type CineDirector } from "@/lib/cine-directors";
 import { matchWatchProviderPlatform } from "@/lib/streaming-platforms";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
@@ -125,6 +127,29 @@ export const sortHomeArrivals = (films: readonly CineFilm[], userPlatforms: read
 export const getCineLastRunAt = cache(async () => {
   const [row] = await db.select({ at: max(cinemaReleases.lastSeenAt) }).from(cinemaReleases);
   return row?.at ?? null;
+});
+
+export type WatchlistCinemaFilm = CineFilm & { titleId: string | null };
+
+/** Quiero ver films Cine is tracking: in theaters, or announced and not yet. Seen titles stay out. */
+export const getWatchlistCinema = cache(async (userId: string): Promise<WatchlistCinemaFilm[]> => {
+  const rows = await db
+    .select({ ...filmColumns, titleId: titles.id })
+    .from(listItems)
+    .innerJoin(lists, eq(lists.id, listItems.listId))
+    .innerJoin(catalog, eq(catalog.id, listItems.catalogId))
+    .innerJoin(cinemaReleases, eq(cinemaReleases.catalogId, catalog.id))
+    .leftJoin(titles, and(eq(titles.userId, userId), eq(titles.catalogId, catalog.id)))
+    .where(
+      and(
+        eq(lists.userId, userId),
+        eq(lists.slug, WATCHLIST_SLUG),
+        eq(catalog.kind, "MOVIE"),
+        or(eq(cinemaReleases.status, "now"), eq(cinemaReleases.status, "upcoming")),
+        isNull(titles.watchedAt),
+      ),
+    );
+  return orderWatchlistCinema(rows.map((row) => ({ ...toFilm(row), titleId: row.titleId })));
 });
 
 /** The ficha badge: the film's MX theatrical status, when Cine knows it. */

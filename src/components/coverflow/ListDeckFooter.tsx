@@ -36,8 +36,9 @@ export const ListDeckFooter = ({ title, className, onOpenMenu }: ListDeckFooterP
     <div
       className={cn(
         "tonight-footer mx-auto flex w-full max-w-xl flex-col items-center gap-2.5 text-center",
-        // The «Vi esto» stub hangs ~30px under unwatched cards: keep it off the title.
-        !title.watched && "pt-8",
+        // The «Vi esto» stub hangs ~36px under unwatched cards. Margin, not padding,
+        // so the gap is not a hit target sitting on the buttons.
+        !title.watched && "mt-10",
         className,
       )}
     >

@@ -62,10 +62,10 @@ describe("¿Las viste?", () => {
 
   it("closes with what changed, only gains", () => {
     assert.equal(
-      visteSummary({ seen: 2, newPeople: ["Christopher Nolan", "Hans Zimmer", "Otro"], rutas: [{ shortTitle: "Lord & Miller", done: 2, total: 5 }] }),
-      "Aparecieron Christopher Nolan y Hans Zimmer; Lord & Miller va 2 de 5.",
+      visteSummary({ seen: 2, newPeople: ["Christopher Nolan", "Hans Zimmer", "Otro"] }),
+      "Aparecieron Christopher Nolan y Hans Zimmer.",
     );
-    assert.equal(visteSummary({ seen: 1, newPeople: [], rutas: [] }), "Una más en tu diario.");
-    assert.equal(visteSummary({ seen: 0, newPeople: [], rutas: [] }), "Ninguna de estas. Sigue con otras tres.");
+    assert.equal(visteSummary({ seen: 1, newPeople: [] }), "Una más en tu diario.");
+    assert.equal(visteSummary({ seen: 0, newPeople: [] }), "Ninguna de estas. Sigue con otras tres.");
   });
 });

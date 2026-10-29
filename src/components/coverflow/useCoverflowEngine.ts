@@ -31,6 +31,11 @@ type CoverflowEngineOptions = {
   lite?: boolean;
   /** Each settle / coast frame's duration (ms), for the lite pace monitor. */
   onMotionFrame?: (frameMs: number) => void;
+  /**
+   * A vertical drag or wheel scrolls the page instead of moving the deck.
+   * List pages need it: the score sits under the dock and the deck used to swallow the scroll.
+   */
+  allowPageScroll?: boolean;
 };
 
 type CoverflowEngine = {
@@ -73,7 +78,7 @@ export const useCoverflowEngine = (
   cinematic = false,
   options: CoverflowEngineOptions = {},
 ): CoverflowEngine => {
-  const { initialIndex = 0, lite = false, onMotionFrame } = options;
+  const { initialIndex = 0, lite = false, onMotionFrame, allowPageScroll = false } = options;
   const liteRef = useRef(lite);
   const onMotionFrameRef = useRef(onMotionFrame);
   const startIndex = clampCoverflowIndex(
@@ -88,6 +93,10 @@ export const useCoverflowEngine = (
   const [stageWidth, setStageWidth] = useState(480);
   const [stageHeight, setStageHeight] = useState(360);
   const dragStartX = useRef(0);
+  const dragStartY = useRef(0);
+  /** Waiting to see if the gesture is a vertical page scroll or a horizontal deck drag. */
+  const pendingScrollRef = useRef(false);
+  const allowPageScrollRef = useRef(allowPageScroll);
   const dragStartIndex = useRef(0);
   const targetIndexRef = useRef(startIndex);
   const displayIndexRef = useRef(startIndex);
@@ -422,6 +431,14 @@ export const useCoverflowEngine = (
       return;
     }
 
+    if (allowPageScrollRef.current) {
+      pendingScrollRef.current = true;
+      dragStartX.current = event.clientX;
+      dragStartY.current = event.clientY;
+      dragStartIndex.current = displayIndexRef.current;
+      return;
+    }
+
     if (wheelSnapTimeout.current != null) {
       window.clearTimeout(wheelSnapTimeout.current);
       wheelSnapTimeout.current = null;
@@ -447,6 +464,30 @@ export const useCoverflowEngine = (
 
   useEffect(() => {
     const handlePointerMove = (event: PointerEvent) => {
+      if (pendingScrollRef.current) {
+        const dx = event.clientX - dragStartX.current;
+        const dy = event.clientY - dragStartY.current;
+        if (Math.hypot(dx, dy) < 10) {
+          return;
+        }
+        pendingScrollRef.current = false;
+        if (Math.abs(dy) > Math.abs(dx)) {
+          return;
+        }
+        cancelJumpFade(true);
+        jumpLandingRef.current = null;
+        isDraggingRef.current = true;
+        motionModeRef.current = "drag";
+        springVelocityRef.current = 0;
+        suppressClick.current = false;
+        prevPointerX.current = dragStartX.current;
+        prevPointerTime.current = performance.now();
+        velocityRef.current = 0;
+        setGrabbingCursor(true);
+        stopRaf();
+        paintCards(true);
+      }
+
       if (!isDraggingRef.current) {
         return;
       }
@@ -475,6 +516,7 @@ export const useCoverflowEngine = (
     };
 
     const handlePointerUp = () => {
+      pendingScrollRef.current = false;
       stopDragging();
     };
 
@@ -518,6 +560,10 @@ export const useCoverflowEngine = (
 
     const handleWheel = (event: WheelEvent) => {
       if (titlesLengthRef.current <= 0) {
+        return;
+      }
+
+      if (allowPageScrollRef.current && Math.abs(event.deltaY) >= Math.abs(event.deltaX)) {
         return;
       }
 
@@ -615,6 +661,7 @@ export const useCoverflowEngine = (
     compactRef.current = isSheet;
     cinematicRef.current = cinematic;
     liteRef.current = lite;
+    allowPageScrollRef.current = allowPageScroll;
     // Extra lateral room for soft L+R fan (cinematic); historial/sheet keep prior inset.
     sideRoomRef.current = Math.max(
       8,

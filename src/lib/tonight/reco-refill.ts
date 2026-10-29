@@ -5,7 +5,7 @@ import { isTmdbConfigured } from "@/lib/tmdb";
 
 /**
  * FIL-26 · Hoy never waits for the nightly cron: a new account (Bienvenida), or one whose pool ran
- * out (¿Las viste? and rutas mark many recommendations as seen), gets its pool rebuilt right after
+ * out (¿Las viste? marks many recommendations as seen), gets its pool rebuilt right after
  * the response, and Hoy says it is looking meanwhile.
  */
 

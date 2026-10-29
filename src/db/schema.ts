@@ -91,8 +91,6 @@ export const users = pgTable(
     onboardingStep: text("onboardingStep"),
     /** Signed into every session token; bumping it (password change) revokes older sessions. */
     sessionVersion: integer("sessionVersion").notNull().default(0),
-    /** Rutas (FIL-I26): the first ruta was offered (made, or declined in the Bienvenida); Hoy never offers it again. */
-    rutasOfferedAt: timestamp("rutasOfferedAt", { precision: 3, mode: "date" }),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),
@@ -218,16 +216,6 @@ export const lists = pgTable(
     year: integer("year"),
     /** Shared lists: a link only creates a join request the owner approves. */
     requireApproval: boolean("requireApproval").notNull().default(true),
-    /**
-     * Rutas curadas (FIL-I26-5): a list written as a ruta (order + one note per film), offered to
-     * whoever it fits. Never shown as a list to anyone but its owner.
-     */
-    curated: boolean("curated").notNull().default(false),
-    /** De temporada: offered only inside this window; its rutas end with it. */
-    curatedFrom: date("curatedFrom", { mode: "string" }),
-    curatedUntil: date("curatedUntil", { mode: "string" }),
-    /** TMDB ids of the films it follows («Después de Michael»): a seed among them fits best. */
-    curatedFor: jsonb("curatedFor").notNull().default([]),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),
@@ -762,69 +750,6 @@ export const mcpIdempotencyKeys = pgTable(
   ],
 );
 
-/**
- * Rutas (FIL-I26): 3–8 films in an order, one line of why per step. Built from a TMDB
- * collection, a person's filmography, a title's recommendations or by hand. At most two are
- * `activa` (Hoy shows them); the rest wait (`espera`) with no reminders. A step is done when the
- * person's `Title` for its film is watched: «lo visto cuenta», whatever screen marked it.
- */
-export const rutas = pgTable(
-  "Ruta",
-  {
-    id: text("id").primaryKey(),
-    userId: text("userId")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    /** `coleccion` | `persona` | `titulo` | `curada` | `temporada` (see `RutaKind`). */
-    kind: text("kind").notNull(),
-    /** «El señor de los anillos, la trilogía». */
-    title: text("title").notNull(),
-    /** What a second lens in Hoy is called («Lord & Miller»). */
-    shortTitle: text("shortTitle").notNull(),
-    /** One line under the title: why this ruta is for you. */
-    reason: text("reason"),
-    /** What it was built from (`coleccion:119`, `persona:108:director`): one ruta per source. */
-    sourceKey: text("sourceKey").notNull(),
-    /** The film of the library that led here. */
-    seedCatalogId: text("seedCatalogId").references(() => catalog.id, { onDelete: "set null" }),
-    /** `activa` | `espera` | `cerrada` | `archivada` (a seasonal one that ran out). */
-    status: text("status").notNull(),
-    startedAt: timestamp("startedAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
-    closedAt: timestamp("closedAt", { precision: 3, mode: "date" }),
-    /** De temporada: past it the ruta is archived in silence (no push, nothing lost). */
-    endsAt: timestamp("endsAt", { precision: 3, mode: "date" }),
-    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
-  },
-  (table) => [
-    uniqueIndex("Ruta_userId_sourceKey_key").on(table.userId, table.sourceKey),
-    index("Ruta_userId_status_idx").on(table.userId, table.status),
-  ],
-);
-
-/** One film of a ruta. `revealedAt` / `doneAt` are stamped the first time they hold (telemetry, «en 11 días»). */
-export const rutaPasos = pgTable(
-  "RutaPaso",
-  {
-    rutaId: text("rutaId")
-      .notNull()
-      .references(() => rutas.id, { onDelete: "cascade" }),
-    position: integer("position").notNull(),
-    catalogId: text("catalogId")
-      .notNull()
-      .references(() => catalog.id, { onDelete: "cascade" }),
-    /** Why this step, once it is face up. */
-    why: text("why").notNull(),
-    /** The one line a face-down step shows. */
-    hint: text("hint").notNull(),
-    revealedAt: timestamp("revealedAt", { precision: 3, mode: "date" }),
-    doneAt: timestamp("doneAt", { precision: 3, mode: "date" }),
-  },
-  (table) => [
-    primaryKey({ columns: [table.rutaId, table.position] }),
-    index("RutaPaso_catalogId_idx").on(table.catalogId),
-  ],
-);
-
 export const usersRelations = relations(users, ({ many }) => ({
   titles: many(titles),
   lists: many(lists),
@@ -892,8 +817,6 @@ export type PlatformAlertRow = typeof platformAlerts.$inferSelect;
 export type CinemaReleaseRow = typeof cinemaReleases.$inferSelect;
 export type YearTopRow = typeof yearTops.$inferSelect;
 export type CinemaAlertRow = typeof cinemaAlerts.$inferSelect;
-export type RutaRow = typeof rutas.$inferSelect;
-export type RutaPasoRow = typeof rutaPasos.$inferSelect;
 
 export type ListItemWithTitleRelations = typeof listItems.$inferSelect & {
   title: Title;

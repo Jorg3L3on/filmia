@@ -844,58 +844,8 @@ export const getTmdbPersonFilmography = async (
 };
 
 // ---------------------------------------------------------------------------
-// Rutas (FIL-I26): a film's TMDB collection and a person's credits, raw. The
-// parsing lives in rutas/core.ts. Same 24 h cache as the rest of the metadata.
+// A person's credits, raw (Universo's «N»). Same 24 h cache as the rest of the metadata.
 // ---------------------------------------------------------------------------
-
-export type TmdbCollectionPartPayload = {
-  id?: number;
-  title?: string;
-  original_title?: string;
-  release_date?: string;
-  poster_path?: string | null;
-  backdrop_path?: string | null;
-  overview?: string;
-  vote_average?: number;
-  vote_count?: number;
-  genre_ids?: number[];
-  adult?: boolean;
-};
-
-export type TmdbCollectionPayload = {
-  id: number;
-  name?: string;
-  parts?: TmdbCollectionPartPayload[];
-};
-
-/** The collection a film belongs to (`belongs_to_collection`), null when none or unknown. */
-export const getTmdbMovieCollectionRef = async (
-  tmdbId: number,
-): Promise<{ id: number; name: string } | null> => {
-  try {
-    const data = await tmdbFetch<{ belongs_to_collection?: { id?: number; name?: string } | null }>(
-      `/movie/${tmdbId}`,
-    );
-    const ref = data.belongs_to_collection;
-    return ref?.id && ref.name?.trim() ? { id: ref.id, name: ref.name.trim() } : null;
-  } catch (error) {
-    if (error instanceof TmdbRequestError && error.status === 404) {
-      return null;
-    }
-    throw error;
-  }
-};
-
-export const getTmdbCollection = async (collectionId: number): Promise<TmdbCollectionPayload | null> => {
-  try {
-    return await tmdbFetch<TmdbCollectionPayload>(`/collection/${collectionId}`);
-  } catch (error) {
-    if (error instanceof TmdbRequestError && error.status === 404) {
-      return null;
-    }
-    throw error;
-  }
-};
 
 /** `/person/:id` + `combined_credits`, the same cached responses the filmography reads. */
 export const getTmdbPersonCredits = async (personId: number) => {

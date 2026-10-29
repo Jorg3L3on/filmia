@@ -102,13 +102,12 @@ const listNames = (names: readonly string[]) =>
   names.length <= 1 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} y ${names.at(-1)}`;
 
 /**
- * What changed after the three (P2): who appeared in your universe, which ruta moved. Only gains;
+ * What changed after the three (P2): who appeared in your universe. Only gains;
  * three «No la vi» say tomorrow brings others.
  */
 export const visteSummary = (input: {
   seen: number;
   newPeople: readonly string[];
-  rutas: ReadonlyArray<{ shortTitle: string; done: number; total: number }>;
 }) => {
   if (input.seen === 0) {
     return "Ninguna de estas. Sigue con otras tres.";
@@ -117,9 +116,6 @@ export const visteSummary = (input: {
   const people = input.newPeople.slice(0, 2);
   if (people.length > 0) {
     parts.push(`${people.length === 1 ? "Apareció" : "Aparecieron"} ${listNames(people)}`);
-  }
-  for (const ruta of input.rutas.slice(0, 1)) {
-    parts.push(`${ruta.shortTitle} va ${ruta.done} de ${ruta.total}`);
   }
   if (parts.length === 0) {
     return input.seen === 1 ? "Una más en tu diario." : `${input.seen} más en tu diario.`;

@@ -9,12 +9,8 @@ import {
   todayDateInput,
 } from "@/lib/dates";
 import { DIARY_HISTORIAL_PATH } from "@/lib/diary-picks";
-import { formatRating, PLATFORM_SERVICE_LABEL } from "@/lib/labels";
-import { impliedRatingLabel } from "@/lib/piezas/core";
 import { getRecentWatchedTitles, getWatchedSince } from "@/lib/queries";
-import { currentAvailabilityPlatform } from "@/lib/streaming-platforms";
 import { focusRing } from "@/lib/ui";
-import { parseStoredWatchProviders } from "@/lib/watch-providers";
 
 const WEEK_DAYS = 7;
 const RECENT_LIMIT = 3;
@@ -31,13 +27,7 @@ const localDaysBack = (days: number) => {
 /** Buscar in «log as seen on this day» mode: what the strip's empty cells and «Registrar» open. */
 const logTodayHref = (iso: string) => `/buscar?fecha=${iso}&destino=visto`;
 
-const entryDayParts = (watchedAt: Date) => {
-  const day = watchedAt.getUTCDate();
-  const weekday = WEEKDAY_LABELS_SHORT[WEEKDAY_FROM_GETDAY[watchedAt.getUTCDay()] ?? 0];
-  return { day, weekday };
-};
-
-/** Perfil «Tu diario»: this week at a glance + the last entries with your note. */
+/** Perfil «Tu diario»: this week at a glance, then the way into the full diary. */
 export const ProfileDiary = async () => {
   const days = localDaysBack(WEEK_DAYS);
   const firstDay = days[0] ?? new Date();
@@ -107,7 +97,7 @@ export const ProfileDiary = async () => {
                   )}
                 >
                   {primary ? (
-                    // share={false}: the same title can also sit in «Últimas entradas», which owns the poster-{id} morph.
+                    // share={false}: the same title can sit on more than one day, and a morph name must be unique.
                     <SharedPoster titleId={primary.id} share={false} className="absolute inset-0">
                       <PosterImage
                         name={primary.name}
@@ -135,74 +125,20 @@ export const ProfileDiary = async () => {
         })}
       </ul>
 
-      {recent.length > 0 ? (
-        <div className="space-y-1">
-          <p className="px-1 text-[11px] font-medium uppercase tracking-[0.18em] text-fog">
-            Últimas entradas
-          </p>
-          <ul className="-mx-2 space-y-0.5">
-            {recent.map((title) => {
-              const watchedAt = title.watchedAt ?? new Date();
-              const { day, weekday } = entryDayParts(watchedAt);
-              const platform = currentAvailabilityPlatform(
-                parseStoredWatchProviders(title.watchProvidersMx),
-                title.platform,
-              );
-              const review = title.review?.trim();
-              return (
-                <li key={title.id}>
-                  <Link
-                    href={`/titulos/${title.id}`}
-                    className={cn(
-                      "press-scale grid grid-cols-[40px_44px_minmax(0,1fr)] items-center gap-3 rounded-2xl px-2 py-2 tab-transition hover:bg-well",
-                      focusRing,
-                    )}
-                  >
-                    <span className="text-center">
-                      <span className="block text-[10px] uppercase tracking-[0.12em] text-mist">{weekday}</span>
-                      <span className="block font-serif text-xl leading-tight text-paper">{day}</span>
-                    </span>
-                    <SharedPoster titleId={title.id} className="block w-11">
-                      <PosterImage
-                        name={title.name}
-                        posterPath={title.posterPath}
-                        sizes="44px"
-                        tmdbSize="w185"
-                        className="rounded-lg shadow-[0_8px_18px_rgba(0,0,0,0.45)]"
-                      />
-                    </SharedPoster>
-                    <span className="min-w-0">
-                      <span className="block truncate font-serif text-[17px] leading-tight text-paper">{title.name}</span>
-                      <span className="mt-0.5 flex items-center gap-1.5 text-xs">
-                        <span className={title.rating != null ? "text-star" : "text-mist"}>
-                          {title.rating == null ? (impliedRatingLabel(title.impliedRating) ?? formatRating(null)) : formatRating(title.rating)}
-                        </span>
-                        {platform ? <span className="text-mist">· {PLATFORM_SERVICE_LABEL[platform]}</span> : null}
-                      </span>
-                      {review ? (
-                        <span className="mt-0.5 block truncate text-[13px] italic text-fog">«{review}»</span>
-                      ) : null}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-          <Link
-            href={DIARY_HISTORIAL_PATH}
-            className={cn(
-              "mt-2 flex h-11 w-full items-center justify-center rounded-[var(--radius-button)] border border-chrome text-sm font-medium text-paper tab-transition hover:bg-chrome",
-              focusRing,
-            )}
-          >
-            Ver todo el diario
-          </Link>
-        </div>
-      ) : (
+      {recent.length === 0 ? (
         <p className="rounded-2xl border border-line bg-surface/40 px-4 py-5 text-center text-sm text-fog">
           Todavía no hay entradas. Arranca el talón de una carta en Hoy y aparecerá aquí.
         </p>
-      )}
+      ) : null}
+      <Link
+        href={DIARY_HISTORIAL_PATH}
+        className={cn(
+          "flex h-11 w-full items-center justify-center rounded-[var(--radius-button)] border border-chrome text-sm font-medium text-paper tab-transition hover:bg-chrome",
+          focusRing,
+        )}
+      >
+        Ver todo el diario
+      </Link>
     </section>
   );
 };

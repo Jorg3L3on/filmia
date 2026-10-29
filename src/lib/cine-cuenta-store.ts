@@ -10,11 +10,8 @@ import {
   type UniversePerson,
 } from "@/lib/cine-cuenta";
 import { isPushConfigured, sendPush, type PushPayload, type PushSendOutcome } from "@/lib/push/web-push";
-import { parseThreadPeople, type PersonRutaRole } from "@/lib/rutas/core";
-import { seasonSourceKey } from "@/lib/rutas/factories";
-import { loadSourceKeys } from "@/lib/rutas/store";
+import { parseThreadPeople } from "@/lib/people/core";
 import { loadUniversoFilms } from "@/lib/universo/store";
-import { rutaRoleOf } from "@/lib/universo/core";
 
 /**
  * Cuenta regresiva, server side (FIL-I26-5). «Avísame el día» is a `cine_avisame` event; the daily
@@ -26,8 +23,6 @@ const REMINDED_KIND = "cine_avisado";
 
 export type CountdownView = Countdown & {
   reminded: boolean;
-  /** «Ruta: antes de verla»: the person's ruta, ending the day the film opens. */
-  season: { sourceKey: string; started: boolean };
 };
 
 /** The people of your universe by id, with the films of yours they are in (oldest watch first). */
@@ -75,22 +70,16 @@ export const loadCountdowns = async (userId: string, now = new Date()): Promise<
   if (countdowns.length === 0) {
     return [];
   }
-  const [reminders, used] = await Promise.all([
-    db.query.pickEvents.findMany({
-      where: and(
-        eq(pickEvents.userId, userId),
-        eq(pickEvents.kind, REMIND_KIND),
-        inArray(pickEvents.catalogId, countdowns.map((item) => item.release.catalogId)),
-      ),
-      columns: { catalogId: true },
-    }),
-    loadSourceKeys(userId),
-  ]);
-  const reminded = new Set(reminders.map((row) => row.catalogId));
-  return countdowns.map((item) => {
-    const sourceKey = seasonSourceKey(item.release.catalogId, [item.person.id], rutaRoleOf(item.role) as PersonRutaRole);
-    return { ...item, reminded: reminded.has(item.release.catalogId), season: { sourceKey, started: used.has(sourceKey) } };
+  const reminders = await db.query.pickEvents.findMany({
+    where: and(
+      eq(pickEvents.userId, userId),
+      eq(pickEvents.kind, REMIND_KIND),
+      inArray(pickEvents.catalogId, countdowns.map((item) => item.release.catalogId)),
+    ),
+    columns: { catalogId: true },
   });
+  const reminded = new Set(reminders.map((row) => row.catalogId));
+  return countdowns.map((item) => ({ ...item, reminded: reminded.has(item.release.catalogId) }));
 };
 
 export type RemindOutcome =

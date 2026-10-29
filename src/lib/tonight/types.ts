@@ -95,9 +95,7 @@ export type ReasonKind =
   /** Recommended, not in your library: «Porque tienes X en Quiero ver» / «Porque le diste 5★ a X». */
   | "reco_seed"
   /** Recommended by genre: no seed, just the genres you keep coming back to. */
-  | "reco_genre"
-  /** The next step of one of your rutas (FIL-I26): its line of why. */
-  | "ruta";
+  | "reco_genre";
 
 export type TonightReason = {
   kind: ReasonKind;
@@ -129,11 +127,8 @@ export type TonightPickBase = {
   wildcard: boolean;
 };
 
-/**
- * `ruta`: one of the person's active rutas; `pieza`: the door to «¿Las viste?» (FIL-I26).
- * Both are placed after composition.
- */
-export type TonightLensKind = "para-ti" | "genre" | "ruta" | "pieza";
+/** `pieza`: the door to «¿Las viste?» (FIL-I26), placed after composition. */
+export type TonightLensKind = "para-ti" | "genre" | "pieza";
 
 export type TonightLens = {
   slug: string;

@@ -4,10 +4,10 @@ import { CineActionsProvider } from "@/components/cine/CineActions";
 import { CineMarquee, CineSection, StaleNotice } from "@/components/cine/CineParts";
 import { HomeArrivalsRail, NowShowingRail, UpcomingTimeline } from "@/components/cine/CineSections";
 import { CineSkeleton } from "@/components/cine/CineSkeleton";
-import { ParaTiEnSala } from "@/components/cine/ParaTiEnSala";
+import { WatchlistCinema } from "@/components/cine/WatchlistCinema";
 import { EmptyState } from "@/components/EmptyState";
 import { loadCineActions } from "@/app/cine/cine-data";
-import { getCineLastRunAt, getHomeArrivals, getNowShowing, getUpcoming } from "@/lib/cine";
+import { getCineLastRunAt, getHomeArrivals, getNowShowing, getUpcoming, getWatchlistCinema } from "@/lib/cine";
 import { addDays, mxToday, staleLabel, watchlistFirst } from "@/lib/cine-core";
 import { parseTopYear } from "@/lib/cine-top";
 import { getUserStreamingPlatforms } from "@/lib/queries";
@@ -43,7 +43,7 @@ const CineBody = async ({ searchParams }: { searchParams: Promise<SearchParams> 
     getUpcoming(addDays(today, UPCOMING_DAYS)),
     getCineLastRunAt(),
   ]);
-  const home = await getHomeArrivals(platforms);
+  const [home, watchlistCinema] = await Promise.all([getHomeArrivals(platforms), getWatchlistCinema(actions.userId)]);
   const stale = staleLabel(lastRunAt);
 
   return (
@@ -59,10 +59,7 @@ const CineBody = async ({ searchParams }: { searchParams: Promise<SearchParams> 
           {stale ? <StaleNotice label={stale} /> : null}
         </div>
 
-        {/* FIL-I26-5: only when someone of your universe has a premiere coming. */}
-        <Suspense fallback={null}>
-          <ParaTiEnSala userId={actions.userId} />
-        </Suspense>
+        <WatchlistCinema films={watchlistCinema} today={today} />
 
         {now.length === 0 && upcoming.length === 0 ? (
           <EmptyState

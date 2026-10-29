@@ -21,19 +21,12 @@ export const ONBOARDING_STEPS = [
  */
 export const QUICK_PICK_STEP = "tres";
 
-/**
- * «Tu primera ruta» (FIL-I26-2): after the payoff, not on the film strip either. The Bienvenida's
- * steps stay as they were; this one only proposes where to start.
- */
-export const RUTA_STEP = "ruta";
-
 /** Nobody enters Hoy with an empty account: 10 of 18 finished the first Bienvenida with 0 titles. */
 export const MIN_ONBOARDING_TITLES = 3;
 
 export type OnboardingStepId =
   | (typeof ONBOARDING_STEPS)[number]
-  | typeof QUICK_PICK_STEP
-  | typeof RUTA_STEP;
+  | typeof QUICK_PICK_STEP;
 
 export type OnboardingDirection = "forward" | "back";
 
@@ -41,36 +34,25 @@ export const FIRST_STEP: OnboardingStepId = ONBOARDING_STEPS[0];
 
 export const isOnboardingStepId = (value: unknown): value is OnboardingStepId =>
   typeof value === "string" &&
-  (value === QUICK_PICK_STEP || value === RUTA_STEP || (ONBOARDING_STEPS as readonly string[]).includes(value));
+  (value === QUICK_PICK_STEP || (ONBOARDING_STEPS as readonly string[]).includes(value));
 
 export const needsQuickPicks = (titleCount: number) => titleCount < MIN_ONBOARDING_TITLES;
 
-/** Position on the film strip. The quick-pick detour and the first ruta sit on the last hole, right before Hoy. */
+/** Position on the film strip. The quick-pick detour sits on the last hole, right before Hoy. */
 export const stepIndex = (step: OnboardingStepId) =>
-  step === QUICK_PICK_STEP || step === RUTA_STEP ? ONBOARDING_STEPS.length - 1 : ONBOARDING_STEPS.indexOf(step);
+  step === QUICK_PICK_STEP ? ONBOARDING_STEPS.length - 1 : ONBOARDING_STEPS.indexOf(step);
 
 /** Order for slide direction: the detour sits between «noche» and «primera-noche». */
 const stepOrder = (step: OnboardingStepId) =>
-  step === QUICK_PICK_STEP
-    ? ONBOARDING_STEPS.indexOf("noche") + 0.5
-    : step === RUTA_STEP
-      ? ONBOARDING_STEPS.length
-      : ONBOARDING_STEPS.indexOf(step);
+  step === QUICK_PICK_STEP ? ONBOARDING_STEPS.indexOf("noche") + 0.5 : ONBOARDING_STEPS.indexOf(step);
 
 /**
  * Forward through the strip. With fewer than three titles, «noche» leads to the quick picks
- * instead of the payoff; the quick picks always lead to the payoff, and the payoff to the first
- * ruta, the last step before Hoy.
+ * instead of the payoff; the quick picks always lead to the payoff, the last step before Hoy.
  */
 export const nextStep = (step: OnboardingStepId, titleCount = MIN_ONBOARDING_TITLES): OnboardingStepId | null => {
   if (step === QUICK_PICK_STEP) {
     return "primera-noche";
-  }
-  if (step === "primera-noche") {
-    return RUTA_STEP;
-  }
-  if (step === RUTA_STEP) {
-    return null;
   }
   if (step === "noche" && needsQuickPicks(titleCount)) {
     return QUICK_PICK_STEP;
@@ -81,9 +63,6 @@ export const nextStep = (step: OnboardingStepId, titleCount = MIN_ONBOARDING_TIT
 export const prevStep = (step: OnboardingStepId): OnboardingStepId | null => {
   if (step === QUICK_PICK_STEP) {
     return "noche";
-  }
-  if (step === RUTA_STEP) {
-    return "primera-noche";
   }
   const index = ONBOARDING_STEPS.indexOf(step);
   return index > 0 ? (ONBOARDING_STEPS[index - 1] ?? null) : null;
@@ -117,9 +96,16 @@ export const resolveBienvenidaEntry = ({
   return cookieOnboarded === false ? "resync" : "home";
 };
 
+/** The step Rutas added after the payoff (FIL-I26-2, removed in FIL-I33): saved steps resume on the payoff. */
+const REMOVED_RUTA_STEP = "ruta";
+
 /** Where to open the flow: the Bienvenida runs once, so it resumes where the person left off. */
 export const resolveInitialStep = (profile: { onboardingStep: string | null }): OnboardingStepId =>
-  isOnboardingStepId(profile.onboardingStep) ? profile.onboardingStep : FIRST_STEP;
+  profile.onboardingStep === REMOVED_RUTA_STEP
+    ? "primera-noche"
+    : isOnboardingStepId(profile.onboardingStep)
+      ? profile.onboardingStep
+      : FIRST_STEP;
 
 export const STEP_COPY: Record<OnboardingStepId, { eyebrow: string; title: string }> = {
   intro: { eyebrow: "Bienvenida", title: "Bienvenido a Filmia" },
@@ -130,11 +116,10 @@ export const STEP_COPY: Record<OnboardingStepId, { eyebrow: string; title: strin
   noche: { eyebrow: "Tu reloj", title: "Esta noche" },
   tres: { eyebrow: "Antes de entrar", title: "Elige 3 para empezar" },
   "primera-noche": { eyebrow: "Listo", title: "Tu primera noche" },
-  ruta: { eyebrow: "Antes de entrar", title: "Tu primera ruta" },
 };
 
 export const stepAnnouncement = (step: OnboardingStepId) =>
-  step === QUICK_PICK_STEP || step === RUTA_STEP
+  step === QUICK_PICK_STEP
     ? `${STEP_COPY[step].eyebrow}: ${STEP_COPY[step].title}`
     : `Paso ${stepIndex(step) + 1} de ${ONBOARDING_STEPS.length}: ${STEP_COPY[step].title}`;
 

@@ -1,4 +1,4 @@
-import { duoName, personSourceKey, type PersonRutaRole, type ThreadPerson, type ThreadPersonRole } from "@/lib/rutas/core";
+import { duoName, type ThreadPerson, type ThreadPersonRole } from "@/lib/people/core";
 
 /**
  * «Tu universo» (FIL-I26-4, boards U1–U4): the people of the films you saw. Pure: nodes (one
@@ -60,10 +60,6 @@ export const ROLE_LABEL: Record<ThreadPersonRole, string> = {
   composer: "Música",
   cast: "Reparto",
 };
-
-/** `ThreadPersonRole` → the role key of a person ruta / Filmografía count. */
-export const rutaRoleOf = (role: ThreadPersonRole) =>
-  role === "director" ? "director" : role === "dp" ? "fotografia" : role === "composer" ? "musica" : "reparto";
 
 const directorsOf = (film: UniversoFilm) =>
   film.people.filter((person) => person.role === "director").map((person) => person.id);
@@ -305,8 +301,6 @@ export type BridgeReveal = {
   line: string;
   /** «Llevas n de sus N»: null when TMDB's total is unknown. */
   progress: { seen: number; total: number } | null;
-  /** Their ruta, to start from the sheet. */
-  ruta: { sourceKey: string; title: string; total: number | null } | null;
 };
 
 const BRIDGE_VERB: Record<ThreadPersonRole, string> = {
@@ -318,9 +312,6 @@ const BRIDGE_VERB: Record<ThreadPersonRole, string> = {
 
 /** «las dos», «las tres», then digits: «las 5». */
 export const bridgeCountWords = (count: number) => (count === 2 ? "las dos" : count === 3 ? "las tres" : `las ${count}`);
-
-/** Cast with more than this many titles get no ruta from the sheet: «Ver el universo» leads instead. */
-export const BRIDGE_CAST_RUTA_MAX = 40;
 
 /** The sheet's data from a found bridge (`newBridge`) and TMDB's total for the person. Pure. */
 export const bridgeRevealOf = (
@@ -337,13 +328,5 @@ export const bridgeRevealOf = (
     films,
     line: `${BRIDGE_VERB[person.role]} ${bridgeCountWords(films.length)}.`,
     progress: total ? { seen: Math.min(films.length, total), total } : null,
-    ruta:
-      person.role === "cast" && total != null && total > BRIDGE_CAST_RUTA_MAX
-        ? null
-        : {
-            sourceKey: personSourceKey([person.id], rutaRoleOf(person.role) as PersonRutaRole),
-            title: `Ruta de ${person.name}`,
-            total,
-          },
   };
 };

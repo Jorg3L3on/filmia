@@ -4,6 +4,8 @@ type WatchlistCountTickerProps = {
   /** Noun after the number (Buscar uses «resultado» / «resultados»). */
   singular?: string;
   plural?: string;
+  /** `false`: the digits alone (Quiero ver's «37 de 262», FIL-I34). */
+  noun?: boolean;
 };
 
 const DIGITS = Array.from({ length: 10 }, (_, digit) => digit);
@@ -14,6 +16,7 @@ export const WatchlistCountTicker = ({
   className,
   singular = "título",
   plural = "títulos",
+  noun = true,
 }: WatchlistCountTickerProps) => {
   const digits = String(Math.max(0, count)).split("");
   return (
@@ -31,8 +34,8 @@ export const WatchlistCountTicker = ({
             ))}
           </span>
         ))}
-      </span>{" "}
-      {count === 1 ? singular : plural}
+      </span>
+      {noun ? ` ${count === 1 ? singular : plural}` : null}
     </span>
   );
 };

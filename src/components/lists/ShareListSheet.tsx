@@ -12,6 +12,8 @@ import {
 } from "@/lib/list-invite-limits";
 import { showToast } from "@/lib/toast";
 import { showActionError, TOAST_COPY } from "@/lib/toast-alerts";
+import { SegmentActionTooltip, segmentActionCompactClass } from "@/components/SegmentAction";
+import { ShareIcon } from "@/components/share/ShareButton";
 import { focusRing } from "@/lib/ui";
 
 const optionClass = (selected: boolean) =>
@@ -58,6 +60,7 @@ export const ShareListSheet = ({
   roles,
   publicShare,
   triggerLabel = "Compartir",
+  compact = false,
 }: {
   listId: string;
   listName: string;
@@ -67,6 +70,8 @@ export const ShareListSheet = ({
   publicShare?: ReactNode;
   /** «Compartir» on the list; «Invitar a alguien más» in Miembros. */
   triggerLabel?: string;
+  /** Round disc, same size as the other list actions. */
+  compact?: boolean;
 }) => {
   const headingId = useId();
   const [open, setOpen] = useState(false);
@@ -142,15 +147,27 @@ export const ShareListSheet = ({
       <button
         type="button"
         onClick={() => setOpen(true)}
+        aria-label={triggerLabel}
         className={cn(
-          "press-scale inline-flex h-10 items-center gap-2 rounded-full bg-accent px-4 text-sm font-semibold text-ink transition hover:bg-accent-hover",
-          focusRing,
+          compact
+            ? segmentActionCompactClass
+            : "press-scale inline-flex h-10 items-center gap-2 rounded-full bg-accent px-4 text-sm font-semibold text-ink transition hover:bg-accent-hover",
+          !compact && focusRing,
         )}
       >
-        <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-          <path d="M16 8a3 3 0 1 0-2.8-4M8 12a3 3 0 1 0 0 .01M16 16a3 3 0 1 0 0 .01M10.6 10.7l2.8-1.6M10.6 13.3l2.8 1.6" />
-        </svg>
-        {triggerLabel}
+        {compact ? (
+          <>
+            <ShareIcon className="size-5" />
+            <SegmentActionTooltip label={triggerLabel} />
+          </>
+        ) : (
+          <>
+            <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+              <path d="M16 8a3 3 0 1 0-2.8-4M8 12a3 3 0 1 0 0 .01M16 16a3 3 0 1 0 0 .01M10.6 10.7l2.8-1.6M10.6 13.3l2.8 1.6" />
+            </svg>
+            {triggerLabel}
+          </>
+        )}
       </button>
       <Sheet open={open} onClose={() => setOpen(false)} labelledBy={headingId} align="bottom" dragDismiss portal>
         <div className="space-y-5 px-5 pb-4 pt-3">

@@ -1,6 +1,5 @@
-import { StartRutaButton } from "@/components/universo/StartRutaButton";
-import type { UniversoView } from "@/lib/universo/store";
 import { Button } from "@/components/Button";
+import type { UniversoView } from "@/lib/universo/store";
 import { VISTE_PATH } from "@/lib/piezas/core";
 
 const ISLAND_WORD = (n: number) => (n === 1 ? "Una isla" : n === 2 ? "Dos islas" : n === 3 ? "Tres islas" : `${n} islas`);
@@ -35,13 +34,6 @@ export const ClosestPanel = ({ view }: { view: UniversoView }) => {
         </p>
       ) : null}
       <div className="mt-3 flex flex-col gap-2">
-        {closest.started ? (
-          <Button href="/rutas" variant="secondary" size="md">
-            Ver tus rutas
-          </Button>
-        ) : (
-          <StartRutaButton sourceKey={closest.sourceKey} label={`Empezar la ruta de ${closest.node.name}`} />
-        )}
         <Button href={VISTE_PATH} variant="ghost" size="md">
           ¿La viste?
         </Button>

@@ -7,11 +7,11 @@
 const RECEIVE_CLASS = "nav-receive";
 const FLY_MS = 620;
 
-export type NavTab = "today" | "queue" | "ticket" | "profile";
+export type NavTab = "today" | "lists" | "ticket" | "profile";
 
 const NAV_HREF: Record<NavTab, string> = {
   today: "/",
-  queue: "/watchlist",
+  lists: "/listas",
   ticket: "/cine",
   profile: "/perfil",
 };
