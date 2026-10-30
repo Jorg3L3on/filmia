@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { readSessionCookie } from "@/lib/auth";
 import { isSessionCurrent } from "@/lib/auth/session-version";
+import { touchLastActive } from "@/lib/last-active";
 import { redirect } from "next/navigation";
 
 export const getCurrentSession = cache(async () => readSessionCookie());
@@ -13,6 +14,7 @@ export const requireUser = cache(async () => {
     redirect("/login");
   }
 
+  touchLastActive(session.user.id);
   return session.user;
 });
 
@@ -31,5 +33,9 @@ export const getLiveSessionUser = cache(async () => {
     return null;
   }
   const current = await isSessionCurrent({ id: session.user.id, sessionVersion: session.sessionVersion });
-  return current ? session.user : null;
+  if (!current) {
+    return null;
+  }
+  touchLastActive(session.user.id);
+  return session.user;
 });
