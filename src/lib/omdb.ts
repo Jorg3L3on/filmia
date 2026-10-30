@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { parseMetascore, parseRottenTomatoes, type OmdbRatingEntry } from "@/lib/critic-scores";
 import {
   METADATA_REVALIDATE_SECONDS,
   OMDB_CACHE_TAG,
@@ -16,6 +17,10 @@ type OmdbResponse = {
   imdbVotes?: string;
   /** e.g. "Won 2 Oscars. 23 wins & 12 nominations total." or "N/A". */
   Awards?: string;
+  /** Other sources, e.g. `{ Source: "Rotten Tomatoes", Value: "96%" }`. */
+  Ratings?: OmdbRatingEntry[];
+  /** "72" or "N/A". */
+  Metascore?: string;
   Error?: string;
 };
 
@@ -25,9 +30,13 @@ export type ImdbScore = {
   votes: number | null;
   /** Raw OMDb awards sentence; parsed for display by `src/lib/awards.ts`. */
   awards: string | null;
+  /** Tomatometer 0–100 (FIL-I36); null when OMDb has none. */
+  rt: number | null;
+  /** Metascore 0–100 (FIL-I36); null when N/A. */
+  metascore: number | null;
 };
 
-const EMPTY_SCORE: ImdbScore = { rating: null, votes: null, awards: null };
+export const EMPTY_SCORE: ImdbScore = { rating: null, votes: null, awards: null, rt: null, metascore: null };
 
 const parseVotes = (value: string | undefined) => {
   if (!value || value === "N/A") {
@@ -90,11 +99,13 @@ const fetchOmdbScore = async (imdbId: string): Promise<ImdbScore> => {
     rating: rating != null && Number.isFinite(rating) ? rating : null,
     votes: parseVotes(data.imdbVotes),
     awards: parseAwards(data.Awards),
+    rt: parseRottenTomatoes(data.Ratings),
+    metascore: parseMetascore(data.Metascore),
   };
 };
 
-// Key bumped to v2 when `awards` joined the shape: older cached entries lack it.
-const loadCachedOmdbScore = unstable_cache(fetchOmdbScore, ["omdb-imdb-score", "v2"], {
+// Key bumped when the shape grows (v2 `awards`, v3 `rt` + `metascore`): older cached entries lack them.
+const loadCachedOmdbScore = unstable_cache(fetchOmdbScore, ["omdb-imdb-score", "v3"], {
   revalidate: METADATA_REVALIDATE_SECONDS,
   tags: [OMDB_CACHE_TAG],
 });

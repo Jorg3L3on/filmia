@@ -1,13 +1,13 @@
 import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
-import { ImdbBadge } from "@/components/ImdbBadge";
+import { CriticsPill } from "@/components/CriticsPill";
 import { PosterImage } from "@/components/PosterImage";
 import { SharedPoster } from "@/components/SharedPoster";
 import { LaurelIcon } from "@/components/watchlist/icons";
 import { cn } from "@/lib/cn";
 import { formatStarScore } from "@/lib/labels";
 import { isRemoteImage } from "@/lib/tmdb";
-import { focusRing, posterFrame } from "@/lib/ui";
+import { posterFrame } from "@/lib/ui";
 
 type TitleHeroProps = {
   titleId: string;
@@ -24,6 +24,9 @@ type TitleHeroProps = {
   imdbHref?: string | null;
   /** The ficha preview is still resolving OMDb: placeholder chips instead of «sin calificación». */
   imdbPending?: boolean;
+  /** Rotten Tomatoes / Metascore 0–100 (FIL-I36): segments of the critics pill. */
+  rtScore?: number | null;
+  metascore?: number | null;
   awardLabel?: string | null;
   rating?: number | null;
   /** «Te gustó» / «No tanto» from ¿Las viste?, when there are no stars of the person's own. */
@@ -63,6 +66,8 @@ export const TitleHero = ({
   imdbRating,
   imdbHref,
   imdbPending = false,
+  rtScore = null,
+  metascore = null,
   awardLabel,
   rating,
   reaction = null,
@@ -73,6 +78,7 @@ export const TitleHero = ({
   cinema,
 }: TitleHeroProps) => {
   const restBits = [runtimeLabel, kindLabel, genreLabel].filter(Boolean);
+  const hasScores = imdbRating != null || rtScore != null || metascore != null;
 
   return (
     <>
@@ -129,24 +135,8 @@ export const TitleHero = ({
         >
           {trailer}
           {cinema}
-          {imdbRating != null && imdbHref ? (
-            <a
-              href={imdbHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`IMDb ${imdbRating.toFixed(1)} de 10: abrir en IMDb`}
-              className={cn(
-                "liquid-glass liquid-glass-pill relative inline-flex h-7 items-center gap-1 rounded-full pl-1 pr-2 transition-transform active:scale-[0.97]",
-                focusRing,
-              )}
-            >
-              <ImdbBadge rating={imdbRating} compact />
-              <ExternalGlyph />
-            </a>
-          ) : imdbRating != null ? (
-            <span className="liquid-glass liquid-glass-pill relative inline-flex h-7 items-center rounded-full pl-1 pr-2.5">
-              <ImdbBadge rating={imdbRating} compact />
-            </span>
+          {hasScores ? (
+            <CriticsPill name={name} imdbRating={imdbRating} imdbHref={imdbHref} rtScore={rtScore} metascore={metascore} />
           ) : imdbPending ? (
             <>
               <span className="shimmer inline-block h-7 w-[4.75rem] rounded-full" aria-hidden="true" />
@@ -154,7 +144,7 @@ export const TitleHero = ({
             </>
           ) : null}
           {affinity}
-          {imdbRating == null && !imdbPending ? (
+          {!hasScores && !imdbPending ? (
             <span className="text-[11px] leading-none text-mist">Aún sin calificación en IMDb</span>
           ) : null}
           {awardLabel ? (
@@ -163,25 +153,30 @@ export const TitleHero = ({
               <span className="truncate">{awardLabel}</span>
             </span>
           ) : null}
-          {rating != null ? (
-            <span className="liquid-glass liquid-glass-pill relative inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-star">
-              <StarGlyph />
-              {formatStarScore(rating)}
-              <span className="font-normal text-fog">· Tu nota</span>
-            </span>
-          ) : reaction ? (
-            <span className="liquid-glass liquid-glass-pill relative inline-flex h-7 items-center rounded-full px-2.5 text-xs font-semibold text-paper/90">
-              {reaction}
-            </span>
-          ) : null}
-          {watched ? (
-            <span
-              className={cn(
-                "inline-flex h-7 items-center rounded-full border border-success/40 bg-success-well px-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-success",
-              )}
-            >
-              Visto
-            </span>
+          {rating != null || reaction || watched ? (
+            // Yours on a line of its own on the phone (FIL-I36, option B); one row again from sm.
+            <div className="flex basis-full flex-wrap items-center justify-center gap-2 sm:contents">
+              {rating != null ? (
+                <span className="liquid-glass liquid-glass-pill relative inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-star">
+                  <StarGlyph />
+                  {formatStarScore(rating)}
+                  <span className="font-normal text-fog">· Tu nota</span>
+                </span>
+              ) : reaction ? (
+                <span className="liquid-glass liquid-glass-pill relative inline-flex h-7 items-center rounded-full px-2.5 text-xs font-semibold text-paper/90">
+                  {reaction}
+                </span>
+              ) : null}
+              {watched ? (
+                <span
+                  className={cn(
+                    "inline-flex h-7 items-center rounded-full border border-success/40 bg-success-well px-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-success",
+                  )}
+                >
+                  Visto
+                </span>
+              ) : null}
+            </div>
           ) : null}
         </div>
       </header>
@@ -192,11 +187,5 @@ export const TitleHero = ({
 const StarGlyph = () => (
   <svg viewBox="0 0 24 24" className="size-3.5" fill="currentColor" aria-hidden="true">
     <path d="m12 4.5 2.1 4.4 4.8.6-3.5 3.3.9 4.8L12 15.4 7.7 17.6l.9-4.8-3.5-3.3 4.8-.6Z" />
-  </svg>
-);
-
-const ExternalGlyph = () => (
-  <svg viewBox="0 0 24 24" className="size-3 text-[#f5c518]/70" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4" />
   </svg>
 );
