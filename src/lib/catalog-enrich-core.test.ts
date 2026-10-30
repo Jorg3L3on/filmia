@@ -15,6 +15,8 @@ const full: TitleMetadata = {
   imdbRating: 9,
   imdbVotes: 900000,
   awards: "Nominated for 3 Oscars.",
+  rtScore: 100,
+  metascore: 97,
   overview: "Un jurado…",
   tmdbGenres: [{ id: 18, name: "Drama" }],
   tmdbKeywords: [{ id: 1, name: "jury" }],
@@ -37,6 +39,22 @@ describe("catalog-enrich-core/catalogEnrichmentPatch", () => {
     assert.equal("imdbVotes" in patch, false);
     assert.equal("awards" in patch, false);
     assert.equal(patch.imdbId, "tt0050083");
+  });
+
+  it("writes critic scores that came back and never blanks stored ones (FIL-I36)", () => {
+    const patch = catalogEnrichmentPatch(full);
+    assert.equal(patch.rtScore, 100);
+    assert.equal(patch.metascore, 97);
+
+    const missing = catalogEnrichmentPatch({ ...full, rtScore: null, metascore: undefined });
+    assert.equal("rtScore" in missing, false);
+    assert.equal("metascore" in missing, false);
+  });
+
+  it("keeps a 0 % Tomatometer but drops out-of-range scores", () => {
+    const patch = catalogEnrichmentPatch({ ...full, rtScore: 0, metascore: 140 });
+    assert.equal(patch.rtScore, 0);
+    assert.equal("metascore" in patch, false);
   });
 
   it("drops empty strings, zeros and empty lists instead of writing them", () => {

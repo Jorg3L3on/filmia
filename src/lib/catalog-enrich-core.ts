@@ -13,6 +13,8 @@ export type CatalogEnrichmentPatch = Partial<{
   imdbRating: number;
   imdbVotes: number;
   awards: string;
+  rtScore: number;
+  metascore: number;
   overview: string;
   tmdbGenres: TmdbGenre[];
   tmdbKeywords: TmdbKeyword[];
@@ -28,6 +30,10 @@ const text = (value: string | null | undefined) => {
 
 const positive = (value: number | null | undefined) =>
   value != null && Number.isFinite(value) && value > 0 ? value : undefined;
+
+/** Critic scores: 0 is a real score, so only null / out of range is "missing". */
+const percent = (value: number | null | undefined) =>
+  value != null && Number.isInteger(value) && value >= 0 && value <= 100 ? value : undefined;
 
 const nonEmpty = <T>(value: T[] | null | undefined) =>
   value && value.length > 0 ? value : undefined;
@@ -52,6 +58,8 @@ export const catalogEnrichmentPatch = (
     imdbRating: positive(resolved.imdbRating),
     imdbVotes: positive(resolved.imdbVotes),
     awards: text(resolved.awards),
+    rtScore: percent(resolved.rtScore),
+    metascore: percent(resolved.metascore),
     overview: text(resolved.overview),
     tmdbGenres: nonEmpty(resolved.tmdbGenres),
     tmdbKeywords: nonEmpty(resolved.tmdbKeywords),
