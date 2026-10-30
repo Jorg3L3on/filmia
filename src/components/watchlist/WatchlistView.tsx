@@ -3,7 +3,8 @@
 import { useMemo } from "react";
 import type { Platform } from "@/db";
 import { MinePlatformsSetupCta, MissingStreamingDataNote } from "@/components/MinePlatformsNotice";
-import { useWatchlistQuery } from "@/components/watchlist/useWatchlistQuery";
+import { useSavedViews } from "@/components/watchlist/useSavedViews";
+import { useRememberedQuery, useWatchlistQuery } from "@/components/watchlist/useWatchlistQuery";
 import { WatchlistCartelera } from "@/components/watchlist/WatchlistCartelera";
 import { WatchlistEditingProvider, useWatchlistEditing } from "@/components/watchlist/WatchlistEditing";
 import { WatchlistEmpty } from "@/components/watchlist/WatchlistEmpty";
@@ -16,6 +17,7 @@ import { makeWatchlistCounter } from "@/lib/watchlist-facets";
 import type { WatchlistFicha } from "@/lib/watchlist-ficha";
 import { filterRows, scopeCounts, sortRows, type WatchlistRow } from "@/lib/watchlist-filters";
 import { activeFilterCount } from "@/lib/watchlist-query";
+import type { SavedView } from "@/lib/watchlist-views";
 
 type WatchlistViewProps = {
   /** The whole list, manual order. */
@@ -26,6 +28,8 @@ type WatchlistViewProps = {
   listId: string;
   nightEnds: NightEnds;
   pinnedTitleId: string | null;
+  /** Vistas guardadas (FIL-I34-6), pinned first. */
+  savedViews: SavedView[];
   /** Server clock (epoch ms): «Agregada» windows and the offline note's «de hoy, 6:40 p. m.». */
   renderedAt: number;
 };
@@ -49,9 +53,12 @@ const WatchlistViewBody = ({
   listId,
   nightEnds,
   pinnedTitleId,
+  savedViews: initialViews,
   renderedAt,
 }: WatchlistViewProps) => {
   const { query, setQuery } = useWatchlistQuery();
+  useRememberedQuery(query, setQuery);
+  const savedViews = useSavedViews(initialViews);
   const editing = useWatchlistEditing();
   const context = useMemo(() => ({ now: renderedAt }), [renderedAt]);
   const count = useMemo(() => makeWatchlistCounter(rows, context), [rows, context]);
@@ -85,6 +92,7 @@ const WatchlistViewBody = ({
         names={names}
         context={context}
         count={count}
+        savedViews={savedViews}
       />
       <WatchlistOfflineNote renderedAt={renderedAt} />
       {needsSetup && !editing?.isEditing ? (

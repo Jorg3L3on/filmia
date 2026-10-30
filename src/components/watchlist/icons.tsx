@@ -120,3 +120,15 @@ export const CloseIcon = ({ size = 14 }: { size?: number }) => (
     <path d="M7 7l10 10M17 7 7 17" />
   </svg>
 );
+
+export const PinIcon = ({ size = 16, filled = false }: { size?: number; filled?: boolean }) => (
+  <svg {...base(size)} fill={filled ? "currentColor" : "none"}>
+    <path d="M9 4h6l-1 5 3 3v2H7v-2l3-3-1-5ZM12 14v6" />
+  </svg>
+);
+
+export const BookmarkIcon = ({ size = 16 }: { size?: number }) => (
+  <svg {...base(size)}>
+    <path d="M7 4h10v16l-5-3.5L7 20V4Z" />
+  </svg>
+);

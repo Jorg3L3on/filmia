@@ -9,6 +9,7 @@ import {
   getWatchlist,
 } from "@/lib/queries";
 import { scheduleMissingTitleOverviews } from "@/lib/title-overview-schedule";
+import { loadSavedViews } from "@/lib/saved-views-store";
 import { parseNightEnds } from "@/lib/tonight/time";
 import { buildWatchlistFichas, type WatchlistSignals } from "@/lib/watchlist-ficha";
 import { loadWatchlistSignals } from "@/lib/watchlist-hook-store";
@@ -73,7 +74,9 @@ const WatchlistBody = async () => {
   // Runtime too (FIL-I24-7): Cortas, Duración and «Más cortas» need it.
   scheduleMissingTitleOverviews(items.map((item) => item.title), { runtime: true });
 
-  const signals = profile ? await loadWatchlistSignals(profile.id, now) : EMPTY_SIGNALS;
+  const [signals, savedViews] = profile
+    ? await Promise.all([loadWatchlistSignals(profile.id, now), loadSavedViews(profile.id)])
+    : [EMPTY_SIGNALS, []];
   const snoozedIds = new Set(signals.snoozedUntilByTitle.keys());
   const fichas = buildWatchlistFichas(items, { signals, userPlatforms, now });
   const rows = items.map((item) => toWatchlistRow(item, { userPlatforms, snoozedIds }));
@@ -96,6 +99,7 @@ const WatchlistBody = async () => {
       listId={watchlist?.id ?? ""}
       nightEnds={profile?.nightEnds ?? parseNightEnds(null)}
       pinnedTitleId={signals.pinnedTitleId}
+      savedViews={savedViews}
       renderedAt={now.getTime()}
     />
   );
