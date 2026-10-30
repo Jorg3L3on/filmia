@@ -52,9 +52,12 @@ const imdbScoreFor = async (row: typeof catalog.$inferSelect): Promise<YearTopCa
 
   const score = await fetchImdbScore(current.imdbId).catch(() => null);
   if (score?.rating != null || score?.votes != null) {
+    // Same call, so the critic scores ride along (FIL-I36); a null never blanks a stored one.
     const patch = {
       ...(score.rating != null ? { imdbRating: score.rating } : {}),
       ...(score.votes != null ? { imdbVotes: score.votes } : {}),
+      ...(score.rt != null ? { rtScore: score.rt } : {}),
+      ...(score.metascore != null ? { metascore: score.metascore } : {}),
     };
     await db.update(catalog).set(patch).where(eq(catalog.id, current.id));
     return {

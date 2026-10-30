@@ -3,7 +3,7 @@ import { and, eq, isNotNull } from "drizzle-orm";
 import { db, titles, type Platform, type TitleKind } from "@/db";
 import { ownListEntriesByCatalog } from "@/lib/list-items";
 import { FAVORITAS_SLUG, WATCHLIST_SLUG } from "@/lib/lists";
-import { fetchImdbScore } from "@/lib/omdb";
+import { EMPTY_SCORE, fetchImdbScore } from "@/lib/omdb";
 import {
   VOTE_COUNT_LADDER,
   YEAR_GRID_SIZE,
@@ -79,7 +79,7 @@ const attachImdbRatings = async (items: YearGridItem[]) => {
     if (!imdbId) {
       return;
     }
-    const score = await withTimeout(fetchImdbScore(imdbId), LOOKUP_TIMEOUT_MS, { rating: null, votes: null, awards: null });
+    const score = await withTimeout(fetchImdbScore(imdbId), LOOKUP_TIMEOUT_MS, EMPTY_SCORE);
     item.imdbRating = score.rating;
   });
   return items;

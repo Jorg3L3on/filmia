@@ -1,5 +1,5 @@
 import { TitleKind } from "@/db";
-import { fetchImdbScore, isOmdbConfigured } from "@/lib/omdb";
+import { EMPTY_SCORE, fetchImdbScore, isOmdbConfigured } from "@/lib/omdb";
 import {
   getTmdbDetails,
   getTmdbExternalIds,
@@ -21,6 +21,9 @@ export type TitleMetadata = {
   imdbVotes?: number | null;
   /** Raw OMDb awards sentence (see `src/lib/awards.ts`). */
   awards?: string | null;
+  /** Rotten Tomatoes / Metascore, 0–100 (FIL-I36). */
+  rtScore?: number | null;
+  metascore?: number | null;
   tmdbGenres: TmdbGenre[];
   tmdbKeywords?: TmdbKeyword[];
   tmdbPeople?: TmdbPerson[];
@@ -45,9 +48,7 @@ export const resolveTitleMetadata = async (
     getTmdbExternalIds(tmdbId, kind),
   ]);
 
-  const score = imdbId
-    ? await fetchImdbScore(imdbId)
-    : { rating: null, votes: null, awards: null };
+  const score = imdbId ? await fetchImdbScore(imdbId) : EMPTY_SCORE;
 
   return {
     tmdbId: details.tmdbId,
@@ -58,6 +59,8 @@ export const resolveTitleMetadata = async (
     imdbRating: score.rating,
     imdbVotes: score.votes,
     awards: score.awards,
+    rtScore: score.rt,
+    metascore: score.metascore,
     tmdbGenres: details.genres,
     tmdbKeywords: details.keywords,
     tmdbPeople: details.people,

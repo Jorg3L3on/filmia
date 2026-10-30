@@ -124,6 +124,10 @@ export const catalog = pgTable(
     imdbVotes: integer("imdbVotes"),
     /** OMDb `Awards` text, e.g. "Won 2 Oscars. 23 wins & 12 nominations total." */
     awards: text("awards"),
+    /** Rotten Tomatoes Tomatometer 0–100 from OMDb `Ratings` (FIL-I36). */
+    rtScore: integer("rtScore"),
+    /** Metacritic Metascore 0–100 from OMDb (FIL-I36). */
+    metascore: integer("metascore"),
     overview: text("overview"),
     tmdbGenres: jsonb("tmdbGenres").notNull().default([]),
     /** Esta noche (Hoy): TMDB keywords `[{ id, name }]` for the taste vector. */
