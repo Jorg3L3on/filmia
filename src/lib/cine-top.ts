@@ -147,6 +147,23 @@ export const parseTopYear = (value: unknown, today: string) => {
   return Number.isInteger(year) && year >= FIRST_TOP_YEAR && year <= yearOf(today) ? year : defaultTopYear(today);
 };
 
+/** Oldest year `?force=` takes. */
+const FIRST_FORCE_YEAR = 1900;
+
+/**
+ * `/api/cron/cine?force=<año>` (FIL-I35-3): recompute that year now, whatever its age. Absent →
+ * `{ ok: true, year: null }`; anything but a whole year from 1900 to this one → `{ ok: false }`.
+ */
+export const parseForceYear = (value: string | null, today: string) => {
+  if (value == null) {
+    return { ok: true as const, year: null };
+  }
+  const year = /^\d{4}$/.test(value.trim()) ? Number(value.trim()) : Number.NaN;
+  return Number.isInteger(year) && year >= FIRST_FORCE_YEAR && year <= yearOf(today)
+    ? { ok: true as const, year }
+    : { ok: false as const };
+};
+
 export const yearTopSlug = (year: number) => `top-${year}`;
 export const yearTopName = (year: number) => `Mi top de ${year}`;
 

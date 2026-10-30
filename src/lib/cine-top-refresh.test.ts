@@ -52,7 +52,7 @@ const fakeDeps = ({
 describe("refreshYearTops (FIL-I35)", () => {
   it("reads IMDb's file once for every year the run computes", async () => {
     const { deps, calls } = fakeDeps({ missing: [2022, 2019, 2017] });
-    const results = await refreshYearTops(NOW, { left: 500 }, deps);
+    const results = await refreshYearTops(NOW, { left: 500 }, {}, deps);
     assert.deepEqual(calls.load, [2026, 2025, 2022, 2019]);
     assert.equal(calls.read.length, 1);
     assert.deepEqual(calls.read[0], [2026, 2025, 2022, 2019].flatMap((year) => [`tt${year}97`, `tt${year}98`]).sort());
@@ -62,7 +62,7 @@ describe("refreshYearTops (FIL-I35)", () => {
 
   it("keeps the 6.5-day freshness: a top 6 days old is skipped, one 7 days old recomputed", async () => {
     const fresh = fakeDeps({ daysAgo: 6 });
-    const freshResults = await refreshYearTops(NOW, { left: 500 }, fresh.deps);
+    const freshResults = await refreshYearTops(NOW, { left: 500 }, {}, fresh.deps);
     assert.deepEqual(freshResults, [
       { ok: true, year: 2026, skipped: "fresh" },
       { ok: true, year: 2025, skipped: "fresh" },
@@ -70,9 +70,34 @@ describe("refreshYearTops (FIL-I35)", () => {
     assert.equal(fresh.calls.read.length, 0);
 
     const stale = fakeDeps({ daysAgo: 7 });
-    await refreshYearTops(NOW, { left: 500 }, stale.deps);
+    await refreshYearTops(NOW, { left: 500 }, {}, stale.deps);
     assert.deepEqual(stale.calls.load, [2026, 2025]);
     assert.equal(stale.calls.read.length, 1);
+  });
+
+  it("force recomputes this year though its top is a day old, and nothing else changes", async () => {
+    const { deps, calls } = fakeDeps({ daysAgo: 1 });
+    const results = await refreshYearTops(NOW, { left: 500 }, { force: 2026 }, deps);
+    assert.deepEqual(calls.load, [2026]);
+    assert.equal(calls.read.length, 1);
+    assert.deepEqual(results, [
+      { ok: true, year: 2025, skipped: "fresh" },
+      { ok: true, year: 2026, candidates: 3, fromDataset: 0, omdbCalls: 0, ranked: 3 },
+    ]);
+
+    const plain = fakeDeps({ daysAgo: 1 });
+    assert.deepEqual(await refreshYearTops(NOW, { left: 500 }, {}, plain.deps), [
+      { ok: true, year: 2026, skipped: "fresh" },
+      { ok: true, year: 2025, skipped: "fresh" },
+    ]);
+    assert.deepEqual(plain.calls.load, []);
+  });
+
+  it("force on an older year computes it first, past the nightly cap", async () => {
+    const { deps, calls } = fakeDeps({ daysAgo: 1, missing: [2024, 2023, 2022] });
+    await refreshYearTops(NOW, { left: 0 }, { force: 2010 }, deps);
+    assert.deepEqual(calls.load, [2010, 2024, 2023]);
+    assert.deepEqual(calls.score.map((entry) => entry.year), [2010]);
   });
 
   it("a file that cannot be read logs and the run goes on with OMDb alone", async () => {
@@ -86,7 +111,7 @@ describe("refreshYearTops (FIL-I35)", () => {
           log: (message) => logged.push(message),
         }),
     });
-    const results = await refreshYearTops(NOW, { left: 500 }, deps);
+    const results = await refreshYearTops(NOW, { left: 500 }, {}, deps);
     assert.deepEqual(logged, ["imdb-ratings: unavailable status 503"]);
     assert.deepEqual(calls.score.map((entry) => entry.ratings), [null, null]);
     assert.ok(results.every((entry) => entry.ok));

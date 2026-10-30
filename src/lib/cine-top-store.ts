@@ -234,12 +234,14 @@ export type RefreshDeps = typeof refreshDeps;
 /**
  * Cron step, within one OMDb budget: this year and last, when missing, a week old or still a
  * pre-FIL-I32 ten; then older years with no top, then older tens, newest first, a couple a night
- * and while the budget lasts. IMDb's file is read once for every year the run computes. A year the
- * budget did not finish keeps its stored top and goes on the next night.
+ * and while the budget lasts. `force` (FIL-I35-3) recomputes that year whatever its age. IMDb's
+ * file is read once for every year the run computes. A year the budget did not finish keeps its
+ * stored top and goes on the next night.
  */
 export const refreshYearTops = async (
   now = new Date(),
   budget: OmdbBudget = { left: YEAR_TOP_OMDB_PER_RUN },
+  { force = null }: { force?: number | null } = {},
   deps: RefreshDeps = refreshDeps,
 ) => {
   const today = mxToday(now);
@@ -253,29 +255,32 @@ export const refreshYearTops = async (
   for (const target of [year, year - 1]) {
     const at = await deps.lastComputedAt(target);
     const legacy = (sizes.get(target) ?? 0) <= LEGACY_IMDB_TOP_SIZE;
-    if (at && !legacy && now.getTime() - at.getTime() < TOP_STALE_MS) {
+    if (target !== force && at && !legacy && now.getTime() - at.getTime() < TOP_STALE_MS) {
       results.push({ ok: true, year: target, skipped: "fresh" });
     } else {
       recent.push(target);
     }
   }
-  const older = olderTopYears(sizes, today);
+  // A forced older year goes first among them, past the nightly cap and the budget check.
+  const forcedOlder = force != null && !recent.includes(force) && force < year - 1 ? [force] : [];
+  const older = olderTopYears(sizes, today).filter((target) => target !== force);
   const olderNow = older.slice(0, YEAR_TOP_OLDER_PER_RUN);
+  const urgent = [...recent, ...forcedOlder];
 
   const loaded: YearRows[] = [];
-  for (const target of [...recent, ...olderNow]) {
+  for (const target of [...urgent, ...olderNow]) {
     loaded.push(await deps.loadYearRows(target));
   }
   const ids = imdbIdsOf(loaded);
   const ratings = ids.size > 0 ? await deps.readRatings(ids) : null;
 
   for (const entry of loaded) {
-    const isRecent = recent.includes(entry.year);
-    if (!isRecent && budget.left < MIN_BUDGET_FOR_YEAR) {
+    const isUrgent = urgent.includes(entry.year);
+    if (!isUrgent && budget.left < MIN_BUDGET_FOR_YEAR) {
       results.push({ ok: true, year: entry.year, skipped: "budget" });
       return results;
     }
-    results.push(await deps.scoreYearTop(entry, ratings, now, budget, isRecent ? YEAR_TOP_OMDB_REFRESH : 0));
+    results.push(await deps.scoreYearTop(entry, ratings, now, budget, isUrgent ? YEAR_TOP_OMDB_REFRESH : 0));
   }
   if (older.length > olderNow.length) {
     results.push({ ok: true, year: older[olderNow.length], skipped: "later" });

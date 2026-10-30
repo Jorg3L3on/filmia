@@ -4,6 +4,7 @@ import {
   defaultTopYear,
   IMDB_YEAR_TOP_SIZE,
   olderTopYears,
+  parseForceYear,
   parseTopYear,
   pendingTopDay,
   pendingTopDayLabel,
@@ -228,5 +229,25 @@ describe("year top constants stay put (FIL-I35)", () => {
     assert.equal(IMDB_YEAR_TOP_SIZE, 100);
     assert.equal(YEAR_TOP_CANDIDATES, 300);
     assert.equal(YEAR_TOP_OMDB_PER_RUN, 500);
+  });
+});
+
+describe("parseForceYear (FIL-I35-3)", () => {
+  const today = "2026-10-29";
+
+  it("no force is a normal run", () => {
+    assert.deepEqual(parseForceYear(null, today), { ok: true, year: null });
+  });
+
+  it("takes a whole year from 1900 to this one", () => {
+    assert.deepEqual(parseForceYear("2026", today), { ok: true, year: 2026 });
+    assert.deepEqual(parseForceYear(" 1999 ", today), { ok: true, year: 1999 });
+    assert.deepEqual(parseForceYear("1900", today), { ok: true, year: 1900 });
+  });
+
+  it("refuses anything else", () => {
+    for (const value of ["", "2027", "1899", "2026.5", "20x6", "2026,2025", "02026", "-2026", "abc"]) {
+      assert.deepEqual(parseForceYear(value, today), { ok: false }, value);
+    }
   });
 });
