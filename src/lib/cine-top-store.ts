@@ -226,7 +226,7 @@ const refreshDeps = {
   getYearTopSizes,
   lastComputedAt,
   loadYearRows,
-  readRatings: (ids: ReadonlySet<string>) => readImdbRatingsOrNull(ids),
+  readRatings: (ids: ReadonlySet<string>): Promise<ImdbRatings | null> => readImdbRatingsOrNull(ids),
   scoreYearTop,
 };
 export type RefreshDeps = typeof refreshDeps;

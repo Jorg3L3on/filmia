@@ -22,7 +22,7 @@ const rowsOf = (year: number) =>
 const fakeDeps = ({
   daysAgo = 10,
   missing = [] as number[],
-  readRatings = async (_ids: ReadonlySet<string>): Promise<ImdbRatings | null> => new Map(),
+  readRatings = async (ids: ReadonlySet<string>): Promise<ImdbRatings | null> => new Map([...ids].map((id) => [id, { rating: 7, votes: 30_000 }])),
 } = {}) => {
   const calls = { load: [] as number[], read: [] as string[][], score: [] as { year: number; ratings: ImdbRatings | null }[] };
   const sizes = new Map<number, number>();
