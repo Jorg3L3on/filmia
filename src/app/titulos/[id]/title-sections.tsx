@@ -62,6 +62,8 @@ export type HeroSource = Pick<
   | "imdbRating"
   | "imdbId"
   | "awards"
+  | "rtScore"
+  | "metascore"
   | "rating"
   | "impliedRating"
   | "watchedAt"
@@ -97,6 +99,8 @@ export const heroProps = (
     imdbRating: title.imdbRating,
     imdbHref: imdbTitleUrl(title.imdbId),
     imdbPending: options.imdbPending ?? false,
+    rtScore: title.rtScore,
+    metascore: title.metascore,
     awardLabel: awardChipLabel(title.awards),
     rating: title.rating,
     reaction: title.rating == null ? impliedRatingLabel(title.impliedRating) : null,

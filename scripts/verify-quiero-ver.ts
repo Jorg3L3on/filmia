@@ -18,7 +18,7 @@ const run = () => {
   assert(exists("drizzle/0006_title_awards.sql") && read("drizzle/0006_title_awards.sql").includes("IF NOT EXISTS"), "Migration 0006 (awards) is additive and idempotent");
   assert(read("src/db/schema.ts").includes('awards: text("awards")'), "Title.awards column");
   const omdb = read("src/lib/omdb.ts");
-  assert(omdb.includes("Awards") && omdb.includes('"v2"') && omdb.includes("imdbVotes"), "OMDb keeps Awards and bumped its cache key");
+  assert(omdb.includes("Awards") && /"v[2-9]"/.test(omdb) && omdb.includes("imdbVotes"), "OMDb keeps Awards and bumped its cache key");
   assert(awardChipLabel("Won 2 Oscars. 23 wins & 12 nominations total.") === "2 Óscar", "Awards parser → «2 Óscar»");
   assert(awardChipLabel("Nominated for 1 Oscar. 4 wins & 12 nominations total") === "Nominada al Óscar", "Awards parser → «Nominada al Óscar»");
   for (const file of ["src/lib/metadata.ts", "src/lib/catalog-enrich.ts", "scripts/backfill-tonight.ts"]) {

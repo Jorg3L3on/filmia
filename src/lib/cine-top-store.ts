@@ -51,12 +51,22 @@ const storedScore = (row: CatalogRow): YearTopCandidate => ({
   imdbVotes: row.imdbVotes,
 });
 
-/** Writes the picked score to Catalog when it moved; never a null over a value (`pickScore`). */
-const saveScore = async (row: CatalogRow, dataset: ScorePair | null, omdb: ScorePair | null): Promise<YearTopCandidate> => {
+/**
+ * Writes the picked score to Catalog when it moved; never a null over a value (`pickScore`).
+ * `critics` are OMDb's Rotten Tomatoes and Metascore (FIL-I36), kept the same way.
+ */
+const saveScore = async (
+  row: CatalogRow,
+  dataset: ScorePair | null,
+  omdb: ScorePair | null,
+  critics: { rt: number | null; metascore: number | null } | null = null,
+): Promise<YearTopCandidate> => {
   const score = pickScore(dataset, omdb, { rating: row.imdbRating, votes: row.imdbVotes });
   const patch = {
     ...(score.rating != null && score.rating !== row.imdbRating ? { imdbRating: score.rating } : {}),
     ...(score.votes != null && score.votes !== row.imdbVotes ? { imdbVotes: score.votes } : {}),
+    ...(critics?.rt != null && critics.rt !== row.rtScore ? { rtScore: critics.rt } : {}),
+    ...(critics?.metascore != null && critics.metascore !== row.metascore ? { metascore: critics.metascore } : {}),
   };
   if (Object.keys(patch).length > 0) {
     await db.update(catalog).set(patch).where(eq(catalog.id, row.id));
@@ -78,7 +88,8 @@ const imdbScoreFor = async (row: CatalogRow): Promise<YearTopCandidate> => {
   }
 
   const score = await fetchImdbScore(current.imdbId).catch(() => null);
-  return saveScore(current, null, score);
+  // Same call, so the critic scores ride along (FIL-I36).
+  return saveScore(current, null, score, score);
 };
 
 export type YearRows = { ok: true; year: number; candidates: number; rows: CatalogRow[] } | { ok: false; year: number; error: string };

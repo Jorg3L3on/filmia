@@ -33,6 +33,8 @@ const shared: CatalogRow = {
   imdbRating: 8.7,
   imdbVotes: 2000000,
   awards: "Won 4 Oscars.",
+  rtScore: 93,
+  metascore: 81,
   overview: "A hacker learns the truth.",
   tmdbGenres: [{ id: 28, name: "Acción" }],
   tmdbKeywords: [{ id: 1, name: "simulation" }],
