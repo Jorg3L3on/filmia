@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CineSection, GhostPoster } from "@/components/cine/CineParts";
+import { ImdbAttribution } from "@/components/ImdbAttribution";
 import { YearSelector } from "@/components/cine/YearSelector";
 import { YearTopMore } from "@/components/cine/YearTopMore";
 import { YearTopRow } from "@/components/cine/YearTopRow";
@@ -139,9 +140,12 @@ export const BestOfYearList = ({
     </li>
   ));
   return (
-    <ol id={`top-${year}`} className="space-y-1">
-      {rows.length > YEAR_TOP_STEP ? <YearTopMore step={YEAR_TOP_STEP}>{rows}</YearTopMore> : rows}
-    </ol>
+    <>
+      <ol id={`top-${year}`} className="space-y-1">
+        {rows.length > YEAR_TOP_STEP ? <YearTopMore step={YEAR_TOP_STEP}>{rows}</YearTopMore> : rows}
+      </ol>
+      <ImdbAttribution />
+    </>
   );
 };
 

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import { ImdbAttribution } from "@/components/ImdbAttribution";
 import { NightEndsForm } from "@/components/NightEndsForm";
 import { ProfileHeaderSkeleton, ProfileBodySkeleton } from "@/components/PageSkeletons";
 import { ProfileDiary } from "@/components/ProfileDiary";
@@ -75,6 +76,8 @@ const ProfileBody = async () => {
           />
         </div>
       </div>
+      {/* Credits (FIL-I35-4): the yearly top ranks on IMDb's own ratings file. */}
+      <ImdbAttribution />
     </div>
   );
 };

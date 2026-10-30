@@ -2,6 +2,8 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { notifyCinemaArrivals } from "@/lib/cine-alerts-store";
 import { notifyPremiereReminders } from "@/lib/cine-cuenta-store";
+import { mxToday } from "@/lib/cine-core";
+import { parseForceYear } from "@/lib/cine-top";
 import { refreshYearTops } from "@/lib/cine-top-store";
 import { applyImcineReleases, backfillPastReleases, refreshCinemaReleases, shouldBackfill } from "@/lib/cine-store";
 import { isTmdbConfigured } from "@/lib/tmdb";
@@ -35,14 +37,27 @@ const step = async <T>(run: () => Promise<T>) => {
  * Vercel Cron (10:00 UTC, after watch-providers / tonight-*): Cine (FIL-I17). Materializes the
  * MX cartelera into CinemaRelease (IMCINE dates on top, past releases weekly) and «Lo mejor del
  * año» into YearTop. The pages only ever read the tables.
+ *
+ * `?force=<año>` (FIL-I35-3, same secret) recomputes that year's top now, whatever its age, and
+ * runs nothing else: the cartelera and its pushes keep their nightly turn.
  */
 export const GET = async (request: Request) => {
   if (!isAuthorizedCron(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  const force = parseForceYear(new URL(request.url).searchParams.get("force"), mxToday());
+  if (!force.ok) {
+    return NextResponse.json({ error: "invalid_force" }, { status: 400 });
+  }
+
   if (!isTmdbConfigured()) {
     return NextResponse.json({ error: "tmdb_not_configured" }, { status: 503 });
+  }
+
+  if (force.year != null) {
+    const yearTop = await step(() => refreshYearTops(new Date(), undefined, { force: force.year }));
+    return NextResponse.json({ force: force.year, yearTop });
   }
 
   const cartelera = await step(() => refreshCinemaReleases());
