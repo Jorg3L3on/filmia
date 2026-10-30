@@ -1,4 +1,6 @@
 import { config as loadEnv } from "dotenv";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { and, asc, eq, isNotNull, isNull, or } from "drizzle-orm";
 
 loadEnv({ path: ".env.local" });
@@ -6,7 +8,7 @@ loadEnv();
 
 import { db, catalog } from "../src/db/index";
 import { awardChipLabel } from "../src/lib/awards";
-import { fetchImdbScore, isOmdbConfigured } from "../src/lib/omdb";
+import { isOmdbConfigured, lookupOmdbScore, OmdbRefusedError } from "../src/lib/omdb";
 import { runPool } from "../src/lib/run-pool";
 
 /**
@@ -15,6 +17,11 @@ import { runPool } from "../src/lib/run-pool";
  * missing votes / rating and the Rotten Tomatoes / Metacritic scores (FIL-I36) while it is there.
  * Idempotent; `--criticas` also takes titles that have awards but no critic score yet;
  * `--force` refetches everything; `--dry-run` only reports what it would write.
+ *
+ * Runs over several days on the free tier: it stops at the daily limit (OMDb answers 401),
+ * and remembers every title OMDb already answered in `scripts/.cache/` (one file per database),
+ * so the next day starts with titles not asked yet instead of the ones OMDb has nothing for.
+ * Delete that file (or pass `--force`) to ask them again.
  */
 
 if (!process.env.DATABASE_URL) {
@@ -25,13 +32,38 @@ const force = process.argv.includes("--force");
 const critics = process.argv.includes("--criticas");
 const dryRun = process.argv.includes("--dry-run");
 const CONCURRENCY = 4;
+const SAVE_EVERY = 25;
+
+// One file per database so a local run never hides titles from a prod run.
+const databaseKey = (() => {
+  const url = new URL(process.env.DATABASE_URL!);
+  return `${url.hostname}${url.pathname}`.replace(/[^a-zA-Z0-9.-]+/g, "_");
+})();
+const CACHE_DIR = join(process.cwd(), "scripts/.cache");
+const checkedPath = join(CACHE_DIR, `omdb-checked-${databaseKey}.json`);
+
+const loadChecked = () => {
+  try {
+    return new Set(JSON.parse(readFileSync(checkedPath, "utf8")) as string[]);
+  } catch {
+    return new Set<string>();
+  }
+};
+
+const saveChecked = (checked: Set<string>) => {
+  if (dryRun) {
+    return;
+  }
+  mkdirSync(CACHE_DIR, { recursive: true });
+  writeFileSync(checkedPath, JSON.stringify([...checked]));
+};
 
 const backfill = async () => {
   if (!isOmdbConfigured()) {
     throw new Error("OMDB_API_KEY no está configurada.");
   }
 
-  const rows = await db.query.catalog.findMany({
+  const candidates = await db.query.catalog.findMany({
     where: force
       ? isNotNull(catalog.imdbId)
       : critics
@@ -54,14 +86,38 @@ const backfill = async () => {
     orderBy: [asc(catalog.name)],
   });
 
-  console.log(`${rows.length} títulos por consultar en OMDb${dryRun ? " (simulación)" : ""}.`);
+  const checked = loadChecked();
+  const rows = force ? candidates : candidates.filter((row) => !checked.has(row.imdbId!));
+  const skipped = candidates.length - rows.length;
+
+  console.log(
+    `${rows.length} títulos por consultar en OMDb${dryRun ? " (simulación)" : ""}` +
+      (skipped > 0 ? ` · ${skipped} ya consultados antes (${checkedPath}).` : "."),
+  );
   let updated = 0;
   let empty = 0;
   let failed = 0;
+  let refused: string | null = null;
+  let sinceSave = 0;
 
   await runPool(rows, CONCURRENCY, async (title) => {
+    if (refused) {
+      return;
+    }
     try {
-      const score = await fetchImdbScore(title.imdbId!);
+      const { score, answered } = await lookupOmdbScore(title.imdbId!);
+      if (answered) {
+        checked.add(title.imdbId!);
+        sinceSave += 1;
+        if (sinceSave >= SAVE_EVERY) {
+          sinceSave = 0;
+          saveChecked(checked);
+        }
+      } else {
+        failed += 1;
+        return;
+      }
+
       const patch: Record<string, unknown> = {};
       if (score.awards && (force || !title.awards)) patch.awards = score.awards;
       if (score.votes != null && title.imdbVotes == null) patch.imdbVotes = score.votes;
@@ -84,14 +140,25 @@ const backfill = async () => {
         }`,
       );
     } catch (error) {
+      if (error instanceof OmdbRefusedError) {
+        refused ??= error.message;
+        return;
+      }
       failed += 1;
       console.log(`✗ ${title.name}: ${error instanceof Error ? error.message : "desconocido"}`);
     }
   });
 
+  saveChecked(checked);
+  const asked = updated + empty + failed;
   console.log(
-    `\nBackfill premios: ${updated} ${dryRun ? "por actualizar" : "actualizados"}, ${empty} sin datos, ${failed} fallidos (${rows.length} revisados).`,
+    `\nBackfill premios: ${updated} ${dryRun ? "por actualizar" : "actualizados"}, ${empty} sin datos, ${failed} fallidos (${asked} de ${rows.length} consultados).`,
   );
+  if (refused) {
+    console.log(
+      `OMDb dejó de responder: «${refused}». Faltan ${rows.length - asked}; vuelve a correrlo mañana con los mismos argumentos.`,
+    );
+  }
 };
 
 backfill().catch((error) => {

@@ -68,10 +68,20 @@ export const fetchImdbScore = async (imdbId: string): Promise<ImdbScore> => {
   }
 };
 
-const fetchOmdbScore = async (imdbId: string): Promise<ImdbScore> => {
+/** OMDb refused the key: daily limit reached (free tier: 1 000/day) or the key is invalid. Both answer 401. */
+export class OmdbRefusedError extends Error {}
+
+/**
+ * One OMDb lookup that tells the caller whether OMDb actually answered.
+ * `answered: false` = network or server error, worth retrying another day; a title OMDb
+ * does not know counts as answered. Throws `OmdbRefusedError` on 401 so a backfill can stop.
+ */
+export const lookupOmdbScore = async (
+  imdbId: string,
+): Promise<{ score: ImdbScore; answered: boolean }> => {
   const apiKey = getOmdbApiKey();
   if (!apiKey || !imdbId) {
-    return EMPTY_SCORE;
+    return { score: EMPTY_SCORE, answered: false };
   }
 
   const url = new URL(OMDB_BASE);
@@ -84,24 +94,42 @@ const fetchOmdbScore = async (imdbId: string): Promise<ImdbScore> => {
       tags: [OMDB_CACHE_TAG],
     },
   });
+  if (response.status === 401) {
+    const data = (await response.json().catch(() => null)) as OmdbResponse | null;
+    throw new OmdbRefusedError(data?.Error ?? "OMDb respondió 401");
+  }
   if (!response.ok) {
-    return EMPTY_SCORE;
+    return { score: EMPTY_SCORE, answered: false };
   }
 
   const data = (await response.json()) as OmdbResponse;
   if (data.Response !== "True") {
-    return EMPTY_SCORE;
+    return { score: EMPTY_SCORE, answered: true };
   }
 
   const rating =
     data.imdbRating && data.imdbRating !== "N/A" ? Number(data.imdbRating) : null;
   return {
-    rating: rating != null && Number.isFinite(rating) ? rating : null,
-    votes: parseVotes(data.imdbVotes),
-    awards: parseAwards(data.Awards),
-    rt: parseRottenTomatoes(data.Ratings),
-    metascore: parseMetascore(data.Metascore),
+    score: {
+      rating: rating != null && Number.isFinite(rating) ? rating : null,
+      votes: parseVotes(data.imdbVotes),
+      awards: parseAwards(data.Awards),
+      rt: parseRottenTomatoes(data.Ratings),
+      metascore: parseMetascore(data.Metascore),
+    },
+    answered: true,
   };
+};
+
+const fetchOmdbScore = async (imdbId: string): Promise<ImdbScore> => {
+  try {
+    return (await lookupOmdbScore(imdbId)).score;
+  } catch (error) {
+    if (error instanceof OmdbRefusedError) {
+      return EMPTY_SCORE;
+    }
+    throw error;
+  }
 };
 
 // Key bumped when the shape grows (v2 `awards`, v3 `rt` + `metascore`): older cached entries lack them.
