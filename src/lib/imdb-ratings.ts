@@ -119,3 +119,19 @@ export const readImdbRatings = async (
 };
 
 const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
+/**
+ * The cron's way in: `readImdbRatings`, but a file that cannot be read logs
+ * `imdb-ratings: unavailable <reason>` and answers null, so the run goes on with OMDb alone.
+ */
+export const readImdbRatingsOrNull = async (
+  ids: ReadonlySet<string>,
+  { read = readImdbRatings, log = console.warn }: { read?: typeof readImdbRatings; log?: (message: string) => void } = {},
+) => {
+  try {
+    return await read(ids);
+  } catch (error) {
+    log(error instanceof ImdbRatingsUnavailable ? error.message : `imdb-ratings: unavailable ${messageOf(error)}`);
+    return null;
+  }
+};

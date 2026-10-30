@@ -7,11 +7,17 @@ import {
   parseTopYear,
   pendingTopDay,
   pendingTopDayLabel,
+  pickScore,
   planOmdbCalls,
+  planYearScores,
   rankYearTop,
   startTopLabel,
+  VOTE_FLOOR,
+  VOTE_FLOOR_EARLY,
   voteFloorFor,
   watchedOfYearCopy,
+  YEAR_TOP_CANDIDATES,
+  YEAR_TOP_OMDB_PER_RUN,
   yearTopError,
   yourTopLabel,
   type YearTopPick,
@@ -146,5 +152,81 @@ describe("yearTopError", () => {
     assert.match(yearTopError(2026, ["seen-2026", "seen-2026"], picks) ?? "", /una vez/);
     assert.match(yearTopError(2026, ["someone-else"], picks) ?? "", /no encontrada/);
     assert.match(yearTopError(2026, Array.from({ length: 11 }, (_, i) => `x${i}`), picks) ?? "", /10 lugares/);
+  });
+});
+
+describe("pickScore (FIL-I35)", () => {
+  const stored = { rating: 6.9, votes: 80_000 };
+
+  it("IMDb's file wins over OMDb and the stored score", () => {
+    assert.deepEqual(pickScore({ rating: 7.5, votes: 117_433 }, { rating: 7.2, votes: 90_000 }, stored), {
+      rating: 7.5,
+      votes: 117_433,
+    });
+  });
+
+  it("without a row, OMDb; without OMDb either, the stored score", () => {
+    assert.deepEqual(pickScore(null, { rating: 7.2, votes: 90_000 }, stored), { rating: 7.2, votes: 90_000 });
+    assert.deepEqual(pickScore(undefined, null, stored), stored);
+  });
+
+  it("never answers null where a value was stored (OMDb's N/A)", () => {
+    assert.deepEqual(pickScore(null, { rating: null, votes: null }, stored), stored);
+    assert.deepEqual(pickScore(null, { rating: 7.0, votes: null }, stored), { rating: 7.0, votes: 80_000 });
+    assert.deepEqual(pickScore(null, null, { rating: null, votes: null }), { rating: null, votes: null });
+  });
+});
+
+describe("planYearScores (FIL-I35)", () => {
+  const row = (id: string, imdbId: string | null, scored: boolean) => ({
+    id,
+    imdbId,
+    imdbRating: scored ? 7 : null,
+    imdbVotes: scored ? 50_000 : null,
+  });
+  const rows = [
+    row("re", "tt35538033", false),
+    row("u1", "tt0000001", false),
+    row("noid", null, false),
+    row("s1", "tt0000002", true),
+    row("s2", "tt0000003", true),
+  ];
+  const ratings = new Map([
+    ["tt35538033", { rating: 7.5, votes: 117_433 }],
+    ["tt0000003", { rating: 8.1, votes: 61_000 }],
+  ]);
+
+  it("films with a row in the file take it and are not asked of OMDb", () => {
+    const plan = planYearScores(rows, ratings, 500, 100);
+    assert.deepEqual(plan.fromDataset.map((entry) => [entry.row.id, entry.score]), [
+      ["re", { rating: 7.5, votes: 117_433 }],
+      ["s2", { rating: 8.1, votes: 61_000 }],
+    ]);
+    assert.deepEqual(plan.ask.map((entry) => entry.id), ["u1", "noid", "s1"]);
+    assert.equal(plan.skipped, 0);
+  });
+
+  it("without a row, OMDb within the budget as before", () => {
+    const plan = planYearScores(rows, ratings, 1, 100);
+    assert.deepEqual(plan.ask.map((entry) => entry.id), ["u1"]);
+    assert.equal(plan.skipped, 1);
+  });
+
+  it("without the file it is exactly today's OMDb plan", () => {
+    const plan = planYearScores(rows, null, 3, 100);
+    assert.deepEqual(plan.fromDataset, []);
+    const today = planOmdbCalls(rows, 3, 100);
+    assert.deepEqual(plan.ask, today.ask);
+    assert.equal(plan.skipped, today.skipped);
+  });
+});
+
+describe("year top constants stay put (FIL-I35)", () => {
+  it("keeps the floor, the hundred, the 300 candidates and the OMDb budget", () => {
+    assert.equal(VOTE_FLOOR, 25_000);
+    assert.equal(VOTE_FLOOR_EARLY, 10_000);
+    assert.equal(IMDB_YEAR_TOP_SIZE, 100);
+    assert.equal(YEAR_TOP_CANDIDATES, 300);
+    assert.equal(YEAR_TOP_OMDB_PER_RUN, 500);
   });
 });

@@ -17,6 +17,11 @@ export const YEAR_TOP_MIN_PICKS = 3;
 export const YEAR_TOP_CANDIDATES = 300;
 /** OMDb calls one cron run may spend on tops, all years together (OMDb's free tier is 1000 a day). */
 export const YEAR_TOP_OMDB_PER_RUN = 500;
+/**
+ * Older years one cron run computes (FIL-I35). OMDb's budget used to hold it to one or two; with
+ * IMDb's file it barely spends any, and each year still costs 15 TMDB pages and 300 Catalog rows.
+ */
+export const YEAR_TOP_OLDER_PER_RUN = 2;
 /** OMDb calls opening a year without a top may spend (after the response). */
 export const YEAR_TOP_OMDB_ON_DEMAND = 150;
 /** Stored scores re-asked per year, most voted first: only this year and last move. */
@@ -65,6 +70,45 @@ export const planOmdbCalls = <T extends { imdbRating: number | null; imdbVotes: 
   const missing = unscored.slice(0, room);
   const again = scored.slice(0, Math.max(0, Math.min(refresh, room - missing.length)));
   return { ask: [...missing, ...again], skipped: unscored.length - missing.length };
+};
+
+/** A rating and vote count; either may be missing. */
+export type ScorePair = { rating: number | null; votes: number | null };
+
+/**
+ * Which score a candidate ranks on (FIL-I35): IMDb's file when it has the row, OMDb when it
+ * answered, else what Catalog already holds. Field by field, so a null never replaces a value.
+ */
+export const pickScore = (
+  dataset: ScorePair | null | undefined,
+  omdb: ScorePair | null | undefined,
+  stored: ScorePair,
+): ScorePair => ({
+  rating: dataset?.rating ?? omdb?.rating ?? stored.rating,
+  votes: dataset?.votes ?? omdb?.votes ?? stored.votes,
+});
+
+/**
+ * One year's scoring plan: candidates IMDb's file has a row for take it and skip OMDb; the rest
+ * go through `planOmdbCalls` as before. With no file (`ratings` null) it is exactly today's plan.
+ */
+export const planYearScores = <T extends { imdbId: string | null; imdbRating: number | null; imdbVotes: number | null }>(
+  rows: readonly T[],
+  ratings: ReadonlyMap<string, { rating: number; votes: number }> | null,
+  budget: number,
+  refresh: number,
+) => {
+  const fromDataset: { row: T; score: { rating: number; votes: number } }[] = [];
+  const rest: T[] = [];
+  for (const row of rows) {
+    const score = row.imdbId ? ratings?.get(row.imdbId) : undefined;
+    if (score) {
+      fromDataset.push({ row, score });
+    } else {
+      rest.push(row);
+    }
+  }
+  return { fromDataset, ...planOmdbCalls(rest, budget, refresh) };
 };
 
 /**
