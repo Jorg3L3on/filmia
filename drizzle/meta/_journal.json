@@ -162,6 +162,20 @@
       "when": 1793261003026,
       "tag": "0022_drop_rutas",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793320240648,
+      "tag": "0023_saved_views",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793320818980,
+      "tag": "0024_critic_scores",
+      "breakpoints": true
     }
   ]
 }

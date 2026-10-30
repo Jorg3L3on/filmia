@@ -1,5 +1,5 @@
 import { config as loadEnv } from "dotenv";
-import { and, asc, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull, or } from "drizzle-orm";
 
 loadEnv({ path: ".env.local" });
 loadEnv();
@@ -12,8 +12,9 @@ import { runPool } from "../src/lib/run-pool";
 /**
  * Quiero ver «Premiadas»: fill `Title.awards` from OMDb for every title with an
  * IMDb id (one OMDb call per title; the free tier allows 1 000/day). Also fills
- * missing votes / rating while it is there. Idempotent; `--force` refetches
- * everything; `--dry-run` only reports what it would write.
+ * missing votes / rating and the Rotten Tomatoes / Metacritic scores (FIL-I36) while it is there.
+ * Idempotent; `--criticas` also takes titles that have awards but no critic score yet;
+ * `--force` refetches everything; `--dry-run` only reports what it would write.
  */
 
 if (!process.env.DATABASE_URL) {
@@ -21,6 +22,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 const force = process.argv.includes("--force");
+const critics = process.argv.includes("--criticas");
 const dryRun = process.argv.includes("--dry-run");
 const CONCURRENCY = 4;
 
@@ -32,7 +34,12 @@ const backfill = async () => {
   const rows = await db.query.catalog.findMany({
     where: force
       ? isNotNull(catalog.imdbId)
-      : and(isNotNull(catalog.imdbId), isNull(catalog.awards)),
+      : critics
+        ? and(
+            isNotNull(catalog.imdbId),
+            or(isNull(catalog.awards), and(isNull(catalog.rtScore), isNull(catalog.metascore))),
+          )
+        : and(isNotNull(catalog.imdbId), isNull(catalog.awards)),
     columns: {
       id: true,
       name: true,
@@ -41,6 +48,8 @@ const backfill = async () => {
       imdbRating: true,
       imdbVotes: true,
       awards: true,
+      rtScore: true,
+      metascore: true,
     },
     orderBy: [asc(catalog.name)],
   });
@@ -57,6 +66,8 @@ const backfill = async () => {
       if (score.awards && (force || !title.awards)) patch.awards = score.awards;
       if (score.votes != null && title.imdbVotes == null) patch.imdbVotes = score.votes;
       if (score.rating != null && title.imdbRating == null) patch.imdbRating = score.rating;
+      if (score.rt != null && (force || title.rtScore == null)) patch.rtScore = score.rt;
+      if (score.metascore != null && (force || title.metascore == null)) patch.metascore = score.metascore;
 
       if (Object.keys(patch).length === 0) {
         empty += 1;
