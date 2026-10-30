@@ -14,6 +14,8 @@ type WatchlistScopeBarProps = {
   scope: WatchlistScope;
   counts: { all: number; mine: number };
   userPlatforms: readonly Platform[];
+  /** The pinned saved view (FIL-I34-6): a third cell with its name and count. */
+  pinned?: { name: string; count: number; selected: boolean; onSelect: () => void } | null;
   /** Error state: «—» and nothing to tap. */
   disabled?: boolean;
   onChange: (scope: WatchlistScope) => void;
@@ -21,16 +23,22 @@ type WatchlistScopeBarProps = {
 
 /**
  * Alcance (FIL-I34-2): Todo / Mis plataformas, each with its whole-list count. Without
- * platforms in the profile the second cell leads to «Elige tus plataformas».
+ * platforms in the profile the second cell leads to «Elige tus plataformas». A pinned view
+ * adds a third cell; while it is open, neither scope cell is selected.
  */
-export const WatchlistScopeBar = ({ scope, counts, userPlatforms, disabled = false, onChange }: WatchlistScopeBarProps) => {
+export const WatchlistScopeBar = ({ scope, counts, userPlatforms, pinned = null, disabled = false, onChange }: WatchlistScopeBarProps) => {
   const noPlatforms = userPlatforms.length === 0;
   const mineLabel = minePlatformsCellLabel(userPlatforms);
   const extra = userPlatforms.length - MAX_LOGOS;
+  const cells = pinned ? 3 : 2;
+  const viewOpen = Boolean(pinned?.selected);
+
+  const spokenFor = (label: string, count: string, selected: boolean, index: number) =>
+    `Alcance: ${label}, ${disabled ? "sin datos" : count === "—" ? "elige tus plataformas" : `${count} títulos`}${selected ? ", seleccionado" : ""}, ${index} de ${cells}`;
 
   const cell = (id: WatchlistScope, index: number, label: string, count: string, logos: boolean) => {
-    const selected = scope === id;
-    const spoken = `Alcance: ${label}, ${disabled ? "sin datos" : count === "—" ? "elige tus plataformas" : `${count} títulos`}${selected ? ", seleccionado" : ""}, ${index} de 2`;
+    const selected = scope === id && !viewOpen;
+    const spoken = spokenFor(label, count, selected, index);
     const content = (
       <>
         <span className="qv-scope-label">{label}</span>
@@ -67,9 +75,25 @@ export const WatchlistScopeBar = ({ scope, counts, userPlatforms, disabled = fal
   };
 
   return (
-    <div className={cn("qv-scope", disabled && "is-disabled")} role="radiogroup" aria-label="Alcance">
+    <div className={cn("qv-scope", pinned && "has-view", disabled && "is-disabled")} role="radiogroup" aria-label="Alcance">
       {cell("all", 1, "Todo", String(counts.all), false)}
       {cell("mine", 2, mineLabel, noPlatforms ? "—" : String(counts.mine), !noPlatforms)}
+      {pinned ? (
+        <button
+          type="button"
+          role="radio"
+          aria-checked={pinned.selected}
+          aria-label={`Vista: ${spokenFor(pinned.name, String(pinned.count), pinned.selected, 3).slice("Alcance: ".length)}`}
+          disabled={disabled}
+          onClick={pinned.onSelect}
+          className={cn("qv-scope-cell press-scale", focusRing, pinned.selected && "is-selected")}
+        >
+          <span className="qv-scope-label">{pinned.name}</span>
+          <span className="qv-scope-meta tabular-nums" aria-hidden="true">
+            {disabled ? "—" : pinned.count}
+          </span>
+        </button>
+      ) : null}
     </div>
   );
 };

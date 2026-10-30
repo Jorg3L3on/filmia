@@ -5939,6 +5939,12 @@ html[data-booted] .iris-loader {
   font-size: 10.5px;
 }
 
+/* A pinned saved view (FIL-I34-6): 83 / 146 / 104 at 375 px, like the canvas. */
+.qv-scope.has-view {
+  grid-template-columns: 83fr 146fr 104fr;
+  grid-auto-flow: row;
+}
+
 .qv-scope.is-disabled {
   opacity: 0.5;
 }

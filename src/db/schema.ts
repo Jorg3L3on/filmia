@@ -573,6 +573,30 @@ export const cinemaAlerts = pgTable(
 );
 
 /**
+ * Quiero ver · vistas guardadas (FIL-I34-6): a named combination of scope, filters and order,
+ * stored as its canonical URL query (`watchlistSearchParams`, without the shuffle seed). At most
+ * one per user is pinned: it shows as the third cell of the scope bar.
+ */
+export const savedViews = pgTable(
+  "SavedView",
+  {
+    id: text("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    query: text("query").notNull(),
+    pinned: boolean("pinned").notNull().default(false),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("SavedView_userId_idx").on(table.userId),
+    uniqueIndex("SavedView_userId_pinned_key").on(table.userId).where(sql`${table.pinned}`),
+  ],
+);
+
+/**
  * MCP connector (FIL-I20). An OAuth client: registered by DCR (`id` is a random UUID) or
  * resolved from a Client ID Metadata Document (`id` is the https URL, `isCimd`). Clients are
  * shared; what a person allowed lives on `McpOAuthGrant`.
@@ -817,6 +841,7 @@ export type PlatformAlertRow = typeof platformAlerts.$inferSelect;
 export type CinemaReleaseRow = typeof cinemaReleases.$inferSelect;
 export type YearTopRow = typeof yearTops.$inferSelect;
 export type CinemaAlertRow = typeof cinemaAlerts.$inferSelect;
+export type SavedViewRow = typeof savedViews.$inferSelect;
 
 export type ListItemWithTitleRelations = typeof listItems.$inferSelect & {
   title: Title;

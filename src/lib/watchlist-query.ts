@@ -25,6 +25,7 @@ import { parseSeriesStatusFilter, type SeriesStatusFilter } from "@/lib/series";
  * | awarded=1, added=week·month·old, lang | Premiadas, Agregada, idioma |
  * | nosnooze=1, note=1 | hide «Ahora no», only with my note          |
  * | person     | director or creator TMDB ids (OR)                   |
+ * | view       | the saved view this came from (FIL-I34-6)           |
  */
 
 export type WatchlistScope = "all" | "mine";
@@ -62,6 +63,8 @@ export type WatchlistQuery = {
   hideSnoozed: boolean;
   withNote: boolean;
   people: number[];
+  /** The saved view the person opened; the query may have moved on from it since. */
+  view: string | null;
 };
 
 export const EMPTY_WATCHLIST_QUERY: WatchlistQuery = {
@@ -85,6 +88,7 @@ export const EMPTY_WATCHLIST_QUERY: WatchlistQuery = {
   hideSnoozed: false,
   withNote: false,
   people: [],
+  view: null,
 };
 
 export const WATCHLIST_SORTS: readonly WatchlistSort[] = [
@@ -164,6 +168,9 @@ export const formatRange = (range: NumberRange) => `${range.min ?? ""}-${range.m
 
 const LANGUAGE_CODE = /^[a-z]{2,3}$/;
 
+/** `SavedView.id` is a cuid2. */
+const VIEW_ID = /^[a-z0-9]{8,40}$/;
+
 export const parseWatchlistQuery = (params: RawParams): WatchlistQuery => {
   const sort = parseWatchlistSort(params.sort);
   const rawDir = last(params.dir);
@@ -194,6 +201,7 @@ export const parseWatchlistQuery = (params: RawParams): WatchlistQuery => {
     hideSnoozed: flag(params.nosnooze),
     withNote: flag(params.note),
     people: positiveInts(params.person),
+    view: VIEW_ID.test(last(params.view)) ? last(params.view) : null,
   };
 };
 
@@ -228,6 +236,7 @@ export const watchlistSearchParams = (query: WatchlistQuery) => {
   if (query.hideSnoozed) params.set("nosnooze", "1");
   if (query.withNote) params.set("note", "1");
   for (const id of query.people) params.append("person", String(id));
+  if (query.view) params.set("view", query.view);
   return params;
 };
 

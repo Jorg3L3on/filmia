@@ -1,10 +1,16 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useMemo } from "react";
-import { parseWatchlistQuery, watchlistHref, type WatchlistQuery } from "@/lib/watchlist-query";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  parseWatchlistQuery,
+  watchlistHref,
+  watchlistSearchParams,
+  type WatchlistQuery,
+} from "@/lib/watchlist-query";
 
 const SEED_KEY = "filmia:qv-seed";
+const LAST_KEY = "filmia:qv-last";
 
 const freshSeed = () => Math.floor(Math.random() * 2 ** 31);
 
@@ -41,4 +47,37 @@ export const useWatchlistQuery = () => {
   );
 
   return { query, setQuery };
+};
+
+const paramsToQuery = (stored: string) => {
+  const params = new URLSearchParams(stored);
+  const raw: Record<string, string[]> = {};
+  for (const key of new Set(params.keys())) raw[key] = params.getAll(key);
+  return parseWatchlistQuery(raw);
+};
+
+/**
+ * Recordar el último filtro (FIL-I34-6): on this device, Quiero ver opened without params
+ * (the tab bar) comes back to the last scope, filters and order. «Limpiar filtros» stores the
+ * empty query, so Todo sticks too. A link with params always wins.
+ */
+export const useRememberedQuery = (query: WatchlistQuery, setQuery: (next: WatchlistQuery) => void) => {
+  const arrived = useRef(true);
+
+  useEffect(() => {
+    const first = arrived.current;
+    arrived.current = false;
+    try {
+      if (first && window.location.search === "") {
+        const stored = window.localStorage.getItem(LAST_KEY);
+        if (stored) {
+          setQuery(paramsToQuery(stored));
+          return;
+        }
+      }
+      window.localStorage.setItem(LAST_KEY, watchlistSearchParams(query).toString());
+    } catch {
+      // Private mode or blocked storage: nothing to remember, the list still works.
+    }
+  }, [query, setQuery]);
 };
