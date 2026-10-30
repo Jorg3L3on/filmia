@@ -1,5 +1,6 @@
 import "@/lib/test-support/local-db";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
 import { setApiUsageWriterForTests, utcDay, type ApiProvider } from "@/lib/api-usage";
 import { fetchImdbScore, lookupOmdbScore } from "@/lib/omdb";
@@ -28,6 +29,12 @@ describe("API usage counter (FIL-I37-2)", () => {
     setApiUsageWriterForTests();
     process.env.OMDB_API_KEY = env.omdb;
     process.env.TMDB_API_KEY = env.tmdb;
+  });
+
+  it("tmdb.ts stays importable from client components: no server-only imports", () => {
+    const source = readFileSync(new URL("./tmdb.ts", import.meta.url), "utf8");
+    assert.doesNotMatch(source, /from "@\/lib\/(api-usage|after-response|last-active)"/);
+    assert.doesNotMatch(source, /from "next\/server"/);
   });
 
   it("keys the day in UTC", () => {

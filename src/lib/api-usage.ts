@@ -44,3 +44,6 @@ export const recordApiCall = (provider: ApiProvider, now: Date = new Date()) => 
     }
   });
 };
+
+// `tmdb.ts` is shared with client components and cannot import this module: it calls this hook.
+(globalThis as { __filmiaRecordApiCall?: (provider: ApiProvider) => void }).__filmiaRecordApiCall = recordApiCall;

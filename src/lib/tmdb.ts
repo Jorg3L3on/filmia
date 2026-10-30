@@ -1,7 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { TitleKind } from "@/db";
-import { recordApiCall } from "@/lib/api-usage";
 import {
   countRoles,
   parseFilmography,
@@ -34,6 +33,12 @@ import {
 } from "@/lib/tmdb-trailer";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
+
+/**
+ * Admin panel (FIL-I37): `@/lib/api-usage` installs this on the server. Client components import
+ * this file for helpers like `tmdbPosterUrl`, so it must not import server-only code itself.
+ */
+type ApiUsageHook = { __filmiaRecordApiCall?: (provider: "tmdb") => void };
 
 const getTmdbApiKey = () => process.env.TMDB_API_KEY?.trim() ?? "";
 
@@ -233,7 +238,7 @@ const fetchTmdbJson = async (
     );
   }
 
-  recordApiCall("tmdb");
+  (globalThis as ApiUsageHook).__filmiaRecordApiCall?.("tmdb");
 
   if (response.status === 429) {
     throw new TmdbRequestError(
