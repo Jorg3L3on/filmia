@@ -176,6 +176,20 @@
       "when": 1793320818980,
       "tag": "0024_critic_scores",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793332829676,
+      "tag": "0025_user_last_active_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793332830423,
+      "tag": "0026_api_usage",
+      "breakpoints": true
     }
   ]
 }
