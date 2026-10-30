@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { TitleKind } from "@/db";
+import { recordApiCall } from "@/lib/api-usage";
 import {
   countRoles,
   parseFilmography,
@@ -231,6 +232,8 @@ const fetchTmdbJson = async (
       "No se pudo conectar con TMDB. Revisa tu red.",
     );
   }
+
+  recordApiCall("tmdb");
 
   if (response.status === 429) {
     throw new TmdbRequestError(

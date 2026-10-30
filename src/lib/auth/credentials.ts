@@ -38,6 +38,7 @@ export const authenticateCredentials = async (
 
   const user = await db.query.users.findFirst({
     where: eq(users.email, normalizedEmail),
+    columns: { id: true, email: true, name: true, passwordHash: true, onboardedAt: true, sessionVersion: true },
   });
 
   // Unknown email and password-less (Google) account fail exactly like a wrong password.
