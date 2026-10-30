@@ -4,7 +4,11 @@ import { loadAdminUsers, loadApiUsage } from "@/lib/admin-stats";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Admin", robots: { index: false, follow: false } } as const;
+// Behind the same check as the page, so a 404 never carries the «Admin» tab title.
+export const generateMetadata = async () => {
+  await requireAdmin();
+  return { title: "Admin", robots: { index: false, follow: false } };
+};
 
 /** FIL-I37 · /admin: only `ADMIN_EMAILS` get here, everyone else a 404. Not in nav. */
 export default async function AdminPage() {
