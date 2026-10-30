@@ -91,6 +91,8 @@ export const users = pgTable(
     onboardingStep: text("onboardingStep"),
     /** Signed into every session token; bumping it (password change) revokes older sessions. */
     sessionVersion: integer("sessionVersion").notNull().default(0),
+    /** Admin panel (FIL-I37): last authenticated request, written at most every 15 min. */
+    lastActiveAt: timestamp("lastActiveAt", { precision: 3, mode: "date" }),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),
@@ -598,6 +600,21 @@ export const savedViews = pgTable(
     index("SavedView_userId_idx").on(table.userId),
     uniqueIndex("SavedView_userId_pinned_key").on(table.userId).where(sql`${table.pinned}`),
   ],
+);
+
+/**
+ * Admin panel (FIL-I37): real network calls to OMDb and TMDB per UTC day. One upsert per call;
+ * cache hits never reach it.
+ */
+export const apiUsage = pgTable(
+  "ApiUsage",
+  {
+    /** `omdb` | `tmdb`. */
+    provider: text("provider").notNull(),
+    day: date("day", { mode: "string" }).notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (table) => [primaryKey({ columns: [table.provider, table.day] })],
 );
 
 /**

@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { recordApiCall } from "@/lib/api-usage";
 import { parseMetascore, parseRottenTomatoes, type OmdbRatingEntry } from "@/lib/critic-scores";
 import {
   METADATA_REVALIDATE_SECONDS,
@@ -94,6 +95,7 @@ export const lookupOmdbScore = async (
       tags: [OMDB_CACHE_TAG],
     },
   });
+  recordApiCall("omdb");
   if (response.status === 401) {
     const data = (await response.json().catch(() => null)) as OmdbResponse | null;
     throw new OmdbRefusedError(data?.Error ?? "OMDb respondió 401");

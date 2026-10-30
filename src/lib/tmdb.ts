@@ -34,6 +34,12 @@ import {
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
+/**
+ * Admin panel (FIL-I37): `@/lib/api-usage` installs this on the server. Client components import
+ * this file for helpers like `tmdbPosterUrl`, so it must not import server-only code itself.
+ */
+type ApiUsageHook = { __filmiaRecordApiCall?: (provider: "tmdb") => void };
+
 const getTmdbApiKey = () => process.env.TMDB_API_KEY?.trim() ?? "";
 
 export const isTmdbConfigured = () => Boolean(getTmdbApiKey());
@@ -231,6 +237,8 @@ const fetchTmdbJson = async (
       "No se pudo conectar con TMDB. Revisa tu red.",
     );
   }
+
+  (globalThis as ApiUsageHook).__filmiaRecordApiCall?.("tmdb");
 
   if (response.status === 429) {
     throw new TmdbRequestError(
