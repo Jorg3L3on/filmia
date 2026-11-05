@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useId, useMemo, useState, useTransition } from "react";
-import { addTitleFromTmdbToList } from "@/app/actions/lists";
+import { addTitleFromTmdbToList, removeTitleFromList } from "@/app/actions/lists";
 import { Button } from "@/components/Button";
 import { PosterImage } from "@/components/PosterImage";
 import { Sheet, SheetHandle } from "@/components/Sheet";
@@ -38,6 +38,8 @@ type AddTitleToListCtaProps = {
   compact?: boolean;
 };
 
+const NO_KEYS: ReadonlySet<string> = new Set();
+
 export const AddTitleToListCta = ({
   action,
   titles,
@@ -51,6 +53,9 @@ export const AddTitleToListCta = ({
   const [open, setOpen] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [addedKeys, setAddedKeys] = useState<ReadonlySet<string>>(() => new Set());
+  // The rows as they were when the sheet opened (UX-12): an added title stays in its place as
+  // «Añadida ✓» instead of vanishing when the list refreshes behind the sheet.
+  const [shownTitles, setShownTitles] = useState(titles);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const search = useTmdbDiscoverSearch({ enabled: tmdbEnabled });
@@ -61,13 +66,13 @@ export const AddTitleToListCta = ({
   const candidates = useMemo(
     () =>
       mergeListAddCandidates({
-        local: titles,
+        local: shownTitles,
         query,
         tmdbResults: tmdbEnabled ? search.results : [],
         inListKeys: inListSet,
-        addedKeys,
+        addedKeys: NO_KEYS,
       }),
-    [addedKeys, inListSet, query, search.results, titles, tmdbEnabled],
+    [inListSet, query, search.results, shownTitles, tmdbEnabled],
   );
   const filtered = candidates.local;
   const showTmdb = tmdbEnabled && Boolean(trimmedQuery);
@@ -77,6 +82,8 @@ export const AddTitleToListCta = ({
     filtered.length === 0 && candidates.tmdb.length === 0 && !tmdbBusy && !tmdbError;
 
   const handleOpen = () => {
+    setShownTitles(titles);
+    setAddedKeys(new Set());
     setOpen(true);
   };
 
@@ -100,22 +107,22 @@ export const AddTitleToListCta = ({
     });
   };
 
-  /** Optimistic like before: close, toast, write; on failure roll back and reopen. */
+  /**
+   * The sheet stays open for the next title (UX-12): the row turns «Añadida ✓» where it is, the
+   * toast confirms, and focus stays on that row (rows are never disabled while a write runs).
+   */
   const runAdd = (keys: string[], name: string, write: () => Promise<void>, posterPath?: string | null) => {
     const poster = toastPoster(posterPath);
     const added = () => showToast({ title: TOAST_COPY.addedList, description: name, poster });
     setError(null);
     markAdded(keys, true);
     setPendingId(keys[0]);
-    handleClose();
     added();
     startTransition(async () => {
       try {
         await write();
       } catch (caught) {
         markAdded(keys, false);
-        setPendingId(null);
-        setOpen(true);
         const message = actionErrorMessage(caught, "No se pudo agregar el título.");
         setError(message);
         const business = caught instanceof Error && caught.name === "ActionRejected";
@@ -126,32 +133,55 @@ export const AddTitleToListCta = ({
           retry: business
             ? undefined
             : async () => {
-            await retryAfterRevert(
-              () => {
-                markAdded(keys, true);
-                setError(null);
-                setOpen(false);
+                await retryAfterRevert(
+                  () => {
+                    markAdded(keys, true);
+                    setError(null);
+                  },
+                  () => markAdded(keys, false),
+                  write,
+                );
+                added();
               },
-              () => {
-                markAdded(keys, false);
-                setPendingId(null);
-                setOpen(true);
-              },
-              write,
-            );
-            added();
-          },
         });
+      } finally {
+        setPendingId(null);
+      }
+    });
+  };
+
+  /** Tapping «Añadida ✓» on one of your titles takes it back off the list. */
+  const runRemove = (keys: string[], name: string, removeId: string, posterPath?: string | null) => {
+    if (!listId) {
+      return;
+    }
+    const poster = toastPoster(posterPath);
+    setError(null);
+    markAdded(keys, false);
+    showToast({ title: TOAST_COPY.removedList, description: name, poster });
+    startTransition(async () => {
+      try {
+        await removeTitleFromList(listId, removeId);
+      } catch (caught) {
+        markAdded(keys, true);
+        setError(actionErrorMessage(caught, "No se pudo quitar el título."));
       }
     });
   };
 
   const handleAdd = (title: AddableListTitle) => {
+    if (addedKeys.has(title.id)) {
+      runRemove([title.id], title.name, title.id, title.posterPath);
+      return;
+    }
     runAdd([title.id], title.name, () => action(title.id), title.posterPath);
   };
 
   const handleAddTmdb = ({ key, result, state, titleId: localId }: TmdbListCandidate) => {
-    if (state === "in-list") {
+    if (state === "in-list" || addedKeys.has(key)) {
+      if (state === "local" && localId && addedKeys.has(key)) {
+        runRemove([key, localId], result.name, localId, result.posterPath);
+      }
       return;
     }
 
@@ -310,8 +340,9 @@ export const AddTitleToListCta = ({
                       name={title.name}
                       posterPath={title.posterPath}
                       meta={title.year ? String(title.year) : null}
-                      actionLabel={isPending && pendingId === title.id ? "…" : "Agregar"}
-                      disabled={isPending}
+                      actionLabel={addedKeys.has(title.id) ? "Añadida ✓" : "Agregar"}
+                      added={addedKeys.has(title.id)}
+                      busy={isPending && pendingId === title.id}
                       onClick={() => handleAdd(title)}
                     />
                   </li>
@@ -342,7 +373,8 @@ export const AddTitleToListCta = ({
                 <ul className="space-y-2">
                   {candidates.tmdb.map((candidate) => {
                     const { result } = candidate;
-                    const inList = candidate.state === "in-list";
+                    const justAdded = addedKeys.has(candidate.key);
+                    const inList = candidate.state === "in-list" && !justAdded;
                     const meta = [result.year, TITLE_KIND_LABEL[result.kind]]
                       .filter(Boolean)
                       .join(" · ");
@@ -353,14 +385,10 @@ export const AddTitleToListCta = ({
                           name={result.name}
                           posterPath={result.posterPath}
                           meta={meta}
-                          actionLabel={
-                            inList
-                              ? "En la lista"
-                              : isPending && pendingId === candidate.key
-                                ? "…"
-                                : "Agregar"
-                          }
-                          disabled={isPending || inList}
+                          actionLabel={inList ? "En la lista" : justAdded ? "Añadida ✓" : "Agregar"}
+                          added={justAdded}
+                          busy={isPending && pendingId === candidate.key}
+                          disabled={inList}
                           muted={inList}
                           onClick={() => handleAddTmdb(candidate)}
                         />
@@ -393,6 +421,11 @@ export const AddTitleToListCta = ({
             </p>
           ) : null}
         </div>
+        <div className="flex shrink-0 justify-end border-t border-line px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <Button type="button" onClick={handleClose} className="press-scale px-6">
+            Listo
+          </Button>
+        </div>
       </Sheet>
     </div>
   );
@@ -407,7 +440,9 @@ const CandidateRow = ({
   posterPath,
   meta,
   actionLabel,
-  disabled,
+  disabled = false,
+  added = false,
+  busy = false,
   muted = false,
   onClick,
 }: {
@@ -415,7 +450,9 @@ const CandidateRow = ({
   posterPath: string | null;
   meta: string | null;
   actionLabel: string;
-  disabled: boolean;
+  disabled?: boolean;
+  added?: boolean;
+  busy?: boolean;
   muted?: boolean;
   onClick: () => void;
 }) => (
@@ -423,7 +460,11 @@ const CandidateRow = ({
     type="button"
     onClick={onClick}
     disabled={disabled}
-    aria-label={muted ? `${name} ya está en la lista` : `Agregar ${name} a la lista`}
+    aria-busy={busy || undefined}
+    aria-pressed={added}
+    aria-label={
+      muted ? `${name} ya está en la lista` : added ? `${name} añadida a la lista. Toca para quitarla` : `Agregar ${name} a la lista`
+    }
     className={cn(
       "card-physics press-scale flex w-full items-center gap-3 rounded-2xl border border-line bg-well px-3 py-2.5 text-left disabled:opacity-60",
       "transition-[border-color,background-color,opacity] duration-[var(--duration-hover)] ease-[var(--ease-out)]",
@@ -447,7 +488,7 @@ const CandidateRow = ({
     <span
       className={cn(
         "shrink-0 text-xs font-medium uppercase tracking-[0.12em]",
-        muted ? "text-mist" : "text-accent",
+        muted ? "text-mist" : added ? "text-success" : "text-accent",
       )}
     >
       {actionLabel}

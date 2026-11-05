@@ -1,6 +1,8 @@
 "use client";
 
 import { useId, useState, useTransition } from "react";
+import { isSessionExpiredError } from "@/lib/session-expired-copy";
+import { actionErrorMessage } from "@/lib/use-optimistic-action";
 import { markTitleWatched } from "@/app/actions/watchlist";
 import { Button } from "@/components/Button";
 import { PlatformChips } from "@/components/PlatformChips";
@@ -78,13 +80,12 @@ type MarkWatchedSheetProps = {
   silent?: boolean;
   posterPath?: string | null;
   /**
-   * The mazo already toasts `onWatchError`. Leaving this false avoids a second
-   * error toast on top of that one. Other callers keep the toast: the sheet
-   * has already closed, so the inline error would not be on screen.
+   * No longer used: the sheet now stays open until the save lands and shows its error inside
+   * (UX-10). Kept so the mazo's callers compile unchanged.
    */
   toastOnError?: boolean;
   onClose: () => void;
-  /** Called with the YYYY-MM-DD the user just confirmed, before the write settles. */
+  /** Called with the YYYY-MM-DD the user just confirmed, once the write has landed (UX-10). */
   onSaved?: (watchedAt: string, rating: number | null) => void;
   onError?: (message: string) => void;
   /**
@@ -105,7 +106,6 @@ export const MarkWatchedSheet = ({
   saveLabel = WATCHLIST_SAVE_LABEL,
   silent = false,
   posterPath = null,
-  toastOnError = true,
   onClose,
   onSaved,
   onError,
@@ -126,7 +126,6 @@ export const MarkWatchedSheet = ({
       saveLabel={saveLabel}
       silent={silent}
       posterPath={posterPath}
-      toastOnError={toastOnError}
       onClose={onClose}
       onSaved={onSaved}
       onError={onError}
@@ -146,7 +145,6 @@ const MarkWatchedSheetFields = ({
   saveLabel = WATCHLIST_SAVE_LABEL,
   silent = false,
   posterPath = null,
-  toastOnError = true,
   onClose,
   onSaved,
   onError,
@@ -165,7 +163,7 @@ const MarkWatchedSheetFields = ({
   const [note, setNote] = useState((review ?? "").slice(0, NOTE_MAX));
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | "">(platform ?? "");
   const [platformDirty, setPlatformDirty] = useState(false);
-  // Stars and Guardar first (FIL-I21-8); Fecha, Dónde la vi and Nota fold under «Más detalles»,
+  // Stars and Guardar first (FIL-I21-8); Fecha, Dónde la vi and Reseña fold under «Más detalles»,
   // open from the start when there is already a note or the date is not today.
   const [detailsOpen, setDetailsOpen] = useState(
     Boolean((review ?? "").trim()) || (hasInitialDate && initialWatchedAt !== todayDateInput()),
@@ -187,21 +185,18 @@ const MarkWatchedSheetFields = ({
     setError(null);
   };
 
+  // The sheet stays open and the button locked until the server answers (UX-10): a second tap
+  // never lands on the ficha behind it, and nothing says «vista» before it is saved.
   const handleSave = () => {
+    if (isPending) {
+      return;
+    }
     if (!watchedAt) {
       setError("Elige una fecha.");
       return;
     }
 
-    onClose();
-    onSaved?.(watchedAt, value);
-    if (!silent) {
-      showToast({
-        title: hasInitialDate ? TOAST_COPY.diaryUpdated : TOAST_COPY.markedSeen,
-        description: titleName,
-        poster,
-      });
-    }
+    setError(null);
     startTransition(async () => {
       try {
         const formData = new FormData();
@@ -220,25 +215,34 @@ const MarkWatchedSheetFields = ({
           await markTitleWatched(titleId, formData);
         }
       } catch (caught) {
-        const message =
-          caught instanceof Error ? caught.message : "No se pudo guardar.";
+        const message = actionErrorMessage(caught, "No se pudo guardar.");
         onError?.(message);
-        if (toastOnError) {
-          showToast({
-            title: TOAST_COPY.couldNotSave,
-            description: message,
-            variant: "error",
-            poster,
-          });
-        }
+        // The sheet is still open: the error shows inside it.
+        setError(isSessionExpiredError(caught) ? null : message);
+        return;
+      }
+      onSaved?.(watchedAt, value);
+      onClose();
+      if (!silent) {
+        showToast({
+          title: hasInitialDate ? TOAST_COPY.diaryUpdated : TOAST_COPY.markedSeen,
+          description: titleName,
+          poster,
+        });
       }
     });
+  };
+
+  const closeUnlessSaving = () => {
+    if (!isPending) {
+      onClose();
+    }
   };
 
   return (
     <Sheet
       open={open}
-      onClose={onClose}
+      onClose={closeUnlessSaving}
       labelledBy={titleDomId}
       overlayLabel="Cerrar Marqué visto"
       layer="top"
@@ -264,7 +268,7 @@ const MarkWatchedSheetFields = ({
       >
         <div className="space-y-2">
           <p className="text-center text-[11px] font-medium uppercase tracking-[0.18em] text-fog">
-            Tu nota
+            Tu calificación
           </p>
           <RatingStars value={value} onChange={setValue} />
         </div>
@@ -274,26 +278,6 @@ const MarkWatchedSheetFields = ({
             {error}
           </p>
         ) : null}
-
-        <div className="flex flex-col-reverse gap-2 sm:flex-row">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onClose}
-            className="w-full py-3 sm:w-auto sm:px-5"
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSave}
-            pending={isPending}
-            pendingLabel="Guardando…"
-            className="w-full flex-1 py-3"
-          >
-            {saveLabel}
-          </Button>
-        </div>
 
         <button
           type="button"
@@ -369,7 +353,7 @@ const MarkWatchedSheetFields = ({
 
             <label className="block space-y-2">
               <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-fog">
-                Nota
+                Reseña
               </span>
               <textarea
                 value={note}
@@ -385,6 +369,29 @@ const MarkWatchedSheetFields = ({
             </label>
           </div>
         ) : null}
+      </div>
+
+      {/* Pinned under the fields (UX-10): «Más detalles» opens above it, Guardar stays in view. */}
+      <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-white/10 px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={closeUnlessSaving}
+          disabled={isPending}
+          className="w-full py-3 sm:w-auto sm:px-5"
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="button"
+          onClick={handleSave}
+          pending={isPending}
+          pendingLabel="Guardando…"
+          aria-busy={isPending || undefined}
+          className="w-full flex-1 py-3"
+        >
+          {saveLabel}
+        </Button>
       </div>
     </Sheet>
   );

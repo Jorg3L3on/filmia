@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { collectionCountLabel } from "@/lib/labels";
 import { PosterStack, type PosterStackItem } from "@/components/PosterStack";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
@@ -13,6 +14,8 @@ type ListCardProps = {
   slug?: string | null;
   description?: string | null;
   itemCount: number;
+  /** Series among the items; omitted when unknown, which reads «títulos» (UX-05). */
+  seriesCount?: number;
   posters: PosterStackItem[];
   /** `rail`: fixed width for horizontal scroll; `grid`: fills its grid cell. */
   layout?: "rail" | "grid";
@@ -26,12 +29,13 @@ export const ListCard = ({
   href,
   name,
   itemCount,
+  seriesCount,
   posters,
   layout = "rail",
   subtitle,
   badge,
 }: ListCardProps) => {
-  const countLabel = subtitle ?? `${itemCount} ${itemCount === 1 ? "película" : "películas"}`;
+  const countLabel = subtitle ?? collectionCountLabel(itemCount, seriesCount);
 
   return (
     <Link

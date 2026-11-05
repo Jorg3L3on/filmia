@@ -177,16 +177,44 @@ export const upsertTitleFromTmdbForUser = async (
     };
   }
 
-  const titleId = createId();
   const now = new Date();
-  await db.insert(titles).values({
-    id: titleId,
-    userId,
-    catalogId: shared.id,
-    watchedAt: markWatched ? resolveWatchedAt(input.watchedAt) : null,
-    createdAt: now,
-    updatedAt: now,
-  });
+  // Two taps at once (FIL-I41-8): the loser of the race must not fail on the unique
+  // (userId, catalogId) key. It reads the winner's row and goes the «existing» way.
+  const [inserted] = await db
+    .insert(titles)
+    .values({
+      id: createId(),
+      userId,
+      catalogId: shared.id,
+      watchedAt: markWatched ? resolveWatchedAt(input.watchedAt) : null,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoNothing({ target: [titles.userId, titles.catalogId] })
+    .returning({ id: titles.id });
+
+  if (!inserted) {
+    const winner = await db.query.titles.findFirst({
+      where: and(eq(titles.userId, userId), eq(titles.catalogId, shared.id)),
+      columns: { id: true },
+    });
+    if (!winner) {
+      return { ok: false, error: "No se pudo guardar." };
+    }
+    if (markWatched) {
+      await markExistingWatched(userId, winner.id, input.watchedAt);
+    } else if (addToWatchlist) {
+      await enqueueInWatchlist(userId, winner.id);
+    }
+    return {
+      ok: true,
+      titleId: winner.id,
+      created: false,
+      addedToWatchlist: addToWatchlist,
+      markedWatched: markWatched,
+    };
+  }
+  const titleId = inserted.id;
 
   if (addToWatchlist) {
     await enqueueInWatchlist(userId, titleId);

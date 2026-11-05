@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LIST_DESCRIPTION_MAX, LIST_NAME_MAX } from "@/lib/text-limits";
 import { mxToday } from "@/lib/cine-core";
 import { isoDateToUtcNoon } from "@/lib/dates";
 import { resolveTitleRef, loadOwnTitle, type ResolvedTitle } from "@/lib/library";
@@ -204,8 +205,8 @@ export const createListTool = defineTool({
   description: "Crea una lista propia de la persona (como «Domingo» o «Para ver con papá»). El nombre no puede repetir uno que ya tenga.",
   scope: "write",
   input: {
-    name: z.string().min(1).max(60).describe("Nombre de la lista."),
-    description: z.string().max(300).optional().describe("Descripción opcional."),
+    name: z.string().min(1).max(LIST_NAME_MAX).describe("Nombre de la lista."),
+    description: z.string().max(LIST_DESCRIPTION_MAX).optional().describe("Descripción opcional."),
     idempotency_key: idempotencyKeySchema,
   },
   output: {

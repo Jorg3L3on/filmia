@@ -18,10 +18,10 @@ export const PersonalRating = ({
           ? "inline-flex items-baseline gap-1.5 text-xs"
           : "inline-flex items-baseline gap-2 text-sm"
       }
-      title="Tu nota personal"
+      title="Tu calificación personal"
     >
       <span className="text-[10px] uppercase tracking-wide text-fog">
-        Tu nota
+        Tu calificación
       </span>
       <span className={isEmpty ? "text-mist" : "font-medium text-star"}>
         {formatRating(rating)}

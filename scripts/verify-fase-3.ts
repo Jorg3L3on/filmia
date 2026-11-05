@@ -80,7 +80,7 @@ const run = () => {
   );
 
   const ratingLabel = CATALOG_ORDER_OPTIONS.find((option) => option.id === "rating");
-  assert(ratingLabel?.label === "Nota", "Catalog sort uses Spanish Nota, not Rating");
+  assert(ratingLabel?.label === "Calificación", "Catalog sort uses Spanish Calificación (UX-11), not Rating");
   assert(
     !read("src/lib/catalog-filters.ts").includes('"Rating"'),
     "No English Rating label in catalog filters",

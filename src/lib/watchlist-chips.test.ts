@@ -15,7 +15,7 @@ const names = { genres: new Map([[18, "Drama"], [878, "Ciencia ficción y fantas
 describe("watchlist-chips/scope cell", () => {
   it("names 1, 2, 3+ and 0 platforms", () => {
     assert.equal(minePlatformsCellLabel(["NETFLIX"]), "Netflix");
-    assert.equal(minePlatformsCellLabel(["NETFLIX", "MAX"]), "Netflix y Max");
+    assert.equal(minePlatformsCellLabel(["NETFLIX", "MAX"]), "Netflix y HBO Max");
     assert.equal(minePlatformsCellLabel(["NETFLIX", "MAX", "MUBI"]), "3 plataformas");
     assert.equal(minePlatformsCellLabel([]), "Mis plataformas");
   });

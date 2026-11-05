@@ -1,3 +1,4 @@
+import { SESSION_EXPIRED_DETAIL, SESSION_EXPIRED_TITLE } from "@/lib/session-expired-copy";
 import { showToast, type ToastPayload } from "@/lib/toast";
 import { tmdbPosterUrl } from "@/lib/tmdb";
 
@@ -16,7 +17,9 @@ export const TOAST_COPY = {
   markedSeen: "Marcada como vista",
   markedUnseen: "Marcada como no vista",
   diaryUpdated: "Diario actualizado",
+  /** The Quiero ver note (text). Stars are a «Calificación» (UX-11). */
   noteSaved: "Nota guardada",
+  ratingSaved: "Calificación guardada",
   noteRemoved: "Nota quitada",
   reservedTonight: "Reservada para esta noche",
   choiceConfirmed: "Elección confirmada",
@@ -54,6 +57,11 @@ export const TOAST_COPY = {
   retry: "Reintentar",
   retryHint: "Puedes volver a intentarlo.",
   retryFailed: "Sigue sin poder hacerse.",
+  sessionExpired: SESSION_EXPIRED_TITLE,
+  sessionExpiredDetail: SESSION_EXPIRED_DETAIL,
+  signIn: "Entrar",
+  connectionLost: "Conexión perdida",
+  connectionLostDetail: "Revisa tu señal y vuelve a intentarlo.",
 } as const;
 
 export const addedToLists = (count: number) =>

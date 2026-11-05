@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { PosterStackItem } from "@/components/PosterStack";
+import { collectionCountLabel } from "@/lib/labels";
 import { PosterImage } from "@/components/PosterImage";
 import { ChevronIcon } from "@/components/profile/ProfileRows";
 import { cn } from "@/lib/cn";
@@ -12,13 +13,15 @@ import { focusRing, glassRowClass } from "@/lib/ui";
 export const QuieroVerPinnedCard = ({
   name,
   itemCount,
+  seriesCount,
   posters,
 }: {
   name: string;
   itemCount: number;
+  seriesCount?: number;
   posters: PosterStackItem[];
 }) => {
-  const countLabel = `${itemCount} ${itemCount === 1 ? "película" : "películas"}`;
+  const countLabel = collectionCountLabel(itemCount, seriesCount);
   const shown = posters.slice(0, 4);
 
   return (

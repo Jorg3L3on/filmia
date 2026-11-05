@@ -5,6 +5,10 @@ import { cn } from "@/lib/cn";
 import { formatStarScore } from "@/lib/labels";
 import { focusRing } from "@/lib/ui";
 
+/** «1 estrella», «media estrella», «2.5 estrellas» (UX-11). */
+const starCountLabel = (count: number) =>
+  count === 0.5 ? "media estrella" : count === 1 ? "1 estrella" : `${count} estrellas`;
+
 type RatingStarsProps = {
   value: number | null;
   onChange: (rating: number) => void;
@@ -32,7 +36,7 @@ export const RatingStars = ({
     <div className="space-y-3 text-center">
       <div
         role="group"
-        aria-label="Tu nota, de media estrella a cinco"
+        aria-label="Tu calificación, de media estrella a cinco"
         className={cn("flex justify-center gap-1.5", spring.className)}
       >
         {STEPS.map((star) => {
@@ -52,7 +56,7 @@ export const RatingStars = ({
               <StarShape fill={fill} className={starSize} gradientId={`star-half-${star}`} />
               <button
                 type="button"
-                aria-label={`${star - 0.5} estrellas`}
+                aria-label={starCountLabel(star - 0.5)}
                 aria-pressed={value === halfValue}
                 onClick={() => handlePick(halfValue)}
                 className={cn(
@@ -62,7 +66,7 @@ export const RatingStars = ({
               />
               <button
                 type="button"
-                aria-label={`${star} estrellas`}
+                aria-label={starCountLabel(star)}
                 aria-pressed={value === fullValue}
                 onClick={() => handlePick(fullValue)}
                 className={cn(

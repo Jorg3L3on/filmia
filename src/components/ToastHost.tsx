@@ -13,6 +13,7 @@ import {
   subscribeToasts,
   type ToastItem,
 } from "@/lib/toast";
+import { installSessionWatch } from "@/lib/session-expired";
 import { safeAreaInsetXPadClass, toastLayerClass } from "@/lib/ui";
 
 const EXIT_MS = 280;
@@ -43,6 +44,10 @@ export const ToastHost = () => {
       setGhosts((current) => current.filter((ghost) => !liveIds.has(ghost.id)));
     }
   }
+
+  useEffect(() => {
+    installSessionWatch();
+  }, []);
 
   useEffect(() => {
     if (ghosts.length === 0) {

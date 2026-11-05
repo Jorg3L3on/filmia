@@ -8,6 +8,7 @@ import { PendingSubmit } from "@/components/PendingSubmit";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { PosterImage } from "@/components/PosterImage";
 import { PersonAvatar } from "@/components/lists/PersonAvatar";
+import { WatchingToggle } from "@/components/juntos/WatchingToggle";
 import { cn } from "@/lib/cn";
 import { canWatchTogether, deciders, parseWatching } from "@/lib/group-access";
 import { chosenOfList, loadWatchTogether, type GroupView } from "@/lib/group-store";
@@ -135,22 +136,15 @@ export default async function WatchTogetherPage({
             const on = watchingIds.includes(person.id);
             const next = toggle(person.id);
             return (
-              <Link
+              <WatchingToggle
                 key={person.id}
                 href={hrefFor(list.id, next.length > 0 ? next : watchingIds, filter, anyPlatform)}
-                aria-pressed={on}
-                replace
-                scroll={false}
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm transition-colors",
-                  on
-                    ? "border-affinity/50 bg-affinity/[0.12] text-paper"
-                    : "border-white/10 bg-white/[0.03] text-fog hover:text-paper",
-                )}
+                on={on}
+                label={person.id === userId ? "Tú" : personFirstName(person.name)}
               >
                 <PersonAvatar person={person} size={28} className={on ? undefined : "opacity-50"} />
                 {person.id === userId ? "Tú" : personFirstName(person.name)}
-              </Link>
+              </WatchingToggle>
             );
           })}
         </div>
@@ -351,7 +345,15 @@ const PickRow = ({ pick, rank, listId, hero }: { pick: GroupView; rank: number; 
           </form>
         )}
         {film.chosen ? (
-          <span className="self-center text-xs font-semibold text-accent">Vamos con esta ✓</span>
+          // The pick stays where it is in the order (UX-15): marked, with a way to change it.
+          <>
+            <span className="self-center rounded-full bg-accent/15 px-2.5 py-1 text-xs font-semibold text-accent">
+              Esta noche ✓
+            </span>
+            <form action={clearTonight.bind(null, listId)}>
+              <PendingSubmit idleLabel="Cambiar" pendingLabel="…" variant="ghost" size="sm" />
+            </form>
+          </>
         ) : (
           <form action={chooseTonight.bind(null, listId, film.catalogId)}>
             <PendingSubmit idleLabel="Vamos con esta" pendingLabel="Marcando…" size="sm" />

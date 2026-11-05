@@ -83,11 +83,30 @@ const appendToList = async (userId: string, listId: string, titleId: string) => 
     .onConflictDoNothing();
 };
 
-const deleteOwnedTitle = async (userId: string, titleId: string) => {
+/**
+ * Undo a pick the Bienvenida created. The client's `createdByFlow` is only a hint (FIL-I41-10):
+ * the server deletes the title only while the user's Bienvenida is still open and the title has
+ * no review (the flow never writes one). Anything else is the user's own data and stays.
+ * Returns whether the title was deleted.
+ */
+const deleteFlowTitle = async (userId: string, titleId: string): Promise<boolean> => {
+  const [user, title] = await Promise.all([
+    db.query.users.findFirst({ where: eq(users.id, userId), columns: { onboardedAt: true } }),
+    db.query.titles.findFirst({
+      where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
+      columns: { review: true },
+    }),
+  ]);
+  if (!user || user.onboardedAt || !title || title.review) {
+    return false;
+  }
   await db.batch([
     deleteOwnListItemsOfTitle(userId, titleId),
-    db.delete(titles).where(and(eq(titles.id, titleId), eq(titles.userId, userId))),
+    db
+      .delete(titles)
+      .where(and(eq(titles.id, titleId), eq(titles.userId, userId), isNull(titles.review))),
   ]);
+  return true;
 };
 
 const ambientFor = async (posterPath: string | null | undefined) => {
@@ -126,7 +145,7 @@ export const pickAllTimeFavorite = async (
   }
 
   if (previous && previous.titleId !== result.titleId && previous.createdByFlow) {
-    await deleteOwnedTitle(userId, previous.titleId);
+    await deleteFlowTitle(userId, previous.titleId);
   }
 
   revalidateRatingSurfaces(result.titleId);
@@ -155,10 +174,10 @@ export const applyYearPicks = async (changes: YearPickChangeInput[]): Promise<Ye
 
   for (const change of changes.slice(0, 24)) {
     if (change.to === "none") {
+      let deleted = false;
       if (change.titleId) {
-        if (change.createdByFlow) {
-          await deleteOwnedTitle(userId, change.titleId);
-        } else {
+        deleted = change.createdByFlow ? await deleteFlowTitle(userId, change.titleId) : false;
+        if (!deleted) {
           // Pre-existing title: only drop the 5★ the flow may have set; never un-watch it.
           await db
             .update(titles)
@@ -166,7 +185,7 @@ export const applyYearPicks = async (changes: YearPickChangeInput[]): Promise<Ye
             .where(and(eq(titles.id, change.titleId), eq(titles.userId, userId), eq(titles.rating, FAVORITE_RATING)));
         }
       }
-      outcomes.push({ tmdbId: change.tmdbId, titleId: change.createdByFlow ? null : (change.titleId ?? null), created: false });
+      outcomes.push({ tmdbId: change.tmdbId, titleId: deleted ? null : (change.titleId ?? null), created: false });
       continue;
     }
 
@@ -200,9 +219,8 @@ export const addWatchlistPick = async (input: TmdbPickInput): Promise<PickResult
 
 export const removeWatchlistPick = async (titleId: string, createdByFlow: boolean) => {
   const userId = await requireUserId();
-  if (createdByFlow) {
-    await deleteOwnedTitle(userId, titleId);
-  } else {
+  const deleted = createdByFlow ? await deleteFlowTitle(userId, titleId) : false;
+  if (!deleted) {
     const watchlistId = await fixedListId(userId, WATCHLIST_SLUG);
     if (watchlistId) {
       await db

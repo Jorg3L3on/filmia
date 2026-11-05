@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, type ReactNode } from "react";
+import { LIST_DESCRIPTION_MAX, LIST_NAME_MAX } from "@/lib/text-limits";
 import { PendingSubmit } from "@/components/PendingSubmit";
 import type { ListFormState } from "@/lib/list-names";
 import { fieldClass, wellClass } from "@/lib/ui";
@@ -51,6 +52,7 @@ export const ListFormFields = ({
             readOnly={fixed}
             className={fieldClass}
             autoComplete="off"
+            maxLength={LIST_NAME_MAX}
             placeholder="Ej. Películas favoritas"
             aria-readonly={fixed || undefined}
             aria-invalid={state ? true : undefined}
@@ -68,6 +70,7 @@ export const ListFormFields = ({
           <textarea
             name="description"
             rows={4}
+            maxLength={LIST_DESCRIPTION_MAX}
             defaultValue={description}
             className={fieldClass}
             placeholder="Cuenta de qué trata tu lista (opcional)"

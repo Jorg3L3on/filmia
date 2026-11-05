@@ -22,7 +22,8 @@ type FavoriteStepProps = {
 };
 
 export const FavoriteStep = ({ favorite, onFavorite, tmdbConfigured, headingRef }: FavoriteStepProps) => {
-  const search = useOnboardingSearch({ enabled: tmdbConfigured });
+  // «Tu película favorita»: films only, no series in the results (UX-07).
+  const search = useOnboardingSearch({ enabled: tmdbConfigured, kind: "MOVIE" });
   const [changing, setChanging] = useState(false);
   const [isSaving, startSave] = useTransition();
   const [pendingKey, setPendingKey] = useState<string | null>(null);

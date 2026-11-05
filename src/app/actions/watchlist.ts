@@ -1,6 +1,7 @@
 "use server";
 
 import { and, asc, desc, eq } from "drizzle-orm";
+import { QUEUE_NOTE_MAX, QUEUE_NOTE_TOO_LONG } from "@/lib/text-limits";
 import { revalidatePath } from "next/cache";
 import { todayDateInput } from "@/lib/dates";
 import {
@@ -176,6 +177,9 @@ export const updateWatchlistNote = async (titleId: string, formData: FormData) =
   const userId = await requireUserId();
   const watchlist = await ensureWatchlist(userId);
   const queueNote = String(formData.get("queueNote") ?? "").trim() || null;
+  if (queueNote && queueNote.length > QUEUE_NOTE_MAX) {
+    throw new Error(QUEUE_NOTE_TOO_LONG);
+  }
 
   await db
     .update(listItems)

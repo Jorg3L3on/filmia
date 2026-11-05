@@ -16,6 +16,7 @@ import {
   PASSWORD_MIN_LENGTH,
   SIGNUP_FIELD_ORDER,
   passwordStrength,
+  SIGNUP_EMAIL_UNAVAILABLE,
   suggestEmailFix,
   validateEmail,
   validateName,
@@ -33,7 +34,6 @@ type SignupFormProps = {
 type RegisterPayload = {
   error?: string;
   fieldErrors?: SignupFieldErrors;
-  existingAccount?: boolean;
 };
 
 const fieldValidators: Record<SignupField, (value: string) => string | undefined> = {
@@ -146,7 +146,7 @@ export const SignupForm = ({ googleEnabled }: SignupFormProps) => {
       if (!response.ok) {
         const serverErrors = payload.fieldErrors ?? {};
         setFieldErrors(serverErrors);
-        setExistingAccount(Boolean(payload.existingAccount));
+        setExistingAccount(serverErrors.email === SIGNUP_EMAIL_UNAVAILABLE);
         if (Object.keys(serverErrors).length > 0) {
           focusFirstInvalid(serverErrors);
         } else {
@@ -174,7 +174,10 @@ export const SignupForm = ({ googleEnabled }: SignupFormProps) => {
       footer={
         <p className="text-center text-sm text-mist">
           Ya tengo cuenta{" "}
-          <Link href={loginHref} className={`text-accent hover:text-accent-hover ${focusRing}`}>
+          <Link
+            href={loginHref}
+            className={`text-accent underline underline-offset-2 hover:text-accent-hover ${focusRing}`}
+          >
             → Entrar
           </Link>
         </p>
@@ -199,7 +202,7 @@ export const SignupForm = ({ googleEnabled }: SignupFormProps) => {
       <form onSubmit={handleSubmit} noValidate className="space-y-6">
         <label className="block space-y-1.5">
           <span className="text-xs font-medium uppercase tracking-wide text-fog">
-            Nombre <span className="normal-case tracking-normal text-faint">(opcional)</span>
+            Nombre <span className="normal-case tracking-normal text-fog">(opcional)</span>
           </span>
           <input
             ref={nameRef}

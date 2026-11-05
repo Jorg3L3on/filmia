@@ -168,6 +168,25 @@ export const getInvitePreview = async (token: string) => {
   };
 };
 
+/**
+ * The list behind a link this user already asked to join (FIL-I41-16). A one-time link stops
+ * being usable once their request takes it, but they must still see «Solicitud enviada»
+ * there, not the dead-link page. Any other account gets null.
+ */
+export const pendingRequestThroughInvite = async (token: string, userId: string) => {
+  const invite = await findInviteByToken(token);
+  if (!invite || !(await pendingRequestOf(invite.listId, userId))) {
+    return null;
+  }
+  const [head] = await db
+    .select({ id: lists.id, name: lists.name, ownerName: users.name })
+    .from(lists)
+    .innerJoin(users, eq(users.id, lists.userId))
+    .where(eq(lists.id, invite.listId))
+    .limit(1);
+  return head ?? null;
+};
+
 export type InvitePreview = NonNullable<Awaited<ReturnType<typeof getInvitePreview>>>;
 
 // ── Joining ──────────────────────────────────────────────────────────────

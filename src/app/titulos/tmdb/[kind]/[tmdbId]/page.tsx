@@ -35,6 +35,7 @@ import {
   type DiaryLog,
 } from "@/lib/title-preview";
 import { getCinemaRelease } from "@/lib/cine";
+import { isPrerelease, mxToday } from "@/lib/cine-core";
 import { getWatchProvidersForTitle } from "@/lib/watch-providers-cache";
 import {
   AffinitySlot,
@@ -180,7 +181,7 @@ const TitlePreview = async ({
             </Suspense>
           )}
           <Suspense fallback={<TitleActionsSkeleton />}>
-            <PreviewActions title={title} listsPromise={listsPromise} diaryLog={diaryLog} />
+            <PreviewActions title={title} listsPromise={listsPromise} cinemaPromise={cinemaPromise} diaryLog={diaryLog} />
           </Suspense>
         </div>
       </section>
@@ -264,13 +265,15 @@ const PreviewSynopsis = async ({ extrasPromise }: { extrasPromise: Promise<TmdbT
 const PreviewActions = async ({
   title,
   listsPromise,
+  cinemaPromise,
   diaryLog,
 }: {
   title: PreviewTitle;
   listsPromise: ReturnType<typeof getAssignableLists>;
+  cinemaPromise: ReturnType<typeof getCinemaRelease>;
   diaryLog: DiaryLog | null;
 }) => {
-  const lists = await listsPromise;
+  const [lists, cinema] = await Promise.all([listsPromise, cinemaPromise]);
   return (
     <TitleFichaActions
       titleId={null}
@@ -292,6 +295,7 @@ const PreviewActions = async ({
       review={null}
       platform={null}
       pinnedTonight={false}
+      prerelease={isPrerelease(cinema, mxToday())}
       previewLists={lists}
     />
   );

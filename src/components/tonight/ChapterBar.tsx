@@ -69,6 +69,7 @@ export const ChapterBar = ({
 
   return (
     <div className={cn("chapter-bar", className)}>
+      {/* The progress is its own element: a progressbar's children are presentational (UX-18). */}
       <div
         role="progressbar"
         aria-label="Capítulos de la noche"
@@ -76,8 +77,9 @@ export const ChapterBar = ({
         aria-valuemax={count}
         aria-valuenow={position + 1}
         aria-valuetext={valueText}
-        className="chapter-bar-track"
-      >
+        className="sr-only"
+      />
+      <div className="chapter-bar-track">
         {lenses.map((lens, index) => {
           const state = index < activeIndex ? "past" : index === activeIndex ? "current" : "ahead";
           const breathing = breathKey != null && index === activeIndex + 1 && onLastOfLens;

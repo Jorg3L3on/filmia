@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { publicErrorMessage } from "@/lib/public-error";
 import { revalidatePath } from "next/cache";
 import type { ListInviteKind, ListRole } from "@/db";
 import { requireListAccess } from "@/lib/list-access";
@@ -58,7 +59,7 @@ export const createInvite = async (
     revalidateSharing(listId);
     return { ok: true, path: invitePath(token) };
   } catch (caught) {
-    return { ok: false, error: caught instanceof Error ? caught.message : "No se pudo crear el link." };
+    return { ok: false, error: publicErrorMessage(caught, "No se pudo crear el enlace.") };
   }
 };
 

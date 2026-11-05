@@ -144,7 +144,7 @@ export const MarkWatchedForm = ({
         </label>
 
         <div className="block space-y-1">
-          <span className={isCompact ? "sr-only" : fieldLabel}>Tu nota</span>
+          <span className={isCompact ? "sr-only" : fieldLabel}>Tu calificación</span>
           <RatingStars
             value={noteValue}
             onChange={setNoteValue}
@@ -155,14 +155,14 @@ export const MarkWatchedForm = ({
         </div>
 
         <label className={isCompact ? "block space-y-1 sm:col-span-2" : "block space-y-1"}>
-          <span className={isCompact ? "sr-only" : fieldLabel}>Nota corta</span>
+          <span className={isCompact ? "sr-only" : fieldLabel}>Reseña corta</span>
           <textarea
             name="review"
             rows={isCompact ? 2 : 3}
             maxLength={1000}
             defaultValue={review ?? ""}
             placeholder="Una línea, un spoiler, un veredicto…"
-            aria-label="Nota corta opcional"
+            aria-label="Reseña corta opcional"
             className={cn(fieldClass, isCompact && "px-2 py-1 text-xs")}
           />
         </label>

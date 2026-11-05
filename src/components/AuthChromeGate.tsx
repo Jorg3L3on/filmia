@@ -29,6 +29,13 @@ export const AuthChromeGate = ({
         children
       ) : (
         <>
+          {/* First Tab stop on every app page (UX-19, WCAG 2.4.1): straight to the content. */}
+          <a
+            href="#contenido"
+            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-ink"
+          >
+            Saltar al contenido
+          </a>
           {isImmersiveFichaPath(pathname) ? (
             // `contents` keeps the header sticky on desktop; on a phone the ficha owns the top.
             <div className="max-sm:hidden sm:contents">{header}</div>
@@ -36,7 +43,9 @@ export const AuthChromeGate = ({
             header
           )}
           {prefetch}
-          <main className={mainClassName}>{children}</main>
+          <main id="contenido" tabIndex={-1} className={mainClassName}>
+            {children}
+          </main>
           {bottomNav}
         </>
       )}

@@ -8,7 +8,12 @@ import { ensureDefaultLists } from "@/lib/lists";
 import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
 import { RATE_LIMITS, clientIp } from "@/lib/rate-limit";
 import { checkAuthRateLimit, tooManyAttempts } from "@/lib/rate-limit-store";
-import { SIGNUP_FIELD_ORDER, normalizeEmail, validateSignup } from "@/lib/signup-validation";
+import {
+  SIGNUP_EMAIL_UNAVAILABLE,
+  SIGNUP_FIELD_ORDER,
+  normalizeEmail,
+  validateSignup,
+} from "@/lib/signup-validation";
 
 export const POST = async (request: Request) => {
   const formData = await request.formData();
@@ -27,7 +32,7 @@ export const POST = async (request: Request) => {
     );
   }
 
-  // Counted after validation so typos don't burn the budget; the 409 below counts.
+  // Counted after validation so typos don't burn the budget; the existing-email answer counts.
   const limit = await checkAuthRateLimit([
     { rule: RATE_LIMITS.signupIp, subject: clientIp(request.headers) },
   ]);
@@ -41,13 +46,11 @@ export const POST = async (request: Request) => {
   });
 
   if (existing) {
-    const googleOnly = Boolean(existing.googleId) && !existing.passwordHash;
-    const message = googleOnly
-      ? "Ese correo ya entra con Google. Usa «Continuar con Google»."
-      : "Ya existe una cuenta con ese correo. ¿Quieres entrar?";
+    // One answer for every existing account, whatever its sign-in method (FIL-I41-11): the
+    // reply must not tell a stranger how someone signs in, and carries no account flag.
     return NextResponse.json(
-      { error: message, fieldErrors: { email: message }, existingAccount: true },
-      { status: 409 },
+      { error: SIGNUP_EMAIL_UNAVAILABLE, fieldErrors: { email: SIGNUP_EMAIL_UNAVAILABLE } },
+      { status: 400 },
     );
   }
 
