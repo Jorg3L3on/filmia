@@ -8,7 +8,7 @@ import { PlatformLogo } from "@/components/PlatformLogo";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { cn } from "@/lib/cn";
 import { PLATFORM_SERVICE_LABEL, TITLE_KIND_LABEL } from "@/lib/labels";
-import { deckAvailabilityPlatform } from "@/lib/streaming-platforms";
+import { deckAvailabilityPlatform, providerDisplayName } from "@/lib/streaming-platforms";
 import { formatRuntimeShort } from "@/lib/tonight/time";
 import { reasonPerson } from "@/lib/watchlist-credits";
 import { buildPersonSearchHref } from "@/lib/person-filmography";
@@ -40,7 +40,7 @@ export const TonightFooter = ({ title, className }: TonightFooterProps) => {
   const platform = deckAvailabilityPlatform(title);
   const platformLabel = platform
     ? PLATFORM_SERVICE_LABEL[platform]
-    : (title.flatrateProviders?.[0]?.name ?? null);
+    : (title.flatrateProviders?.[0] ? providerDisplayName(title.flatrateProviders[0]) : null);
   const runtime = formatRuntimeShort(tonight?.runtimeMinutes ?? null);
   const headline = tonight?.headline[0] ?? null;
   const headlinePerson = reasonPerson(headline, tonight?.leads ?? []);

@@ -5,7 +5,7 @@ import { PlatformLogo } from "@/components/PlatformLogo";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { cn } from "@/lib/cn";
 import { formatStarScore, PLATFORM_SERVICE_LABEL, TITLE_KIND_LABEL } from "@/lib/labels";
-import { deckAvailabilityPlatform } from "@/lib/streaming-platforms";
+import { deckAvailabilityPlatform, providerDisplayName } from "@/lib/streaming-platforms";
 import { focusRing } from "@/lib/ui";
 
 type ListDeckFooterProps = {
@@ -30,7 +30,7 @@ export const ListDeckFooter = ({ title, className, onOpenMenu }: ListDeckFooterP
   const platform = deckAvailabilityPlatform(title);
   const platformLabel = platform
     ? PLATFORM_SERVICE_LABEL[platform]
-    : (title.flatrateProviders?.[0]?.name ?? null);
+    : (title.flatrateProviders?.[0] ? providerDisplayName(title.flatrateProviders[0]) : null);
 
   return (
     <div

@@ -31,7 +31,7 @@ import {
   TITLE_KIND_LABEL,
 } from "@/lib/labels";
 import { PICKS_SAVE_LABEL } from "@/lib/mark-seen";
-import { deckAvailabilityPlatform } from "@/lib/streaming-platforms";
+import { deckAvailabilityPlatform, providerDisplayName } from "@/lib/streaming-platforms";
 import type { Platform } from "@/db";
 import { recoPreviewHref } from "@/lib/tonight/reco-card";
 
@@ -152,7 +152,7 @@ export const DeckCard = memo(function DeckCard({
   const availabilityPlatform = deckAvailabilityPlatform(title);
   const availabilityLabel = availabilityPlatform
     ? PLATFORM_SERVICE_LABEL[availabilityPlatform]
-    : title.flatrateProviders?.[0]?.name;
+    : (title.flatrateProviders?.[0] ? providerDisplayName(title.flatrateProviders[0]) : undefined);
   const posterSizes = compact
     ? COVERFLOW_SHEET_POSTER_SIZES
     : COVERFLOW_PAGE_POSTER_SIZES;

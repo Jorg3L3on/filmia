@@ -1,5 +1,5 @@
 import type { Platform, TitleKind } from "@/db";
-import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
+import { primaryAvailabilityPlatform, providerDisplayName } from "@/lib/streaming-platforms";
 import { rankForNow } from "@/lib/tonight/serve";
 import { nightEndsLabel } from "@/lib/tonight/time";
 import type { TonightDecks } from "@/lib/tonight-store";
@@ -86,7 +86,7 @@ export const pickPayoffCard = (decks: TonightDecks, now: Date): PayoffCard | nul
     imdbRating: top.imdbRating,
     runtimeMinutes: top.runtimeMinutes,
     platform,
-    providerName: platform ? null : (top.flatrateProviders?.[0]?.name ?? null),
+    providerName: platform ? null : (top.flatrateProviders?.[0] ? providerDisplayName(top.flatrateProviders[0]) : null),
     genres: (top.genres ?? []).map((genre) => genre.name).slice(0, 3),
     reason: personal?.text ?? null,
     endsAt: top.runtimeMinutes ? top.fit.endsAt : null,

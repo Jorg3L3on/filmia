@@ -2,7 +2,7 @@ import Image from "next/image";
 import { Button } from "@/components/Button";
 import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
-import { isUserStreamingProvider } from "@/lib/streaming-platforms";
+import { isUserStreamingProvider, providerDisplayName } from "@/lib/streaming-platforms";
 import { focusRing } from "@/lib/ui";
 import type { WatchProviderOffer, WatchProvidersMxData } from "@/lib/watch-providers";
 
@@ -35,13 +35,13 @@ export const WatchProviderChips = ({
       {visible.map((provider) => (
         <span
           key={provider.providerId}
-          title={provider.name}
+          title={providerDisplayName(provider)}
           className="inline-flex overflow-hidden rounded-sm border border-chrome/80 bg-surface"
         >
           {provider.logoUrl ? (
             <Image
               src={provider.logoUrl}
-              alt={provider.name}
+              alt={providerDisplayName(provider)}
               width={chipSize}
               height={chipSize}
               className="object-cover"
@@ -109,8 +109,8 @@ const ProviderSection = ({
               : "border-chrome bg-surface text-paper hover:border-accent/40 hover:text-paper",
           );
           const ariaLabel = isMine
-            ? `${provider.name} en ${label.toLowerCase()} (tu plataforma)`
-            : `${provider.name} en ${label.toLowerCase()}`;
+            ? `${providerDisplayName(provider)} en ${label.toLowerCase()} (tu plataforma)`
+            : `${providerDisplayName(provider)} en ${label.toLowerCase()}`;
 
           return (
             <li key={`${label}-${provider.providerId}`}>
@@ -123,13 +123,13 @@ const ProviderSection = ({
                   aria-label={ariaLabel}
                 >
                   <ProviderLogo provider={provider} />
-                  <span>{provider.name}</span>
+                  <span>{providerDisplayName(provider)}</span>
                   {isMine ? <YoursBadge /> : null}
                 </a>
               ) : (
                 <span className={chipClass} aria-label={ariaLabel}>
                   <ProviderLogo provider={provider} />
-                  <span>{provider.name}</span>
+                  <span>{providerDisplayName(provider)}</span>
                   {isMine ? <YoursBadge /> : null}
                 </span>
               )}

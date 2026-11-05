@@ -1,5 +1,6 @@
 import { FAVORITAS_SLUG, POR_REWATCH_SLUG } from "@/lib/lists";
 import { PLATFORM_SERVICE_LABEL } from "@/lib/labels";
+import { providerDisplayName } from "@/lib/streaming-platforms";
 import { clamp01, cosine, type FeatureVector } from "@/lib/tonight/features";
 import { closestAnchor, type TasteProfile } from "@/lib/tonight/profile";
 import {
@@ -115,7 +116,7 @@ export const fatigueMultiplier = (events: readonly TonightEvent[], now: Date) =>
 };
 
 const platformLabel = (title: TonightTitle) =>
-  title.platform ? PLATFORM_SERVICE_LABEL[title.platform] : (title.flatrate[0]?.name ?? null);
+  title.platform ? PLATFORM_SERVICE_LABEL[title.platform] : (title.flatrate[0] ? providerDisplayName(title.flatrate[0]) : null);
 
 export const impulseScore = (
   title: TonightTitle,
