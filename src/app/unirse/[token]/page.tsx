@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { collectionCountLabel } from "@/lib/labels";
 import { redirect } from "next/navigation";
 import { PosterImage } from "@/components/PosterImage";
 import { PersonAvatar } from "@/components/lists/PersonAvatar";
@@ -16,7 +17,8 @@ export const dynamic = "force-dynamic";
 
 type JoinPageProps = { params: Promise<{ token: string }> };
 
-const filmsLabel = (count: number) => (count === 1 ? "1 película" : `${count} películas`);
+/** The preview does not know the kinds: «títulos» (UX-05). */
+const filmsLabel = (count: number) => collectionCountLabel(count);
 
 const roleLine = (role: "EDITOR" | "VIEWER") =>
   role === "EDITOR" ? "Podrás agregar y quitar" : "Podrás verla y ver quién agregó qué";

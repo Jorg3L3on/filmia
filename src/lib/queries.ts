@@ -94,6 +94,20 @@ const countByIds = async (
   return new Map(rows.map((row) => [row.id, row.count]));
 };
 
+/** Series per list, so a card can say «títulos» when films and series mix (UX-05). */
+const countSeriesByList = async (ids: string[]) => {
+  if (ids.length === 0) {
+    return new Map<string, number>();
+  }
+  const rows = await db
+    .select({ id: listItems.listId, count: sql<number>`count(*)::int` })
+    .from(listItems)
+    .innerJoin(catalog, eq(catalog.id, listItems.catalogId))
+    .where(and(inArray(listItems.listId, ids), eq(catalog.kind, "SERIES")))
+    .groupBy(listItems.listId);
+  return new Map(rows.map((row) => [row.id, row.count]));
+};
+
 const buildSeriesStatusCondition = (filter: SeriesStatusFilter | undefined) => {
   if (!filter) {
     return undefined;
@@ -277,6 +291,7 @@ export const loadLists = async (userId: string) => {
   );
 
   const members = await getMembersByList(rows.map((row) => row.id));
+  const seriesCounts = await countSeriesByList(rows.map((row) => row.id));
 
   return sortUserLists(
     rows.map((list) => ({
@@ -290,7 +305,7 @@ export const loadLists = async (userId: string) => {
           posterPath: film.posterPath,
         },
       })),
-      _count: { items: counts.get(list.id) ?? 0 },
+      _count: { items: counts.get(list.id) ?? 0, series: seriesCounts.get(list.id) ?? 0 },
     })),
   );
 };

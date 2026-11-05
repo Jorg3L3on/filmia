@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { CSSProperties, ReactNode } from "react";
+import { collectionCountLabel } from "@/lib/labels";
 import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
 import { ListCard, listCardGridClass } from "@/components/ListCard";
@@ -66,10 +67,10 @@ export default function ListsPage() {
 }
 
 /** «12 · compartida con 3» and the members' avatars on your shared lists (canvas 4·1). */
-const sharedCardProps = (list: { _count: { items: number }; members: Array<{ id: string; name: string | null }> }) =>
+const sharedCardProps = (list: { _count: { items: number; series: number }; members: Array<{ id: string; name: string | null }> }) =>
   list.members.length > 0
     ? {
-        subtitle: `${list._count.items} · compartida con ${list.members.length}`,
+        subtitle: `${collectionCountLabel(list._count.items, list._count.series)} · compartida con ${list.members.length}`,
         badge: <AvatarStack people={list.members} />,
       }
     : {};
@@ -92,6 +93,7 @@ const ListsBody = async () => {
       <QuieroVerPinnedCard
         name={watchlist?.name ?? WATCHLIST_NAME}
         itemCount={watchlist?._count.items ?? 0}
+        seriesCount={watchlist?._count.series}
         posters={watchlist?.items.map((item) => item.title) ?? []}
       />
       <OwnerRequestsNotice requests={requests} />
@@ -115,6 +117,7 @@ const ListsBody = async () => {
                 slug={list.slug}
                 description={list.description}
                 itemCount={list._count.items}
+                  seriesCount={list._count.series}
                 posters={list.items.map((item) => item.title)}
                 {...sharedCardProps(list)}
               />
@@ -152,6 +155,7 @@ const ListsBody = async () => {
                   slug={list.slug}
                   description={list.description}
                   itemCount={list._count.items}
+                  seriesCount={list._count.series}
                   posters={list.items.map((item) => item.title)}
                   layout="grid"
                   {...sharedCardProps(list)}
@@ -193,6 +197,7 @@ const ListsBody = async () => {
                   slug={list.slug}
                   description={list.description}
                   itemCount={list._count.items}
+                  seriesCount={list._count.series}
                   posters={list.items.map((item) => item.title)}
                   layout="grid"
                 />
