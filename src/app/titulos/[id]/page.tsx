@@ -190,6 +190,7 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
               title={title}
               listsPromise={listsPromise}
               pinnedPromise={pinnedPromise}
+              cinemaPromise={cinemaPromise}
               diaryLog={diaryLog}
             />
           </Suspense>
