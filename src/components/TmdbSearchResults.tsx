@@ -46,7 +46,10 @@ const emptyChipClass = cn(
   focusRing,
 );
 
-/** «11 películas de 16» when a chip filters the list; «16 resultados» otherwise. */
+/**
+ * The count lives in the header only (UX-09): «19 resultados», «19 de 31 resultados» while more
+ * can load, «11 de 16 películas» when a chip filters what loaded.
+ */
 const KIND_NOUN: Record<Exclude<SearchKind, "ALL">, [string, string]> = {
   MOVIE: ["película", "películas"],
   SERIES: ["serie", "series"],
@@ -74,6 +77,7 @@ export const TmdbSearchResults = ({
   if (results.length > 0) {
     const filtered = kind !== "ALL" && results.length !== loadedCount;
     const noun = kind !== "ALL" ? KIND_NOUN[kind] : (["resultado", "resultados"] as const);
+    const denominator = filtered ? loadedCount : canLoadMore ? Math.max(total, loadedCount) : null;
     return (
       <section className="space-y-3" aria-labelledby="buscar-resultados">
         <header className="flex items-baseline justify-between gap-3">
@@ -83,8 +87,16 @@ export const TmdbSearchResults = ({
           {/* Stays mounted while a new search runs so the digits roll to the new count. */}
           <p className="flex items-baseline gap-1.5 text-xs text-mist" data-search-count>
             {isSearching ? <span className="buscar-shiny">Buscando…</span> : null}
-            <WatchlistCountTicker count={results.length} singular={noun[0]} plural={noun[1]} />
-            {filtered ? <span>{" "}de {loadedCount}</span> : null}
+            {denominator != null ? (
+              <>
+                <WatchlistCountTicker count={results.length} noun={false} />
+                <span>
+                  de {denominator} {denominator === 1 ? noun[0] : noun[1]}
+                </span>
+              </>
+            ) : (
+              <WatchlistCountTicker count={results.length} singular={noun[0]} plural={noun[1]} />
+            )}
           </p>
         </header>
         <ul className="grid grid-cols-[minmax(0,1fr)] gap-2 lg:grid-cols-2 lg:gap-3">
@@ -111,10 +123,7 @@ export const TmdbSearchResults = ({
         </ul>
         <footer className="space-y-3 pt-1" data-search-more>
           {canLoadMore && onLoadMore ? (
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs text-mist">
-                {loadedCount} de {Math.max(total, loadedCount)}
-              </p>
+            <div className="flex items-center justify-end gap-3">
               <Button
                 type="button"
                 variant="secondary"
@@ -126,8 +135,6 @@ export const TmdbSearchResults = ({
                 Cargar 20 más
               </Button>
             </div>
-          ) : loadedCount > 1 ? (
-            <p className="text-xs text-mist">{loadedCount} de {loadedCount}</p>
           ) : null}
           {hint}
         </footer>
