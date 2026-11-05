@@ -89,14 +89,19 @@ export const ShareListSheet = ({
       }
       return new URL(result.path, window.location.origin).toString();
     };
-    if (kind === "GROUP") {
-      const key = `${role}:${maxUses}`;
-      if (groupLink.current?.key !== key) {
-        groupLink.current = { key, url: make() };
-      }
-      return groupLink.current.url;
+    // While the sheet is open, the same options give the same link (UX-13): a second «Copiar
+    // enlace» copies the personal link not used yet instead of minting a stray one. Closing the
+    // sheet, or changing «Qué pueden hacer», starts a new one.
+    const key = kind === "GROUP" ? `${kind}:${role}:${maxUses}` : `${kind}:${role}`;
+    if (groupLink.current?.key !== key) {
+      groupLink.current = { key, url: make() };
     }
-    return make();
+    return groupLink.current.url;
+  };
+
+  const closeSheet = () => {
+    groupLink.current = null;
+    setOpen(false);
   };
 
   const message = (url: string) =>
@@ -169,7 +174,7 @@ export const ShareListSheet = ({
           </>
         )}
       </button>
-      <Sheet open={open} onClose={() => setOpen(false)} labelledBy={headingId} align="bottom" dragDismiss portal>
+      <Sheet open={open} onClose={closeSheet} labelledBy={headingId} align="bottom" dragDismiss portal>
         <div className="space-y-5 px-5 pb-4 pt-3">
           <div className="flex flex-col items-center">
             <SheetHandle />
@@ -257,7 +262,7 @@ export const ShareListSheet = ({
                 focusRing,
               )}
             >
-              Copiar link
+              Copiar enlace
             </button>
           </div>
           {publicShare ? (
