@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { describeKeyTarget, watchlistKeyAction } from "@/lib/watchlist-keys";
 
 type UseWatchlistKeyboardArgs = {
   enabled: boolean;
@@ -11,19 +12,10 @@ type UseWatchlistKeyboardArgs = {
   onMark: (id: string) => void;
 };
 
-const isEditable = (target: EventTarget | null) => {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-  return (
-    target.isContentEditable ||
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA" ||
-    target.tagName === "SELECT"
-  );
-};
-
-/** Desktop stage: ↑↓ move the selection, Enter opens the ficha, V marks it as seen. */
+/**
+ * Desktop stage: ↑↓ move the selection, Enter opens the ficha, V marks it as seen. Focused
+ * controls and open sheets keep their own keys (FIL-I41-15, `watchlistKeyAction`).
+ */
 export const useWatchlistKeyboard = ({
   enabled,
   ids,
@@ -37,11 +29,16 @@ export const useWatchlistKeyboard = ({
       return;
     }
     const handle = (event: KeyboardEvent) => {
-      if (event.metaKey || event.ctrlKey || event.altKey || isEditable(event.target)) {
+      const action = watchlistKeyAction(
+        event.key,
+        { meta: event.metaKey, ctrl: event.ctrlKey, alt: event.altKey },
+        describeKeyTarget(event.target),
+      );
+      if (!action) {
         return;
       }
       const index = selectedId ? ids.indexOf(selectedId) : -1;
-      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      if (action === "move") {
         if (ids.length === 0) {
           return;
         }
@@ -57,11 +54,10 @@ export const useWatchlistKeyboard = ({
       if (!selectedId) {
         return;
       }
-      if (event.key === "Enter") {
-        event.preventDefault();
+      event.preventDefault();
+      if (action === "open") {
         onOpen(selectedId);
-      } else if (event.key === "v" || event.key === "V") {
-        event.preventDefault();
+      } else {
         onMark(selectedId);
       }
     };
