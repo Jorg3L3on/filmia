@@ -73,7 +73,7 @@ export const stepDirection = (from: OnboardingStepId, to: OnboardingStepId): Onb
 
 export type LeaveTarget = "finish" | typeof QUICK_PICK_STEP;
 
-/** «Saltar por ahora» / «Entrar a Filmia»: straight to Hoy only with three titles or more. */
+/** «Saltar a lo mínimo» / «Entrar a Filmia»: straight to Hoy only with three titles or more. */
 export const resolveLeave = (titleCount: number): LeaveTarget =>
   needsQuickPicks(titleCount) ? QUICK_PICK_STEP : "finish";
 
