@@ -1,3 +1,4 @@
+import { SESSION_EXPIRED_DETAIL, SESSION_EXPIRED_TITLE } from "@/lib/session-expired-copy";
 import { showToast, type ToastPayload } from "@/lib/toast";
 import { tmdbPosterUrl } from "@/lib/tmdb";
 
@@ -54,6 +55,9 @@ export const TOAST_COPY = {
   retry: "Reintentar",
   retryHint: "Puedes volver a intentarlo.",
   retryFailed: "Sigue sin poder hacerse.",
+  sessionExpired: SESSION_EXPIRED_TITLE,
+  sessionExpiredDetail: SESSION_EXPIRED_DETAIL,
+  signIn: "Entrar",
 } as const;
 
 export const addedToLists = (count: number) =>

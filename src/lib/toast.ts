@@ -74,6 +74,18 @@ const listeners = new Set<() => void>();
 const timers = new Map<number, ReturnType<typeof setTimeout>>();
 const holds = new Map<number, Set<ToastHold>>();
 const timing = new Map<number, { durationMs?: number; persistent?: boolean }>();
+/** When each live toast was first shown (epoch ms), for `dismissToastsShownSince`. */
+const shownAt = new Map<number, number>();
+/**
+ * Optional filter every new toast passes first: it may rewrite the payload or drop it (null).
+ * FIL-I41-18 uses it so «Sesión vencida» mutes the rest and no English server text shows.
+ */
+type ToastGate = (payload: ToastPayload) => ToastPayload | null;
+let gate: ToastGate | null = null;
+
+export const setToastGate = (next: ToastGate | null) => {
+  gate = next;
+};
 
 const emit = () => {
   items = items === EMPTY ? EMPTY : items.slice();
@@ -142,6 +154,7 @@ const forget = (id: number) => {
   clearTimer(id);
   holds.delete(id);
   timing.delete(id);
+  shownAt.delete(id);
 };
 
 const schedule = (item: ToastItem) => {
@@ -232,7 +245,11 @@ const makeRoom = (incoming: ToastVariant) => {
   return true;
 };
 
-export const showToast = (payload: ToastPayload) => {
+export const showToast = (input: ToastPayload) => {
+  const payload = gate ? gate(input) : input;
+  if (!payload) {
+    return -1;
+  }
   const variant = payload.variant ?? "success";
 
   if (payload.key) {
@@ -286,6 +303,7 @@ export const showToast = (payload: ToastPayload) => {
   const id = nextId;
   nextId += 1;
   const next = materialize(id, payload, 1, false);
+  shownAt.set(id, Date.now());
   items = [...items, next];
   schedule(next);
   emit();
@@ -330,6 +348,17 @@ export const updateToast = (key: string, patch: ToastPatch) => {
     schedule(next);
   }
   emit();
+};
+
+/**
+ * Take back the toasts shown at or after `since` (optimistic ones the server then refused),
+ * except those `keep` returns true for.
+ */
+export const dismissToastsShownSince = (since: number, keep: (item: ToastItem) => boolean = () => false) => {
+  const gone = items.filter((item) => (shownAt.get(item.id) ?? 0) >= since && !keep(item));
+  for (const item of gone) {
+    dismissToast(item.id);
+  }
 };
 
 export const dismissToast = (id: number) => {

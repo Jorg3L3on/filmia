@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { SESSION_EXPIRED_BODY, SESSION_EXPIRED_HEADER, SESSION_EXPIRED_VALUE } from "@/lib/session-expired-copy";
 import { PUBLIC_PATHS, isPublicPath, proxy } from "./proxy";
 
 /**
@@ -50,6 +51,24 @@ describe("proxy public paths", () => {
     const location = new URL(response.headers.get("location")!);
     assert.equal(location.pathname, "/login");
     assert.equal(location.searchParams.get("callbackUrl"), "/oauth/consent?client_id=abc&state=1");
+  });
+
+  it("answers a signed-out Server Action with a readable 401, not a redirect (FIL-I41-18)", async () => {
+    const action = new Request("https://filmia.test/titulos/tmdb/pelicula/242", {
+      method: "POST",
+      headers: { host: "filmia.test", "next-action": "abc123", "content-type": "text/plain;charset=UTF-8" },
+      body: "[]",
+    });
+    const response = await proxy(action);
+    assert.equal(response.status, 401);
+    assert.equal(response.headers.get("location"), null);
+    // Next's action client only reads the body as the error message for exactly text/plain.
+    assert.equal(response.headers.get("content-type"), "text/plain");
+    assert.equal(response.headers.get(SESSION_EXPIRED_HEADER), SESSION_EXPIRED_VALUE);
+    assert.equal(await response.text(), SESSION_EXPIRED_BODY);
+
+    const page = await proxy(request("/titulos/tmdb/pelicula/242"));
+    assert.equal(new URL(page.headers.get("location")!).pathname, "/login");
   });
 
   it("does not treat lookalike paths as public", () => {
