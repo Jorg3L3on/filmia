@@ -238,6 +238,20 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     return { cards: all, lensStarts: starts, dealt: dealtCount };
   }, [lensCards, lenses]);
 
+  // «Ver esta noche» on a card (UX-16): the pinned film leads Para ti once the decks refresh, so
+  // the deck follows it there and keeps it in the center instead of showing the next card.
+  const pinnedCardId = reco.pinnedId ? (reco.titleIdOf(reco.pinnedId) ?? reco.pinnedId) : null;
+  const pinnedIndex = pinnedCardId
+    ? cards.findIndex((card) => card.id === pinnedCardId || card.id === reco.pinnedId)
+    : -1;
+  const [followedPin, setFollowedPin] = useState(-1);
+  if (pinnedIndex !== followedPin) {
+    setFollowedPin(pinnedIndex);
+    if (pinnedIndex >= 0) {
+      setFocusRequest((current) => ({ index: pinnedIndex, seq: (current?.seq ?? 0) + 1 }));
+    }
+  }
+
   const activeLens = lenses.find((lens) => lens.slug === activeSlug) ?? lenses[0] ?? null;
   useNavLabel(activeLens ? `Hoy · ${activeLens.name}` : "Hoy");
 
