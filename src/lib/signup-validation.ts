@@ -128,3 +128,9 @@ export const passwordStrength = (value: string): PasswordStrength => {
   }
   return { level, label: STRENGTH_LABELS[level] };
 };
+
+/**
+ * Sign-up answer for an email that cannot be used (FIL-I41-11). The same text for every
+ * existing account, so it never says how that person signs in.
+ */
+export const SIGNUP_EMAIL_UNAVAILABLE = "No pudimos crear la cuenta con ese correo. Si ya tienes una, entra.";

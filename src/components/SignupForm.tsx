@@ -16,6 +16,7 @@ import {
   PASSWORD_MIN_LENGTH,
   SIGNUP_FIELD_ORDER,
   passwordStrength,
+  SIGNUP_EMAIL_UNAVAILABLE,
   suggestEmailFix,
   validateEmail,
   validateName,
@@ -33,7 +34,6 @@ type SignupFormProps = {
 type RegisterPayload = {
   error?: string;
   fieldErrors?: SignupFieldErrors;
-  existingAccount?: boolean;
 };
 
 const fieldValidators: Record<SignupField, (value: string) => string | undefined> = {
@@ -146,7 +146,7 @@ export const SignupForm = ({ googleEnabled }: SignupFormProps) => {
       if (!response.ok) {
         const serverErrors = payload.fieldErrors ?? {};
         setFieldErrors(serverErrors);
-        setExistingAccount(Boolean(payload.existingAccount));
+        setExistingAccount(serverErrors.email === SIGNUP_EMAIL_UNAVAILABLE);
         if (Object.keys(serverErrors).length > 0) {
           focusFirstInvalid(serverErrors);
         } else {
