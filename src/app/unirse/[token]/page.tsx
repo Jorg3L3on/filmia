@@ -3,10 +3,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PosterImage } from "@/components/PosterImage";
 import { PersonAvatar } from "@/components/lists/PersonAvatar";
-import { JoinListActions } from "@/components/lists/JoinListActions";
+import { JoinListActions, JoinPendingCard } from "@/components/lists/JoinListActions";
 import { SharePage } from "@/components/share/SharePage";
 import { listAccessFor } from "@/lib/list-access";
-import { getInvitePreview, pendingRequestOf } from "@/lib/list-invites";
+import { getInvitePreview, pendingRequestOf, pendingRequestThroughInvite } from "@/lib/list-invites";
 import { personFirstName } from "@/lib/person-avatar";
 import { shareMetadataBase } from "@/lib/share";
 import { getLiveSessionUser } from "@/lib/session";
@@ -25,7 +25,7 @@ const roleLine = (role: "EDITOR" | "VIEWER") =>
 export const generateMetadata = async ({ params }: JoinPageProps): Promise<Metadata> => {
   const preview = await getInvitePreview((await params).token);
   if (!preview) {
-    return { title: "Link no disponible", robots: { index: false, follow: false } };
+    return { title: "Enlace no disponible", robots: { index: false, follow: false } };
   }
   const { list } = preview;
   const owner = personFirstName(list.ownerName);
@@ -56,13 +56,31 @@ export default async function JoinListPage({ params }: JoinPageProps) {
     }
   }
 
+  // Signed in, the app shell already has the page's <main> and the invitation to sign up is noise.
+  const shell = { embedded: true, hideFooter: Boolean(user) };
+
   if (!preview) {
+    // The one-time link was used by this user's own request (FIL-I41-16): show it as pending.
+    const requested = user ? await pendingRequestThroughInvite(token, user.id) : null;
+    if (requested) {
+      return (
+        <SharePage {...shell}>
+          <section className="flex w-full flex-col items-center gap-5 text-center">
+            <div className="space-y-2">
+              <p className="text-sm text-fog">{requested.ownerName?.trim() || "Alguien"} te invitó a</p>
+              <h1 className="font-serif text-[2.25rem] leading-[1.05] tracking-[-0.02em] text-paper">{requested.name}</h1>
+            </div>
+            <JoinPendingCard />
+          </section>
+        </SharePage>
+      );
+    }
     return (
-      <SharePage>
+      <SharePage {...shell}>
         <section className="w-full space-y-3 rounded-3xl border border-white/10 bg-white/[0.04] px-6 py-8 text-center">
-          <h1 className="font-serif text-2xl text-paper">Este link ya no sirve</h1>
+          <h1 className="font-serif text-2xl text-paper">Este enlace ya no sirve</h1>
           <p className="text-pretty text-sm text-fog">
-            Puede que ya se haya usado, que haya vencido o que lo hayan apagado. Pídele un link nuevo a quien te lo
+            Puede que ya se haya usado, que haya vencido o que lo hayan apagado. Pídele un enlace nuevo a quien te lo
             mandó.
           </p>
           {user ? (
@@ -80,7 +98,7 @@ export default async function JoinListPage({ params }: JoinPageProps) {
   const callback = `/unirse/${token}`;
 
   return (
-    <SharePage>
+    <SharePage {...shell}>
       <section className="flex w-full flex-col items-center gap-5 text-center">
         {list.posters.length > 0 ? (
           <div className="flex items-end justify-center -space-x-6" aria-hidden="true">
