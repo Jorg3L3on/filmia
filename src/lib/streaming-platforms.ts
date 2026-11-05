@@ -213,6 +213,17 @@ export const primaryAvailabilityPlatform = (
 };
 
 /**
+ * The platform a deck card names (FIL-I41-14). `platform` was already chosen for this user
+ * when the card was built (`toCoverflowTitle` with their platforms), so it wins whenever the
+ * title still streams there; otherwise the first TMDB provider, as before.
+ */
+export const deckAvailabilityPlatform = (title: {
+  flatrateProviders?: readonly Pick<WatchProviderOffer, "providerId" | "name">[];
+  platform: Platform | null;
+}): Platform | null =>
+  primaryAvailabilityPlatform(title.flatrateProviders, title.platform, title.platform ? [title.platform] : []);
+
+/**
  * Where a title streams now: TMDB data wins once fetched (even if empty); the saved
  * «Dónde la vi» platform is only a stand-in for titles never checked against TMDB.
  */

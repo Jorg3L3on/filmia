@@ -31,7 +31,7 @@ import {
   TITLE_KIND_LABEL,
 } from "@/lib/labels";
 import { PICKS_SAVE_LABEL } from "@/lib/mark-seen";
-import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
+import { deckAvailabilityPlatform } from "@/lib/streaming-platforms";
 import type { Platform } from "@/db";
 import { recoPreviewHref } from "@/lib/tonight/reco-card";
 
@@ -149,10 +149,7 @@ export const DeckCard = memo(function DeckCard({
       ? "Más acciones: ver detalles, Quiero ver, ver esta noche, no me interesa"
       : "Más acciones: ahora no, mover a una lista, quitar de Quiero ver";
   const imdbLabel = formatImdbRating(title.imdbRating);
-  const availabilityPlatform = primaryAvailabilityPlatform(
-    title.flatrateProviders,
-    title.platform,
-  );
+  const availabilityPlatform = deckAvailabilityPlatform(title);
   const availabilityLabel = availabilityPlatform
     ? PLATFORM_SERVICE_LABEL[availabilityPlatform]
     : title.flatrateProviders?.[0]?.name;
