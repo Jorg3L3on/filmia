@@ -116,7 +116,9 @@ export const GenreCoverflow = ({
     return null;
   }
 
-  return (
+  // The indicator (Hoy's chapter bar) sits outside the listbox: a listbox may only hold its
+  // options, never a progressbar or buttons (UX-18, axe aria-required-children).
+  const listbox = (
     <div
       role="listbox"
       aria-label={label}
@@ -206,9 +208,7 @@ export const GenreCoverflow = ({
         )}
       </div>
 
-      {indicator ? (
-        indicator
-      ) : categories.length > 1 ? (
+      {indicator ? null : categories.length > 1 ? (
         <div className="genre-coverflow-dots" aria-hidden>
           {categories.map((category, index) => (
             <span
@@ -222,5 +222,14 @@ export const GenreCoverflow = ({
         </div>
       ) : null}
     </div>
+  );
+
+  return indicator ? (
+    <div className="mx-auto flex w-full max-w-lg flex-col items-center">
+      {listbox}
+      {indicator}
+    </div>
+  ) : (
+    listbox
   );
 };
