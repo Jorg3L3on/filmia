@@ -1,6 +1,7 @@
 "use server";
 
 import { and, desc, eq, inArray } from "drizzle-orm";
+import { publicErrorMessage } from "@/lib/public-error";
 import { redirect } from "next/navigation";
 import { db, listItems, lists } from "@/db";
 import {
@@ -322,7 +323,7 @@ export const saveTmdbTitleInLists = async ({
   } catch (caught) {
     return {
       ok: false,
-      error: caught instanceof Error ? caught.message : "No se pudo guardar en la lista.",
+      error: publicErrorMessage(caught, "No se pudo guardar en la lista."),
     };
   }
 };
