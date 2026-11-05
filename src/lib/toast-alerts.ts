@@ -17,7 +17,9 @@ export const TOAST_COPY = {
   markedSeen: "Marcada como vista",
   markedUnseen: "Marcada como no vista",
   diaryUpdated: "Diario actualizado",
+  /** The Quiero ver note (text). Stars are a «Calificación» (UX-11). */
   noteSaved: "Nota guardada",
+  ratingSaved: "Calificación guardada",
   noteRemoved: "Nota quitada",
   reservedTonight: "Reservada para esta noche",
   choiceConfirmed: "Elección confirmada",

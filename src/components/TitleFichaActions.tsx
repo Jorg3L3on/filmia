@@ -331,7 +331,7 @@ export const TitleFichaActions = ({
   const handleSaveRating = (next: { rating: number | null; review: string }) => {
     setPendingAction("rating");
     setRatingOpen(false);
-    showToast({ title: TOAST_COPY.noteSaved, description: titleName, poster });
+    showToast({ title: TOAST_COPY.ratingSaved, description: titleName, poster });
     run({ ...state, rating: next.rating, review: next.review || null }, async () => {
       try {
         const formData = new FormData();
@@ -555,7 +555,7 @@ export const TitleFichaActions = ({
             className={cn(groupItemClass(state.rating != null), ratingSpring.className, state.rating != null && "text-star")}
           >
             <StarIcon filled={state.rating != null} />
-            {state.rating != null ? formatStarScore(state.rating) : "Nota"}
+            {state.rating != null ? formatStarScore(state.rating) : "Calificar"}
           </button>
         )}
 

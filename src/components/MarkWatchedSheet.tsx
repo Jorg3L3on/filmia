@@ -163,7 +163,7 @@ const MarkWatchedSheetFields = ({
   const [note, setNote] = useState((review ?? "").slice(0, NOTE_MAX));
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | "">(platform ?? "");
   const [platformDirty, setPlatformDirty] = useState(false);
-  // Stars and Guardar first (FIL-I21-8); Fecha, Dónde la vi and Nota fold under «Más detalles»,
+  // Stars and Guardar first (FIL-I21-8); Fecha, Dónde la vi and Reseña fold under «Más detalles»,
   // open from the start when there is already a note or the date is not today.
   const [detailsOpen, setDetailsOpen] = useState(
     Boolean((review ?? "").trim()) || (hasInitialDate && initialWatchedAt !== todayDateInput()),
@@ -268,7 +268,7 @@ const MarkWatchedSheetFields = ({
       >
         <div className="space-y-2">
           <p className="text-center text-[11px] font-medium uppercase tracking-[0.18em] text-fog">
-            Tu nota
+            Tu calificación
           </p>
           <RatingStars value={value} onChange={setValue} />
         </div>
@@ -353,7 +353,7 @@ const MarkWatchedSheetFields = ({
 
             <label className="block space-y-2">
               <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-fog">
-                Nota
+                Reseña
               </span>
               <textarea
                 value={note}

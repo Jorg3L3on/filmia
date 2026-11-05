@@ -155,7 +155,7 @@ const RelinkSheetBody = ({
             Elige la {kind === "SERIES" ? "serie" : "película"} correcta
           </h2>
           <p className="text-xs text-mist">
-            Ahora: {titleName}. Tu nota, comentario, fecha y listas se quedan; solo cambia la ficha.
+            Ahora: {titleName}. Tu calificación, reseña, fecha y listas se quedan; solo cambia la ficha.
           </p>
         </div>
         <Button

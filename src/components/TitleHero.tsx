@@ -160,7 +160,7 @@ export const TitleHero = ({
                 <span className="liquid-glass liquid-glass-pill relative inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-star">
                   <StarGlyph />
                   {formatStarScore(rating)}
-                  <span className="font-normal text-fog">· Tu nota</span>
+                  <span className="font-normal text-fog">· Tu calificación</span>
                 </span>
               ) : reaction ? (
                 <span className="liquid-glass liquid-glass-pill relative inline-flex h-7 items-center rounded-full px-2.5 text-xs font-semibold text-paper/90">

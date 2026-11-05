@@ -60,7 +60,7 @@ export const ListDeckFooter = ({ title, className, onOpenMenu }: ListDeckFooterP
 
       <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
         {title.rating != null ? (
-          <span className="tonight-chip" title="Tu nota">
+          <span className="tonight-chip" title="Tu calificación">
             <span className="text-star" aria-hidden="true">★</span>
             <span className="font-semibold">{formatStarScore(title.rating)}</span>
             <span className="sr-only">estrellas, tu nota</span>
