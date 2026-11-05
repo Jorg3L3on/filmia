@@ -351,7 +351,15 @@ const PickRow = ({ pick, rank, listId, hero }: { pick: GroupView; rank: number; 
           </form>
         )}
         {film.chosen ? (
-          <span className="self-center text-xs font-semibold text-accent">Vamos con esta ✓</span>
+          // The pick stays where it is in the order (UX-15): marked, with a way to change it.
+          <>
+            <span className="self-center rounded-full bg-accent/15 px-2.5 py-1 text-xs font-semibold text-accent">
+              Esta noche ✓
+            </span>
+            <form action={clearTonight.bind(null, listId)}>
+              <PendingSubmit idleLabel="Cambiar" pendingLabel="…" variant="ghost" size="sm" />
+            </form>
+          </>
         ) : (
           <form action={chooseTonight.bind(null, listId, film.catalogId)}>
             <PendingSubmit idleLabel="Vamos con esta" pendingLabel="Marcando…" size="sm" />
