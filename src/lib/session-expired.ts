@@ -1,3 +1,4 @@
+import { watchNavigationFailures } from "@/lib/connection-watch";
 import { dismissToastsShownSince, setToastGate, showToast } from "@/lib/toast";
 import {
   SESSION_EXPIRED_BODY,
@@ -64,13 +65,18 @@ export const resetSessionExpired = () => {
 
 let installed = false;
 
-/** Watch every fetch of the page (Server Actions go through `window.fetch`). Idempotent. */
+/** Watch every fetch of the page (Server Actions and RSC navigations go through `window.fetch`). Idempotent. */
 export const installSessionWatch = () => {
   if (installed || typeof window === "undefined") {
     return;
   }
   installed = true;
-  const original = window.fetch.bind(window);
+  // A failed navigation says «Conexión perdida» (UX-17); «Reintentar» loads the page it wanted.
+  const original = watchNavigationFailures(
+    window.fetch.bind(window),
+    (path) => window.location.assign(path),
+    () => window.location.href,
+  );
   window.fetch = async (...args: Parameters<typeof fetch>) => {
     const response = await original(...args);
     if (isSessionExpiredResponse(response)) {

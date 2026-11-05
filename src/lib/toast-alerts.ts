@@ -60,6 +60,8 @@ export const TOAST_COPY = {
   sessionExpired: SESSION_EXPIRED_TITLE,
   sessionExpiredDetail: SESSION_EXPIRED_DETAIL,
   signIn: "Entrar",
+  connectionLost: "Conexión perdida",
+  connectionLostDetail: "Revisa tu señal y vuelve a intentarlo.",
 } as const;
 
 export const addedToLists = (count: number) =>
