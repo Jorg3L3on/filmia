@@ -30,6 +30,7 @@ import { isDomainError } from "@/lib/domain-error";
 import {
   addTitleToListFor,
   createListFor,
+  parseListDescription,
   parseListName,
   removeFromListFor,
   resolveListItemCatalogIds,
@@ -66,7 +67,11 @@ const saveListChanges = async (
   formData: FormData,
 ): Promise<ListSaveOutcome> => {
   const { userId, list: existing } = await requireListAccess(listId, "manage");
-  const description = String(formData.get("description") ?? "").trim() || null;
+  const describedAs = parseListDescription(formData.get("description"));
+  if ("error" in describedAs) {
+    return describedAs;
+  }
+  const { description } = describedAs;
   const fixed = isFixedListSlug(existing.slug);
 
   let name = existing.name;

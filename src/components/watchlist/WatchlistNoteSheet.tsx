@@ -4,9 +4,9 @@ import { useId, useState } from "react";
 import { Sheet, SheetHandle } from "@/components/Sheet";
 import type { FichaView } from "@/components/watchlist/types";
 import { cn } from "@/lib/cn";
+import { QUEUE_NOTE_MAX } from "@/lib/text-limits";
 import { fieldClass, pillActionClass } from "@/lib/ui";
 
-export const QUEUE_NOTE_MAX = 120;
 
 type WatchlistNoteSheetProps = {
   ficha: FichaView | null;
