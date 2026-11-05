@@ -21,7 +21,7 @@ export const PLATFORM_LABEL: Record<Platform, string> = {
   NETFLIX: "Netflix",
   PRIME: "Prime",
   DISNEY: "Disney+",
-  MAX: "Max",
+  MAX: "HBO Max",
   APPLE: "Apple TV+",
   PARAMOUNT: "Paramount+",
   CRUNCHYROLL: "Crunchyroll",
@@ -38,7 +38,7 @@ export const PLATFORM_SERVICE_LABEL: Record<Platform, string> = {
   NETFLIX: "Netflix",
   PRIME: "Prime Video",
   DISNEY: "Disney+",
-  MAX: "Max",
+  MAX: "HBO Max",
   APPLE: "Apple TV+",
   PARAMOUNT: "Paramount+",
   CRUNCHYROLL: "Crunchyroll",
@@ -55,7 +55,7 @@ export const PLATFORM_WATCH_LABEL: Record<Platform, string> = {
   NETFLIX: "Ver ahora en Netflix",
   PRIME: "Ver ahora en Prime",
   DISNEY: "Ver ahora en Disney+",
-  MAX: "Ver ahora en Max",
+  MAX: "Ver ahora en HBO Max",
   APPLE: "Ver ahora en Apple TV+",
   PARAMOUNT: "Ver ahora en Paramount+",
   CRUNCHYROLL: "Ver ahora en Crunchyroll",
@@ -175,4 +175,18 @@ const IMDB_ID = /^tt\d{7,10}$/;
 export const imdbTitleUrl = (imdbId: string | null | undefined) => {
   const id = imdbId?.trim();
   return id && IMDB_ID.test(id) ? `https://www.imdb.com/title/${id}/` : null;
+};
+
+/**
+ * A count over a list that may mix films and series (UX-05): «N títulos» when mixed or unknown,
+ * «N películas» / «N series» only when every item is of that kind. Same word as Quiero ver.
+ */
+export const collectionCountLabel = (total: number, seriesCount?: number | null) => {
+  if (seriesCount != null && total > 0 && seriesCount === 0) {
+    return total === 1 ? "1 película" : `${total} películas`;
+  }
+  if (seriesCount != null && total > 0 && seriesCount === total) {
+    return total === 1 ? "1 serie" : `${total} series`;
+  }
+  return total === 1 ? "1 título" : `${total} títulos`;
 };

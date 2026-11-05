@@ -16,7 +16,7 @@ import {
   SERIES_STATUS_LABEL,
   TITLE_KIND_LABEL,
 } from "@/lib/labels";
-import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
+import { deckAvailabilityPlatform } from "@/lib/streaming-platforms";
 import type { Platform } from "@/db";
 
 export type DeckFooterProps = {
@@ -40,7 +40,7 @@ export const DeckFooter = ({
 }: DeckFooterProps) => {
   const activePlatform: Platform | null =
     footer === "full" && !isSheet
-      ? primaryAvailabilityPlatform(activeTitle.flatrateProviders, activeTitle.platform)
+      ? deckAvailabilityPlatform(activeTitle)
       : null;
 
   if (isSheet) {

@@ -71,6 +71,8 @@ type TitleFichaActionsProps = {
   platform: Platform | null;
   /** This title is tonight's pin right now. */
   pinnedTonight: boolean;
+  /** A premiere not yet in cinemas (UX-03): only Quiero ver and Lista until it opens. */
+  prerelease?: boolean;
   posterPath?: string | null;
   /** The user's lists panel; a preview passes `previewLists` instead (nothing is written until confirmed). */
   listsPanel?: ReactNode;
@@ -118,6 +120,7 @@ export const TitleFichaActions = ({
   review,
   platform,
   pinnedTonight,
+  prerelease = false,
   posterPath = null,
   listsPanel,
   previewLists = [],
@@ -184,6 +187,8 @@ export const TitleFichaActions = ({
 
   const displayedWatched =
     diaryHold === "restoring" || (diaryHold !== "removed" && (state.watched || seenOptimistic));
+  // Before the premiere (UX-03) there is nothing to watch tonight, mark or rate: Quiero ver leads.
+  const beforeRelease = prerelease && !diaryLog && !displayedWatched && state.rating == null;
 
   const handlePin = () => {
     if (state.pinned || isPinning) {
@@ -224,6 +229,10 @@ export const TitleFichaActions = ({
   };
 
   const handleToggleWatchlist = () => {
+    // aria-disabled, not disabled, while it saves: a disabled button drops focus to <body> (UX-12).
+    if (pendingAction === "watchlist") {
+      return;
+    }
     const next = !state.inWatchlist;
     setPendingAction("watchlist");
     watchlistSpring.trigger();
@@ -326,7 +335,7 @@ export const TitleFichaActions = ({
   const handleSaveRating = (next: { rating: number | null; review: string }) => {
     setPendingAction("rating");
     setRatingOpen(false);
-    showToast({ title: TOAST_COPY.noteSaved, description: titleName, poster });
+    showToast({ title: TOAST_COPY.ratingSaved, description: titleName, poster });
     run({ ...state, rating: next.rating, review: next.review || null }, async () => {
       try {
         const formData = new FormData();
@@ -444,7 +453,23 @@ export const TitleFichaActions = ({
           <CheckIcon />
           {isLogging ? "Anotando…" : `Registrar vista · ${diaryDayLabel(diaryLog.date)}`}
         </button>
-      ) : displayedWatched ? null : state.pinned ? (
+      ) : displayedWatched ? null : beforeRelease ? (
+        <button
+          type="button"
+          onClick={handleToggleWatchlist}
+          aria-disabled={pendingAction === "watchlist" || undefined}
+          aria-pressed={state.inWatchlist}
+          className={cn(
+            "press-scale relative flex h-[3.25rem] w-full items-center justify-center gap-2 overflow-hidden rounded-full px-5 text-base font-semibold sm:w-auto sm:px-7",
+            state.inWatchlist ? "bg-accent/14 text-accent-hover" : "bg-accent text-ink",
+            watchlistSpring.className,
+            focusRing,
+          )}
+        >
+          <BookmarkIcon filled={state.inWatchlist} />
+          {state.inWatchlist ? "En Quiero ver" : "Quiero ver"}
+        </button>
+      ) : state.pinned ? (
         <Link
           href={HOY_PARA_TI_HREF}
           aria-label="Fijada para esta noche. Ver en Hoy"
@@ -481,32 +506,34 @@ export const TitleFichaActions = ({
         aria-label="Acciones del título"
         className={cn(
           "ficha-action-group grid gap-1 p-1.5 sm:flex sm:gap-0.5 sm:rounded-full sm:p-1",
-          diaryLog ? "grid-cols-3" : "grid-cols-4",
+          beforeRelease ? "grid-cols-1" : diaryLog ? "grid-cols-3" : "grid-cols-4",
         )}
       >
-        <button
-          type="button"
-          onClick={handleToggleWatchlist}
-          disabled={pendingAction === "watchlist"}
-          aria-pressed={state.inWatchlist}
-          className={cn(
-            groupItemClass(state.inWatchlist),
-            watchlistSpring.className,
-            state.inWatchlist && "bg-accent/14 text-accent-hover",
-          )}
-        >
-          <BookmarkIcon filled={state.inWatchlist} />
-          <span>
-            {state.inWatchlist ? <span className="max-[359px]:hidden">En </span> : null}
-            Quiero ver
-          </span>
-        </button>
+        {beforeRelease ? null : (
+          <button
+            type="button"
+            onClick={handleToggleWatchlist}
+            aria-disabled={pendingAction === "watchlist" || undefined}
+            aria-pressed={state.inWatchlist}
+            className={cn(
+              groupItemClass(state.inWatchlist),
+              watchlistSpring.className,
+              state.inWatchlist && "bg-accent/14 text-accent-hover",
+            )}
+          >
+            <BookmarkIcon filled={state.inWatchlist} />
+            <span>
+              {state.inWatchlist ? <span className="max-[359px]:hidden">En </span> : null}
+              Quiero ver
+            </span>
+          </button>
+        )}
 
-        {diaryLog ? null : (
+        {diaryLog || beforeRelease ? null : (
           <button
             type="button"
             onClick={handleToggleWatched}
-            disabled={diaryHold === "restoring"}
+            aria-disabled={diaryHold === "restoring" || undefined}
             aria-pressed={displayedWatched}
             aria-label={displayedWatched ? "Quitar de visto" : "Marcar como visto"}
             className={cn(
@@ -521,18 +548,20 @@ export const TitleFichaActions = ({
           </button>
         )}
 
-        <button
-          type="button"
-          onClick={() => {
-            ratingSpring.trigger();
-            setRatingOpen(true);
-          }}
-          aria-expanded={ratingOpen}
-          className={cn(groupItemClass(state.rating != null), ratingSpring.className, state.rating != null && "text-star")}
-        >
-          <StarIcon filled={state.rating != null} />
-          {state.rating != null ? formatStarScore(state.rating) : "Nota"}
-        </button>
+        {beforeRelease ? null : (
+          <button
+            type="button"
+            onClick={() => {
+              ratingSpring.trigger();
+              setRatingOpen(true);
+            }}
+            aria-expanded={ratingOpen}
+            className={cn(groupItemClass(state.rating != null), ratingSpring.className, state.rating != null && "text-star")}
+          >
+            <StarIcon filled={state.rating != null} />
+            {state.rating != null ? formatStarScore(state.rating) : "Calificar"}
+          </button>
+        )}
 
         <button
           type="button"

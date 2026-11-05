@@ -1,6 +1,7 @@
 "use server";
 
 import { and, desc, eq, inArray } from "drizzle-orm";
+import { publicErrorMessage } from "@/lib/public-error";
 import { redirect } from "next/navigation";
 import { db, listItems, lists } from "@/db";
 import {
@@ -30,6 +31,7 @@ import { isDomainError } from "@/lib/domain-error";
 import {
   addTitleToListFor,
   createListFor,
+  parseListDescription,
   parseListName,
   removeFromListFor,
   resolveListItemCatalogIds,
@@ -66,7 +68,11 @@ const saveListChanges = async (
   formData: FormData,
 ): Promise<ListSaveOutcome> => {
   const { userId, list: existing } = await requireListAccess(listId, "manage");
-  const description = String(formData.get("description") ?? "").trim() || null;
+  const describedAs = parseListDescription(formData.get("description"));
+  if ("error" in describedAs) {
+    return describedAs;
+  }
+  const { description } = describedAs;
   const fixed = isFixedListSlug(existing.slug);
 
   let name = existing.name;
@@ -317,7 +323,7 @@ export const saveTmdbTitleInLists = async ({
   } catch (caught) {
     return {
       ok: false,
-      error: caught instanceof Error ? caught.message : "No se pudo guardar en la lista.",
+      error: publicErrorMessage(caught, "No se pudo guardar en la lista."),
     };
   }
 };

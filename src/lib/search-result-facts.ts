@@ -1,5 +1,6 @@
 import type { Platform, TitleKind } from "@/db";
 import type { AffinityLevel } from "@/lib/tonight/affinity";
+import { providerDisplayName } from "@/lib/streaming-platforms";
 import { awardChipLabel } from "@/lib/awards";
 import { parseStoredTmdbGenres } from "@/lib/diary-picks";
 import { catalogNeedsEnrichment } from "@/lib/title-preview";
@@ -82,7 +83,11 @@ export const PENDING_FACTS: SearchResultFacts = {
 export const pickPlatformName = (watchProvidersMx: unknown): string | null => {
   const flatrate = parseStoredWatchProviders(watchProvidersMx)?.flatrate ?? [];
   const service = flatrate.find((offer) => !/channel/i.test(offer.name)) ?? flatrate[0];
-  return service ? service.name.replace(/\s+Amazon Channel$/i, "").trim() || service.name : null;
+  if (!service) {
+    return null;
+  }
+  const bare = { ...service, name: service.name.replace(/\s+Amazon Channel$/i, "").trim() || service.name };
+  return providerDisplayName(bare);
 };
 
 /** The row's line from a Catalog row: IMDb, award chip, runtime, first genre, first MX subscription. */

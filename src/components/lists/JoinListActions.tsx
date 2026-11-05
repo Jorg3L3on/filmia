@@ -19,6 +19,22 @@ const secondary = cn(
 
 type State = "idle" | "pending" | "unavailable" | "error";
 
+/** «Solicitud enviada» (FIL-I41-16): after the request, and on every later visit to the link. */
+export const JoinPendingCard = () => (
+  <div className="w-full max-w-sm space-y-4 rounded-3xl border border-accent/30 bg-accent/[0.08] px-5 py-6 shadow-[0_0_60px_-20px_var(--color-accent)]">
+    <div className="space-y-1">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">En espera</p>
+      <h2 className="font-serif text-xl text-paper">Solicitud enviada</h2>
+      <p className="text-pretty text-sm text-fog">
+        Te avisamos cuando te acepten. Mientras, la verás en Listas como pendiente.
+      </p>
+    </div>
+    <Link href="/listas" className={primary}>
+      Ir a Listas
+    </Link>
+  </div>
+);
+
 /**
  * Canvas 2·1–2·3: sign in (or create an account) and come back here, then
  * «Solicitar unirme»; once sent, «En espera» until the owner decides.
@@ -26,7 +42,6 @@ type State = "idle" | "pending" | "unavailable" | "error";
 export const JoinListActions = ({
   token,
   ownerFirstName,
-  listName,
   signedInAs,
   callbackPath,
   initiallyPending,
@@ -59,30 +74,14 @@ export const JoinListActions = ({
   }
 
   if (state === "pending") {
-    return (
-      <div className="w-full max-w-sm space-y-4 rounded-3xl border border-accent/30 bg-accent/[0.08] px-5 py-6 shadow-[0_0_60px_-20px_var(--color-accent)]">
-        <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">En espera</p>
-          <h2 className="font-serif text-xl text-paper">Solicitud enviada</h2>
-          <p className="text-pretty text-sm text-fog">
-            {ownerFirstName} tiene que aprobarte. Mientras, «{listName}» te espera en Listas → Compartidas conmigo.
-          </p>
-        </div>
-        <Link href="/" className={primary}>
-          Ir a Hoy
-        </Link>
-        <Link href="/listas" className="block text-sm text-fog underline-offset-4 hover:text-paper hover:underline">
-          Ver Compartidas conmigo
-        </Link>
-      </div>
-    );
+    return <JoinPendingCard />;
   }
 
   if (state === "unavailable") {
     return (
       <div className="w-full max-w-sm space-y-2 rounded-3xl border border-white/10 bg-white/[0.04] px-5 py-6">
-        <h2 className="font-serif text-xl text-paper">Este link ya no sirve</h2>
-        <p className="text-sm text-fog">Pídele un link nuevo a {ownerFirstName}.</p>
+        <h2 className="font-serif text-xl text-paper">Este enlace ya no sirve</h2>
+        <p className="text-sm text-fog">Pídele un enlace nuevo a {ownerFirstName}.</p>
       </div>
     );
   }

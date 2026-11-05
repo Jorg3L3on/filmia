@@ -12,7 +12,39 @@ import { showDiaryRemovedToast } from "@/lib/diary-undo";
 import { slugify } from "@/lib/labels";
 import { reviewShareText } from "@/lib/share-card";
 import { showActionError, TOAST_COPY, toastPoster, retryAfterRevert } from "@/lib/toast-alerts";
-import { buttonClass, wellClass } from "@/lib/ui";
+import { cn } from "@/lib/cn";
+import { buttonClass, focusRing, wellClass } from "@/lib/ui";
+
+const REVIEW_CLAMP_CHARS = 240;
+
+/** The review saved with «Vi esto» (FIL-I41-17): four lines, «Más» opens the rest. */
+const WatchedReview = ({ text }: { text: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  const long = text.length > REVIEW_CLAMP_CHARS || text.split("\n").length > 4;
+  return (
+    <figure className="space-y-1.5">
+      <figcaption className="text-[11px] font-medium uppercase tracking-[0.18em] text-mist">Reseña</figcaption>
+      <blockquote
+        className={cn(
+          "whitespace-pre-line text-pretty text-sm leading-relaxed text-paper/90",
+          long && !expanded && "line-clamp-4",
+        )}
+      >
+        {text}
+      </blockquote>
+      {long ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((value) => !value)}
+          aria-expanded={expanded}
+          className={cn("text-sm font-medium text-accent hover:text-accent-hover", focusRing)}
+        >
+          {expanded ? "Menos" : "Más"}
+        </button>
+      ) : null}
+    </figure>
+  );
+};
 
 type FichaWatchedSectionProps = {
   titleId: string;
@@ -92,6 +124,8 @@ export const FichaWatchedSection = ({
           Vista el {formatWatchedDate(typeof watchedAt === "string" ? new Date(watchedAt) : watchedAt)}
         </p>
       </header>
+
+      {review?.trim() ? <WatchedReview text={review.trim()} /> : null}
 
       <div className="flex flex-wrap gap-3">
         <Button type="button" onClick={() => setOpen(true)}>

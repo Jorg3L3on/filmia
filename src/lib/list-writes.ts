@@ -1,4 +1,10 @@
 import { createId } from "@paralleldrive/cuid2";
+import {
+  LIST_DESCRIPTION_MAX,
+  LIST_DESCRIPTION_TOO_LONG,
+  LIST_NAME_MAX,
+  LIST_NAME_TOO_LONG,
+} from "@/lib/text-limits";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db, listItems, lists } from "@/db";
@@ -64,16 +70,27 @@ export const userListNameError = async (userId: string, name: string, current?: 
 
 export const parseListName = (value: unknown): { name: string } | { error: string } => {
   try {
-    return { name: parseRequiredName(typeof value === "string" ? value : null) };
+    const name = parseRequiredName(typeof value === "string" ? value : null);
+    if (name.length > LIST_NAME_MAX) return { error: LIST_NAME_TOO_LONG };
+    return { name };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Datos no válidos." };
   }
+};
+
+/** Optional list description: trimmed, null when empty, refused above the cap (FIL-I41-9). */
+export const parseListDescription = (value: unknown): { description: string | null } | { error: string } => {
+  const description = typeof value === "string" ? value.trim() : "";
+  if (description.length > LIST_DESCRIPTION_MAX) return { error: LIST_DESCRIPTION_TOO_LONG };
+  return { description: description || null };
 };
 
 /** A new COLLECTION list of the person; name errors are DomainError validation. */
 export const createListFor = async (userId: string, input: { name: string; description?: string | null }) => {
   const parsed = parseListName(input.name);
   if ("error" in parsed) throw new DomainError("validation", parsed.error);
+  const describedAs = parseListDescription(input.description);
+  if ("error" in describedAs) throw new DomainError("validation", describedAs.error);
   const nameError = await userListNameError(userId, parsed.name);
   if (nameError) throw new DomainError("validation", nameError);
 
@@ -83,7 +100,7 @@ export const createListFor = async (userId: string, input: { name: string; descr
     id: listId,
     userId,
     name: parsed.name,
-    description: input.description?.trim() || null,
+    description: describedAs.description,
     kind: "COLLECTION",
     createdAt: now,
     updatedAt: now,

@@ -83,6 +83,36 @@ export const parseTmdbYear = (value: string | null | undefined) => {
   return Number.isInteger(year) ? year : null;
 };
 
+/**
+ * TMDB's TV genres that pair two film genres, or have an English name in es-MX (UX-08). Each is
+ * read as its film equivalents, so filters and lenses show one Spanish chip per genre.
+ */
+const TV_GENRE_EQUIVALENTS: Record<number, TmdbGenre[]> = {
+  10759: [
+    { id: 28, name: "Acción" },
+    { id: 12, name: "Aventura" },
+  ],
+  10765: [
+    { id: 878, name: "Ciencia ficción" },
+    { id: 14, name: "Fantasía" },
+  ],
+  10768: [{ id: 10752, name: "Bélica" }],
+  10762: [{ id: 10762, name: "Infantil" }],
+  10763: [{ id: 10763, name: "Noticias" }],
+  10764: [{ id: 10764, name: "Reality" }],
+  10766: [{ id: 10766, name: "Telenovela" }],
+  10767: [{ id: 10767, name: "Entrevistas" }],
+};
+
+/** Raw TMDB ids to match in stored JSON for these (already merged) genre ids: TV ids included. */
+export const storedGenreIdsFor = (ids: readonly number[]) => {
+  const wanted = new Set(ids);
+  for (const [tvId, equivalents] of Object.entries(TV_GENRE_EQUIVALENTS)) {
+    if (equivalents.some((genre) => wanted.has(genre.id))) wanted.add(Number(tvId));
+  }
+  return [...wanted];
+};
+
 export const parseTmdbGenres = (value: unknown): TmdbGenre[] => {
   if (!Array.isArray(value)) {
     return [];
@@ -103,8 +133,12 @@ export const parseTmdbGenres = (value: unknown): TmdbGenre[] => {
       continue;
     }
 
-    seen.add(id);
-    genres.push({ id, name });
+    for (const genre of TV_GENRE_EQUIVALENTS[id] ?? [{ id, name }]) {
+      if (!seen.has(genre.id)) {
+        seen.add(genre.id);
+        genres.push(genre);
+      }
+    }
   }
 
   return genres;

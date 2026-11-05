@@ -238,6 +238,20 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     return { cards: all, lensStarts: starts, dealt: dealtCount };
   }, [lensCards, lenses]);
 
+  // «Ver esta noche» on a card (UX-16): the pinned film leads Para ti once the decks refresh, so
+  // the deck follows it there and keeps it in the center instead of showing the next card.
+  const pinnedCardId = reco.pinnedId ? (reco.titleIdOf(reco.pinnedId) ?? reco.pinnedId) : null;
+  const pinnedIndex = pinnedCardId
+    ? cards.findIndex((card) => card.id === pinnedCardId || card.id === reco.pinnedId)
+    : -1;
+  const [followedPin, setFollowedPin] = useState(-1);
+  if (pinnedIndex !== followedPin) {
+    setFollowedPin(pinnedIndex);
+    if (pinnedIndex >= 0) {
+      setFocusRequest((current) => ({ index: pinnedIndex, seq: (current?.seq ?? 0) + 1 }));
+    }
+  }
+
   const activeLens = lenses.find((lens) => lens.slug === activeSlug) ?? lenses[0] ?? null;
   useNavLabel(activeLens ? `Hoy · ${activeLens.name}` : "Hoy");
 
@@ -517,6 +531,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
   return (
     <TonightProvider value={handlers}>
       <div className="diario-que-ver-shell tonight-sala flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-sm:-mt-5 max-sm:gap-1">
+        {/* The page's one heading (UX-18): the eyebrow and deck carry the visible titles. */}
+        <h1 className="sr-only">Hoy</h1>
         {/* Desktop keeps the three rows; the phone folds the eyebrow into the rail (FIL-I21-3). */}
         <div className="tonight-eyebrow-row shrink-0 max-sm:hidden">
           <TonightEyebrow now={now} nightEnds={decks.nightEnds} />

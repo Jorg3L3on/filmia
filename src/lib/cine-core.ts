@@ -305,3 +305,12 @@ export const watchlistFirst = <T extends { tmdbId: number }>(
   }
   return [...films.filter((film) => wanted.has(film.tmdbId)), ...films.filter((film) => !wanted.has(film.tmdbId))];
 };
+
+/**
+ * A premiere not yet in MX cinemas (UX-03): its ficha offers only what can be done before it
+ * opens (Quiero ver, Lista). `today` is the MX calendar day (`mxToday()`).
+ */
+export const isPrerelease = (
+  cinema: { status: "now" | "upcoming"; mxReleaseDate: string } | null,
+  today: string,
+) => cinema?.status === "upcoming" && cinema.mxReleaseDate > today;

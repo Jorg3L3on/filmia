@@ -10,10 +10,12 @@ type IntroStepProps = {
   headingRef: RefObject<HTMLHeadingElement | null>;
 };
 
+/** In the order the steps really come (ONBOARDING_STEPS), the required one included (UX-01). */
 const BEATS = [
   { icon: "★", title: "Tu favorita de siempre", text: "Para saber qué te mueve." },
   { icon: "▣", title: "Lo mejor del año", text: "Marca lo que ya viste." },
   { icon: "▶", title: "Tus plataformas", text: "Hoy solo propone lo que puedes ver ya." },
+  { icon: "+", title: "Lo que quieres ver", text: "Elige 3 para que Hoy tenga de dónde partir." },
   { icon: "☾", title: "Tu hora de dormir", text: "Para que la peli acabe a tiempo." },
 ] as const;
 
@@ -46,7 +48,7 @@ export const IntroStep = ({ userName, headingRef }: IntroStepProps) => {
         }
         lede={
           <span className="mx-auto block max-w-sm text-center">
-            Cuatro preguntas, menos de dos minutos. Al final, Hoy ya sabrá qué proponerte esta noche.
+            Unas preguntas rápidas, menos de dos minutos. Al final, Hoy ya sabrá qué proponerte esta noche.
           </span>
         }
       />

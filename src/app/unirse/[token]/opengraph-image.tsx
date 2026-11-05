@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { collectionCountLabel } from "@/lib/labels";
 import { excerpt } from "@/lib/share-card";
 import { getInvitePreview } from "@/lib/list-invites";
 import { personFirstName } from "@/lib/person-avatar";
@@ -25,7 +26,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
       .filter((poster) => poster.posterPath)
       .map(async (poster) => ({ name: poster.name, src: await ogImageSrc(tmdbPosterUrl(poster.posterPath, "w342")) })),
   );
-  const count = list.total === 1 ? "1 película" : `${list.total} películas`;
+  const count = collectionCountLabel(list.total);
 
   return new ImageResponse(
     (

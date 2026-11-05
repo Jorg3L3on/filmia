@@ -5,7 +5,7 @@ import { PlatformLogo } from "@/components/PlatformLogo";
 import type { CoverflowTitle } from "@/components/coverflow/types";
 import { cn } from "@/lib/cn";
 import { formatStarScore, PLATFORM_SERVICE_LABEL, TITLE_KIND_LABEL } from "@/lib/labels";
-import { primaryAvailabilityPlatform } from "@/lib/streaming-platforms";
+import { deckAvailabilityPlatform, providerDisplayName } from "@/lib/streaming-platforms";
 import { focusRing } from "@/lib/ui";
 
 type ListDeckFooterProps = {
@@ -27,10 +27,10 @@ export const ListDeckFooter = ({ title, className, onOpenMenu }: ListDeckFooterP
   }
   metaParts.push(...(genreNames.length > 0 ? genreNames : [TITLE_KIND_LABEL[title.kind]]));
 
-  const platform = primaryAvailabilityPlatform(title.flatrateProviders, title.platform);
+  const platform = deckAvailabilityPlatform(title);
   const platformLabel = platform
     ? PLATFORM_SERVICE_LABEL[platform]
-    : (title.flatrateProviders?.[0]?.name ?? null);
+    : (title.flatrateProviders?.[0] ? providerDisplayName(title.flatrateProviders[0]) : null);
 
   return (
     <div
@@ -60,7 +60,7 @@ export const ListDeckFooter = ({ title, className, onOpenMenu }: ListDeckFooterP
 
       <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
         {title.rating != null ? (
-          <span className="tonight-chip" title="Tu nota">
+          <span className="tonight-chip" title="Tu calificación">
             <span className="text-star" aria-hidden="true">★</span>
             <span className="font-semibold">{formatStarScore(title.rating)}</span>
             <span className="sr-only">estrellas, tu nota</span>

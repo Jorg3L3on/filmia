@@ -1,6 +1,7 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
+import { isSessionExpiredError, NEXT_UNEXPECTED_RESPONSE } from "@/lib/session-expired-copy";
 
 export {
   sameIdList,
@@ -11,7 +12,10 @@ export {
 export const actionErrorMessage = (
   error: unknown,
   fallback = "No se pudo guardar.",
-) => (error instanceof Error ? error.message : fallback);
+) =>
+  error instanceof Error && error.message && error.message !== NEXT_UNEXPECTED_RESPONSE
+    ? error.message
+    : fallback;
 
 /**
  * Optimistic value that stays put after the transition ends (until the
@@ -46,7 +50,8 @@ export const useStickyOptimistic = <T,>(
         await action();
         setConfirmed(next);
       } catch (caught) {
-        setError(actionErrorMessage(caught));
+        // «Sesión vencida» is already the one toast on screen (FIL-I41-18): no inline copy.
+        setError(isSessionExpiredError(caught) ? null : actionErrorMessage(caught));
       }
     });
   };

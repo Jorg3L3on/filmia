@@ -24,7 +24,7 @@ import type { DiaryLog } from "@/lib/title-preview";
 import { peopleRailItems, type TmdbPerson } from "@/lib/tmdb-people";
 import type { WatchProvidersResult } from "@/lib/watch-providers-cache";
 import type { getCinemaRelease } from "@/lib/cine";
-import { cinemaChipFor, mxToday } from "@/lib/cine-core";
+import { cinemaChipFor, isPrerelease, mxToday } from "@/lib/cine-core";
 import type { getAssignableLists, getRelatedTitles, getTitleById, getUserStreamingPlatforms } from "@/lib/queries";
 
 type TitleDetail = NonNullable<Awaited<ReturnType<typeof getTitleById>>>;
@@ -276,14 +276,20 @@ export const TitleActionsBlock = async ({
   title,
   listsPromise,
   pinnedPromise,
+  cinemaPromise,
   diaryLog = null,
 }: {
   title: TitleDetail;
   listsPromise: Promise<AssignableLists>;
   pinnedPromise: Promise<string | null>;
+  cinemaPromise?: ReturnType<typeof getCinemaRelease>;
   diaryLog?: DiaryLog | null;
 }) => {
-  const [assignableLists, pinnedTitleId] = await Promise.all([listsPromise, pinnedPromise]);
+  const [assignableLists, pinnedTitleId, cinema] = await Promise.all([
+    listsPromise,
+    pinnedPromise,
+    cinemaPromise ?? Promise.resolve(null),
+  ]);
   const { memberListIds, inWatchlist, listCount } = titleMembership(title);
 
   return (
@@ -299,6 +305,7 @@ export const TitleActionsBlock = async ({
       review={title.review ?? null}
       platform={title.platform ?? null}
       pinnedTonight={pinnedTitleId === title.id}
+      prerelease={isPrerelease(cinema, mxToday())}
       posterPath={title.posterPath}
       listsPanel={
         <TitleListsPanel

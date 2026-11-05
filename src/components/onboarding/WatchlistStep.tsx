@@ -22,6 +22,8 @@ type WatchlistStepProps = {
    * grid, but it counts every title in the account toward three and always has suggestions.
    */
   variant?: "quiero-ver" | "tres";
+  /** «Elige 3» reached by «Saltar a lo mínimo» or an early «Entrar» (UX-02). */
+  detoured?: boolean;
   /** Titles in the account (seen, rated, favorite or queued), for the «tres» counter. */
   accountTitleCount?: number;
   platforms: Platform[];
@@ -47,6 +49,7 @@ type Candidate = {
 
 export const WatchlistStep = ({
   variant = "quiero-ver",
+  detoured = false,
   accountTitleCount = 0,
   platforms,
   libraryTmdbIds,
@@ -174,7 +177,7 @@ export const WatchlistStep = ({
       {isQuickPick ? (
         <StepHeader
           headingRef={headingRef}
-          eyebrow="Antes de entrar"
+          eyebrow={detoured ? "Solo falta esto para entrar" : "Antes de entrar"}
           title={
             <>
               Elige <span className="text-accent">3</span> para empezar

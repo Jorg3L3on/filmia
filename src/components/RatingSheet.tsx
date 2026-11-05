@@ -74,7 +74,7 @@ const RatingSheetFields = ({
       <div className="flex flex-col items-center px-5 pt-3">
         <SheetHandle />
         <h2 id={titleDomId} className="font-serif text-3xl text-paper">
-          Tu nota
+          Tu calificación
         </h2>
       </div>
 
@@ -82,7 +82,7 @@ const RatingSheetFields = ({
         <RatingStars value={value} onChange={setValue} />
 
         <label className="block space-y-2">
-          <span className="sr-only">Nota corta opcional</span>
+          <span className="sr-only">Reseña corta opcional</span>
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value.slice(0, NOTE_MAX))}

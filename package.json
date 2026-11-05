@@ -18,6 +18,7 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
     "db:seed:tutorial": "tsx scripts/seed-demo-tutorial.ts",
+    "db:seed:audit": "tsx scripts/seed-audit.ts",
     "db:backfill-metadata": "tsx scripts/backfill-metadata.ts",
     "db:set-password": "tsx scripts/set-password.ts",
     "db:clone-account": "tsx scripts/clone-account.ts",

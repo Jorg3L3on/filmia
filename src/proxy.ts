@@ -5,6 +5,11 @@ import { isSessionCurrent } from "@/lib/auth/session-version";
 import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
 import { isProxyStaticAsset } from "@/lib/proxy-static";
 import { requestOrigin } from "@/lib/request-origin";
+import {
+  SESSION_EXPIRED_BODY,
+  SESSION_EXPIRED_HEADER,
+  SESSION_EXPIRED_VALUE,
+} from "@/lib/session-expired-copy";
 import { isToastBenchEnabled } from "@/lib/toast";
 
 const LOGIN_PATH = "/login";
@@ -100,6 +105,17 @@ export const proxy = async (request: Request) => {
   }
 
   if (!loggedIn) {
+    // A Server Action cannot follow a redirect to /login: the client would get an empty result
+    // and show success (FIL-I41-18). Answer 401 in plain text so the action rejects and the page
+    // can say «Sesión vencida».
+    if (request.headers.has("next-action")) {
+      return respond(
+        new NextResponse(SESSION_EXPIRED_BODY, {
+          status: 401,
+          headers: { "content-type": "text/plain", [SESSION_EXPIRED_HEADER]: SESSION_EXPIRED_VALUE },
+        }),
+      );
+    }
     const loginUrl = new URL(LOGIN_PATH, requestOrigin(request));
     const callbackPath = `${pathname}${new URL(request.url).search}`;
     if (callbackPath && callbackPath !== "/") {

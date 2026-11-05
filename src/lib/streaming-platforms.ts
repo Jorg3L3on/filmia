@@ -174,11 +174,30 @@ export const matchWatchProviderPlatform = (
   return null;
 };
 
+/** «HBO Max Amazon Channel», «MGM+ Apple TV Channel», «… Premium»: add-ons sold apart (UX-04). */
+export const isAddOnChannel = (provider: Pick<WatchProviderOffer, "name">) =>
+  /\b(channel|premium)\b/i.test(provider.name);
+
+/**
+ * One name per service across the app (UX-04): «HBO Max», «Paramount+», whatever TMDB calls the
+ * main offer. Add-on channels keep their own name, with the service inside it spelled the same.
+ */
+export const providerDisplayName = (provider: Pick<WatchProviderOffer, "providerId" | "name">) => {
+  const platform = isAddOnChannel(provider) ? null : matchWatchProviderPlatform(provider);
+  if (platform) {
+    return PLATFORM_SERVICE_LABEL[platform];
+  }
+  return provider.name
+    .replace(/\bParamount Plus\b/g, "Paramount+")
+    .replace(/^Max\b/, "HBO Max");
+};
+
+/** «Tuya» (UX-04): the user's own subscription, never an add-on channel of it. */
 export const isUserStreamingProvider = (
   provider: Pick<WatchProviderOffer, "providerId" | "name">,
   userPlatforms: readonly Platform[],
 ) => {
-  if (userPlatforms.length === 0) {
+  if (userPlatforms.length === 0 || isAddOnChannel(provider)) {
     return false;
   }
 
@@ -211,6 +230,17 @@ export const primaryAvailabilityPlatform = (
 
   return fallback;
 };
+
+/**
+ * The platform a deck card names (FIL-I41-14). `platform` was already chosen for this user
+ * when the card was built (`toCoverflowTitle` with their platforms), so it wins whenever the
+ * title still streams there; otherwise the first TMDB provider, as before.
+ */
+export const deckAvailabilityPlatform = (title: {
+  flatrateProviders?: readonly Pick<WatchProviderOffer, "providerId" | "name">[];
+  platform: Platform | null;
+}): Platform | null =>
+  primaryAvailabilityPlatform(title.flatrateProviders, title.platform, title.platform ? [title.platform] : []);
 
 /**
  * Where a title streams now: TMDB data wins once fetched (even if empty); the saved

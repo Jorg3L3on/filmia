@@ -29,6 +29,7 @@ import { cn } from "@/lib/cn";
 import type { LibraryEntry, SuggestionItem, YearGrid, YearGridItem } from "@/lib/onboarding/load";
 import type { PayoffPayload } from "@/lib/onboarding/payoff";
 import {
+  FIRST_STEP,
   QUICK_PICK_STEP,
   countAccountTitles,
   needsQuickPicks,
@@ -110,6 +111,8 @@ export const OnboardingFlow = ({
   const router = useRouter();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [step, setStep] = useState<OnboardingStepId>(initialStep);
+  /** The steps this person actually saw, oldest first: «Atrás» walks this, never the strip (UX-02). */
+  const [trail, setTrail] = useState<OnboardingStepId[]>([initialStep]);
   const announcement = stepAnnouncement(step);
 
   const initialFavorite = favoriteFromLibrary(library);
@@ -150,10 +153,11 @@ export const OnboardingFlow = ({
     return () => cancelAnimationFrame(frame);
   }, [step]);
 
-  const go = (to: OnboardingStepId) => {
+  const go = (to: OnboardingStepId, options: { back?: boolean } = {}) => {
     if (to !== QUICK_PICK_STEP) {
       setDetourFrom(null);
     }
+    setTrail((current) => (options.back ? current.slice(0, -1) : [...current, to]));
     const direction = stepDirection(step, to);
     startTransition(() => {
       addTransitionType(`bienvenida-${direction}`);
@@ -184,7 +188,7 @@ export const OnboardingFlow = ({
     });
   };
 
-  /** «Saltar por ahora» and «Entrar a Filmia»: Hoy only with three titles in the account. */
+  /** «Saltar a lo mínimo» and «Entrar a Filmia»: Hoy only with three titles in the account. */
   const leave = () => {
     if (resolveLeave(titleCount) === "finish") {
       finish();
@@ -213,9 +217,13 @@ export const OnboardingFlow = ({
   };
 
   const next = nextStep(step, titleCount);
-  const previous = step === QUICK_PICK_STEP && detourFrom ? detourFrom : prevStep(step);
+  // The last step shown before this one. A resumed flow has no trail yet: the strip's order is
+  // what was shown then, except «Elige 3», whose way in is unknown, so it goes back to the start.
+  const previous =
+    trail.length > 1 ? (trail[trail.length - 2] ?? null) : step === QUICK_PICK_STEP ? FIRST_STEP : prevStep(step);
   const remaining = quickPickRemaining(titleCount);
-  const quickPickBlocked = step === QUICK_PICK_STEP && remaining > 0;
+  // «¿Qué quieres ver?» asks for the same three titles as the gate, with the same words (UX-06).
+  const quickPickBlocked = (step === QUICK_PICK_STEP || step === "quiero-ver") && remaining > 0;
 
   const primaryLabel =
     step === "intro"
@@ -226,7 +234,9 @@ export const OnboardingFlow = ({
           : detourFrom
             ? "Entrar a Filmia"
             : "Siguiente"
-        : step === "primera-noche"
+        : step === "quiero-ver" && remaining > 0
+          ? `Te ${remaining === 1 ? "falta 1" : `faltan ${remaining}`}`
+          : step === "primera-noche"
           ? "Entrar a Filmia"
           : step === "noche"
             ? "Listo"
@@ -310,6 +320,7 @@ export const OnboardingFlow = ({
         return (
           <WatchlistStep
             variant="tres"
+            detoured={detourFrom != null}
             accountTitleCount={titleCount}
             platforms={platformsState.value}
             libraryTmdbIds={libraryTmdbIds}
@@ -353,7 +364,7 @@ export const OnboardingFlow = ({
           <FilmStripProgress step={step} />
           {step !== "intro" && step !== "primera-noche" && step !== QUICK_PICK_STEP ? (
             <button type="button" onClick={() => leave()} className={cn(btnLink, "text-mist")}>
-              Saltar por ahora
+              Saltar a lo mínimo
             </button>
           ) : null}
         </div>
@@ -373,7 +384,7 @@ export const OnboardingFlow = ({
       >
         <div className="mx-auto flex w-full max-w-xl items-center gap-3">
           {previous && step !== "primera-noche" ? (
-            <Button variant="ghost" size="lg" onClick={() => go(previous)} aria-label="Paso anterior" className="px-4">
+            <Button variant="ghost" size="lg" onClick={() => go(previous, { back: true })} aria-label="Paso anterior" className="px-4">
               Atrás
             </Button>
           ) : null}
@@ -391,7 +402,7 @@ export const OnboardingFlow = ({
         {step === "intro" ? (
           <div className="mx-auto mt-3 flex w-full max-w-xl items-center justify-center gap-4 text-xs">
             <button type="button" onClick={() => leave()} className={cn(btnLink, "text-mist")}>
-              Saltar por ahora
+              Saltar a lo mínimo
             </button>
             <span className="text-faint" aria-hidden="true">
               ·

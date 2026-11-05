@@ -1,4 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
+import { clampLens } from "@/lib/text-limits";
 import { and, asc, desc, eq, gte, inArray, isNotNull, sql, type SQL } from "drizzle-orm";
 import {
   catalog,
@@ -495,7 +496,7 @@ export const recordPickEvents = async (userId: string, events: ReadonlyArray<Pic
       const catalogId = catalogByTitle.get(event.titleId);
       // Not the user's title: drop it rather than file feedback under someone else's id.
       return catalogId
-        ? [{ titleId: event.titleId, catalogId, kind: event.kind, lens: event.lens ?? null }]
+        ? [{ titleId: event.titleId, catalogId, kind: event.kind, lens: clampLens(event.lens) }]
         : [];
     }
     if (event.catalogId && knownCatalog.has(event.catalogId)) {
@@ -506,7 +507,7 @@ export const recordPickEvents = async (userId: string, events: ReadonlyArray<Pic
           titleId: null,
           catalogId: event.catalogId,
           kind: event.kind,
-          lens: event.lens ?? null,
+          lens: clampLens(event.lens),
         },
       ];
     }

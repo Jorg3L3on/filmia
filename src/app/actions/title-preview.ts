@@ -1,6 +1,7 @@
 "use server";
 
 import { setTitleRating } from "@/app/actions/titles";
+import { publicErrorMessage } from "@/lib/public-error";
 import { markTitleWatched } from "@/app/actions/watchlist";
 import { upsertTitleFromTmdbForUser, type AddTitleFromTmdbInput } from "@/lib/add-title-from-tmdb";
 import { revalidateSearchAddSurfaces } from "@/lib/revalidate-surfaces";
@@ -12,7 +13,7 @@ type TmdbSnapshot = Pick<AddTitleFromTmdbInput, "tmdbId" | "kind" | "name" | "or
 
 const failure = (caught: unknown): TitlePreviewActionResult => ({
   ok: false,
-  error: caught instanceof Error ? caught.message : "No se pudo guardar.",
+  error: publicErrorMessage(caught, "No se pudo guardar."),
 });
 
 /**
