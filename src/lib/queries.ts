@@ -15,6 +15,7 @@ import {
   sql,
 } from "drizzle-orm";
 import { cache } from "react";
+import { storedGenreIdsFor } from "@/lib/tmdb-details";
 import {
   catalog,
   db,
@@ -246,7 +247,7 @@ export const getRelatedTitles = cache(async (titleId: string, genreIds: number[]
 
   const userId = await requireUserId();
   const genreList = sql.join(
-    genreIds.map((id) => sql`${id}`),
+    storedGenreIdsFor(genreIds).map((id) => sql`${id}`),
     sql`, `,
   );
   const sharedGenres = sql<number>`(
