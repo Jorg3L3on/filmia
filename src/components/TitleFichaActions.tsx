@@ -229,6 +229,10 @@ export const TitleFichaActions = ({
   };
 
   const handleToggleWatchlist = () => {
+    // aria-disabled, not disabled, while it saves: a disabled button drops focus to <body> (UX-12).
+    if (pendingAction === "watchlist") {
+      return;
+    }
     const next = !state.inWatchlist;
     setPendingAction("watchlist");
     watchlistSpring.trigger();
@@ -453,7 +457,7 @@ export const TitleFichaActions = ({
         <button
           type="button"
           onClick={handleToggleWatchlist}
-          disabled={pendingAction === "watchlist"}
+          aria-disabled={pendingAction === "watchlist" || undefined}
           aria-pressed={state.inWatchlist}
           className={cn(
             "press-scale relative flex h-[3.25rem] w-full items-center justify-center gap-2 overflow-hidden rounded-full px-5 text-base font-semibold sm:w-auto sm:px-7",
@@ -509,7 +513,7 @@ export const TitleFichaActions = ({
           <button
             type="button"
             onClick={handleToggleWatchlist}
-            disabled={pendingAction === "watchlist"}
+            aria-disabled={pendingAction === "watchlist" || undefined}
             aria-pressed={state.inWatchlist}
             className={cn(
               groupItemClass(state.inWatchlist),
@@ -529,7 +533,7 @@ export const TitleFichaActions = ({
           <button
             type="button"
             onClick={handleToggleWatched}
-            disabled={diaryHold === "restoring"}
+            aria-disabled={diaryHold === "restoring" || undefined}
             aria-pressed={displayedWatched}
             aria-label={displayedWatched ? "Quitar de visto" : "Marcar como visto"}
             className={cn(
