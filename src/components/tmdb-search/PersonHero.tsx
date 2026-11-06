@@ -241,28 +241,22 @@ export const PersonHero = ({
       <div
         className={cn(
           // Phones: the hero starts at the top of the screen, under the floating header (FIL-I45).
-          "persona-hero relative -mx-4 overflow-hidden sm:mx-0 sm:rounded-[28px]",
+          "persona-hero relative -mx-4 sm:mx-0",
           wall.length > 0
             ? "pt-[calc(env(safe-area-inset-top)+200px)] min-[360px]:pt-[calc(env(safe-area-inset-top)+250px)] sm:pt-[224px]"
             : "pt-[calc(env(safe-area-inset-top)+76px)] sm:pt-16",
         )}
       >
-        <PosterWall entries={wall} />
-        {/* Canvas fade, then the accent glow low left and a lilac one top right. */}
-        <div
-          className="pointer-events-none absolute inset-0 bg-linear-to-b from-canvas/55 via-canvas/45 via-35% to-canvas to-72%"
-          aria-hidden="true"
-        />
-        <div
-          className="persona-glow pointer-events-none absolute inset-0"
-          aria-hidden="true"
-        />
-        {wall.length > 0 ? <Grain /> : null}
-        {/* A scrim under the back and search discs. */}
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-linear-to-b from-canvas/80 to-transparent sm:hidden"
-          aria-hidden="true"
-        />
+        {/* Only the backdrop is clipped: the role menu opens past the hero's bottom edge (FIL-I45). */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden sm:rounded-[28px]" aria-hidden="true">
+          <PosterWall entries={wall} />
+          {/* Canvas fade, then the accent glow low left and a lilac one top right. */}
+          <div className="absolute inset-0 bg-linear-to-b from-canvas/55 via-canvas/45 via-35% to-canvas to-72%" />
+          <div className="persona-glow absolute inset-0" />
+          {wall.length > 0 ? <Grain /> : null}
+          {/* A scrim under the back and search discs. */}
+          <div className="absolute inset-x-0 top-0 h-36 bg-linear-to-b from-canvas/80 to-transparent sm:hidden" />
+        </div>
         {nav ? (
           <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+0.75rem)] z-10 px-4 sm:top-4">
             {nav}
