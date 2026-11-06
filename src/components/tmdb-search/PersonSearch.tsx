@@ -41,7 +41,6 @@ import {
 } from "@/lib/person-filmography";
 import type { SearchResultFacts } from "@/lib/search-result-facts";
 import {
-  decadeChart,
   essentialPicks,
   groupByDecade,
   mineSplit,
@@ -648,45 +647,7 @@ const KIND_FILTERS: { value: KindFilter; label: string }[] = [
 
 type SeenFilter = "ALL" | "SEEN" | "UNSEEN";
 
-/** The work by decade as bars: total height, what you watched in green on top; a tap jumps to it. */
-const DecadeChart = ({
-  bars,
-  onJump,
-}: {
-  bars: ReturnType<typeof decadeChart>;
-  onJump: (decade: number) => void;
-}) => {
-  const top = Math.max(1, ...bars.map((bar) => bar.total));
-  return (
-    <div role="group" aria-label="Por década" className="-mx-4 flex items-end gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
-      {[...bars].map((bar) => (
-        <button
-          key={bar.decade}
-          type="button"
-          onClick={() => onJump(bar.decade)}
-          aria-label={`${bar.label}: ${bar.total} ${plural(bar.total, "título", "títulos")}${bar.watched > 0 ? `, ${bar.watched} ${plural(bar.watched, "vista", "vistas")}` : ""}`}
-          className={cn("press-scale flex min-h-11 min-w-11 flex-1 flex-col items-center gap-1.5 rounded-lg pt-1", focusRing)}
-        >
-          <span className="flex h-14 w-full flex-col justify-end gap-0.5" aria-hidden="true">
-            <span className="block w-full rounded-[3px] bg-chrome" style={{ height: `${Math.max(6, ((bar.total - bar.watched) / top) * 52)}px` }} />
-            {bar.watched > 0 ? (
-              <span
-                className="block w-full rounded-[3px] bg-success shadow-[0_0_10px_rgb(61_214_140/0.5)]"
-                style={{ height: `${Math.max(6, (bar.watched / top) * 52)}px` }}
-              />
-            ) : null}
-          </span>
-          <span className="text-[11px] font-semibold text-paper">{bar.label}</span>
-          <span className={cn("text-[10px] whitespace-nowrap", bar.watched > 0 ? "text-success" : "text-fog")}>
-            {bar.watched > 0 ? `${bar.total} · ${bar.watched} ${plural(bar.watched, "vista", "vistas")}` : bar.total}
-          </span>
-        </button>
-      ))}
-    </div>
-  );
-};
-
-/** Every title of the work: decade bars, Todo / Vistas / Sin ver, kind and platform chips, editorial rows by decade. */
+/** Every title of the work: Todo / Vistas / Sin ver, kind and platform chips, editorial rows by decade. */
 const WorkByDecade = ({
   entries,
   role,
@@ -726,21 +687,8 @@ const WorkByDecade = ({
   const filtering = mine && hasPlatforms;
   const shown = filtering ? split.shown : ofKind;
   const decades = groupByDecade(shown);
-  const bars = decadeChart(entries, (entry) => statusOf(entry).status);
   // Where each decade starts in the whole list, for the entrance stagger.
   const starts = decades.map((_, at) => decades.slice(0, at).reduce((sum, group) => sum + group.entries.length, 0));
-  const jump = (decade: number) => {
-    if (!decades.some((group) => group.decade === decade)) {
-      setSeen("ALL");
-      setKind("ALL");
-    }
-    requestAnimationFrame(() => {
-      document.getElementById(`persona-decada-${decade}`)?.scrollIntoView({
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-        block: "start",
-      });
-    });
-  };
   const tabs: { value: SeenFilter; label: string; count: number }[] = [
     { value: "ALL", label: "Todo", count: progress.total },
     { value: "SEEN", label: "Vistas", count: progress.watched },
@@ -764,7 +712,6 @@ const WorkByDecade = ({
           <p className="mb-1 font-serif text-[14px] text-fog italic">{shown.length === 1 ? "1 título" : `${shown.length} títulos`}</p>
         )}
       </header>
-      {bars.length > 1 ? <DecadeChart bars={bars} onJump={jump} /> : null}
       <div className="sticky top-[calc(7.5rem+env(safe-area-inset-top))] z-20 -mx-4 space-y-2.5 bg-canvas/92 px-4 py-2 backdrop-blur sm:top-[calc(11.5rem+env(safe-area-inset-top))] sm:mx-0 sm:px-0">
         <div role="tablist" aria-label="Vistas" className="flex gap-0.5 rounded-full border border-line bg-[#0b0d10] p-[3px] shadow-[inset_0_2px_8px_rgb(0_0_0/0.6)]">
           {tabs.map((tab) => (
@@ -850,7 +797,7 @@ const WorkByDecade = ({
         />
       ) : null}
       {mine && !hasPlatforms ? null : decades.map((group, groupIndex) => (
-        <div key={group.decade} id={`persona-decada-${group.decade}`} className="scroll-mt-[calc(15.25rem+env(safe-area-inset-top))] sm:scroll-mt-[calc(19.5rem+env(safe-area-inset-top))] space-y-1">
+        <div key={group.decade} className="space-y-1">
           <h4 className="flex items-center gap-2.5 text-xs font-medium tracking-[0.14em] text-faint after:h-px after:flex-1 after:bg-line">
             {group.label}
           </h4>

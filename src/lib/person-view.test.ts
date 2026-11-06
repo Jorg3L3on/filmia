@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { FilmographyEntry } from "./person-filmography";
 import {
-  decadeChart,
   essentialPicks,
   monthYearLabel,
   nextForYou,
@@ -230,15 +229,6 @@ describe("watchedStrip", () => {
   it("labels the strip date as «mar 2025»", () => {
     assert.equal(monthYearLabel("2025-03-12"), "mar 2025");
     assert.equal(monthYearLabel(null), null);
-  });
-
-  it("charts decades with what you watched", () => {
-    assert.deepEqual(decadeChart(scott, status), [
-      { decade: 2010, label: "2010s", total: 2, watched: 0 },
-      { decade: 2000, label: "2000s", total: 1, watched: 1 },
-      { decade: 1980, label: "1980s", total: 1, watched: 0 },
-      { decade: 1970, label: "1970s", total: 2, watched: 1 },
-    ]);
   });
 
   it("«Siguiente para ti»: taste first, then «Lo esencial», never a watched one", () => {

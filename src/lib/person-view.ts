@@ -258,18 +258,6 @@ export const watchedStrip = (
   };
 };
 
-/** One bar per decade, newest first: how many titles and how many of them you watched. */
-export const decadeChart = (
-  entries: readonly FilmographyEntry[],
-  statusOf: (entry: FilmographyEntry) => LibraryStatus,
-) =>
-  groupByDecade(entries).map((group) => ({
-    decade: group.decade,
-    label: group.label,
-    total: group.entries.length,
-    watched: group.entries.filter((entry) => statusOf(entry) === "watched").length,
-  }));
-
 /** «Siguiente para ti»: the first unwatched of «Muy tu estilo» / «Podría gustarte», else of «Lo esencial». */
 export const nextForYou = (
   taste: ReturnType<typeof tastePicks>,
