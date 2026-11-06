@@ -60,7 +60,8 @@ export const AFFINITY_SHOWN_KIND = "affinity_shown";
 export const affinityEventLens = (level: AffinityLevel, lowConfidence: boolean) =>
   `afinidad:${level}${lowConfidence ? "~" : ""}`;
 
-type OwnedEntry = { watched: boolean; rating: number | null };
+/** `on`: the day it was watched, `YYYY-MM-DD` (FIL-I45-1: «Vista · 12 mar 2025»); null when unwatched. */
+type OwnedEntry = { watched: boolean; rating: number | null; on: string | null };
 
 type UserAffinity = {
   scorer: AffinityScorer | null;
@@ -185,7 +186,11 @@ const buildUserAffinity = async (userId: string, now: Date): Promise<UserAffinit
   const scorer = buildAffinityScorer(library, events, now);
   const owned = new Map<string, OwnedEntry>();
   rows.forEach((row) => {
-    owned.set(ownedKey(row.kind, row.tmdbId), { watched: row.watchedAt != null, rating: row.rating });
+    owned.set(ownedKey(row.kind, row.tmdbId), {
+      watched: row.watchedAt != null,
+      rating: row.rating,
+      on: row.watchedAt ? row.watchedAt.toISOString().slice(0, 10) : null,
+    });
   });
   const ratedCount = library.filter((t) => t.watchedAt != null && t.rating != null).length;
   return { scorer, ratedCount, owned };
@@ -294,8 +299,11 @@ export const fichaAffinity = async (
   return affinity ? { kind: "prediction", affinity, catalogId: row.id } : null;
 };
 
-/** The user's rating of a film they watched, for Buscar rows («vistas muestran tu nota»). */
+/**
+ * The user's rating of a film they watched, for Buscar rows («vistas muestran tu nota»), and the day
+ * they watched it (FIL-I45-1).
+ */
 export const watchedRatingOf = (user: UserAffinity, kind: TitleKind, tmdbId: number) => {
   const entry = user.owned.get(ownedKey(kind, tmdbId));
-  return entry?.watched ? { rating: entry.rating } : null;
+  return entry?.watched ? { rating: entry.rating, on: entry.on } : null;
 };

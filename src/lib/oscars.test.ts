@@ -61,6 +61,29 @@ describe("oscars/core", () => {
     assert.equal(spielberg.nominations, 6);
   });
 
+  it("keeps every nomination that did not win, newest first (FIL-I45-1)", () => {
+    const deakins = oscarsFor(fixture, DEAKINS);
+    assert.ok(deakins);
+    assert.equal(deakins.wins.length, 2);
+    assert.equal(deakins.nominated.length, 14);
+    assert.equal(deakins.wins.length + deakins.nominated.length, deakins.nominations);
+    assert.deepEqual(
+      deakins.nominated.slice(0, 3).map((entry) => [entry.year, entry.film?.title]),
+      [
+        [2023, "Empire of Light"],
+        [2016, "Sicario"],
+        [2015, "Unbroken"],
+      ],
+    );
+    assert.deepEqual(
+      oscarsFor(fixture, SPIELBERG)?.nominated.map((entry) => [entry.year, entry.categoryEs, entry.film?.title]),
+      [
+        [1999, "Mejor película (producción)", "Saving Private Ryan"],
+        [1978, "Mejor dirección", "Close Encounters of the Third Kind"],
+      ],
+    );
+  });
+
   it("keeps the first film of a multi-film row as one award", () => {
     const jannings = oscarsFor(fixture, "nm0417837");
     assert.ok(jannings);
@@ -70,7 +93,19 @@ describe("oscars/core", () => {
 
   it("skips `?` ids and keeps the named nominee of the same row", () => {
     assert.equal(Object.hasOwn(fixture.people, "?"), false);
-    assert.deepEqual(oscarsFor(fixture, "nm0914249"), { wins: [], nominations: 1 });
+    assert.deepEqual(oscarsFor(fixture, "nm0914249"), {
+      wins: [],
+      nominated: [
+        {
+          ceremony: 12,
+          year: 1940,
+          category: "SOUND RECORDING",
+          categoryEs: "Mejor grabación de sonido",
+          film: { title: "Goodbye, Mr. Chips", imdbId: "tt0031385" },
+        },
+      ],
+      nominations: 1,
+    });
   });
 
   it("ignores SciTech and commendation rows entirely", () => {
@@ -104,11 +139,23 @@ describe("oscars/built JSON", () => {
     const thalberg = oscarsFor(built, SPIELBERG)?.wins.find((win) => win.category === "IRVING G. THALBERG MEMORIAL AWARD");
     assert.deepEqual(thalberg && [thalberg.year, thalberg.categoryEs, thalberg.film], [1987, "Premio Irving G. Thalberg", null]);
     assert.equal(oscarsFor(built, REEVES), null);
+    assert.equal(deakins?.nominated.length, 14);
+    // Ridley Scott: four nominations, no win (FIL-I45 canvas).
+    assert.deepEqual(
+      oscarsFor(built, "nm0000631")?.nominated.map((entry) => [entry.year, entry.categoryEs, entry.film?.title]),
+      [
+        [2016, "Mejor película (producción)", "The Martian"],
+        [2002, "Mejor dirección", "Black Hawk Down"],
+        [2001, "Mejor dirección", "Gladiator"],
+        [1992, "Mejor dirección", "Thelma & Louise"],
+      ],
+    );
+    assert.equal(oscarsFor(built, "nm0000631")?.wins.length, 0);
   });
 
   it("has a Spanish label for every category it holds (a new one fails here on the yearly rebuild)", () => {
     const categories = new Set(
-      Object.values(built.people).flatMap((person) => (person.w ?? []).map((win) => win[1])),
+      Object.values(built.people).flatMap((person) => [...(person.w ?? []), ...(person.x ?? [])].map((entry) => entry[1])),
     );
     const missing = [...categories].filter((category) => !Object.hasOwn(OSCAR_CATEGORY_ES, category));
     assert.deepEqual(missing, []);

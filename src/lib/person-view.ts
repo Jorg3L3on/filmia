@@ -177,3 +177,153 @@ export const upcomingSummary = (upcoming: readonly FilmographyEntry[], today: st
     more,
   };
 };
+
+/* ── FIL-I45 «Tu recorrido» ─────────────────────────────────────────────────────────────────── */
+
+type WatchedFacts = Pick<SearchResultFacts, "watched">;
+
+/**
+ * The headline next to the ring, by how much of the work you have seen. Gender-neutral («su obra»):
+ * the person's gender is not in the data the view loads.
+ */
+export const recorridoTitle = (watched: number, total: number) => {
+  if (total <= 0 || watched <= 0) {
+    return "Aún no has visto nada suyo";
+  }
+  if (watched >= total) {
+    return "Viste toda su obra";
+  }
+  const share = watched / total;
+  if (share < 0.2) return "Apenas empiezas con su obra";
+  if (share < 0.4) return "Le vas tomando el hilo";
+  if (share < 0.6) return "Vas por la mitad";
+  if (share < 0.8) return "Llevas la mayor parte";
+  return "Casi completo";
+};
+
+/** «mar 2025» for the film strip; null without a date. */
+export const monthYearLabel = (date: string | null | undefined) => {
+  if (!date) {
+    return null;
+  }
+  const [year, month] = date.split("-").map(Number);
+  return month ? `${MONTHS[month - 1]} ${year}` : String(year);
+};
+
+export type StripFrame = {
+  entry: FilmographyEntry;
+  state: "watched" | "watchlist" | "unseen";
+  /** Your stars, for a watched title (null = watched, not rated). */
+  rating: number | null;
+  /** `YYYY-MM-DD` you watched it, when known. */
+  on: string | null;
+};
+
+/** Frames drawn before «+N · Ver todas». */
+export const STRIP_FRAMES_MAX = 5;
+
+/**
+ * The film strip of «Tu recorrido»: what you watched first (latest first, undated last), then what
+ * waits in Quiero ver, then the rest by how known it is; `more` counts what does not fit.
+ */
+export const watchedStrip = (
+  entries: readonly FilmographyEntry[],
+  statusOf: (entry: FilmographyEntry) => LibraryStatus,
+  factsOf: (entry: FilmographyEntry) => WatchedFacts | null,
+  max = STRIP_FRAMES_MAX,
+) => {
+  const frames: StripFrame[] = entries.map((entry) => {
+    const status = statusOf(entry);
+    const watched = factsOf(entry)?.watched ?? null;
+    if (status === "watched" || watched) {
+      return { entry, state: "watched", rating: watched?.rating ?? null, on: watched?.on ?? null };
+    }
+    return { entry, state: status === "watchlist" ? "watchlist" : "unseen", rating: null, on: null };
+  });
+  const rank = { watched: 0, watchlist: 1, unseen: 2 } as const;
+  frames.sort(
+    (a, b) =>
+      rank[a.state] - rank[b.state] ||
+      (a.state === "watched" ? (b.on ?? "").localeCompare(a.on ?? "") : 0) ||
+      b.entry.votes - a.entry.votes,
+  );
+  const watched = frames.filter((frame) => frame.state === "watched");
+  return {
+    frames: frames.slice(0, Math.max(0, max)),
+    more: Math.max(0, frames.length - max),
+    /** Every watched title, latest first: the «Ver todas» sheet. */
+    watched,
+    /** The latest watched title with a date, for «La última: X, fecha». */
+    last: watched.find((frame) => frame.on) ?? null,
+  };
+};
+
+/** One bar per decade, newest first: how many titles and how many of them you watched. */
+export const decadeChart = (
+  entries: readonly FilmographyEntry[],
+  statusOf: (entry: FilmographyEntry) => LibraryStatus,
+) =>
+  groupByDecade(entries).map((group) => ({
+    decade: group.decade,
+    label: group.label,
+    total: group.entries.length,
+    watched: group.entries.filter((entry) => statusOf(entry) === "watched").length,
+  }));
+
+/** «Siguiente para ti»: the first unwatched of «Muy tu estilo» / «Podría gustarte», else of «Lo esencial». */
+export const nextForYou = (
+  taste: ReturnType<typeof tastePicks>,
+  essential: readonly FilmographyEntry[],
+  statusOf: (entry: FilmographyEntry) => LibraryStatus,
+) => {
+  const fromTaste = taste?.entries.find((entry) => statusOf(entry) !== "watched");
+  if (fromTaste) {
+    return { entry: fromTaste, source: "taste" as const };
+  }
+  const fromEssential = essential.find((entry) => statusOf(entry) !== "watched");
+  return fromEssential ? { entry: fromEssential, source: "essential" as const } : null;
+};
+
+type OscarCounts = { wins: readonly unknown[]; nominations: number } | null | undefined;
+
+const WORK_AWARD = /^(\d+) (Óscar|Emmy|BAFTA|Globos de Oro)$/;
+
+/**
+ * The hero's third number: the person's Óscar (won, else nominations); without Óscar data, the
+ * biggest award their work won (from the rows' award chips: «2 Emmy»); else nothing.
+ */
+export const thirdStat = (
+  oscars: OscarCounts,
+  entries: readonly FilmographyEntry[],
+  factsOf: (entry: FilmographyEntry) => Pick<SearchResultFacts, "awardLabel"> | null,
+): { value: number; label: string; tone: "gold" | "plain" } | null => {
+  if (oscars && oscars.wins.length > 0) {
+    return { value: oscars.wins.length, label: "Óscar", tone: "gold" };
+  }
+  if (oscars && oscars.nominations > 0) {
+    return { value: oscars.nominations, label: "nom. al Óscar", tone: "gold" };
+  }
+  const totals = new Map<string, number>();
+  for (const entry of entries) {
+    const label = factsOf(entry)?.awardLabel;
+    const match = label ? WORK_AWARD.exec(label) : label === "Globo de Oro" ? [label, "1", "Globos de Oro"] : null;
+    if (match) {
+      totals.set(match[2]!, (totals.get(match[2]!) ?? 0) + Number(match[1]));
+    }
+  }
+  const best = [...totals].sort((a, b) => b[1] - a[1])[0];
+  return best ? { value: best[1], label: `${best[0]} de su obra`, tone: "plain" } : null;
+};
+
+/** «n. 1937 · South Shields · † 2020»: only what TMDB has; null when it has nothing. */
+export const personLifeLine = (person: {
+  birthday?: string | null;
+  deathday?: string | null;
+  placeOfBirth?: string | null;
+}) => {
+  const born = person.birthday?.slice(0, 4);
+  const place = person.placeOfBirth?.split(",")[0]?.trim();
+  const died = person.deathday?.slice(0, 4);
+  const parts = [born ? `n. ${born}` : null, place || null, died ? `† ${died}` : null].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : null;
+};
