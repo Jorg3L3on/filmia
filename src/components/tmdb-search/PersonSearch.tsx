@@ -12,6 +12,7 @@ import { ImdbBadge } from "@/components/ImdbBadge";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { SearchResultsSkeleton } from "@/components/PageSkeletons";
 import { PosterImage } from "@/components/PosterImage";
+import { PersonOscars } from "@/components/tmdb-search/PersonOscars";
 import {
   SearchResultRow,
   type SearchRowStatus,
@@ -235,6 +236,9 @@ export const PersonView = ({
         data={data}
         onSwitchRole={onSwitchRole}
       />
+
+      {/* The person's Óscar, for every role: under the stats, above «Tu avance» (FIL-I43). */}
+      {data?.oscars ? <PersonOscars key={data.person.id} oscars={data.oscars} /> : null}
 
       {pending || !state ? (
         <SearchResultsSkeleton />

@@ -833,6 +833,7 @@ export const getTmdbPersonFilmography = async (
       name?: string;
       profile_path?: string | null;
       known_for_department?: string;
+      imdb_id?: string | null;
     }>(`/person/${personId}`),
     tmdbFetch<TmdbCombinedCredits>(`/person/${personId}/combined_credits`),
   ]);
@@ -844,11 +845,29 @@ export const getTmdbPersonFilmography = async (
       name,
       profilePath: person.profile_path ?? null,
       department: person.known_for_department ?? null,
+      imdbId: person.imdb_id?.trim() || null,
     },
     role,
     parseFilmography(credits, role, name),
     { today, roles: countRoles(credits, name, today) },
   );
+};
+
+/**
+ * A movie by its IMDb id (FIL-I43: the films of a person's Óscar), es-MX title and poster. Same
+ * 24 h cache as the rest; null when TMDB has no movie for it.
+ */
+export const findTmdbMovieByImdbId = async (
+  imdbId: string,
+): Promise<{ tmdbId: number; title: string | null; posterPath: string | null } | null> => {
+  if (!/^tt\d+$/.test(imdbId)) {
+    return null;
+  }
+  const data = await tmdbFetch<{
+    movie_results?: { id: number; title?: string | null; poster_path?: string | null }[];
+  }>(`/find/${imdbId}`, { external_source: "imdb_id" });
+  const movie = data.movie_results?.[0];
+  return movie ? { tmdbId: movie.id, title: movie.title?.trim() || null, posterPath: movie.poster_path ?? null } : null;
 };
 
 // ---------------------------------------------------------------------------

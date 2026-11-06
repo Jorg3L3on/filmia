@@ -1,6 +1,7 @@
 "use server";
 
 import { metadataServicesConfigured, searchTmdbCatalogPage } from "@/lib/metadata";
+import { loadPersonOscars } from "@/lib/person-oscars-load";
 import { requireUserId } from "@/lib/session";
 import {
   isPersonRole,
@@ -101,7 +102,9 @@ export const loadPersonFilmography = async (
   }
 
   try {
-    return { ok: true, data: await getTmdbPersonFilmography(personId, role) };
+    const data = await getTmdbPersonFilmography(personId, role);
+    // The person's Óscar (FIL-I43) ride along: same response, no skeleton of their own.
+    return { ok: true, data: { ...data, oscars: await loadPersonOscars(data.person.imdbId) } };
   } catch (error) {
     return { ok: false, error: tmdbErrorMessage(error) };
   }
