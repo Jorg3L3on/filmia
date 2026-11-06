@@ -209,7 +209,6 @@ export const PersonView = ({
 
   const progress = data ? watchProgress(data.entries, (entry) => statusOf(entry).status) : null;
   const gold = Boolean(data?.oscars && data.oscars.wins.length > 0);
-  const factsOf = (entry: FilmographyEntry) => rows.factsFor?.(entry) ?? null;
   const stats: HeroStat[] = [];
   if (data && data.entries.length > 0) {
     stats.push({ value: String(data.entries.length), label: workKindsLabel(data) });
@@ -217,7 +216,7 @@ export const PersonView = ({
     if (years) {
       stats.push(years);
     }
-    const third = thirdStat(data.oscars, data.entries, factsOf);
+    const third = thirdStat(data.oscars);
     if (third) {
       stats.push({ value: String(third.value), label: third.label, tone: third.tone === "gold" ? "gold" : undefined });
     }
@@ -411,11 +410,14 @@ const PersonBody = ({
   }
   const drawn = !waiting && shelves?.key === shelvesKey ? shelves : null;
   const essential = drawn?.essential ?? [];
-  const taste = drawn?.taste ?? null;
+  // «Muy tu estilo» skips what «Lo esencial» already shows, so the same posters never repeat.
+  const tasteAll = drawn?.taste ?? null;
+  const tasteRest = tasteAll ? tasteAll.entries.filter((entry) => !essential.includes(entry)) : [];
+  const taste = tasteAll && tasteRest.length >= 2 ? { ...tasteAll, entries: tasteRest } : null;
   const today = todayIso();
   const upcoming = upcomingSummary(data.upcoming, today);
   const strip = watchedStrip(data.entries, statusOnly, factsOf);
-  const next = drawn ? nextForYou(taste, essential, statusOnly) : null;
+  const next = drawn ? nextForYou(tasteAll, essential, statusOnly) : null;
   const essentialSeen = essential.filter((entry) => statusOnly(entry) === "watched").length;
 
   return (
@@ -639,8 +641,8 @@ const UpcomingCard = ({
 };
 
 type KindFilter = "ALL" | "MOVIE" | "SERIES";
+// «Todo» lives in the Vistas tabs above; the kind chips toggle on and off (FIL-I45).
 const KIND_FILTERS: { value: KindFilter; label: string }[] = [
-  { value: "ALL", label: "Todo" },
   { value: "MOVIE", label: "Películas" },
   { value: "SERIES", label: "Series" },
 ];
@@ -741,7 +743,7 @@ const WorkByDecade = ({
                   key={filter.value}
                   type="button"
                   aria-pressed={kind === filter.value}
-                  onClick={() => setKind(filter.value)}
+                  onClick={() => setKind(kind === filter.value ? "ALL" : filter.value)}
                   className={cn(catalogBarChipClass(kind === filter.value), "min-h-11")}
                 >
                   {filter.label}

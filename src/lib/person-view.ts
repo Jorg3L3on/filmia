@@ -274,16 +274,12 @@ export const nextForYou = (
 
 type OscarCounts = { wins: readonly unknown[]; nominations: number } | null | undefined;
 
-const WORK_AWARD = /^(\d+) (Óscar|Emmy|BAFTA|Globos de Oro)$/;
-
 /**
- * The hero's third number: the person's Óscar (won, else nominations); without Óscar data, the
- * biggest award their work won (from the rows' award chips: «2 Emmy»); else nothing.
+ * The hero's third number: the person's own Óscar (won, else nominations), else nothing. The awards
+ * of their films are not theirs («13 Óscar de su obra» on Keanu Reeves read as his own).
  */
 export const thirdStat = (
   oscars: OscarCounts,
-  entries: readonly FilmographyEntry[],
-  factsOf: (entry: FilmographyEntry) => Pick<SearchResultFacts, "awardLabel"> | null,
 ): { value: number; label: string; tone: "gold" | "plain" } | null => {
   if (oscars && oscars.wins.length > 0) {
     return { value: oscars.wins.length, label: "Óscar", tone: "gold" };
@@ -291,16 +287,7 @@ export const thirdStat = (
   if (oscars && oscars.nominations > 0) {
     return { value: oscars.nominations, label: "nom. al Óscar", tone: "gold" };
   }
-  const totals = new Map<string, number>();
-  for (const entry of entries) {
-    const label = factsOf(entry)?.awardLabel;
-    const match = label ? WORK_AWARD.exec(label) : label === "Globo de Oro" ? [label, "1", "Globos de Oro"] : null;
-    if (match) {
-      totals.set(match[2]!, (totals.get(match[2]!) ?? 0) + Number(match[1]));
-    }
-  }
-  const best = [...totals].sort((a, b) => b[1] - a[1])[0];
-  return best ? { value: best[1], label: `${best[0]} de su obra`, tone: "plain" } : null;
+  return null;
 };
 
 /** «n. 1937 · South Shields · † 2020»: only what TMDB has; null when it has nothing. */

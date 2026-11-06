@@ -240,18 +240,10 @@ describe("watchedStrip", () => {
 });
 
 describe("thirdStat", () => {
-  const none = () => null;
-  it("shows the person's Óscar: won, else nominations", () => {
-    assert.deepEqual(thirdStat({ wins: [1, 2], nominations: 16 }, [], none), { value: 2, label: "Óscar", tone: "gold" });
-    assert.deepEqual(thirdStat({ wins: [], nominations: 4 }, [], none), { value: 4, label: "nom. al Óscar", tone: "gold" });
-  });
-
-  it("falls back to the biggest award of the work, then to nothing", () => {
-    const labels: Record<number, string> = { 1: "2 Emmy", 2: "1 Emmy", 3: "Globo de Oro", 4: "Nominada al Óscar", 5: "3 premios" };
-    const work = [1, 2, 3, 4, 5].map((id) => entry(id, `T${id}`, 2010));
-    const awards = (item: FilmographyEntry) => ({ awardLabel: labels[item.tmdbId] ?? null });
-    assert.deepEqual(thirdStat(null, work, awards), { value: 3, label: "Emmy de su obra", tone: "plain" });
-    assert.equal(thirdStat(null, work.slice(3), awards), null);
+  it("shows the person's own Óscar: won, else nominations, else nothing", () => {
+    assert.deepEqual(thirdStat({ wins: [1, 2], nominations: 16 }), { value: 2, label: "Óscar", tone: "gold" });
+    assert.deepEqual(thirdStat({ wins: [], nominations: 4 }), { value: 4, label: "nom. al Óscar", tone: "gold" });
+    assert.equal(thirdStat(null), null);
   });
 });
 

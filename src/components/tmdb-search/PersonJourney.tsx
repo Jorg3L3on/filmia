@@ -301,7 +301,8 @@ export const PersonJourney = ({
             {last?.on ? (
               <>
                 <br />
-                La última: <span className="text-paper">{last.entry.name}</span>, {releaseDateLabel(last.on, today)}
+                La última: <span className="text-paper">{last.entry.name}</span>,{" "}
+                <span className="whitespace-nowrap">{releaseDateLabel(last.on, today)}</span>
               </>
             ) : null}
           </p>

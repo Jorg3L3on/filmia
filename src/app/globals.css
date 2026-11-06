@@ -6572,6 +6572,11 @@ html[data-booted] .iris-loader {
     margin-top: -80px;
   }
 
+  /* No dock at the bottom of this view: no room kept for it either. */
+  body:has([data-persona-view]) main.app-main {
+    padding-bottom: max(2.5rem, calc(1.5rem + env(safe-area-inset-bottom)));
+  }
+
   /* The status-bar scrim stays off while the wall is under the notch. */
   body:has([data-persona-view]):not([data-persona-scrolled])::before {
     content: none;

@@ -314,9 +314,7 @@ export const PersonHero = ({
                 {stat.tone === "gold" ? <LaurelGlyph /> : null}
                 <span className="persona-tick">{stat.value}</span>
               </dd>
-              <dt className="mt-1.5 text-[10px] font-medium tracking-[0.14em] text-fog uppercase">
-                {stat.label}
-              </dt>
+              <dt className="mt-1.5 truncate text-[11.5px] text-fog">{stat.label}</dt>
             </div>
           ))}
         </dl>
