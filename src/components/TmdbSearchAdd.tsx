@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
-import { BackButton } from "@/components/BackButton";
 import { EmptyState } from "@/components/EmptyState";
 import { useNavLabel } from "@/components/NavOriginTracker";
 import { SearchResultsSkeleton } from "@/components/PageSkeletons";
@@ -278,7 +277,6 @@ export const TmdbSearchAdd = ({
           onRetry={() => router.refresh()}
           backLabel={query.trim() ? `Resultados de «${query.trim()}»` : null}
           onBack={closePerson}
-          originBack={<BackButton hideWithoutOrigin hideWhenOriginPath="/buscar" className="-mb-1" />}
           onSwitchRole={switchRole}
           hasPlatforms={hasPlatforms}
         />

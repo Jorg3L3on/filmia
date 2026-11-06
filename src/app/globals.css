@@ -6551,6 +6551,42 @@ html[data-booted] .iris-loader {
     transform 200ms var(--ease-out);
 }
 
+/*
+ * Phones: the person view runs its hero under the floating header (FIL-I45). Buscar's top field
+ * steps aside (the hero carries «atrás» and a search disc), the header drops its glass over the
+ * wall and gets it back once the name has scrolled away.
+ */
+@media (max-width: 39.999rem) {
+  body:has([data-persona-view]) nav:has([data-search-dock]) {
+    display: none;
+  }
+
+  body:has([data-persona-view]) header.site-header {
+    transition:
+      background-color 200ms var(--ease-out),
+      border-color 200ms var(--ease-out),
+      box-shadow 200ms var(--ease-out);
+  }
+
+  body:has([data-persona-view]):not([data-persona-scrolled]) header.site-header {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  body:has([data-persona-view]):not([data-persona-scrolled])::before {
+    content: none;
+  }
+
+  /* Measured: the header (0.5 rem + 3 rem + the notch), Buscar's 3.5 rem room for its field and one
+     24 px gap put the hero 138 px + the notch down; it moves back to the top of the screen. */
+  .persona-hero {
+    margin-top: calc(-138px - env(safe-area-inset-top));
+  }
+}
+
 @keyframes persona-blur-in {
   from {
     opacity: 0;

@@ -15,6 +15,7 @@ import {
   PersonHero,
   PersonPhoto,
   PersonStickyBar,
+  PersonTopNav,
   useScrolledPast,
   watchedLine,
   type HeroStat,
@@ -158,8 +159,6 @@ type PersonViewProps = {
   /** «‹ Resultados»: only when there is a search to go back to. */
   backLabel: string | null;
   onBack: () => void;
-  /** Without a search behind: «‹ Obsesión» back to the page that opened this view (FIL-I4-6). */
-  originBack?: ReactNode;
   /** The role menu: the same person in another role (same page, no new history entry). */
   onSwitchRole?: (role: PersonRole) => void;
   /** The user saved streaming platforms in Perfil: «En mis plataformas» can filter (FIL-I30-2). */
@@ -181,7 +180,7 @@ const activeYears = (years: PersonFilmography["years"]) =>
   !years ? null : years.from === years.to ? { value: String(years.from), label: "en activo" } : { value: String(years.to - years.from + 1), label: "años en activo" };
 
 /** The phone header (Filmia + the search row) covers this many px; the name is gone past it. */
-const STICKY_OFFSET = 124;
+const STICKY_OFFSET = 64;
 
 /**
  * One view for any person and role, «Tu recorrido» v3 (FIL-I45): the poster-wall hero with three
@@ -197,7 +196,6 @@ export const PersonView = ({
   onRetry,
   backLabel,
   onBack,
-  originBack = null,
   onSwitchRole,
   hasPlatforms = false,
 }: PersonViewProps) => {
@@ -239,24 +237,14 @@ export const PersonView = ({
       </span>
     ) : null;
 
-  return (
-    <div className="space-y-6">
-      {!backLabel ? originBack : null}
-      {backLabel ? (
-        <button
-          type="button"
-          onClick={onBack}
-          className={cn(
-            // On phones the dock's disc is the one «atrás» (FIL-I22-6); the text link stays for desktop.
-            "press-scale -ml-1 hidden max-w-full items-center gap-1 rounded-full px-1 text-sm text-fog hover:text-paper sm:inline-flex",
-            focusRing,
-          )}
-        >
-          <span aria-hidden="true">‹</span>
-          <span className="truncate">{backLabel}</span>
-        </button>
-      ) : null}
+  // Phones: the header loses its glass over the wall and gets it back once the name is gone (FIL-I45).
+  useEffect(() => {
+    document.body.toggleAttribute("data-persona-scrolled", scrolledPast);
+    return () => document.body.removeAttribute("data-persona-scrolled");
+  }, [scrolledPast]);
 
+  return (
+    <div className="space-y-6" data-persona-view>
       <PersonHero
         key={`${name}:${role}`}
         name={name}
@@ -267,6 +255,7 @@ export const PersonView = ({
         gold={gold}
         nameRef={nameRef}
         roleMenu={roleMenu("hero")}
+        nav={<PersonTopNav results={backLabel} onBackToResults={onBack} />}
       />
       {name ? (
         <PersonStickyBar
@@ -276,6 +265,7 @@ export const PersonView = ({
           gold={gold}
           line={watchedLine(role, progress?.watched ?? 0, progress?.total ?? 0)}
           roleMenu={roleMenu("bar")}
+          back={<PersonTopNav results={backLabel} onBackToResults={onBack} compact />}
         />
       ) : null}
 
@@ -775,7 +765,7 @@ const WorkByDecade = ({
         )}
       </header>
       {bars.length > 1 ? <DecadeChart bars={bars} onJump={jump} /> : null}
-      <div className="sticky top-[calc(11.75rem+env(safe-area-inset-top))] z-20 -mx-4 space-y-2.5 bg-canvas/92 px-4 py-2 backdrop-blur sm:top-[calc(11.5rem+env(safe-area-inset-top))] sm:mx-0 sm:px-0">
+      <div className="sticky top-[calc(7.5rem+env(safe-area-inset-top))] z-20 -mx-4 space-y-2.5 bg-canvas/92 px-4 py-2 backdrop-blur sm:top-[calc(11.5rem+env(safe-area-inset-top))] sm:mx-0 sm:px-0">
         <div role="tablist" aria-label="Vistas" className="flex gap-0.5 rounded-full border border-line bg-[#0b0d10] p-[3px] shadow-[inset_0_2px_8px_rgb(0_0_0/0.6)]">
           {tabs.map((tab) => (
             <button
@@ -860,7 +850,7 @@ const WorkByDecade = ({
         />
       ) : null}
       {mine && !hasPlatforms ? null : decades.map((group, groupIndex) => (
-        <div key={group.decade} id={`persona-decada-${group.decade}`} className="scroll-mt-[calc(19.5rem+env(safe-area-inset-top))] space-y-1">
+        <div key={group.decade} id={`persona-decada-${group.decade}`} className="scroll-mt-[calc(15.25rem+env(safe-area-inset-top))] sm:scroll-mt-[calc(19.5rem+env(safe-area-inset-top))] space-y-1">
           <h4 className="flex items-center gap-2.5 text-xs font-medium tracking-[0.14em] text-faint after:h-px after:flex-1 after:bg-line">
             {group.label}
           </h4>
