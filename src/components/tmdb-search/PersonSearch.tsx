@@ -236,7 +236,7 @@ export const PersonView = ({
       </span>
     ) : null;
 
-  // Phones: the header loses its glass over the wall and gets it back once the name is gone (FIL-I45).
+  // Phones: the status-bar scrim comes back once the name is gone and the sticky bar takes the top (FIL-I45).
   useEffect(() => {
     document.body.toggleAttribute("data-persona-scrolled", scrolledPast);
     return () => document.body.removeAttribute("data-persona-scrolled");
@@ -712,7 +712,7 @@ const WorkByDecade = ({
           <p className="mb-1 font-serif text-[14px] text-fog italic">{shown.length === 1 ? "1 título" : `${shown.length} títulos`}</p>
         )}
       </header>
-      <div className="sticky top-[calc(7.5rem+env(safe-area-inset-top))] z-20 -mx-4 space-y-2.5 bg-canvas/92 px-4 py-2 backdrop-blur sm:top-[calc(11.5rem+env(safe-area-inset-top))] sm:mx-0 sm:px-0">
+      <div className="sticky top-[calc(4rem+env(safe-area-inset-top))] z-20 -mx-4 space-y-2.5 bg-canvas/92 px-4 py-2 backdrop-blur sm:top-[calc(11.5rem+env(safe-area-inset-top))] sm:mx-0 sm:px-0">
         <div role="tablist" aria-label="Vistas" className="flex gap-0.5 rounded-full border border-line bg-[#0b0d10] p-[3px] shadow-[inset_0_2px_8px_rgb(0_0_0/0.6)]">
           {tabs.map((tab) => (
             <button

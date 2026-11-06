@@ -243,8 +243,8 @@ export const PersonHero = ({
           // Phones: the hero starts at the top of the screen, under the floating header (FIL-I45).
           "persona-hero relative -mx-4 overflow-hidden sm:mx-0 sm:rounded-[28px]",
           wall.length > 0
-            ? "pt-[calc(env(safe-area-inset-top)+250px)] min-[360px]:pt-[calc(env(safe-area-inset-top)+300px)] sm:pt-[224px]"
-            : "pt-[calc(env(safe-area-inset-top)+128px)] sm:pt-16",
+            ? "pt-[calc(env(safe-area-inset-top)+200px)] min-[360px]:pt-[calc(env(safe-area-inset-top)+250px)] sm:pt-[224px]"
+            : "pt-[calc(env(safe-area-inset-top)+76px)] sm:pt-16",
         )}
       >
         <PosterWall entries={wall} />
@@ -258,13 +258,13 @@ export const PersonHero = ({
           aria-hidden="true"
         />
         {wall.length > 0 ? <Grain /> : null}
-        {/* The header's own glass is off over the wall: this scrim keeps «Filmia» readable. */}
+        {/* A scrim under the back and search discs. */}
         <div
           className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-linear-to-b from-canvas/80 to-transparent sm:hidden"
           aria-hidden="true"
         />
         {nav ? (
-          <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4.25rem)] z-10 px-4 sm:top-4">
+          <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+0.75rem)] z-10 px-4 sm:top-4">
             {nav}
           </div>
         ) : null}
@@ -392,7 +392,7 @@ export const PersonStickyBar = ({
     aria-hidden={!visible}
     inert={!visible}
     className={cn(
-      "persona-bar fixed inset-x-0 top-[calc(3.5rem+env(safe-area-inset-top))] z-30 border-b border-white/8 bg-canvas/72 shadow-[0_10px_30px_-16px_rgb(0_0_0/0.9)] backdrop-blur-xl backdrop-saturate-150 sm:top-[calc(7.5rem+env(safe-area-inset-top))]",
+      "persona-bar fixed inset-x-0 top-0 z-30 pt-[env(safe-area-inset-top)] border-b border-white/8 bg-canvas/72 shadow-[0_10px_30px_-16px_rgb(0_0_0/0.9)] backdrop-blur-xl backdrop-saturate-150 sm:top-[calc(7.5rem+env(safe-area-inset-top))]",
       visible ? "opacity-100" : "pointer-events-none -translate-y-2 opacity-0",
     )}
   >

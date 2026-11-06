@@ -6552,38 +6552,29 @@ html[data-booted] .iris-loader {
 }
 
 /*
- * Phones: the person view runs its hero under the floating header (FIL-I45). Buscar's top field
- * steps aside (the hero carries «atrás» and a search disc), the header drops its glass over the
- * wall and gets it back once the name has scrolled away.
+ * Phones: the person view runs its hero to the top of the screen (FIL-I45). Buscar's top field
+ * and the «Filmia» header step aside: the hero carries «atrás» and a search disc, and the sticky
+ * bar takes the top once the name has scrolled away.
  */
 @media (max-width: 39.999rem) {
   body:has([data-persona-view]) nav:has([data-search-dock]) {
     display: none;
   }
 
+  /* No «Filmia» plate here: the hero's own back and search discs are the chrome. */
   body:has([data-persona-view]) header.site-header {
-    transition:
-      background-color 200ms var(--ease-out),
-      border-color 200ms var(--ease-out),
-      box-shadow 200ms var(--ease-out);
+    display: none;
   }
 
-  body:has([data-persona-view]):not([data-persona-scrolled]) header.site-header {
-    border-color: transparent;
-    background: transparent;
-    box-shadow: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
+  /* Measured: Buscar's 3.5 rem room for its field and one 24 px gap put the hero 80 px down; it
+     moves back to the top of the screen (the hero pads for the notch itself). */
+  .persona-hero {
+    margin-top: -80px;
   }
 
+  /* The status-bar scrim stays off while the wall is under the notch. */
   body:has([data-persona-view]):not([data-persona-scrolled])::before {
     content: none;
-  }
-
-  /* Measured: the header (0.5 rem + 3 rem + the notch), Buscar's 3.5 rem room for its field and one
-     24 px gap put the hero 138 px + the notch down; it moves back to the top of the screen. */
-  .persona-hero {
-    margin-top: calc(-138px - env(safe-area-inset-top));
   }
 }
 
