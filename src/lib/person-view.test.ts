@@ -3,6 +3,12 @@ import { describe, it } from "node:test";
 import type { FilmographyEntry } from "./person-filmography";
 import {
   essentialPicks,
+  monthYearLabel,
+  nextForYou,
+  personLifeLine,
+  recorridoTitle,
+  thirdStat,
+  watchedStrip,
   groupByDecade,
   mineSplit,
   releaseDateLabel,
@@ -78,7 +84,7 @@ describe("tastePicks", () => {
 
   it("drops watched titles and is null without a taste profile", () => {
     const watched = tastePicks(work, (item) =>
-      item === club ? facts({ imdbRating: 8.8, watched: { rating: 4.5 } }) : factsOf(item),
+      item === club ? facts({ imdbRating: 8.8, watched: { rating: 4.5, on: "2025-03-12" } }) : factsOf(item),
     );
     assert.deepEqual(watched?.entries.map((item) => item.name), ["Red Social", "MANK"]);
     assert.equal(tastePicks(work, (item) => facts({ imdbRating: factsOf(item)?.imdbRating ?? null })), null);
@@ -155,5 +161,99 @@ describe("mineSplit", () => {
     assert.deepEqual(split.shown.map((item) => item.name), ["MINDHUNTER", "El Club de la Pelea"]);
     assert.equal(split.checking, 2);
     assert.equal(split.unknown, 1);
+  });
+});
+
+// FIL-I45-1 · «Tu recorrido» (Ridley Scott in the demo account: 2 of 40 watched, Gladiador and Alien).
+describe("recorridoTitle", () => {
+  it("speaks by share, gender-neutral", () => {
+    assert.equal(recorridoTitle(0, 40), "Aún no has visto nada suyo");
+    assert.equal(recorridoTitle(2, 40), "Apenas empiezas con su obra");
+    assert.equal(recorridoTitle(10, 40), "Le vas tomando el hilo");
+    assert.equal(recorridoTitle(20, 40), "Vas por la mitad");
+    assert.equal(recorridoTitle(30, 40), "Llevas la mayor parte");
+    assert.equal(recorridoTitle(36, 40), "Casi completo");
+    assert.equal(recorridoTitle(40, 40), "Viste toda su obra");
+    assert.equal(recorridoTitle(0, 0), "Aún no has visto nada suyo");
+  });
+});
+
+describe("watchedStrip", () => {
+  const gladiador = entry(98, "Gladiador", 2000, 19000);
+  const alien = entry(348, "Alien", 1979, 15000);
+  const blade = entry(78, "Blade Runner", 1982, 14000);
+  const marciano = entry(286217, "Misión rescate", 2015, 21000);
+  const prometeo = entry(70981, "Prometeo", 2012, 11000);
+  const duelistas = entry(19067, "Los duelistas", 1977, 900);
+  const scott = [marciano, prometeo, gladiador, blade, alien, duelistas];
+  const status = (item: FilmographyEntry) =>
+    item === gladiador || item === alien ? ("watched" as const) : item === blade ? ("watchlist" as const) : null;
+  const seen = (item: FilmographyEntry) =>
+    item === gladiador
+      ? { watched: { rating: 4.5, on: "2025-03-12" } }
+      : item === alien
+        ? { watched: { rating: 4, on: "2024-08-01" } }
+        : null;
+
+  it("puts watched first (latest first), then Quiero ver, then the best known", () => {
+    const strip = watchedStrip(scott, status, seen, 5);
+    assert.deepEqual(
+      strip.frames.map((frame) => [frame.entry.name, frame.state, frame.rating, frame.on]),
+      [
+        ["Gladiador", "watched", 4.5, "2025-03-12"],
+        ["Alien", "watched", 4, "2024-08-01"],
+        ["Blade Runner", "watchlist", null, null],
+        ["Misión rescate", "unseen", null, null],
+        ["Prometeo", "unseen", null, null],
+      ],
+    );
+    assert.equal(strip.more, 1);
+    assert.equal(strip.last?.entry, gladiador);
+    assert.deepEqual(strip.watched.map((frame) => frame.entry), [gladiador, alien]);
+  });
+
+  it("puts an undated watch after the dated ones and has no «última» without dates", () => {
+    const strip = watchedStrip(scott, status, (item) => (item === gladiador ? { watched: { rating: null, on: null } } : seen(item)), 2);
+    assert.deepEqual(strip.frames.map((frame) => frame.entry), [alien, gladiador]);
+    const undated = watchedStrip(scott, status, (item) => (status(item) === "watched" ? { watched: { rating: null, on: null } } : null));
+    assert.equal(undated.last, null);
+  });
+
+  it("is all «unseen» with nothing watched", () => {
+    const strip = watchedStrip(scott, () => null, () => null, 3);
+    assert.deepEqual(strip.frames.map((frame) => frame.state), ["unseen", "unseen", "unseen"]);
+    assert.equal(strip.watched.length, 0);
+    assert.equal(strip.more, 3);
+  });
+
+  it("labels the strip date as «mar 2025»", () => {
+    assert.equal(monthYearLabel("2025-03-12"), "mar 2025");
+    assert.equal(monthYearLabel(null), null);
+  });
+
+  it("«Siguiente para ti»: taste first, then «Lo esencial», never a watched one", () => {
+    const taste = { level: "alta" as const, entries: [marciano, prometeo] };
+    assert.deepEqual(nextForYou(taste, [gladiador, blade], status), { entry: marciano, source: "taste" });
+    assert.deepEqual(nextForYou(null, [gladiador, blade], status), { entry: blade, source: "essential" });
+    assert.equal(nextForYou(null, [gladiador, alien], status), null);
+  });
+});
+
+describe("thirdStat", () => {
+  it("shows the person's own Óscar: won, else nominations, else nothing", () => {
+    assert.deepEqual(thirdStat({ wins: [1, 2], nominations: 16 }), { value: 2, label: "Óscar", tone: "gold" });
+    assert.deepEqual(thirdStat({ wins: [], nominations: 4 }), { value: 4, label: "nom. al Óscar", tone: "gold" });
+    assert.equal(thirdStat(null), null);
+  });
+});
+
+describe("personLifeLine", () => {
+  it("joins what TMDB has", () => {
+    assert.equal(
+      personLifeLine({ birthday: "1937-11-30", placeOfBirth: "South Shields, County Durham, England, UK" }),
+      "n. 1937 · South Shields",
+    );
+    assert.equal(personLifeLine({ birthday: "1930-05-31", deathday: "2024-02-02", placeOfBirth: null }), "n. 1930 · † 2024");
+    assert.equal(personLifeLine({}), null);
   });
 });

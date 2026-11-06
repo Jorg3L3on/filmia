@@ -1,5 +1,6 @@
 import type { TitleKind } from "@/db";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
+import type { PersonOscars } from "@/lib/person-oscars";
 
 /**
  * Buscar's person view (FIL-I3-5): one filmography per person and role, for
@@ -43,6 +44,13 @@ export type PersonSummary = {
   name: string;
   profilePath: string | null;
   department: string | null;
+  /** IMDb `nm…` id from `/person/:id`, for the Óscar panel (FIL-I43). */
+  imdbId?: string | null;
+  /** `YYYY-MM-DD` from `/person/:id` (FIL-I45-1: the hero's «n. 1937»); null when TMDB has none. */
+  birthday?: string | null;
+  deathday?: string | null;
+  /** TMDB's English «City, Region, Country», as given. */
+  placeOfBirth?: string | null;
 };
 
 export type PersonFilmography = {
@@ -60,6 +68,8 @@ export type PersonFilmography = {
   years: { from: number; to: number } | null;
   /** Titles of the work in each role, for the role menu. */
   roles: Record<PersonRole, number>;
+  /** The person's Óscar (FIL-I43), filled by the server action; null or absent when none. */
+  oscars?: PersonOscars | null;
 };
 
 type CreditBase = {

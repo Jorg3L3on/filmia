@@ -19,8 +19,11 @@ export type SearchResultFacts = {
   platform: string | null;
   /** «Para ti» (FIL-I9): for a film you have not watched, once your profile has 8 rated watches. */
   affinity: SearchAffinityChip | null;
-  /** A film you watched shows your rating, never a prediction (null = watched, not rated). */
-  watched: { rating: number | null } | null;
+  /**
+   * A film you watched shows your rating, never a prediction (rating null = watched, not rated);
+   * `on` is the day you watched it, `YYYY-MM-DD` (FIL-I45-1), null when unknown.
+   */
+  watched: { rating: number | null; on: string | null } | null;
   /**
    * «En mis plataformas» (FIL-I30): included (flatrate, MX) on one of your
    * platforms. Null = never checked against TMDB, or no platforms saved.

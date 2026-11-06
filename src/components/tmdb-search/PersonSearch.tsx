@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AffinityChip } from "@/components/affinity/AffinityChip";
@@ -13,17 +12,27 @@ import { PlatformLogo } from "@/components/PlatformLogo";
 import { SearchResultsSkeleton } from "@/components/PageSkeletons";
 import { PosterImage } from "@/components/PosterImage";
 import {
+  PersonHero,
+  PersonPhoto,
+  PersonStickyBar,
+  PersonTopNav,
+  useScrolledPast,
+  watchedLine,
+  type HeroStat,
+} from "@/components/tmdb-search/PersonHero";
+import { PersonJourney } from "@/components/tmdb-search/PersonJourney";
+import { PersonOscars } from "@/components/tmdb-search/PersonOscars";
+import {
   SearchResultRow,
   type SearchRowStatus,
   type SearchRowWiring,
 } from "@/components/tmdb-search/SearchResultRow";
 import { cn } from "@/lib/cn";
-import { PLATFORM_SERVICE_LABEL } from "@/lib/labels";
+import { formatStarScore, PLATFORM_SERVICE_LABEL } from "@/lib/labels";
 import { staggerStyle } from "@/lib/motion";
 import {
   menuRoles,
   PERSON_ROLE_LABEL,
-  personYearsLabel,
   todayIso,
   type DirectorHit,
   type FilmographyEntry,
@@ -35,45 +44,18 @@ import {
   essentialPicks,
   groupByDecade,
   mineSplit,
-  PROGRESS_MARKS_MAX,
+  nextForYou,
   shelvesSettled,
   TASTE_SHELF_TITLE,
   tastePicks,
+  thirdStat,
   upcomingSummary,
+  watchedStrip,
   watchProgress,
 } from "@/lib/person-view";
 import { personMineFilterOn, setPersonMineFilter } from "@/lib/search-session";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
-import { tmdbProfileUrl } from "@/lib/tmdb";
 import { focusRing, glassPanelClass } from "@/lib/ui";
-
-/** Round TMDB profile photo; no photo, no placeholder. */
-const PersonPhoto = ({
-  profilePath,
-  name,
-  className,
-  sizes,
-}: {
-  profilePath: string | null;
-  name: string;
-  className: string;
-  sizes: string;
-}) => {
-  const src = tmdbProfileUrl(profilePath);
-  if (!src) {
-    return null;
-  }
-  return (
-    <span
-      className={cn(
-        "relative shrink-0 overflow-hidden rounded-full bg-well ring-1 ring-white/15 shadow-[0_10px_24px_-12px_rgb(0_0_0/0.8)]",
-        className,
-      )}
-    >
-      <Image src={src} alt={`Foto de ${name}`} fill sizes={sizes} className="object-cover" unoptimized />
-    </span>
-  );
-};
 
 /** «David Fincher · Director — Ver filmografía ›» on top of Todos / Películas / Series. */
 export const DirectorSuggestion = ({
@@ -176,19 +158,34 @@ type PersonViewProps = {
   /** «‹ Resultados»: only when there is a search to go back to. */
   backLabel: string | null;
   onBack: () => void;
-  /** Without a search behind: «‹ Obsesión» back to the page that opened this view (FIL-I4-6). */
-  originBack?: ReactNode;
   /** The role menu: the same person in another role (same page, no new history entry). */
   onSwitchRole?: (role: PersonRole) => void;
   /** The user saved streaming platforms in Perfil: «En mis plataformas» can filter (FIL-I30-2). */
   hasPlatforms?: boolean;
 };
 
+const plural = (count: number, one: string, many: string) => (count === 1 ? one : many);
+
+/** «32 pelis · 8 series», or just «películas» / «series». */
+const workKindsLabel = ({ movies, series }: Pick<PersonFilmography, "movies" | "series">) =>
+  series === 0
+    ? plural(movies, "película", "películas")
+    : movies === 0
+      ? plural(series, "serie", "series")
+      : `${movies} ${plural(movies, "peli", "pelis")} · ${series} ${plural(series, "serie", "series")}`;
+
+/** Years in activity as one number («61») when it is a span, else the year itself. */
+const activeYears = (years: PersonFilmography["years"]) =>
+  !years ? null : years.from === years.to ? { value: String(years.from), label: "en activo" } : { value: String(years.to - years.from + 1), label: "años en activo" };
+
+/** The phone header (Filmia + the search row) covers this many px; the name is gone past it. */
+const STICKY_OFFSET = 64;
+
 /**
- * One view for any person and role, direction B «Lo esencial» (FIL-I16-4):
- * who they are, how much of their work you have seen, their best by IMDb, the
- * closest to your taste, what is coming, and the whole work by decade, with
- * the appearances that are not their work folded at the end.
+ * One view for any person and role, «Tu recorrido» v3 (FIL-I45): the poster-wall hero with three
+ * numbers, how much of the work you have seen and which (ring + film strip), what to watch next,
+ * their Óscar as tickets, their best by IMDb, the closest to your taste, what is coming, and the whole
+ * work by decade with Todo / Vistas / Sin ver, the appearances that are not their work folded last.
  */
 export const PersonView = ({
   state,
@@ -198,7 +195,6 @@ export const PersonView = ({
   onRetry,
   backLabel,
   onBack,
-  originBack = null,
   onSwitchRole,
   hasPlatforms = false,
 }: PersonViewProps) => {
@@ -208,33 +204,68 @@ export const PersonView = ({
   const role = pending?.role ?? data?.role ?? (state?.kind === "error" ? state.role : "director");
   // A ficha opened from this filmography says «‹ Greg Daniels».
   useNavLabel(name || null);
+  const nameRef = useRef<HTMLHeadingElement>(null);
+  const scrolledPast = useScrolledPast(nameRef, STICKY_OFFSET);
+
+  const progress = data ? watchProgress(data.entries, (entry) => statusOf(entry).status) : null;
+  const gold = Boolean(data?.oscars && data.oscars.wins.length > 0);
+  const stats: HeroStat[] = [];
+  if (data && data.entries.length > 0) {
+    stats.push({ value: String(data.entries.length), label: workKindsLabel(data) });
+    const years = activeYears(data.years);
+    if (years) {
+      stats.push(years);
+    }
+    const third = thirdStat(data.oscars);
+    if (third) {
+      stats.push({ value: String(third.value), label: third.label, tone: third.tone === "gold" ? "gold" : undefined });
+    }
+  }
+  const roles = data ? menuRoles(data) : [role];
+  const otherRoles = data
+    ? roles.filter((option) => option !== role && data.roles[option] > 0).map((option) => `${PERSON_ROLE_LABEL[option].toLowerCase()} · ${data.roles[option]}`)
+    : [];
+  const roleMenu = (where: "hero" | "bar") =>
+    data && onSwitchRole && roles.length > 1 ? (
+      <span className="inline-flex items-center gap-2.5">
+        <RoleMenu role={role} roles={roles} counts={data.roles} onSwitch={onSwitchRole} align={where === "bar" ? "right" : "left"} />
+        {where === "hero" && otherRoles.length > 0 ? (
+          <span className="text-[12.5px] text-fog">También {otherRoles.join(", ")}</span>
+        ) : null}
+      </span>
+    ) : null;
+
+  // Phones: the status-bar scrim comes back once the name is gone and the sticky bar takes the top (FIL-I45).
+  useEffect(() => {
+    document.body.toggleAttribute("data-persona-scrolled", scrolledPast);
+    return () => document.body.removeAttribute("data-persona-scrolled");
+  }, [scrolledPast]);
 
   return (
-    <div className="space-y-6">
-      {!backLabel ? originBack : null}
-      {backLabel ? (
-        <button
-          type="button"
-          onClick={onBack}
-          className={cn(
-            // On phones the dock's disc is the one «atrás» (FIL-I22-6); the text link stays for desktop.
-            "press-scale -ml-1 hidden max-w-full items-center gap-1 rounded-full px-1 text-sm text-fog hover:text-paper sm:inline-flex",
-            focusRing,
-          )}
-        >
-          <span aria-hidden="true">‹</span>
-          <span className="truncate">{backLabel}</span>
-        </button>
-      ) : null}
-
-      <PersonHeader
+    <div className="space-y-6" data-persona-view>
+      <PersonHero
         key={`${name}:${role}`}
         name={name}
         profilePath={profilePath}
         role={role}
         data={data}
-        onSwitchRole={onSwitchRole}
+        stats={stats}
+        gold={gold}
+        nameRef={nameRef}
+        roleMenu={roleMenu("hero")}
+        nav={<PersonTopNav results={backLabel} onBackToResults={onBack} />}
       />
+      {name ? (
+        <PersonStickyBar
+          visible={scrolledPast}
+          name={name}
+          profilePath={profilePath}
+          gold={gold}
+          line={watchedLine(role, progress?.watched ?? 0, progress?.total ?? 0)}
+          roleMenu={roleMenu("bar")}
+          back={<PersonTopNav results={backLabel} onBackToResults={onBack} compact />}
+        />
+      ) : null}
 
       {pending || !state ? (
         <SearchResultsSkeleton />
@@ -259,62 +290,6 @@ export const PersonView = ({
   );
 };
 
-const plural = (count: number, one: string, many: string) => (count === 1 ? one : many);
-
-/** «títulos · 13 pelis, 4 series», or just «películas» / «series». */
-const workKindsLabel = ({ movies, series }: Pick<PersonFilmography, "movies" | "series">) =>
-  series === 0
-    ? plural(movies, "película", "películas")
-    : movies === 0
-      ? plural(series, "serie", "series")
-      : `títulos · ${movies} ${plural(movies, "peli", "pelis")}, ${series} ${plural(series, "serie", "series")}`;
-
-const PersonStat = ({ value, label }: { value: string; label: string }) => (
-  <div className="min-w-0 flex-1 rounded-2xl bg-well px-3 py-2.5">
-    <p className="font-serif text-xl leading-tight text-paper">{value}</p>
-    <p className="truncate text-[11.5px] text-fog">{label}</p>
-  </div>
-);
-
-const PersonHeader = ({
-  name,
-  profilePath,
-  role,
-  data,
-  onSwitchRole,
-}: {
-  name: string;
-  profilePath: string | null;
-  role: PersonRole;
-  data: PersonFilmography | null;
-  onSwitchRole?: (role: PersonRole) => void;
-}) => {
-  const roles = data ? menuRoles(data) : [role];
-  const years = data ? personYearsLabel(data.years) : null;
-  return (
-    <section aria-label={name || "Persona"} className="person-card-in space-y-4">
-      <div className="flex min-w-0 items-center gap-4">
-        <PersonPhoto profilePath={profilePath} name={name} className="size-[92px]" sizes="92px" />
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <h2 className="line-clamp-2 font-serif text-[30px] leading-[1.05] text-pretty break-words text-paper">
-            {name || "…"}
-          </h2>
-          {data && onSwitchRole && roles.length > 1 ? (
-            <RoleMenu role={role} roles={roles} counts={data.roles} onSwitch={onSwitchRole} />
-          ) : (
-            <p className="text-sm text-paper/80">{PERSON_ROLE_LABEL[role]}</p>
-          )}
-        </div>
-      </div>
-      {data && data.entries.length > 0 ? (
-        <div className="flex gap-2">
-          <PersonStat value={String(data.entries.length)} label={workKindsLabel(data)} />
-          {years ? <PersonStat value={years} label="en activo" /> : null}
-        </div>
-      ) : null}
-    </section>
-  );
-};
 
 /** «Director ▾»: the same person in another role, with the size of each. */
 const RoleMenu = ({
@@ -322,11 +297,14 @@ const RoleMenu = ({
   roles,
   counts,
   onSwitch,
+  align = "left",
 }: {
   role: PersonRole;
   roles: PersonRole[];
   counts: Record<PersonRole, number>;
   onSwitch: (role: PersonRole) => void;
+  /** The sticky bar opens it toward the left edge. */
+  align?: "left" | "right";
 }) => {
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -360,8 +338,8 @@ const RoleMenu = ({
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          // 40 px tall (FIL-I22-5): a thumb target, not a label.
-          "press-scale inline-flex h-10 items-center gap-1.5 rounded-full border border-accent/50 bg-accent/10 px-3.5 text-sm text-accent-hover",
+          // 44 px tall (FIL-I45-6): a thumb target, not a label.
+          "press-scale inline-flex h-11 items-center gap-1.5 rounded-full border border-accent/55 bg-accent/14 px-3.5 text-sm text-accent-hover backdrop-blur-md",
           focusRing,
         )}
       >
@@ -374,7 +352,7 @@ const RoleMenu = ({
         <div
           role="menu"
           aria-label="Rol"
-          className="absolute top-[calc(100%+6px)] left-0 z-30 min-w-[13rem] rounded-2xl border border-line bg-surface p-1.5 shadow-[0_20px_40px_-14px_rgb(0_0_0/0.8)]"
+          className={cn("absolute top-[calc(100%+6px)] z-40", align === "right" ? "right-0" : "left-0", "min-w-[13rem] rounded-2xl border border-line bg-surface p-1.5 shadow-[0_20px_40px_-14px_rgb(0_0_0/0.8)]")}
         >
           {roles.map((option) => (
             <button
@@ -416,7 +394,8 @@ const PersonBody = ({
   hasPlatforms: boolean;
 }) => {
   const factsOf = (entry: FilmographyEntry) => rows.factsFor?.(entry) ?? null;
-  const progress = watchProgress(data.entries, (entry) => statusOf(entry).status);
+  const statusOnly = (entry: FilmographyEntry) => statusOf(entry).status;
+  const progress = watchProgress(data.entries, statusOnly);
   // Until the facts settle, the shelves keep their place; then they are drawn once and kept,
   // so a rating that lands later never swaps a poster (FIL-I30-4).
   const waiting = data.entries.length > 0 && !shelvesSettled(data.entries, factsOf);
@@ -431,26 +410,34 @@ const PersonBody = ({
   }
   const drawn = !waiting && shelves?.key === shelvesKey ? shelves : null;
   const essential = drawn?.essential ?? [];
-  const taste = drawn?.taste ?? null;
-  const upcoming = upcomingSummary(data.upcoming, todayIso());
+  // «Muy tu estilo» skips what «Lo esencial» already shows, so the same posters never repeat.
+  const tasteAll = drawn?.taste ?? null;
+  const tasteRest = tasteAll ? tasteAll.entries.filter((entry) => !essential.includes(entry)) : [];
+  const taste = tasteAll && tasteRest.length >= 2 ? { ...tasteAll, entries: tasteRest } : null;
+  const today = todayIso();
+  const upcoming = upcomingSummary(data.upcoming, today);
+  const strip = watchedStrip(data.entries, statusOnly, factsOf);
+  const next = drawn ? nextForYou(tasteAll, essential, statusOnly) : null;
+  const essentialSeen = essential.filter((entry) => statusOnly(entry) === "watched").length;
 
   return (
     <>
-      {progress.total > 0 ? <WatchProgress progress={progress} nudge={Boolean(taste)} /> : null}
+      {progress.total > 0 ? (
+        <PersonJourney progress={progress} strip={strip} next={next} statusOf={statusOf} rows={rows} today={today} />
+      ) : null}
+      {/* The person's Óscar (FIL-I43), as tickets on an axis since FIL-I45-4. */}
+      {data.oscars ? <PersonOscars key={data.person.id} oscars={data.oscars} /> : null}
       {waiting ? <ShelfSkeleton /> : null}
       {essential.length > 0 ? (
         <PosterShelf
+          eyebrow="Por dónde empezar"
           title="Lo esencial"
           hint="Su mejor calificada en IMDb"
+          badge={essentialSeen > 0 ? `${essentialSeen} de ${essential.length} vistas` : null}
+          size="large"
           entries={essential}
           statusOf={statusOf}
           rows={rows}
-          meta={(entry, status) => (
-            <span className="flex items-center gap-1.5">
-              <ImdbBadge rating={factsOf(entry)?.imdbRating} compact />
-              {status === "watched" ? <span className="text-xs text-success">La viste</span> : null}
-            </span>
-          )}
         />
       ) : null}
       {taste ? (
@@ -474,10 +461,14 @@ const PersonBody = ({
         <WorkByDecade
           entries={data.entries}
           role={data.role}
+          years={data.years}
           statusOf={statusOf}
           rows={rows}
           factsOf={factsOf}
           hasPlatforms={hasPlatforms}
+          progress={progress}
+          next={next?.entry ?? null}
+          today={today}
         />
       ) : null}
       {data.others.length > 0 ? <OtherAppearances entries={data.others} statusOf={statusOf} rows={rows} /> : null}
@@ -485,44 +476,6 @@ const PersonBody = ({
   );
 };
 
-/** «Has visto 4 de 23 · 2 en Quiero ver», one mark per title (proportional past 40). */
-const WatchProgress = ({
-  progress,
-  nudge,
-}: {
-  progress: ReturnType<typeof watchProgress>;
-  nudge: boolean;
-}) => (
-  <section aria-label="Tu avance" className={cn(glassPanelClass, "space-y-2 rounded-[20px] px-4 py-3.5")}>
-    <div className="flex items-baseline justify-between gap-3">
-      <p className="font-serif text-lg text-paper">
-        Has visto {progress.watched} de {progress.total}
-      </p>
-      <p className="shrink-0 text-xs text-fog">{progress.watchlist} en Quiero ver</p>
-    </div>
-    {progress.total <= PROGRESS_MARKS_MAX ? (
-      <div className="flex gap-[3px]" aria-hidden="true">
-        {progress.marks.map((mark, index) => (
-          <span
-            key={index}
-            className={cn(
-              "h-2 flex-1 rounded-[3px]",
-              mark === "watched" ? "bg-success" : mark === "watchlist" ? "ring-[1.5px] ring-accent/70 ring-inset" : "bg-line",
-            )}
-          />
-        ))}
-      </div>
-    ) : (
-      <div className="flex h-2 overflow-hidden rounded-[3px] bg-line" aria-hidden="true">
-        <span className="bg-success" style={{ width: `${(progress.watched / progress.total) * 100}%` }} />
-        <span className="bg-accent/45" style={{ width: `${(progress.watchlist / progress.total) * 100}%` }} />
-      </div>
-    )}
-    {progress.watched === 0 && nudge ? (
-      <p className="text-[13px] text-paper/80">Empieza por la que más se parece a lo que te gusta{"\u00a0"}↓</p>
-    ) : null}
-  </section>
-);
 
 /** The shelf's streaming line: your platform with its logo, otherwise the first MX subscription. */
 const ShelfPlatform = ({ facts }: { facts: SearchResultFacts | null }) => {
@@ -543,52 +496,95 @@ const ShelfPlatform = ({ facts }: { facts: SearchResultFacts | null }) => {
   return <span className="block truncate text-[11px] text-paper/75">{facts.platform}</span>;
 };
 
-/** A horizontal rail of posters that open their ficha. */
+/** The ribbon across a watched poster's corner. */
+const SeenRibbon = () => (
+  <span
+    className="pointer-events-none absolute top-4 -left-9 w-[140px] -rotate-45 bg-linear-to-r from-success to-[#9ff0c9] py-[3px] text-center text-[9.5px] font-semibold tracking-[0.22em] text-ink uppercase shadow-[0_4px_12px_rgb(0_0_0/0.5)]"
+    aria-hidden="true"
+  >
+    Vista
+  </span>
+);
+
+/** A horizontal rail of posters that open their ficha; «large» puts IMDb, your stars and «Vista» on the poster. */
 const PosterShelf = ({
+  eyebrow,
   title,
   hint,
+  badge = null,
   tone,
+  size = "regular",
   entries,
   statusOf,
   rows,
   meta,
 }: {
+  eyebrow?: string;
   title: string;
   hint: string;
+  badge?: string | null;
   tone?: "affinity";
+  size?: "regular" | "large";
   entries: FilmographyEntry[];
   statusOf: StatusOf;
   rows: SearchRowWiring;
-  meta: (entry: FilmographyEntry, status: SearchRowStatus) => ReactNode;
+  meta?: (entry: FilmographyEntry, status: SearchRowStatus) => ReactNode;
 }) => (
-  <section className="space-y-3">
-    <header className="space-y-0.5">
-      <h3 className={cn("font-serif text-[21px] leading-tight", tone === "affinity" ? "text-affinity" : "text-paper")}>
-        {title}
-      </h3>
-      <p className="text-[13px] text-fog">{hint}</p>
+  <section className="space-y-3.5">
+    <header className="flex items-end justify-between gap-3">
+      <div className="min-w-0">
+        {eyebrow ? <p className="text-[10.5px] font-medium tracking-[0.22em] text-fog uppercase">{eyebrow}</p> : null}
+        <h3
+          className={cn(
+            "font-serif leading-[1.05] tracking-[-0.015em]",
+            eyebrow ? "mt-1.5 text-[27px]" : "text-[23px]",
+            tone === "affinity" ? "text-affinity" : "text-paper",
+          )}
+        >
+          {title}
+        </h3>
+        <p className="mt-1 font-serif text-[14px] text-fog italic">{hint}</p>
+      </div>
+      {badge ? (
+        <span className="mb-1 inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border border-success/25 bg-success-well px-2.5 text-xs font-medium text-success">
+          <svg viewBox="0 0 16 16" className="size-3" aria-hidden="true">
+            <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2.5" />
+            <path d="M8 2a6 6 0 0 1 5.2 3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          </svg>
+          {badge}
+        </span>
+      ) : null}
     </header>
-    <ul className="rail rail-fade -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+    <ul className="rail rail-fade -mx-4 flex gap-3.5 overflow-x-auto px-4 pt-1 pb-1 sm:mx-0 sm:px-0">
       {entries.map((entry) => {
         const { titleId, status } = statusOf(entry);
+        const facts = rows.factsFor?.(entry) ?? null;
+        const large = size === "large";
         return (
-          <li key={`${entry.kind}:${entry.tmdbId}`} className="w-[7.5rem] shrink-0 lg:w-[8.5rem]">
+          <li key={`${entry.kind}:${entry.tmdbId}`} className={cn("shrink-0", large ? "w-[8.75rem]" : "w-[7.5rem] lg:w-[8.5rem]")}>
             <Link
               href={rows.hrefFor(entry, titleId)}
               prefetch={false}
               onClick={() => rows.onOpen(entry)}
               className={cn("press-scale block space-y-1.5 rounded-xl", focusRing)}
             >
-              <PosterImage
-                name={entry.name}
-                posterPath={entry.posterPath}
-                sizes="136px"
-                tmdbSize="w342"
-                className="rounded-[10px] shadow-[0_14px_30px_-12px_rgb(0_0_0/0.8)]"
-              />
-              <span className="block truncate font-serif text-sm text-paper">{entry.name}</span>
-              {meta(entry, status)}
-              <ShelfPlatform facts={rows.factsFor?.(entry) ?? null} />
+              <span className="relative block overflow-hidden rounded-[12px] shadow-[0_18px_36px_-14px_rgb(0_0_0/0.9)]">
+                <PosterImage name={entry.name} posterPath={entry.posterPath} sizes={large ? "140px" : "136px"} tmdbSize="w342" />
+                {status === "watched" ? <SeenRibbon /> : null}
+                {large && (facts?.imdbRating != null || facts?.watched?.rating != null) ? (
+                  <span className="absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-lg bg-canvas/72 px-1.5 py-1 backdrop-blur-md">
+                    {facts?.imdbRating != null ? <ImdbBadge rating={facts.imdbRating} compact /> : null}
+                    {facts?.watched?.rating != null ? (
+                      <span className="text-xs font-semibold text-star">★ {formatStarScore(facts.watched.rating)}</span>
+                    ) : null}
+                  </span>
+                ) : null}
+              </span>
+              <span className={cn("block font-serif text-paper", large ? "line-clamp-2 text-[15px] leading-snug" : "truncate text-sm")}>
+                {entry.name}
+              </span>
+              {meta ? meta(entry, status) : null}
+              {large ? null : <ShelfPlatform facts={facts} />}
             </Link>
           </li>
         );
@@ -596,6 +592,7 @@ const PosterShelf = ({
     </ul>
   </section>
 );
+
 
 const ShelfSkeleton = () => (
   <div className="space-y-3" aria-hidden="true">
@@ -644,69 +641,119 @@ const UpcomingCard = ({
 };
 
 type KindFilter = "ALL" | "MOVIE" | "SERIES";
+// «Todo» lives in the Vistas tabs above; the kind chips toggle on and off (FIL-I45).
 const KIND_FILTERS: { value: KindFilter; label: string }[] = [
-  { value: "ALL", label: "Todo" },
   { value: "MOVIE", label: "Películas" },
   { value: "SERIES", label: "Series" },
 ];
 
-/** Every title of the work, Buscar's rows grouped by decade, filterable by kind and by your platforms. */
+type SeenFilter = "ALL" | "SEEN" | "UNSEEN";
+
+/** Every title of the work: Todo / Vistas / Sin ver, kind and platform chips, editorial rows by decade. */
 const WorkByDecade = ({
   entries,
   role,
+  years,
   statusOf,
   rows,
   factsOf,
   hasPlatforms,
+  progress,
+  next,
+  today,
 }: {
   entries: FilmographyEntry[];
   role: PersonRole;
+  years: PersonFilmography["years"];
   statusOf: StatusOf;
   rows: SearchRowWiring;
   factsOf: (entry: FilmographyEntry) => SearchResultFacts | null;
   hasPlatforms: boolean;
+  progress: ReturnType<typeof watchProgress>;
+  next: FilmographyEntry | null;
+  today: string;
 }) => {
   const [kind, setKind] = useState<KindFilter>("ALL");
+  const [seen, setSeen] = useState<SeenFilter>("ALL");
   // «En mis plataformas» (FIL-I30-2) stays on from one person to the next.
   const [mine, setMine] = useState(personMineFilterOn);
   const toggleMine = () => {
     setMine(!mine);
     setPersonMineFilter(!mine);
   };
+  const isSeen = (entry: FilmographyEntry) => statusOf(entry).status === "watched";
   const mixed = entries.some((entry) => entry.kind === "MOVIE") && entries.some((entry) => entry.kind === "SERIES");
-  const ofKind = kind === "ALL" ? entries : entries.filter((entry) => entry.kind === kind);
+  const ofSeen = seen === "ALL" ? entries : entries.filter((entry) => (seen === "SEEN" ? isSeen(entry) : !isSeen(entry)));
+  const ofKind = kind === "ALL" ? ofSeen : ofSeen.filter((entry) => entry.kind === kind);
   const split = mineSplit(ofKind, factsOf);
   const filtering = mine && hasPlatforms;
   const shown = filtering ? split.shown : ofKind;
   const decades = groupByDecade(shown);
   // Where each decade starts in the whole list, for the entrance stagger.
   const starts = decades.map((_, at) => decades.slice(0, at).reduce((sum, group) => sum + group.entries.length, 0));
+  const tabs: { value: SeenFilter; label: string; count: number }[] = [
+    { value: "ALL", label: "Todo", count: progress.total },
+    { value: "SEEN", label: "Vistas", count: progress.watched },
+    { value: "UNSEEN", label: "Sin ver", count: progress.total - progress.watched },
+  ];
 
   return (
-    <section className="space-y-3">
-      <header className="flex items-baseline justify-between gap-3">
-        <h3 className="font-serif text-[21px] leading-tight text-paper">Toda su obra</h3>
+    <section className="space-y-4" aria-labelledby="persona-obra">
+      <header className="flex items-end justify-between gap-3">
+        <div>
+          {years ? (
+            <p className="text-[10.5px] font-medium tracking-[0.22em] text-fog uppercase">
+              {years.from === years.to ? years.from : `${years.from} – ${years.to}`}
+            </p>
+          ) : null}
+          <h3 id="persona-obra" className="mt-1.5 font-serif text-[27px] leading-[1.05] tracking-[-0.015em] text-paper">
+            Toda su obra
+          </h3>
+        </div>
         {mine && !hasPlatforms ? null : (
-          <p className="text-xs text-mist">{shown.length === 1 ? "1 título" : `${shown.length} títulos`}</p>
+          <p className="mb-1 font-serif text-[14px] text-fog italic">{shown.length === 1 ? "1 título" : `${shown.length} títulos`}</p>
         )}
       </header>
-      <div role="group" aria-label="Filtros" className="flex flex-wrap gap-2">
-        {mixed
-          ? KIND_FILTERS.map((filter) => (
-              <button
-                key={filter.value}
-                type="button"
-                aria-pressed={kind === filter.value}
-                onClick={() => setKind(filter.value)}
-                className={catalogBarChipClass(kind === filter.value)}
-              >
-                {filter.label}
-              </button>
-            ))
-          : null}
-        <button type="button" aria-pressed={mine} onClick={toggleMine} className={catalogBarChipClass(mine)}>
-          En mis plataformas
-        </button>
+      <div className="sticky top-[calc(4rem+env(safe-area-inset-top))] z-20 -mx-4 space-y-2.5 bg-canvas/92 px-4 py-2 backdrop-blur sm:top-[calc(11.5rem+env(safe-area-inset-top))] sm:mx-0 sm:px-0">
+        <div role="tablist" aria-label="Vistas" className="flex gap-0.5 rounded-full border border-line bg-[#0b0d10] p-[3px] shadow-[inset_0_2px_8px_rgb(0_0_0/0.6)]">
+          {tabs.map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              role="tab"
+              aria-selected={seen === tab.value}
+              onClick={() => setSeen(tab.value)}
+              className={cn(
+                "flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-[13px] font-medium transition-[background-color,color,box-shadow] duration-[var(--duration-hover)]",
+                seen === tab.value
+                  ? "bg-linear-to-b from-[#242b33] to-surface text-paper shadow-[inset_0_1px_0_rgb(255_255_255/0.1),0_6px_18px_-8px_rgb(0_0_0/0.9)]"
+                  : "text-fog hover:text-paper",
+                focusRing,
+              )}
+            >
+              {tab.label}
+              <span className={cn("text-[11px]", tab.value === "SEEN" && tab.count > 0 ? "text-success" : "text-fog")}>{tab.count}</span>
+            </button>
+          ))}
+        </div>
+        <div role="group" aria-label="Filtros" className="flex flex-wrap gap-2">
+          {mixed
+            ? KIND_FILTERS.map((filter) => (
+                <button
+                  key={filter.value}
+                  type="button"
+                  aria-pressed={kind === filter.value}
+                  onClick={() => setKind(kind === filter.value ? "ALL" : filter.value)}
+                  className={cn(catalogBarChipClass(kind === filter.value), "min-h-11")}
+                >
+                  {filter.label}
+                </button>
+              ))
+            : null}
+          <button type="button" aria-pressed={mine} onClick={toggleMine} className={cn(catalogBarChipClass(mine), "min-h-11")}>
+            En mis plataformas
+          </button>
+        </div>
       </div>
       {mine && !hasPlatforms ? (
         <MinePanel
@@ -726,7 +773,21 @@ const WorkByDecade = ({
             : `${split.unknown} sin datos de plataformas`}
         </p>
       ) : null}
-      {filtering && shown.length === 0 && split.checking === 0 ? (
+      {seen === "SEEN" && progress.watched === 0 ? (
+        <MinePanel
+          title="Aún no has visto nada de su obra"
+          description={next ? `Empieza por «${next.name}».` : "Cuando marques una como vista, aparecerá aquí."}
+          action={
+            next ? (
+              <Button href={rows.hrefFor(next, statusOf(next).titleId)} variant="secondary">
+                Ver «{next.name}»
+              </Button>
+            ) : null
+          }
+        />
+      ) : seen === "UNSEEN" && progress.total > 0 && progress.watched >= progress.total ? (
+        <MinePanel title="Viste toda su obra" description="No te falta ninguno de sus títulos en este rol." action={null} />
+      ) : filtering && shown.length === 0 && split.checking === 0 ? (
         <MinePanel
           title="Nada de su obra está en tus plataformas hoy"
           description="Rentar o comprar no cuenta: solo lo incluido en tu suscripción."
@@ -738,11 +799,11 @@ const WorkByDecade = ({
         />
       ) : null}
       {mine && !hasPlatforms ? null : decades.map((group, groupIndex) => (
-        <div key={group.decade} className="space-y-2">
+        <div key={group.decade} className="space-y-1">
           <h4 className="flex items-center gap-2.5 text-xs font-medium tracking-[0.14em] text-faint after:h-px after:flex-1 after:bg-line">
             {group.label}
           </h4>
-          <ul className="grid grid-cols-[minmax(0,1fr)] gap-2 lg:grid-cols-2 lg:gap-3">
+          <ul className="divide-y divide-white/6 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:divide-y-0">
             {group.entries.map((entry, entryIndex) => {
               const { titleId, status } = statusOf(entry);
               // The first rows of the view stagger in; later ones are already there when scrolled to.
@@ -760,6 +821,8 @@ const WorkByDecade = ({
                     onMenu={rows.onMenu}
                     log={rows.logFor?.(entry) ?? null}
                     pinned={titleId !== null && titleId === rows.pinnedTitleId}
+                    variant="editorial"
+                    today={today}
                   />
                 </li>
               );
@@ -770,6 +833,7 @@ const WorkByDecade = ({
     </section>
   );
 };
+
 
 /** «En mis plataformas» with nothing to list: why, and the way out. */
 const MinePanel = ({ title, description, action }: { title: string; description: string; action: ReactNode }) => (
@@ -814,7 +878,7 @@ const OtherAppearances = ({
               href={rows.hrefFor(entry, statusOf(entry).titleId)}
               prefetch={false}
               onClick={() => rows.onOpen(entry)}
-              className={cn("block truncate rounded text-sm text-fog hover:text-paper", focusRing)}
+              className={cn("flex min-h-11 items-center truncate rounded text-sm text-fog hover:text-paper", focusRing)}
             >
               {entry.name}
               {entry.year ? <span className="text-faint"> · {entry.year}</span> : null}
