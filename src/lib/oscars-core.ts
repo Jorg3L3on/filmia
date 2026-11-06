@@ -105,6 +105,8 @@ export type OscarPersonEntry = {
   n: number;
   /** Wins; omitted when there are none. */
   w?: OscarWinTuple[];
+  /** Nominations that did not win (FIL-I45-1); omitted when there are none. */
+  x?: OscarWinTuple[];
 };
 
 export type OscarIndex = {
@@ -120,7 +122,11 @@ export type OscarWin = {
   film: { title: string; imdbId: string | null } | null;
 };
 
-export type PersonOscarRecord = { wins: OscarWin[]; nominations: number };
+/**
+ * Wins and the nominations that did not win (`nominated`), both newest first, plus the total count
+ * of nominations (wins included).
+ */
+export type PersonOscarRecord = { wins: OscarWin[]; nominated: OscarWin[]; nominations: number };
 
 const firstOf = (value: string | undefined) => (value ?? "").split("|")[0]?.trim() ?? "";
 
@@ -187,6 +193,8 @@ export const parseOscarsTsv = (
       entry.n += 1;
       if (won) {
         (entry.w ??= []).push(win);
+      } else {
+        (entry.x ??= []).push(win);
       }
     }
   }
@@ -197,12 +205,20 @@ export const parseOscarsTsv = (
   };
 };
 
+const toOscarWin = ([ceremony, category, title, filmImdbId]: OscarWinTuple): OscarWin => ({
+  ceremony,
+  year: oscarYear(ceremony),
+  category,
+  categoryEs: oscarCategoryEs(category),
+  film: title ? { title, imdbId: filmImdbId } : null,
+});
+
 const byNewest = (a: OscarWin, b: OscarWin) =>
   b.ceremony - a.ceremony ||
   (CATEGORY_ORDER.get(a.category) ?? Number.MAX_SAFE_INTEGER) -
     (CATEGORY_ORDER.get(b.category) ?? Number.MAX_SAFE_INTEGER);
 
-/** Wins newest first (then category order) and the nominations; null for an unknown id. */
+/** Wins and lost nominations newest first (then category order), and the count; null for an unknown id. */
 export const oscarsFor = (index: OscarIndex, imdbId: string | null | undefined): PersonOscarRecord | null => {
   const id = imdbId?.trim();
   if (!id || !Object.hasOwn(index.people, id)) {
@@ -212,14 +228,7 @@ export const oscarsFor = (index: OscarIndex, imdbId: string | null | undefined):
   if (!entry || entry.n <= 0) {
     return null;
   }
-  const wins = (entry.w ?? [])
-    .map(([ceremony, category, title, filmImdbId]): OscarWin => ({
-      ceremony,
-      year: oscarYear(ceremony),
-      category,
-      categoryEs: oscarCategoryEs(category),
-      film: title ? { title, imdbId: filmImdbId } : null,
-    }))
-    .sort(byNewest);
-  return { wins, nominations: Math.max(entry.n, wins.length) };
+  const wins = (entry.w ?? []).map(toOscarWin).sort(byNewest);
+  const nominated = (entry.x ?? []).map(toOscarWin).sort(byNewest);
+  return { wins, nominated, nominations: Math.max(entry.n, wins.length + nominated.length) };
 };

@@ -15,7 +15,8 @@ import { OSCAR_DATA_REPO, OSCAR_DATA_SHA, parseOscarsTsv } from "../src/lib/osca
 
 const SOURCE_URL = `https://raw.githubusercontent.com/${OSCAR_DATA_REPO}/${OSCAR_DATA_SHA}/oscars.csv`;
 const OUT = fileURLToPath(new URL("../src/data/oscars-by-person.json", import.meta.url));
-const MAX_BYTES = 600 * 1024;
+// Every nomination is kept since FIL-I45-1 (the person view draws one ticket per nomination).
+const MAX_BYTES = 1536 * 1024;
 
 const load = async (localPath: string | undefined) => {
   if (localPath) {
@@ -46,7 +47,8 @@ const main = async () => {
   const all = Object.values(people);
   console.log(
     `oscars-by-person.json: ${all.length} people, ${all.filter((p) => p.w?.length).length} winners, ` +
-      `${all.reduce((sum, p) => sum + (p.w?.length ?? 0), 0)} wins, ceremonies ${index.source.ceremonies.join("–")}, ` +
+      `${all.reduce((sum, p) => sum + (p.w?.length ?? 0), 0)} wins, ` +
+      `${all.reduce((sum, p) => sum + (p.x?.length ?? 0), 0)} lost nominations, ceremonies ${index.source.ceremonies.join("–")}, ` +
       `${(bytes / 1024).toFixed(0)} KB`,
   );
 };

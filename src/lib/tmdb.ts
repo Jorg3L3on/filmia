@@ -834,10 +834,14 @@ export const getTmdbPersonFilmography = async (
       profile_path?: string | null;
       known_for_department?: string;
       imdb_id?: string | null;
+      birthday?: string | null;
+      deathday?: string | null;
+      place_of_birth?: string | null;
     }>(`/person/${personId}`),
     tmdbFetch<TmdbCombinedCredits>(`/person/${personId}/combined_credits`),
   ]);
   const name = person.name?.trim() || "";
+  const isoDate = (value: string | null | undefined) => (value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null);
   const today = todayIso();
   return summarizeFilmography(
     {
@@ -846,6 +850,9 @@ export const getTmdbPersonFilmography = async (
       profilePath: person.profile_path ?? null,
       department: person.known_for_department ?? null,
       imdbId: person.imdb_id?.trim() || null,
+      birthday: isoDate(person.birthday),
+      deathday: isoDate(person.deathday),
+      placeOfBirth: person.place_of_birth?.trim() || null,
     },
     role,
     parseFilmography(credits, role, name),

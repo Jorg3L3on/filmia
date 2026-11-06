@@ -6435,6 +6435,222 @@ html[data-booted] .iris-loader {
   }
 }
 
+/* ── Persona «Tu recorrido» (FIL-I45) ───────────────────────────────────────────────────────── */
+
+/* The hero's wall: the person's own posters, 5 × 3, tilted −9°, drifting at 0.6× while scrolling. */
+.persona-wall {
+  --wall-drift: 0px;
+  position: absolute;
+  left: -46px;
+  top: -44px;
+  display: grid;
+  grid-template-columns: repeat(5, 100px);
+  gap: 10px;
+  transform: translate3d(0, var(--wall-drift), 0) rotate(-9deg) scale(1.02);
+  transform-origin: 50% 40%;
+  will-change: transform;
+  /* Gone before the hero's clipped bottom edge: a composited layer can leak a pixel row there. */
+  mask-image: linear-gradient(to bottom, #000 50%, transparent 80%);
+}
+
+.persona-wall-tile {
+  display: block;
+  width: 100px;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--well);
+  box-shadow: 0 20px 40px -18px rgb(0 0 0 / 0.9);
+  animation: persona-blur-in 520ms var(--ease-out) backwards;
+  animation-delay: calc(var(--row, 0) * 120ms);
+}
+
+.persona-wall-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.persona-glow {
+  background:
+    radial-gradient(55% 40% at 12% 70%, rgb(var(--accent-rgb) / 0.32), transparent 70%),
+    radial-gradient(45% 35% at 95% 12%, rgb(var(--affinity-rgb) / 0.18), transparent 70%);
+  /* The glow (and the grain over it) fade out before the hero's bottom edge: no seam under the name. */
+  mask-image: linear-gradient(to bottom, #000 70%, transparent 98%);
+}
+
+/* The name: white to silver, one shine from left to right when it enters. */
+.persona-name {
+  background: linear-gradient(100deg, #fff 0%, var(--paper) 40%, #b9bec5 60%, #fff 75%, #b9bec5 100%);
+  background-size: 250% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: persona-shine 1100ms var(--ease-out) 200ms both;
+}
+
+.persona-tick {
+  display: inline-block;
+  animation: persona-rise 520ms var(--ease-out) 300ms backwards;
+}
+
+/* The ring draws from 0 to its value. */
+.persona-ring-arc {
+  animation: persona-ring 900ms var(--ease-out) 360ms backwards;
+}
+
+/* The film strip: sprocket holes on both edges, frames slide in from the right. */
+.persona-strip {
+  position: relative;
+  padding: 16px 0;
+  background: #07090b;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    inset 0 -1px 0 rgb(255 255 255 / 0.06);
+}
+
+.persona-strip::before,
+.persona-strip::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: repeating-linear-gradient(90deg, transparent 0 9px, var(--surface) 9px 20px, transparent 20px 29px);
+  pointer-events: none;
+}
+
+.persona-strip::before {
+  top: 3px;
+}
+
+.persona-strip::after {
+  bottom: 3px;
+}
+
+.persona-strip-in {
+  animation: persona-slide-in 520ms var(--ease-out) 540ms backwards;
+}
+
+/* The Óscar axis draws itself, then the tickets rise one by one. */
+.persona-axis {
+  transform-origin: left center;
+  animation: persona-axis 620ms var(--ease-out) 720ms backwards;
+}
+
+.persona-tickets > li {
+  animation: persona-rise 420ms var(--ease-out) backwards;
+  animation-delay: calc(820ms + min(var(--i, 0), 6) * 60ms);
+}
+
+.persona-bar {
+  transition:
+    opacity 200ms var(--ease-out),
+    transform 200ms var(--ease-out);
+}
+
+/*
+ * Phones: the person view runs its hero to the top of the screen (FIL-I45). Buscar's top field
+ * and the «Filmia» header step aside: the hero carries «atrás» and a search disc, and the sticky
+ * bar takes the top once the name has scrolled away.
+ */
+@media (max-width: 39.999rem) {
+  body:has([data-persona-view]) nav:has([data-search-dock]) {
+    display: none;
+  }
+
+  /* No «Filmia» plate here: the hero's own back and search discs are the chrome. */
+  body:has([data-persona-view]) header.site-header {
+    display: none;
+  }
+
+  /* Measured: Buscar's 3.5 rem room for its field and one 24 px gap put the hero 80 px down; it
+     moves back to the top of the screen (the hero pads for the notch itself). */
+  .persona-hero {
+    margin-top: -80px;
+  }
+
+  /* No dock at the bottom of this view: no room kept for it either. */
+  body:has([data-persona-view]) main.app-main {
+    padding-bottom: max(2.5rem, calc(1.5rem + env(safe-area-inset-bottom)));
+  }
+
+  /* The status-bar scrim stays off while the wall is under the notch. */
+  body:has([data-persona-view]):not([data-persona-scrolled])::before {
+    content: none;
+  }
+}
+
+@keyframes persona-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+  }
+}
+
+@keyframes persona-shine {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+@keyframes persona-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes persona-ring {
+  from {
+    stroke-dashoffset: var(--ring-c);
+  }
+}
+
+@keyframes persona-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+@keyframes persona-axis {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .persona-wall-tile,
+  .persona-name,
+  .persona-tick,
+  .persona-ring-arc,
+  .persona-strip-in,
+  .persona-axis,
+  .persona-tickets > li {
+    animation: none;
+    filter: none;
+  }
+
+  .persona-name {
+    background-position: 0 0;
+  }
+
+  .persona-wall {
+    transform: rotate(-9deg) scale(1.02);
+    will-change: auto;
+  }
+
+  .persona-bar {
+    transition: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bienvenida-glow,
   .bienvenida-poster-wash,

@@ -15,18 +15,25 @@ export type PersonOscarRow = {
   posterPath: string | null;
 };
 
-export type PersonOscars = { wins: PersonOscarRow[]; nominations: number };
+/**
+ * `wins` and `nominated` (the nominations that did not win, FIL-I45-1), each newest first;
+ * `nominations` counts both.
+ */
+export type PersonOscars = { wins: PersonOscarRow[]; nominated: PersonOscarRow[]; nominations: number };
 
 export type FoundMovie = { tmdbId: number; title: string | null; posterPath: string | null };
 
-/** `/find` runs for the newest wins only (Spielberg, Disney…); older ones keep the dataset title. */
+/**
+ * `/find` runs for the 12 newest entries that name a film, wins and nominations together
+ * (Spielberg, Disney…); older ones keep the dataset title.
+ */
 export const OSCAR_FIND_MAX = 12;
 
 /** Rows shown before «Ver los N». */
 export const OSCAR_ROWS_COLLAPSED = 4;
 
-export const oscarRow = (win: OscarWin, found: FoundMovie | null, index: number): PersonOscarRow => ({
-  key: `${win.ceremony}:${win.category}:${index}`,
+export const oscarRow = (win: OscarWin, found: FoundMovie | null, index: number, keyPrefix?: string): PersonOscarRow => ({
+  key: `${keyPrefix ? `${keyPrefix}:` : ""}${win.ceremony}:${win.category}:${index}`,
   year: win.year,
   categoryEs: win.categoryEs,
   title: win.film ? found?.title || win.film.title : null,
@@ -54,14 +61,27 @@ export const resolvePersonOscars = async (
     }
     return pending;
   };
-  const wins = await Promise.all(
-    record.wins.map(async (win, index) => {
-      const imdbId = win.film?.imdbId;
-      const found = imdbId && index < OSCAR_FIND_MAX ? await lookup(imdbId) : null;
-      return oscarRow(win, found, index);
-    }),
+  // The newest entries, wins and nominations together, are the ones that get a TMDB lookup.
+  const ranked = [
+    ...record.wins.map((entry, index) => ({ entry, won: true, index })),
+    ...record.nominated.map((entry, index) => ({ entry, won: false, index })),
+  ].sort((a, b) => b.entry.ceremony - a.entry.ceremony);
+  const looked = new Set(
+    ranked
+      .filter(({ entry }) => entry.film?.imdbId)
+      .slice(0, OSCAR_FIND_MAX)
+      .map(({ won, index }) => `${won ? "w" : "x"}${index}`),
   );
-  return { wins, nominations: record.nominations };
+  const resolve = (list: OscarWin[], prefix: "w" | "x") =>
+    Promise.all(
+      list.map(async (entry, index) => {
+        const imdbId = entry.film?.imdbId;
+        const found = imdbId && looked.has(`${prefix}${index}`) ? await lookup(imdbId) : null;
+        return oscarRow(entry, found, index, prefix === "x" ? "nom" : undefined);
+      }),
+    );
+  const [wins, nominated] = await Promise.all([resolve(record.wins, "w"), resolve(record.nominated, "x")]);
+  return { wins, nominated, nominations: record.nominations };
 };
 
 const nominationsWord = (count: number) => (count === 1 ? "nominación" : "nominaciones");
@@ -87,3 +107,21 @@ export const visibleOscarRows = (rows: PersonOscarRow[], expanded: boolean) => {
 
 /** Line 2: «2020 · Mejor fotografía»; a win without a film already names the award in line 1. */
 export const oscarRowMeta = (row: PersonOscarRow) => (row.title ? `${row.year} · ${row.categoryEs}` : String(row.year));
+
+/** One ticket on the person view's axis (FIL-I45-4): a win or a nomination that did not win. */
+export type OscarTicket = { row: PersonOscarRow; won: boolean };
+
+/** Wins and nominations together, newest first; at one ceremony the win goes first. */
+export const oscarTickets = ({ wins, nominated }: PersonOscars): OscarTicket[] =>
+  [...wins.map((row) => ({ row, won: true })), ...nominated.map((row) => ({ row, won: false }))].sort(
+    (a, b) => b.row.year - a.row.year || Number(b.won) - Number(a.won),
+  );
+
+/** «2 Óscar · 16 nominaciones», «4 nominaciones · ninguno ganado», «1 Óscar». */
+export const oscarsSummaryLine = ({ wins, nominations }: PersonOscars) => {
+  const noms = `${nominations} ${nominationsWord(nominations)}`;
+  if (wins.length === 0) {
+    return `${noms} · ninguno ganado`;
+  }
+  return nominations > wins.length ? `${wins.length} Óscar · ${noms}` : `${wins.length} Óscar`;
+};

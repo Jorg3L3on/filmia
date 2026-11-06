@@ -46,6 +46,11 @@ export type PersonSummary = {
   department: string | null;
   /** IMDb `nm…` id from `/person/:id`, for the Óscar panel (FIL-I43). */
   imdbId?: string | null;
+  /** `YYYY-MM-DD` from `/person/:id` (FIL-I45-1: the hero's «n. 1937»); null when TMDB has none. */
+  birthday?: string | null;
+  deathday?: string | null;
+  /** TMDB's English «City, Region, Country», as given. */
+  placeOfBirth?: string | null;
 };
 
 export type PersonFilmography = {
