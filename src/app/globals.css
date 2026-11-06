@@ -6449,6 +6449,8 @@ html[data-booted] .iris-loader {
   transform: translate3d(0, var(--wall-drift), 0) rotate(-9deg) scale(1.02);
   transform-origin: 50% 40%;
   will-change: transform;
+  /* Gone before the hero's clipped bottom edge: a composited layer can leak a pixel row there. */
+  mask-image: linear-gradient(to bottom, #000 50%, transparent 80%);
 }
 
 .persona-wall-tile {
@@ -6472,8 +6474,10 @@ html[data-booted] .iris-loader {
 
 .persona-glow {
   background:
-    radial-gradient(55% 45% at 12% 78%, rgb(var(--accent-rgb) / 0.32), transparent 70%),
+    radial-gradient(55% 40% at 12% 70%, rgb(var(--accent-rgb) / 0.32), transparent 70%),
     radial-gradient(45% 35% at 95% 12%, rgb(var(--affinity-rgb) / 0.18), transparent 70%);
+  /* The glow (and the grain over it) fade out before the hero's bottom edge: no seam under the name. */
+  mask-image: linear-gradient(to bottom, #000 70%, transparent 98%);
 }
 
 /* The name: white to silver, one shine from left to right when it enters. */

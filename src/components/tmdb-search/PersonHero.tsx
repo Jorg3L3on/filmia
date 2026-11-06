@@ -105,7 +105,7 @@ const RingedPhoto = ({
 
 /** Film grain over the hero: an SVG noise, soft-light, 10 %. */
 const Grain = () => (
-  <svg className="pointer-events-none absolute inset-0 size-full opacity-10 mix-blend-soft-light" aria-hidden="true">
+  <svg className="pointer-events-none absolute inset-0 size-full opacity-10 mix-blend-soft-light [mask-image:linear-gradient(to_bottom,#000_70%,transparent_98%)]" aria-hidden="true">
     <filter id="persona-grain">
       <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={2} stitchTiles="stitch" />
       <feColorMatrix type="saturate" values="0" />
