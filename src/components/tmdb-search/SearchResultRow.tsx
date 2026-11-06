@@ -9,6 +9,7 @@ import { PosterImage } from "@/components/PosterImage";
 import { SharedPoster } from "@/components/SharedPoster";
 import { LaurelIcon } from "@/components/watchlist/icons";
 import { cn } from "@/lib/cn";
+import { releaseDateLabel } from "@/lib/person-view";
 import { formatRuntime, formatStarScore, PLATFORM_SERVICE_LABEL, TITLE_KIND_LABEL } from "@/lib/labels";
 import { menuVia, type SearchMenuVia } from "@/components/tmdb-search/SearchRowMenu";
 import { useLongPress } from "@/lib/motion";
@@ -50,6 +51,13 @@ type SearchResultRowProps = {
   log?: SearchRowLog | null;
   /** Tonight's pin (FIL-I22-5): the row says «Esta noche» without opening the menu. */
   pinned?: boolean;
+  /**
+   * «editorial» (person view, FIL-I45-5): no glass card, a hairline, a 64 px poster with the green
+   * check when watched, and «Vista · 12 mar 2025». Buscar keeps «glass».
+   */
+  variant?: "glass" | "editorial";
+  /** Today, `YYYY-MM-DD`, for the editorial «Vista · día» label. */
+  today?: string;
 };
 
 /** How Buscar wires every row (results, filmographies): where it goes, what holding it does. */
@@ -62,6 +70,8 @@ export type SearchRowWiring = {
   logFor?: (result: TmdbCatalogResult) => SearchRowLog | null;
   /** The title pinned for tonight, so its row says «Esta noche». */
   pinnedTitleId?: string | null;
+  /** «Ver esta noche» straight from a card (the person view's «Siguiente para ti», FIL-I45-3). */
+  onPinTonight?: (result: TmdbCatalogResult) => void;
 };
 
 const sameTitle = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -87,6 +97,8 @@ export const SearchResultRow = ({
   onMenu,
   log = null,
   pinned = false,
+  variant = "glass",
+  today,
 }: SearchResultRowProps) => {
   const rowRef = useRef<HTMLAnchorElement>(null);
   const firedRef = useRef(false);
@@ -136,10 +148,14 @@ export const SearchResultRow = ({
           }
         : {})}
       className={cn(
-        glassRowClass,
-        "group card-physics press-scale flex w-full min-w-0 select-none items-center gap-3 p-2.5 text-left [-webkit-touch-callout:none]",
-        "transition-[border-color,background-color] duration-[var(--duration-hover)] ease-[var(--ease-out)] hover:border-accent/40",
-        status === "watchlist" && "border-accent/30",
+        variant === "editorial"
+          ? "group press-scale flex w-full min-w-0 select-none items-center gap-3.5 rounded-xl py-3.5 text-left [-webkit-touch-callout:none] hover:bg-white/3"
+          : cn(
+              glassRowClass,
+              "group card-physics press-scale flex w-full min-w-0 select-none items-center gap-3 p-2.5 text-left [-webkit-touch-callout:none]",
+              "transition-[border-color,background-color] duration-[var(--duration-hover)] ease-[var(--ease-out)] hover:border-accent/40",
+              status === "watchlist" && "border-accent/30",
+            ),
         // Diario: room for the check button that sits over the row's right edge.
         log && "pr-14",
         focusRing,
@@ -155,6 +171,8 @@ export const SearchResultRow = ({
         pinned={pinned}
         chevron={!log}
         morph
+        variant={variant}
+        today={today}
       />
     </Link>
   );
@@ -202,7 +220,9 @@ export const SearchResultRowBody = ({
   pinned = false,
   chevron = true,
   morph = false,
-}: Pick<SearchResultRowProps, "result" | "titleId" | "detail" | "status" | "facts" | "pinned"> & {
+  variant = "glass",
+  today,
+}: Pick<SearchResultRowProps, "result" | "titleId" | "detail" | "status" | "facts" | "pinned" | "variant" | "today"> & {
   /** Diario: the day this row was just logged on (null = today); the pill says «Registrada · día». */
   loggedOn?: string | null;
   /** The trailing chevron; Diario rows put their check button there instead. */
@@ -213,11 +233,13 @@ export const SearchResultRowBody = ({
     <PosterImage
       name={result.name}
       posterPath={result.posterPath}
-      sizes="56px"
+      sizes={variant === "editorial" ? "64px" : "56px"}
       tmdbSize="w185"
       className="rounded-poster"
     />
   );
+  const editorial = variant === "editorial";
+  const seenOn = editorial && status === "watched" ? (facts?.watched?.on ?? null) : null;
   const original =
     result.originalName && !sameTitle(result.originalName, result.name) ? result.originalName : null;
   const meta = [
@@ -229,13 +251,30 @@ export const SearchResultRowBody = ({
 
   return (
     <>
-      <span className="w-14 shrink-0 overflow-hidden rounded-poster shadow-[0_10px_24px_rgba(0,0,0,0.45)] transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110">
-        <SharedPoster titleId={searchPosterKey(result, titleId)} share={morph}>
-          {poster}
-        </SharedPoster>
+      <span className={cn("relative shrink-0", editorial ? "w-16" : "w-14")}>
+        <span className="block overflow-hidden rounded-poster shadow-[0_10px_24px_rgba(0,0,0,0.45)] transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110">
+          <SharedPoster titleId={searchPosterKey(result, titleId)} share={morph}>
+            {poster}
+          </SharedPoster>
+        </span>
+        {editorial && status === "watched" ? (
+          <span
+            className="absolute -top-1.5 -right-1.5 flex size-[22px] items-center justify-center rounded-full bg-success text-ink shadow-[0_0_0_2px_var(--canvas),0_0_14px_rgb(61_214_140/0.6)]"
+            aria-hidden="true"
+          >
+            <svg viewBox="0 0 24 24" className="size-3" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+              <path d="m5 12 5 5 9-10" />
+            </svg>
+          </span>
+        ) : null}
       </span>
       <span className="min-w-0 flex-1 space-y-1">
-        <span className="line-clamp-2 font-serif text-[17px] leading-snug text-pretty break-words text-paper">
+        <span
+          className={cn(
+            "line-clamp-2 font-serif leading-snug text-pretty break-words text-paper",
+            editorial ? "text-[19px] tracking-[-0.01em]" : "text-[17px]",
+          )}
+        >
           {result.name}
         </span>
         <span className="block truncate text-[13px] text-fog">
@@ -249,7 +288,16 @@ export const SearchResultRowBody = ({
         ) : pinned ? (
           <TonightPill />
         ) : status ? (
-          <LibraryPill status={status} />
+          <LibraryPill
+            status={status}
+            label={
+              editorial && status === "watched"
+                ? seenOn && today
+                  ? `Vista · ${releaseDateLabel(seenOn, today)}`
+                  : "Vista"
+                : undefined
+            }
+          />
         ) : null}
       </span>
       {chevron ? (

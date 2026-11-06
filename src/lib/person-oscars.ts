@@ -107,3 +107,21 @@ export const visibleOscarRows = (rows: PersonOscarRow[], expanded: boolean) => {
 
 /** Line 2: «2020 · Mejor fotografía»; a win without a film already names the award in line 1. */
 export const oscarRowMeta = (row: PersonOscarRow) => (row.title ? `${row.year} · ${row.categoryEs}` : String(row.year));
+
+/** One ticket on the person view's axis (FIL-I45-4): a win or a nomination that did not win. */
+export type OscarTicket = { row: PersonOscarRow; won: boolean };
+
+/** Wins and nominations together, newest first; at one ceremony the win goes first. */
+export const oscarTickets = ({ wins, nominated }: PersonOscars): OscarTicket[] =>
+  [...wins.map((row) => ({ row, won: true })), ...nominated.map((row) => ({ row, won: false }))].sort(
+    (a, b) => b.row.year - a.row.year || Number(b.won) - Number(a.won),
+  );
+
+/** «2 Óscar · 16 nominaciones», «4 nominaciones · ninguno ganado», «1 Óscar». */
+export const oscarsSummaryLine = ({ wins, nominations }: PersonOscars) => {
+  const noms = `${nominations} ${nominationsWord(nominations)}`;
+  if (wins.length === 0) {
+    return `${noms} · ninguno ganado`;
+  }
+  return nominations > wins.length ? `${wins.length} Óscar · ${noms}` : `${wins.length} Óscar`;
+};

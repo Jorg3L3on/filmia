@@ -194,6 +194,10 @@ export const TmdbSearchAdd = ({
     factsFor: rowFactsFor,
     logFor,
     pinnedTitleId,
+    onPinTonight: (result) => {
+      rememberQuery();
+      handlePinTonight(result);
+    },
     onOpen: () => rememberQuery(),
     onMenu: (result, anchor, via) => {
       rememberQuery();

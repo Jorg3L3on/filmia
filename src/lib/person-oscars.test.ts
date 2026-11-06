@@ -6,6 +6,8 @@ import {
   oscarNominationsLine,
   oscarRowMeta,
   oscarsHeader,
+  oscarsSummaryLine,
+  oscarTickets,
   resolvePersonOscars,
   visibleOscarRows,
   type FoundMovie,
@@ -170,5 +172,40 @@ describe("person-oscars/labels", () => {
     assert.equal(collapsed.rows.length, 4);
     assert.equal(collapsed.more, "Ver los 6");
     assert.deepEqual(visibleOscarRows(rows(6), true), { rows: rows(6), more: null });
+  });
+});
+
+describe("person-oscars/tickets (FIL-I45-4)", () => {
+  const row = (key: string, year: number): PersonOscarRow => ({
+    key,
+    year,
+    categoryEs: "Mejor fotografía",
+    title: key,
+    tmdbId: null,
+    posterPath: null,
+  });
+
+  it("puts wins and nominations on one axis, newest first, the win first at one ceremony", () => {
+    const tickets = oscarTickets({
+      wins: [row("1917", 2020), row("BR2049", 2018)],
+      nominated: [row("Empire", 2023), row("Sicario", 2016), row("Same", 2020)],
+      nominations: 5,
+    });
+    assert.deepEqual(
+      tickets.map((ticket) => [ticket.row.key, ticket.won]),
+      [
+        ["Empire", false],
+        ["1917", true],
+        ["Same", false],
+        ["BR2049", true],
+        ["Sicario", false],
+      ],
+    );
+  });
+
+  it("summary line", () => {
+    assert.equal(oscarsSummaryLine({ wins: rows(2), nominated: rows(14), nominations: 16 }), "2 Óscar · 16 nominaciones");
+    assert.equal(oscarsSummaryLine({ wins: [], nominated: rows(4), nominations: 4 }), "4 nominaciones · ninguno ganado");
+    assert.equal(oscarsSummaryLine({ wins: rows(1), nominated: [], nominations: 1 }), "1 Óscar");
   });
 });
