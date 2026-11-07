@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { db, users } from "@/db";
 import type { SessionUser } from "@/lib/auth/constants";
@@ -129,7 +129,14 @@ const SESSION_COLUMNS = {
 /**
  * Resolve the Filmia account for a verified Google identity:
  * 1. already linked by Google id;
- * 2. same email → link it (Google verified the address, so auto-link is safe);
+ * 2. same email → Google takes the account over (H1, FIL-35): link it, drop the password and
+ *    bump `sessionVersion`. Registration never confirms the email, so anyone could have
+ *    pre-registered this address with a password; Google proves who owns it, and without this
+ *    the squatter would keep the password and any open session in the real owner's account.
+ *    Every older session dies in the proxy; the caller mints the new cookie with the version
+ *    returned here, so the Google user stays signed in. Cost Jorge accepted: someone who did
+ *    register with a password and later taps Google loses password login and keeps Google;
+ *    the Perfil password form then explains the account signs in with Google;
  * 3. otherwise create a password-less account with the default lists.
  */
 export const findOrCreateGoogleUser = async (
@@ -150,15 +157,24 @@ export const findOrCreateGoogleUser = async (
   });
   if (byEmail) {
     const name = byEmail.name ?? identity.name;
-    await db
+    const [updated] = await db
       .update(users)
-      .set({ googleId: identity.sub, name })
-      .where(eq(users.id, byEmail.id));
+      .set({
+        googleId: identity.sub,
+        name,
+        passwordHash: null,
+        sessionVersion: sql`${users.sessionVersion} + 1`,
+      })
+      .where(eq(users.id, byEmail.id))
+      .returning({ sessionVersion: users.sessionVersion });
+    if (!updated) {
+      throw new Error("The account to link vanished mid sign-in.");
+    }
     return {
       user: { id: byEmail.id, email: byEmail.email, name },
       created: false,
       onboarded: byEmail.onboardedAt != null,
-      sessionVersion: byEmail.sessionVersion,
+      sessionVersion: updated.sessionVersion,
     };
   }
 
