@@ -44,9 +44,9 @@ type WatchlistHeaderProps = {
 };
 
 /**
- * Quiero ver «Barra de decisión» (FIL-I34, option B): title with «N de total», Sorpréndeme and
- * the funnel; the Todo / Mis plataformas scope; the order pill and wrapping chips; one summary
- * line. Scrolling away leaves a 44 px bar with the title, the count, the order and the funnel.
+ * Quiero ver «Barra de decisión» (FIL-I34, option B): title with «N de total» and the funnel
+ * (the dice left in FIL-I44-4; Aleatoria is in Orden); the Todo / Mis plataformas scope; the
+ * order pill and wrapping chips; one summary line. Scrolling away leaves a 44 px bar with the title, the count, the order and the funnel.
  * Saved views (FIL-I34-6): the pinned one is a third scope cell, the summary line opens «Vistas»
  * and, once the person changes an open view, offers «Actualizar vista · Guardar como…».
  */
@@ -73,8 +73,6 @@ export const WatchlistHeader = ({
   const canReorder = Boolean(editing?.canReorder);
   const close = () => setSheet(null);
 
-  const surprise = () =>
-    onChange(random ? { ...query, sort: null, dir: null, seed: null } : { ...query, sort: "random", dir: null, seed: sessionSeed() });
   const flip = () => onChange({ ...query, dir: effectiveDirection(query) === "asc" ? "desc" : "asc" });
   const reorder = () => {
     close();
@@ -141,8 +139,6 @@ export const WatchlistHeader = ({
           total={total}
           narrowed={narrowed}
           filterCount={filterCount}
-          random={random}
-          onSurprise={surprise}
           onFilters={() => setSheet("filters")}
         />
         <WatchlistScopeBar

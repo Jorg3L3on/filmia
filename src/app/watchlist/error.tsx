@@ -28,7 +28,7 @@ export default function WatchlistError({ error, reset }: ErrorPageProps) {
   return (
     <div className="space-y-4 max-sm:-mt-6" aria-labelledby="qv-error-title">
       <div className="pointer-events-none space-y-2.5 opacity-60" aria-hidden="true" inert>
-        <WatchlistTopBar shown={0} total={0} narrowed={false} filterCount={0} random={false} disabled onSurprise={noop} onFilters={noop} />
+        <WatchlistTopBar shown={0} total={0} narrowed={false} filterCount={0} disabled onFilters={noop} />
         <WatchlistScopeBar scope="all" counts={{ all: 0, mine: 0 }} userPlatforms={[]} disabled onChange={noop} />
         <WatchlistChipRow
           query={EMPTY_WATCHLIST_QUERY}
