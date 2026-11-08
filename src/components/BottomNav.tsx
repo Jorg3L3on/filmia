@@ -194,7 +194,7 @@ const SearchDock = ({ origin, day }: { origin: (typeof mobileNavItems)[number]; 
         <div
           aria-hidden
           data-search-dock
-          className="pointer-events-none fixed inset-x-0 top-[calc(3.5rem+env(safe-area-inset-top))] -z-10 h-[4.25rem] bg-gradient-to-b from-canvas via-canvas/95 to-canvas/0"
+          className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-[calc(4.75rem+env(safe-area-inset-top))] bg-gradient-to-b from-canvas via-canvas/95 to-canvas/0"
         />
         {/* The person view hides this row on phones: its hero carries «atrás» and the search disc (FIL-I45). */}
         <div data-search-dock className="flex items-center gap-2.5">

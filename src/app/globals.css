@@ -2035,23 +2035,13 @@ header.site-header {
 }
 
 /*
- * FIL-29: on phones the header floats like the dock — inset from the notch and the sides,
- * rounded, with its border all around — so its blur never runs into the screen edges. A scrim
- * keeps the status bar readable over what scrolls above it. Desktop keeps the full-width bar.
+ * FIL-I44-5: no «Filmia» plate on phones — the dock is the navigation there, and every page
+ * starts at the notch (main pads for it). A scrim keeps the status bar readable over what
+ * scrolls under it. Desktop keeps the full-width bar with its nav.
  */
 @media (max-width: 39.999rem) {
   header.site-header {
-    top: calc(env(safe-area-inset-top) + 0.5rem);
-    margin: calc(env(safe-area-inset-top) + 0.5rem) max(1rem, env(safe-area-inset-right)) 0
-      max(1rem, env(safe-area-inset-left));
-    padding-top: 0;
-    border: 1px solid rgb(255 255 255 / 0.1);
-    border-radius: 1.25rem;
-  }
-
-  header.site-header > div {
-    padding-left: 0.875rem;
-    padding-right: 0.875rem;
+    display: none;
   }
 
   body::before {
@@ -6561,15 +6551,10 @@ html[data-booted] .iris-loader {
     display: none;
   }
 
-  /* No «Filmia» plate here: the hero's own back and search discs are the chrome. */
-  body:has([data-persona-view]) header.site-header {
-    display: none;
-  }
-
-  /* Measured: Buscar's 3.5 rem room for its field and one 24 px gap put the hero 80 px down; it
-     moves back to the top of the screen (the hero pads for the notch itself). */
+  /* Measured: Buscar's 3.5 rem room for its field, main's 24 px and the notch put the hero that
+     far down; it moves back to the top of the screen (the hero pads for the notch itself). */
   .persona-hero {
-    margin-top: -80px;
+    margin-top: calc(-80px - env(safe-area-inset-top));
   }
 
   /* No dock at the bottom of this view: no room kept for it either. */
