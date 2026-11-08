@@ -4653,7 +4653,8 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   row-gap: 1rem;
-  margin-top: -1.5rem;
+  /* Main pads 1.5 rem + the notch on phones: the backdrop bleeds back up under the status bar. */
+  margin-top: calc(-1.5rem - env(safe-area-inset-top));
   padding-top: calc(env(safe-area-inset-top) + 4.25rem);
   text-align: center;
 }
@@ -6070,6 +6071,15 @@ html[data-booted] .iris-loader {
   transform: translateY(-6px);
   pointer-events: none;
   transition: opacity var(--duration-tab) var(--ease-out), transform var(--duration-tab) var(--ease-out);
+}
+
+/* Phones (FIL-I44-5): the bar sits at the very top, so it covers the status bar and keeps 6 px
+   above its row. */
+@media (max-width: 39.999rem) {
+  .qv-condensed {
+    height: calc(50px + env(safe-area-inset-top));
+    padding-top: calc(6px + env(safe-area-inset-top));
+  }
 }
 
 .qv-condensed[data-shown="true"] {

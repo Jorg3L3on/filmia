@@ -80,7 +80,7 @@ describe("safe-area tokens (JOR-220)", () => {
 
 describe("iPhone pass tokens (JOR-218)", () => {
   it("sticky bars: at the notch on phones (no SiteHeader, FIL-I44-5), under the h-14 header from sm", () => {
-    assert.match(safeAreaStickyUnderHeaderClass, /^top-\[env\(safe-area-inset-top\)\] /);
+    assert.match(safeAreaStickyUnderHeaderClass, /^top-0 /);
     assert.match(safeAreaStickyUnderHeaderClass, /sm:top-\[calc\(3\.5rem\+env\(safe-area-inset-top\)\)\]/);
   });
 

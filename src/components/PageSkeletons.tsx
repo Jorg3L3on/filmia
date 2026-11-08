@@ -137,7 +137,7 @@ export const HoyDeckSkeleton = () => (
 
 export const HoySkeleton = ({ label = "Cargando Hoy" }: SkeletonProps) => (
   <div
-    className="diario-que-ver-shell flex min-h-0 flex-1 flex-col gap-3 max-sm:-mt-1"
+    className="diario-que-ver-shell flex min-h-0 flex-1 flex-col gap-3"
     aria-busy="true"
     aria-label={label}
   >

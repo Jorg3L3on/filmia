@@ -530,7 +530,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
 
   return (
     <TonightProvider value={handlers}>
-      <div className="diario-que-ver-shell tonight-sala flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-sm:-mt-5 max-sm:gap-1">
+      <div className="diario-que-ver-shell tonight-sala flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-sm:gap-1">
         {/* The page's one heading (UX-18): the eyebrow and deck carry the visible titles. */}
         <h1 className="sr-only">Hoy</h1>
         {/* Desktop keeps the three rows; the phone folds the eyebrow into the rail (FIL-I21-3). */}

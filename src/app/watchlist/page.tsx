@@ -41,7 +41,7 @@ const FIRST_YEAR = 1930;
 // page never parses them: an old `?tonight=1` simply has nothing to match (FIL-I34-1).
 export default function WatchlistPage() {
   return (
-    <div className="space-y-5 max-sm:-mt-6 max-sm:space-y-1">
+    <div className="space-y-5 max-sm:space-y-1">
       <WatchlistDesktopTitle />
       <Suspense fallback={<WatchlistBodySkeleton />}>
         <WatchlistBody />
