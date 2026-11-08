@@ -30,6 +30,11 @@ type CatalogSortSheetProps<Id extends string | null> = {
   /** `false` drops the sort glyph (the rail keeps the chip short). */
   icon?: boolean;
   buttonClassName?: string;
+  /** Controlled open (list «···» menu, FIL-I44-2); pair with `onOpenChange`. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Opened from elsewhere: render only the sheet. */
+  hideTrigger?: boolean;
 };
 
 export const CatalogSortSheet = <Id extends string | null>({
@@ -41,8 +46,16 @@ export const CatalogSortSheet = <Id extends string | null>({
   chevron = false,
   icon = true,
   buttonClassName,
+  open: openProp,
+  onOpenChange,
+  hideTrigger = false,
 }: CatalogSortSheetProps<Id>) => {
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = (next: boolean) => {
+    setOpenState(next);
+    onOpenChange?.(next);
+  };
   const titleId = useId();
   const currentOption = options.find((option) => option.id === current);
   const label = buttonLabel ?? (currentOption ? currentOption.label : title);
@@ -58,6 +71,7 @@ export const CatalogSortSheet = <Id extends string | null>({
 
   return (
     <>
+      {hideTrigger ? null : (
       <button
         type="button"
         onClick={handleOpen}
@@ -70,6 +84,7 @@ export const CatalogSortSheet = <Id extends string | null>({
         {label}
         {chevron ? <ChevronDownIcon /> : null}
       </button>
+      )}
 
       <Sheet
         open={open}

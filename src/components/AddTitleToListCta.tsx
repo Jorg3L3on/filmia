@@ -19,7 +19,7 @@ import {
 import { showToast } from "@/lib/toast";
 import { retryAfterRevert, showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { actionErrorMessage } from "@/lib/use-optimistic-action";
-import { fieldClass, focusRing } from "@/lib/ui";
+import { fieldClass, focusRing, pillActionClass } from "@/lib/ui";
 import {
   SegmentActionTooltip,
   SegmentPlusIcon,
@@ -38,6 +38,8 @@ type AddTitleToListCtaProps = {
   /** `kind:tmdbId` keys of titles already on the list. */
   inListKeys?: string[];
   compact?: boolean;
+  /** List header (FIL-I44-2): the one labelled accent action, «+ Agregar». */
+  pill?: boolean;
 };
 
 const NO_KEYS: ReadonlySet<string> = new Set();
@@ -49,6 +51,7 @@ export const AddTitleToListCta = ({
   configuredTmdb = false,
   inListKeys = [],
   compact = false,
+  pill = false,
 }: AddTitleToListCtaProps) => {
   const titleId = useId();
   const tmdbEnabled = configuredTmdb && Boolean(listId);
@@ -267,8 +270,20 @@ export const AddTitleToListCta = ({
   );
 
   return (
-    <div className={compact ? undefined : "flex justify-center"}>
-      {compact ? (
+    <div className={compact || pill ? undefined : "flex justify-center"}>
+      {pill ? (
+        <button
+          type="button"
+          onClick={handleOpen}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label="Agregar título a la lista"
+          className={cn(pillActionClass.primary, "pl-3.5 pr-5")}
+        >
+          <SegmentPlusIcon className="size-[1.1rem] group-hover:rotate-90" />
+          Agregar
+        </button>
+      ) : compact ? (
         <button
           type="button"
           onClick={handleOpen}

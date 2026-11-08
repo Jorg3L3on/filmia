@@ -39,6 +39,7 @@ type CatalogFilterSheetProps = {
   onApply: () => void;
   onDraftChange: (next: CatalogFilterDraft | ((current: CatalogFilterDraft) => CatalogFilterDraft)) => void;
   compactOnMobile?: boolean;
+  hideTrigger?: boolean;
 };
 
 export const CatalogFilterSheet = ({
@@ -54,6 +55,7 @@ export const CatalogFilterSheet = ({
   onApply,
   onDraftChange,
   compactOnMobile = false,
+  hideTrigger = false,
 }: CatalogFilterSheetProps) => {
   const handleTogglePlatform = (platform: Platform) => {
     onDraftChange((current) => {
@@ -73,6 +75,7 @@ export const CatalogFilterSheet = ({
       onClear={onClear}
       onApply={onApply}
       compactOnMobile={compactOnMobile}
+      hideTrigger={hideTrigger}
     >
       {showKind ? (
         <CatalogSheetSection title="Tipo">
