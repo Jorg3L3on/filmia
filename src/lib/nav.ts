@@ -31,10 +31,13 @@ export const isCinePath = (pathname: string) => {
   return path === "/cine" || path.startsWith("/cine/");
 };
 
+/** A ficha belongs to no tab: it lights the tab it was opened from (FIL-I44-8). */
+export const isTitlePath = (pathname: string) => pathOnly(pathname).startsWith("/titulos/");
+
 export const isCurrentPath = (href: string, pathname: string) => {
   const path = pathOnly(pathname);
   if (href === "/") {
-    return path === "/" || path.startsWith("/titulos/");
+    return path === "/";
   }
   if (href === "/listas") {
     return isListasHubPath(pathname);
@@ -81,6 +84,13 @@ export const desktopNavItems = [
 
 /** Desktop header tabs light up like the dock: Cine on /cine/*, Listas on Quiero ver, Perfil on Tu diario. */
 export const isDesktopNavCurrent = (href: string, pathname: string) => isMobileNavCurrent(href, pathname);
+
+/**
+ * The tab matcher for the dock and the desktop header: a ficha lights the last tab the person was
+ * on (`originTab`, kept in sessionStorage by the dock), Hoy when there is none (FIL-I44-8).
+ */
+export const navTabMatcher = (originTab: string | null) => (href: string, pathname: string) =>
+  isTitlePath(pathname) ? href === (originTab ?? "/") : isMobileNavCurrent(href, pathname);
 
 /** Bottom tab bar: four tabs around the center Buscar disc. */
 export const mobileNavItems = [

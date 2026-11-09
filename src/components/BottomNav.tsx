@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ViewTransition, useEffect, useState, useSyncExternalStore } from "react";
 import { ActiveNavLink } from "@/components/ActiveNavLink";
+import { useNavTabMatch } from "@/components/useNavTabMatch";
 import { BottomNavShell } from "@/components/BottomNavShell";
 import { DockSearchField } from "@/components/DockSearchField";
 import { NavIcon } from "@/components/NavIcon";
@@ -76,9 +77,8 @@ export const BottomNav = () => {
   const day = useTodayDay();
   const searchMode = isMobileNavCurrent(mobileNavSearch.href, pathname);
   const origin = useOriginTab(pathname, searchMode);
-  const activeIndex = mobileNavItems.findIndex((item) =>
-    isMobileNavCurrent(item.href, pathname),
-  );
+  const matchTab = useNavTabMatch();
+  const activeIndex = mobileNavItems.findIndex((item) => matchTab(item.href, pathname));
   const activeColumn = activeIndex === -1 ? null : columnFor(activeIndex);
 
   // Leaving Buscar: the next visit starts from its own URL, not the last words.
@@ -114,7 +114,7 @@ export const BottomNav = () => {
               <ActiveNavLink
                 key={item.href}
                 href={item.href}
-                match={isMobileNavCurrent}
+                match={matchTab}
                 aria-label={item.label}
                 data-nav={item.icon}
                 className={(isCurrent) =>

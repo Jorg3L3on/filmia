@@ -11,13 +11,22 @@ import {
   mobileNavItems,
   mobileNavSearch,
   mobileNavSearchSlot,
+  navTabMatcher,
 } from "./nav";
 
 describe("isCurrentPath nested routes", () => {
-  it("keeps Diario active on /titulos/*", () => {
-    assert.equal(isCurrentPath("/", "/titulos/abc"), true);
+  it("Hoy is only Hoy: a ficha is no tab of its own (FIL-I44-8)", () => {
+    assert.equal(isCurrentPath("/", "/titulos/abc"), false);
     assert.equal(isCurrentPath("/", "/"), true);
     assert.equal(isCurrentPath("/", "/watchlist"), false);
+  });
+
+  it("a ficha lights the tab it came from, Hoy without one (FIL-I44-8)", () => {
+    assert.equal(navTabMatcher("/listas")("/listas", "/titulos/abc"), true);
+    assert.equal(navTabMatcher("/listas")("/", "/titulos/abc"), false);
+    assert.equal(navTabMatcher(null)("/", "/titulos/tmdb/pelicula/1"), true);
+    assert.equal(navTabMatcher("/cine")("/cine", "/cine/cartelera"), true);
+    assert.equal(navTabMatcher("/cine")("/cine", "/listas"), false);
   });
 
   it("keeps Listas active on /listas/*", () => {
