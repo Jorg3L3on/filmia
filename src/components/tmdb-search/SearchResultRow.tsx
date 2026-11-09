@@ -58,6 +58,8 @@ type SearchResultRowProps = {
   variant?: "glass" | "editorial";
   /** Today, `YYYY-MM-DD`, for the editorial «Vista · día» label. */
   today?: string;
+  /** The first rows of a result list: their posters are the page's LCP (FIL-I44-20). */
+  priority?: boolean;
 };
 
 /** How Buscar wires every row (results, filmographies): where it goes, what holding it does. */
@@ -99,6 +101,7 @@ export const SearchResultRow = ({
   pinned = false,
   variant = "glass",
   today,
+  priority = false,
 }: SearchResultRowProps) => {
   const rowRef = useRef<HTMLAnchorElement>(null);
   const firedRef = useRef(false);
@@ -173,6 +176,7 @@ export const SearchResultRow = ({
         morph
         variant={variant}
         today={today}
+        priority={priority}
       />
     </Link>
   );
@@ -222,7 +226,8 @@ export const SearchResultRowBody = ({
   morph = false,
   variant = "glass",
   today,
-}: Pick<SearchResultRowProps, "result" | "titleId" | "detail" | "status" | "facts" | "pinned" | "variant" | "today"> & {
+  priority = false,
+}: Pick<SearchResultRowProps, "result" | "titleId" | "detail" | "status" | "facts" | "pinned" | "variant" | "today" | "priority"> & {
   /** Diario: the day this row was just logged on (null = today); the pill says «Registrada · día». */
   loggedOn?: string | null;
   /** The trailing chevron; Diario rows put their check button there instead. */
@@ -236,6 +241,7 @@ export const SearchResultRowBody = ({
       sizes={variant === "editorial" ? "64px" : "56px"}
       tmdbSize="w185"
       className="rounded-poster"
+      priority={priority}
     />
   );
   const editorial = variant === "editorial";

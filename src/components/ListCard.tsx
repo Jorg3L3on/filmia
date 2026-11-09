@@ -25,6 +25,8 @@ type ListCardProps = {
   subtitle?: string;
   /** Over the poster stack's top corner: members' avatars or the owner's. */
   badge?: ReactNode;
+  /** First card on the page: its front poster is the LCP (FIL-I44-20). */
+  priority?: boolean;
 };
 
 export const ListCard = ({
@@ -36,6 +38,7 @@ export const ListCard = ({
   layout = "rail",
   subtitle,
   badge,
+  priority = false,
 }: ListCardProps) => {
   const countLabel = subtitle ?? collectionCountLabel(itemCount, seriesCount);
 
@@ -49,7 +52,7 @@ export const ListCard = ({
       )}
     >
       <div className="group relative rounded-2xl card-physics press-scale sm:max-w-[124px]">
-        <PosterStack posters={posters} />
+        <PosterStack posters={posters} priority={priority} />
         {badge ? <div className="absolute right-1.5 top-1.5 z-40">{badge}</div> : null}
         <div className="absolute inset-x-0 bottom-0 z-40 rounded-b-2xl bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-2.5 pb-2.5 pt-12 sm:hidden">
           <h2 className="line-clamp-3 text-sm font-semibold leading-tight text-paper [overflow-wrap:anywhere] hyphens-auto">{name}</h2>

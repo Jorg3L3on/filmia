@@ -120,6 +120,7 @@ const ListsBody = async () => {
                 itemCount={list._count.items}
                   seriesCount={list._count.series}
                 posters={list.items.map((item) => item.title)}
+                priority={index < 3}
                 {...sharedCardProps(list)}
               />
             </li>
@@ -159,6 +160,7 @@ const ListsBody = async () => {
                   seriesCount={list._count.series}
                   posters={list.items.map((item) => item.title)}
                   layout="grid"
+                  priority={index < 3}
                   {...sharedCardProps(list)}
                 />
               </li>
