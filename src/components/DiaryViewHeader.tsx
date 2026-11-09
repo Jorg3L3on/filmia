@@ -5,7 +5,7 @@ import {
 } from "@/components/DeckViewToggle";
 import { DIARY_VIEW_MODES, HISTORIAL_DEFAULT_VIEW } from "@/lib/diary-view";
 import { cn } from "@/lib/cn";
-import { formatMonthHeading, shiftMonthParam } from "@/lib/dates";
+import { formatMonthHeading, monthCountSuffix, shiftMonthParam } from "@/lib/dates";
 import type { CatalogKindFilter } from "@/lib/catalog-href";
 import { catalogHref } from "@/lib/catalog-href";
 import { focusRing } from "@/lib/ui";
@@ -50,45 +50,39 @@ export const DiaryViewHeader = ({
   const prevMonth = shiftMonthParam(month, -1);
   const nextMonth = shiftMonthParam(month, 1);
 
+  // Two rows (FIL-I44-10): the month always fits on one line between its arrows; the count and
+  // the view switch share the second row instead of squeezing the month into two lines.
+  const monthNavClass = cn(
+    "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-fog hover:bg-well hover:text-paper",
+    focusRing,
+  );
+
   return (
-    <header className="flex items-center justify-between gap-2">
-      <Link
-        href={catalogHref(pathname, { ...query, view, month: prevMonth })}
-        aria-label={`Mes anterior, ${formatMonthHeading(prevMonth)}`}
-        className={cn(
-          "inline-flex h-10 w-10 items-center justify-center rounded-full text-fog hover:bg-well hover:text-paper",
-          focusRing,
-        )}
-      >
-        <ChevronIcon direction="prev" />
-      </Link>
-      <div className="min-w-0 text-center">
-        <h1 className="font-serif text-2xl tracking-tight text-paper first-letter:uppercase sm:text-[1.85rem]">
+    <header className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <Link
+          href={catalogHref(pathname, { ...query, view, month: prevMonth })}
+          aria-label={`Mes anterior, ${formatMonthHeading(prevMonth)}`}
+          className={monthNavClass}
+        >
+          <ChevronIcon direction="prev" />
+        </Link>
+        <h2 className="min-w-0 truncate text-center font-serif text-2xl tracking-tight text-paper first-letter:uppercase sm:text-[1.85rem]">
           {formatMonthHeading(month)}
-        </h1>
-        {countLabel ? (
-          <p className="text-[11px] uppercase tracking-[0.18em] text-mist">
-            {countLabel} este mes
-          </p>
-        ) : null}
-      </div>
-      <div className="flex items-center gap-1">
-        <DeckViewToggle
-          mode={view}
-          hrefFor={hrefFor}
-          modes={DIARY_VIEW_MODES}
-          variant="icons"
-        />
+        </h2>
         <Link
           href={catalogHref(pathname, { ...query, view, month: nextMonth })}
           aria-label={`Mes siguiente, ${formatMonthHeading(nextMonth)}`}
-          className={cn(
-            "inline-flex h-10 w-10 items-center justify-center rounded-full text-fog hover:bg-well hover:text-paper",
-            focusRing,
-          )}
+          className={monthNavClass}
         >
           <ChevronIcon direction="next" />
         </Link>
+      </div>
+      <div className="flex items-center justify-between gap-3">
+        <p className="min-w-0 text-[11px] uppercase tracking-[0.18em] text-mist">
+          {countLabel ? `${countLabel} ${monthCountSuffix(month)}` : null}
+        </p>
+        <DeckViewToggle mode={view} hrefFor={hrefFor} modes={DIARY_VIEW_MODES} variant="icons" />
       </div>
     </header>
   );
