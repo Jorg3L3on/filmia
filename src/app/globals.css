@@ -5957,6 +5957,13 @@ html[data-booted] .iris-loader {
   background: rgb(255 255 255 / 0.05);
 }
 
+/* Desktop: a control, not a 1 120 px bar with two huge halves (FIL-I44-19). */
+@media (min-width: 640px) {
+  .qv-scope {
+    max-width: 22.5rem;
+  }
+}
+
 .qv-scope-cell {
   position: relative;
   display: flex;
