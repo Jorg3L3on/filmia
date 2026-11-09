@@ -196,12 +196,12 @@ const run = () => {
 
   // JOR-218 — iPhone final pass (home → ficha → alta / standalone)
   assert(
-    // FIL-29: phones float the header 0.5 rem down at h-12, so both widths sit 3.5 rem down.
-    ui.includes('safeAreaStickyUnderHeaderClass = "top-[calc(3.5rem+env(safe-area-inset-top))]"') &&
+    // FIL-I44-5: no header on phones, so sticky bars sit at the top (and pad for the notch); h-14 header from sm.
+    ui.includes('safeAreaStickyUnderHeaderClass = "top-0 sm:top-[calc(3.5rem+env(safe-area-inset-top))]"') &&
       ui.includes("safeAreaInsetXPadClass") &&
       ui.includes("safe-area-inset-left") &&
       ui.includes("safe-area-inset-right"),
-    "ui.ts sticky under header must match h-12/h-14 + export landscape X insets (JOR-218)",
+    "ui.ts sticky bars: top on phones, under the h-14 header from sm + export landscape X insets (JOR-218, FIL-I44-5)",
   );
   assert(
     !ui.includes('top-[calc(4rem+env(safe-area-inset-top))]'),
@@ -222,7 +222,8 @@ const run = () => {
   assert(
     buscarForm.includes("3.5rem") &&
       buscarAdd.includes("top-[calc(3rem+env(safe-area-inset-top))]") &&
-      buscarAdd.includes("top-[calc(7.75rem+env(safe-area-inset-top))]") &&
+      // FIL-I44-5: no «Filmia» plate on phones, so the chips sit 4.25 rem (the field) under the notch.
+      buscarAdd.includes("top-[calc(4.25rem+env(safe-area-inset-top))]") &&
       !buscarForm.includes("4rem+env(safe-area-inset-top)"),
     "Buscar sticky sits under the docked field on mobile and flush under SiteHeader from sm (JOR-218)",
   );

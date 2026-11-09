@@ -9,6 +9,7 @@ import {
   mobileNavSearch,
   mobileNavSearchSlot,
   mobileNavItems,
+  navTabMatcher,
 } from "../src/lib/nav";
 
 const assert = (condition: unknown, message: string) => {
@@ -22,8 +23,9 @@ const cases: Array<{ href: string; pathname: string; expected: boolean }> = [
   { href: "/", pathname: "/listas", expected: false },
   { href: "/", pathname: "/listas/abc", expected: false },
   { href: "/", pathname: "/watchlist", expected: false },
-  { href: "/", pathname: "/titulos/abc", expected: true },
-  { href: "/", pathname: "/titulos/nuevo", expected: true },
+  // A ficha is no tab of its own: it lights the tab it came from (FIL-I44-8, navTabMatcher).
+  { href: "/", pathname: "/titulos/abc", expected: false },
+  { href: "/", pathname: "/titulos/nuevo", expected: false },
   { href: "/listas", pathname: "/listas", expected: true },
   { href: "/listas", pathname: "/listas/abc", expected: true },
   { href: "/listas", pathname: "/listas/abc/editar", expected: true },
@@ -51,7 +53,9 @@ for (const pathname of onListas) {
   assert(isCurrentPath("/listas", pathname), `Listas must be active on ${pathname}`);
 }
 
-assert(isCurrentPath("/", "/titulos/abc"), "Diario highlights nested ficha routes");
+assert(navTabMatcher(null)("/", "/titulos/abc"), "A ficha with no origin lights Hoy (FIL-I44-8)");
+assert(navTabMatcher("/listas")("/listas", "/titulos/abc"), "A ficha lights the tab it came from (FIL-I44-8)");
+assert(!navTabMatcher("/listas")("/", "/titulos/abc"), "…and not Hoy (FIL-I44-8)");
 assert(isCurrentPath("/listas", "/listas/abc"), "Listas highlights nested list routes");
 assert(isMobileNavCurrent("/listas", "/listas/abc"), "The Listas tab lights on its nested routes (FIL-34)");
 assert(isMobileNavCurrent("/listas", "/watchlist"), "Quiero ver is pinned inside Listas: the Listas tab lights there (FIL-34)");
