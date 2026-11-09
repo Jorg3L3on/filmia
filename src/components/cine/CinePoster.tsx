@@ -25,6 +25,10 @@ type CinePosterProps = {
   priority?: boolean;
   /** Próximamente's narrow tiles: the director's avatar drops to 24 px. */
   compact?: boolean;
+  /** «En cines» (FIL-I46-4): the poster as a perforated ticket. */
+  ticket?: boolean;
+  /** Under the tile, outside its link: «Avísame» on Próximamente (FIL-I46-4). */
+  after?: ReactNode;
 };
 
 /** A Cine poster: tap → ficha, hold (or right click) → the Buscar menu anchored on it. */
@@ -37,6 +41,8 @@ export const CinePoster = ({
   sizes = "(max-width: 640px) 34vw, 180px",
   priority,
   compact = false,
+  ticket = false,
+  after,
 }: CinePosterProps) => {
   const { hrefFor, statusOf, openMenu } = useCineActions();
   const frameRef = useRef<HTMLDivElement>(null);
@@ -79,7 +85,7 @@ export const CinePoster = ({
           longPress.onPointerDown(event);
         }}
       >
-        <div ref={frameRef} className={cn(posterFrame, "card-physics press-scale relative")}>
+        <div ref={frameRef} className={cn(posterFrame, "card-physics press-scale relative", ticket && "cine-ticket")}>
           <PosterImage name={film.name} posterPath={film.posterPath} sizes={sizes} priority={priority} />
           {badge ? <div className="absolute left-1.5 top-1.5 flex items-center gap-1">{badge}</div> : null}
           {status ? (
@@ -100,6 +106,7 @@ export const CinePoster = ({
         <DirectorCredit directors={film.directors} compact={compact} />
         {caption ? <p className="mt-0.5 text-xs text-mist">{caption}</p> : null}
       </Link>
+      {after}
     </article>
   );
 };
@@ -148,3 +155,42 @@ const BellGlyph = () => (
     <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
   </svg>
 );
+
+/**
+ * Próximamente (FIL-I46-4): «En 12 días» and «Avísame». «Avísame» is the hold menu's Quiero ver,
+ * so the alert it arms is the existing one (push «Llega a cines» on the premiere day). Once the
+ * film is in Quiero ver it reads «Te avisamos».
+ */
+export const PremiereCountdown = ({ film, label }: { film: CineFilm; label: string | null }) => {
+  const { statusOf, remind, pendingFor } = useCineActions();
+  const status = statusOf(film);
+  const pending = pendingFor(film);
+  return (
+    <div className="mt-1.5 flex flex-col items-start gap-1">
+      {label ? (
+        <span data-countdown className="cine-countdown">
+          {label}
+        </span>
+      ) : null}
+      {status === "watched" ? null : status === "watchlist" ? (
+        <span data-remind="on" className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent-hover">
+          <BellGlyph /> Te avisamos
+        </span>
+      ) : (
+        <button
+          type="button"
+          data-remind="off"
+          onClick={() => remind(film)}
+          disabled={pending}
+          aria-label={`Avísame cuando se estrene ${film.name}`}
+          className={cn(
+            "press-scale inline-flex min-h-8 items-center gap-1 rounded-full border border-cine/40 bg-cine/10 px-2 text-[11px] font-semibold text-paper disabled:opacity-60",
+            focusRing,
+          )}
+        >
+          <BellGlyph /> {pending ? "Guardando…" : "Avísame"}
+        </button>
+      )}
+    </div>
+  );
+};

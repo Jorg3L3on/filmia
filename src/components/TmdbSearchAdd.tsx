@@ -31,6 +31,7 @@ import { useSearchFacts } from "@/components/tmdb-search/useSearchFacts";
 import { useSearchRecents } from "@/components/tmdb-search/useSearchRecents";
 import { useTmdbSearchAdd } from "@/components/tmdb-search/useTmdbSearchAdd";
 import type { StartArrival, StartDirector } from "@/lib/buscar-start";
+import type { DecadeTitle } from "@/lib/decades";
 import type { SelectableList } from "@/lib/list-selection";
 import { resolveDirectorQuery, type PersonFilmography } from "@/lib/person-filmography";
 import { buildSearchHref, liveSearchState, type SearchKind, type SearchMode } from "@/lib/search-session";
@@ -59,6 +60,8 @@ type TmdbSearchAddProps = {
   startDirectors?: StartDirector[];
   /** «Llegó a tu plataforma» start row (FIL-I21-8). */
   startArrivals?: StartArrival[];
+  /** «Explora por década» (FIL-I46-4): the library with its years. */
+  startDecades?: DecadeTitle[];
   /** Saved streaming platforms: a person's work can filter to them (FIL-I30-2). */
   hasPlatforms?: boolean;
 };
@@ -79,6 +82,7 @@ export const TmdbSearchAdd = ({
   person = null,
   startDirectors = [],
   startArrivals = [],
+  startDecades = [],
   hasPlatforms = false,
 }: TmdbSearchAddProps) => {
   const router = useRouter();
@@ -382,6 +386,7 @@ export const TmdbSearchAdd = ({
                 recents={recents}
                 directors={startDirectors}
                 arrivals={startArrivals}
+                decades={startDecades}
                 onPickRecent={onQueryChange}
                 onClearRecents={clearRecents}
                 logDate={logMode ? watchedDate : undefined}

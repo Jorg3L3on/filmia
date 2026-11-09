@@ -7,6 +7,7 @@ import { loadUserPlatformArrivals } from "@/lib/platform-arrivals-store";
 import { getTmdbPersonProfilePath } from "@/lib/tmdb";
 import { parseStoredPeople } from "@/lib/tonight-store";
 import type { Platform } from "@/db";
+import type { DecadeTitle } from "@/lib/decades";
 
 export type StartDirector = FavoriteDirector & { profilePath: string | null };
 
@@ -91,4 +92,17 @@ export const getStartArrivals = cache(async (userId: string): Promise<StartArriv
     posterPath: posterOf.get(arrival.catalogId) ?? null,
     availableSince: arrival.availableSince.toISOString(),
   }));
+});
+
+/**
+ * «Explora por década» (FIL-I46-4): every title in your library with its year, for the decade
+ * shelves on Buscar's start screen. A plain read of data already there.
+ */
+export const getDecadeTitles = cache(async (userId: string): Promise<DecadeTitle[]> => {
+  const rows = await db
+    .select({ id: titles.id, name: catalog.name, posterPath: catalog.posterPath, year: catalog.year })
+    .from(titles)
+    .innerJoin(catalog, eq(catalog.id, titles.catalogId))
+    .where(eq(titles.userId, userId));
+  return rows;
 });

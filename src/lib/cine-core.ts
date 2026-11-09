@@ -314,3 +314,21 @@ export const isPrerelease = (
   cinema: { status: "now" | "upcoming"; mxReleaseDate: string } | null,
   today: string,
 ) => cinema?.status === "upcoming" && cinema.mxReleaseDate > today;
+
+/**
+ * Days to a premiere for the countdown on Próximamente (FIL-I46-4): 0 on the day, negative once
+ * it opened. Calendar days in Mexico City (both sides are `YYYY-MM-DD`).
+ */
+export const daysUntilPremiere = (mxReleaseDate: string, today: string) =>
+  Math.round(
+    (Date.parse(`${mxReleaseDate.slice(0, 10)}T12:00:00Z`) - Date.parse(`${today.slice(0, 10)}T12:00:00Z`)) / 86_400_000,
+  );
+
+/** «Hoy», «Mañana», «En 12 días»; nothing once it opened. */
+export const countdownLabel = (mxReleaseDate: string, today: string) => {
+  const days = daysUntilPremiere(mxReleaseDate, today);
+  if (!Number.isFinite(days) || days < 0) return null;
+  if (days === 0) return "Hoy";
+  if (days === 1) return "Mañana";
+  return `En ${days} días`;
+};
