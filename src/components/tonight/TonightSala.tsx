@@ -14,6 +14,7 @@ import { ChapterBar } from "@/components/tonight/ChapterBar";
 import { TonightClosingEmpty } from "@/components/tonight/TonightClosingCard";
 import { TonightCardMenu } from "@/components/tonight/TonightCardMenu";
 import { TonightProvider, type TonightHandlers } from "@/components/tonight/TonightContext";
+import { pickDoubleFeature } from "@/lib/tonight/double-feature";
 import { TonightEyebrow } from "@/components/tonight/TonightEyebrow";
 import { TonightFilters } from "@/components/tonight/TonightFilters";
 import { WhySheet } from "@/components/tonight/WhySheet";
@@ -283,10 +284,37 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
     [],
   );
 
+  // «+ Sesión doble» (FIL-I46-2): a second film from Quiero ver (never a recommendation), in the
+  // order the sala already ranked them for tonight, deduped across lenses.
+  const queueCards = useMemo(() => {
+    const seen = new Set<string>();
+    const queue: CoverflowTitle[] = [];
+    for (const lens of lensCards.values()) {
+      for (const card of lens) {
+        if (card.closing || card.portal || card.tonight?.source === "reco" || seen.has(card.id)) continue;
+        seen.add(card.id);
+        queue.push(card);
+      }
+    }
+    return queue;
+  }, [lensCards]);
+  const doubleFeatureFor = useCallback(
+    (title: CoverflowTitle) =>
+      dayPart !== "noche"
+        ? null
+        : pickDoubleFeature({
+            current: { id: title.id, runtimeMinutes: title.tonight?.runtimeMinutes },
+            candidates: queueCards.map((card) => ({ id: card.id, name: card.name, runtimeMinutes: card.tonight?.runtimeMinutes })),
+            remainingMinutes: title.tonight?.fit?.remainingMinutes,
+          }),
+    [dayPart, queueCards],
+  );
+
   const handlers: TonightHandlers = {
     lens: activeLens?.slug ?? "",
     dayPart,
     now,
+    doubleFeatureFor,
     closing: {
       total: dealtTotal,
       watched: tallyCount(decks.tally.watched, watchedIds),
@@ -637,6 +665,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
         />
         <TonightCardMenu
           title={menuTitle}
+          doubleFeature={menuTitle && !menuTitle.closing && !menuTitle.portal ? doubleFeatureFor(menuTitle) : null}
           onClose={() => setMenuTitle(null)}
           onNotTonight={handleNotTonight}
           onRemove={handleRemove}

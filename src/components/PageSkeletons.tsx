@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 type SkeletonProps = {
@@ -437,11 +438,14 @@ export const TitleProvidersSkeleton = () => (
 
 export const FichaBodySkeleton = ({
   label = "Cargando ficha",
-}: SkeletonProps) => (
+  poster,
+}: SkeletonProps & { poster?: ReactNode }) => (
   <div className="space-y-8" aria-busy="true" aria-label={label}>
     <div className="ficha-head">
       <div className="ficha-poster-a">
-        <ShimmerBlock className="aspect-[2/3] w-[42vw] max-w-[168px] rounded-poster sm:w-[280px] sm:max-w-none" />
+        {poster ?? (
+          <ShimmerBlock className="aspect-[2/3] w-[42vw] max-w-[168px] rounded-poster sm:w-[280px] sm:max-w-none" />
+        )}
       </div>
       <div className="ficha-info-a">
         <ShimmerBlock className="mx-auto h-3 w-40 rounded-full sm:mx-0" />

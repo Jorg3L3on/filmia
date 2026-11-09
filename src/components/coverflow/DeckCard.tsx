@@ -356,6 +356,8 @@ export const DeckCard = memo(function DeckCard({
         )}
         <span data-coverflow-dim className="coverflow-card-dim" aria-hidden />
         <span className="coverflow-card-specular" aria-hidden />
+        {/* A light sweep crosses Hoy's hero every few seconds (FIL-I46-2). */}
+        {isTonight ? <span className="coverflow-card-sheen" aria-hidden /> : null}
         {holdable ? <span className="coverflow-card-hold" aria-hidden /> : null}
         {!compact && title.watched && !isTonight ? (
           <WatchedBadge

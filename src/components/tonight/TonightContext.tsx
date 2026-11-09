@@ -13,6 +13,8 @@ export type TonightHandlers = {
   dayPart: DayPart;
   /** The sala clock (null before hydration): the night line draws from it. */
   now: Date | null;
+  /** «+ Sesión doble» (FIL-I46-2): a second Quiero ver film that still ends before bedtime, or null. */
+  doubleFeatureFor?: (title: CoverflowTitle) => { id: string; name: string; runtimeMinutes: number | null | undefined } | null;
   onWhy: (title: CoverflowTitle) => void;
   onOpenMenu: (title: CoverflowTitle) => void;
   /** Card finished its stamp + flight: remove from the deck and offer Deshacer. */

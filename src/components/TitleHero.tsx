@@ -97,6 +97,11 @@ export const TitleHero = ({
           />
         ) : null}
         <div className="ficha-backdrop-a-shade" />
+        {/* Secuencia de créditos (FIL-I46-2): a short curtain parts over the backdrop once. */}
+        <div className="ficha-curtain">
+          <span className="ficha-curtain-panel is-left" />
+          <span className="ficha-curtain-panel is-right" />
+        </div>
       </div>
 
       {/* No entrance of its own: the poster-{id} morph from the tile is its entrance. */}
@@ -121,7 +126,7 @@ export const TitleHero = ({
           {restBits.join(" · ")}
         </p>
         <h1
-          className="ficha-enter font-serif text-[2.625rem] leading-[1.05] tracking-[-0.02em] text-paper sm:text-7xl sm:leading-[0.98]"
+          className="ficha-title-wipe font-serif text-[2.625rem] leading-[1.05] tracking-[-0.02em] text-paper sm:text-7xl sm:leading-[0.98]"
           style={{ "--i": 2 } as CSSProperties}
         >
           {name}
@@ -132,7 +137,7 @@ export const TitleHero = ({
           </p>
         ) : null}
         <div
-          className="ficha-enter flex flex-wrap items-center justify-center gap-2 pt-1.5 sm:justify-start"
+          className="ficha-enter ficha-chips-cascade flex flex-wrap items-center justify-center gap-2 pt-1.5 sm:justify-start"
           style={{ "--i": 3 } as CSSProperties}
         >
           {trailer}
