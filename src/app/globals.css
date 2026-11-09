@@ -3381,6 +3381,64 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   .ficha-actions-a > [role="group"] {
     order: -1;
   }
+
+  /* FIL-I44-7: the actions come before the synopsis, so «Ver esta noche» and the four-action
+     group land above the dock instead of under it (the synopsis opens with «Más» below). */
+  .ficha-body-a {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .ficha-body-a > * {
+    margin-block: 0;
+  }
+
+  .ficha-body-a > :is(.ficha-actions-a, .ficha-actions-skeleton) {
+    order: -1;
+  }
+}
+
+/* Short phones (375×667): even first, a long title pushes the actions under the dock. There
+   they keep their place after the synopsis and stick above the dock while the page is at the
+   top, with a veil over the text behind them (the pattern of FIL-I24-2). */
+@media (max-width: 639px) and (max-height: 760px) {
+  /* The body's children join the head's grid, so the sticky actions can rise over the whole
+     head instead of only inside the body. */
+  /* Doubled class: the base .ficha-head rule comes later in this file. */
+  .ficha-head.ficha-head {
+    grid-template-areas: "poster" "info" "synopsis" "actions";
+  }
+
+  .ficha-body-a {
+    display: contents;
+  }
+
+  .ficha-body-a > * {
+    grid-area: synopsis;
+    width: 100%;
+    max-width: 34rem;
+  }
+
+  .ficha-body-a > :is(.ficha-actions-a, .ficha-actions-skeleton) {
+    grid-area: actions;
+    order: 0;
+  }
+
+  .ficha-body-a > .ficha-actions-a {
+    position: sticky;
+    bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 4.75rem);
+    z-index: 2;
+  }
+
+  .ficha-body-a > .ficha-actions-a::before {
+    content: "";
+    position: absolute;
+    inset: -28px -16px -12px;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(180deg, transparent, rgb(14 17 20 / 0.9) 30%);
+  }
 }
 
 /* --- Carta de cierre (FIL-I21-6) ----------------------------------------
