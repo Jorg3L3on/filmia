@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { characterInSpanish } from "@/lib/character-notes";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AffinityChip } from "@/components/affinity/AffinityChip";
 import { useNavLabel } from "@/components/NavOriginTracker";
@@ -814,7 +815,7 @@ const WorkByDecade = ({
                     result={entry}
                     titleId={titleId}
                     status={status}
-                    detail={role === "reparto" && entry.character ? entry.character : null}
+                    detail={role === "reparto" && entry.character ? characterInSpanish(entry.character) : null}
                     facts={rows.factsFor?.(entry) ?? null}
                     href={rows.hrefFor(entry, titleId)}
                     onOpen={rows.onOpen}
