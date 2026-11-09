@@ -23,7 +23,7 @@ export const TonightFilters = ({ moodId, onMood, className }: TonightFiltersProp
       <div
         role="group"
         aria-labelledby="tonight-mood-label"
-        className="rail rail-fade flex min-w-0 gap-1.5 overflow-x-auto"
+        className="rail rail-fade tonight-mood-rail flex min-w-0 gap-1.5 overflow-x-auto"
       >
         {MOODS.map((mood) => (
           <button

@@ -114,7 +114,7 @@ export default async function WatchTogetherPage({
       : [];
 
   return (
-    <div className="mx-auto max-w-xl space-y-6 py-2">
+    <div className="mx-auto w-full max-w-xl space-y-6 py-2">
       <NavLabel label={`Listas · ${list.name} · Qué vemos juntos`} />
       <PageHeader
         title="Qué vemos juntos"

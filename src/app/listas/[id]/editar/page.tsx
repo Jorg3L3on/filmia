@@ -22,7 +22,7 @@ export default async function EditListPage({
   const itemCount = isFixedListSlug(list.slug) ? 0 : await getListItemCount(list.id);
 
   return (
-    <div className="mx-auto max-w-xl space-y-10 py-2">
+    <div className="mx-auto w-full max-w-xl space-y-10 py-2">
       <ListForm list={list} />
       {isFixedListSlug(list.slug) ? null : (
         <footer className="flex justify-center border-t border-line/70 pt-6 pb-[max(0.5rem,env(safe-area-inset-bottom))]">

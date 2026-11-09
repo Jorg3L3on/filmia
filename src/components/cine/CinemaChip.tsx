@@ -1,5 +1,6 @@
 "use client";
 
+import { HitArea } from "@/components/HitArea";
 import { useId, useState } from "react";
 import { CHAINS } from "@/components/cine/CinemaBadge";
 import { Sheet, SheetHandle } from "@/components/Sheet";
@@ -58,6 +59,7 @@ export const CinemaChip = ({ release, inWatchlist, today, titleName }: CinemaChi
           ·
         </span>
         Horarios <span aria-hidden="true">›</span>
+        <HitArea />
       </button>
 
       <Sheet open={open} onClose={() => setOpen(false)} labelledBy={titleId} align="bottom" layer="top" portal>

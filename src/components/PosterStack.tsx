@@ -12,12 +12,15 @@ type PosterStackProps = {
   posters: PosterStackItem[];
   size?: "sm" | "lg";
   emptyLabel?: string;
+  /** The page's largest image (LCP): load the front poster first (FIL-I44-20). */
+  priority?: boolean;
 };
 
 export const PosterStack = ({
   posters,
   size = "lg",
   emptyLabel = "Vacía",
+  priority = false,
 }: PosterStackProps) => {
   const shown = posters.slice(0, 3);
   const isSmall = size === "sm";
@@ -67,6 +70,7 @@ export const PosterStack = ({
               name={title.name}
               posterPath={title.posterPath}
               sizes={isSmall ? "96px" : "140px"}
+              priority={priority}
               className="h-full rounded-none transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110"
               ratio="fill"
             />

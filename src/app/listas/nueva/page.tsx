@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function NewListPage() {
   return (
-    <div className="mx-auto max-w-xl py-2">
+    <div className="mx-auto w-full max-w-xl py-2">
       <ListForm />
     </div>
   );

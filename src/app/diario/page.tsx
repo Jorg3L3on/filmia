@@ -186,8 +186,10 @@ const HistorialHome = async ({
 
       {catalog.needsSetup ? <MinePlatformsSetupCta /> : null}
 
+      {/* Tipo lives in the Filtros sheet: at 375 px three chips + Orden + Filtros did not fit (FIL-I44-10). */}
       <CatalogFilters
         pathname={DIARY_HISTORIAL_PATH}
+        showKindChips={false}
         view={view}
         defaultView={HISTORIAL_DEFAULT_VIEW}
         minePlatforms={minePlatforms}

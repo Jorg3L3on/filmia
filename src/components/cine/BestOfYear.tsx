@@ -65,7 +65,7 @@ type BestOfYearData = Awaited<ReturnType<typeof loadBestOfYear>>;
 
 /** «Has visto 3 de 100», or the two ends in words. */
 export const seenOfTopLabel = (seen: number, total: number) =>
-  seen === 0 ? "Ninguna vista todavía" : seen >= total ? "Las viste todas" : null;
+  seen === 0 ? "No has visto ninguna de estas todavía" : seen >= total ? "Las viste todas" : null;
 
 const SeenOfTop = ({ seen, total }: { seen: number; total: number }) => {
   const words = seenOfTopLabel(seen, total);
@@ -106,7 +106,13 @@ export const BestOfYearList = ({
   limit = IMDB_YEAR_TOP_SIZE,
   pending,
   pendingDay,
-}: Pick<BestOfYearData, "top" | "watchedIds" | "pending" | "pendingDay"> & { year: number; limit?: number }) => {
+  attribution = true,
+}: Pick<BestOfYearData, "top" | "watchedIds" | "pending" | "pendingDay"> & {
+  year: number;
+  limit?: number;
+  /** false when the page puts IMDb's credit at its own foot (FIL-I44-16). */
+  attribution?: boolean;
+}) => {
   if (top.length === 0) {
     const previous = (
       <Link href={`/cine?anio=${year - 1}#mejor`} scroll={false} className={cn("font-medium text-cine", focusRing)}>
@@ -144,7 +150,7 @@ export const BestOfYearList = ({
       <ol id={`top-${year}`} className="space-y-1">
         {rows.length > YEAR_TOP_STEP ? <YearTopMore step={YEAR_TOP_STEP}>{rows}</YearTopMore> : rows}
       </ol>
-      <ImdbAttribution />
+      {attribution ? <ImdbAttribution /> : null}
     </>
   );
 };
@@ -166,10 +172,11 @@ export const BestOfYearSection = async ({ userId, year }: { userId: string; year
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div className="space-y-2">
           {data.top.length > 0 ? <SeenOfTop seen={seen} total={data.top.length} /> : null}
-          <BestOfYearList year={year} top={data.top} watchedIds={data.watchedIds} pending={data.pending} pendingDay={data.pendingDay} limit={5} />
+          <BestOfYearList year={year} top={data.top} watchedIds={data.watchedIds} pending={data.pending} pendingDay={data.pendingDay} limit={5} attribution={false} />
         </div>
         <YourTopCard year={year} top={data.yours} watched={data.watched} past={data.past} topHref={data.top.length > 0 ? "#mejor" : null} />
       </div>
+      {data.top.length > 0 ? <ImdbAttribution className="mt-4" /> : null}
     </CineSection>
   );
 };

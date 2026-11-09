@@ -2035,23 +2035,13 @@ header.site-header {
 }
 
 /*
- * FIL-29: on phones the header floats like the dock — inset from the notch and the sides,
- * rounded, with its border all around — so its blur never runs into the screen edges. A scrim
- * keeps the status bar readable over what scrolls above it. Desktop keeps the full-width bar.
+ * FIL-I44-5: no «Filmia» plate on phones — the dock is the navigation there, and every page
+ * starts at the notch (main pads for it). A scrim keeps the status bar readable over what
+ * scrolls under it. Desktop keeps the full-width bar with its nav.
  */
 @media (max-width: 39.999rem) {
   header.site-header {
-    top: calc(env(safe-area-inset-top) + 0.5rem);
-    margin: calc(env(safe-area-inset-top) + 0.5rem) max(1rem, env(safe-area-inset-right)) 0
-      max(1rem, env(safe-area-inset-left));
-    padding-top: 0;
-    border: 1px solid rgb(255 255 255 / 0.1);
-    border-radius: 1.25rem;
-  }
-
-  header.site-header > div {
-    padding-left: 0.875rem;
-    padding-right: 0.875rem;
+    display: none;
   }
 
   body::before {
@@ -2068,6 +2058,11 @@ header.site-header {
   body:has(.diario-que-ver-shell)::before {
     content: none;
   }
+}
+
+/* Buscar renders a second tab dock for its person view; hidden everywhere else (FIL-I44-9). */
+nav[data-persona-dock] {
+  display: none;
 }
 
 ::view-transition-group(app-header),
@@ -2706,7 +2701,8 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 @media (max-width: 767px) and (max-height: 700px) {
   /* The sala already ends above the dock: main's 6 rem dock padding only made the page scroll ~20 px. */
   body:has(.tonight-sala) .app-main {
-    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+    /* The dock is 4 rem + its 0.75 rem float: 5 rem keeps the footer's last line above it (FIL-I44-13). */
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
   }
 
   .tonight-sala .coverflow-cinematic-stage {
@@ -3391,6 +3387,64 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   .ficha-actions-a > [role="group"] {
     order: -1;
   }
+
+  /* FIL-I44-7: the actions come before the synopsis, so «Ver esta noche» and the four-action
+     group land above the dock instead of under it (the synopsis opens with «Más» below). */
+  .ficha-body-a {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .ficha-body-a > * {
+    margin-block: 0;
+  }
+
+  .ficha-body-a > :is(.ficha-actions-a, .ficha-actions-skeleton) {
+    order: -1;
+  }
+}
+
+/* Short phones (375×667): even first, a long title pushes the actions under the dock. There
+   they keep their place after the synopsis and stick above the dock while the page is at the
+   top, with a veil over the text behind them (the pattern of FIL-I24-2). */
+@media (max-width: 639px) and (max-height: 760px) {
+  /* The body's children join the head's grid, so the sticky actions can rise over the whole
+     head instead of only inside the body. */
+  /* Doubled class: the base .ficha-head rule comes later in this file. */
+  .ficha-head.ficha-head {
+    grid-template-areas: "poster" "info" "synopsis" "actions";
+  }
+
+  .ficha-body-a {
+    display: contents;
+  }
+
+  .ficha-body-a > * {
+    grid-area: synopsis;
+    width: 100%;
+    max-width: 34rem;
+  }
+
+  .ficha-body-a > :is(.ficha-actions-a, .ficha-actions-skeleton) {
+    grid-area: actions;
+    order: 0;
+  }
+
+  .ficha-body-a > .ficha-actions-a {
+    position: sticky;
+    bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 4.75rem);
+    z-index: 2;
+  }
+
+  .ficha-body-a > .ficha-actions-a::before {
+    content: "";
+    position: absolute;
+    inset: -28px -16px -12px;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(180deg, transparent, rgb(14 17 20 / 0.9) 30%);
+  }
 }
 
 /* --- Carta de cierre (FIL-I21-6) ----------------------------------------
@@ -3684,6 +3738,27 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* A neighbor lens reads whole: two short lines instead of «Ciencia fic…» (FIL-I44-13). */
+.genre-coverflow-neighbor-name {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+/* Hoy's «Ánimo» rail runs to the screen edge, where the fade says there is more (FIL-I44-13). */
+@media (max-width: 639px) {
+  .tonight-mood-rail {
+    margin-right: -1.25rem;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+    padding-right: 2.5rem;
   }
 }
 
@@ -4663,7 +4738,8 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   row-gap: 1rem;
-  margin-top: -1.5rem;
+  /* Main pads 1.5 rem + the notch on phones: the backdrop bleeds back up under the status bar. */
+  margin-top: calc(-1.5rem - env(safe-area-inset-top));
   padding-top: calc(env(safe-area-inset-top) + 4.25rem);
   text-align: center;
 }
@@ -5203,12 +5279,13 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   );
 }
 
+/* 40 px: at 24 px a cut chip («202…») read as clipped, not as «there is more» (FIL-I44-16). */
 .cine-fade[data-fade~="left"] {
-  --cine-fade-l: 24px;
+  --cine-fade-l: 40px;
 }
 
 .cine-fade[data-fade~="right"] {
-  --cine-fade-r: 24px;
+  --cine-fade-r: 40px;
 }
 
 .cine-dot-live {
@@ -5880,6 +5957,13 @@ html[data-booted] .iris-loader {
   background: rgb(255 255 255 / 0.05);
 }
 
+/* Desktop: a control, not a 1 120 px bar with two huge halves (FIL-I44-19). */
+@media (min-width: 640px) {
+  .qv-scope {
+    max-width: 22.5rem;
+  }
+}
+
 .qv-scope-cell {
   position: relative;
   display: flex;
@@ -6080,6 +6164,15 @@ html[data-booted] .iris-loader {
   transform: translateY(-6px);
   pointer-events: none;
   transition: opacity var(--duration-tab) var(--ease-out), transform var(--duration-tab) var(--ease-out);
+}
+
+/* Phones (FIL-I44-5): the bar sits at the very top, so it covers the status bar and keeps 6 px
+   above its row. */
+@media (max-width: 39.999rem) {
+  .qv-condensed {
+    height: calc(50px + env(safe-area-inset-top));
+    padding-top: calc(6px + env(safe-area-inset-top));
+  }
 }
 
 .qv-condensed[data-shown="true"] {
@@ -6561,20 +6654,15 @@ html[data-booted] .iris-loader {
     display: none;
   }
 
-  /* No «Filmia» plate here: the hero's own back and search discs are the chrome. */
-  body:has([data-persona-view]) header.site-header {
-    display: none;
-  }
-
-  /* Measured: Buscar's 3.5 rem room for its field and one 24 px gap put the hero 80 px down; it
-     moves back to the top of the screen (the hero pads for the notch itself). */
+  /* Measured: Buscar's 3.5 rem room for its field, main's 24 px and the notch put the hero that
+     far down; it moves back to the top of the screen (the hero pads for the notch itself). */
   .persona-hero {
-    margin-top: -80px;
+    margin-top: calc(-80px - env(safe-area-inset-top));
   }
 
-  /* No dock at the bottom of this view: no room kept for it either. */
-  body:has([data-persona-view]) main.app-main {
-    padding-bottom: max(2.5rem, calc(1.5rem + env(safe-area-inset-bottom)));
+  /* The tab dock Buscar keeps for this view (FIL-I44-9): main keeps its usual room for it. */
+  body:has([data-persona-view]) nav[data-persona-dock] {
+    display: block;
   }
 
   /* The status-bar scrim stays off while the wall is under the notch. */

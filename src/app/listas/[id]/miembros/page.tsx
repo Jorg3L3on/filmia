@@ -42,7 +42,7 @@ export default async function ListMembersPage({ params }: { params: Promise<{ id
   const viewerFullName = people.find((person) => person.id === userId)?.name ?? null;
 
   return (
-    <div className="mx-auto max-w-xl space-y-8 py-2">
+    <div className="mx-auto w-full max-w-xl space-y-8 py-2">
       <NavLabel label={`Listas · ${list.name} · Miembros`} />
       <PageHeader
         title="Miembros"

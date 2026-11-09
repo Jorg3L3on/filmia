@@ -155,7 +155,7 @@ export const GenreCoverflow = ({
             <span aria-hidden className="genre-coverflow-chevron">
               ‹
             </span>
-            <span className="truncate">{prev.name}</span>
+            <span className="genre-coverflow-neighbor-name">{prev.name}</span>
           </button>
         ) : (
           <span className="genre-coverflow-neighbor-spacer" aria-hidden />
@@ -198,7 +198,7 @@ export const GenreCoverflow = ({
               focusRing,
             )}
           >
-            <span className="truncate">{next.name}</span>
+            <span className="genre-coverflow-neighbor-name">{next.name}</span>
             <span aria-hidden className="genre-coverflow-chevron">
               ›
             </span>

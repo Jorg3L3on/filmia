@@ -143,6 +143,17 @@ export const formatMonthName = (monthParam: string) => {
   });
 };
 
+/** «este mes» for the current month, else «en octubre» (+ year when it is another year). FIL-I44-10. */
+export const monthCountSuffix = (monthParam: string, now = new Date()) => {
+  const current = currentMonthParam(now);
+  if (monthParam === current) {
+    return "este mes";
+  }
+  return monthParam.slice(0, 4) === current.slice(0, 4)
+    ? `en ${formatMonthName(monthParam)}`
+    : `en ${formatMonthHeading(monthParam)}`;
+};
+
 export const parseOptionalIsoDate = (value: unknown) => {
   const raw = asSingleString(value).trim();
   return isValidIsoDate(raw) ? raw : null;

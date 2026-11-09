@@ -12,6 +12,8 @@ type BottomNavShellProps = {
    * the header, where people look for a search box, and needs no keyboard handling.
    */
   placement?: "bottom" | "top";
+  /** The tab dock Buscar keeps for its person view, shown only there by CSS (FIL-I44-9). */
+  persona?: boolean;
 };
 
 /**
@@ -19,7 +21,7 @@ type BottomNavShellProps = {
  * The tab dock floats above the home indicator: max(safe-area-inset-bottom, 0.75rem). The
  * Buscar field sits under the floating header (3.5 rem) instead (see SiteHeader).
  */
-export const BottomNavShell = ({ children, placement = "bottom" }: BottomNavShellProps) => {
+export const BottomNavShell = ({ children, placement = "bottom", persona = false }: BottomNavShellProps) => {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
 
@@ -40,10 +42,11 @@ export const BottomNavShell = ({ children, placement = "bottom" }: BottomNavShel
     <nav
       ref={navRef}
       aria-label="Principal móvil"
+      data-persona-dock={persona || undefined}
       className={cn(
         "pointer-events-none fixed inset-x-0 z-50 sm:hidden",
         placement === "top"
-          ? "top-[calc(3.5rem+env(safe-area-inset-top))] pt-2"
+          ? "top-[env(safe-area-inset-top)] pt-2"
           : "bottom-0 pb-[max(env(safe-area-inset-bottom),0.75rem)]",
         safeAreaInsetXPadClass,
       )}

@@ -107,6 +107,19 @@ describe("Tu universo · el caso Ivan", () => {
   });
 });
 
+describe("islands the cap leaves empty (FIL-I44-18)", () => {
+  it("are not drawn; their people count as hidden", () => {
+    const films = Array.from({ length: 6 }, (_, index) =>
+      film(`isla${index}`, `Película ${index}`, Array.from({ length: 4 }, (__, person) => p(500 + index * 10 + person, `Persona ${index}-${person}`, "cast"))),
+    );
+    const universo = buildUniverso(films, new Map(), 6);
+    assert.ok(universo.islands.length < films.length);
+    assert.ok(universo.islands.every((island) => island.nodes.length > 0));
+    const shown = universo.islands.reduce((sum, island) => sum + island.nodes.length, 0);
+    assert.equal(shown + universo.hidden, universo.people);
+  });
+});
+
 describe("la que más puentes abre", () => {
   it("Greig Fraser: Duna (Villeneuve, Zimmer, Chalamet come back), the earlier on a tie", () => {
     const candidates = [

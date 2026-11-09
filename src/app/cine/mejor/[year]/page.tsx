@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { loadCineActions } from "@/app/cine/cine-data";
 import { BestOfYearList, loadBestOfYear, SeenOfTop } from "@/components/cine/BestOfYear";
+import { ImdbAttribution } from "@/components/ImdbAttribution";
 import { YearSelector } from "@/components/cine/YearSelector";
 import { CineActionsProvider } from "@/components/cine/CineActions";
 import { CineMarquee } from "@/components/cine/CineParts";
@@ -48,8 +49,9 @@ const BestOfYearBody = async ({ year }: { year: number }) => {
       <div className="space-y-6">
         <YearSelector year={year} today={data.today} hrefTemplate="/cine/mejor/{year}" />
         {data.top.length > 0 ? <SeenOfTop seen={seen} total={data.top.length} /> : null}
-        <BestOfYearList year={year} top={data.top} watchedIds={data.watchedIds} pending={data.pending} pendingDay={data.pendingDay} />
+        <BestOfYearList year={year} top={data.top} watchedIds={data.watchedIds} pending={data.pending} pendingDay={data.pendingDay} attribution={false} />
         <YourTopCard year={year} top={data.yours} watched={data.watched} past={data.past} topHref={data.top.length > 0 ? `#top-${year}` : null} />
+        {data.top.length > 0 ? <ImdbAttribution /> : null}
       </div>
     </CineActionsProvider>
   );

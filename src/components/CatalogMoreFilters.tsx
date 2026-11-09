@@ -15,6 +15,8 @@ type CatalogMoreFiltersProps = {
   onApply: () => void;
   /** Phone: a round icon button (the label stays for screen readers); desktop keeps the pill. */
   compactOnMobile?: boolean;
+  /** Opened from elsewhere (list «···» menu, FIL-I44-2): render only the sheet. */
+  hideTrigger?: boolean;
   children: ReactNode;
 };
 
@@ -26,6 +28,7 @@ export const CatalogMoreFilters = ({
   onClear,
   onApply,
   compactOnMobile = false,
+  hideTrigger = false,
   children,
 }: CatalogMoreFiltersProps) => {
   const titleId = useId();
@@ -36,6 +39,7 @@ export const CatalogMoreFilters = ({
 
   return (
     <>
+      {hideTrigger ? null : (
       <button
         type="button"
         onClick={onOpen}
@@ -63,6 +67,7 @@ export const CatalogMoreFilters = ({
           </span>
         ) : null}
       </button>
+      )}
 
       <Sheet
         open={open}
@@ -100,7 +105,7 @@ export const CatalogMoreFilters = ({
   );
 };
 
-const FunnelIcon = () => (
+export const FunnelIcon = () => (
   <svg
     viewBox="0 0 24 24"
     className="h-4 w-4"

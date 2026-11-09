@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ViewTransition, useEffect, useState, useSyncExternalStore } from "react";
+import { ViewTransition, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { ActiveNavLink } from "@/components/ActiveNavLink";
+import { useNavTabMatch } from "@/components/useNavTabMatch";
 import { BottomNavShell } from "@/components/BottomNavShell";
 import { DockSearchField } from "@/components/DockSearchField";
 import { NavIcon } from "@/components/NavIcon";
@@ -76,9 +77,8 @@ export const BottomNav = () => {
   const day = useTodayDay();
   const searchMode = isMobileNavCurrent(mobileNavSearch.href, pathname);
   const origin = useOriginTab(pathname, searchMode);
-  const activeIndex = mobileNavItems.findIndex((item) =>
-    isMobileNavCurrent(item.href, pathname),
-  );
+  const matchTab = useNavTabMatch();
+  const activeIndex = mobileNavItems.findIndex((item) => matchTab(item.href, pathname));
   const activeColumn = activeIndex === -1 ? null : columnFor(activeIndex);
 
   // Leaving Buscar: the next visit starts from its own URL, not the last words.
@@ -89,12 +89,42 @@ export const BottomNav = () => {
   }, [searchMode]);
 
   if (searchMode) {
-    return <SearchDock origin={origin} day={day} />;
+    return (
+      <>
+        <SearchDock origin={origin} day={day} />
+        {/* The person view hides Buscar's row on phones and keeps the tabs at the bottom (FIL-I44-9). */}
+        <TabDock day={day} matchTab={matchTab} activeColumn={null} persona />
+      </>
+    );
   }
 
+  return <TabDock day={day} matchTab={matchTab} activeColumn={activeColumn} />;
+};
+
+type TabDockProps = {
+  day: number | null;
+  matchTab: (href: string, pathname: string) => boolean;
+  activeColumn: number | null;
+  /** Buscar's person view: no shared morph names (the search dock owns them on that page). */
+  persona?: boolean;
+};
+
+type MorphProps = { name: string; off: boolean; children: ReactNode };
+
+/** Two docks may be on screen in Buscar: only the real one carries the morph names. */
+const Morph = ({ name, off, children }: MorphProps) =>
+  off ? (
+    <>{children}</>
+  ) : (
+    <ViewTransition name={name} share={DOCK_MORPH} default="none">
+      {children}
+    </ViewTransition>
+  );
+
+const TabDock = ({ day, matchTab, activeColumn, persona = false }: TabDockProps) => {
   return (
-    <BottomNavShell>
-      <ViewTransition name="dock-shell" share={DOCK_MORPH} default="none">
+    <BottomNavShell persona={persona}>
+      <Morph name="dock-shell" off={persona}>
         <div
           data-dock-shell
           className={cn(dockGlassClass, "relative grid h-16 grid-cols-5 items-center rounded-full px-1")}
@@ -114,7 +144,7 @@ export const BottomNav = () => {
               <ActiveNavLink
                 key={item.href}
                 href={item.href}
-                match={isMobileNavCurrent}
+                match={matchTab}
                 aria-label={item.label}
                 data-nav={item.icon}
                 className={(isCurrent) =>
@@ -153,7 +183,7 @@ export const BottomNav = () => {
                 className="relative z-10 flex justify-center"
                 onClickCapture={dockSearch.requestFocus}
               >
-                <ViewTransition name="dock-search" share={DOCK_MORPH} default="none">
+                <Morph name="dock-search" off={persona}>
                   <ActiveNavLink
                     href={mobileNavSearch.href}
                     match={isMobileNavCurrent}
@@ -164,13 +194,13 @@ export const BottomNav = () => {
                   >
                     <NavIcon name={mobileNavSearch.icon} />
                   </ActiveNavLink>
-                </ViewTransition>
+                </Morph>
               </div>,
               tab,
             ];
           })}
         </div>
-      </ViewTransition>
+      </Morph>
     </BottomNavShell>
   );
 };
@@ -194,7 +224,7 @@ const SearchDock = ({ origin, day }: { origin: (typeof mobileNavItems)[number]; 
         <div
           aria-hidden
           data-search-dock
-          className="pointer-events-none fixed inset-x-0 top-[calc(3.5rem+env(safe-area-inset-top))] -z-10 h-[4.25rem] bg-gradient-to-b from-canvas via-canvas/95 to-canvas/0"
+          className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-[calc(4.75rem+env(safe-area-inset-top))] bg-gradient-to-b from-canvas via-canvas/95 to-canvas/0"
         />
         {/* The person view hides this row on phones: its hero carries «atrás» and the search disc (FIL-I45). */}
         <div data-search-dock className="flex items-center gap-2.5">

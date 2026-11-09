@@ -90,6 +90,8 @@ export const TitleHero = ({
             fill
             sizes="100vw"
             className="ficha-backdrop-a-img object-cover object-[center_25%]"
+            // The backdrop is the ficha's LCP: never lazy, but still behind the poster (FIL-I44-20).
+            loading="eager"
             fetchPriority="low"
             unoptimized={isRemoteImage(backdropSrc)}
           />

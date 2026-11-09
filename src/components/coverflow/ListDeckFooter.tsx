@@ -1,5 +1,6 @@
 "use client";
 
+import { HitArea } from "@/components/HitArea";
 import Link from "next/link";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import type { CoverflowTitle } from "@/components/coverflow/types";
@@ -84,9 +85,10 @@ export const ListDeckFooter = ({ title, className, onOpenMenu }: ListDeckFooterP
             onClick={() => onOpenMenu(title)}
             aria-label={`Más opciones de ${title.name}`}
             aria-haspopup="dialog"
-            className={cn("tonight-chip press-scale w-10 justify-center px-0 text-paper hover:bg-white/10", focusRing)}
+            className={cn("tonight-chip press-scale relative w-10 justify-center px-0 text-paper hover:bg-white/10", focusRing)}
           >
             <MoreIcon />
+            <HitArea />
           </button>
         ) : null}
       </div>

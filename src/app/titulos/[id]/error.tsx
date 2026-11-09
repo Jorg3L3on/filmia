@@ -28,7 +28,7 @@ export default function TitleDetailError({ error, reset }: ErrorPageProps) {
           Reintentar
         </Button>
         <Button href="/" variant="ghost">
-          Volver al Diario
+          Volver a Hoy
         </Button>
       </div>
     </div>

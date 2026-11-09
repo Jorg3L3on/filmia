@@ -1,5 +1,6 @@
 "use client";
 
+import { HitArea } from "@/components/HitArea";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
@@ -69,6 +70,7 @@ export const TrailerButton = ({ trailerKey, titleName, backdropSrc }: TrailerBut
       >
         <PlayGlyph />
         Tráiler
+        <HitArea />
       </button>
 
       <dialog

@@ -154,8 +154,11 @@ export const safeAreaMainPadClass =
  */
 export const safeAreaToastBottomClass =
   "bottom-[calc(4rem+0.75rem+max(env(safe-area-inset-bottom),0.75rem))] sm:bottom-8";
-/** Sticky under SiteHeader + notch — JOR-218: phones float it 0.5 rem down at h-12 (FIL-29), sm:h-14. */
-export const safeAreaStickyUnderHeaderClass = "top-[calc(3.5rem+env(safe-area-inset-top))]";
+/**
+ * Sticky bars: on phones they stick to the very top and pad for the notch themselves, so their
+ * background covers the status bar (no SiteHeader there, FIL-I44-5); from sm, under the h-14 header.
+ */
+export const safeAreaStickyUnderHeaderClass = "top-0 sm:top-[calc(3.5rem+env(safe-area-inset-top))]";
 /** Landscape notch / Dynamic Island sides (JOR-218). */
 export const safeAreaInsetXPadClass =
   "pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]";
