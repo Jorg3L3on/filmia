@@ -1,3 +1,4 @@
+import { HitArea } from "@/components/HitArea";
 import { Suspense } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { collectionCountLabel } from "@/lib/labels";
@@ -178,10 +179,11 @@ const ListsBody = async () => {
         {years.length === 0 ? (
           <Link
             href="/cine#mejor"
-            className={`inline-flex items-center gap-1.5 text-sm text-fog transition-colors hover:text-paper ${focusRing}`}
+            className={`relative inline-flex items-center gap-1.5 text-sm text-fog transition-colors hover:text-paper ${focusRing}`}
           >
             Arma tu top 10 de {year} en Cine
             <span aria-hidden="true">›</span>
+            <HitArea />
           </Link>
         ) : (
           <ListCollection layout="grid">

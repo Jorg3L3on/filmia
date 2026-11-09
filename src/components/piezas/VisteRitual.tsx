@@ -1,5 +1,6 @@
 "use client";
 
+import { HitArea } from "@/components/HitArea";
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { answerViste, moreViste } from "@/app/actions/viste";
@@ -149,8 +150,9 @@ export const VisteRitual = ({ cards: initial }: { cards: VisteCard[] }) => {
         <p aria-live="polite" className={cn("min-w-0 truncate", summary && "text-paper")}>
           {summary ?? (answeredCount > 0 ? `${answeredCount} ${answeredCount === 1 ? "respondida" : "respondidas"} hoy` : "Las que quieras")}
         </p>
-        <Link href="/" className={cn("shrink-0 text-accent-hover", focusRing)}>
+        <Link href="/" className={cn("relative shrink-0 text-accent-hover", focusRing)}>
           Listo
+          <HitArea />
         </Link>
       </div>
       {/* Shrinks with the screen so the three answers stay above the dock on a 667 px phone (FIL-I44-6). */}
