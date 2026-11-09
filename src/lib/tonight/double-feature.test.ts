@@ -46,3 +46,41 @@ describe("pickDoubleFeature (FIL-I46-2)", () => {
     assert.equal(pick?.id, "a");
   });
 });
+
+import { DOUBLE_FEATURE_BREAK_MINUTES, pickMarathon } from "./double-feature";
+
+describe("pickMarathon (FIL-I46-3)", () => {
+  const view = [
+    { id: "a", runtimeMinutes: 95, kind: "MOVIE" },
+    { id: "s", runtimeMinutes: 45, kind: "SERIES" },
+    { id: "b", runtimeMinutes: 180, kind: "MOVIE" },
+    { id: "c", runtimeMinutes: 88, kind: "MOVIE" },
+    { id: "u", runtimeMinutes: null, kind: "MOVIE" },
+    { id: "d", runtimeMinutes: 70, kind: "MOVIE" },
+  ];
+
+  it("never proposes a sum past bedtime, for any night length", () => {
+    for (let remaining = 0; remaining <= 600; remaining += 7) {
+      const pick = pickMarathon({ candidates: view, remainingMinutes: remaining, now: at(20, 0) });
+      if (!pick) continue;
+      const sum = pick.items.reduce((total, item) => total + (item.runtimeMinutes ?? 0), 0) + (pick.items.length - 1) * DOUBLE_FEATURE_BREAK_MINUTES;
+      assert.equal(pick.totalMinutes, sum);
+      assert.ok(sum <= remaining, `${sum} ≤ ${remaining}`);
+      assert.ok(pick.items.length >= 2 && pick.items.length <= 3);
+      assert.ok(pick.items.every((item) => item.kind !== "SERIES" && item.runtimeMinutes));
+    }
+  });
+
+  it("keeps the view's order and says when it ends", () => {
+    const pick = pickMarathon({ candidates: view, remainingMinutes: 280, now: at(20, 0) });
+    assert.deepEqual(pick?.items.map((item) => item.id), ["a", "c", "d"]);
+    assert.equal(pick?.totalMinutes, 95 + 10 + 88 + 10 + 70);
+    assert.equal(pick?.endsAt, "00:33");
+  });
+
+  it("disappears without a bedtime, a clock, or room for two", () => {
+    assert.equal(pickMarathon({ candidates: view, remainingMinutes: null, now: at(20, 0) }), null);
+    assert.equal(pickMarathon({ candidates: view, remainingMinutes: 300, now: null }), null);
+    assert.equal(pickMarathon({ candidates: view, remainingMinutes: 120, now: at(20, 0) }), null);
+  });
+});

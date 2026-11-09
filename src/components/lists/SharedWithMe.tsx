@@ -59,7 +59,14 @@ export const SharedWithMeSection = ({ shared }: { shared: SharedWithMe }) => {
                 posters={list.posters}
                 layout="grid"
                 subtitle={`De ${personFirstName(list.ownerName)} · ${roleLabel(list.role)}`}
-                badge={<PersonAvatar person={{ id: list.ownerId, name: list.ownerName }} size={28} />}
+                badge={
+                  <span className="relative inline-flex">
+                    <PersonAvatar person={{ id: list.ownerId, name: list.ownerName }} size={28} />
+                    {list.recentlyActive ? (
+                      <span className="presence-dot" title="Alguien agregó algo hace poco" aria-label="Novedades recientes" role="img" />
+                    ) : null}
+                  </span>
+                }
               />
             </li>
           ))}

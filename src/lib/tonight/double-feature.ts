@@ -54,3 +54,43 @@ export const pickDoubleFeature = <T extends DoubleFeatureCandidate>({
     ) ?? null
   );
 };
+
+export type MarathonPick<T> = { items: T[]; totalMinutes: number; endsAt: string };
+
+/** At most three films; a marathon of one is just tonight's film. */
+export const MARATHON_MAX = 3;
+
+/**
+ * «Maratón que cabe en tu noche» (FIL-I46-3): the first two or three films of the current view,
+ * in its order, whose runtimes plus a short break between each still end before bedtime. A title
+ * with no runtime (or a series, measured per episode) is skipped, never guessed. Null without a
+ * bedtime or when fewer than two fit.
+ */
+export const pickMarathon = <T extends DoubleFeatureCandidate & { kind?: string }>({
+  candidates,
+  remainingMinutes,
+  now,
+}: {
+  candidates: readonly T[];
+  remainingMinutes: number | null | undefined;
+  now: Date | null;
+}): MarathonPick<T> | null => {
+  if (!now || remainingMinutes == null || remainingMinutes <= 0) {
+    return null;
+  }
+  const items: T[] = [];
+  let used = 0;
+  for (const candidate of candidates) {
+    if (items.length >= MARATHON_MAX) break;
+    const runtime = candidate.runtimeMinutes;
+    if (!runtime || runtime <= 0 || candidate.kind === "SERIES") continue;
+    const next = used + (items.length > 0 ? DOUBLE_FEATURE_BREAK_MINUTES : 0) + runtime;
+    if (next > remainingMinutes) continue;
+    items.push(candidate);
+    used = next;
+  }
+  if (items.length < 2) {
+    return null;
+  }
+  return { items, totalMinutes: used, endsAt: formatClock(new Date(now.getTime() + used * 60_000)) };
+};

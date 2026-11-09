@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/cn";
 import { WatchlistClosingCard } from "@/components/watchlist/WatchlistClosingCard";
+import { WatchlistMarathon } from "@/components/watchlist/WatchlistMarathon";
 import { WatchlistFicha } from "@/components/watchlist/WatchlistFicha";
 import { WatchlistHeroCompact } from "@/components/watchlist/WatchlistHeroCompact";
 import { WatchlistReorderList } from "@/components/watchlist/WatchlistReorderList";
@@ -15,7 +17,8 @@ import { useExpandedFicha } from "@/components/watchlist/useExpandedFicha";
 import { useFichaViews } from "@/components/watchlist/useFichaViews";
 import { useWatchlistActions } from "@/components/watchlist/useWatchlistActions";
 import { useWatchlistKeyboard } from "@/components/watchlist/useWatchlistKeyboard";
-import { isNight } from "@/lib/tonight/time";
+import { isNight, remainingMinutes } from "@/lib/tonight/time";
+import { pickMarathon } from "@/lib/tonight/double-feature";
 import type { NightEnds } from "@/lib/tonight/types";
 import { safeAreaStickyUnderHeaderClass } from "@/lib/ui";
 import { DESKTOP_QUERY, useMediaQuery } from "@/lib/use-media-query";
@@ -173,6 +176,15 @@ export const WatchlistCartelera = ({
       ? views.filter((view) => view.fit && view.fit.overflowMinutes === 0 && view.fit.remainingMinutes > 0).length
       : null;
 
+  // «Maratón» (FIL-I46-3): only at night, from the films of the view as it is shown.
+  const marathon = useMemo(
+    () =>
+      now && isNight(now, nightEnds)
+        ? pickMarathon({ candidates: visible, remainingMinutes: remainingMinutes(now, nightEnds), now })
+        : null,
+    [nightEnds, now, visible],
+  );
+
   return (
     <div className="relative space-y-4">
       {isEditing ? (
@@ -198,7 +210,12 @@ export const WatchlistCartelera = ({
               />
             ) : null}
             {rows.length > 0 ? (
-              <ol className="space-y-2.5" aria-label={isDesktop ? "Quiero ver" : "Después"}>
+              <ol
+                // «Sorpréndeme» (FIL-I46-3): a new shuffle deals the rows in again, like a fresh hand.
+                key={sort === "random" ? `shuffle-${visibleIds.slice(0, 3).join("-")}` : "list"}
+                className={cn("space-y-2.5", sort === "random" && "watchlist-dealt")}
+                aria-label={isDesktop ? "Quiero ver" : "Después"}
+              >
                 {rows.map((ficha, index) => (
                   <WatchlistFicha
                     key={ficha.id}
@@ -223,6 +240,7 @@ export const WatchlistCartelera = ({
                 ))}
               </ol>
             ) : null}
+            {marathon && !isEditing ? <WatchlistMarathon pick={marathon} /> : null}
             {visible.length > 1 ? <WatchlistClosingCard total={visible.length} fitCount={fitCount} /> : null}
           </div>
           {isDesktop && selected ? (

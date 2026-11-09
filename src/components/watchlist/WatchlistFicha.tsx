@@ -172,6 +172,9 @@ const WatchlistFichaImpl = ({
         onClickCapture={swallowAfterGesture}
         onAnimationEnd={hinting ? () => setHinting(false) : undefined}
       >
+        {/* A frame of film (FIL-I46-3): perforations down both edges, static. */}
+        <span aria-hidden="true" className="film-perf is-left" />
+        <span aria-hidden="true" className="film-perf is-right" />
         {backdropSrc ? (
           <div className="ficha-backdrop" aria-hidden="true">
             <Image
