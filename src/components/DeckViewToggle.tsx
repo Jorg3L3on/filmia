@@ -18,6 +18,7 @@ const MODE_LABEL: Record<DeckViewMode, string> = {
   deck: "Mazo",
   grid: "Cuadrícula",
   calendar: "Calendario",
+  strip: "Tira",
 };
 
 export const DeckViewToggle = ({
@@ -79,6 +80,15 @@ const ViewModeIcon = ({ mode }: { mode: DeckViewMode }) => {
       <svg {...common}>
         <rect x="4.5" y="6" width="15" height="13.5" rx="2" />
         <path strokeLinecap="round" d="M4.5 10.5h15M8 4.5v3M16 4.5v3" />
+      </svg>
+    );
+  }
+
+  if (mode === "strip") {
+    return (
+      <svg {...common}>
+        <rect x="3.5" y="6" width="17" height="12" rx="1.5" />
+        <path d="M9 6v12M15 6v12M3.5 8.5h1.5M3.5 15.5h1.5M19 8.5h1.5M19 15.5h1.5" />
       </svg>
     );
   }

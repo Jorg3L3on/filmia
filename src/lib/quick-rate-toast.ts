@@ -1,6 +1,7 @@
 import { quickRateWatched, undoQuickRate } from "@/app/actions/watchlist";
 import { showToast, updateToast } from "@/lib/toast";
 import { showActionError, TOAST_COPY } from "@/lib/toast-alerts";
+import { dropVistoStamp } from "@/lib/visto-stamp";
 
 /** Provisional copy (FIL-28); «Me gustó / No tanto» are the ¿Las viste? words (FIL-I26-3). */
 export const QUICK_RATE_COPY = {
@@ -31,6 +32,8 @@ export const showDiaryToast = ({
   rated: boolean;
   onUndo?: () => void;
 }) => {
+  // The entry is in the diary: the «VISTA» stamp drops once (FIL-I46-5).
+  dropVistoStamp();
   nextKey += 1;
   const key = `diario:${titleId}:${nextKey}`;
   let saved: Promise<{ titleId: string; previous: number | null } | null> | null = null;

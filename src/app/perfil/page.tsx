@@ -8,6 +8,7 @@ import { ProfileAccountCard } from "@/components/profile/ProfileAccountCard";
 import { ProfileMarquee } from "@/components/profile/ProfileMarquee";
 import { ProfileTuFilmia } from "@/components/profile/ProfileTuFilmia";
 import { ProfileUniverso } from "@/components/universo/ProfileUniverso";
+import { ProfileYearInFilm } from "@/components/profile/ProfileYearInFilm";
 import { ShimmerBlock } from "@/components/PageSkeletons";
 import { StreamingPlatformPicker } from "@/components/StreamingPlatformPicker";
 import { getCurrentUserProfile, getRecentWatchedTitles } from "@/lib/queries";
@@ -59,6 +60,10 @@ const ProfileBody = async () => {
       <div className="space-y-7 lg:grid lg:grid-cols-[minmax(0,36rem)_minmax(0,1fr)] lg:items-start lg:gap-14 lg:space-y-0">
         <div className="space-y-7">
           <ProfileDiary />
+          {/* «Tu año en cine» and «Tu mes en cine» (FIL-I46-5): diary reads only. */}
+          <Suspense fallback={<ShimmerBlock className="h-56 w-full rounded-card" />}>
+            <ProfileYearInFilm />
+          </Suspense>
           {/* FIL-I26-4: TMDB counts behind it, so it never holds the rest of Perfil. */}
           <Suspense fallback={<ShimmerBlock className="h-64 w-full rounded-3xl" />}>
             <ProfileUniverso />
