@@ -153,7 +153,8 @@ export const VisteRitual = ({ cards: initial }: { cards: VisteCard[] }) => {
           Listo
         </Link>
       </div>
-      <div className="relative mx-auto h-[330px] w-[220px]">
+      {/* Shrinks with the screen so the three answers stay above the dock on a 667 px phone (FIL-I44-6). */}
+      <div className="relative mx-auto aspect-[2/3] h-[clamp(200px,calc(100dvh-377px-env(safe-area-inset-top)),330px)]">
         {open.slice(1, 3).map((card, index) => (
           <span
             key={card.catalogId}
