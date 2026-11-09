@@ -2701,7 +2701,8 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 @media (max-width: 767px) and (max-height: 700px) {
   /* The sala already ends above the dock: main's 6 rem dock padding only made the page scroll ~20 px. */
   body:has(.tonight-sala) .app-main {
-    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+    /* The dock is 4 rem + its 0.75 rem float: 5 rem keeps the footer's last line above it (FIL-I44-13). */
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
   }
 
   .tonight-sala .coverflow-cinematic-stage {
@@ -3737,6 +3738,27 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* A neighbor lens reads whole: two short lines instead of «Ciencia fic…» (FIL-I44-13). */
+.genre-coverflow-neighbor-name {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+/* Hoy's «Ánimo» rail runs to the screen edge, where the fade says there is more (FIL-I44-13). */
+@media (max-width: 639px) {
+  .tonight-mood-rail {
+    margin-right: -1.25rem;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+    padding-right: 2.5rem;
   }
 }
 
