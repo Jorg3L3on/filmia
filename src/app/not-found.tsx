@@ -26,7 +26,7 @@ export default function NotFound() {
         Parece que esta escena se perdió en el corte final. Volvamos al guion principal.
       </p>
       <Button href="/" className="mt-8">
-        ← Volver al Diario
+        ← Volver a Hoy
       </Button>
     </div>
   );
