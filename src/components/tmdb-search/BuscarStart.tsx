@@ -34,12 +34,12 @@ const initialsOf = (name: string) =>
     .join("");
 
 /** Round photo, or the initials on glass when TMDB has none. */
-const DirectorFace = ({ director }: { director: StartDirector }) => {
+const DirectorFace = ({ director, priority = false }: { director: StartDirector; priority?: boolean }) => {
   const src = tmdbProfileUrl(director.profilePath);
   return (
     <span className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-chrome ring-1 ring-white/15 shadow-[0_12px_26px_-14px_rgb(0_0_0/0.9)] transition-[box-shadow] duration-[var(--duration-hover)] ease-[var(--ease-out)] group-hover:ring-accent/60">
       {src ? (
-        <Image src={src} alt="" fill sizes="64px" className="object-cover" unoptimized />
+        <Image src={src} alt="" fill sizes="64px" className="object-cover" unoptimized priority={priority} />
       ) : (
         <span className="font-serif text-xl text-paper/80">{initialsOf(director.name)}</span>
       )}
@@ -160,7 +160,8 @@ export const FavoriteDirectors = ({ directors }: { directors: StartDirector[] })
             href={buildPersonSearchHref({ personId: director.id, role: "director", name: director.name })}
             className={cn("group press-scale flex flex-col items-center gap-2 rounded-2xl px-1 py-1.5 text-center", focusRing)}
           >
-            <DirectorFace director={director} />
+            {/* The first faces are the start page's LCP (FIL-I44-20). */}
+            <DirectorFace director={director} priority={index < 8} />
             <span className="line-clamp-2 text-xs leading-snug text-paper">{director.name}</span>
             <span className="-mt-1.5 text-[11px] text-mist">
               {director.count === 1 ? "1 favorita" : `${director.count} favoritas`}

@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { PageHeader } from "@/components/PageHeader";
 import { WatchlistBodySkeleton } from "@/components/PageSkeletons";
 import { WatchlistView } from "@/components/watchlist/WatchlistView";
 import {
@@ -21,13 +20,6 @@ export const metadata = {
   title: "Quiero ver",
 };
 
-/** Desktop keeps the big page title; the phone header carries its own (FIL-I21-7, FIL-I34). */
-const WatchlistDesktopTitle = () => (
-  <div className="hidden sm:block">
-    <PageHeader title="Quiero ver" />
-  </div>
-);
-
 const EMPTY_SIGNALS: WatchlistSignals = {
   reasonsByTitle: new Map(),
   snoozedUntilByTitle: new Map(),
@@ -41,8 +33,8 @@ const FIRST_YEAR = 1930;
 // page never parses them: an old `?tonight=1` simply has nothing to match (FIL-I34-1).
 export default function WatchlistPage() {
   return (
-    <div className="space-y-5 max-sm:-mt-6 max-sm:space-y-1">
-      <WatchlistDesktopTitle />
+    <div className="space-y-5 max-sm:space-y-1">
+      {/* One title at every width: the top bar's «Quiero ver N» (FIL-I44-1). */}
       <Suspense fallback={<WatchlistBodySkeleton />}>
         <WatchlistBody />
       </Suspense>

@@ -137,7 +137,7 @@ export const HoyDeckSkeleton = () => (
 
 export const HoySkeleton = ({ label = "Cargando Hoy" }: SkeletonProps) => (
   <div
-    className="diario-que-ver-shell flex min-h-0 flex-1 flex-col gap-3 max-sm:-mt-1"
+    className="diario-que-ver-shell flex min-h-0 flex-1 flex-col gap-3"
     aria-busy="true"
     aria-label={label}
   >
@@ -421,7 +421,7 @@ export const AuthScreenSkeleton = ({
 );
 
 export const TitleActionsSkeleton = () => (
-  <div className="space-y-3" aria-hidden="true">
+  <div className="ficha-actions-skeleton space-y-3" aria-hidden="true">
     <ShimmerBlock className="h-[3.25rem] w-full rounded-full" />
     <div className="grid grid-cols-4 gap-1 rounded-[1.375rem] border border-white/10 p-1.5">
       {Array.from({ length: 4 }, (_, index) => (

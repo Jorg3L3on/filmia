@@ -61,6 +61,9 @@ export const ShareListSheet = ({
   publicShare,
   triggerLabel = "Compartir",
   compact = false,
+  open: openProp,
+  onOpenChange,
+  hideTrigger = false,
 }: {
   listId: string;
   listName: string;
@@ -72,9 +75,19 @@ export const ShareListSheet = ({
   triggerLabel?: string;
   /** Round disc, same size as the other list actions. */
   compact?: boolean;
+  /** Controlled open (list «···» menu, FIL-I44-2). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Opened from elsewhere: render only the sheet. */
+  hideTrigger?: boolean;
 }) => {
   const headingId = useId();
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = (next: boolean) => {
+    setOpenState(next);
+    onOpenChange?.(next);
+  };
   const [role, setRole] = useState<ListRole>(roles.includes("EDITOR") ? "EDITOR" : "VIEWER");
   const [kind, setKind] = useState<ListInviteKind>("PERSONAL");
   const [maxUses, setMaxUses] = useState(GROUP_MAX_USES_DEFAULT);
@@ -149,6 +162,7 @@ export const ShareListSheet = ({
 
   return (
     <>
+      {hideTrigger ? null : (
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -174,6 +188,7 @@ export const ShareListSheet = ({
           </>
         )}
       </button>
+      )}
       <Sheet open={open} onClose={closeSheet} labelledBy={headingId} align="bottom" dragDismiss portal>
         <div className="space-y-5 px-5 pb-4 pt-3">
           <div className="flex flex-col items-center">

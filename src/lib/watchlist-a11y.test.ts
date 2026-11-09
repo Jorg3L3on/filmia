@@ -56,11 +56,11 @@ describe("watchlist a11y/contrast", () => {
 
 describe("watchlist a11y/names", () => {
   const read = (file: string) => readFileSync(path.join(process.cwd(), "src/components/watchlist", file), "utf8");
-  it("names the count, funnel, dice, scope, order, direction and chips for VoiceOver", () => {
+  it("names the count, funnel, scope, order, direction and chips for VoiceOver", () => {
     const top = read("WatchlistTopBar.tsx");
     assert.match(top, /aria-live="polite"/);
     assert.match(top, /Filtros, \$\{filterCount\}/);
-    assert.match(top, /Sorpréndeme\. Baraja lo que ves/);
+    assert.doesNotMatch(top, /Sorpréndeme/);
     assert.match(read("WatchlistScopeBar.tsx"), /Alcance: \$\{label\}/);
     const pill = read("WatchlistOrderPill.tsx");
     assert.match(pill, /Orden: \$\{label\}\. Cambiar/);

@@ -130,12 +130,12 @@ const run = () => {
 
   const listDetail = read("src/app/listas/[id]/page.tsx");
   assert(
-    listDetail.includes("compact") && listDetail.includes("segmentActionCompactClass"),
-    "List detail has a header add CTA and round glass edit chrome (same as Listas)",
+    listDetail.includes("<ListHeaderActions") && listDetail.includes("pill"),
+    "List detail header: one «+ Agregar» pill and one «···» menu for the rest (FIL-I44-2)",
   );
   assert(
-    read("src/components/ListCard.tsx").includes("truncate"),
-    "List cards truncate names",
+    read("src/components/ListCard.tsx").includes("line-clamp-3") && read("src/components/ListCard.tsx").includes("line-clamp-2"),
+    "List card names wrap and clamp instead of cutting to one line (FIL-I44-15)",
   );
 
   // Cuenta + contraseña live in one card; every edit happens in a sheet (FIL-I5-3).

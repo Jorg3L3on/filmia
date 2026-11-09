@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { TmdbCatalogResult } from "./tmdb";
-import { mergeListAddCandidates, type LocalListTitle } from "./list-add-candidates";
+import {
+  LIST_ADD_PAGE_SIZE,
+  mergeListAddCandidates,
+  nextListAddPage,
+  type LocalListTitle,
+} from "./list-add-candidates";
 
 const hit = (
   tmdbId: number,
@@ -136,5 +141,19 @@ describe("mergeListAddCandidates", () => {
     });
     assert.deepEqual(merged.local.map((title) => title.id), ["t-manual"]);
     assert.equal(merged.tmdb[0]?.state, "new");
+  });
+});
+
+describe("nextListAddPage", () => {
+  it("adds one page at a time and stops at the total", () => {
+    assert.equal(nextListAddPage(0, 488), LIST_ADD_PAGE_SIZE);
+    assert.equal(nextListAddPage(LIST_ADD_PAGE_SIZE, 488), LIST_ADD_PAGE_SIZE * 2);
+    assert.equal(nextListAddPage(480, 488), 488);
+    assert.equal(nextListAddPage(488, 488), 488);
+  });
+
+  it("never goes below zero or past a short list", () => {
+    assert.equal(nextListAddPage(-5, 10), 10);
+    assert.equal(nextListAddPage(0, 0), 0);
   });
 });

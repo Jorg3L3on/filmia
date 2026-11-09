@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useMemo, useState, useTransition } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
 import { addTitleFromTmdbToList, removeTitleFromList } from "@/app/actions/lists";
 import { Button } from "@/components/Button";
 import { PosterImage } from "@/components/PosterImage";
@@ -10,14 +10,16 @@ import { useTmdbDiscoverSearch } from "@/components/tmdb-search/useTmdbDiscoverS
 import { cn } from "@/lib/cn";
 import { TITLE_KIND_LABEL } from "@/lib/labels";
 import {
+  LIST_ADD_PAGE_SIZE,
   mergeListAddCandidates,
+  nextListAddPage,
   type LocalListTitle,
   type TmdbListCandidate,
 } from "@/lib/list-add-candidates";
 import { showToast } from "@/lib/toast";
 import { retryAfterRevert, showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { actionErrorMessage } from "@/lib/use-optimistic-action";
-import { fieldClass, focusRing } from "@/lib/ui";
+import { fieldClass, focusRing, pillActionClass } from "@/lib/ui";
 import {
   SegmentActionTooltip,
   SegmentPlusIcon,
@@ -36,6 +38,8 @@ type AddTitleToListCtaProps = {
   /** `kind:tmdbId` keys of titles already on the list. */
   inListKeys?: string[];
   compact?: boolean;
+  /** List header (FIL-I44-2): the one labelled accent action, «+ Agregar». */
+  pill?: boolean;
 };
 
 const NO_KEYS: ReadonlySet<string> = new Set();
@@ -47,6 +51,7 @@ export const AddTitleToListCta = ({
   configuredTmdb = false,
   inListKeys = [],
   compact = false,
+  pill = false,
 }: AddTitleToListCtaProps) => {
   const titleId = useId();
   const tmdbEnabled = configuredTmdb && Boolean(listId);
@@ -81,9 +86,45 @@ export const AddTitleToListCta = ({
   const nothingFound =
     filtered.length === 0 && candidates.tmdb.length === 0 && !tmdbBusy && !tmdbError;
 
+  // FIL-40: a page of rows at a time (the iPhone killed the page drawing ~500 posters at once).
+  // A new query starts again from the first page; the filter itself still sees every title.
+  const [rowLimit, setRowLimit] = useState(LIST_ADD_PAGE_SIZE);
+  const [limitQuery, setLimitQuery] = useState(query);
+  if (limitQuery !== query) {
+    setLimitQuery(query);
+    setRowLimit(LIST_ADD_PAGE_SIZE);
+  }
+  const visibleLocal = filtered.length > rowLimit ? filtered.slice(0, rowLimit) : filtered;
+  const hasMoreLocal = filtered.length > visibleLocal.length;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [moreSentinel, setMoreSentinel] = useState<HTMLLIElement | null>(null);
+
+  useEffect(() => {
+    if (!moreSentinel || typeof IntersectionObserver === "undefined") {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setRowLimit((current) => nextListAddPage(current, filtered.length));
+        }
+      },
+      { root: scrollRef.current, rootMargin: "0px 0px 600px 0px" },
+    );
+    observer.observe(moreSentinel);
+    return () => observer.disconnect();
+    // rowLimit re-arms it: a sentinel still in view after a page only reports on a fresh observe.
+  }, [filtered.length, moreSentinel, rowLimit]);
+
+  // Touch: no keyboard on open (FIL-40). It rose while the sheet animated over the deck; the
+  // search box is one tap away. A mouse keeps the cursor in the box as before.
+  const [focusSearchOnOpen, setFocusSearchOnOpen] = useState(false);
+
   const handleOpen = () => {
     setShownTitles(titles);
     setAddedKeys(new Set());
+    setRowLimit(LIST_ADD_PAGE_SIZE);
+    setFocusSearchOnOpen(window.matchMedia("(pointer: fine)").matches);
     setOpen(true);
   };
 
@@ -229,8 +270,20 @@ export const AddTitleToListCta = ({
   );
 
   return (
-    <div className={compact ? undefined : "flex justify-center"}>
-      {compact ? (
+    <div className={compact || pill ? undefined : "flex justify-center"}>
+      {pill ? (
+        <button
+          type="button"
+          onClick={handleOpen}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label="Agregar título a la lista"
+          className={cn(pillActionClass.primary, "pl-3.5 pr-5")}
+        >
+          <SegmentPlusIcon className="size-[1.1rem] group-hover:rotate-90" />
+          Agregar
+        </button>
+      ) : compact ? (
         <button
           type="button"
           onClick={handleOpen}
@@ -307,7 +360,7 @@ export const AddTitleToListCta = ({
               className={fieldClass}
               autoComplete="off"
               enterKeyHint="search"
-              autoFocus
+              autoFocus={focusSearchOnOpen}
             />
           </label>
           {error ? (
@@ -329,12 +382,16 @@ export const AddTitleToListCta = ({
           </p>
         </div>
 
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-4" data-no-sheet-drag>
+        <div
+          ref={scrollRef}
+          className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-4"
+          data-no-sheet-drag
+        >
           {filtered.length > 0 ? (
             <section className="space-y-2" aria-label="En Filmia">
               {showTmdb ? <SectionLabel>En Filmia</SectionLabel> : null}
               <ul className="space-y-2">
-                {filtered.map((title) => (
+                {visibleLocal.map((title) => (
                   <li key={title.id}>
                     <CandidateRow
                       name={title.name}
@@ -347,6 +404,9 @@ export const AddTitleToListCta = ({
                     />
                   </li>
                 ))}
+                {hasMoreLocal ? (
+                  <li ref={setMoreSentinel} aria-hidden="true" className="h-px" />
+                ) : null}
               </ul>
             </section>
           ) : null}

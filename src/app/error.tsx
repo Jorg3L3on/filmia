@@ -29,7 +29,7 @@ const ErrorPage = ({ error, retry, reset }: ErrorPageProps) => {
       </p>
       <h1 className="font-serif text-3xl text-paper">Algo salió mal</h1>
       <p className="text-sm leading-relaxed text-fog">
-        Esta escena no cargó. Reintenta o vuelve al Diario; si sigue fallando, el
+        Esta escena no cargó. Reintenta o vuelve a Hoy; si sigue fallando, el
         problema es nuestro, no tuyo.
       </p>
       <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
@@ -37,7 +37,7 @@ const ErrorPage = ({ error, retry, reset }: ErrorPageProps) => {
           Reintentar
         </Button>
         <Button href="/" variant="ghost">
-          Volver al Diario
+          Volver a Hoy
         </Button>
       </div>
     </div>

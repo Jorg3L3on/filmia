@@ -1,5 +1,6 @@
 "use client";
 
+import { HitArea } from "@/components/HitArea";
 import { useEffect, useId, useState } from "react";
 import { recordAffinityShown } from "@/app/actions/affinity";
 import { AffinityChip } from "@/components/affinity/AffinityChip";
@@ -54,7 +55,7 @@ export const FichaAffinity = ({ state, titleName }: FichaAffinityProps) => {
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-label={`${affinity.label}. Por qué`}
-        className={cn("press-scale rounded-full", focusRing)}
+        className={cn("press-scale relative rounded-full", focusRing)}
         data-affinity-chip={affinity.level}
       >
         <AffinityChip
@@ -63,6 +64,7 @@ export const FichaAffinity = ({ state, titleName }: FichaAffinityProps) => {
           lowConfidence={affinity.lowConfidence}
           variant="ficha"
         />
+        <HitArea />
       </button>
       <Sheet
         open={open}

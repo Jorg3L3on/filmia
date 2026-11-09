@@ -116,6 +116,7 @@ export const TmdbSearchResults = ({
                   onMenu={rows.onMenu}
                   log={rows.logFor?.(result) ?? null}
                   pinned={titleId !== null && titleId === rows.pinnedTitleId}
+                  priority={index < 3}
                 />
               </li>
             );

@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { DiceIcon } from "@/components/catalog-filters/filter-ui";
 import { WatchlistCountTicker } from "@/components/watchlist/WatchlistCountTicker";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
@@ -75,21 +74,17 @@ type WatchlistTopBarProps = {
   total: number;
   narrowed: boolean;
   filterCount: number;
-  random: boolean;
   disabled?: boolean;
-  onSurprise: () => void;
   onFilters: () => void;
 };
 
-/** Title + «N de total», Sorpréndeme and the funnel with its badge (FIL-I34-2). */
+/** Title + «N de total» and the funnel with its badge (FIL-I34-2); Aleatoria lives in Orden (FIL-I44-4). */
 export const WatchlistTopBar = ({
   shown,
   total,
   narrowed,
   filterCount,
-  random,
   disabled = false,
-  onSurprise,
   onFilters,
 }: WatchlistTopBarProps) => (
   <div className="flex items-center gap-2">
@@ -100,14 +95,6 @@ export const WatchlistTopBar = ({
         {disabled ? "" : countSpoken(shown, total, narrowed)}
       </span>
     </h1>
-    <WatchlistRoundButton
-      label={random ? "Sorpréndeme, activado. Volver a Mi orden" : "Sorpréndeme. Baraja lo que ves"}
-      pressed={random}
-      disabled={disabled}
-      onClick={onSurprise}
-    >
-      <DiceIcon className="h-[18px] w-[18px]" />
-    </WatchlistRoundButton>
     <WatchlistRoundButton
       label={filterCount > 0 ? `Filtros, ${filterCount} ${filterCount === 1 ? "activo" : "activos"}. Abre las opciones` : "Filtros. Abre las opciones"}
       badge={filterCount}

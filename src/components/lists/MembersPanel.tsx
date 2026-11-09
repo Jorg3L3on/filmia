@@ -106,8 +106,9 @@ export const MembersPanel = ({
   return (
     <div className="space-y-8">
       <section className="space-y-2" aria-labelledby="miembros-title">
+        {/* «Personas»: the page title already says «Miembros» (FIL-I44-17). */}
         <h2 id="miembros-title" className="text-sm font-semibold uppercase tracking-[0.14em] text-fog">
-          Miembros
+          Personas
         </h2>
         <ul className="divide-y divide-white/[0.06] rounded-3xl border border-white/10 bg-white/[0.03]">
           {people.map((person) => {

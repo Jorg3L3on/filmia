@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { addTitleToList } from "@/app/actions/lists";
 import { AddTitleToListCta } from "@/components/AddTitleToListCta";
-import { CatalogFilters } from "@/components/CatalogFilters";
 import { EmptyState } from "@/components/EmptyState";
 import { ListTitlesView } from "@/components/ListTitlesView";
 import { NavLabel } from "@/components/NavOriginTracker";
@@ -14,7 +13,7 @@ import {
 } from "@/components/MinePlatformsNotice";
 import { ListsBodySkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/PageHeader";
-import { ShareButton, ShareIcon } from "@/components/share/ShareButton";
+import { ShareButton } from "@/components/share/ShareButton";
 import {
   parseCatalogOrder,
   parseKindFilter,
@@ -35,7 +34,7 @@ import { chosenOfList } from "@/lib/group-store";
 import { getListPeople, getPeopleNames, getPendingRequests } from "@/lib/list-invites";
 import { personFirstName } from "@/lib/person-avatar";
 import { AvatarStack } from "@/components/lists/PersonAvatar";
-import { ShareListSheet } from "@/components/lists/ShareListSheet";
+import { ListHeaderActions } from "@/components/lists/ListHeaderActions";
 import { OwnerRequestsNotice } from "@/components/lists/SharedWithMe";
 import { metadataServicesConfigured } from "@/lib/metadata";
 import { listShareText } from "@/lib/share-card";
@@ -46,11 +45,6 @@ import { resolveCatalogAvailability } from "@/lib/streaming-platforms";
 import { tmdbCatalogKey } from "@/lib/tmdb-search-catalog";
 import { catalogHref, parseMinePlatforms } from "@/lib/catalog-href";
 import { parseSeriesStatusFilter, titleMatchesSeriesStatus } from "@/lib/series";
-import {
-  PencilIcon,
-  SegmentActionTooltip,
-  segmentActionCompactClass,
-} from "@/components/SegmentAction";
 
 export const dynamic = "force-dynamic";
 
@@ -170,82 +164,69 @@ const ListDetail = async ({
         backLabel="Todas las listas"
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        {automatic || yearTop || !canEditItems ? null : (
-          <AddTitleToListCta
-            action={addAction}
-            titles={availableTitles}
-            listId={list.id}
-            configuredTmdb={configuredTmdb}
-            inListKeys={inListKeys}
-            compact
-          />
-        )}
-        {isOwner && shareRoles.length > 0 ? (
-          <ShareListSheet
-            listId={list.id}
-            listName={list.name}
-            roles={shareRoles}
-            compact
-            publicShare={
-              <ShareButton
-                path={sharePath("lista", list.id)}
-                title={list.name}
-                text={listShareText(list.name, list.items.length)}
-                fileName={`${slugify(list.name) || "lista"}.png`}
-                ariaLabel="Mandar la vista pública"
-                className="shrink-0 rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold text-paper"
-              >
-                Vista pública
-              </ShareButton>
-            }
-          />
-        ) : null}
-        {isOwner && shareRoles.length === 0 ? (
-          <ShareButton
-            path={sharePath("lista", list.id)}
-            title={list.name}
-            text={listShareText(list.name, list.items.length)}
-            fileName={`${slugify(list.name) || "lista"}.png`}
-            ariaLabel="Compartir lista"
-            className={segmentActionCompactClass}
-          >
-            <ShareIcon className="size-5" />
-            <SegmentActionTooltip label="Compartir lista" />
-          </ShareButton>
-        ) : null}
-        {isOwner ? (
-          <Link
-            href={yearTop ? `/cine/mejor/${list.year}` : `/listas/${list.id}/editar`}
-            aria-label={yearTop ? "Editar en Cine" : fixed ? "Editar descripción" : "Editar lista"}
-            className={segmentActionCompactClass}
-          >
-            <PencilIcon className="size-5 group-hover/action:-rotate-12" />
-            <SegmentActionTooltip label={yearTop ? "Editar en Cine" : fixed ? "Editar descripción" : "Editar lista"} />
-          </Link>
-        ) : null}
-        {isOwner && shareRoles.length > 0 && !shared ? (
-          <Link
-            href={`/listas/${list.id}/miembros`}
-            aria-label="Miembros y links"
-            className={segmentActionCompactClass}
-          >
-            <PeopleIcon className="size-5" />
-            <SegmentActionTooltip label="Miembros y links" />
-          </Link>
-        ) : null}
-        <CatalogFilters
-          pathname={`/listas/${list.id}`}
-          kind={kindFilter}
-          platforms={platforms}
-          sort={sort ?? undefined}
-          minePlatforms={minePlatforms}
-          hasStreamingPlatforms={userPlatforms.length > 0}
-          seriesStatus={seriesStatus}
-          showKindChips={false}
-          inline
-        />
-      </div>
+      <ListHeaderActions
+        add={
+          automatic || yearTop || !canEditItems ? null : (
+            <AddTitleToListCta
+              action={addAction}
+              titles={availableTitles}
+              listId={list.id}
+              configuredTmdb={configuredTmdb}
+              inListKeys={inListKeys}
+              pill
+            />
+          )
+        }
+        share={
+          !isOwner
+            ? null
+            : shareRoles.length > 0
+              ? {
+                  mode: "invite",
+                  listId: list.id,
+                  listName: list.name,
+                  roles: shareRoles,
+                  publicShare: (
+                    <ShareButton
+                      key="public-share"
+                      path={sharePath("lista", list.id)}
+                      title={list.name}
+                      text={listShareText(list.name, list.items.length)}
+                      fileName={`${slugify(list.name) || "lista"}.png`}
+                      ariaLabel="Mandar la vista pública"
+                      className="shrink-0 rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold text-paper"
+                    >
+                      Vista pública
+                    </ShareButton>
+                  ),
+                }
+              : {
+                  mode: "public",
+                  path: sharePath("lista", list.id),
+                  title: list.name,
+                  text: listShareText(list.name, list.items.length),
+                  fileName: `${slugify(list.name) || "lista"}.png`,
+                }
+        }
+        edit={
+          isOwner
+            ? {
+                href: yearTop ? `/cine/mejor/${list.year}` : `/listas/${list.id}/editar`,
+                label: yearTop ? "Editar en Cine" : fixed ? "Editar descripción" : "Editar lista",
+              }
+            : null
+        }
+        membersHref={isOwner && shareRoles.length > 0 && !shared ? `/listas/${list.id}/miembros` : null}
+        filters={{
+          pathname: `/listas/${list.id}`,
+          kind: kindFilter,
+          platforms,
+          sort: sort ?? undefined,
+          minePlatforms,
+          hasStreamingPlatforms: userPlatforms.length > 0,
+          seriesStatus,
+        }}
+      />
 
       {shared ? (
         <div className="flex flex-wrap items-center gap-3">
@@ -350,21 +331,3 @@ const ListDetail = async ({
     </div>
   );
 };
-
-const PeopleIcon = ({ className }: { className?: string }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-    className={className}
-  >
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="3" />
-    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-    <path d="M16 3.13a3 3 0 0 1 0 5.75" />
-  </svg>
-);

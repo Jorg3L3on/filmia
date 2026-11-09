@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackDisc } from "@/components/PageHeader";
 import type { CSSProperties, ReactNode } from "react";
 import { FadeRail } from "@/components/cine/FadeRail";
 import { ticketStub } from "@/lib/cine-core";
@@ -37,16 +38,9 @@ export const CineMarquee = ({
 }) => (
   <header className="space-y-3">
     <MarqueeBulbs />
-    <div className="flex items-end justify-between gap-3">
+    <div className="flex items-start gap-3">
+      {backHref ? <BackDisc href={backHref} label="Volver a Cine" className="mt-0.5" /> : null}
       <div className="min-w-0">
-        {backHref ? (
-          <Link
-            href={backHref}
-            className={cn("-ml-2 -mt-2 mb-0.5 inline-flex min-h-11 items-center gap-1 rounded-full px-2 text-xs text-mist hover:text-paper", focusRing)}
-          >
-            <span aria-hidden="true">‹</span> Cine
-          </Link>
-        ) : null}
         <h1 className="cine-glow font-serif text-[2.25rem] leading-none text-paper sm:text-5xl">{title}</h1>
         <p className="mt-1.5 text-sm text-fog">{subtitle ?? capitalize(LONG_DATE.format(now))}</p>
       </div>

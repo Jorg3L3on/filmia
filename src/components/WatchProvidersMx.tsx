@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { HitArea } from "@/components/HitArea";
 import { Button } from "@/components/Button";
 import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
@@ -244,9 +245,10 @@ export const WatchProvidersMx = ({
               href={data.link}
               target="_blank"
               rel="noopener noreferrer"
-              className={cn("text-sm font-medium text-accent hover:underline", focusRing)}
+              className={cn("relative text-sm font-medium text-accent hover:underline", focusRing)}
             >
               Buscar en JustWatch
+              <HitArea />
             </a>
           ) : (
             <p className="text-xs text-mist">
@@ -295,9 +297,10 @@ export const WatchProvidersMx = ({
           href="https://www.justwatch.com/mx"
           target="_blank"
           rel="noopener noreferrer"
-          className="underline-offset-2 hover:text-fog hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="relative underline-offset-2 hover:text-fog hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           JustWatch
+          <HitArea />
         </a>
       </p>
     </section>

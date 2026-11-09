@@ -103,3 +103,14 @@ export const mergeListAddCandidates = ({
 
   return { local: shownLocal, tmdb };
 };
+
+/**
+ * Rows of «En Filmia» the add sheet draws at a time (FIL-40). Someone with ~500 titles got every
+ * one as a poster row on open, and the iPhone killed the page; more pages load as the list nears
+ * its end, and the text filter still searches all of them.
+ */
+export const LIST_ADD_PAGE_SIZE = 30;
+
+/** How many rows to draw after one more page, never past `total`. */
+export const nextListAddPage = (shown: number, total: number, page = LIST_ADD_PAGE_SIZE) =>
+  Math.min(total, Math.max(0, shown) + page);

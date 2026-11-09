@@ -1,3 +1,5 @@
+import { characterInSpanish } from "@/lib/character-notes";
+
 /**
  * TMDB people for a title: who made it and who is in it, with what the ficha
  * rail needs (photo, character, cinematographer). Stored as-is in
@@ -276,7 +278,7 @@ export const peopleRailItems = (people: readonly TmdbPerson[], kind: "MOVIE" | "
     ...cast.map((person) => ({
       id: person.id,
       name: person.name,
-      detail: person.character ? `como ${person.character}` : null,
+      detail: person.character ? `como ${characterInSpanish(person.character)}` : null,
       crew: false,
       role: "reparto" as const,
       profilePath: person.profilePath ?? null,

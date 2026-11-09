@@ -1,4 +1,5 @@
 import { formatShortDay } from "@/lib/cine-core";
+import { HitArea } from "@/components/HitArea";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
 
@@ -35,10 +36,11 @@ export const CinemaBadge = ({ release }: { release: { status: "now" | "upcoming"
               href={showing ? chain.now : chain.upcoming}
               target="_blank"
               rel="noopener"
-              className={cn("font-medium text-fog underline-offset-2 hover:text-paper hover:underline", focusRing)}
+              className={cn("relative font-medium text-fog underline-offset-2 hover:text-paper hover:underline", focusRing)}
             >
               {chain.name}
               <span aria-hidden="true"> ↗</span>
+              <HitArea />
             </a>
           </span>
         ))}

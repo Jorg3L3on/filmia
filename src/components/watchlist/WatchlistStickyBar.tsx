@@ -25,7 +25,7 @@ const pausedSentence = ({ filters, order }: { filters: number; order: boolean },
  * header. Filters and orders pause while it is on, and the bar says so.
  */
 export const WatchlistStickyBar = ({ paused, total, onDone, className }: WatchlistStickyBarProps) => (
-  <div className={cn("qv-edit-bar sticky z-30 -mx-4 space-y-2 px-4 pb-2", className)}>
+  <div className={cn("qv-edit-bar sticky z-30 -mx-4 space-y-2 px-4 pb-2 max-sm:pt-[calc(6px+env(safe-area-inset-top))]", className)}>
     <div className="flex h-12 items-center justify-between gap-3">
       <p className="flex min-w-0 items-baseline gap-2">
         <span className="font-serif text-[1.75rem] leading-7 text-paper">Reordenar</span>

@@ -84,7 +84,12 @@ const Cartelera = async ({ searchParams }: { searchParams: Promise<SearchParams>
           ) : null}
 
           {rest.length > 0 ? (
-            <CineSection id="siguen" title="Siguen en cartelera" aside={plural(rest.length, "película", "películas")}>
+            <CineSection
+              id="siguen"
+              title="Siguen en cartelera"
+              // With no «Esta semana» above, this is every film: the subtitle already counts them (FIL-I44-16).
+              aside={thisWeek.length > 0 ? plural(rest.length, "película", "películas") : undefined}
+            >
               <CarteleraOrderToggle order={order} />
               <ul className="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-5 sm:gap-x-4">
                 {rest.map((film, index) => (
