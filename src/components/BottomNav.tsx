@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ViewTransition, useEffect, useState, useSyncExternalStore } from "react";
+import { ViewTransition, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { ActiveNavLink } from "@/components/ActiveNavLink";
 import { useNavTabMatch } from "@/components/useNavTabMatch";
 import { BottomNavShell } from "@/components/BottomNavShell";
@@ -89,12 +89,42 @@ export const BottomNav = () => {
   }, [searchMode]);
 
   if (searchMode) {
-    return <SearchDock origin={origin} day={day} />;
+    return (
+      <>
+        <SearchDock origin={origin} day={day} />
+        {/* The person view hides Buscar's row on phones and keeps the tabs at the bottom (FIL-I44-9). */}
+        <TabDock day={day} matchTab={matchTab} activeColumn={null} persona />
+      </>
+    );
   }
 
+  return <TabDock day={day} matchTab={matchTab} activeColumn={activeColumn} />;
+};
+
+type TabDockProps = {
+  day: number | null;
+  matchTab: (href: string, pathname: string) => boolean;
+  activeColumn: number | null;
+  /** Buscar's person view: no shared morph names (the search dock owns them on that page). */
+  persona?: boolean;
+};
+
+type MorphProps = { name: string; off: boolean; children: ReactNode };
+
+/** Two docks may be on screen in Buscar: only the real one carries the morph names. */
+const Morph = ({ name, off, children }: MorphProps) =>
+  off ? (
+    <>{children}</>
+  ) : (
+    <ViewTransition name={name} share={DOCK_MORPH} default="none">
+      {children}
+    </ViewTransition>
+  );
+
+const TabDock = ({ day, matchTab, activeColumn, persona = false }: TabDockProps) => {
   return (
-    <BottomNavShell>
-      <ViewTransition name="dock-shell" share={DOCK_MORPH} default="none">
+    <BottomNavShell persona={persona}>
+      <Morph name="dock-shell" off={persona}>
         <div
           data-dock-shell
           className={cn(dockGlassClass, "relative grid h-16 grid-cols-5 items-center rounded-full px-1")}
@@ -153,7 +183,7 @@ export const BottomNav = () => {
                 className="relative z-10 flex justify-center"
                 onClickCapture={dockSearch.requestFocus}
               >
-                <ViewTransition name="dock-search" share={DOCK_MORPH} default="none">
+                <Morph name="dock-search" off={persona}>
                   <ActiveNavLink
                     href={mobileNavSearch.href}
                     match={isMobileNavCurrent}
@@ -164,13 +194,13 @@ export const BottomNav = () => {
                   >
                     <NavIcon name={mobileNavSearch.icon} />
                   </ActiveNavLink>
-                </ViewTransition>
+                </Morph>
               </div>,
               tab,
             ];
           })}
         </div>
-      </ViewTransition>
+      </Morph>
     </BottomNavShell>
   );
 };

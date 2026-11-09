@@ -2060,6 +2060,11 @@ header.site-header {
   }
 }
 
+/* Buscar renders a second tab dock for its person view; hidden everywhere else (FIL-I44-9). */
+nav[data-persona-dock] {
+  display: none;
+}
+
 ::view-transition-group(app-header),
 ::view-transition-old(app-header),
 ::view-transition-new(app-header) {
@@ -6625,9 +6630,9 @@ html[data-booted] .iris-loader {
     margin-top: calc(-80px - env(safe-area-inset-top));
   }
 
-  /* No dock at the bottom of this view: no room kept for it either. */
-  body:has([data-persona-view]) main.app-main {
-    padding-bottom: max(2.5rem, calc(1.5rem + env(safe-area-inset-bottom)));
+  /* The tab dock Buscar keeps for this view (FIL-I44-9): main keeps its usual room for it. */
+  body:has([data-persona-view]) nav[data-persona-dock] {
+    display: block;
   }
 
   /* The status-bar scrim stays off while the wall is under the notch. */
