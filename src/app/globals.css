@@ -55,6 +55,23 @@
   --duration-pop: 420ms;
   --duration-sheet: 480ms;
   --duration-exit: 240ms;
+  /* Rediseño cinemático (FIL-I46): corte, ambiente, grano, cascada. New durations live here only. */
+  --duration-cut: 520ms;
+  --ease-cut: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-ambient: 12s;
+  --duration-ambient-fast: 9s;
+  --duration-ambient-slow: 16s;
+  --duration-grain: 480ms;
+  --duration-sweep: 1.4s;
+  --duration-dock-stretch: 380ms;
+  --duration-reduced: 120ms;
+  --cascade-0: 0ms;
+  --cascade-1: 80ms;
+  --cascade-2: 140ms;
+  --cascade-3: 220ms;
+  --cascade-step: 50ms;
+  --cascade-last: 400ms;
+  --grain-opacity: 0.08;
   /* Glass surfaces (ported from MiCasa, retinted to the Filmia accent). */
   --glass-fill: rgb(16 20 28 / 0.52);
   --glass-fill-solid: rgb(16 20 28 / 0.88);
@@ -1498,21 +1515,6 @@ html[data-que-ver-grade="live"] body {
 
 /* Sprockets removed (Artist): no L/R edge dots on Qué ver. */
 
-.que-ver-atmosphere-grain {
-  position: absolute;
-  inset: 0;
-  opacity: 0.28;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
-  background-size: 140px 140px;
-  mix-blend-mode: overlay;
-  animation: que-ver-grain-shift 1.8s steps(2) infinite;
-}
-
-.que-ver-atmosphere-grain.is-static {
-  animation: none;
-  opacity: 0.18;
-}
-
 /* Idle projector flicker — subtle, not 60fps noise. */
 .que-ver-atmosphere-flicker {
   position: absolute;
@@ -1553,24 +1555,6 @@ html[data-que-ver-grade="live"] body {
   animation: none;
   opacity: 0.28;
   transform: none;
-}
-
-@keyframes que-ver-grain-shift {
-  0% {
-    transform: translate(0, 0);
-  }
-  25% {
-    transform: translate(-1.5%, 1%);
-  }
-  50% {
-    transform: translate(1%, -1.5%);
-  }
-  75% {
-    transform: translate(-1%, -0.5%);
-  }
-  100% {
-    transform: translate(0, 0);
-  }
 }
 
 @keyframes que-ver-flicker {
@@ -2172,7 +2156,7 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[aria-curren
   opacity: 0.78;
 }
 
-body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] [data-dock-indicator] {
+body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] [data-dock-indicator] > .dock-indicator-glass {
   background-color: rgb(var(--que-ver-glow, var(--accent-rgb)) / 0.16);
 }
 
@@ -2203,7 +2187,6 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
    touch, key or hero change resumes. */
 .diario-que-ver-deck[data-still] .que-ver-atmosphere-grade,
 .diario-que-ver-deck[data-still] .que-ver-atmosphere-haze,
-.diario-que-ver-deck[data-still] .que-ver-atmosphere-grain,
 .diario-que-ver-deck[data-still] .que-ver-atmosphere-flicker,
 .diario-que-ver-deck[data-still] .coverflow-card.is-cinematic.is-focused .coverflow-card-face {
   animation-play-state: paused;
@@ -2286,7 +2269,6 @@ html[data-que-ver-slot="b"] .que-ver-slot-a > * {
    washes are blur-free for everyone) but drops every breath. */
 html[data-que-ver-lite] .que-ver-atmosphere-grade,
 html[data-que-ver-lite] .que-ver-atmosphere-haze,
-html[data-que-ver-lite] .que-ver-atmosphere-grain,
 html[data-que-ver-lite] .que-ver-atmosphere-flicker,
 html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-face {
   animation: none;
@@ -2351,7 +2333,7 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
     var(--well) 80%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
+  animation: shimmer var(--duration-sweep) ease-in-out infinite;
 }
 
 ::view-transition-group(.morph) {
@@ -3833,11 +3815,6 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 
   .coverflow-soft-glow {
     opacity: 0.9;
-  }
-
-  .que-ver-atmosphere-grain {
-    animation: none !important;
-    opacity: 0.08;
   }
 
   .que-ver-atmosphere-flicker,
@@ -6768,5 +6745,223 @@ html[data-booted] .iris-loader {
   .hour-tick-label,
   .year-tile img {
     transition: none;
+  }
+}
+
+/* ----------------------------------------------------------------------
+ * Rediseño cinemático · A · Sistema y atmósfera (FIL-I46-1)
+ * Luz (grano, haz), corte (cascada con la curva de corte), dock líquido.
+ * Only transform / opacity animate; nothing here blurs. Reduced motion and lite sala never
+ * mount grain or beam (see lib/motion-atmosphere); the rules below are the CSS backstop.
+ * ---------------------------------------------------------------------- */
+
+/* Grain: one fixed node for the whole app, above content, under the dock (z-50) and sheets. */
+.film-grain {
+  position: fixed;
+  inset: -12%;
+  z-index: 45;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  background-size: 140px 140px;
+  contain: strict;
+  will-change: transform;
+  animation: film-grain-shift var(--duration-grain) steps(1, end) infinite;
+}
+
+/* Hoy's room is darker and asked for more grain under the deck (was its own layer). */
+body:has(.que-ver-atmosphere) .film-grain {
+  --grain-opacity: 0.11;
+}
+
+/* The deck holds still (data-still): so does the grain, as the old deck grain did. */
+body:has(.diario-que-ver-deck[data-still]) .film-grain,
+html[data-ambient-paused] .film-grain,
+html[data-ambient-paused] .projector-beam *,
+[data-ambient-paused],
+[data-ambient-paused] * {
+  animation-play-state: paused;
+}
+
+/* Four steps: the tile jumps between four offsets, never slides. */
+@keyframes film-grain-shift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  25% {
+    transform: translate3d(-3%, 2%, 0);
+  }
+  50% {
+    transform: translate3d(2%, -3%, 0);
+  }
+  75% {
+    transform: translate3d(-2%, -1%, 0);
+  }
+}
+
+/* Projector beam: a cone from the top of its box, flickering on the ambient clock. */
+.projector-beam {
+  --beam-rgb: 255 236 210;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.projector-beam-cone {
+  position: absolute;
+  inset: -4% -30% 0;
+  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+  background: linear-gradient(
+    180deg,
+    rgb(var(--beam-rgb) / 0.2) 0%,
+    rgb(var(--beam-rgb) / 0.08) 38%,
+    rgb(var(--beam-rgb) / 0.02) 72%,
+    transparent 100%
+  );
+  transform-origin: 50% 0;
+  animation: projector-beam-flicker var(--duration-ambient-fast) steps(6, end) infinite;
+}
+
+.projector-beam-dust {
+  position: absolute;
+  inset: 0 18% 10%;
+  background-image:
+    radial-gradient(1.5px 1.5px at 22% 30%, rgb(var(--beam-rgb) / 0.55), transparent 70%),
+    radial-gradient(1px 1px at 64% 18%, rgb(var(--beam-rgb) / 0.5), transparent 70%),
+    radial-gradient(1.5px 1.5px at 48% 62%, rgb(var(--beam-rgb) / 0.45), transparent 70%),
+    radial-gradient(1px 1px at 78% 48%, rgb(var(--beam-rgb) / 0.5), transparent 70%),
+    radial-gradient(1px 1px at 34% 80%, rgb(var(--beam-rgb) / 0.4), transparent 70%);
+  animation: projector-beam-dust var(--duration-ambient-slow) linear infinite;
+}
+
+@keyframes projector-beam-flicker {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  17% {
+    opacity: 1;
+  }
+  34% {
+    opacity: 0.82;
+  }
+  51% {
+    opacity: 0.96;
+  }
+  68% {
+    opacity: 0.86;
+  }
+  85% {
+    opacity: 1;
+  }
+}
+
+@keyframes projector-beam-dust {
+  0% {
+    transform: translate3d(0, 4%, 0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate3d(2%, -3%, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, 4%, 0);
+    opacity: 0.6;
+  }
+}
+
+/*
+ * Cascade entrance on the cut curve: head 0 · title 80 · meta 140 · items 220 + 50 n · last 400.
+ * At most eight items step (n caps at 7); the rest arrive with the eighth.
+ */
+.cascade-in {
+  --cascade-delay: var(--cascade-0);
+  animation: cascade-rise var(--duration-cut) var(--ease-cut) backwards;
+  animation-delay: var(--cascade-delay);
+}
+
+.cascade-in.cascade-title {
+  --cascade-delay: var(--cascade-1);
+}
+
+.cascade-in.cascade-meta {
+  --cascade-delay: var(--cascade-2);
+}
+
+.cascade-in.cascade-item {
+  --cascade-delay: calc(var(--cascade-3) + min(var(--cascade-i, 0), 7) * var(--cascade-step));
+}
+
+.cascade-in.cascade-last {
+  --cascade-delay: var(--cascade-last);
+}
+
+@keyframes cascade-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Dock: the glass pill stretches toward the new tab and gathers back (liquid). */
+.dock-indicator {
+  transition:
+    transform var(--duration-dock-stretch) var(--ease-cut),
+    opacity var(--duration-tab) var(--ease-out);
+}
+
+.dock-indicator-glass {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.dock-indicator-glass.is-stretching {
+  animation: dock-stretch var(--duration-dock-stretch) var(--ease-cut);
+}
+
+@keyframes dock-stretch {
+  0% {
+    transform: scaleX(1);
+  }
+  45% {
+    transform: scaleX(var(--dock-stretch, 1.4)) scaleY(0.9);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .film-grain,
+  .projector-beam {
+    display: none;
+  }
+
+  .cascade-in {
+    animation: cascade-fade var(--duration-reduced) linear backwards !important;
+    animation-delay: var(--cascade-0) !important;
+  }
+
+  .dock-indicator-glass.is-stretching {
+    animation: none;
+  }
+}
+
+html[data-que-ver-lite] .film-grain,
+html[data-que-ver-lite] .projector-beam {
+  display: none;
+}
+
+@keyframes cascade-fade {
+  from {
+    opacity: 0;
   }
 }

@@ -90,7 +90,7 @@ const useGhostLayers = (src: string | null) => {
 
 /**
  * Room atmosphere behind the soft-coverflow mazo (JOR-226 / JOR-228).
- * Norte C «Película viva»: grade + grain/flicker + ghost + leak (no sprockets).
+ * Norte C «Película viva»: grade + flicker + ghost + leak (no sprockets); grain is FilmGrain.
  * Does not alter card fan / radii / blur — layer sits under the stage.
  */
 export const QueVerAtmosphere = ({
@@ -136,13 +136,7 @@ export const QueVerAtmosphere = ({
           />
         </div>
       ))}
-      <div
-        className={
-          reducedMotion
-            ? "que-ver-atmosphere-grain is-static"
-            : "que-ver-atmosphere-grain"
-        }
-      />
+      {/* Grain is the app's single FilmGrain layer (FIL-I46-1), tuned for Hoy in globals.css. */}
       <div
         className={
           reducedMotion

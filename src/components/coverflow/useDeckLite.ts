@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createFramePaceMonitor, isLowEndDevice } from "@/lib/deck-lite";
+import { LITE_SESSION_KEY, announceLite } from "@/lib/motion-atmosphere";
 
-const LITE_SESSION_KEY = "filmia:deck-lite";
 /** Hydration and first image decodes stutter on any phone: don't judge them. */
 const WARMUP_MS = 2500;
 
@@ -54,6 +54,8 @@ export const useDeckLite = (cinematic: boolean) => {
     }
     const root = document.documentElement;
     root.dataset.queVerLite = "";
+    // The app-wide grain and beam (FIL-I46-1) drop with the deck.
+    announceLite();
     return () => {
       delete root.dataset.queVerLite;
     };

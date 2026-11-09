@@ -58,7 +58,6 @@ export const WatchlistHeroCompact = ({ ficha, stamped, eyebrow, ranked, onMarkSe
         aria-hidden="true"
         className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_90%_60%_at_50%_30%,rgb(var(--que-ver-glow)/0.38),transparent_70%),linear-gradient(180deg,rgb(14_17_20/0.35)_0%,rgb(14_17_20/0.75)_45%,var(--color-canvas)_100%)]"
       />
-      <div aria-hidden="true" className="que-ver-atmosphere-grain is-static -z-10" />
       {stamped ? (
         <span className="visto-stamp" aria-hidden="true">
           Visto

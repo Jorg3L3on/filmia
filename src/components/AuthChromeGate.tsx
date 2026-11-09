@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { ToastHost } from "@/components/ToastHost";
+import { FilmGrain } from "@/components/atmosphere/FilmGrain";
 import { isAuthChromePath, isImmersiveFichaPath } from "@/lib/nav";
 
 type AuthChromeGateProps = {
@@ -47,6 +48,8 @@ export const AuthChromeGate = ({
             {children}
           </main>
           {bottomNav}
+          {/* The app's one grain layer (FIL-I46-1); never under reduced motion or lite sala. */}
+          <FilmGrain />
         </>
       )}
       {/* One host for auth and app chrome, so a toast's timer survives the swap. */}
