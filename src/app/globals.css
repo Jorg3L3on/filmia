@@ -5279,12 +5279,13 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   );
 }
 
+/* 40 px: at 24 px a cut chip («202…») read as clipped, not as «there is more» (FIL-I44-16). */
 .cine-fade[data-fade~="left"] {
-  --cine-fade-l: 24px;
+  --cine-fade-l: 40px;
 }
 
 .cine-fade[data-fade~="right"] {
-  --cine-fade-r: 24px;
+  --cine-fade-r: 40px;
 }
 
 .cine-dot-live {
