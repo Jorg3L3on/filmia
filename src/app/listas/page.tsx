@@ -31,7 +31,7 @@ export const metadata = {
 type ListCollectionLayout = "rail" | "grid";
 
 const listCollectionClassName: Record<ListCollectionLayout, string> = {
-  rail: "rail -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-8 overflow-x-auto overscroll-x-contain px-4 pb-3 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-3 sm:gap-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4",
+  rail: "rail -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-8 overflow-x-auto overscroll-x-contain px-4 pb-3 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-[repeat(auto-fill,minmax(124px,1fr))] sm:gap-x-8 sm:gap-y-10 sm:overflow-visible sm:px-0 sm:pb-0",
   grid: listCardGridClass,
 };
 
@@ -100,8 +100,8 @@ const ListsBody = async () => {
       <OwnerRequestsNotice requests={requests} />
       <section className="space-y-4">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-paper">
-          <span className="text-accent" aria-hidden="true">
-            ▦
+          <span className="text-accent">
+            <SectionIcon name="daily" />
           </span>
           Listas diarias
         </h2>
@@ -129,8 +129,8 @@ const ListsBody = async () => {
 
       <section className="space-y-4 pt-2">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-paper">
-          <span className="text-accent" aria-hidden="true">
-            ★
+          <span className="text-accent">
+            <SectionIcon name="custom" />
           </span>
           Personalizadas
         </h2>
@@ -171,8 +171,8 @@ const ListsBody = async () => {
 
       <section id="tus-anos" className="scroll-mt-20 space-y-4 pt-2">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-paper">
-          <span className="text-cine" aria-hidden="true">
-            ✦
+          <span className="text-cine">
+            <SectionIcon name="years" />
           </span>
           Tus años
         </h2>
@@ -211,3 +211,32 @@ const ListsBody = async () => {
     </div>
   );
 };
+
+/** One stroke family for the three section marks (FIL-I44-15; they were ▦ ★ ✦). */
+const SectionIcon = ({ name }: { name: "daily" | "custom" | "years" }) => (
+  <svg
+    viewBox="0 0 24 24"
+    width={18}
+    height={18}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.75}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    {name === "daily" ? (
+      <>
+        <rect x="4" y="5" width="16" height="15" rx="2.5" />
+        <path d="M4 10h16M9 3v4M15 3v4" />
+      </>
+    ) : name === "custom" ? (
+      <path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16.4l-4.8 2.5.9-5.4-3.9-3.8 5.4-.8z" />
+    ) : (
+      <>
+        <path d="M8 4h8v5a4 4 0 0 1-8 0z" />
+        <path d="M16 6h3a3 3 0 0 1-3 4M8 6H5a3 3 0 0 0 3 4M12 13v4M8.5 20h7" />
+      </>
+    )}
+  </svg>
+);
