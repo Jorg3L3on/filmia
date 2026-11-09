@@ -191,7 +191,9 @@ export const buildUniverso = (
     const take = Math.min(island.nodes.length, Math.max(0, Math.min(share, budget)));
     budget -= take;
     return { ...island, nodes: island.nodes.slice(0, take) };
-  });
+  })
+    // An island the cap left with nobody drew an empty card (FIL-I44-18): its people are in «hidden».
+    .filter((island) => island.nodes.length > 0);
   const shown = drawn.reduce((sum, island) => sum + island.nodes.length, 0);
   return {
     films: films.length,

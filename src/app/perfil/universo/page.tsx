@@ -27,6 +27,11 @@ export default async function UniversoPage() {
         <p className="text-[15px] text-fog">Marca una película como vista y aquí aparecerá la gente que la hizo.</p>
       ) : (
         <>
+          {/* How to read the map, before the map (FIL-I44-18; it sat at the foot, ~2 400 px down). */}
+          <p className="-mt-2 text-[12px] leading-snug text-fog">
+            Tamaño: cuántas viste de esa persona. Anillo: qué tan cerca estás de completarla («n de N», sus películas
+            con 50 votos o más). Un puente une películas de directores distintos.
+          </p>
           {universo.bridges.length > 0 ? (
             <section aria-labelledby="universo-puentes" className="space-y-2">
               <h2 id="universo-puentes" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-affinity">
@@ -43,10 +48,6 @@ export default async function UniversoPage() {
           ) : null}
           <ClosestPanel view={view} />
           <UniversoMap islands={universo.islands} hidden={universo.hidden} />
-          <p className="text-[12px] leading-snug text-fog">
-            Tamaño: cuántas viste de esa persona. Anillo: qué tan cerca estás de completarla («n de N», sus películas
-            con 50 votos o más). Un puente une películas de directores distintos.
-          </p>
         </>
       )}
     </div>
