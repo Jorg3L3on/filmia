@@ -106,3 +106,15 @@ export const isOwnMcpResource = (resource: string) =>
 /** Scopes a grant or token carries: always read; write only when the person allowed it. */
 export const scopesFor = (allowWrite: boolean): McpScope[] =>
   allowWrite ? ["read", "write"] : ["read"];
+
+export const CONSENT_PATH = "/oauth/consent";
+
+/**
+ * /login back to this same consent request (FIL-41). The proxy normally sends signed-out people
+ * there first; the consent page uses this too so it never depends on that.
+ */
+export const consentLoginHref = (params: Record<string, string>) => {
+  const query = new URLSearchParams(params).toString();
+  const consent = query ? `${CONSENT_PATH}?${query}` : CONSENT_PATH;
+  return `/login?callbackUrl=${encodeURIComponent(consent)}`;
+};

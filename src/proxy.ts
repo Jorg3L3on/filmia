@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 import { sessionCookieOptions, verifySessionToken } from "@/lib/auth/session-token";
 import { isSessionCurrent } from "@/lib/auth/session-version";
-import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
+import { ONBOARDING_PATH, onboardingHref } from "@/lib/onboarding/steps";
+import { safeNextPath } from "@/lib/google-oauth";
 import { isProxyStaticAsset } from "@/lib/proxy-static";
 import { requestOrigin } from "@/lib/request-origin";
 import {
@@ -91,7 +92,10 @@ export const proxy = async (request: Request) => {
   if (publicPath) {
     if (loggedIn && isAuthScreen) {
       return NextResponse.redirect(
-        new URL(gated ? ONBOARDING_PATH : "/", requestOrigin(request)),
+        new URL(
+          gated ? onboardingHref(safeNextPath(new URL(request.url).searchParams.get("callbackUrl"))) : "/",
+          requestOrigin(request),
+        ),
       );
     }
     return respond(NextResponse.next());
@@ -101,7 +105,11 @@ export const proxy = async (request: Request) => {
   // from / to /login or /bienvenida. Server Functions POST to the page they
   // are used on, so /bienvenida itself must stay reachable.
   if (gated && pathname !== ONBOARDING_PATH && !pathname.startsWith("/api/")) {
-    return NextResponse.redirect(new URL(ONBOARDING_PATH, requestOrigin(request)));
+    // FIL-41: keep where they were going (an MCP consent screen) so the Bienvenida returns there.
+    const requestedUrl = new URL(request.url);
+    requestedUrl.searchParams.delete("_rsc");
+    const requested = safeNextPath(`${pathname}${requestedUrl.search}`);
+    return NextResponse.redirect(new URL(onboardingHref(requested), requestOrigin(request)));
   }
 
   if (!loggedIn) {

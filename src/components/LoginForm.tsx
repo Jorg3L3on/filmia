@@ -9,7 +9,7 @@ import { AuthDivider, GoogleSignInButton } from "@/components/GoogleSignInButton
 import { PasswordField } from "@/components/PasswordField";
 import { messageForSignInError } from "@/lib/auth-errors";
 import { safeNextPath } from "@/lib/google-oauth";
-import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
+import { onboardingHref } from "@/lib/onboarding/steps";
 import { fieldClass, focusRing } from "@/lib/ui";
 
 type LoginFormProps = {
@@ -50,7 +50,7 @@ export const LoginForm = ({ googleEnabled }: LoginFormProps) => {
 
     // An account that never finished the Bienvenida picks up where it left off.
     if (payload.onboarding) {
-      router.push(ONBOARDING_PATH);
+      router.push(onboardingHref(callbackUrl));
       router.refresh();
       return;
     }

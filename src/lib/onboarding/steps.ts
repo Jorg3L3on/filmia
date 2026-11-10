@@ -127,3 +127,11 @@ export const stepAnnouncement = (step: OnboardingStepId) =>
 export const countAccountTitles = (keys: Iterable<string>) => new Set(keys).size;
 
 export const quickPickRemaining = (titleCount: number) => Math.max(0, MIN_ONBOARDING_TITLES - titleCount);
+
+/**
+ * Where a not-yet-onboarded account goes instead of `next` (FIL-41): the Bienvenida, carrying
+ * `next` as `callbackUrl` so finishing it returns there (an MCP consent screen, a deep link)
+ * instead of Hoy. Callers pass a path already checked with `safeNextPath`; "/" carries nothing.
+ */
+export const onboardingHref = (next: string) =>
+  next === "/" ? ONBOARDING_PATH : `${ONBOARDING_PATH}?callbackUrl=${encodeURIComponent(next)}`;
