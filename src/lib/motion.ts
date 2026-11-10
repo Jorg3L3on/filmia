@@ -16,7 +16,7 @@ export {
   POSTER_TRANSITION_PREFIX,
   posterTransitionName,
 } from "@/lib/motion-ids";
-export { staggerStyle } from "@/lib/motion-style";
+export { cascadeStyle, staggerStyle } from "@/lib/motion-style";
 
 const reducedMotionQuery = "(prefers-reduced-motion: reduce)";
 

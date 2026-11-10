@@ -90,7 +90,9 @@ const run = () => {
   }
   const slideRules = css.match(/::view-transition-(old|new)\(\.bienvenida-(forward|back)\)\s*\{[^}]*\}/g) ?? [];
   assert(slideRules.length === 4 && slideRules.every((rule) => rule.includes("var(--ease-out)") && !rule.includes("var(--spring)")), "Step slides use ease-out, never spring");
-  const reduced = css.slice(css.lastIndexOf("@media (prefers-reduced-motion: reduce)"));
+  // Any reduced-motion block may carry them (later sections, e.g. FIL-I46, append their own).
+  const reducedBlocks = css.split("@media (prefers-reduced-motion: reduce)").slice(1);
+  const reduced = reducedBlocks.find((block) => block.includes(".bienvenida-glow")) ?? "";
   assert(reduced.includes(".bienvenida-glow") && reduced.includes(".year-crown") && reduced.includes(".bedtime-moon"), "Reduced motion covers the Bienvenida");
 
   // Pure helpers behave.

@@ -10,6 +10,7 @@ import { cn } from "@/lib/cn";
 import { PLATFORM_SERVICE_LABEL, TITLE_KIND_LABEL } from "@/lib/labels";
 import { deckAvailabilityPlatform, providerDisplayName } from "@/lib/streaming-platforms";
 import { formatRuntimeShort } from "@/lib/tonight/time";
+import { endsAtLabel } from "@/lib/tonight/double-feature";
 import { reasonPerson } from "@/lib/watchlist-credits";
 import { buildPersonSearchHref } from "@/lib/person-filmography";
 import { focusRing, personLinkClass } from "@/lib/ui";
@@ -57,6 +58,11 @@ export const TonightFooter = ({ title, className }: TonightFooterProps) => {
       })
     : null;
   const overflow = nightLine?.state === "over-long";
+  // «Termina HH:MM» (FIL-I46-2): unless the night line already draws where the film ends.
+  const lineShowsEnd = nightLine?.state === "fits" || nightLine?.state === "over" || nightLine?.state === "past";
+  const endsAt = lineShowsEnd || overflow ? null : endsAtLabel(sala?.now ?? null, tonight?.runtimeMinutes);
+  // Short phones (≤ 740 px tall) find «Sesión doble» in the card's «···» menu instead.
+  const second = sala?.doubleFeatureFor?.(title) ?? null;
   const recommended = tonight?.source === "reco";
   const recoSaved = Boolean(recommended && tonight?.reco?.saved);
 
@@ -164,6 +170,25 @@ export const TonightFooter = ({ title, className }: TonightFooterProps) => {
         ) : null}
       </div>
       {nightLine ? <TonightNightLine line={nightLine} /> : null}
+      {/* By day the night line is not drawn: «Termina 17:20» takes its slot (FIL-I46-2). */}
+      {endsAt && (!nightLine || nightLine.state === "none") ? (
+        <p data-ends-at className="tonight-ends-at">
+          {endsAt}
+        </p>
+      ) : null}
+      {second ? (
+        <Link
+          href={`/titulos/${second.id}`}
+          data-double-feature
+          aria-label={`Sesión doble: después, ${second.name}${second.runtimeMinutes ? ` (${formatRuntimeShort(second.runtimeMinutes)})` : ""}`}
+          className={cn("tonight-double press-scale", focusRing)}
+        >
+          <span aria-hidden="true" className="text-accent">+</span>
+          <span className="shrink-0">Sesión doble</span>
+          <span aria-hidden="true" className="text-paper/70">·</span>
+          <span className="truncate font-medium text-paper">{second.name}</span>
+        </Link>
+      ) : null}
     </div>
   );
 };

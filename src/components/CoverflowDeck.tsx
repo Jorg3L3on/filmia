@@ -5,6 +5,7 @@ import { DeckCard } from "@/components/coverflow/DeckCard";
 import { DeckFooterSwap } from "@/components/coverflow/DeckFooterSwap";
 import { CoverflowIndicators } from "@/components/coverflow/CoverflowIndicators";
 import { QueVerAtmosphere, SoftGlowSlots } from "@/components/coverflow/QueVerAtmosphere";
+import { ProjectorBeam } from "@/components/atmosphere/ProjectorBeam";
 import { useCoverflowEngine } from "@/components/coverflow/useCoverflowEngine";
 import { useCoverflowLocalTitles } from "@/components/coverflow/useCoverflowLocalTitles";
 import { useDeckLite } from "@/components/coverflow/useDeckLite";
@@ -213,6 +214,8 @@ export const CoverflowDeck = ({
             />
           ) : null}
           {cinematic ? <SoftGlowSlots /> : null}
+          {/* La sala (FIL-I46-2): the projector's beam and dust behind Hoy's deck only. */}
+          <ProjectorBeam on={footer === "tonight"} className="tonight-beam" />
           <div
             ref={cardsRef}
             className="absolute left-1/2 top-1/2 z-[1]"

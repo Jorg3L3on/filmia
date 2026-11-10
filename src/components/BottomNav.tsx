@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ViewTransition, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { ViewTransition, useEffect, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { ActiveNavLink } from "@/components/ActiveNavLink";
 import { useNavTabMatch } from "@/components/useNavTabMatch";
 import { BottomNavShell } from "@/components/BottomNavShell";
@@ -17,6 +17,7 @@ import {
   mobileNavSearch,
   mobileNavSearchSlot,
 } from "@/lib/nav";
+import { dockStretchScale } from "@/lib/motion-style";
 import { focusRing, glassIconClass, glassPillClass } from "@/lib/ui";
 
 /** Grid column for a tab: tabs flow around the center Buscar disc. */
@@ -121,6 +122,40 @@ const Morph = ({ name, off, children }: MorphProps) =>
     </ViewTransition>
   );
 
+/**
+ * The sliding glass pill (FIL-I46-1): the outer span slides on the cut curve while the
+ * glass inside stretches toward the new tab and gathers back. Tap boxes are untouched: the
+ * pill is decoration under the links. No stretch on first paint or when it hides.
+ */
+const DockIndicator = ({ activeColumn }: { activeColumn: number | null }) => {
+  const [shown, setShown] = useState(activeColumn);
+  const [jump, setJump] = useState<{ key: number; distance: number } | null>(null);
+  if (activeColumn !== shown) {
+    setShown(activeColumn);
+    if (shown !== null && activeColumn !== null) {
+      setJump((prev) => ({ key: (prev?.key ?? 0) + 1, distance: Math.abs(activeColumn - shown) }));
+    }
+  }
+
+  return (
+    <span
+      aria-hidden
+      data-dock-indicator
+      className={cn(
+        "dock-indicator pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-0.5rem)/5)] rounded-full",
+        activeColumn === null && "opacity-0",
+      )}
+      style={{ transform: `translateX(${(activeColumn ?? 0) * 100}%)` }}
+    >
+      <span
+        key={jump?.key ?? 0}
+        className={cn(glassPillClass, "dock-indicator-glass", jump && "is-stretching")}
+        style={jump ? ({ "--dock-stretch": dockStretchScale(jump.distance) } as CSSProperties) : undefined}
+      />
+    </span>
+  );
+};
+
 const TabDock = ({ day, matchTab, activeColumn, persona = false }: TabDockProps) => {
   return (
     <BottomNavShell persona={persona}>
@@ -129,16 +164,7 @@ const TabDock = ({ day, matchTab, activeColumn, persona = false }: TabDockProps)
           data-dock-shell
           className={cn(dockGlassClass, "relative grid h-16 grid-cols-5 items-center rounded-full px-1")}
         >
-          <span
-            aria-hidden
-            data-dock-indicator
-            className={cn(
-              glassPillClass,
-              "dock-indicator pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-0.5rem)/5)]",
-              activeColumn === null && "opacity-0",
-            )}
-            style={{ transform: `translateX(${(activeColumn ?? 0) * 100}%)` }}
-          />
+          <DockIndicator activeColumn={activeColumn} />
           {mobileNavItems.map((item, index) => {
             const tab = (
               <ActiveNavLink

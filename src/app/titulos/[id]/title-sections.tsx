@@ -307,6 +307,7 @@ export const TitleActionsBlock = async ({
       pinnedTonight={pinnedTitleId === title.id}
       prerelease={isPrerelease(cinema, mxToday())}
       posterPath={title.posterPath}
+      posterAmbient={title.posterAmbient}
       listsPanel={
         <TitleListsPanel
           titleId={title.id}

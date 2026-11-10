@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { CatalogFilters } from "@/components/CatalogFilters";
 import { DiaryCalendar } from "@/components/DiaryCalendar";
+import { DiaryStrip } from "@/components/DiaryStrip";
 import { DiaryViewHeader } from "@/components/DiaryViewHeader";
 import { EmptyState } from "@/components/EmptyState";
 import {
@@ -43,7 +44,7 @@ export const metadata = {
 } as const;
 
 const isView = (value: string | undefined): value is DeckViewMode =>
-  value === "deck" || value === "grid" || value === "calendar";
+  value === "deck" || value === "grid" || value === "calendar" || value === "strip";
 
 type DiarioSearchParams = {
   view?: string;
@@ -203,7 +204,10 @@ const HistorialHome = async ({
       />
 
       <div className="diary-stage space-y-5">
-        {catalog.needsSetup ? null : view === "calendar" ? (
+        {catalog.needsSetup ? null : view === "strip" && monthTitles.length > 0 ? (
+          // «Tira» (FIL-I46-5): the month as a strip of film, same entries as the calendar.
+          <DiaryStrip titles={monthTitles} month={month} />
+        ) : view === "calendar" ? (
           <>
             <MissingStreamingDataNote count={catalog.missingCache} />
             {titles.length === 0 && minePlatforms ? (

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { PersonSheet } from "@/components/universo/PersonSheet";
 import { cn } from "@/lib/cn";
 import { nodeProgress, ROLE_LABEL, type Island, type UniversoNode } from "@/lib/universo/core";
@@ -29,7 +29,7 @@ const NodeBubble = ({ node, onOpen }: { node: UniversoNode; onOpen: (node: Unive
         type="button"
         onClick={() => onOpen(node)}
         aria-label={`${node.name}, ${ROLE_LABEL[node.role].toLowerCase()}${node.total ? `: ${node.count} de ${node.total}` : node.count > 1 ? `: ${node.count} películas tuyas` : ""}${node.bridge ? ", puente" : ""}`}
-        className={cn("press-scale relative rounded-full p-[2px]", focusRing)}
+        className={cn("universo-node press-scale relative rounded-full p-[2px]", focusRing)}
         style={{ background: ring, width: size + 4, height: size + 4 }}
       >
         <span className="flex size-full items-center justify-center overflow-hidden rounded-full bg-chrome text-[13px] font-semibold text-paper/80">
@@ -73,13 +73,18 @@ export const UniversoMap = ({
           const nodes = compact ? island.nodes.slice(0, 6) : island.nodes;
           const films = island.films.map((film) => film.name);
           return (
-            <li key={island.key} className="rounded-3xl border border-line bg-surface/70 px-3 pb-3 pt-2.5">
+            <li
+              key={island.key}
+              className="universo-island rounded-3xl border border-line bg-surface/70 px-3 pb-3 pt-2.5"
+              style={{ "--island": index } as CSSProperties}
+            >
               <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-fog">
                 <span className="sr-only">Isla {index + 1}: </span>
                 {films.slice(0, 2).join(" · ")}
                 {films.length > 2 ? ` · +${films.length - 2}` : ""}
               </p>
-              <ul className="mt-2 flex flex-wrap gap-x-1 gap-y-2.5">
+              {/* The island draws itself (FIL-I46-5): a thread traces under its people once, then they twinkle. */}
+              <ul className="universo-thread relative mt-2 flex flex-wrap gap-x-1 gap-y-2.5">
                 {nodes.map((node) => (
                   <NodeBubble key={node.key} node={node} onOpen={setOpen} />
                 ))}

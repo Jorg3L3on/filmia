@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useTypewriter } from "@/components/atmosphere/useTypewriter";
+import { useAtmosphereOn } from "@/lib/motion-atmosphere";
 import { cn } from "@/lib/cn";
 import { dockSearch } from "@/lib/dock-search";
 
@@ -20,6 +22,10 @@ export const DockSearchField = () => {
     dockSearch.getServerSnapshot,
   );
   const inputRef = useRef<HTMLInputElement>(null);
+  // Empty, unfocused and with full motion, the field types examples (FIL-I46-4); a focus stops it.
+  const [focused, setFocused] = useState(false);
+  const motion = useAtmosphereOn();
+  const typing = useTypewriter(motion && !focused && !query && !disabled);
 
   // Arrived by tapping the dock disc: try to take focus. iOS only opens the
   // keyboard inside a user gesture, so after the navigation it may not; then
@@ -56,11 +62,19 @@ export const DockSearchField = () => {
         <circle cx="11" cy="11" r="6.5" />
         <path d="m20 20-3.8-3.8" />
       </svg>
-      <label className="min-w-0 flex-1">
+      <label className="relative min-w-0 flex-1">
         <span className="sr-only">Buscar películas, series o directores</span>
+        {typing !== null ? (
+          <span aria-hidden="true" data-typewriter className="dock-typewriter">
+            {typing}
+            <span className="dock-typewriter-caret" />
+          </span>
+        ) : null}
         <input
           ref={inputRef}
           value={query}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           onChange={(event) => dockSearch.type(event.target.value)}
           disabled={disabled}
           placeholder="Películas, series o directores"
@@ -69,7 +83,10 @@ export const DockSearchField = () => {
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
-          className="w-full min-w-0 bg-transparent text-base text-paper outline-none placeholder:text-mist disabled:cursor-not-allowed"
+          className={cn(
+            "w-full min-w-0 bg-transparent text-base text-paper outline-none placeholder:text-mist disabled:cursor-not-allowed",
+            typing !== null && "placeholder:text-transparent",
+          )}
         />
       </label>
       {query && !disabled ? (

@@ -16,6 +16,7 @@ import {
 } from "@/db";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { listAccessFor } from "@/lib/list-access";
+import { isRecentlyActive } from "@/lib/list-invites-core";
 import { shareableRoles } from "@/lib/list-access-core";
 import {
   draftInvite,
@@ -511,7 +512,12 @@ export const getSharedWithMe = async (userId: string) => {
   const [counts, posters] = ids.length
     ? await Promise.all([
         db
-          .select({ listId: listItems.listId, total: count() })
+          .select({
+            listId: listItems.listId,
+            total: count(),
+            // Presence (FIL-I46-3): the last time someone else added a film to this list.
+            othersAddedAt: sql<Date | string | null>`max(case when ${listItems.addedByUserId} <> ${userId} then ${listItems.addedAt} end)`,
+          })
           .from(listItems)
           .where(inArray(listItems.listId, ids))
           .groupBy(listItems.listId),
@@ -530,10 +536,13 @@ export const getSharedWithMe = async (userId: string) => {
       ])
     : [[], []];
   const totals = new Map(counts.map((row) => [row.listId, row.total]));
+  const activity = new Map(counts.map((row) => [row.listId, row.othersAddedAt]));
+  const now = new Date();
   return {
     lists: memberships.map((list) => ({
       ...list,
       total: totals.get(list.id) ?? 0,
+      recentlyActive: isRecentlyActive(activity.get(list.id), now),
       posters: posters.filter((poster) => poster.listId === list.id).slice(0, 5),
     })),
     requests,

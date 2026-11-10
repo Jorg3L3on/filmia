@@ -19,6 +19,7 @@ import {
 } from "@/lib/cine-top-store";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
+import { CountUp } from "@/components/atmosphere/CountUp";
 
 export const yearTopFilm = (film: YearTopFilm): CineFilm => ({
   catalogId: film.catalogId,
@@ -73,7 +74,7 @@ const SeenOfTop = ({ seen, total }: { seen: number; total: number }) => {
     <p className="text-sm text-fog">
       {words ?? (
         <>
-          Has visto <span className="font-semibold text-paper">{seen}</span> de {total}
+          Has visto <CountUp value={seen} className="font-semibold text-paper" /> de {total}
         </>
       )}
     </p>

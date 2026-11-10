@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { PosterImage } from "@/components/PosterImage";
 import { SharedPoster } from "@/components/SharedPoster";
 import { cn } from "@/lib/cn";
@@ -14,6 +15,8 @@ type PosterStackProps = {
   emptyLabel?: string;
   /** The page's largest image (LCP): load the front poster first (FIL-I44-20). */
   priority?: boolean;
+  /** «Portada viva» (FIL-I46-3): on entry the cover runs through the stack's posters once. */
+  live?: boolean;
 };
 
 export const PosterStack = ({
@@ -21,6 +24,7 @@ export const PosterStack = ({
   size = "lg",
   emptyLabel = "Vacía",
   priority = false,
+  live = false,
 }: PosterStackProps) => {
   const shown = posters.slice(0, 3);
   const isSmall = size === "sm";
@@ -51,7 +55,7 @@ export const PosterStack = ({
         <div
           key={title.id}
           className={cn(
-            "absolute top-0 overflow-hidden rounded-2xl border border-canvas bg-well shadow-[0_10px_24px_rgba(0,0,0,0.45)]",
+            "poster-stack-card absolute top-0 overflow-hidden rounded-2xl border border-canvas bg-well shadow-[0_10px_24px_rgba(0,0,0,0.45)]",
             index === 0 ? "left-0 z-30 h-full w-[72%]" : "h-[88%]",
             index === 0 ? undefined : isSmall ? "w-[50%]" : "w-[58%]",
           )}
@@ -62,7 +66,8 @@ export const PosterStack = ({
                   left: `${isSmall ? 18 + index * 14 : 28 + index * 18}%`,
                   top: `${6 * index}%`,
                   zIndex: 30 - index,
-                }
+                  "--fan": index,
+                } as CSSProperties
           }
         >
           <SharedPoster titleId={title.id} share={false} className="h-full">
@@ -75,6 +80,20 @@ export const PosterStack = ({
               ratio="fill"
             />
           </SharedPoster>
+          {live && index === 0
+            ? shown.slice(1).map((other, step) => (
+                // The cover's other faces: the same images the stack already loaded (same size).
+                <span key={other.id} className="live-cover-face" style={{ "--face": step } as CSSProperties}>
+                  <PosterImage
+                    name={other.name}
+                    posterPath={other.posterPath}
+                    sizes={isSmall ? "96px" : "140px"}
+                    className="h-full rounded-none"
+                    ratio="fill"
+                  />
+                </span>
+              ))
+            : null}
         </div>
       ))}
       </div>

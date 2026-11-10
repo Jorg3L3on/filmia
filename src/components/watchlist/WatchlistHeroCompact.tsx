@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePosterAmbientColor } from "@/components/coverflow/usePosterAmbientColor";
 import { PosterImage } from "@/components/PosterImage";
 import { SharedPoster } from "@/components/SharedPoster";
+import { MarqueeBulbs } from "@/components/atmosphere/MarqueeBulbs";
 import { DotsIcon, EyeIcon } from "@/components/watchlist/icons";
 import { WatchlistFichaChips } from "@/components/watchlist/WatchlistFichaChips";
 import { WatchlistHookLine } from "@/components/watchlist/WatchlistHookLine";
@@ -58,7 +59,8 @@ export const WatchlistHeroCompact = ({ ficha, stamped, eyebrow, ranked, onMarkSe
         aria-hidden="true"
         className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_90%_60%_at_50%_30%,rgb(var(--que-ver-glow)/0.38),transparent_70%),linear-gradient(180deg,rgb(14_17_20/0.35)_0%,rgb(14_17_20/0.75)_45%,var(--color-canvas)_100%)]"
       />
-      <div aria-hidden="true" className="que-ver-atmosphere-grain is-static -z-10" />
+      {/* «Próxima en tu lista» as a marquee: bulbs chase along the top (FIL-I46-3). */}
+      <MarqueeBulbs className="watchlist-hero-bulbs" />
       {stamped ? (
         <span className="visto-stamp" aria-hidden="true">
           Visto
@@ -81,6 +83,7 @@ export const WatchlistHeroCompact = ({ ficha, stamped, eyebrow, ranked, onMarkSe
               className="rounded-poster shadow-[0_24px_60px_rgb(var(--que-ver-glow)/0.35),0_12px_28px_rgba(0,0,0,0.6)] transition-[filter] duration-[var(--duration-hover)] group-hover:brightness-110"
             />
           </SharedPoster>
+          <span aria-hidden="true" className="poster-sheen" />
           {ranked ? (
             <span className="absolute -left-2.5 -top-2.5 inline-flex size-9 items-center justify-center rounded-full bg-accent font-serif text-base font-bold text-ink shadow-[0_8px_20px_rgba(0,0,0,0.45)]">
               1

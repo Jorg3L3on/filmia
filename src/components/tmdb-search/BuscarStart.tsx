@@ -6,6 +6,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { PosterImage } from "@/components/PosterImage";
 import type { StartArrival, StartDirector } from "@/lib/buscar-start";
+import { groupByDecade, type DecadeTitle } from "@/lib/decades";
+import { ARRIVAL_POSTER, DecadeExplorer, PosterWall, useNewArrivals } from "@/components/tmdb-search/BuscarStartExtras";
 import { PLATFORM_SERVICE_LABEL } from "@/lib/labels";
 import { cn } from "@/lib/cn";
 import { staggerStyle } from "@/lib/motion";
@@ -19,6 +21,8 @@ type BuscarStartProps = {
   /** Start rows (FIL-I21-8): always shown when they have data, with or without recents. */
   directors?: StartDirector[];
   arrivals?: StartArrival[];
+  /** «Explora por década» (FIL-I46-4). */
+  decades?: DecadeTitle[];
   onPickRecent: (query: string) => void;
   onClearRecents: () => void;
   /** Diario mode (FIL-I22-3): the day being logged (null = today); undefined outside Diario. */
@@ -52,9 +56,9 @@ const DirectorFace = ({ director, priority = false }: { director: StartDirector;
  * favoritas» and «Llegó a tu plataforma» as start rows (FIL-I21-8). The empty card only when
  * none of the three has anything to show.
  */
-export const BuscarStart = ({ recents, directors = [], arrivals = [], onPickRecent, onClearRecents, logDate }: BuscarStartProps) => {
+export const BuscarStart = ({ recents, directors = [], arrivals = [], decades = [], onPickRecent, onClearRecents, logDate }: BuscarStartProps) => {
   const logging = logDate !== undefined;
-  if (recents.length === 0 && directors.length === 0 && arrivals.length === 0) {
+  if (recents.length === 0 && directors.length === 0 && arrivals.length === 0 && (logging || decades.length === 0)) {
     return logging ? (
       <EmptyState
         variant="buscar"
@@ -71,7 +75,8 @@ export const BuscarStart = ({ recents, directors = [], arrivals = [], onPickRece
   }
 
   return (
-    <div className="space-y-8">
+    <div className="relative isolate space-y-8">
+      {logging ? null : <PosterWall arrivals={arrivals} shelf={groupByDecade(decades)[0]?.titles} />}
       {logging ? (
         <p className="font-serif text-xl text-paper">Busca lo que viste el {diaryDayLabel(logDate)}</p>
       ) : null}
@@ -115,12 +120,15 @@ export const BuscarStart = ({ recents, directors = [], arrivals = [], onPickRece
       ) : null}
       {directors.length > 0 ? <FavoriteDirectors directors={directors} /> : null}
       {arrivals.length > 0 ? <PlatformArrivalsRow arrivals={arrivals} /> : null}
+      {logging || decades.length === 0 ? null : <DecadeExplorer titles={decades} />}
     </div>
   );
 };
 
 /** «Llegó a tu plataforma»: Quiero ver titles that just reached one of your platforms, one tap to the ficha. */
-export const PlatformArrivalsRow = ({ arrivals }: { arrivals: StartArrival[] }) => (
+export const PlatformArrivalsRow = ({ arrivals }: { arrivals: StartArrival[] }) => {
+  const fresh = useNewArrivals(arrivals.map((arrival) => arrival.titleId));
+  return (
   <section aria-labelledby="buscar-llegadas" className="space-y-3">
     <h2 id="buscar-llegadas" className="text-[11px] font-medium uppercase tracking-[0.2em] text-mist">
       Llegó a tu plataforma
@@ -133,7 +141,13 @@ export const PlatformArrivalsRow = ({ arrivals }: { arrivals: StartArrival[] }) 
             className={cn("group press-scale flex flex-col gap-2 rounded-2xl p-1 text-left", focusRing)}
           >
             <span className="relative block overflow-hidden rounded-xl ring-1 ring-white/10">
-              <PosterImage name={arrival.name} posterPath={arrival.posterPath} sizes="100px" tmdbSize="w185" className="rounded-xl" />
+              <PosterImage name={arrival.name} posterPath={arrival.posterPath} sizes={ARRIVAL_POSTER.sizes} tmdbSize={ARRIVAL_POSTER.tmdbSize} className="rounded-xl" />
+              {/* First sight of an arrival on this device: «Ya en …» drops onto the poster once (FIL-I46-4). */}
+              {fresh.has(arrival.titleId) ? (
+                <span className="arrival-ribbon" aria-hidden="true">
+                  Ya en {PLATFORM_SERVICE_LABEL[arrival.platform]}
+                </span>
+              ) : null}
               <span className="absolute right-1.5 top-1.5">
                 <PlatformLogo platform={arrival.platform} size={20} className="rounded-[5px] shadow-[0_2px_8px_rgba(0,0,0,0.4)] ring-1 ring-white/25" />
               </span>
@@ -145,7 +159,8 @@ export const PlatformArrivalsRow = ({ arrivals }: { arrivals: StartArrival[] }) 
       ))}
     </ul>
   </section>
-);
+  );
+};
 
 /** The Director tab before typing: the directors of your favorites, one tap to their filmography. */
 export const FavoriteDirectors = ({ directors }: { directors: StartDirector[] }) => (
@@ -161,7 +176,14 @@ export const FavoriteDirectors = ({ directors }: { directors: StartDirector[] })
             className={cn("group press-scale flex flex-col items-center gap-2 rounded-2xl px-1 py-1.5 text-center", focusRing)}
           >
             {/* The first faces are the start page's LCP (FIL-I44-20). */}
-            <DirectorFace director={director} priority={index < 8} />
+            {index === 0 ? (
+              // The top director wears a slowly turning ring of light (FIL-I46-4).
+              <span className="director-ring">
+                <DirectorFace director={director} priority />
+              </span>
+            ) : (
+              <DirectorFace director={director} priority={index < 8} />
+            )}
             <span className="line-clamp-2 text-xs leading-snug text-paper">{director.name}</span>
             <span className="-mt-1.5 text-[11px] text-mist">
               {director.count === 1 ? "1 favorita" : `${director.count} favoritas`}
