@@ -3,7 +3,7 @@ import { ActTwoActionsProvider } from "@/components/tonight/act-two/ActTwoAction
 import { HoyActTwo } from "@/components/tonight/act-two/HoyActTwo";
 import { HoyPeek } from "@/components/tonight/act-two/HoyPeek";
 import { getAssignableLists, getUserListMembershipIndex, getUserTmdbIndex } from "@/lib/queries";
-import { getRecentArrivals, getServiceCharts } from "@/lib/service-charts-store";
+import { getGems, getRecentArrivals, getSeedRail, getServiceCharts } from "@/lib/service-charts-store";
 import { actTwoStamp, chartPlatformsFor } from "@/lib/service-charts";
 import { getPinnedTonightTitleId } from "@/lib/tonight-store";
 import { countUserSignals, loadAfinaCards } from "@/lib/cold-start-store";
@@ -15,11 +15,13 @@ import { afinaMode } from "@/lib/tonight/cold-start";
  */
 export const HoyActTwoServer = async ({ userId, userPlatforms }: { userId: string; userPlatforms: Platform[] }) => {
   const now = new Date();
-  const [charts, arrivals] = await Promise.all([
+  const [charts, arrivals, seedRail] = await Promise.all([
     getServiceCharts(userPlatforms),
     getRecentArrivals(userId, userPlatforms, now).catch(() => []),
+    getSeedRail(userId),
   ]);
-  if (chartPlatformsFor(userPlatforms, charts).length === 0 && arrivals.length === 0) {
+  const gems = await getGems(userId, userPlatforms, charts);
+  if (chartPlatformsFor(userPlatforms, charts).length === 0 && arrivals.length === 0 && gems.length === 0 && !seedRail) {
     return null;
   }
   const [existing, lists, memberships, pinnedTitleId, signals] = await Promise.all([
@@ -47,6 +49,9 @@ export const HoyActTwoServer = async ({ userId, userPlatforms }: { userId: strin
         now={now.toISOString()}
         stamp={actTwoStamp(charts, arrivals)}
         afina={signals != null && afinaCards.length > 0 ? { cards: afinaCards, signals } : null}
+        signals={signals}
+        gems={gems}
+        seedRail={seedRail}
       />
     </ActTwoActionsProvider>
   );

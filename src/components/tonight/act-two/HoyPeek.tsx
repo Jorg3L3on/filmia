@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { recordActTwoEvent } from "@/app/actions/tonight";
 import { cn } from "@/lib/cn";
 import { usePrefersReducedMotion } from "@/lib/motion";
 import { focusRing } from "@/lib/ui";
@@ -14,6 +15,8 @@ const ACT_TWO_ID = "en-tus-plataformas";
 export const HoyPeek = () => {
   const reducedMotion = usePrefersReducedMotion();
   const [visible, setVisible] = useState(false);
+  /** «acto_dos_visto» once per page: the act reached the viewport (FIL-I47-4 metric). */
+  const seenRef = useRef(false);
 
   useEffect(() => {
     const target = document.getElementById(ACT_TWO_ID);
@@ -24,6 +27,10 @@ export const HoyPeek = () => {
       ([entry]) => {
         // Shown only while the act starts below the viewport (not after scrolling past it).
         setVisible(Boolean(entry) && !entry.isIntersecting && entry.boundingClientRect.top > 0);
+        if (entry?.isIntersecting && !seenRef.current) {
+          seenRef.current = true;
+          void recordActTwoEvent("acto_dos_visto");
+        }
       },
       // Touching the fold counts as intersecting: the act starts exactly there on a phone.
       { threshold: 0, rootMargin: "0px 0px -12px 0px" },

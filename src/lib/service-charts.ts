@@ -236,3 +236,88 @@ export const ACT_TWO_SEEN_KEY = "filmia:hoy-acto-dos";
 
 /** Window event Hoy fires after it stores a new stamp, so the dock clears its dot at once. */
 export const ACT_TWO_SEEN_EVENT = "filmia:hoy-acto-dos-visto";
+
+/* ---------------------------------------------------------------------------------------------
+ * FIL-I47-4: «Joyas que ya pagas», «Porque te gustó» and the order of the sections.
+ * ------------------------------------------------------------------------------------------- */
+
+export const GEMS_LIMIT = 8;
+
+export type GemCandidate = {
+  catalogId: string;
+  imdbRating: number | null;
+  imdbVotes: number | null;
+  rtScore: number | null;
+  metascore: number | null;
+  backdropPath: string | null;
+};
+
+/** A critic gem: IMDb ≥ 7.8, or Rotten Tomatoes ≥ 90, or Metacritic ≥ 80. */
+export const isGem = (title: Pick<GemCandidate, "imdbRating" | "rtScore" | "metascore">) =>
+  (title.imdbRating ?? 0) >= 7.8 || (title.rtScore ?? 0) >= 90 || (title.metascore ?? 0) >= 80;
+
+/** Strength of the proof, for the order: each score on a 0–1 scale, the best of them, then votes. */
+const gemStrength = (title: GemCandidate) =>
+  Math.max(
+    title.imdbRating != null ? (title.imdbRating - 7) / 3 : 0,
+    title.rtScore != null ? (title.rtScore - 80) / 20 : 0,
+    title.metascore != null ? (title.metascore - 70) / 30 : 0,
+  );
+
+/**
+ * The gems to show: proven by the critics, with a still to show (wide cards), outside every
+ * current chart (those are already on the page) and not watched by the user. Strongest first.
+ */
+export const pickGems = <T extends GemCandidate>(
+  candidates: readonly T[],
+  exclude: ReadonlySet<string>,
+  limit = GEMS_LIMIT,
+): T[] =>
+  candidates
+    .filter((title) => isGem(title) && Boolean(title.backdropPath) && !exclude.has(title.catalogId))
+    .sort((a, b) => gemStrength(b) - gemStrength(a) || (b.imdbVotes ?? 0) - (a.imdbVotes ?? 0) || a.catalogId.localeCompare(b.catalogId))
+    .slice(0, limit);
+
+export const SEED_RAIL_MIN = 3;
+export const SEED_RAIL_LIMIT = 8;
+
+export type SeededReco = { catalogId: string; seedCatalogId: string | null; seedName: string | null; rank: number };
+
+/**
+ * «Porque te gustó X»: the seed that led to the most recommendations (ties: the best-ranked one),
+ * with its recommendations in rank order. Null under three, so the rail never looks empty.
+ */
+export const pickSeedRail = <T extends SeededReco>(recos: readonly T[]) => {
+  const bySeed = new Map<string, T[]>();
+  for (const reco of recos) {
+    if (!reco.seedCatalogId || !reco.seedName) continue;
+    const list = bySeed.get(reco.seedCatalogId) ?? [];
+    list.push(reco);
+    bySeed.set(reco.seedCatalogId, list);
+  }
+  let best: { seedCatalogId: string; seedName: string; titles: T[] } | null = null;
+  for (const [seedCatalogId, list] of bySeed) {
+    const sorted = [...list].sort((a, b) => a.rank - b.rank);
+    const better =
+      !best ||
+      sorted.length > best.titles.length ||
+      (sorted.length === best.titles.length && (sorted[0]?.rank ?? Infinity) < (best.titles[0]?.rank ?? Infinity));
+    if (better) best = { seedCatalogId, seedName: sorted[0]!.seedName!, titles: sorted };
+  }
+  if (!best || best.titles.length < SEED_RAIL_MIN) return null;
+  return { ...best, titles: best.titles.slice(0, SEED_RAIL_LIMIT) };
+};
+
+export type ActTwoSection = "ranking" | "afina" | "arrivals" | "gems" | "seed";
+
+/**
+ * The page ordered by how much Hoy knows (signals, see `countSignals`): a new account starts with
+ * the ranking and the taste card; a light one sees its own taste second; a rich one opens on what
+ * just arrived and never sees «Afina tu gusto».
+ */
+export const actTwoOrder = (signals: number): ActTwoSection[] =>
+  signals < 10
+    ? ["ranking", "afina", "arrivals", "gems", "seed"]
+    : signals <= 40
+      ? ["ranking", "seed", "arrivals", "afina", "gems"]
+      : ["arrivals", "seed", "ranking", "gems"];

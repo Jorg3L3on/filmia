@@ -7,6 +7,7 @@ import { SearchShortcuts } from "@/components/tmdb-search/SearchShortcuts";
 import type { SearchMenuTarget, SearchMenuVia } from "@/components/tmdb-search/SearchRowMenu";
 import type { SearchRowStatus } from "@/components/tmdb-search/SearchResultRow";
 import { useTmdbTitleActions } from "@/components/tmdb-search/useTmdbTitleActions";
+import { recordActTwoEvent } from "@/app/actions/tonight";
 import type { SelectableList } from "@/lib/list-selection";
 import type { UserTmdbEntry } from "@/lib/queries";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
@@ -97,7 +98,10 @@ export const ActTwoActionsProvider = ({
         onPin={actions.handlePinTonight}
         onPickLists={setListsFor}
         onSaveLists={actions.handleSaveLists}
-        onOpenFicha={(href) => router.push(href)}
+        onOpenFicha={(href) => {
+          if (menu) void recordActTwoEvent("acto_dos_ficha", { tmdbId: menu.result.tmdbId, kind: menu.result.kind });
+          router.push(href);
+        }}
         liftFor={(result) => (
           <div className={`${posterFrame} h-full shadow-[0_24px_60px_rgb(0_0_0/0.7)]`}>
             <PosterImage name={result.name} posterPath={result.posterPath} ratio="fill" sizes="160px" />

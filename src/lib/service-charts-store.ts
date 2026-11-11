@@ -1,5 +1,6 @@
-import { and, asc, desc, eq, gte, inArray, isNotNull } from "drizzle-orm";
-import { catalog, db, serviceCharts, titles, type Platform, type TitleKind } from "@/db";
+import { and, asc, desc, eq, gte, inArray, isNotNull, or, sql } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
+import { catalog, db, serviceCharts, titles, tonightRecos, type Platform, type TitleKind } from "@/db";
 import { findOrCreateCatalog } from "@/lib/catalog";
 import { enrichCatalog } from "@/lib/catalog-enrich";
 import { addDays, mxToday } from "@/lib/cine-core";
@@ -23,14 +24,18 @@ import {
   ARRIVALS_WINDOW_DAYS,
   CHART_KINDS,
   CHART_SIZE,
+  GEMS_LIMIT,
   parseChartSource,
+  pickGems,
+  pickSeedRail,
   snapshotRows,
   type ArrivalTitle,
   type ChartEntry,
   type ServiceChart,
 } from "@/lib/service-charts";
 import { matchWatchProviderPlatform, STREAMING_PLATFORM_TMDB } from "@/lib/streaming-platforms";
-import { discoverTmdb, searchTmdbTitlesEn, type TmdbDiscoverResult } from "@/lib/tmdb";
+import { parseStoredWatchProviders } from "@/lib/watch-providers";
+import { discoverTmdb, searchTmdbTitlesEn, tmdbBackdropUrl, type TmdbDiscoverResult } from "@/lib/tmdb";
 import { fetchMxWatchProviders } from "@/lib/watch-providers";
 
 /** New Catalog rows enriched per run: enrichment spends the shared OMDb budget. */
@@ -413,4 +418,181 @@ export const getRecentArrivals = async (
     });
   }
   return arrivals;
+};
+
+/* ---------------------------------------------------------------------------------------------
+ * FIL-I47-4: «Joyas que ya pagas» and «Porque te gustó».
+ * ------------------------------------------------------------------------------------------- */
+
+export type GemTitle = {
+  catalogId: string;
+  tmdbId: number;
+  kind: TitleKind;
+  name: string;
+  originalName: string | null;
+  year: number | null;
+  posterPath: string | null;
+  backdropPath: string | null;
+  imdbRating: number | null;
+  imdbVotes: number | null;
+  rtScore: number | null;
+  metascore: number | null;
+  /** Platforms that include it (flatrate MX), as stored. */
+  platforms: Platform[];
+};
+
+/** How many critic-proven candidates the shared list keeps (most-voted first). */
+const GEM_CANDIDATES = 400;
+
+/**
+ * The critic-proven titles that stream flatrate in MX, shared by every user and cached for an
+ * hour: one scan of Catalog per hour, not per Hoy visit. The per-user cut happens in memory.
+ */
+const loadGemCandidates = unstable_cache(
+  async (): Promise<GemTitle[]> => {
+    const rows = await db
+      .select({
+        catalogId: catalog.id,
+        tmdbId: catalog.tmdbId,
+        kind: catalog.kind,
+        name: catalog.name,
+        originalName: catalog.originalName,
+        year: catalog.year,
+        posterPath: catalog.posterPath,
+        backdropPath: catalog.backdropPath,
+        imdbRating: catalog.imdbRating,
+        imdbVotes: catalog.imdbVotes,
+        rtScore: catalog.rtScore,
+        metascore: catalog.metascore,
+        watchProvidersMx: catalog.watchProvidersMx,
+      })
+      .from(catalog)
+      .where(
+        and(
+          isNotNull(catalog.watchProvidersMx),
+          isNotNull(catalog.backdropPath),
+          or(gte(catalog.imdbRating, 7.8), gte(catalog.rtScore, 90), gte(catalog.metascore, 80)),
+        ),
+      )
+      .orderBy(sql`${catalog.imdbVotes} DESC NULLS LAST`)
+      .limit(GEM_CANDIDATES);
+    return rows.flatMap(({ watchProvidersMx, ...row }) => {
+      const flatrate = parseStoredWatchProviders(watchProvidersMx)?.flatrate ?? [];
+      const platforms = [...new Set(flatrate.flatMap((offer) => matchWatchProviderPlatform(offer) ?? []))];
+      return platforms.length > 0 ? [{ ...row, platforms }] : [];
+    });
+  },
+  ["hoy-gem-candidates", "v1"],
+  { revalidate: 3600 },
+);
+
+/**
+ * «Joyas que ya pagas»: critic gems on the user's platforms, outside today's charts, not watched.
+ * Database only (cached); empty on any failure.
+ */
+export const getGems = async (
+  userId: string,
+  platforms: readonly Platform[],
+  charts: readonly ServiceChart[],
+): Promise<(GemTitle & { platform: Platform; backdropUrl: string })[]> => {
+  if (platforms.length === 0) return [];
+  try {
+    const [candidates, watched] = await Promise.all([
+      loadGemCandidates().catch(() => []),
+      db
+        .select({ catalogId: titles.catalogId })
+        .from(titles)
+        .where(and(eq(titles.userId, userId), isNotNull(titles.watchedAt))),
+    ]);
+    const exclude = new Set([
+      ...charts.flatMap((chart) => chart.titles.map((title) => title.catalogId)),
+      ...watched.map((row) => row.catalogId),
+    ]);
+    const mine = candidates.flatMap((candidate) => {
+      const platform = platforms.find((value) => candidate.platforms.includes(value));
+      return platform ? [{ ...candidate, platform }] : [];
+    });
+    return pickGems(mine, exclude, GEMS_LIMIT).flatMap((gem) => {
+      const backdropUrl = tmdbBackdropUrl(gem.backdropPath, "w780");
+      return backdropUrl ? [{ ...gem, backdropUrl }] : [];
+    });
+  } catch {
+    return [];
+  }
+};
+
+export type SeedRail = {
+  seedCatalogId: string;
+  seedName: string;
+  seedPosterPath: string | null;
+  /** True when the seed is in Quiero ver (not watched): «Porque elegiste X». */
+  chosen: boolean;
+  titles: {
+    catalogId: string;
+    tmdbId: number;
+    kind: TitleKind;
+    name: string;
+    originalName: string | null;
+    year: number | null;
+    posterPath: string | null;
+  }[];
+};
+
+/**
+ * «Porque te gustó X» / «Porque elegiste X»: the nightly recommendations grouped by the library
+ * title that seeded them; the seed with most rows wins. Not-yet-owned titles only.
+ */
+export const getSeedRail = async (userId: string): Promise<SeedRail | null> => {
+  try {
+    const rows = await db
+      .select({
+        catalogId: catalog.id,
+        tmdbId: catalog.tmdbId,
+        kind: catalog.kind,
+        name: catalog.name,
+        originalName: catalog.originalName,
+        year: catalog.year,
+        posterPath: catalog.posterPath,
+        seedCatalogId: tonightRecos.seedCatalogId,
+        seedName: tonightRecos.seedName,
+        rank: tonightRecos.rank,
+      })
+      .from(tonightRecos)
+      .innerJoin(catalog, eq(catalog.id, tonightRecos.catalogId))
+      .where(and(eq(tonightRecos.userId, userId), isNotNull(tonightRecos.seedCatalogId)));
+    if (rows.length === 0) return null;
+    const owned = new Set(
+      (
+        await db
+          .select({ catalogId: titles.catalogId })
+          .from(titles)
+          .where(and(eq(titles.userId, userId), inArray(titles.catalogId, rows.map((row) => row.catalogId))))
+      ).map((row) => row.catalogId),
+    );
+    const rail = pickSeedRail(rows.filter((row) => !owned.has(row.catalogId) && Boolean(row.posterPath)));
+    if (!rail) return null;
+    const [seed] = await db
+      .select({ posterPath: catalog.posterPath, watchedAt: titles.watchedAt })
+      .from(catalog)
+      .leftJoin(titles, and(eq(titles.catalogId, catalog.id), eq(titles.userId, userId)))
+      .where(eq(catalog.id, rail.seedCatalogId))
+      .limit(1);
+    return {
+      seedCatalogId: rail.seedCatalogId,
+      seedName: rail.seedName,
+      seedPosterPath: seed?.posterPath ?? null,
+      chosen: seed ? seed.watchedAt == null : false,
+      titles: rail.titles.map((title) => ({
+        catalogId: title.catalogId,
+        tmdbId: title.tmdbId,
+        kind: title.kind,
+        name: title.name,
+        originalName: title.originalName,
+        year: title.year,
+        posterPath: title.posterPath,
+      })),
+    };
+  } catch {
+    return null;
+  }
 };

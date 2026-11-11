@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { Platform, TitleKind } from "@/db";
 import { MarqueeBulbs } from "@/components/cine/CineParts";
@@ -11,12 +12,14 @@ import { menuVia } from "@/components/tmdb-search/SearchRowMenu";
 import { useActTwoActions, type ActTwoTitle } from "@/components/tonight/act-two/ActTwoActions";
 import { AfinaTuGusto } from "@/components/tonight/act-two/AfinaTuGusto";
 import type { AfinaCard } from "@/lib/cold-start-store";
+import type { GemTitle, SeedRail } from "@/lib/service-charts-store";
 import { cn } from "@/lib/cn";
 import { PLATFORM_SERVICE_LABEL } from "@/lib/labels";
 import { nextOfficialDay } from "@/lib/netflix-top10";
 import {
   ACT_TWO_SEEN_EVENT,
   ACT_TWO_SEEN_KEY,
+  actTwoOrder,
   CHART_KIND_LABEL,
   CHART_KINDS,
   chartHeading,
@@ -26,6 +29,7 @@ import {
   groupArrivalsByDay,
   rankMovement,
   SERVICE_TINT,
+  type ActTwoSection,
   showsMovement,
   weeksOnListLabel,
   type ArrivalTitle,
@@ -265,6 +269,103 @@ const RecentArrivals = ({ arrivals, now }: { arrivals: ArrivalTitle[]; now: Date
   );
 };
 
+export type ActTwoGem = GemTitle & { platform: Platform; backdropUrl: string };
+
+/** «Joyas que ya pagas»: wide stills, the critics' scores as stored (FIL-I47-4). */
+const Gems = ({ gems }: { gems: ActTwoGem[] }) => {
+  if (gems.length === 0) {
+    return null;
+  }
+  return (
+    <section className="act-two-block" aria-labelledby="act-two-gems-title" data-act-two="gems">
+      <div className="act-two-head">
+        <h2 id="act-two-gems-title" className="font-serif">
+          Joyas que <em>ya pagas</em>
+        </h2>
+        <p>Muy bien calificadas por la crítica, fuera de lo más visto</p>
+      </div>
+      <FadeRail label="Joyas que ya pagas" className="act-two-rail">
+        {gems.map((gem) => {
+          const scores = [
+            gem.imdbRating != null ? `IMDb ${gem.imdbRating.toFixed(1)}` : null,
+            gem.rtScore != null ? `RT ${gem.rtScore} %` : null,
+            gem.metascore != null ? `Metacritic ${gem.metascore}` : null,
+          ].filter((value): value is string => Boolean(value));
+          return (
+            <div key={gem.catalogId} role="listitem">
+              <TitleButton
+                title={gem}
+                label={`${gem.name}${gem.year ? ` (${gem.year})` : ""}, ${scores.join(", ")}, en ${PLATFORM_SERVICE_LABEL[gem.platform]}`}
+                className="act-two-gem"
+              >
+                {(frameRef) => (
+                  <div ref={frameRef} className="act-two-gem-frame">
+                    <Image src={gem.backdropUrl} alt="" fill sizes="268px" unoptimized className="act-two-gem-still" />
+                    <PlatformLogo platform={gem.platform} size={26} className="act-two-gem-logo rounded-[8px]" />
+                    <span className="act-two-gem-text">
+                      <span className="act-two-gem-name font-serif">{gem.name}</span>
+                      <span className="act-two-gem-scores">
+                        {scores.map((score) => (
+                          <span key={score} className="act-two-gem-score">
+                            {score}
+                          </span>
+                        ))}
+                        {gem.year ? <span>{gem.year}</span> : null}
+                      </span>
+                    </span>
+                  </div>
+                )}
+              </TitleButton>
+            </div>
+          );
+        })}
+      </FadeRail>
+    </section>
+  );
+};
+
+/** «Porque te gustó X» / «Porque elegiste X»: one seed, its recommendations (FIL-I47-4). */
+const SeedRailSection = ({ rail }: { rail: SeedRail | null }) => {
+  if (!rail) {
+    return null;
+  }
+  const heading = rail.chosen ? "Porque elegiste" : "Porque te gustó";
+  return (
+    <section className="act-two-block" aria-labelledby="act-two-seed-title" data-act-two="seed">
+      <div className="act-two-seed">
+        {rail.seedPosterPath ? (
+          <div className="act-two-seed-poster" aria-hidden="true">
+            <PosterImage name={rail.seedName} posterPath={rail.seedPosterPath} ratio="fill" sizes="34px" />
+          </div>
+        ) : null}
+        <div className="act-two-head !px-0">
+          <h2 id="act-two-seed-title" className="font-serif">
+            {heading} <em>{rail.seedName}</em>
+          </h2>
+          <p>Incluidas en tus plataformas</p>
+        </div>
+      </div>
+      <FadeRail label={`${heading} ${rail.seedName}`} className="act-two-rail">
+        {rail.titles.map((title) => (
+          <div key={title.catalogId} role="listitem">
+            <TitleButton title={title} label={`${title.name}${title.year ? ` (${title.year})` : ""}`} className="act-two-seed-tile">
+              {(frameRef) => (
+                <>
+                  <div ref={frameRef} className="act-two-seed-tile-poster">
+                    <PosterImage name={title.name} posterPath={title.posterPath} ratio="fill" sizes="98px" />
+                    <StatusDot title={title} />
+                  </div>
+                  <span className="act-two-seed-tile-name">{title.name}</span>
+                </>
+              )}
+            </TitleButton>
+          </div>
+        ))}
+      </FadeRail>
+    </section>
+  );
+};
+
 const LONG_DATE = new Intl.DateTimeFormat("es-MX", {
   weekday: "long",
   day: "numeric",
@@ -289,13 +390,17 @@ export type HoyActTwoProps = {
   stamp: string;
   /** «Afina tu gusto» cards and the signal count; null when Hoy already knows enough. */
   afina: { cards: AfinaCard[]; signals: number } | null;
+  /** How much Hoy knows (FIL-I47-3): it orders the sections. Null when it could not be counted. */
+  signals: number | null;
+  gems: ActTwoGem[];
+  seedRail: SeedRail | null;
 };
 
 /**
  * Hoy's second act (FIL-I47-1): below the sala, what the user's services carry today. Computed
  * by the nightly crons; nothing here calls TMDB.
  */
-export const HoyActTwo = ({ userPlatforms, charts, arrivals, now, stamp, afina }: HoyActTwoProps) => {
+export const HoyActTwo = ({ userPlatforms, charts, arrivals, now, stamp, afina, signals, gems, seedRail }: HoyActTwoProps) => {
   const date = new Date(now);
   // Seen on Hoy: the dock's dot clears (FIL-I47-2).
   useEffect(() => {
@@ -311,9 +416,16 @@ export const HoyActTwo = ({ userPlatforms, charts, arrivals, now, stamp, afina }
   const closingLine = netflixOfficial
     ? `El Top 10 de Netflix cambia el ${WEEKDAY_LONG.format(new Date(`${nextOfficialDay(mxDayOf(date))}T18:00:00Z`))}; lo demás, cada mañana. Aquí te esperamos.`
     : "El ranking se actualiza cada mañana. Aquí te esperamos.";
-  if (!hasRanking && arrivals.length === 0) {
+  if (!hasRanking && arrivals.length === 0 && gems.length === 0 && !seedRail) {
     return null;
   }
+  const sections: Record<ActTwoSection, ReactNode> = {
+    ranking: <ServiceRanking key="ranking" charts={charts} userPlatforms={userPlatforms} />,
+    afina: afina ? <AfinaTuGusto key="afina" initialCards={afina.cards} initialSignals={afina.signals} /> : null,
+    arrivals: <RecentArrivals key="arrivals" arrivals={arrivals} now={date} />,
+    gems: <Gems key="gems" gems={gems} />,
+    seed: <SeedRailSection key="seed" rail={seedRail} />,
+  };
   return (
     <section id="en-tus-plataformas" className="hoy-act-two" aria-labelledby="act-two-title">
       <header className="act-two-intro">
@@ -322,9 +434,7 @@ export const HoyActTwo = ({ userPlatforms, charts, arrivals, now, stamp, afina }
           En tus plataformas
         </h2>
       </header>
-      <ServiceRanking charts={charts} userPlatforms={userPlatforms} />
-      {afina ? <AfinaTuGusto initialCards={afina.cards} initialSignals={afina.signals} /> : null}
-      <RecentArrivals arrivals={arrivals} now={date} />
+      {actTwoOrder(signals ?? 0).map((section) => sections[section])}
       <footer className="act-two-end">
         <p className="font-serif">Eso es todo por hoy</p>
         <span>{closingLine}</span>

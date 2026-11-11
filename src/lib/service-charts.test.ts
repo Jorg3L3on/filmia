@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { showsNovedad } from "../components/tonight/act-two/useHoyNovedad";
 import {
+  actTwoOrder,
+  isGem,
+  pickGems,
+  pickSeedRail,
   actTwoStamp,
   chartHeading,
   chartPlatformsFor,
@@ -166,5 +170,83 @@ describe("Hoy tab dot", () => {
     assert.equal(showsNovedad("x", null), false);
     assert.equal(showsNovedad("x", "x"), false);
     assert.equal(showsNovedad("x", "y"), true);
+  });
+});
+
+describe("Joyas que ya pagas", () => {
+  const gem = (catalogId: string, scores: { imdb?: number; rt?: number; meta?: number; votes?: number; backdrop?: boolean }) => ({
+    catalogId,
+    imdbRating: scores.imdb ?? null,
+    imdbVotes: scores.votes ?? 1000,
+    rtScore: scores.rt ?? null,
+    metascore: scores.meta ?? null,
+    backdropPath: scores.backdrop === false ? null : `/${catalogId}.jpg`,
+  });
+
+  it("takes IMDb ≥ 7.8, RT ≥ 90 or Metacritic ≥ 80", () => {
+    assert.equal(isGem({ imdbRating: 7.8, rtScore: null, metascore: null }), true);
+    assert.equal(isGem({ imdbRating: 7.7, rtScore: 89, metascore: 79 }), false);
+    assert.equal(isGem({ imdbRating: null, rtScore: 90, metascore: null }), true);
+    assert.equal(isGem({ imdbRating: null, rtScore: null, metascore: 80 }), true);
+  });
+
+  it("leaves out charted, watched and still-less titles; strongest proof first; at most 8", () => {
+    const candidates = [
+      gem("plain", { imdb: 7.0 }),
+      gem("charted", { imdb: 9.0 }),
+      gem("no-still", { imdb: 8.9, backdrop: false }),
+      gem("rt", { rt: 100 }),
+      gem("imdb", { imdb: 8.2 }),
+      gem("meta", { meta: 85 }),
+      ...Array.from({ length: 10 }, (_, i) => gem(`extra-${i}`, { imdb: 7.9, votes: i })),
+    ];
+    const picked = pickGems(candidates, new Set(["charted"]));
+    assert.equal(picked.length, 8);
+    assert.deepEqual(picked.slice(0, 3).map((g) => g.catalogId), ["rt", "meta", "imdb"]);
+    assert.ok(!picked.some((g) => ["plain", "charted", "no-still"].includes(g.catalogId)));
+    assert.equal(picked[3]!.catalogId, "extra-9", "ties go to the most voted");
+  });
+});
+
+describe("Porque te gustó", () => {
+  const reco = (catalogId: string, seed: string | null, rank: number) => ({
+    catalogId,
+    seedCatalogId: seed,
+    seedName: seed ? `Seed ${seed}` : null,
+    rank,
+  });
+
+  it("picks the seed with most recommendations, in rank order", () => {
+    const rail = pickSeedRail([
+      reco("a1", "A", 5),
+      reco("b1", "B", 1),
+      reco("a2", "A", 2),
+      reco("b2", "B", 3),
+      reco("a3", "A", 9),
+      reco("d1", null, 0),
+    ]);
+    assert.equal(rail?.seedCatalogId, "A");
+    assert.equal(rail?.seedName, "Seed A");
+    assert.deepEqual(rail?.titles.map((t) => t.catalogId), ["a2", "a1", "a3"]);
+  });
+
+  it("breaks a tie by the best rank and hides a seed under three", () => {
+    assert.equal(pickSeedRail([reco("a1", "A", 4), reco("a2", "A", 5), reco("a3", "A", 6), reco("b1", "B", 1), reco("b2", "B", 2), reco("b3", "B", 3)])?.seedCatalogId, "B");
+    assert.equal(pickSeedRail([reco("a1", "A", 1), reco("a2", "A", 2)]), null);
+    assert.equal(pickSeedRail([]), null);
+  });
+
+  it("keeps eight at most", () => {
+    const rail = pickSeedRail(Array.from({ length: 12 }, (_, i) => reco(`a${i}`, "A", i)));
+    assert.equal(rail?.titles.length, 8);
+  });
+});
+
+describe("section order by signals", () => {
+  it("follows the plan for new, light and rich profiles", () => {
+    assert.deepEqual(actTwoOrder(3), ["ranking", "afina", "arrivals", "gems", "seed"]);
+    assert.deepEqual(actTwoOrder(14), ["ranking", "seed", "arrivals", "afina", "gems"]);
+    assert.deepEqual(actTwoOrder(240), ["arrivals", "seed", "ranking", "gems"]);
+    assert.deepEqual(actTwoOrder(10), actTwoOrder(40));
   });
 });

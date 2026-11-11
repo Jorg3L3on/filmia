@@ -15,6 +15,9 @@ import { getCurrentSession, requireUserId } from "@/lib/session";
 import { actTwoStamp } from "@/lib/service-charts";
 import { answerAfina, loadAfinaCards, type AfinaCard, type AfinaOutcome } from "@/lib/cold-start-store";
 import { isVisteAnswer } from "@/lib/piezas/core";
+import { catalogIdFor } from "@/lib/catalog-core";
+import { createId } from "@paralleldrive/cuid2";
+import { pickEvents } from "@/db";
 import { getRecentArrivals, getServiceCharts } from "@/lib/service-charts-store";
 import { parseStoredStreamingPlatforms } from "@/lib/streaming-platforms";
 import { FICHA_PIN_LENS, SEARCH_PIN_LENS, searchPinBlocker } from "@/lib/tonight/pin";
@@ -247,4 +250,26 @@ export const answerAfinaCard = async (catalogId: string, choice: string): Promis
 export const moreAfinaCards = async (): Promise<AfinaCard[]> => {
   const userId = await requireUserId();
   return loadAfinaCards(userId, await platformsOf(userId)).catch(() => []);
+};
+
+/** Metrics of Hoy's second act (FIL-I47-4): scrolled past the sala, ficha opened from it. */
+const ACT_TWO_EVENTS = ["acto_dos_visto", "acto_dos_ficha"] as const;
+type ActTwoEvent = (typeof ACT_TWO_EVENTS)[number];
+
+export const recordActTwoEvent = async (
+  kind: ActTwoEvent,
+  title?: { tmdbId: number; kind: "MOVIE" | "SERIES" },
+): Promise<void> => {
+  try {
+    const session = await getCurrentSession();
+    const userId = session?.user?.id;
+    if (!userId || !(ACT_TWO_EVENTS as readonly string[]).includes(kind)) return;
+    const catalogId =
+      title && Number.isInteger(title.tmdbId) && (title.kind === "MOVIE" || title.kind === "SERIES")
+        ? catalogIdFor(title.kind, title.tmdbId)
+        : null;
+    await db.insert(pickEvents).values({ id: createId(), userId, titleId: null, catalogId, kind, lens: null, createdAt: new Date() });
+  } catch {
+    // Metrics never cost the person anything.
+  }
 };
