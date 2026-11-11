@@ -90,6 +90,50 @@ describe("mergeListAddCandidates", () => {
     );
   });
 
+  it("finds the same local film by its Mexican title or its original title", () => {
+    const local = [{ ...interstellar, originalName: "Interstellar", alternateNames: ["Interstellar"] }];
+    const byMexican = mergeListAddCandidates({
+      local,
+      query: "Interestelar",
+      tmdbResults: [hit(157336, "Interstellar", "MOVIE", "Interstellar")],
+      inListKeys: none,
+      addedKeys: none,
+    });
+    const byOriginal = mergeListAddCandidates({
+      local,
+      query: "Interstellar",
+      tmdbResults: [hit(157336, "Interstellar", "MOVIE", "Interstellar")],
+      inListKeys: none,
+      addedKeys: none,
+    });
+    assert.deepEqual(byMexican.local.map((title) => title.id), ["t-inter"]);
+    assert.deepEqual(byOriginal.local.map((title) => title.id), ["t-inter"]);
+    assert.deepEqual(byMexican.tmdb, []);
+    assert.deepEqual(byOriginal.tmdb, []);
+  });
+
+  it("lists one row when the Mexican title and the original title are the same string", () => {
+    const lumen: LocalListTitle = {
+      id: "t-lumen",
+      name: "Lumen",
+      originalName: "Lumen",
+      alternateNames: [],
+      year: 2001,
+      posterPath: null,
+      tmdbId: 42,
+      kind: "MOVIE",
+    };
+    const merged = mergeListAddCandidates({
+      local: [lumen],
+      query: "Lumen",
+      tmdbResults: [hit(42, "Lumen", "MOVIE", "Lumen")],
+      inListKeys: none,
+      addedKeys: none,
+    });
+    assert.deepEqual(merged.local.map((title) => title.id), ["t-lumen"]);
+    assert.deepEqual(merged.tmdb, []);
+  });
+
   it("turns a TMDB hit into a local add when its twin missed the text filter", () => {
     const merged = mergeListAddCandidates({
       local: [severance],

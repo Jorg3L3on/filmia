@@ -1,5 +1,7 @@
 "use server";
 
+import { getStoredCatalogHits } from "@/app/actions/search-facts";
+import { mergeStoredIntoRemote } from "@/lib/catalog-search";
 import { metadataServicesConfigured, searchTmdbCatalogPage } from "@/lib/metadata";
 import { loadPersonOscars } from "@/lib/person-oscars-load";
 import { requireUserId } from "@/lib/session";
@@ -52,13 +54,15 @@ export const searchTmdbDiscover = async (query: string, page = 1): Promise<TmdbD
   const wanted = Number.isInteger(page) && page > 1 ? Math.min(page, 50) : 1;
 
   try {
-    const [found, director] = await Promise.all([
+    const [found, director, stored] = await Promise.all([
       searchTmdbCatalogPage(query, wanted),
       // The director card belongs to the first page only.
       wanted === 1 ? directorNamed(query) : Promise.resolve(null),
+      // Local Catalog (name, original, alternates). A failure leaves TMDB's page.
+      wanted === 1 ? getStoredCatalogHits(query).catch(() => []) : Promise.resolve([]),
     ]);
     return {
-      results: found.results,
+      results: mergeStoredIntoRemote(found.results, stored),
       director,
       error: null,
       page: found.page,

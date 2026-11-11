@@ -294,6 +294,40 @@ const loadCachedTmdbJson = unstable_cache(fetchTmdbJson, ["tmdb-json"], {
   tags: [TMDB_CACHE_TAG],
 });
 
+const listedText = (value: string | null | undefined) => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+};
+
+/**
+ * One TMDB search row (movie or series). Both strings travel with the hit:
+ * the es-MX title and `original_title` / `original_name`. Search does not
+ * call `/alternative_titles`; that list is only on the details request.
+ */
+export const tmdbListedTitle = (input: {
+  id: number;
+  name: string | null | undefined;
+  originalName: string | null | undefined;
+  date?: string | null;
+  posterPath?: string | null;
+  backdropPath?: string | null;
+  overview?: string | null;
+}): TmdbSearchResult | null => {
+  const name = input.name?.trim() ?? "";
+  if (!name) {
+    return null;
+  }
+  return {
+    tmdbId: input.id,
+    name,
+    originalName: listedText(input.originalName),
+    year: parseTmdbYear(input.date),
+    posterPath: input.posterPath ?? null,
+    backdropPath: input.backdropPath ?? null,
+    overview: input.overview ?? null,
+  };
+};
+
 export const searchTmdb = async (
   query: string,
   kind: TitleKind,
@@ -335,28 +369,28 @@ export const searchTmdb = async (
     params,
   );
 
-  return data.results.slice(0, 8).map((item) => {
-    if ("title" in item) {
-      return {
-        tmdbId: item.id,
-        name: item.title,
-        originalName: item.original_title ?? null,
-        year: parseTmdbYear(item.release_date),
-        posterPath: item.poster_path ?? null,
-        backdropPath: item.backdrop_path ?? null,
-        overview: item.overview ?? null,
-      };
-    }
-
-    return {
-      tmdbId: item.id,
-      name: item.name,
-      originalName: item.original_name ?? null,
-      year: parseTmdbYear(item.first_air_date),
-      posterPath: item.poster_path ?? null,
-      backdropPath: item.backdrop_path ?? null,
-      overview: item.overview ?? null,
-    };
+  return data.results.slice(0, 8).flatMap((item) => {
+    const hit =
+      "title" in item
+        ? tmdbListedTitle({
+            id: item.id,
+            name: item.title,
+            originalName: item.original_title,
+            date: item.release_date,
+            posterPath: item.poster_path,
+            backdropPath: item.backdrop_path,
+            overview: item.overview,
+          })
+        : tmdbListedTitle({
+            id: item.id,
+            name: item.name,
+            originalName: item.original_name,
+            date: item.first_air_date,
+            posterPath: item.poster_path,
+            backdropPath: item.backdrop_path,
+            overview: item.overview,
+          });
+    return hit ? [hit] : [];
   });
 };
 
@@ -402,41 +436,20 @@ export const searchTmdbMultiPage = async (query: string, page = 1): Promise<Tmdb
   let people = 0;
 
   for (const item of data.results) {
-    if (item.media_type === "movie") {
-      const name = item.title?.trim() ?? "";
-      if (!name) {
-        continue;
-      }
-
-      results.push({
-        tmdbId: item.id,
-        name,
-        originalName: item.original_title ?? null,
-        year: parseTmdbYear(item.release_date),
-        posterPath: item.poster_path ?? null,
-        backdropPath: item.backdrop_path ?? null,
-        overview: item.overview ?? null,
-        kind: "MOVIE",
+    if (item.media_type === "movie" || item.media_type === "tv") {
+      const kind = item.media_type === "movie" ? "MOVIE" : "SERIES";
+      const hit = tmdbListedTitle({
+        id: item.id,
+        name: kind === "MOVIE" ? item.title : item.name,
+        originalName: kind === "MOVIE" ? item.original_title : item.original_name,
+        date: kind === "MOVIE" ? item.release_date : item.first_air_date,
+        posterPath: item.poster_path,
+        backdropPath: item.backdrop_path,
+        overview: item.overview,
       });
-      continue;
-    }
-
-    if (item.media_type === "tv") {
-      const name = item.name?.trim() ?? "";
-      if (!name) {
-        continue;
+      if (hit) {
+        results.push({ ...hit, kind });
       }
-
-      results.push({
-        tmdbId: item.id,
-        name,
-        originalName: item.original_name ?? null,
-        year: parseTmdbYear(item.first_air_date),
-        posterPath: item.poster_path ?? null,
-        backdropPath: item.backdrop_path ?? null,
-        overview: item.overview ?? null,
-        kind: "SERIES",
-      });
       continue;
     }
 
