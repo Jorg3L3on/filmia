@@ -118,6 +118,35 @@ const run = () => {
   const recoCss = css.slice(css.indexOf(".reco-eyebrow {"), css.indexOf(".tonight-chip {"));
   assert(recoCss.includes(".reco-eyebrow") && !/backdrop-filter|filter:\s*blur/.test(recoCss), "Recommended styles use no blur (the sala must stay light)");
 
+  // Hoy en dos actos (FIL-I47-1): act two reads the database only; TMDB is called by the cron.
+  const hoyPage = read("src/app/(diario)/page.tsx");
+  assert(hoyPage.includes('className="hoy-act-one"') && hoyPage.includes("<HoyActTwoServer"), "Hoy renders the sala as act one and the second act in its own Suspense");
+  const actTwoFiles = [
+    "src/app/(diario)/page.tsx",
+    "src/components/tonight/act-two/HoyActTwoServer.tsx",
+    "src/components/tonight/act-two/HoyActTwo.tsx",
+    "src/components/tonight/act-two/ActTwoActions.tsx",
+    "src/components/tonight/act-two/HoyPeek.tsx",
+  ];
+  for (const file of actTwoFiles) {
+    const source = read(file);
+    assert(!/from "@\/lib\/tmdb"/.test(source.replace(/import type [^;]+;/g, "")), `${file} imports nothing that calls TMDB`);
+  }
+  const chartsStore = read("src/lib/service-charts-store.ts");
+  const readsSource = chartsStore.slice(chartsStore.indexOf("export const getServiceCharts"));
+  assert(readsSource.length > 0 && !/discoverTmdb|tmdbFetch|enrichCatalog|findOrCreateCatalog/.test(readsSource), "getServiceCharts / getRecentArrivals only read the database");
+  assert(read("vercel.json").includes("/api/cron/service-charts"), "The ranking has its own nightly cron");
+  const actTwoCss = css.slice(css.indexOf("Hoy en dos actos (FIL-I47-1)"));
+  assert(
+    actTwoCss.includes("@media (prefers-reduced-motion: no-preference) and (max-width: 639px)") &&
+      actTwoCss.includes("html:not([data-que-ver-lite]) body:has(.hoy-act-two) .hoy-act-one") &&
+      actTwoCss.includes("animation-timeline: --hoy-act-two"),
+    "The curtain runs only with full motion, outside lite, on browsers with scroll-driven animations",
+  );
+  assert(!/filter:\s*blur|backdrop-filter/.test(actTwoCss), "Act two and the curtain add no blur");
+  const labels = read("src/lib/service-charts.ts");
+  assert(labels.includes("`Lo más popular en ${") && labels.includes('source === "official" ? "Top 10 en México"'), "Only an official list may say «Top 10»");
+
   // Pure engine sanity.
   assert(PARA_TI_SLUG === "para-ti", "First lens is Para ti");
   const friday = new Date(2026, 9, 2, 22, 0);

@@ -558,6 +558,35 @@ export const yearTops = pgTable(
 );
 
 /**
+ * Hoy's second act (FIL-I47): the current top 10 per streaming platform in MX, films and series
+ * apart. `popularity` comes from TMDB discover (nightly cron); `official` is Netflix's own weekly
+ * list (FIL-I47-2). Only the latest snapshot is kept; `previousRank` remembers the one before it.
+ */
+export const serviceCharts = pgTable(
+  "ServiceChart",
+  {
+    platform: platformEnum("platform").notNull(),
+    kind: titleKindEnum("kind").notNull(),
+    rank: integer("rank").notNull(),
+    catalogId: text("catalogId")
+      .notNull()
+      .references(() => catalog.id, { onDelete: "cascade" }),
+    /** `popularity` | `official` (see `ServiceChartSource`). */
+    source: text("source").notNull(),
+    /** The day (MX) the snapshot was taken, or the official list's week start. */
+    period: date("period", { mode: "string" }).notNull(),
+    /** Rank in the previous snapshot of the same platform and kind; null = new on the list. */
+    previousRank: integer("previousRank"),
+    /** Official lists only: weeks in the top 10. */
+    weeksOnList: integer("weeksOnList"),
+    computedAt: timestamp("computedAt", { precision: 3, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.platform, table.kind, table.rank] })],
+);
+
+/**
  * «Llega a cines» ledger (FIL-I17-6): one row per Quiero ver film a user was told premieres in MX.
  * Keyed by the release date, so a date that moves (IMCINE) can be announced again.
  */
@@ -861,6 +890,7 @@ export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect;
 export type PlatformAlertRow = typeof platformAlerts.$inferSelect;
 export type CinemaReleaseRow = typeof cinemaReleases.$inferSelect;
 export type YearTopRow = typeof yearTops.$inferSelect;
+export type ServiceChartRow = typeof serviceCharts.$inferSelect;
 export type CinemaAlertRow = typeof cinemaAlerts.$inferSelect;
 export type SavedViewRow = typeof savedViews.$inferSelect;
 

@@ -7823,3 +7823,525 @@ li:nth-child(3n) > .universo-node::after {
     display: none;
   }
 }
+
+/* ----------------------------------------------------------------------
+ * Hoy en dos actos (FIL-I47-1). Act one is the sala, untouched; act two slides over it like a
+ * curtain while the sala recedes (scale + dim, no blur). The curtain only runs with full motion
+ * and outside lite; otherwise the two acts simply stack.
+ * ---------------------------------------------------------------------- */
+/* Main's bottom padding on Hoy (room for the dock); the two acts share it. */
+body:has(.hoy-act-one) {
+  --hoy-dock-room: max(6rem, calc(5.5rem + env(safe-area-inset-bottom)));
+}
+
+@media (max-width: 767px) and (max-height: 700px) {
+  body:has(.hoy-act-one) {
+    --hoy-dock-room: calc(5rem + env(safe-area-inset-bottom));
+  }
+}
+
+/*
+ * Act one fills what main's content box was before act two existed (viewport minus main's top
+ * padding and the dock room), so the sala lays out exactly as it did.
+ */
+.hoy-act-one {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  min-height: calc(100dvh - 1.5rem - env(safe-area-inset-top) - var(--hoy-dock-room));
+  position: relative;
+  z-index: 1;
+}
+
+@media (min-width: 640px) {
+  .hoy-act-one {
+    /* Header (3.5rem) + main's 1rem top and 2.5rem bottom padding. */
+    min-height: calc(100dvh - 7rem);
+  }
+}
+
+.hoy-act-two {
+  position: relative;
+  z-index: 2;
+  /* Bleed to the screen edges on a phone: main's side padding is put back inside. */
+  margin-inline: calc(-1 * max(1rem, env(safe-area-inset-left)));
+  /* The dock room again: on a phone act two begins at the fold, the first screen is the sala alone. */
+  margin-top: var(--hoy-dock-room);
+  margin-bottom: calc(-1 * var(--hoy-dock-room));
+  padding: 0.75rem 0 calc(6.5rem + env(safe-area-inset-bottom));
+  border-radius: 1.75rem 1.75rem 0 0;
+  background: var(--canvas);
+  box-shadow: 0 -24px 60px rgb(0 0 0 / 0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 2.25rem;
+  scroll-margin-top: 0;
+}
+
+.hoy-act-two::before {
+  content: "";
+  align-self: center;
+  width: 2.4rem;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--chrome);
+}
+
+@media (min-width: 640px) {
+  .hoy-act-two {
+    margin-inline: 0;
+    margin-top: 2.5rem;
+    margin-bottom: -2.5rem;
+    padding-bottom: 3rem;
+    border-radius: 1.75rem;
+  }
+}
+
+.act-two-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: -1.25rem;
+  padding-inline: 1rem;
+}
+
+.act-two-intro p {
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fog);
+}
+
+.act-two-intro h2 {
+  font-size: 1.65rem;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.1;
+  color: var(--paper);
+}
+
+.act-two-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+  contain: inline-size;
+}
+
+.act-two-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-inline: 1rem;
+}
+
+.act-two-head h2 {
+  font-size: 1.3rem;
+  font-weight: 500;
+  line-height: 1.15;
+  color: var(--paper);
+  text-wrap: balance;
+}
+
+.act-two-head h2 em {
+  font-style: italic;
+}
+
+.act-two-head p {
+  font-size: 0.6875rem;
+  color: var(--fog);
+}
+
+/* Ranking: the section takes the service's light. */
+.act-two-ranking {
+  position: relative;
+  padding-top: 0.25rem;
+}
+
+.act-two-ranking::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: -1.25rem 0 30% 0;
+  background: radial-gradient(80% 60% at 30% 0, rgb(var(--svc) / 0.2), transparent 70%);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 2.5rem);
+  mask-image: linear-gradient(180deg, transparent, #000 2.5rem);
+  transition: background var(--duration-sheet) var(--ease-out);
+}
+
+.act-two-ranking > * {
+  position: relative;
+}
+
+.act-two-services {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-inline: 1rem;
+  scrollbar-width: none;
+}
+
+.act-two-service {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0.3rem 0.75rem 0.3rem 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--well);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fog);
+  transition:
+    color var(--duration-hover) var(--ease-out),
+    border-color var(--duration-hover) var(--ease-out),
+    background-color var(--duration-hover) var(--ease-out);
+}
+
+.act-two-service[aria-pressed="true"] {
+  color: var(--paper);
+  border-color: rgb(var(--svc) / 0.7);
+  background: rgb(var(--svc) / 0.16);
+}
+
+.act-two-kinds {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 0.25rem;
+  margin-inline: 1rem;
+  padding: 0.2rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--well);
+}
+
+.act-two-kind {
+  min-height: 2rem;
+  padding: 0.25rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fog);
+}
+
+.act-two-kind[aria-pressed="true"] {
+  background: var(--chrome);
+  color: var(--paper);
+}
+
+.act-two-rail {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 0.25rem 1rem 0.4rem;
+  scroll-padding-inline: 1rem;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.act-two-rail::-webkit-scrollbar,
+.act-two-services::-webkit-scrollbar {
+  display: none;
+}
+
+.act-two-rail > * {
+  flex: none;
+  scroll-snap-align: start;
+}
+
+.act-two-rank {
+  display: grid;
+  grid-template-columns: 3.4rem 6.5rem;
+  align-items: end;
+}
+
+.act-two-numeral {
+  justify-self: end;
+  margin-right: -0.6rem;
+  font-size: 5.75rem;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 0.74;
+  letter-spacing: -0.06em;
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgb(var(--svc) / 0.95);
+  text-shadow: 0 0 28px rgb(var(--svc) / 0.35);
+}
+
+.act-two-rank:has(.act-two-numeral.is-wide) {
+  grid-template-columns: 5.6rem 6.5rem;
+}
+
+.act-two-rank-poster {
+  position: relative;
+  z-index: 1;
+  width: 6.5rem;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 0.625rem;
+  box-shadow: 0 14px 28px -14px #000;
+}
+
+.act-two-status {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgb(0 0 0 / 0.55);
+}
+
+.act-two-status.is-watched {
+  background: var(--success);
+  color: #04130b;
+}
+
+.act-two-status.is-queued {
+  background: var(--accent);
+  color: #1b0a03;
+}
+
+/* Switching service or kind: the posters rise in rank order. */
+.act-two-rise > * {
+  animation: act-two-rise var(--duration-sheet) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * var(--cascade-step));
+}
+
+@keyframes act-two-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Recién llegó: a dated list, not a rail. */
+.act-two-days {
+  display: flex;
+  flex-direction: column;
+  padding-inline: 1rem;
+}
+
+.act-two-day {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-top: 1px dashed var(--line);
+}
+
+.act-two-day:first-child {
+  border-top: 0;
+}
+
+.act-two-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 0.35rem;
+  font-size: 0.5625rem;
+  letter-spacing: 0.1em;
+  color: var(--fog);
+  line-height: 1.2;
+}
+
+.act-two-date span {
+  font-size: 1.375rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1;
+  color: var(--paper);
+}
+
+.act-two-day-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.act-two-row {
+  display: grid;
+  grid-template-columns: 2.875rem minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  width: 100%;
+  border-radius: 0.5rem;
+}
+
+.act-two-row-poster {
+  width: 2.875rem;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 0.375rem;
+}
+
+.act-two-row-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.act-two-row-title {
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--paper);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.act-two-row-meta {
+  font-size: 0.6875rem;
+  color: var(--fog);
+}
+
+/* The page ends. */
+.act-two-end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin-inline: 1rem;
+  padding: 1.4rem 1rem;
+  border: 1px dashed var(--chrome);
+  border-radius: 1.1rem;
+  text-align: center;
+}
+
+.act-two-end p {
+  font-size: 1.5rem;
+  font-style: italic;
+  font-weight: 500;
+  color: var(--paper);
+}
+
+.act-two-end span {
+  max-width: 28ch;
+  font-size: 0.75rem;
+  color: var(--fog);
+}
+
+.act-two-end small {
+  margin-top: 0.4rem;
+  font-size: 0.625rem;
+  color: var(--faint);
+}
+
+/* The peek line: just above the dock while act two waits below the fold. */
+.hoy-peek {
+  position: fixed;
+  left: 50%;
+  bottom: calc(4.8rem + env(safe-area-inset-bottom));
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--accent-tint);
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.8);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 6px);
+  transition:
+    opacity var(--duration-enter) var(--ease-out),
+    transform var(--duration-enter) var(--ease-out);
+}
+
+.hoy-peek.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+
+.hoy-peek svg {
+  animation: hoy-peek-nudge var(--duration-sweep) var(--ease-out) infinite;
+}
+
+@keyframes hoy-peek-nudge {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+
+@media (min-width: 640px) {
+  .hoy-peek {
+    bottom: 1.25rem;
+  }
+}
+
+/* iPhone SE / mini: the night line already sits on the dock; no room for the line. */
+@media (max-width: 767px) and (max-height: 700px) {
+  .hoy-peek {
+    display: none;
+  }
+}
+
+/*
+ * The curtain: phone only (on desktop the header and the floating bedtime chip would ride over a
+ * stuck sala), full motion, not lite, and a browser with scroll-driven animations.
+ */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) and (max-width: 639px) {
+    body:has(.hoy-act-two) {
+      timeline-scope: --hoy-act-two;
+    }
+
+    html:not([data-que-ver-lite]) .hoy-act-two {
+      view-timeline: --hoy-act-two block;
+    }
+
+    html:not([data-que-ver-lite]) body:has(.hoy-act-two) .hoy-act-one {
+      position: sticky;
+      top: 0;
+      transform-origin: 50% 30%;
+      animation: hoy-act-one-recede linear both;
+      animation-timeline: --hoy-act-two;
+      animation-range: entry 0% entry 100%;
+    }
+  }
+}
+
+@keyframes hoy-act-one-recede {
+  to {
+    opacity: 0.35;
+    transform: scale(0.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .act-two-rise > *,
+  .hoy-peek svg {
+    animation: none;
+  }
+
+  .hoy-peek {
+    transition: none;
+  }
+}
+
+html[data-que-ver-lite] .act-two-rise > *,
+html[data-que-ver-lite] .hoy-peek svg {
+  animation: none;
+}

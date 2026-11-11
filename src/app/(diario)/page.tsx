@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { EmptyState } from "@/components/EmptyState";
 import { HoySkeleton } from "@/components/PageSkeletons";
 import { RecosRefresher, RecosWarming } from "@/components/tonight/RecosWarming";
+import { HoyActTwoServer } from "@/components/tonight/act-two/HoyActTwoServer";
 import { TonightSala } from "@/components/tonight/TonightSala";
 import { parseDeckCard } from "@/lib/nav-origin";
 import { TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
@@ -109,8 +110,14 @@ const HoyShell = async ({
 
   return (
     <>
-      <TonightSala decks={decks} initialSlug={initialSlug} initialCardId={parseDeckCard(params.carta)} />
+      {/* Act one: the sala, the first screen. Act two slides over it (FIL-I47). */}
+      <div className="hoy-act-one">
+        <TonightSala decks={decks} initialSlug={initialSlug} initialCardId={parseDeckCard(params.carta)} />
+      </div>
       {decks.recosWarming ? <RecosRefresher /> : null}
+      <Suspense fallback={null}>
+        <HoyActTwoServer userId={userId} userPlatforms={decks.userPlatforms} />
+      </Suspense>
     </>
   );
 };

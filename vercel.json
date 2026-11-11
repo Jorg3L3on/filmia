@@ -16,6 +16,10 @@
       "schedule": "0 9 * * *"
     },
     {
+      "path": "/api/cron/service-charts",
+      "schedule": "15 9 * * *"
+    },
+    {
       "path": "/api/cron/tonight-picks",
       "schedule": "30 9 * * *"
     },
