@@ -190,6 +190,13 @@
       "when": 1793332830423,
       "tag": "0026_api_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1794374149167,
+      "tag": "0027_catalog_alternate_names",
+      "breakpoints": true
     }
   ]
 }

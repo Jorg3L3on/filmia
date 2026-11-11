@@ -115,8 +115,20 @@ export const catalog = pgTable(
     id: text("id").primaryKey(),
     tmdbId: integer("tmdbId").notNull(),
     kind: titleKindEnum("kind").notNull(),
+    /**
+     * Mexican-facing title (FIL-I48-1). Preference: the first MX alternative
+     * that differs from `originalName`; otherwise the es-MX title from the
+     * details response (`language=es-MX`).
+     */
     name: text("name").notNull(),
+    /** TMDB's original title (`original_title` / `original_name`). */
     originalName: text("originalName"),
+    /**
+     * Extra search strings (FIL-I48-1), not a second display name. Order:
+     * the MX alternative, the original title, then the en-US title when it
+     * differs from those. Anything equal to `name` is left out.
+     */
+    alternateNames: jsonb("alternateNames").notNull().default([]),
     year: integer("year"),
     posterPath: text("posterPath"),
     backdropPath: text("backdropPath"),
