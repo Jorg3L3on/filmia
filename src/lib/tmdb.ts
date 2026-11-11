@@ -18,6 +18,7 @@ import {
 import {
   parseTmdbDetails,
   parseTmdbYear,
+  tmdbDetailsAppendToResponse,
   type TmdbDetails,
   type TmdbGenre,
   type TmdbKeyword,
@@ -108,14 +109,42 @@ export type TmdbErrorCode = "missing_key" | "rate_limit" | "network" | "http";
 export class TmdbRequestError extends Error {
   readonly code: TmdbErrorCode;
   readonly status: number | null;
+  /** Seconds from TMDB's `Retry-After` on a 429, when the header was present. */
+  readonly retryAfterSeconds: number | null;
 
-  constructor(code: TmdbErrorCode, message: string, status: number | null = null) {
+  constructor(
+    code: TmdbErrorCode,
+    message: string,
+    status: number | null = null,
+    retryAfterSeconds: number | null = null,
+  ) {
     super(message);
     this.name = "TmdbRequestError";
     this.code = code;
     this.status = status;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
+
+/** `Retry-After` is either delta-seconds or an HTTP date. */
+export const parseRetryAfterSeconds = (header: string | null, nowMs = Date.now()) => {
+  const trimmed = header?.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const seconds = Number(trimmed);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return seconds;
+  }
+
+  const when = Date.parse(trimmed);
+  if (Number.isNaN(when)) {
+    return null;
+  }
+
+  return Math.max(0, Math.ceil((when - nowMs) / 1000));
+};
 
 export const TMDB_UNAVAILABLE_COPY =
   "No se puede buscar títulos ahora. Tu diario y tus listas siguen disponibles.";
@@ -245,6 +274,7 @@ const fetchTmdbJson = async (
       "rate_limit",
       "TMDB está limitando las peticiones. Espera un momento e inténtalo de nuevo.",
       429,
+      parseRetryAfterSeconds(response.headers.get("retry-after")),
     );
   }
 
@@ -705,7 +735,7 @@ const fetchTmdbDetails = async (
   const data = (await fetchTmdbJson(
     path,
     tmdbSearch(path, {
-      append_to_response: segment === "tv" ? "keywords,aggregate_credits" : "keywords,credits",
+      append_to_response: tmdbDetailsAppendToResponse(segment),
     }),
     { store: false },
   )) as TmdbMovieDetailsPayload | TmdbTvDetailsPayload;
@@ -718,7 +748,8 @@ const fetchTmdbDetails = async (
 
 // v2: series runtime falls back to the last / next episode aired (FIL-I24-7).
 // v3: people carry the composer (FIL-I26-4).
-const loadCachedTmdbDetails = unstable_cache(fetchTmdbDetails, ["tmdb-details", "v3"], {
+// v4: Mexican-facing name, original title, and extra search strings (FIL-I48-1).
+const loadCachedTmdbDetails = unstable_cache(fetchTmdbDetails, ["tmdb-details", "v4"], {
   revalidate: METADATA_REVALIDATE_SECONDS,
   tags: [TMDB_CACHE_TAG],
 });

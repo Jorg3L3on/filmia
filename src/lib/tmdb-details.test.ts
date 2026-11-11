@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
-import { parseTmdbDetails, parseTmdbRuntimeMinutes, type TmdbTvDetailsPayload } from "./tmdb-details";
+import {
+  parseTmdbDetails,
+  parseTmdbRuntimeMinutes,
+  tmdbDetailsAppendToResponse,
+  type TmdbTvDetailsPayload,
+} from "./tmdb-details";
 import { TMDB_CAST_LIMIT } from "./tmdb-people";
 
 const longSeries = (castSize: number): TmdbTvDetailsPayload => ({
@@ -94,6 +100,84 @@ describe("parseTmdbDetails", () => {
 
     assert.ok(rawBytes > 1_000_000, `fixture should be megabytes, got ${rawBytes}`);
     assert.ok(parsedBytes < 100_000, `parsed details should be < 100 KB, got ${parsedBytes}`);
+  });
+});
+
+describe("catalog titles (FIL-I48-1)", () => {
+  it("uses the MX alternative when it differs from the original, and keeps en-US when that differs too", () => {
+    const details = parseTmdbDetails({
+      id: 129,
+      title: "El viaje de Chihiro",
+      original_title: "千と千尋の神隠し",
+      original_language: "ja",
+      release_date: "2001-07-20",
+      poster_path: "/p.jpg",
+      backdrop_path: null,
+      overview: "Una niña.",
+      runtime: 125,
+      alternative_titles: {
+        titles: [
+          { iso_3166_1: "ES", title: "El viaje de Chihiro" },
+          { iso_3166_1: "MX", title: "  El viaje de Chihiro: México  " },
+          { iso_3166_1: "US", title: "Spirited Away" },
+        ],
+      },
+      translations: {
+        translations: [
+          { iso_3166_1: "US", iso_639_1: "en", data: { title: "Spirited Away" } },
+          { iso_3166_1: "MX", iso_639_1: "es", data: { title: "El viaje de Chihiro" } },
+        ],
+      },
+    });
+
+    assert.equal(details.name, "El viaje de Chihiro: México");
+    assert.equal(details.originalName, "千と千尋の神隠し");
+    assert.deepEqual(details.alternateNames, ["千と千尋の神隠し", "Spirited Away"]);
+  });
+
+  it("keeps the es-MX name when the MX alternative is the original title", () => {
+    const details = parseTmdbDetails({
+      id: 27205,
+      title: "El origen",
+      original_title: "Inception",
+      release_date: "2010-07-15",
+      runtime: 148,
+      alternative_titles: { titles: [{ iso_3166_1: "MX", title: "Inception" }] },
+      translations: {
+        translations: [{ iso_3166_1: "US", iso_639_1: "en", data: { title: "Inception" } }],
+      },
+    });
+    assert.equal(details.name, "El origen");
+    assert.equal(details.originalName, "Inception");
+    assert.deepEqual(details.alternateNames, ["Inception"]);
+  });
+
+  it("reads a series from alternative_titles.results and translations data.name", () => {
+    const details = parseTmdbDetails({
+      id: 1396,
+      name: "Breaking Bad",
+      original_name: "Breaking Bad",
+      original_language: "en",
+      first_air_date: "2008-01-20",
+      alternative_titles: { results: [{ iso_3166_1: "MX", title: "Breaking Bad" }] },
+      translations: {
+        translations: [{ iso_3166_1: "US", iso_639_1: "en", data: { name: "Breaking Bad" } }],
+      },
+    });
+
+    assert.equal(details.name, "Breaking Bad");
+    assert.equal(details.originalName, "Breaking Bad");
+    assert.deepEqual(details.alternateNames, []);
+  });
+
+  it("asks the details call for alternative titles and translations", () => {
+    assert.match(tmdbDetailsAppendToResponse("movie"), /keywords,credits,alternative_titles,translations/);
+    assert.match(
+      tmdbDetailsAppendToResponse("tv"),
+      /keywords,aggregate_credits,alternative_titles,translations/,
+    );
+    const source = readFileSync(new URL("./tmdb.ts", import.meta.url), "utf8");
+    assert.match(source, /append_to_response: tmdbDetailsAppendToResponse\(segment\)/);
   });
 });
 

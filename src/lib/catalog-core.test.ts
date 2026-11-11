@@ -25,6 +25,7 @@ const shared: CatalogRow = {
   kind: "MOVIE",
   name: "Matrix",
   originalName: "The Matrix",
+  alternateNames: [],
   year: 1999,
   posterPath: "/fresh.jpg",
   backdropPath: "/bg.jpg",

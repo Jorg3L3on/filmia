@@ -137,6 +137,11 @@ const buildTitleConditions = (userId: string, filters: TitleFilters) => {
       or(
         ilike(catalog.name, `%${q}%`),
         ilike(catalog.originalName, `%${q}%`),
+        // FIL-I48-1: MX, original, and en-US strings that are not already `name`.
+        sql`exists (
+          select 1 from jsonb_array_elements_text(${catalog.alternateNames}) as alt(value)
+          where alt.value ilike ${`%${q}%`}
+        )`,
         ilike(titles.review, `%${q}%`),
       )!,
     );
