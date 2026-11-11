@@ -30,6 +30,8 @@ import {
   type TitleWithRelations,
 } from "@/db";
 import { flattenTitle, WITH_CATALOG } from "@/lib/catalog";
+import { storedAlternateNames } from "@/lib/catalog-search";
+import { catalogTitlesMatchSql } from "@/lib/catalog-search-db";
 import { monthUtcRange, toDateInput } from "@/lib/dates";
 import { listAccessFor } from "@/lib/list-access";
 import { getMembersByList } from "@/lib/list-invites";
@@ -132,19 +134,9 @@ const buildTitleConditions = (userId: string, filters: TitleFilters) => {
   } = filters;
   const conditions = [eq(titles.userId, userId)];
 
-  if (q) {
-    conditions.push(
-      or(
-        ilike(catalog.name, `%${q}%`),
-        ilike(catalog.originalName, `%${q}%`),
-        // FIL-I48-1: MX, original, and en-US strings that are not already `name`.
-        sql`exists (
-          select 1 from jsonb_array_elements_text(${catalog.alternateNames}) as alt(value)
-          where alt.value ilike ${`%${q}%`}
-        )`,
-        ilike(titles.review, `%${q}%`),
-      )!,
-    );
+  const text = q?.trim().replace(/\s+/g, " ") ?? "";
+  if (text) {
+    conditions.push(or(catalogTitlesMatchSql(text), ilike(titles.review, `%${text}%`))!);
   }
 
   if (kind && kind !== "ALL") {
@@ -439,10 +431,12 @@ export const getTitleOptionsOutsideList = cache(async (listId: string) => {
     return [];
   }
 
-  return db
+  const rows = await db
     .select({
       id: titles.id,
       name: catalog.name,
+      originalName: catalog.originalName,
+      alternateNames: catalog.alternateNames,
       year: catalog.year,
       posterPath: catalog.posterPath,
       tmdbId: catalog.tmdbId,
@@ -463,6 +457,11 @@ export const getTitleOptionsOutsideList = cache(async (listId: string) => {
       ),
     )
     .orderBy(asc(catalog.name));
+
+  return rows.map((row) => ({
+    ...row,
+    alternateNames: storedAlternateNames(row.alternateNames),
+  }));
 });
 
 export const getUserStreamingPlatforms = cache(async () => {

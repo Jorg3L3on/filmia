@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { after, it } from "node:test";
 import { eq, sql } from "drizzle-orm";
 import { catalog, db } from "@/db";
+import { catalogTitlesMatchSql } from "@/lib/catalog-search-db";
 import { closeLocalPg } from "@/db/local-pg";
 import { seeder } from "@/lib/test-support/seed";
 
@@ -47,16 +48,20 @@ describeWithDb("Catalog title columns on a local database (FIL-I48-1)", () => {
     assert.equal(stored?.originalName, "Inside Out");
     assert.deepEqual(stored?.alternateNames, ["Intensamente", "Inside Out"]);
 
-    const bySearch = await db
+    const byOriginal = await db
       .select({ id: catalog.id })
       .from(catalog)
-      .where(
-        sql`exists (
-          select 1 from jsonb_array_elements_text(${catalog.alternateNames}) as alt(value)
-          where alt.value ilike ${"%Inside Out%"}
-        )`,
-      );
-    assert.ok(bySearch.some((hit) => hit.id === film.catalogId));
+      .where(catalogTitlesMatchSql("Inside Out"));
+    const byMexican = await db
+      .select({ id: catalog.id })
+      .from(catalog)
+      .where(catalogTitlesMatchSql("Intensa-Mente"));
+    assert.ok(byOriginal.some((hit) => hit.id === film.catalogId));
+    assert.ok(byMexican.some((hit) => hit.id === film.catalogId));
+    assert.equal(
+      byOriginal.find((hit) => hit.id === film.catalogId)?.id,
+      byMexican.find((hit) => hit.id === film.catalogId)?.id,
+    );
 
     const equal = await seed.film({ name: "El origen", year: 2010 });
     await db
