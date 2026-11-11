@@ -340,3 +340,54 @@ export const fitPeek = (salaBottom: number, dockTop: number, fullHeight = 18, ch
   if (room >= PEEK_CHEVRON_ROOM) return { mode: "chevron", top: salaBottom + (room - chevronHeight) / 2 };
   return { mode: "none", top: 0 };
 };
+
+/* FIL-I47-6 · «Asomo»: where there is no room for the peek line (iPhone Safari), the first visits
+ * get one small bounce that shows the second act's edge. */
+
+/** localStorage key: `{ bounces, seen }` for this device. */
+export const ASOMO_KEY = "filmia:hoy-asomo";
+export const ASOMO_MAX_BOUNCES = 3;
+/** How long Hoy waits, untouched, before bouncing. */
+export const ASOMO_DELAY_MS = 2500;
+/** What of the act two shows above the dock during the dip: its handle and the date line. */
+export const ASOMO_REVEAL_PX = 44;
+
+/**
+ * How far the page dips (pure, tested): everything the dock and browser bars cover at the bottom,
+ * plus the part of the act two to show. iOS Safari's floating toolbar sits under the dock, so on an
+ * iPhone this is ~200 px; on a phone browser without it, ~120 px.
+ */
+export const asomoDistance = (viewportHeight: number, dockTop: number) =>
+  Math.round(Math.max(0, viewportHeight - dockTop) + ASOMO_REVEAL_PX);
+
+export type AsomoState = { bounces: number; seen: boolean };
+
+export const parseAsomo = (raw: string | null): AsomoState => {
+  try {
+    const value = raw ? (JSON.parse(raw) as Partial<AsomoState>) : {};
+    return {
+      bounces: Number.isInteger(value.bounces) && (value.bounces as number) > 0 ? (value.bounces as number) : 0,
+      seen: value.seen === true,
+    };
+  } catch {
+    return { bounces: 0, seen: false };
+  }
+};
+
+/**
+ * Bounce only for someone who has not reached the second act yet, on their first visits, with the
+ * act still below the fold, untouched since load, never with reduced motion or in lite sala.
+ */
+export const shouldBounce = (input: {
+  state: AsomoState;
+  reducedMotion: boolean;
+  lite: boolean;
+  actBelowFold: boolean;
+  touched: boolean;
+}) =>
+  !input.reducedMotion &&
+  !input.lite &&
+  input.actBelowFold &&
+  !input.touched &&
+  !input.state.seen &&
+  input.state.bounces < ASOMO_MAX_BOUNCES;

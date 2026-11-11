@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { showsNovedad } from "../components/tonight/act-two/useHoyNovedad";
 import {
+  ASOMO_MAX_BOUNCES,
+  ASOMO_REVEAL_PX,
+  asomoDistance,
+  parseAsomo,
+  shouldBounce,
   fitPeek,
   actTwoOrder,
   isGem,
@@ -266,5 +271,36 @@ describe("peek line placement", () => {
   it("shows nothing without room", () => {
     assert.equal(fitPeek(700, 706).mode, "none");
     assert.equal(fitPeek(700, 690).mode, "none");
+  });
+});
+
+describe("asomo (one-time bounce)", () => {
+  const base = { state: { bounces: 0, seen: false }, reducedMotion: false, lite: false, actBelowFold: true, touched: false };
+
+  it("bounces on a first visit with the act below the fold", () => {
+    assert.equal(shouldBounce(base), true);
+  });
+
+  it("never with reduced motion, in lite, once seen, after the last visit, when touched or scrolled", () => {
+    assert.equal(shouldBounce({ ...base, reducedMotion: true }), false);
+    assert.equal(shouldBounce({ ...base, lite: true }), false);
+    assert.equal(shouldBounce({ ...base, state: { bounces: 0, seen: true } }), false);
+    assert.equal(shouldBounce({ ...base, state: { bounces: ASOMO_MAX_BOUNCES, seen: false } }), false);
+    assert.equal(shouldBounce({ ...base, touched: true }), false);
+    assert.equal(shouldBounce({ ...base, actBelowFold: false }), false);
+  });
+
+  it("dips past the dock and the browser's bottom bars, then shows the act two's top", () => {
+    // iPhone Safari: dock at 700 of 874 pt (floating toolbar under it).
+    assert.equal(asomoDistance(874, 700), 174 + ASOMO_REVEAL_PX);
+    // Desktop: no dock, the act shows right at the bottom.
+    assert.equal(asomoDistance(800, 800), ASOMO_REVEAL_PX);
+  });
+
+  it("reads a stored state and survives garbage", () => {
+    assert.deepEqual(parseAsomo('{"bounces":2,"seen":false}'), { bounces: 2, seen: false });
+    assert.deepEqual(parseAsomo('{"seen":true}'), { bounces: 0, seen: true });
+    assert.deepEqual(parseAsomo("not json"), { bounces: 0, seen: false });
+    assert.deepEqual(parseAsomo(null), { bounces: 0, seen: false });
   });
 });
