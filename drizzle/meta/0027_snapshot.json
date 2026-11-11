@@ -1,5 +1,5 @@
 {
-  "id": "aa4790df-699b-4f2c-aa24-66477d5c399c",
+  "id": "659ab23e-354b-45ae-9837-e8dbe3f84c95",
   "prevId": "01ce527e-6c45-4d95-8c81-ff7dc21fcd08",
   "version": "7",
   "dialect": "postgresql",
@@ -78,6 +78,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "alternateNames": {
+          "name": "alternateNames",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
         },
         "year": {
           "name": "year",
@@ -2483,99 +2490,6 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.ServiceChart": {
-      "name": "ServiceChart",
-      "schema": "",
-      "columns": {
-        "platform": {
-          "name": "platform",
-          "type": "Platform",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "kind": {
-          "name": "kind",
-          "type": "TitleKind",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "rank": {
-          "name": "rank",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "catalogId": {
-          "name": "catalogId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "source": {
-          "name": "source",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "period": {
-          "name": "period",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "previousRank": {
-          "name": "previousRank",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "weeksOnList": {
-          "name": "weeksOnList",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "computedAt": {
-          "name": "computedAt",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "ServiceChart_catalogId_Catalog_id_fk": {
-          "name": "ServiceChart_catalogId_Catalog_id_fk",
-          "tableFrom": "ServiceChart",
-          "tableTo": "Catalog",
-          "columnsFrom": [
-            "catalogId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "ServiceChart_platform_kind_rank_pk": {
-          "name": "ServiceChart_platform_kind_rank_pk",
-          "columns": [
-            "platform",
-            "kind",
-            "rank"
-          ]
-        }
-      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},

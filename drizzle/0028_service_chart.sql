@@ -1,6 +1,6 @@
 -- Hoy en dos actos · ranking por servicio (FIL-I47-1). ADDITIVE and idempotent: one new table, no backfill.
 -- Holds the latest top 10 per platform and kind in MX; the nightly cron rewrites it.
--- Number 0027 (Plania reservation), after 0026_api_usage. Until applied, Hoy's second act
+-- Number 0028 (Plania reservation), after 0027_catalog_alternate_names (FIL-I48-1). Until applied, Hoy's second act
 -- swallows the missing-table error and shows no ranking. Rollback: DROP TABLE "ServiceChart".
 -- Scaffolded with `drizzle-kit generate`, then made idempotent by hand.
 

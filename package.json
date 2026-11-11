@@ -20,6 +20,7 @@
     "db:seed:tutorial": "tsx scripts/seed-demo-tutorial.ts",
     "db:seed:audit": "tsx scripts/seed-audit.ts",
     "db:backfill-metadata": "tsx scripts/backfill-metadata.ts",
+    "db:backfill-titles": "tsx scripts/backfill-alternate-titles.ts",
     "db:set-password": "tsx scripts/set-password.ts",
     "db:clone-account": "tsx scripts/clone-account.ts",
     "db:backfill-tonight": "tsx scripts/backfill-tonight.ts",

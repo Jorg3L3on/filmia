@@ -734,7 +734,7 @@ const CHART_FILL_POOL = 12;
 
 /**
  * FIL-I47-3: the best of the user's charts as recommended cards, for a queue with fewer than three
- * playable titles. Database only (the charts are the nightly cron's). Empty before 0027.
+ * playable titles. Database only (the charts are the nightly cron's). Empty before 0028.
  */
 export const loadChartFillEntries = async (
   userId: string,

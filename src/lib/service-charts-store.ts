@@ -307,7 +307,7 @@ export const importNetflixTop10 = async (
   return { ok: true, week: weekStart, films, series };
 };
 
-/** The stored lists for these platforms, ranks in order. Empty before 0027 is applied. */
+/** The stored lists for these platforms, ranks in order. Empty before 0028 is applied. */
 export const getServiceCharts = async (platforms: readonly Platform[]): Promise<ServiceChart[]> => {
   if (platforms.length === 0) {
     return [];

@@ -5,6 +5,8 @@ import type { TmdbGenre, TmdbKeyword, TmdbPerson } from "@/lib/tmdb";
 export type CatalogEnrichmentPatch = Partial<{
   name: string;
   originalName: string;
+  /** Extra search strings: MX, original, en-US when different (FIL-I48-1). */
+  alternateNames: string[];
   year: number;
   posterPath: string;
   backdropPath: string;
@@ -39,6 +41,25 @@ const nonEmpty = <T>(value: T[] | null | undefined) =>
   value && value.length > 0 ? value : undefined;
 
 /**
+ * The three title columns enrichment and the title backfill both write.
+ * An empty alternate list is omitted so a thin response cannot wipe strings
+ * already stored.
+ */
+export const catalogTitlePatch = (
+  resolved: Pick<TitleMetadata, "name" | "originalName" | "alternateNames">,
+): CatalogEnrichmentPatch => {
+  const patch: CatalogEnrichmentPatch = {
+    name: text(resolved.name),
+    originalName: text(resolved.originalName),
+    alternateNames: nonEmpty(resolved.alternateNames),
+  };
+
+  return Object.fromEntries(
+    Object.entries(patch).filter(([, value]) => value !== undefined),
+  ) as CatalogEnrichmentPatch;
+};
+
+/**
  * Only what the lookup actually returned. The catalog is shared, so a missing
  * value — a dead OMDb key, a TMDB hiccup, a field TMDB lacks — must never
  * overwrite data another user already sees; the column simply stays as is.
@@ -48,8 +69,7 @@ export const catalogEnrichmentPatch = (
   extra: { posterAmbient?: string | null } = {},
 ): CatalogEnrichmentPatch => {
   const patch: CatalogEnrichmentPatch = {
-    name: text(resolved.name),
-    originalName: text(resolved.originalName),
+    ...catalogTitlePatch(resolved),
     year: positive(resolved.year),
     posterPath: text(resolved.posterPath),
     backdropPath: text(resolved.backdropPath),
