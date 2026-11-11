@@ -38,6 +38,8 @@ export type TasteProfile = {
 };
 
 export const RECENCY_HALF_LIFE_MONTHS = 18;
+/** Where a rating means «neither»: the default mean, and the baseline of implied ratings. */
+export const NEUTRAL_RATING = 7;
 export const RECENCY_FLOOR = 0.15;
 export const UNRATED_WEIGHT = 0.3;
 export const DROPPED_WEIGHT = -0.8;
@@ -87,8 +89,11 @@ export const titleTasteWeight = (title: TonightTitle, mean: number) => {
   if (title.kind === "SERIES" && title.seriesStatus === "DROPPED") {
     return DROPPED_WEIGHT;
   }
+  // An implied rating («Me gustó» / «No tanto», FIL-I26 / FIL-I47-3) is absolute, not relative to
+  // the person's stars: against the neutral 7, so ten «Me gustó» never cancel out to no taste at all.
+  const baseline = title.ratingImplied ? NEUTRAL_RATING : mean;
   let weight =
-    title.rating == null ? UNRATED_WEIGHT : clamp((title.rating - mean) / 2, -1.5, 1.5);
+    title.rating == null ? UNRATED_WEIGHT : clamp((title.rating - baseline) / 2, -1.5, 1.5);
   if (title.listSlugs.includes(FAVORITAS_SLUG)) {
     weight = Math.max(weight, 0.8) * 1.5;
   } else if (title.listSlugs.includes(POR_REWATCH_SLUG)) {
@@ -122,11 +127,12 @@ export const buildTasteProfile = (
     options.halfLifeMonths === undefined ? RECENCY_HALF_LIFE_MONTHS : options.halfLifeMonths;
   const collectionBonus = options.collectionBonus ?? 0;
   const watched = titles.filter((title) => title.watchedAt != null);
-  const rated = watched.filter((title) => title.rating != null);
+  // The mean that centres stars: the person's own stars only (implied ratings have their own baseline).
+  const rated = watched.filter((title) => title.rating != null && !title.ratingImplied);
   const mean =
     rated.length >= 3
       ? rated.reduce((sum, title) => sum + (title.rating ?? 0), 0) / rated.length
-      : 7;
+      : NEUTRAL_RATING;
 
   const vector: FeatureVector = new Map();
   const genreAffinity = new Map<number, number>();

@@ -11,7 +11,15 @@ import { findCatalogByTmdb } from "@/lib/catalog";
 import { revalidateSearchAddSurfaces } from "@/lib/revalidate-surfaces";
 import { addToWatchlist } from "@/app/actions/watchlist";
 import { isTitleInWatchlist } from "@/lib/queries";
-import { requireUserId } from "@/lib/session";
+import { getCurrentSession, requireUserId } from "@/lib/session";
+import { actTwoStamp } from "@/lib/service-charts";
+import { answerAfina, loadAfinaCards, type AfinaCard, type AfinaOutcome } from "@/lib/cold-start-store";
+import { isVisteAnswer } from "@/lib/piezas/core";
+import { catalogIdFor } from "@/lib/catalog-core";
+import { createId } from "@paralleldrive/cuid2";
+import { pickEvents } from "@/db";
+import { getRecentArrivals, getServiceCharts } from "@/lib/service-charts-store";
+import { parseStoredStreamingPlatforms } from "@/lib/streaming-platforms";
 import { FICHA_PIN_LENS, SEARCH_PIN_LENS, searchPinBlocker } from "@/lib/tonight/pin";
 import { isHHMM, parseNightEnds } from "@/lib/tonight/time";
 import type { PickEventKind } from "@/lib/tonight";
@@ -198,4 +206,70 @@ export const updateNightEnds = async (formData: FormData) => {
   await db.update(users).set({ nightEndsAt }).where(eq(users.id, userId));
   revalidatePath("/");
   revalidatePath("/perfil");
+};
+
+/**
+ * The Hoy tab dot (FIL-I47-2): the stamp of today's second act for the signed-in user. The dock
+ * compares it with the one Hoy last rendered; null when signed out or on any failure.
+ */
+export const getActTwoStamp = async (): Promise<string | null> => {
+  try {
+    const session = await getCurrentSession();
+    const userId = session?.user?.id;
+    if (!userId) return null;
+    const [user] = await db.select({ platforms: users.streamingPlatforms }).from(users).where(eq(users.id, userId)).limit(1);
+    const platforms = parseStoredStreamingPlatforms(user?.platforms);
+    if (platforms.length === 0) return null;
+    const [charts, arrivals] = await Promise.all([getServiceCharts(platforms), getRecentArrivals(userId, platforms)]);
+    return actTwoStamp(charts, arrivals);
+  } catch {
+    return null;
+  }
+};
+
+const platformsOf = async (userId: string) => {
+  const [user] = await db.select({ platforms: users.streamingPlatforms }).from(users).where(eq(users.id, userId)).limit(1);
+  return parseStoredStreamingPlatforms(user?.platforms);
+};
+
+/** «Afina tu gusto» (FIL-I47-3): one answer about a title on the user's charts. */
+export const answerAfinaCard = async (catalogId: string, choice: string): Promise<AfinaOutcome> => {
+  const userId = await requireUserId();
+  if (typeof catalogId !== "string" || !isVisteAnswer(choice)) {
+    return { ok: false, error: "Respuesta no válida." };
+  }
+  const outcome = await answerAfina(userId, await platformsOf(userId), catalogId, choice);
+  if (outcome.ok && (choice !== "no" || outcome.reachedGoal)) {
+    revalidatePath("/");
+    revalidatePath("/perfil");
+  }
+  return outcome;
+};
+
+/** The next «Afina tu gusto» cards, never one already answered or in the library. */
+export const moreAfinaCards = async (): Promise<AfinaCard[]> => {
+  const userId = await requireUserId();
+  return loadAfinaCards(userId, await platformsOf(userId)).catch(() => []);
+};
+
+/** Metrics of Hoy's second act (FIL-I47-4): scrolled past the sala, ficha opened from it. */
+const ACT_TWO_EVENTS = ["acto_dos_visto", "acto_dos_ficha"] as const;
+type ActTwoEvent = (typeof ACT_TWO_EVENTS)[number];
+
+export const recordActTwoEvent = async (
+  kind: ActTwoEvent,
+  title?: { tmdbId: number; kind: "MOVIE" | "SERIES" },
+): Promise<void> => {
+  try {
+    const session = await getCurrentSession();
+    const userId = session?.user?.id;
+    if (!userId || !(ACT_TWO_EVENTS as readonly string[]).includes(kind)) return;
+    const catalogId =
+      title && Number.isInteger(title.tmdbId) && (title.kind === "MOVIE" || title.kind === "SERIES")
+        ? catalogIdFor(title.kind, title.tmdbId)
+        : null;
+    await db.insert(pickEvents).values({ id: createId(), userId, titleId: null, catalogId, kind, lens: null, createdAt: new Date() });
+  } catch {
+    // Metrics never cost the person anything.
+  }
 };

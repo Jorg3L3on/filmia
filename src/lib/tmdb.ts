@@ -587,6 +587,40 @@ export const discoverTmdb = async (
   });
 };
 
+/** A title search hit with its English (en-US) name: Netflix's Top 10 file is in English (FIL-I47-2). */
+export type TmdbEnglishHit = {
+  tmdbId: number;
+  kind: TitleKind;
+  enName: string;
+  originalName: string | null;
+  year: number | null;
+  posterPath: string | null;
+  popularity: number;
+};
+
+/** `/search/movie` or `/search/tv` in en-US, first page. */
+export const searchTmdbTitlesEn = async (query: string, kind: TitleKind): Promise<TmdbEnglishHit[]> => {
+  const path = kind === "SERIES" ? "/search/tv" : "/search/movie";
+  const data = (await fetchTmdbJson(path, tmdbSearch(path, { query, language: "en-US", include_adult: "false" }), {
+    store: false,
+  })) as { results?: TmdbDiscoverItem[] };
+  return (data.results ?? []).flatMap((item) => {
+    const enName = (kind === "SERIES" ? item.name : item.title)?.trim() ?? "";
+    if (!enName) return [];
+    return [
+      {
+        tmdbId: item.id,
+        kind,
+        enName,
+        originalName: (kind === "SERIES" ? item.original_name : item.original_title) ?? null,
+        year: parseTmdbYear(kind === "SERIES" ? item.first_air_date : item.release_date),
+        posterPath: item.poster_path ?? null,
+        popularity: item.popularity ?? 0,
+      },
+    ];
+  });
+};
+
 export type TmdbRelatedKind = "recommendations" | "similar";
 
 /**
