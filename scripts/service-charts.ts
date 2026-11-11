@@ -6,6 +6,7 @@ import { config as loadEnv } from "dotenv";
  *   npm run charts:revisar                    # read-only: rows stored per platform and kind
  *   npm run charts:correr                     # WRITES: runs the cron step (TMDB discover → Catalog + ServiceChart)
  *   npm run charts:correr -- --plataformas=NETFLIX,MAX
+ *   npm run charts:netflix                    # WRITES: imports Netflix's official MX Top 10 now (--forzar ignores the stored week)
  *
  * All take --env=<path to .env>. With FILMIA_LOCAL_PG=1 they talk to the local Postgres in DATABASE_URL.
  */
@@ -43,6 +44,12 @@ const correr = async () => {
   console.log(JSON.stringify(summary, null, 2));
 };
 
+const netflix = async () => {
+  const { importNetflixTop10 } = await import("../src/lib/service-charts-store");
+  const summary = await importNetflixTop10({ force: args.includes("--forzar") });
+  console.log(JSON.stringify(summary, null, 2));
+};
+
 const main = async () => {
   if (process.env.FILMIA_LOCAL_PG === "1") {
     const { installLocalPg } = await import("../src/db/local-pg");
@@ -50,6 +57,8 @@ const main = async () => {
   }
   if (command === "correr") {
     await correr();
+  } else if (command === "netflix") {
+    await netflix();
   } else {
     await revisar();
   }

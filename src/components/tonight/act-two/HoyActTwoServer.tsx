@@ -4,7 +4,7 @@ import { HoyActTwo } from "@/components/tonight/act-two/HoyActTwo";
 import { HoyPeek } from "@/components/tonight/act-two/HoyPeek";
 import { getAssignableLists, getUserListMembershipIndex, getUserTmdbIndex } from "@/lib/queries";
 import { getRecentArrivals, getServiceCharts } from "@/lib/service-charts-store";
-import { chartPlatformsFor } from "@/lib/service-charts";
+import { actTwoStamp, chartPlatformsFor } from "@/lib/service-charts";
 import { getPinnedTonightTitleId } from "@/lib/tonight-store";
 
 /**
@@ -34,7 +34,13 @@ export const HoyActTwoServer = async ({ userId, userPlatforms }: { userId: strin
       pinnedTitleId={pinnedTitleId}
     >
       <HoyPeek />
-      <HoyActTwo userPlatforms={userPlatforms} charts={charts} arrivals={arrivals} now={now.toISOString()} />
+      <HoyActTwo
+        userPlatforms={userPlatforms}
+        charts={charts}
+        arrivals={arrivals}
+        now={now.toISOString()}
+        stamp={actTwoStamp(charts, arrivals)}
+      />
     </ActTwoActionsProvider>
   );
 };

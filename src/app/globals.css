@@ -8085,6 +8085,36 @@ body:has(.hoy-act-one) {
   box-shadow: 0 14px 28px -14px #000;
 }
 
+.act-two-rank-meta {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.1rem;
+  padding-top: 0.35rem;
+  font-size: 0.625rem;
+  color: var(--fog);
+  white-space: nowrap;
+}
+
+.act-two-move {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.act-two-move.is-up {
+  color: var(--success);
+}
+
+.act-two-move.is-down {
+  color: #ff8a94;
+}
+
+.act-two-move.is-new {
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+
 .act-two-status {
   position: absolute;
   top: 0.35rem;
@@ -8239,6 +8269,19 @@ body:has(.hoy-act-one) {
   margin-top: 0.4rem;
   font-size: 0.625rem;
   color: var(--faint);
+}
+
+/* The Hoy tab dot (FIL-I47-2): the ranking or arrivals changed since the last visit. */
+.dock-novedad {
+  position: absolute;
+  top: 0.55rem;
+  left: calc(50% + 0.55rem);
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px rgb(var(--accent-rgb) / 0.8);
+  pointer-events: none;
 }
 
 /* The peek line: just above the dock while act two waits below the fold. */

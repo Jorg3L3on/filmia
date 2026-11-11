@@ -1,12 +1,16 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { showsNovedad } from "../components/tonight/act-two/useHoyNovedad";
 import {
+  actTwoStamp,
   chartHeading,
   chartPlatformsFor,
   chartSourceLine,
   defaultChartKind,
   groupArrivalsByDay,
   parseChartSource,
+  rankMovement,
+  showsMovement,
   snapshotRows,
   type ArrivalTitle,
   type ServiceChart,
@@ -120,5 +124,47 @@ describe("groupArrivalsByDay", () => {
 
   it("is empty without arrivals", () => {
     assert.deepEqual(groupArrivalsByDay([], now), []);
+  });
+});
+
+describe("rank movement", () => {
+  it("matches two consecutive snapshots", () => {
+    const night1 = snapshotRows(["a", "b", "c", "d"].map((catalogId) => ({ catalogId })), new Map());
+    const night2 = snapshotRows(
+      ["c", "a", "e", "d"].map((catalogId) => ({ catalogId })),
+      new Map(night1.map((row) => [row.catalogId, row.rank])),
+    );
+    assert.deepEqual(
+      night2.map((row) => [row.catalogId, rankMovement(row.rank, row.previousRank)]),
+      [
+        ["c", { kind: "up", by: 2 }],
+        ["a", { kind: "down", by: 1 }],
+        ["e", { kind: "new", by: 0 }],
+        ["d", { kind: "same", by: 0 }],
+      ],
+    );
+    assert.equal(showsMovement(night1), false);
+    assert.equal(showsMovement(night2), true);
+  });
+});
+
+describe("Hoy tab dot", () => {
+  const base = [chart("NETFLIX", "MOVIE", 10), chart("MAX", "SERIES", 10)];
+
+  it("changes with the top three or the newest arrival, not below", () => {
+    const stamp = actTwoStamp(base, []);
+    assert.equal(actTwoStamp([...base].reverse(), []), stamp);
+    const lowerShuffle = base.map((entry) => ({ ...entry, titles: [...entry.titles.slice(0, 3), ...entry.titles.slice(3).reverse()] }));
+    assert.equal(actTwoStamp(lowerShuffle, []), stamp);
+    const newTop = base.map((entry, index) => (index === 0 ? { ...entry, titles: [...entry.titles].reverse() } : entry));
+    assert.notEqual(actTwoStamp(newTop, []), stamp);
+    assert.notEqual(actTwoStamp(base, [{ catalogId: "new-arrival" }]), stamp);
+  });
+
+  it("shows only when a seen stamp exists and moved", () => {
+    assert.equal(showsNovedad(null, "x"), false);
+    assert.equal(showsNovedad("x", null), false);
+    assert.equal(showsNovedad("x", "x"), false);
+    assert.equal(showsNovedad("x", "y"), true);
   });
 });

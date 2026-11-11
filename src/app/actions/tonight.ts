@@ -11,7 +11,10 @@ import { findCatalogByTmdb } from "@/lib/catalog";
 import { revalidateSearchAddSurfaces } from "@/lib/revalidate-surfaces";
 import { addToWatchlist } from "@/app/actions/watchlist";
 import { isTitleInWatchlist } from "@/lib/queries";
-import { requireUserId } from "@/lib/session";
+import { getCurrentSession, requireUserId } from "@/lib/session";
+import { actTwoStamp } from "@/lib/service-charts";
+import { getRecentArrivals, getServiceCharts } from "@/lib/service-charts-store";
+import { parseStoredStreamingPlatforms } from "@/lib/streaming-platforms";
 import { FICHA_PIN_LENS, SEARCH_PIN_LENS, searchPinBlocker } from "@/lib/tonight/pin";
 import { isHHMM, parseNightEnds } from "@/lib/tonight/time";
 import type { PickEventKind } from "@/lib/tonight";
@@ -198,4 +201,23 @@ export const updateNightEnds = async (formData: FormData) => {
   await db.update(users).set({ nightEndsAt }).where(eq(users.id, userId));
   revalidatePath("/");
   revalidatePath("/perfil");
+};
+
+/**
+ * The Hoy tab dot (FIL-I47-2): the stamp of today's second act for the signed-in user. The dock
+ * compares it with the one Hoy last rendered; null when signed out or on any failure.
+ */
+export const getActTwoStamp = async (): Promise<string | null> => {
+  try {
+    const session = await getCurrentSession();
+    const userId = session?.user?.id;
+    if (!userId) return null;
+    const [user] = await db.select({ platforms: users.streamingPlatforms }).from(users).where(eq(users.id, userId)).limit(1);
+    const platforms = parseStoredStreamingPlatforms(user?.platforms);
+    if (platforms.length === 0) return null;
+    const [charts, arrivals] = await Promise.all([getServiceCharts(platforms), getRecentArrivals(userId, platforms)]);
+    return actTwoStamp(charts, arrivals);
+  } catch {
+    return null;
+  }
 };

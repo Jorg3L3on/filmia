@@ -8,6 +8,7 @@ import { useNavTabMatch } from "@/components/useNavTabMatch";
 import { BottomNavShell } from "@/components/BottomNavShell";
 import { DockSearchField } from "@/components/DockSearchField";
 import { NavIcon } from "@/components/NavIcon";
+import { useHoyNovedad } from "@/components/tonight/act-two/useHoyNovedad";
 import { cn } from "@/lib/cn";
 import { dockSearch, readLastDockTab, writeLastDockTab } from "@/lib/dock-search";
 import {
@@ -81,6 +82,7 @@ export const BottomNav = () => {
   const matchTab = useNavTabMatch();
   const activeIndex = mobileNavItems.findIndex((item) => matchTab(item.href, pathname));
   const activeColumn = activeIndex === -1 ? null : columnFor(activeIndex);
+  const novedad = useHoyNovedad(pathname === "/");
 
   // Leaving Buscar: the next visit starts from its own URL, not the last words.
   useEffect(() => {
@@ -94,12 +96,12 @@ export const BottomNav = () => {
       <>
         <SearchDock origin={origin} day={day} />
         {/* The person view hides Buscar's row on phones and keeps the tabs at the bottom (FIL-I44-9). */}
-        <TabDock day={day} matchTab={matchTab} activeColumn={null} persona />
+        <TabDock day={day} matchTab={matchTab} activeColumn={null} novedad={novedad} persona />
       </>
     );
   }
 
-  return <TabDock day={day} matchTab={matchTab} activeColumn={activeColumn} />;
+  return <TabDock day={day} matchTab={matchTab} activeColumn={activeColumn} novedad={novedad} />;
 };
 
 type TabDockProps = {
@@ -108,6 +110,8 @@ type TabDockProps = {
   activeColumn: number | null;
   /** Buscar's person view: no shared morph names (the search dock owns them on that page). */
   persona?: boolean;
+  /** Hoy's second act changed since the last visit (FIL-I47-2): a dot on the Hoy tab. */
+  novedad?: boolean;
 };
 
 type MorphProps = { name: string; off: boolean; children: ReactNode };
@@ -156,7 +160,7 @@ const DockIndicator = ({ activeColumn }: { activeColumn: number | null }) => {
   );
 };
 
-const TabDock = ({ day, matchTab, activeColumn, persona = false }: TabDockProps) => {
+const TabDock = ({ day, matchTab, activeColumn, persona = false, novedad = false }: TabDockProps) => {
   return (
     <BottomNavShell persona={persona}>
       <Morph name="dock-shell" off={persona}>
@@ -171,7 +175,7 @@ const TabDock = ({ day, matchTab, activeColumn, persona = false }: TabDockProps)
                 key={item.href}
                 href={item.href}
                 match={matchTab}
-                aria-label={item.label}
+                aria-label={item.icon === "today" && novedad ? `${item.label}, hay novedades` : item.label}
                 data-nav={item.icon}
                 className={(isCurrent) =>
                   cn(
@@ -186,6 +190,7 @@ const TabDock = ({ day, matchTab, activeColumn, persona = false }: TabDockProps)
                     <span className={cn("contents", isCurrent && item.icon === "ticket" && "text-cine")}>
                       <NavIcon name={item.icon} day={item.icon === "today" ? day : null} />
                     </span>
+                    {item.icon === "today" && novedad ? <span className="dock-novedad" aria-hidden="true" /> : null}
                     <span
                       className={cn(
                         "max-w-full truncate text-center leading-tight",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { Platform, TitleKind } from "@/db";
 import { MarqueeBulbs } from "@/components/cine/CineParts";
 import { FadeRail } from "@/components/cine/FadeRail";
@@ -11,7 +11,10 @@ import { menuVia } from "@/components/tmdb-search/SearchRowMenu";
 import { useActTwoActions, type ActTwoTitle } from "@/components/tonight/act-two/ActTwoActions";
 import { cn } from "@/lib/cn";
 import { PLATFORM_SERVICE_LABEL } from "@/lib/labels";
+import { nextOfficialDay } from "@/lib/netflix-top10";
 import {
+  ACT_TWO_SEEN_EVENT,
+  ACT_TWO_SEEN_KEY,
   CHART_KIND_LABEL,
   CHART_KINDS,
   chartHeading,
@@ -19,7 +22,10 @@ import {
   chartSourceLine,
   defaultChartKind,
   groupArrivalsByDay,
+  rankMovement,
   SERVICE_TINT,
+  showsMovement,
+  weeksOnListLabel,
   type ArrivalTitle,
   type ServiceChart,
 } from "@/lib/service-charts";
@@ -74,6 +80,26 @@ const StatusDot = ({ title }: { title: ActTwoTitle }) => {
   );
 };
 
+const MovementChip = ({ rank, previousRank }: { rank: number; previousRank: number | null }) => {
+  const movement = rankMovement(rank, previousRank);
+  if (movement.kind === "new") {
+    return <span className="act-two-move is-new">NUEVO</span>;
+  }
+  if (movement.kind === "same") {
+    return (
+      <span className="act-two-move is-same" aria-label="mismo puesto">
+        ＝
+      </span>
+    );
+  }
+  const up = movement.kind === "up";
+  return (
+    <span className={cn("act-two-move", up ? "is-up" : "is-down")} aria-label={`${up ? "sube" : "baja"} ${movement.by}`}>
+      {up ? "▲" : "▼"} {movement.by}
+    </span>
+  );
+};
+
 /** «Lo más popular en <servicio>»: the user's platforms, films / series, ten outlined numerals. */
 const ServiceRanking = ({ charts, userPlatforms }: { charts: ServiceChart[]; userPlatforms: Platform[] }) => {
   const platforms = chartPlatformsFor(userPlatforms, charts);
@@ -87,6 +113,7 @@ const ServiceRanking = ({ charts, userPlatforms }: { charts: ServiceChart[]; use
     charts.some((entry) => entry.platform === platform && entry.kind === value && entry.titles.length > 0),
   );
   const source = chart?.source ?? "popularity";
+  const withMovement = showsMovement(chart?.titles ?? []);
 
   const choosePlatform = (next: Platform) => {
     setPlatform(next);
@@ -106,7 +133,7 @@ const ServiceRanking = ({ charts, userPlatforms }: { charts: ServiceChart[]; use
         <h2 id="act-two-ranking-title" className="font-serif">
           {chartHeading(platform, source)}
         </h2>
-        <p>{chartSourceLine(platform, source)}</p>
+        <p>{chartSourceLine(platform, source, chart?.period)}</p>
       </div>
       {platforms.length > 1 ? (
         <div className="act-two-services" role="group" aria-label="Plataforma">
@@ -161,6 +188,12 @@ const ServiceRanking = ({ charts, userPlatforms }: { charts: ServiceChart[]; use
                     <PosterImage name={title.name} posterPath={title.posterPath} ratio="fill" sizes="112px" />
                     <StatusDot title={title} />
                   </div>
+                  {withMovement || title.weeksOnList != null ? (
+                    <span className="act-two-rank-meta">
+                      {withMovement ? <MovementChip rank={title.rank} previousRank={title.previousRank} /> : null}
+                      {source === "official" ? <span>{weeksOnListLabel(title.weeksOnList)}</span> : null}
+                    </span>
+                  ) : null}
                 </>
               )}
             </TitleButton>
@@ -239,21 +272,41 @@ const LONG_DATE = new Intl.DateTimeFormat("es-MX", {
 
 const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
 
+const WEEKDAY_LONG = new Intl.DateTimeFormat("es-MX", { weekday: "long", timeZone: "America/Mexico_City" });
+
+const mxDayOf = (date: Date) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+
 export type HoyActTwoProps = {
   userPlatforms: Platform[];
   charts: ServiceChart[];
   arrivals: ArrivalTitle[];
   /** ISO, from the server: the dates on the page match the snapshot. */
   now: string;
+  /** What the dock's dot compares (`actTwoStamp`). */
+  stamp: string;
 };
 
 /**
  * Hoy's second act (FIL-I47-1): below the sala, what the user's services carry today. Computed
  * by the nightly crons; nothing here calls TMDB.
  */
-export const HoyActTwo = ({ userPlatforms, charts, arrivals, now }: HoyActTwoProps) => {
+export const HoyActTwo = ({ userPlatforms, charts, arrivals, now, stamp }: HoyActTwoProps) => {
   const date = new Date(now);
+  // Seen on Hoy: the dock's dot clears (FIL-I47-2).
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(ACT_TWO_SEEN_KEY, stamp);
+    } catch {
+      // Private mode: no dot, nothing to clear.
+    }
+    window.dispatchEvent(new Event(ACT_TWO_SEEN_EVENT));
+  }, [stamp]);
   const hasRanking = chartPlatformsFor(userPlatforms, charts).length > 0;
+  const netflixOfficial = charts.some((chart) => chart.platform === "NETFLIX" && chart.source === "official");
+  const closingLine = netflixOfficial
+    ? `El Top 10 de Netflix cambia el ${WEEKDAY_LONG.format(new Date(`${nextOfficialDay(mxDayOf(date))}T18:00:00Z`))}; lo demás, cada mañana. Aquí te esperamos.`
+    : "El ranking se actualiza cada mañana. Aquí te esperamos.";
   if (!hasRanking && arrivals.length === 0) {
     return null;
   }
@@ -269,7 +322,7 @@ export const HoyActTwo = ({ userPlatforms, charts, arrivals, now }: HoyActTwoPro
       <RecentArrivals arrivals={arrivals} now={date} />
       <footer className="act-two-end">
         <p className="font-serif">Eso es todo por hoy</p>
-        <span>El ranking se actualiza cada mañana. Aquí te esperamos.</span>
+        <span>{closingLine}</span>
         <small>
           Disponibilidad: datos de{" "}
           <a href="https://www.justwatch.com/mx" target="_blank" rel="noopener noreferrer" className="relative underline-offset-2 hover:underline">

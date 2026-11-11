@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { refreshServiceCharts } from "@/lib/service-charts-store";
+import { importNetflixTop10, refreshServiceCharts } from "@/lib/service-charts-store";
 import { isTmdbConfigured } from "@/lib/tmdb";
 
 export const runtime = "nodejs";
@@ -21,7 +21,8 @@ const isAuthorizedCron = (request: Request) => {
 
 /**
  * Vercel Cron (09:15 UTC, after watch-providers, before tonight-*): Hoy's second act (FIL-I47).
- * Stores the top 10 films and series per platform in MX into ServiceChart; Hoy only reads it.
+ * Stores the top 10 films and series per platform in MX into ServiceChart (Netflix: its official
+ * weekly list, FIL-I47-2); Hoy only reads it.
  */
 export const GET = async (request: Request) => {
   if (!isAuthorizedCron(request)) {
@@ -30,6 +31,14 @@ export const GET = async (request: Request) => {
   if (!isTmdbConfigured()) {
     return NextResponse.json({ error: "tmdb_not_configured" }, { status: 503 });
   }
+  // Netflix's official list first (weekly, only when a newer week should be out): a fresh one
+  // keeps the nightly popularity pass off Netflix.
+  let netflix: Awaited<ReturnType<typeof importNetflixTop10>> | { ok: false; error: string };
+  try {
+    netflix = await importNetflixTop10();
+  } catch {
+    netflix = { ok: false, error: "netflix_import_failed" };
+  }
   const charts = await refreshServiceCharts();
-  return NextResponse.json({ charts });
+  return NextResponse.json({ netflix, charts });
 };
