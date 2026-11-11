@@ -321,3 +321,22 @@ export const actTwoOrder = (signals: number): ActTwoSection[] =>
     : signals <= 40
       ? ["ranking", "seed", "arrivals", "afina", "gems"]
       : ["arrivals", "seed", "ranking", "gems"];
+
+/** Room (px) the peek's full line needs between the sala and the dock; under it, the chevron alone. */
+export const PEEK_FULL_ROOM = 20;
+/** Under this there is no room at all: nothing shows, and the act is found by scrolling. */
+export const PEEK_CHEVRON_ROOM = 9;
+
+export type PeekFit = { mode: "full" | "chevron" | "none"; top: number };
+
+/**
+ * Where Hoy's peek line goes (FIL-I47-1): centred in the gap between the bottom of the sala and the
+ * top of the dock (the viewport's bottom on desktop), so the night line's labels are never covered.
+ * iOS Safari's safe area leaves ~12 px on an iPhone: only the chevron fits there.
+ */
+export const fitPeek = (salaBottom: number, dockTop: number, fullHeight = 18, chevronHeight = 10): PeekFit => {
+  const room = dockTop - salaBottom;
+  if (room >= PEEK_FULL_ROOM) return { mode: "full", top: salaBottom + (room - fullHeight) / 2 };
+  if (room >= PEEK_CHEVRON_ROOM) return { mode: "chevron", top: salaBottom + (room - chevronHeight) / 2 };
+  return { mode: "none", top: 0 };
+};

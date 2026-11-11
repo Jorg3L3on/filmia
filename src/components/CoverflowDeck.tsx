@@ -67,7 +67,7 @@ export const CoverflowDeck = ({
     initialIndex: startIndex,
     lite: deckLite.lite,
     onMotionFrame: deckLite.reportFrame,
-    allowPageScroll: footer === "list" && !isSheet,
+    allowPageScroll: (footer === "list" || footer === "tonight") && !isSheet,
   });
   const {
     containerRef,
@@ -185,7 +185,7 @@ export const CoverflowDeck = ({
         onClickCapture={handleClickCapture}
         className={cn(
           "relative min-w-0 cursor-grab select-none outline-none",
-          footer === "list" && !isSheet ? "touch-pan-y" : "touch-none overscroll-none",
+          (footer === "list" || footer === "tonight") && !isSheet ? "touch-pan-y" : "touch-none overscroll-none",
           isSheet
             ? "overflow-visible bg-transparent px-0 pb-2 pt-1 focus-visible:ring-2 focus-visible:ring-accent/60"
             : cinematic

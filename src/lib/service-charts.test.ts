@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { showsNovedad } from "../components/tonight/act-two/useHoyNovedad";
 import {
+  fitPeek,
   actTwoOrder,
   isGem,
   pickGems,
@@ -248,5 +249,22 @@ describe("section order by signals", () => {
     assert.deepEqual(actTwoOrder(14), ["ranking", "seed", "arrivals", "afina", "gems"]);
     assert.deepEqual(actTwoOrder(240), ["arrivals", "seed", "ranking", "gems"]);
     assert.deepEqual(actTwoOrder(10), actTwoOrder(40));
+  });
+});
+
+describe("peek line placement", () => {
+  it("centres the full line when the gap has room (Chromium phone: 20 px)", () => {
+    assert.deepEqual(fitPeek(700, 724), { mode: "full", top: 703 });
+  });
+
+  it("shows only the chevron in iOS Safari's tight gap and never covers the sala", () => {
+    const fit = fitPeek(688, 700);
+    assert.equal(fit.mode, "chevron");
+    assert.ok(fit.top >= 688 && fit.top + 10 <= 700);
+  });
+
+  it("shows nothing without room", () => {
+    assert.equal(fitPeek(700, 706).mode, "none");
+    assert.equal(fitPeek(700, 690).mode, "none");
   });
 });

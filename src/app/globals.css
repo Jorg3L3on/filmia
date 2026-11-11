@@ -8503,6 +8503,16 @@ body:has(.hoy-act-one) {
   color: var(--faint);
 }
 
+/* Act two covers the screen: the sala's floating bedtime chip (portaled to body) steps aside. */
+html[data-acto-dos] .tonight-bedtime-fixed {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tonight-bedtime-fixed {
+  transition: opacity var(--duration-enter) var(--ease-out);
+}
+
 /* The Hoy tab dot (FIL-I47-2): the ranking or arrivals changed since the last visit. */
 .dock-novedad {
   position: absolute;
@@ -8516,19 +8526,21 @@ body:has(.hoy-act-one) {
   pointer-events: none;
 }
 
-/* The peek line: just above the dock while act two waits below the fold. */
+/* The peek line: between the sala and the dock while act two waits below the fold. `top` comes
+   from HoyPeek, which measures the gap (FIL-I47-1); in a tight gap only the chevron shows. */
 .hoy-peek {
   position: fixed;
   left: 50%;
-  bottom: calc(4.8rem + env(safe-area-inset-bottom));
   z-index: 30;
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  padding: 0.2rem 0.6rem;
+  height: 18px;
+  padding: 0 0.6rem;
   border-radius: 999px;
   font-size: 0.6875rem;
   font-weight: 600;
+  line-height: 18px;
   letter-spacing: 0.04em;
   color: var(--accent-tint);
   text-shadow: 0 1px 10px rgb(0 0 0 / 0.8);
@@ -8538,6 +8550,25 @@ body:has(.hoy-act-one) {
   transition:
     opacity var(--duration-enter) var(--ease-out),
     transform var(--duration-enter) var(--ease-out);
+}
+
+/* A 44 px tap target around a line that may be only 10 px tall. */
+.hoy-peek::before {
+  content: "";
+  position: absolute;
+  inset: -13px -8px;
+}
+
+.hoy-peek.is-chevron {
+  height: 10px;
+  line-height: 10px;
+}
+
+.hoy-peek.is-chevron svg {
+  width: 14px;
+  height: 10px;
+  /* No room to nudge: the chevron would touch the dock. */
+  animation: none;
 }
 
 .hoy-peek.is-visible {
@@ -8557,19 +8588,6 @@ body:has(.hoy-act-one) {
   }
   50% {
     transform: translateY(3px);
-  }
-}
-
-@media (min-width: 640px) {
-  .hoy-peek {
-    bottom: 1.25rem;
-  }
-}
-
-/* iPhone SE / mini: the night line already sits on the dock; no room for the line. */
-@media (max-width: 767px) and (max-height: 700px) {
-  .hoy-peek {
-    display: none;
   }
 }
 
