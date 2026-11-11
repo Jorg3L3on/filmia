@@ -13,6 +13,8 @@ import { addToWatchlist } from "@/app/actions/watchlist";
 import { isTitleInWatchlist } from "@/lib/queries";
 import { getCurrentSession, requireUserId } from "@/lib/session";
 import { actTwoStamp } from "@/lib/service-charts";
+import { answerAfina, loadAfinaCards, type AfinaCard, type AfinaOutcome } from "@/lib/cold-start-store";
+import { isVisteAnswer } from "@/lib/piezas/core";
 import { getRecentArrivals, getServiceCharts } from "@/lib/service-charts-store";
 import { parseStoredStreamingPlatforms } from "@/lib/streaming-platforms";
 import { FICHA_PIN_LENS, SEARCH_PIN_LENS, searchPinBlocker } from "@/lib/tonight/pin";
@@ -220,4 +222,29 @@ export const getActTwoStamp = async (): Promise<string | null> => {
   } catch {
     return null;
   }
+};
+
+const platformsOf = async (userId: string) => {
+  const [user] = await db.select({ platforms: users.streamingPlatforms }).from(users).where(eq(users.id, userId)).limit(1);
+  return parseStoredStreamingPlatforms(user?.platforms);
+};
+
+/** «Afina tu gusto» (FIL-I47-3): one answer about a title on the user's charts. */
+export const answerAfinaCard = async (catalogId: string, choice: string): Promise<AfinaOutcome> => {
+  const userId = await requireUserId();
+  if (typeof catalogId !== "string" || !isVisteAnswer(choice)) {
+    return { ok: false, error: "Respuesta no válida." };
+  }
+  const outcome = await answerAfina(userId, await platformsOf(userId), catalogId, choice);
+  if (outcome.ok && (choice !== "no" || outcome.reachedGoal)) {
+    revalidatePath("/");
+    revalidatePath("/perfil");
+  }
+  return outcome;
+};
+
+/** The next «Afina tu gusto» cards, never one already answered or in the library. */
+export const moreAfinaCards = async (): Promise<AfinaCard[]> => {
+  const userId = await requireUserId();
+  return loadAfinaCards(userId, await platformsOf(userId)).catch(() => []);
 };

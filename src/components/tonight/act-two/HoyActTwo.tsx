@@ -9,6 +9,8 @@ import { PlatformLogo } from "@/components/PlatformLogo";
 import { PosterImage } from "@/components/PosterImage";
 import { menuVia } from "@/components/tmdb-search/SearchRowMenu";
 import { useActTwoActions, type ActTwoTitle } from "@/components/tonight/act-two/ActTwoActions";
+import { AfinaTuGusto } from "@/components/tonight/act-two/AfinaTuGusto";
+import type { AfinaCard } from "@/lib/cold-start-store";
 import { cn } from "@/lib/cn";
 import { PLATFORM_SERVICE_LABEL } from "@/lib/labels";
 import { nextOfficialDay } from "@/lib/netflix-top10";
@@ -285,13 +287,15 @@ export type HoyActTwoProps = {
   now: string;
   /** What the dock's dot compares (`actTwoStamp`). */
   stamp: string;
+  /** «Afina tu gusto» cards and the signal count; null when Hoy already knows enough. */
+  afina: { cards: AfinaCard[]; signals: number } | null;
 };
 
 /**
  * Hoy's second act (FIL-I47-1): below the sala, what the user's services carry today. Computed
  * by the nightly crons; nothing here calls TMDB.
  */
-export const HoyActTwo = ({ userPlatforms, charts, arrivals, now, stamp }: HoyActTwoProps) => {
+export const HoyActTwo = ({ userPlatforms, charts, arrivals, now, stamp, afina }: HoyActTwoProps) => {
   const date = new Date(now);
   // Seen on Hoy: the dock's dot clears (FIL-I47-2).
   useEffect(() => {
@@ -319,6 +323,7 @@ export const HoyActTwo = ({ userPlatforms, charts, arrivals, now, stamp }: HoyAc
         </h2>
       </header>
       <ServiceRanking charts={charts} userPlatforms={userPlatforms} />
+      {afina ? <AfinaTuGusto initialCards={afina.cards} initialSignals={afina.signals} /> : null}
       <RecentArrivals arrivals={arrivals} now={date} />
       <footer className="act-two-end">
         <p className="font-serif">Eso es todo por hoy</p>

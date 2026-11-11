@@ -8157,6 +8157,126 @@ body:has(.hoy-act-one) {
   }
 }
 
+/* Afina tu gusto (FIL-I47-3): one card, one tap, the affinity lilac. */
+.afina {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-inline: 1rem;
+  padding: 0.875rem;
+  border: 1px solid rgb(201 178 255 / 0.22);
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(160deg, rgb(201 178 255 / 0.13), rgb(201 178 255 / 0.03) 60%),
+    var(--well);
+}
+
+.afina-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.afina-top h2 {
+  font-size: 1.2rem;
+  font-weight: 500;
+  line-height: 1.15;
+  color: var(--paper);
+}
+
+.afina-top p {
+  font-size: 0.6875rem;
+  color: var(--fog);
+}
+
+.afina-ring {
+  --afina: 0;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.9rem;
+  height: 2.9rem;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--paper);
+  background:
+    radial-gradient(closest-side, var(--well) 78%, transparent 80%),
+    conic-gradient(rgb(201 178 255) calc(var(--afina) * 1%), rgb(255 255 255 / 0.1) 0);
+}
+
+.afina-card {
+  display: grid;
+  grid-template-columns: 5.25rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  animation: act-two-rise var(--duration-sheet) var(--ease-out) both;
+}
+
+.afina-card.is-leaving .afina-poster {
+  animation: afina-leave var(--duration-enter) var(--ease-out) forwards;
+}
+
+@keyframes afina-leave {
+  to {
+    opacity: 0;
+    transform: translateX(-120%) rotate(-14deg);
+  }
+}
+
+.afina-poster {
+  position: relative;
+  width: 5.25rem;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 0.625rem;
+  box-shadow: 0 12px 24px -12px #000;
+}
+
+.afina-poster .afina-stamp {
+  padding: 3px 7px;
+  border-width: 2px;
+  font-size: 0.875rem;
+}
+
+.afina-name {
+  overflow: hidden;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--paper);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.afina-meta {
+  font-size: 0.6875rem;
+  color: var(--fog);
+}
+
+.afina-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+}
+
+.afina-answer {
+  min-height: 2.25rem;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 0.625rem;
+  background: rgb(255 255 255 / 0.05);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: left;
+  color: var(--paper);
+}
+
+.afina-answer:disabled {
+  opacity: 0.6;
+}
+
 /* Recién llegó: a dated list, not a rail. */
 .act-two-days {
   display: flex;
@@ -8375,7 +8495,9 @@ body:has(.hoy-act-one) {
 
 @media (prefers-reduced-motion: reduce) {
   .act-two-rise > *,
-  .hoy-peek svg {
+  .hoy-peek svg,
+  .afina-card,
+  .afina-card.is-leaving .afina-poster {
     animation: none;
   }
 

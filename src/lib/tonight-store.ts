@@ -7,6 +7,7 @@ import {
   listItems,
   lists,
   pickEvents,
+  serviceCharts,
   titles,
   tonightPicks,
   tonightRecos,
@@ -31,6 +32,7 @@ import {
 import { blockedItemIds } from "@/lib/tonight/candidates";
 import { mxToday } from "@/lib/cine-core";
 import { composeLenses, type RecoEntry } from "@/lib/tonight/compose";
+import { chartReason, needsChartFill, orderChartFill, withReason } from "@/lib/tonight/cold-start";
 import { refillRecosIfThin } from "@/lib/tonight/reco-refill";
 import { itemVector } from "@/lib/tonight/features";
 import { PARA_TI_NAME, PARA_TI_SLUG } from "@/lib/tonight/select";
@@ -81,6 +83,8 @@ export type TonightCard = CoverflowTitle & {
   /** `reco`: recommended and not in the library, so `id` is the film's catalog id (FIL-I6). */
   source: "queue" | "reco";
   reco: RecoMeta | null;
+  /** Queue card added while choosing the first titles (FIL-I11): «Porque la elegiste al empezar». */
+  fromOnboarding?: boolean;
 };
 
 export type TonightLensView = {
@@ -646,66 +650,188 @@ export const loadRecoEntries = async (
     if (owned.has(film.id) || blocked.has(film.id)) {
       return [];
     }
-    const title = catalogToTonightTitle(film);
-    const components = parseComponents(reco.components);
-    const reasons = parseReasons(reco.reasons);
-    const sourceKind: "recommendations" | "discover" =
-      reco.sourceKind === "discover" ? "discover" : "recommendations";
-    const card: TonightCard = {
-      ...toCoverflowTitle(
-        {
-          id: film.id,
-          name: film.name,
-          kind: film.kind,
-          year: film.year,
-          rating: null,
-          posterPath: film.posterPath,
-          platform: null,
-          imdbRating: film.imdbRating,
-          watchedAt: null,
-          review: null,
-          seriesStatus: null,
-          watchProvidersMx: film.watchProvidersMx,
-          tmdbGenres: film.tmdbGenres,
-        },
-        userPlatforms,
-      ),
-      runtimeMinutes: film.runtimeMinutes,
-      components,
-      reasons,
-      wildcard: false,
-      pinned: false,
-      posterAmbient: film.posterAmbient,
-      queueNote: null,
-      overview: film.overview,
-      leads: parseStoredPeople(film.tmdbPeople).filter((person) => person.role !== "cast"),
-      source: "reco",
-      reco: {
-        tmdbId: film.tmdbId,
-        seedName: reco.seedName,
-        sourceKind,
-        originalName: film.originalName,
-        backdropPath: film.backdropPath,
-        overview: film.overview,
-      },
-    };
     return [
-      {
-        card,
-        scored: {
-          title,
-          vector: itemVector(title),
-          pick: {
-            titleId: film.id,
-            components,
-            baseScore: reco.score,
-            reasons,
-            wildcard: false,
-          },
-        },
-      },
+      recoEntryOf(film, userPlatforms, {
+        components: parseComponents(reco.components),
+        reasons: parseReasons(reco.reasons),
+        score: reco.score,
+        seedName: reco.seedName,
+        sourceKind: reco.sourceKind === "discover" ? "discover" : "recommendations",
+      }),
     ];
   });
+};
+
+/** A recommended card (not in the library: its id is the catalog id) with what MMR needs. */
+const recoEntryOf = (
+  film: CatalogRow,
+  userPlatforms: readonly Platform[],
+  meta: {
+    components: TonightComponents;
+    reasons: TonightReason[];
+    score: number;
+    seedName: string | null;
+    sourceKind: "recommendations" | "discover";
+  },
+): RecoEntry<TonightCard> => {
+  const title = catalogToTonightTitle(film);
+  const card: TonightCard = {
+    ...toCoverflowTitle(
+      {
+        id: film.id,
+        name: film.name,
+        kind: film.kind,
+        year: film.year,
+        rating: null,
+        posterPath: film.posterPath,
+        platform: null,
+        imdbRating: film.imdbRating,
+        watchedAt: null,
+        review: null,
+        seriesStatus: null,
+        watchProvidersMx: film.watchProvidersMx,
+        tmdbGenres: film.tmdbGenres,
+      },
+      userPlatforms,
+    ),
+    runtimeMinutes: film.runtimeMinutes,
+    components: meta.components,
+    reasons: meta.reasons,
+    wildcard: false,
+    pinned: false,
+    posterAmbient: film.posterAmbient,
+    queueNote: null,
+    overview: film.overview,
+    leads: parseStoredPeople(film.tmdbPeople).filter((person) => person.role !== "cast"),
+    source: "reco",
+    reco: {
+      tmdbId: film.tmdbId,
+      seedName: meta.seedName,
+      sourceKind: meta.sourceKind,
+      originalName: film.originalName,
+      backdropPath: film.backdropPath,
+      overview: film.overview,
+    },
+  };
+  return {
+    card,
+    scored: {
+      title,
+      vector: itemVector(title),
+      pick: {
+        titleId: film.id,
+        components: meta.components,
+        baseScore: meta.score,
+        reasons: meta.reasons,
+        wildcard: false,
+      },
+    },
+  };
+};
+
+/** How many chart titles a thin deck may draw from (it keeps 6 at most). */
+const CHART_FILL_POOL = 12;
+
+/**
+ * FIL-I47-3: the best of the user's charts as recommended cards, for a queue with fewer than three
+ * playable titles. Database only (the charts are the nightly cron's). Empty before 0027.
+ */
+export const loadChartFillEntries = async (
+  userId: string,
+  userPlatforms: readonly Platform[],
+  events: readonly TonightEvent[],
+  now: Date,
+  skip: ReadonlySet<string>,
+): Promise<RecoEntry<TonightCard>[]> => {
+  if (userPlatforms.length === 0) {
+    return [];
+  }
+  let rows: { chart: typeof serviceCharts.$inferSelect; catalog: CatalogRow }[];
+  try {
+    rows = await db
+      .select({ chart: serviceCharts, catalog })
+      .from(serviceCharts)
+      .innerJoin(catalog, eq(serviceCharts.catalogId, catalog.id))
+      .where(inArray(serviceCharts.platform, [...userPlatforms]));
+  } catch {
+    return [];
+  }
+  if (rows.length === 0) {
+    return [];
+  }
+  const owned = await loadOwnedTitleIdsByCatalog(userId, rows.map((row) => row.catalog.id));
+  const blocked = blockedItemIds(events, now);
+  const films = new Map(rows.map((row) => [row.catalog.id, row.catalog]));
+  const ordered = orderChartFill(
+    rows
+      .filter((row) => !owned.has(row.catalog.id) && !blocked.has(row.catalog.id) && !skip.has(row.catalog.id))
+      .map((row) => ({
+        catalogId: row.catalog.id,
+        platform: row.chart.platform,
+        rank: row.chart.rank,
+        source: row.chart.source === "official" ? ("official" as const) : ("popularity" as const),
+        imdbRating: row.catalog.imdbRating,
+      })),
+  ).slice(0, CHART_FILL_POOL);
+
+  return ordered.flatMap((candidate) => {
+    const film = films.get(candidate.catalogId);
+    if (!film) return [];
+    const calidad = film.imdbRating != null ? Math.min(1, Math.max(0, (film.imdbRating - 5) / 4)) : 0.45;
+    const components = { ...parseComponents({}), calidad };
+    return [
+      recoEntryOf(film, userPlatforms, {
+        components,
+        reasons: [chartReason(candidate)],
+        score: 0.5 * 0.5 + 0.35 * calidad,
+        seedName: null,
+        sourceKind: "discover",
+      }),
+    ];
+  });
+};
+
+/**
+ * Recommendations for the deck: the nightly pool, plus (FIL-I47-3) the best of the user's charts
+ * when the queue is thin, so a new account sees a full deck instead of an empty state.
+ */
+const loadDeckRecos = async (
+  userId: string,
+  userPlatforms: readonly Platform[],
+  events: readonly TonightEvent[],
+  now: Date,
+  queueLenses: readonly TonightLensView[],
+) => {
+  const recos = await loadRecoEntries(userId, userPlatforms, events, now);
+  const eligibleQueue = new Set(queueLenses.flatMap((lens) => lens.titles.map((card) => card.id))).size;
+  if (!needsChartFill(eligibleQueue, recos.length)) {
+    return { recos, pool: recos };
+  }
+  const fill = await loadChartFillEntries(userId, userPlatforms, events, now, new Set(recos.map((entry) => entry.card.id))).catch(
+    () => [],
+  );
+  return { recos, pool: [...recos, ...fill] };
+};
+
+/** Every card says why it is there (FIL-I47-3); queue cards chosen at onboarding say so. */
+const withCardReasons = async (
+  userId: string,
+  lenses: TonightLensView[],
+  rowsById: ReadonlyMap<string, TitleRowWithLists>,
+): Promise<TonightLensView[]> => {
+  const user = await db.query.users
+    .findFirst({ where: eq(users.id, userId), columns: { onboardedAt: true } })
+    .catch(() => null);
+  const onboardedAt = user?.onboardedAt?.getTime() ?? null;
+  return lenses.map((lens) => ({
+    ...lens,
+    titles: lens.titles.map((card) => {
+      const row = card.source === "queue" ? rowsById.get(card.id) : undefined;
+      const addedAt = row ? queueEntryOf(row)?.addedAt.getTime() : undefined;
+      const fromOnboarding = onboardedAt != null && addedAt != null && addedAt <= onboardedAt + 60_000;
+      return withReason({ ...card, fromOnboarding });
+    }),
+  }));
 };
 
 const lensesFromResult = (
@@ -794,8 +920,6 @@ export const getTonightDecks = async (
     const rowsById = new Map(input.rows.map((row) => [row.id, row]));
     const freshPinnedId = findPinnedTitleId(input.events, now);
     const freshLenses = lensesFromResult(result, rowsById, input.userPlatforms);
-    const freshRecos = await loadRecoEntries(userId, input.userPlatforms, input.events, now);
-    const freshWarming = await refillRecosIfThin(userId, freshRecos.length, now).catch(() => false);
     const queueLenses = freshPinnedId
       ? applyPinnedCard(
           freshLenses,
@@ -805,8 +929,10 @@ export const getTonightDecks = async (
           input.userPlatforms,
         )
       : freshLenses;
+    const fresh = await loadDeckRecos(userId, input.userPlatforms, input.events, now, queueLenses);
+    const freshWarming = await refillRecosIfThin(userId, fresh.recos.length, now).catch(() => false);
     return {
-      lenses: await withPiezas(userId, composeLenses(queueLenses, freshRecos), now),
+      lenses: await withPiezas(userId, await withCardReasons(userId, composeLenses(queueLenses, fresh.pool), rowsById), now),
       nightEnds: input.nightEnds,
       userPlatforms: input.userPlatforms,
       profileSize: result.profileSize,
@@ -895,11 +1021,11 @@ export const getTonightDecks = async (
         prefs.userPlatforms,
       )
     : lenses;
-  const recos = await loadRecoEntries(userId, prefs.userPlatforms, events, now);
+  const { recos, pool } = await loadDeckRecos(userId, prefs.userPlatforms, events, now, queueLenses);
   const recosWarming = await refillRecosIfThin(userId, recos.length, now).catch(() => false);
 
   return {
-    lenses: await withPiezas(userId, composeLenses(queueLenses, recos), now),
+    lenses: await withPiezas(userId, await withCardReasons(userId, composeLenses(queueLenses, pool), rowsById), now),
     nightEnds: prefs.nightEnds,
     userPlatforms: prefs.userPlatforms,
     profileSize: 0,
