@@ -32,10 +32,11 @@ const run = () => {
   assert(proxy.includes("ONBOARDING_PATH") && proxy.includes("session?.onboarded === false"), "Proxy redirects gated sessions to /bienvenida");
   assert(/onboarded: false,\s+sessionVersion: 0/.test(read("src/app/api/auth/register/route.ts")), "Register mints onboarded: false");
   assert(read("src/lib/auth/google.ts").includes("created: true") && read("src/lib/auth/google.ts").includes("onboarded: false"), "Google sign-up reports created + gated");
-  assert(read("src/app/api/auth/google/callback/route.ts").includes("ONBOARDING_PATH"), "Google callback lands gated users on /bienvenida");
+  // FIL-41: onboardingHref(next) is /bienvenida carrying where they were going.
+  assert(read("src/app/api/auth/google/callback/route.ts").includes("onboardingHref(stored.next)"), "Google callback lands gated users on /bienvenida");
   // FIL-I18: coming from a list invite (/unirse, public), the new account goes back to it first.
   assert(
-    /router\.push\((isInvitePath\(next\) \? next : )?ONBOARDING_PATH\)/.test(read("src/components/SignupForm.tsx")),
+    /router\.push\((isInvitePath\(next\) \? next : )?onboardingHref\(next\)\)/.test(read("src/components/SignupForm.tsx")),
     "SignupForm pushes /bienvenida (or back to the invite)",
   );
   assert(read("src/components/LoginForm.tsx").includes("payload.onboarding"), "LoginForm resumes the Bienvenida");
@@ -90,7 +91,9 @@ const run = () => {
   }
   const slideRules = css.match(/::view-transition-(old|new)\(\.bienvenida-(forward|back)\)\s*\{[^}]*\}/g) ?? [];
   assert(slideRules.length === 4 && slideRules.every((rule) => rule.includes("var(--ease-out)") && !rule.includes("var(--spring)")), "Step slides use ease-out, never spring");
-  const reduced = css.slice(css.lastIndexOf("@media (prefers-reduced-motion: reduce)"));
+  // Any reduced-motion block may carry them (later sections, e.g. FIL-I46, append their own).
+  const reducedBlocks = css.split("@media (prefers-reduced-motion: reduce)").slice(1);
+  const reduced = reducedBlocks.find((block) => block.includes(".bienvenida-glow")) ?? "";
   assert(reduced.includes(".bienvenida-glow") && reduced.includes(".year-crown") && reduced.includes(".bedtime-moon"), "Reduced motion covers the Bienvenida");
 
   // Pure helpers behave.

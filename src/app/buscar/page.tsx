@@ -4,7 +4,7 @@ import { SearchBodySkeleton } from "@/components/PageSkeletons";
 import { TmdbSearchAdd } from "@/components/TmdbSearchAdd";
 import type { PersonViewState } from "@/components/tmdb-search/PersonSearch";
 import { loadPersonFilmography } from "@/app/actions/metadata";
-import { getFavoriteDirectors, getStartArrivals } from "@/lib/buscar-start";
+import { getDecadeTitles, getFavoriteDirectors, getStartArrivals } from "@/lib/buscar-start";
 import { isPersonRole } from "@/lib/person-filmography";
 import { TmdbSearchUnavailable } from "@/components/TmdbSearchUnavailable";
 import { metadataServicesConfigured } from "@/lib/metadata";
@@ -90,7 +90,7 @@ const SearchBody = async ({
     watchedDate != null ||
     (typeof params.destino === "string" && params.destino === "visto");
   const userId = await requireUserId();
-  const [existing, lists, memberships, pinnedTitleId, person, startDirectors, startArrivals, platforms] = await Promise.all([
+  const [existing, lists, memberships, pinnedTitleId, person, startDirectors, startArrivals, platforms, startDecades] = await Promise.all([
     getUserTmdbIndex(),
     getAssignableLists(),
     getUserListMembershipIndex(),
@@ -100,6 +100,7 @@ const SearchBody = async ({
     single(params.persona) ? [] : getFavoriteDirectors(userId).catch(() => []),
     single(params.persona) ? [] : getStartArrivals(userId).catch(() => []),
     getUserStreamingPlatforms().catch(() => []),
+    single(params.persona) ? [] : getDecadeTitles(userId).catch(() => []),
   ]);
 
   return (
@@ -117,6 +118,7 @@ const SearchBody = async ({
       person={person}
       startDirectors={startDirectors}
       startArrivals={startArrivals}
+      startDecades={startDecades}
       hasPlatforms={platforms.length > 0}
     />
   );

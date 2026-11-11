@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { CinePoster, PremiereTag } from "@/components/cine/CinePoster";
+import { CinePoster, PremiereCountdown, PremiereTag } from "@/components/cine/CinePoster";
 import { CineRail, GhostPoster, railItemClass, TicketStub, weekCountLabel } from "@/components/cine/CineParts";
 import { FadeRail } from "@/components/cine/FadeRail";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import type { CineFilm, HomeArrival } from "@/lib/cine";
-import { formatShortDay, groupByWeek, premiereTag, watchlistFirst } from "@/lib/cine-core";
+import { countdownLabel, formatShortDay, groupByWeek, premiereTag, watchlistFirst } from "@/lib/cine-core";
 import { cn } from "@/lib/cn";
 import { PLATFORM_SERVICE_LABEL } from "@/lib/labels";
 import { focusRing } from "@/lib/ui";
@@ -21,6 +21,7 @@ export const NowShowingRail = ({ films, today }: { films: CineFilm[]; today: str
             priority={index < 3}
             badge={tag ? <PremiereTag label={tag} /> : null}
             caption={`Desde ${formatShortDay(film.mxReleaseDate)}`}
+            ticket
           />
         </div>
       );
@@ -49,10 +50,13 @@ export const UpcomingTimeline = ({
   showMonths = true,
   linkWeeks = false,
   watchlist = [],
+  today,
 }: {
   films: CineFilm[];
   showMonths?: boolean;
   linkWeeks?: boolean;
+  /** Mexico City's day: the countdown on each tile (FIL-I46-4). */
+  today?: string;
   watchlist?: Parameters<typeof watchlistFirst>[1];
 }) => {
   if (films.length === 0) {
@@ -106,6 +110,7 @@ export const UpcomingTimeline = ({
                       sizes="(max-width: 640px) 28vw, 140px"
                       compact
                       caption={film.mxReleaseDate === lead ? undefined : formatShortDay(film.mxReleaseDate)}
+                      after={today ? <PremiereCountdown key="countdown" film={film} label={countdownLabel(film.mxReleaseDate, today)} /> : null}
                     />
                   </div>
                 ))}

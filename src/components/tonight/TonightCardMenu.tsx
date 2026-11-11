@@ -12,6 +12,8 @@ type TonightCardMenuProps = {
   title: CoverflowTitle | null;
   onClose: () => void;
   onNotTonight: (title: CoverflowTitle) => void;
+  /** «+ Sesión doble» (FIL-I46-2): the second film for this card, when one fits before bedtime. */
+  doubleFeature?: { id: string; name: string } | null;
   onRemove: (title: CoverflowTitle) => void;
   /** Recommended cards (not in the library) get their own actions. */
   onOpenReco: (title: CoverflowTitle) => void;
@@ -30,6 +32,7 @@ const itemClass = cn(
 /** Mantén pulsado el póster o toca «···»: Ahora no · Ver ficha · Mover a una lista · Quitar. */
 export const TonightCardMenu = ({
   title,
+  doubleFeature = null,
   onClose,
   onNotTonight,
   onRemove,
@@ -97,6 +100,15 @@ export const TonightCardMenu = ({
             <Link role="menuitem" href={`/titulos/${title.id}`} onClick={onClose} className={itemClass}>
               <Icon kind="ficha" /> Ver ficha
             </Link>
+            {doubleFeature ? (
+              <Link role="menuitem" href={`/titulos/${doubleFeature.id}`} onClick={onClose} className={itemClass} data-double-feature-menu>
+                <Icon kind="plus" />
+                <span className="min-w-0">
+                  Sesión doble
+                  <span className="block truncate text-xs font-normal text-fog">Después: {doubleFeature.name}</span>
+                </span>
+              </Link>
+            ) : null}
             <Link role="menuitem" href={`/titulos/${title.id}#listas`} onClick={onClose} className={itemClass}>
               <Icon kind="list" /> Mover a una lista
             </Link>

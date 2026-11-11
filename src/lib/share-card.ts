@@ -32,3 +32,28 @@ export const reviewShareText = (name: string, rating: number | null, review: str
 
 export const listShareText = (name: string, total: number) =>
   `${name} · ${total === 1 ? "1 título" : `${total} títulos`} en Filmia`;
+
+/**
+ * What «Compartir» sends for «Tu mes en cine» (FIL-I46-5): only the person's own month — counts,
+ * hours, top genre and their best-rated film. Nothing about anyone else.
+ */
+export const monthShareText = ({
+  monthLabel,
+  count,
+  hours,
+  topGenre,
+  best,
+}: {
+  monthLabel: string;
+  count: number;
+  hours: number;
+  topGenre: string | null;
+  best: { name: string; rating: number | null } | null;
+}) => {
+  const parts = [`Mi ${monthLabel} en cine: ${count === 1 ? "1 título" : `${count} títulos`}`];
+  if (hours > 0) parts.push(`${hours} h`);
+  if (topGenre) parts.push(`sobre todo ${topGenre.toLowerCase()}`);
+  const stars = ratingToStars(best?.rating);
+  const head = parts.join(" · ");
+  return best ? `${head}. La mejor: ${best.name}${stars == null ? "" : ` ★ ${stars.toFixed(1)}`}` : head;
+};

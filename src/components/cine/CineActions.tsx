@@ -14,7 +14,7 @@ import { watchlistAlertHint, watchlistAlertToast } from "@/lib/cine-visible-aler
 import type { SelectableList } from "@/lib/list-selection";
 import type { UserTmdbEntry } from "@/lib/queries";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
-import { lookupTmdbCatalogEntry } from "@/lib/tmdb-search-catalog";
+import { lookupTmdbCatalogEntry, tmdbCatalogKey } from "@/lib/tmdb-search-catalog";
 import { ownedFichaHref, previewFichaHref } from "@/lib/title-preview";
 import { posterFrame } from "@/lib/ui";
 
@@ -22,6 +22,10 @@ type CineActionsValue = {
   hrefFor: (film: CineFilm) => string;
   statusOf: (film: CineFilm) => SearchRowStatus;
   openMenu: (film: CineFilm, anchor: DOMRect, via: SearchMenuVia) => void;
+  /** «Avísame» (FIL-I46-4): the same Quiero ver add the hold menu does, which arms the cine alert. */
+  remind: (film: CineFilm) => void;
+  /** An add is on its way for this film. */
+  pendingFor: (film: CineFilm) => boolean;
 };
 
 const CineActionsContext = createContext<CineActionsValue | null>(null);
@@ -31,6 +35,8 @@ const fallback: CineActionsValue = {
   hrefFor: (film) => previewFichaHref("MOVIE", film.tmdbId),
   statusOf: () => null,
   openMenu: () => {},
+  remind: () => {},
+  pendingFor: () => false,
 };
 
 export const useCineActions = () => useContext(CineActionsContext) ?? fallback;
@@ -124,6 +130,11 @@ export const CineActionsProvider = ({
       filmsRef.current.set(film.tmdbId, film);
       setMenu({ result: toResult(film), anchor, via });
     },
+    remind: (film) => {
+      filmsRef.current.set(film.tmdbId, film);
+      actions.handleAdd(toResult(film), "watchlist");
+    },
+    pendingFor: (film) => actions.pendingKey === tmdbCatalogKey(film.tmdbId, "MOVIE"),
   };
 
   return (

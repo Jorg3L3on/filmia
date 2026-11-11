@@ -11,7 +11,7 @@ import { PasswordField } from "@/components/PasswordField";
 import { messageForSignInError } from "@/lib/auth-errors";
 import { cn } from "@/lib/cn";
 import { safeNextPath } from "@/lib/google-oauth";
-import { ONBOARDING_PATH } from "@/lib/onboarding/steps";
+import { onboardingHref } from "@/lib/onboarding/steps";
 import {
   PASSWORD_MIN_LENGTH,
   SIGNUP_FIELD_ORDER,
@@ -157,7 +157,7 @@ export const SignupForm = ({ googleEnabled }: SignupFormProps) => {
 
       // A fresh account opens the Bienvenida; finishing it lands on Hoy. Coming from a list
       // invite, it goes back to the invite first (public, so the gate lets it through).
-      router.push(isInvitePath(next) ? next : ONBOARDING_PATH);
+      router.push(isInvitePath(next) ? next : onboardingHref(next));
       router.refresh();
     } catch {
       setFormError("No pudimos conectar. Revisa tu conexión y reintenta.");

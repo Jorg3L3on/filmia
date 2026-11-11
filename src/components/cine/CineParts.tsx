@@ -41,7 +41,7 @@ export const CineMarquee = ({
     <div className="flex items-start gap-3">
       {backHref ? <BackDisc href={backHref} label="Volver a Cine" className="mt-0.5" /> : null}
       <div className="min-w-0">
-        <h1 className="cine-glow font-serif text-[2.25rem] leading-none text-paper sm:text-5xl">{title}</h1>
+        <h1 className="cine-glow cine-neon-on font-serif text-[2.25rem] leading-none text-paper sm:text-5xl">{title}</h1>
         <p className="mt-1.5 text-sm text-fog">{subtitle ?? capitalize(LONG_DATE.format(now))}</p>
       </div>
     </div>

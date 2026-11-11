@@ -55,6 +55,8 @@ type OnboardingFlowProps = {
   nightEnds: NightEnds;
   library: LibraryEntry[];
   tmdbConfigured: boolean;
+  /** Where finishing lands: Hoy, or the page the person was headed to (FIL-41). Already same-origin. */
+  returnTo?: string;
 };
 
 const TRANSITION_TYPES = {
@@ -107,6 +109,7 @@ export const OnboardingFlow = ({
   nightEnds: initialNightEnds,
   library,
   tmdbConfigured,
+  returnTo = "/",
 }: OnboardingFlowProps) => {
   const router = useRouter();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -183,7 +186,7 @@ export const OnboardingFlow = ({
       } catch {
         // The gate stays; the proxy will bring them back here on the next request.
       }
-      router.push("/");
+      router.push(returnTo);
       router.refresh();
     });
   };

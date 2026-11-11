@@ -84,7 +84,11 @@ describe("launch wiring", () => {
     assert.match(loading, /IrisLoader/);
     // FIL-I25-6: Hoy's skeleton only on `/`; the root boundary is neutral elsewhere.
     assert.match(loading, /RootLoadingSkeleton/);
-    assert.match(read("src/components/RootLoadingSkeleton.tsx"), /usePathname\(\) === "\/" \? <HoySkeleton \/> : <PageChromeSkeleton \/>/);
+    // FIL-I46-2: a ficha keeps its own skeleton (with the tapped poster), the rest stays neutral.
+    const rootSkeleton = read("src/components/RootLoadingSkeleton.tsx");
+    assert.match(rootSkeleton, /pathname === "\/"\) \{\n\s+return <HoySkeleton \/>/);
+    assert.match(rootSkeleton, /return <PageChromeSkeleton \/>/);
+    assert.match(rootSkeleton, /FichaBodySkeleton poster=/);
     assert.match(loading, /exit="iris-out"/);
     assert.match(read("src/components/launch/LaunchBoot.tsx"), /dataset\.booted/);
     assert.doesNotMatch(read("src/components/launch/IrisLoader.tsx"), /iris-still/);

@@ -5,6 +5,7 @@ import { UpcomingTimeline } from "@/components/cine/CineSections";
 import { CineGridSkeleton } from "@/components/cine/CineSkeleton";
 import { loadCineActions } from "@/app/cine/cine-data";
 import { getUpcoming } from "@/lib/cine";
+import { mxToday } from "@/lib/cine-core";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ const Timeline = async () => {
       memberships={actions.memberships}
       pinnedTitleId={actions.pinnedTitleId}
     >
-      <UpcomingTimeline films={films} watchlist={actions.existing} />
+      <UpcomingTimeline films={films} watchlist={actions.existing} today={mxToday()} />
     </CineActionsProvider>
   );
 };

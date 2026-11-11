@@ -8,6 +8,7 @@ import { resolveBienvenidaEntry, resolveInitialStep } from "@/lib/onboarding/ste
 import { resolveOnboardingYear } from "@/lib/onboarding/year";
 import { getCurrentUserProfile } from "@/lib/queries";
 import { auth } from "@/lib/session";
+import { safeNextPath } from "@/lib/google-oauth";
 import { isTmdbConfigured } from "@/lib/tmdb";
 
 export const dynamic = "force-dynamic";
@@ -16,17 +17,26 @@ export const metadata = {
   title: "Bienvenida",
 } as const;
 
-/** Bienvenida — the first-run flow: favorita, lo mejor del año, plataformas, Quiero ver, hora de dormir. */
-export default function BienvenidaPage() {
+type BienvenidaPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+/**
+ * Bienvenida — the first-run flow: favorita, lo mejor del año, plataformas, Quiero ver, hora de dormir.
+ * `callbackUrl` (same-origin path only) is where finishing it lands instead of Hoy (FIL-41).
+ */
+export default function BienvenidaPage({ searchParams }: BienvenidaPageProps) {
   return (
     <Suspense fallback={<OnboardingSkeleton />}>
-      <BienvenidaBody />
+      <BienvenidaBody searchParams={searchParams} />
     </Suspense>
   );
 }
 
-const BienvenidaBody = async () => {
-  const [session, profile] = await Promise.all([auth(), getCurrentUserProfile()]);
+const BienvenidaBody = async ({ searchParams }: BienvenidaPageProps) => {
+  const [session, profile, params] = await Promise.all([auth(), getCurrentUserProfile(), searchParams]);
+  const callback = params.callbackUrl;
+  const next = safeNextPath(typeof callback === "string" ? callback : null);
   if (!profile) {
     notFound();
   }
@@ -36,12 +46,12 @@ const BienvenidaBody = async () => {
     return (
       <>
         <OnboardingSkeleton />
-        <SessionResync />
+        <SessionResync next={next} />
       </>
     );
   }
   if (entry === "home") {
-    redirect("/");
+    redirect(next);
   }
 
   const library = await getOnboardingLibrary(profile.id);
@@ -59,6 +69,7 @@ const BienvenidaBody = async () => {
       nightEnds={profile.nightEnds}
       library={library}
       tmdbConfigured={tmdbConfigured}
+      returnTo={next}
     />
   );
 };

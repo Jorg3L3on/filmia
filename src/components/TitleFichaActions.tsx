@@ -40,6 +40,7 @@ import { TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import { focusRing } from "@/lib/ui";
 import { useStickyOptimistic } from "@/lib/use-optimistic-action";
 import { showDiaryToast } from "@/lib/quick-rate-toast";
+import { fichaButtonColors } from "@/lib/ficha-button-colors";
 
 const HOY_PARA_TI_HREF = `/?${TONIGHT_LENS_PARAM}=${PARA_TI_SLUG}`;
 
@@ -74,6 +75,8 @@ type TitleFichaActionsProps = {
   /** A premiere not yet in cinemas (UX-03): only Quiero ver and Lista until it opens. */
   prerelease?: boolean;
   posterPath?: string | null;
+  /** Catalog.posterAmbient («r g b»): «Ver esta noche» takes the poster's two colors (FIL-I46-2). */
+  posterAmbient?: string | null;
   /** The user's lists panel; a preview passes `previewLists` instead (nothing is written until confirmed). */
   listsPanel?: ReactNode;
   previewLists?: SelectableList[];
@@ -122,6 +125,7 @@ export const TitleFichaActions = ({
   pinnedTonight,
   prerelease = false,
   posterPath = null,
+  posterAmbient = null,
   listsPanel,
   previewLists = [],
 }: TitleFichaActionsProps) => {
@@ -145,6 +149,8 @@ export const TitleFichaActions = ({
     }
   }
   const [justPinned, setJustPinned] = useState(false);
+  // «Vi esto» saved: the stub tears off the button once (FIL-I46-2).
+  const [tearKey, setTearKey] = useState(0);
   const [isPinning, setPinning] = useState(false);
   const [pendingAction, setPendingAction] = useState<"rating" | "watchlist" | null>(null);
   const { value: state, error, run } = useStickyOptimistic(
@@ -152,6 +158,7 @@ export const TitleFichaActions = ({
     sameActionState,
   );
   const watchedSpring = useSpringFeedback();
+  const tonightColors = fichaButtonColors(posterAmbient);
   const ratingSpring = useSpringFeedback();
   const watchlistSpring = useSpringFeedback();
   const [isLogging, setLogging] = useState(false);
@@ -478,6 +485,7 @@ export const TitleFichaActions = ({
             focusRing,
           )}
         >
+          {justPinned ? <ClapperSnap /> : null}
           <span key="full" className={cn("inline-flex text-accent", justPinned && "spring-pop")}>
             <MoonIcon filled />
           </span>
@@ -491,6 +499,15 @@ export const TitleFichaActions = ({
           onClick={handlePin}
           disabled={isPinning}
           aria-busy={isPinning || undefined}
+          data-poster-colors={tonightColors ? "" : undefined}
+          style={
+            tonightColors
+              ? ({
+                  backgroundImage: `linear-gradient(100deg, ${tonightColors.from}, ${tonightColors.to})`,
+                  "--tonight-glow": tonightColors.to,
+                } as CSSProperties)
+              : undefined
+          }
           className={cn(
             "ficha-tonight tonight-pin press-scale relative flex h-[3.25rem] w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-accent px-5 text-base font-semibold text-ink disabled:opacity-70 sm:w-auto sm:px-7",
             focusRing,
@@ -545,6 +562,7 @@ export const TitleFichaActions = ({
           >
             {displayedWatched ? <CheckIcon /> : <EyeIcon />}
             {displayedWatched ? "Vista" : "Vi esto"}
+            {tearKey > 0 ? <StubTear key={tearKey} /> : null}
           </button>
         )}
 
@@ -615,6 +633,7 @@ export const TitleFichaActions = ({
           setSeenOptimistic(true);
           setDiaryHold(null);
           watchedSpring.trigger();
+          setTearKey((key) => key + 1);
         }}
         onError={() => setSeenOptimistic(false)}
         submit={async (formData) => {
@@ -699,4 +718,25 @@ const ListIcon = () => (
   <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
     <path strokeLinecap="round" d="M6 8h12M6 12h12M6 16h7M16.5 15.5v5M14 18h5" />
   </svg>
+);
+
+/** «Ver esta noche» confirmed: a clapperboard snaps shut once over the button (FIL-I46-2). */
+const ClapperSnap = () => (
+  <span className="clapper-snap" aria-hidden="true">
+    <svg viewBox="0 0 32 28" width="30" height="26" fill="none">
+      <rect x="2" y="11" width="28" height="15" rx="2" fill="currentColor" opacity="0.92" />
+      <g className="clapper-snap-arm">
+        <rect x="2" y="4" width="28" height="6" rx="1.5" fill="currentColor" />
+        <path d="M7 4 4 10M14 4l-3 6M21 4l-3 6M28 4l-3 6" stroke="var(--ink)" strokeWidth="2" />
+      </g>
+    </svg>
+  </span>
+);
+
+/** «Vi esto» saved: the stub tears along its perforation and falls away (FIL-I46-2). */
+const StubTear = () => (
+  <span className="ficha-stub-tear" aria-hidden="true">
+    <span className="ficha-stub-tear-half is-left" />
+    <span className="ficha-stub-tear-half is-right" />
+  </span>
 );

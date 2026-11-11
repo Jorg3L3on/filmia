@@ -107,3 +107,12 @@ export const nextJoinRequestStatus = (
       return "CANCELLED";
   }
 };
+
+/** Someone else added to the list in the last two days: the card shows a presence dot (FIL-I46-3). */
+export const LIST_PRESENCE_WINDOW_MS = 48 * 60 * 60 * 1000;
+
+export const isRecentlyActive = (at: Date | string | null | undefined, now: Date) => {
+  if (!at) return false;
+  const time = new Date(at).getTime();
+  return Number.isFinite(time) && now.getTime() - time >= 0 && now.getTime() - time <= LIST_PRESENCE_WINDOW_MS;
+};

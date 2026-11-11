@@ -37,7 +37,7 @@ export const RatingStars = ({
       <div
         role="group"
         aria-label="Tu calificación, de media estrella a cinco"
-        className={cn("flex justify-center gap-1.5", spring.className)}
+        className={cn("rating-stars-cascade flex justify-center gap-1.5", spring.className)}
       >
         {STEPS.map((star) => {
           const fullValue = star * 2;

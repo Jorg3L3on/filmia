@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AuthScreen } from "@/components/AuthScreen";
 import { ConsentForm } from "@/components/oauth/ConsentForm";
 import { clientTrust } from "@/lib/mcp-oauth/clients";
-import { isMcpEnabled } from "@/lib/mcp-oauth/config";
+import { consentLoginHref, isMcpEnabled } from "@/lib/mcp-oauth/config";
 import { oauthHttpDeps } from "@/lib/mcp-oauth/deps";
 import { checkConsentRequest } from "@/lib/mcp-oauth/http";
-import { requireUser } from "@/lib/session";
+import { auth, requireUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -67,11 +67,13 @@ const READS: { icon: ReactNode; label: string }[] = [
  */
 export default async function ConsentPage({ searchParams }: ConsentPageProps) {
   if (!isMcpEnabled()) notFound();
-  const user = await requireUser();
   const params = await searchParams;
   const raw = Object.fromEntries(
     FORWARDED.flatMap((name) => (typeof params[name] === "string" ? [[name, params[name] as string]] : [])),
   );
+  // Signed out: back here after /login, never a bare /login that drops the request (FIL-41).
+  if (!(await auth())?.user?.id) redirect(consentLoginHref(raw));
+  const user = await requireUser();
   const check = await checkConsentRequest(oauthHttpDeps, raw);
 
   if (!check.ok) {
