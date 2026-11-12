@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { catalogEnrichmentPatch, onlyMissingFields } from "@/lib/catalog-enrich-core";
+import { catalogEnrichmentPatch, catalogTitlePatch, onlyMissingFields } from "@/lib/catalog-enrich-core";
 import type { TitleMetadata } from "@/lib/metadata";
 
 const full: TitleMetadata = {
   tmdbId: 389,
   name: "12 Hombres en Pugna",
   originalName: "12 Angry Men",
+  alternateNames: ["12 Angry Men"],
   year: 1957,
   posterPath: "/poster.jpg",
   backdropPath: "/back.jpg",
@@ -31,6 +32,20 @@ describe("catalog-enrich-core/catalogEnrichmentPatch", () => {
     assert.equal(patch.awards, "Nominated for 3 Oscars.");
     assert.equal(patch.posterAmbient, "10 20 30");
     assert.deepEqual(patch.tmdbGenres, [{ id: 18, name: "Drama" }]);
+    assert.equal(patch.name, "12 Hombres en Pugna");
+    assert.equal(patch.originalName, "12 Angry Men");
+    assert.deepEqual(patch.alternateNames, ["12 Angry Men"]);
+  });
+
+  it("stores the title fields and leaves an empty search list alone (FIL-I48-1)", () => {
+    const patch = catalogTitlePatch({
+      name: "Intensa-Mente",
+      originalName: "Inside Out",
+      alternateNames: [],
+    });
+    assert.equal(patch.name, "Intensa-Mente");
+    assert.equal(patch.originalName, "Inside Out");
+    assert.equal("alternateNames" in patch, false);
   });
 
   it("never blanks OMDb data when OMDb returned nothing (dead key, rate limit)", () => {

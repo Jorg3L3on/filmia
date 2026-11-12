@@ -20,6 +20,7 @@
     "db:seed:tutorial": "tsx scripts/seed-demo-tutorial.ts",
     "db:seed:audit": "tsx scripts/seed-audit.ts",
     "db:backfill-metadata": "tsx scripts/backfill-metadata.ts",
+    "db:backfill-titles": "tsx scripts/backfill-alternate-titles.ts",
     "db:set-password": "tsx scripts/set-password.ts",
     "db:clone-account": "tsx scripts/clone-account.ts",
     "db:backfill-tonight": "tsx scripts/backfill-tonight.ts",
@@ -44,6 +45,9 @@
     "cine:top": "tsx scripts/cine.ts top",
     "cine:avisos": "tsx scripts/cine.ts avisos",
     "cine:titulos": "tsx scripts/cine.ts titulos",
+    "charts:revisar": "tsx scripts/service-charts.ts revisar",
+    "charts:correr": "tsx scripts/service-charts.ts correr",
+    "charts:netflix": "tsx scripts/service-charts.ts netflix",
     "oscars:build": "tsx scripts/oscars-build.ts",
     "test:db": "TEST_DATABASE_URL=${TEST_DATABASE_URL:-postgresql://localhost:5432/filmia_test} tsx --test --test-concurrency=4 \"src/**/*.test.ts\" \"scripts/**/*.test.ts\"",
     "test:db:setup": "bash scripts/setup-test-db.sh"

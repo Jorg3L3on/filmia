@@ -10,6 +10,7 @@ import {
   watchedRatingOf,
 } from "@/lib/affinity-store";
 import { findCatalogByTmdb, findOrCreateCatalog } from "@/lib/catalog";
+import { searchStoredCatalog } from "@/lib/catalog-search-db";
 import { enrichCatalog } from "@/lib/catalog-enrich";
 import { TITLE_KINDS } from "@/lib/labels";
 import {
@@ -161,6 +162,8 @@ const lookupFacts = async (
         watchProvidersMx: catalog.watchProvidersMx,
       })
       .from(catalog)
+      // Identity stays (tmdbId, kind). Title text is not a second key (FIL-I39):
+      // Mexican and original titles find the same row in `getStoredCatalogHits`.
       .where(or(...wanted.map((item) => and(eq(catalog.tmdbId, item.tmdbId), eq(catalog.kind, item.kind))))),
     loadUserAffinity(userId).catch(() => null),
     db.query.users
@@ -238,6 +241,16 @@ const lookupFacts = async (
   }
 
   return facts;
+};
+
+/**
+ * Stored Catalog hits for a Buscar query (FIL-I48-2): name, originalName, and
+ * stored alternates. Remote results stay on TMDB search; this does not call
+ * alternative titles per hit.
+ */
+export const getStoredCatalogHits = async (query: string) => {
+  await requireUserId();
+  return searchStoredCatalog(query);
 };
 
 /** Buscar row A (FIL-I8-4): IMDb, award, runtime, genre and MX platform for the results. */

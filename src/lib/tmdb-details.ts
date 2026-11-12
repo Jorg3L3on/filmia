@@ -25,6 +25,38 @@ export type TmdbKeywordsPayload = {
   results?: Array<{ id?: number; name?: string }>;
 };
 
+export type TmdbAlternativeTitle = {
+  iso_3166_1?: string;
+  title?: string;
+  type?: string;
+};
+
+/** Movies return `titles`; series return `results`. */
+export type TmdbAlternativeTitlesPayload = {
+  titles?: TmdbAlternativeTitle[];
+  results?: TmdbAlternativeTitle[];
+};
+
+export type TmdbTranslation = {
+  iso_3166_1?: string;
+  iso_639_1?: string;
+  data?: { title?: string; name?: string };
+};
+
+export type TmdbTranslationsPayload = {
+  translations?: TmdbTranslation[];
+};
+
+/**
+ * One details call (FIL-I48-1). Keywords and credits stay; alternative titles
+ * and translations ride along so the Mexican, original, and en-US names do
+ * not cost a second request.
+ */
+export const tmdbDetailsAppendToResponse = (segment: "movie" | "tv") =>
+  segment === "tv"
+    ? "keywords,aggregate_credits,alternative_titles,translations"
+    : "keywords,credits,alternative_titles,translations";
+
 export type TmdbMovieDetailsPayload = {
   id: number;
   title: string;
@@ -38,6 +70,8 @@ export type TmdbMovieDetailsPayload = {
   genres?: Array<{ id?: number; name?: string }>;
   keywords?: TmdbKeywordsPayload;
   credits?: TmdbCreditsPayload;
+  alternative_titles?: TmdbAlternativeTitlesPayload;
+  translations?: TmdbTranslationsPayload;
 };
 
 export type TmdbTvDetailsPayload = {
@@ -57,6 +91,8 @@ export type TmdbTvDetailsPayload = {
   keywords?: TmdbKeywordsPayload;
   aggregate_credits?: TmdbCreditsPayload;
   created_by?: TmdbCreatedBy;
+  alternative_titles?: TmdbAlternativeTitlesPayload;
+  translations?: TmdbTranslationsPayload;
 };
 
 export type TmdbDetails = {
@@ -72,6 +108,8 @@ export type TmdbDetails = {
   genres: TmdbGenre[];
   keywords: TmdbKeyword[];
   people: TmdbPerson[];
+  /** Search strings other than `name`: MX, original, en-US when different. */
+  alternateNames: string[];
 };
 
 export const parseTmdbYear = (value: string | null | undefined) => {
@@ -183,6 +221,98 @@ export const parseTmdbKeywords = (payload: TmdbKeywordsPayload | null | undefine
   return keywords;
 };
 
+const cleanTitle = (value: string | null | undefined) => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+};
+
+/** Case-insensitive. Accents stay different: «año» is not «ano». */
+const sameTitle = (left: string, right: string | null) =>
+  right != null && left.localeCompare(right, "es-MX", { sensitivity: "accent" }) === 0;
+
+const MAX_ALTERNATE_NAMES = 8;
+
+/** MX alternative titles, in TMDB's order, without empty or repeated strings. */
+export const mxAlternativeTitles = (
+  payload: TmdbAlternativeTitlesPayload | null | undefined,
+): string[] => {
+  const raw = payload?.titles ?? payload?.results ?? [];
+  const seen = new Set<string>();
+  const titles: string[] = [];
+
+  for (const item of raw) {
+    if (item?.iso_3166_1 !== "MX") {
+      continue;
+    }
+    const title = cleanTitle(item.title);
+    if (!title) {
+      continue;
+    }
+    const key = title.toLocaleLowerCase("es-MX");
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    titles.push(title);
+  }
+
+  return titles;
+};
+
+/** en-US translation. Movies put it on `data.title`, series on `data.name`. */
+export const enUsTitle = (payload: TmdbTranslationsPayload | null | undefined) => {
+  for (const item of payload?.translations ?? []) {
+    if (item?.iso_3166_1 !== "US" || item.iso_639_1 !== "en") {
+      continue;
+    }
+    const title = cleanTitle(item.data?.title) ?? cleanTitle(item.data?.name);
+    if (title) {
+      return title;
+    }
+  }
+  return null;
+};
+
+/**
+ * Name preference (FIL-I48-1):
+ * - Mexican-facing `name` is the first MX alternative that differs from the
+ *   original title. When TMDB has none, `name` stays the es-MX title.
+ * - `originalName` is the original title.
+ * - `alternateNames` is a short search list: that MX title, the original,
+ *   and the en-US title when it differs. `name` is not repeated.
+ */
+export const resolveCatalogTitles = (input: {
+  esMxName: string | null | undefined;
+  originalName: string | null | undefined;
+  mxTitles: readonly string[];
+  enUsName: string | null | undefined;
+}) => {
+  const original = cleanTitle(input.originalName);
+  const esMx = cleanTitle(input.esMxName);
+  const mxTitles = input.mxTitles
+    .map((title) => cleanTitle(title))
+    .filter((title): title is string => Boolean(title));
+  const mxFacing = mxTitles.find((title) => !sameTitle(title, original)) ?? null;
+  const name = mxFacing ?? esMx ?? original ?? "";
+  const alternateNames: string[] = [];
+
+  const push = (value: string | null) => {
+    if (!value || alternateNames.length >= MAX_ALTERNATE_NAMES) {
+      return;
+    }
+    if (sameTitle(value, name) || alternateNames.some((existing) => sameTitle(value, existing))) {
+      return;
+    }
+    alternateNames.push(value);
+  };
+
+  push(mxFacing ?? mxTitles[0] ?? null);
+  push(original);
+  push(cleanTitle(input.enUsName));
+
+  return { name, originalName: original, alternateNames };
+};
+
 /**
  * TV keywords come back under `results`, movies under `keywords`;
  * parseTmdbKeywords handles both. `overview` is TMDB's es-MX text or null
@@ -195,12 +325,19 @@ export const parseTmdbDetails = (
   const keywords = parseTmdbKeywords(data.keywords);
   const overview = data.overview?.trim() || null;
   const originalLanguage = data.original_language?.trim() || null;
+  const titles = resolveCatalogTitles({
+    esMxName: "title" in data ? data.title : data.name,
+    originalName: "title" in data ? data.original_title : data.original_name,
+    mxTitles: mxAlternativeTitles(data.alternative_titles),
+    enUsName: enUsTitle(data.translations),
+  });
 
   if ("title" in data) {
     return {
       tmdbId: data.id,
-      name: data.title,
-      originalName: data.original_title ?? null,
+      name: titles.name || data.title,
+      originalName: titles.originalName,
+      alternateNames: titles.alternateNames,
       originalLanguage,
       year: parseTmdbYear(data.release_date),
       posterPath: data.poster_path ?? null,
@@ -215,8 +352,9 @@ export const parseTmdbDetails = (
 
   return {
     tmdbId: data.id,
-    name: data.name,
-    originalName: data.original_name ?? null,
+    name: titles.name || data.name,
+    originalName: titles.originalName,
+    alternateNames: titles.alternateNames,
     originalLanguage,
     year: parseTmdbYear(data.first_air_date),
     posterPath: data.poster_path ?? null,

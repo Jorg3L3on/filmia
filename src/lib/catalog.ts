@@ -11,7 +11,7 @@ export const WITH_CATALOG = { catalog: true } as const;
 export type CatalogSeed = {
   tmdbId: number;
   kind: TitleKind;
-  /** Search snapshot; enrichment replaces it with TMDB's localized title. */
+  /** Search snapshot; enrichment replaces it with the Mexican-facing title. */
   name: string;
   originalName?: string | null;
   year?: number | null;

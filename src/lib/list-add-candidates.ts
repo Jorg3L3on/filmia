@@ -1,4 +1,5 @@
 import type { TitleKind } from "@/db";
+import { storedTitleMatches } from "@/lib/catalog-search";
 import type { TmdbCatalogResult } from "@/lib/tmdb";
 import { normalizeSearchQuery } from "@/lib/search-session";
 import { tmdbCatalogKey } from "@/lib/tmdb-search-catalog";
@@ -11,6 +12,8 @@ export type LocalListTitle = {
   posterPath: string | null;
   tmdbId?: number | null;
   kind?: TitleKind | null;
+  originalName?: string | null;
+  alternateNames?: readonly string[] | null;
 };
 
 /** TMDB hit for the «Agregar título» sheet, already reconciled with the catalog. */
@@ -45,15 +48,23 @@ type MergeArgs = {
 const localKey = (title: LocalListTitle) =>
   title.tmdbId != null && title.kind ? tmdbCatalogKey(title.tmdbId, title.kind) : null;
 
-const matchesQuery = (title: LocalListTitle, needle: string) =>
-  `${title.name} ${title.year ?? ""}`.toLowerCase().includes(needle);
+const matchesQuery = (title: LocalListTitle, query: string) =>
+  storedTitleMatches(
+    {
+      name: title.name,
+      originalName: title.originalName,
+      alternateNames: title.alternateNames,
+      year: title.year,
+    },
+    query,
+  );
 
 /**
- * Local matches first (same filter as before: name + year), then TMDB hits with
- * the same criteria as Buscar. A TMDB hit is deduped against the catalog by
- * `kind:tmdbId`: hidden when its local twin is already listed above, turned
- * into a local add when the twin did not match the text filter (e.g. found by
- * original title), and flagged `in-list` when the title is already on the list.
+ * Local matches first (name, original title, stored alternates, and year), then
+ * TMDB hits with the same criteria as Buscar. A TMDB hit is deduped against the
+ * catalog by `kind:tmdbId`: hidden when its local twin is already listed above,
+ * turned into a local add when the twin did not match the text filter, and
+ * flagged `in-list` when the title is already on the list.
  */
 export const mergeListAddCandidates = ({
   local,
@@ -62,7 +73,7 @@ export const mergeListAddCandidates = ({
   inListKeys,
   addedKeys,
 }: MergeArgs): ListAddCandidates => {
-  const needle = normalizeSearchQuery(query).toLowerCase();
+  const needle = normalizeSearchQuery(query);
   const available = local.filter((title) => !addedKeys.has(title.id));
   const shownLocal = needle
     ? available.filter((title) => matchesQuery(title, needle))

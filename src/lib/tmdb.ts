@@ -18,6 +18,7 @@ import {
 import {
   parseTmdbDetails,
   parseTmdbYear,
+  tmdbDetailsAppendToResponse,
   type TmdbDetails,
   type TmdbGenre,
   type TmdbKeyword,
@@ -108,14 +109,42 @@ export type TmdbErrorCode = "missing_key" | "rate_limit" | "network" | "http";
 export class TmdbRequestError extends Error {
   readonly code: TmdbErrorCode;
   readonly status: number | null;
+  /** Seconds from TMDB's `Retry-After` on a 429, when the header was present. */
+  readonly retryAfterSeconds: number | null;
 
-  constructor(code: TmdbErrorCode, message: string, status: number | null = null) {
+  constructor(
+    code: TmdbErrorCode,
+    message: string,
+    status: number | null = null,
+    retryAfterSeconds: number | null = null,
+  ) {
     super(message);
     this.name = "TmdbRequestError";
     this.code = code;
     this.status = status;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
+
+/** `Retry-After` is either delta-seconds or an HTTP date. */
+export const parseRetryAfterSeconds = (header: string | null, nowMs = Date.now()) => {
+  const trimmed = header?.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const seconds = Number(trimmed);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return seconds;
+  }
+
+  const when = Date.parse(trimmed);
+  if (Number.isNaN(when)) {
+    return null;
+  }
+
+  return Math.max(0, Math.ceil((when - nowMs) / 1000));
+};
 
 export const TMDB_UNAVAILABLE_COPY =
   "No se puede buscar títulos ahora. Tu diario y tus listas siguen disponibles.";
@@ -245,6 +274,7 @@ const fetchTmdbJson = async (
       "rate_limit",
       "TMDB está limitando las peticiones. Espera un momento e inténtalo de nuevo.",
       429,
+      parseRetryAfterSeconds(response.headers.get("retry-after")),
     );
   }
 
@@ -263,6 +293,40 @@ const loadCachedTmdbJson = unstable_cache(fetchTmdbJson, ["tmdb-json"], {
   revalidate: METADATA_REVALIDATE_SECONDS,
   tags: [TMDB_CACHE_TAG],
 });
+
+const listedText = (value: string | null | undefined) => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+};
+
+/**
+ * One TMDB search row (movie or series). Both strings travel with the hit:
+ * the es-MX title and `original_title` / `original_name`. Search does not
+ * call `/alternative_titles`; that list is only on the details request.
+ */
+export const tmdbListedTitle = (input: {
+  id: number;
+  name: string | null | undefined;
+  originalName: string | null | undefined;
+  date?: string | null;
+  posterPath?: string | null;
+  backdropPath?: string | null;
+  overview?: string | null;
+}): TmdbSearchResult | null => {
+  const name = input.name?.trim() ?? "";
+  if (!name) {
+    return null;
+  }
+  return {
+    tmdbId: input.id,
+    name,
+    originalName: listedText(input.originalName),
+    year: parseTmdbYear(input.date),
+    posterPath: input.posterPath ?? null,
+    backdropPath: input.backdropPath ?? null,
+    overview: input.overview ?? null,
+  };
+};
 
 export const searchTmdb = async (
   query: string,
@@ -305,28 +369,28 @@ export const searchTmdb = async (
     params,
   );
 
-  return data.results.slice(0, 8).map((item) => {
-    if ("title" in item) {
-      return {
-        tmdbId: item.id,
-        name: item.title,
-        originalName: item.original_title ?? null,
-        year: parseTmdbYear(item.release_date),
-        posterPath: item.poster_path ?? null,
-        backdropPath: item.backdrop_path ?? null,
-        overview: item.overview ?? null,
-      };
-    }
-
-    return {
-      tmdbId: item.id,
-      name: item.name,
-      originalName: item.original_name ?? null,
-      year: parseTmdbYear(item.first_air_date),
-      posterPath: item.poster_path ?? null,
-      backdropPath: item.backdrop_path ?? null,
-      overview: item.overview ?? null,
-    };
+  return data.results.slice(0, 8).flatMap((item) => {
+    const hit =
+      "title" in item
+        ? tmdbListedTitle({
+            id: item.id,
+            name: item.title,
+            originalName: item.original_title,
+            date: item.release_date,
+            posterPath: item.poster_path,
+            backdropPath: item.backdrop_path,
+            overview: item.overview,
+          })
+        : tmdbListedTitle({
+            id: item.id,
+            name: item.name,
+            originalName: item.original_name,
+            date: item.first_air_date,
+            posterPath: item.poster_path,
+            backdropPath: item.backdrop_path,
+            overview: item.overview,
+          });
+    return hit ? [hit] : [];
   });
 };
 
@@ -372,41 +436,20 @@ export const searchTmdbMultiPage = async (query: string, page = 1): Promise<Tmdb
   let people = 0;
 
   for (const item of data.results) {
-    if (item.media_type === "movie") {
-      const name = item.title?.trim() ?? "";
-      if (!name) {
-        continue;
-      }
-
-      results.push({
-        tmdbId: item.id,
-        name,
-        originalName: item.original_title ?? null,
-        year: parseTmdbYear(item.release_date),
-        posterPath: item.poster_path ?? null,
-        backdropPath: item.backdrop_path ?? null,
-        overview: item.overview ?? null,
-        kind: "MOVIE",
+    if (item.media_type === "movie" || item.media_type === "tv") {
+      const kind = item.media_type === "movie" ? "MOVIE" : "SERIES";
+      const hit = tmdbListedTitle({
+        id: item.id,
+        name: kind === "MOVIE" ? item.title : item.name,
+        originalName: kind === "MOVIE" ? item.original_title : item.original_name,
+        date: kind === "MOVIE" ? item.release_date : item.first_air_date,
+        posterPath: item.poster_path,
+        backdropPath: item.backdrop_path,
+        overview: item.overview,
       });
-      continue;
-    }
-
-    if (item.media_type === "tv") {
-      const name = item.name?.trim() ?? "";
-      if (!name) {
-        continue;
+      if (hit) {
+        results.push({ ...hit, kind });
       }
-
-      results.push({
-        tmdbId: item.id,
-        name,
-        originalName: item.original_name ?? null,
-        year: parseTmdbYear(item.first_air_date),
-        posterPath: item.poster_path ?? null,
-        backdropPath: item.backdrop_path ?? null,
-        overview: item.overview ?? null,
-        kind: "SERIES",
-      });
       continue;
     }
 
@@ -541,6 +584,40 @@ export const discoverTmdb = async (
   return (data.results ?? []).flatMap((item) => {
     const result = toDiscoverResult(item, kind);
     return result ? [result] : [];
+  });
+};
+
+/** A title search hit with its English (en-US) name: Netflix's Top 10 file is in English (FIL-I47-2). */
+export type TmdbEnglishHit = {
+  tmdbId: number;
+  kind: TitleKind;
+  enName: string;
+  originalName: string | null;
+  year: number | null;
+  posterPath: string | null;
+  popularity: number;
+};
+
+/** `/search/movie` or `/search/tv` in en-US, first page. */
+export const searchTmdbTitlesEn = async (query: string, kind: TitleKind): Promise<TmdbEnglishHit[]> => {
+  const path = kind === "SERIES" ? "/search/tv" : "/search/movie";
+  const data = (await fetchTmdbJson(path, tmdbSearch(path, { query, language: "en-US", include_adult: "false" }), {
+    store: false,
+  })) as { results?: TmdbDiscoverItem[] };
+  return (data.results ?? []).flatMap((item) => {
+    const enName = (kind === "SERIES" ? item.name : item.title)?.trim() ?? "";
+    if (!enName) return [];
+    return [
+      {
+        tmdbId: item.id,
+        kind,
+        enName,
+        originalName: (kind === "SERIES" ? item.original_name : item.original_title) ?? null,
+        year: parseTmdbYear(kind === "SERIES" ? item.first_air_date : item.release_date),
+        posterPath: item.poster_path ?? null,
+        popularity: item.popularity ?? 0,
+      },
+    ];
   });
 };
 
@@ -705,7 +782,7 @@ const fetchTmdbDetails = async (
   const data = (await fetchTmdbJson(
     path,
     tmdbSearch(path, {
-      append_to_response: segment === "tv" ? "keywords,aggregate_credits" : "keywords,credits",
+      append_to_response: tmdbDetailsAppendToResponse(segment),
     }),
     { store: false },
   )) as TmdbMovieDetailsPayload | TmdbTvDetailsPayload;
@@ -718,7 +795,8 @@ const fetchTmdbDetails = async (
 
 // v2: series runtime falls back to the last / next episode aired (FIL-I24-7).
 // v3: people carry the composer (FIL-I26-4).
-const loadCachedTmdbDetails = unstable_cache(fetchTmdbDetails, ["tmdb-details", "v3"], {
+// v4: Mexican-facing name, original title, and extra search strings (FIL-I48-1).
+const loadCachedTmdbDetails = unstable_cache(fetchTmdbDetails, ["tmdb-details", "v4"], {
   revalidate: METADATA_REVALIDATE_SECONDS,
   tags: [TMDB_CACHE_TAG],
 });

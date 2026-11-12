@@ -31,6 +31,8 @@ export type TitleMetadata = {
   overview?: string | null;
   name?: string;
   originalName?: string | null;
+  /** Extra search strings: MX, original, en-US when different (FIL-I48-1). */
+  alternateNames?: string[];
   year?: number | null;
 };
 
@@ -68,6 +70,7 @@ export const resolveTitleMetadata = async (
     overview: details.overview,
     name: details.name,
     originalName: details.originalName,
+    alternateNames: details.alternateNames,
     year: details.year,
   };
 };
