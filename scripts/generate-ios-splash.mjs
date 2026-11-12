@@ -1,13 +1,12 @@
 /**
  * Portrait iOS startup PNGs, one per device. Each file is a headless Chrome
- * screenshot of the real Iris CSS at t = 0 (animations paused, the same
- * next/font files). The iPhone 14 Pro frame is checked against a second shot
- * of that page at 600ms — the file on disk, after compression.
+ * screenshot of the real launch loader (FIL-43: the canvas, a faint glow and
+ * the F) with the shipped CSS at t = 0. The iPhone 14 Pro frame is checked
+ * against a second shot of that page at 600ms — the file on disk, after
+ * compression — so the live loader's first frames match the PNG.
  *
- * pngquant's 256-color palette moves channels by dozens on this grain, so it
- * cannot stay inside a max channel delta of 3. The shrink is a posterize of
- * at most 2 levels (no banding; the grain already dithers the gradients),
- * kept only when that delta still holds, then lossless oxipng.
+ * The art is flat apart from one faint glow, so the PNGs are lossless
+ * (sharp + oxipng); no posterize, which would band the glow.
  *
  * Requires a production build so the shot uses the shipped CSS and fonts:
  *   npm run build && npm run generate:ios-splash
@@ -37,30 +36,25 @@ if (cssFiles.length === 0) {
   throw new Error("No built CSS. Run npm run build before generate:ios-splash.");
 }
 
-const cssText = cssFiles.map((file) => readFileSync(file, "utf8")).join("\n");
-const fontClass = (variable) => {
-  const match = cssText.match(new RegExp(`\\.([\\w-]+)\\{[^}]*${variable}\\s*:`));
-  if (!match) throw new Error(`Built CSS is missing ${variable}`);
-  return match[1];
-};
-
 const markup = spawnSync(
   path.join(root, "node_modules/.bin/tsx"),
   [
     "-e",
     `import { renderToStaticMarkup } from "react-dom/server";
      import { createElement } from "react";
-     import { IrisLoader } from "./src/components/launch/IrisLoader.tsx";
-     process.stdout.write(renderToStaticMarkup(createElement(IrisLoader)));`,
+     import { LaunchMark } from "./src/components/launch/LaunchMark.tsx";
+     process.stdout.write(renderToStaticMarkup(
+       createElement("div", { className: "launch-loader" }, createElement(LaunchMark)),
+     ));`,
   ],
   { cwd: root, encoding: "utf8" },
 );
 if (markup.status !== 0) {
-  throw new Error(markup.stderr || "Could not render IrisLoader");
+  throw new Error(markup.stderr || "Could not render LaunchMark");
 }
 
 const html = `<!doctype html>
-<html class="${fontClass("--font-fraunces")} ${fontClass("--font-geist-sans")}">
+<html>
 <head>
 <meta charset="utf-8"/>
 ${cssFiles.map((file) => `<link rel="stylesheet" href="/_next/static/chunks/${path.basename(file)}"/>`).join("")}
@@ -142,24 +136,21 @@ const channelDelta = (left, right) => {
 
 const toRgba = (buffer) => sharp(buffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
 
-/** Snap each channel to a multiple of `step`. Step 1 is a copy. Max error is step/2. */
-const posterize = (rgba, step) => {
-  if (step <= 1) return Buffer.from(rgba);
-  const copy = Buffer.from(rgba);
-  for (let i = 0; i < copy.length; i += 4) {
-    copy[i] = Math.min(255, Math.round(copy[i] / step) * step);
-    copy[i + 1] = Math.min(255, Math.round(copy[i + 1] / step) * step);
-    copy[i + 2] = Math.min(255, Math.round(copy[i + 2] / step) * step);
-  }
-  return copy;
-};
+let warnedOxipng = false;
 
 const writePng = async (file, rgba, width, height) => {
   await sharp(rgba, { raw: { width, height, channels: 4 } })
     .removeAlpha()
     .png({ compressionLevel: 9 })
     .toFile(file);
-  execFileSync("oxipng", ["-o", "4", "--strip", "safe", file], { stdio: "ignore" });
+  try {
+    execFileSync("oxipng", ["-o", "4", "--strip", "safe", file], { stdio: "ignore" });
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+    // oxipng is optional (brew install oxipng): it only shrinks the lossless file.
+    if (!warnedOxipng) console.warn("oxipng not found: PNGs left as sharp wrote them");
+    warnedOxipng = true;
+  }
 };
 
 const browser = await chromium.launch({
@@ -179,9 +170,6 @@ const selected = devices.filter((device) => {
 const isReference = (device) => device.width === 393 && device.height === 852;
 selected.sort((a, b) => Number(isReference(b)) - Number(isReference(a)));
 
-/** Largest posterize that keeps the reference file within a channel delta of 3. */
-let quantStep = 1;
-
 try {
   for (const device of selected) {
     const context = await browser.newContext({
@@ -197,24 +185,30 @@ try {
       ],
     });
     await page.goto(origin, { waitUntil: "networkidle" });
+    // Chrome's media emulation does not implement display-mode. The shipped
+    // rule hides the loader outside standalone; the shot is that same loader shown.
+    const standalone = await page.evaluate(() => matchMedia("(display-mode: standalone)").matches);
+    if (!standalone) {
+      await page.addStyleTag({ content: ".launch-loader{display:block !important}" });
+    }
     const shown = await page.evaluate(() => {
-      const loader = document.querySelector(".iris-loader");
-      const word = document.querySelector(".iris-word");
-      const style = getComputedStyle(loader);
+      const loader = document.querySelector(".launch-loader");
+      const mark = document.querySelector(".launch-mark");
+      const box = mark ? mark.getBoundingClientRect() : null;
       return {
-        display: style.display,
-        position: style.position,
-        fontSize: word ? getComputedStyle(word).fontSize : "",
-        standalone: matchMedia("(display-mode: standalone)").matches,
+        position: getComputedStyle(loader).position,
+        markWidth: box ? box.width : 0,
+        markCenterY: box ? box.top + box.height / 2 : 0,
+        viewportHeight: window.innerHeight,
       };
     });
-    if (shown.position !== "fixed" || shown.fontSize !== "42px") {
-      throw new Error(`Iris CSS did not apply for ${device.name}: ${JSON.stringify(shown)}`);
-    }
-    // Chrome's media emulation does not implement display-mode. The shipped
-    // rule hides Iris outside standalone; the shot is that same loader shown.
-    if (!shown.standalone) {
-      await page.addStyleTag({ content: ".iris-loader{display:block !important}" });
+    // The pose the ticket fixes: a 72px F centered at 43% of the height.
+    if (
+      shown.position !== "fixed" ||
+      shown.markWidth !== 72 ||
+      Math.abs(shown.markCenterY - shown.viewportHeight * 0.43) > 0.5
+    ) {
+      throw new Error(`Launch CSS did not apply for ${device.name}: ${JSON.stringify(shown)}`);
     }
     await pauseAt(page, 0);
     const fileName = `apple-splash-${device.width * device.ratio}x${device.height * device.ratio}.png`;
@@ -228,26 +222,17 @@ try {
       if (css.info.width !== shot.info.width || css.info.height !== shot.info.height) {
         throw new Error("CSS pose screenshot size does not match the startup PNG");
       }
-      quantStep = 1;
-      for (const step of [4, 2]) {
-        const delta = channelDelta(posterize(shot.data, step), css.data);
-        if (delta.max <= 3) {
-          quantStep = step;
-          break;
-        }
-      }
-      const rgba = posterize(shot.data, quantStep);
-      await writePng(file, rgba, shot.info.width, shot.info.height);
+      await writePng(file, shot.data, shot.info.width, shot.info.height);
       const written = await toRgba(readFileSync(file));
       const delta = channelDelta(written.data, css.data);
       console.log(
-        `delta 393x852 @3  png vs css@600ms  step=${quantStep}  max=${delta.max}  mean=${delta.mean.toFixed(4)}  changed=${(delta.changed * 100).toFixed(3)}%`,
+        `delta 393x852 @3  png vs css@600ms  max=${delta.max}  mean=${delta.mean.toFixed(4)}  changed=${(delta.changed * 100).toFixed(3)}%`,
       );
       if (delta.max > 3) {
         throw new Error(`Splash delta ${delta.max} exceeds 3`);
       }
     } else {
-      await writePng(file, posterize(shot.data, quantStep), shot.info.width, shot.info.height);
+      await writePng(file, shot.data, shot.info.width, shot.info.height);
     }
 
     console.log(`wrote public/splash/${fileName} (${device.name})`);
