@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Fraunces, Geist } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
-import { LaunchBoot } from "@/components/launch/LaunchBoot";
+import { LaunchLoader } from "@/components/launch/LaunchLoader";
 import { scheduleAfterResponse } from "@/lib/after-response";
 import { ensureDefaultLists } from "@/lib/lists";
 import { IOS_SPLASH_IMAGES } from "@/lib/pwa/ios-splash";
@@ -77,7 +77,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="flex min-h-full min-h-[100dvh] flex-col bg-canvas text-paper">
-        <LaunchBoot />
+        <LaunchLoader />
         <AppShell>{children}</AppShell>
       </body>
     </html>
