@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   buildSequence,
+  DAILY_LENS_ROTATION,
+  dailyLensOf,
   dailyNumber,
   dayStreak,
   filmsFor,
@@ -120,6 +122,17 @@ describe("the daily helpers (FIL-I52-3/4)", () => {
   it("numbers days from the first one", () => {
     assert.equal(dailyNumber("2026-11-13"), 1);
     assert.equal(dailyNumber("2026-12-05"), 23);
+  });
+
+  it("the daily's lens is a pure function of the day: the same for everyone, rotating through all four (FIL-I52-5)", () => {
+    assert.equal(dailyLensOf("2026-11-13"), "imdb");
+    assert.equal(dailyLensOf("2026-11-14"), "year");
+    assert.equal(dailyLensOf("2026-11-16"), "runtime");
+    assert.equal(dailyLensOf("2026-11-18"), "critica");
+    assert.equal(dailyLensOf("2026-11-19"), dailyLensOf("2026-11-13"));
+    const week = Array.from({ length: DAILY_LENS_ROTATION.length }, (_, index) => dailyLensOf(`2026-12-${String(index + 1).padStart(2, "0")}`));
+    assert.deepEqual(new Set(week), new Set(MAYOR_LENS_IDS));
+    assert.equal(dailyLensOf("2026-11-01"), DAILY_LENS_ROTATION[(((-12 % 6) + 6) % 6)], "days before n.º 1 still rotate");
   });
 
   it("counts days in a row ending today or yesterday", () => {

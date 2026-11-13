@@ -3,8 +3,9 @@ import { NavLabel } from "@/components/NavOriginTracker";
 import { MayorGame, MayorTopBar } from "@/components/juegos/MayorGame";
 import { cn } from "@/lib/cn";
 import { mxToday } from "@/lib/cine-core";
-import { MAYOR_DAILY_PATH, MAYOR_LENSES, parseMayorLens } from "@/lib/juegos/mayor/core";
+import { MAYOR_DAILY_PATH, MAYOR_ID, MAYOR_LENSES, parseMayorLens } from "@/lib/juegos/mayor/core";
 import { openFreeMayor, readDailyMayor, type MayorView } from "@/lib/juegos/mayor/store";
+import { bestScoresByLens } from "@/lib/juegos/partidas";
 import { requireUserId } from "@/lib/session";
 import { focusRing } from "@/lib/ui";
 
@@ -50,12 +51,19 @@ export default async function MayorPage({ searchParams }: { searchParams: Promis
     openFreeMayor(userId, lens).catch(() => null),
     readDailyMayor(userId, mxToday()).catch(() => null),
   ]);
+  // After the partida exists, so its lens counts as played.
+  const records = await bestScoresByLens(userId, MAYOR_ID).catch(() => new Map<string, { best: number; played: number }>());
 
   return (
     <div className="tanda-screen mx-auto flex w-full max-w-md flex-1 flex-col">
       <NavLabel label="Mayor o menor" />
       {view ? (
-        <MayorGame key={view.partidaId} initialView={view} headerExtra={<DailyDoor daily={daily} />} />
+        <MayorGame
+          key={view.partidaId}
+          initialView={view}
+          headerExtra={<DailyDoor daily={daily} />}
+          lensRecords={Object.fromEntries([...records].map(([id, record]) => [id, record.best]))}
+        />
       ) : (
         <div className="flex flex-col gap-6" data-mayor="sin-partida">
           <MayorTopBar eyebrow={MAYOR_LENSES[lens].label} title="Mayor o menor" />

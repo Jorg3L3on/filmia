@@ -7,7 +7,7 @@ import { answerMayorStep, startMayorFree } from "@/app/actions/juegos";
 import { PosterImage } from "@/components/PosterImage";
 import { cn } from "@/lib/cn";
 import { JUEGOS_PATH } from "@/lib/juegos/core";
-import { dailyNumber, MAYOR_DAILY_PATH, MAYOR_LENSES, type MayorGuess } from "@/lib/juegos/mayor/core";
+import { dailyNumber, MAYOR_DAILY_PATH, MAYOR_LENS_IDS, MAYOR_LENSES, MAYOR_PATH, type MayorGuess, type MayorLensId } from "@/lib/juegos/mayor/core";
 import type { MayorStep, MayorView } from "@/lib/juegos/mayor/store";
 import { usePrefersReducedMotion } from "@/lib/motion";
 import { showActionError } from "@/lib/toast-alerts";
@@ -132,6 +132,39 @@ export const Squares = ({ answers, total, small = false }: { answers: readonly b
   </span>
 );
 
+/**
+ * «¿Con qué dato?» (FIL-I52-5, board M-2-lentes): four lenses, each with its own free record. Each
+ * lens keeps its own unfinished partida, so switching and coming back picks it up again.
+ */
+const LensBar = ({ current, records }: { current: MayorLensId; records: Partial<Record<MayorLensId, number>> }) => (
+  <nav aria-label="¿Con qué dato?" className="grid grid-cols-4 gap-1.5" data-mayor="lentes">
+    {MAYOR_LENS_IDS.map((id) => {
+      const best = records[id] ?? 0;
+      const active = id === current;
+      return (
+        <Link
+          key={id}
+          href={id === "imdb" ? MAYOR_PATH : `${MAYOR_PATH}?lente=${id}`}
+          aria-current={active ? "page" : undefined}
+          aria-label={`${MAYOR_LENSES[id].label}. ${MAYOR_LENSES[id].line}${best ? ` Tu récord: ${best}.` : ""}`}
+          className={cn(
+            "flex min-h-12 flex-col justify-center rounded-xl border px-2 py-1.5 text-center",
+            active ? "border-accent/60 bg-accent/10" : "border-line bg-surface",
+            focusRing,
+          )}
+        >
+          <b className={cn("truncate text-[13px] font-semibold", active ? "text-paper" : "text-mist")}>{MAYOR_LENSES[id].short}</b>
+          {best ? (
+            <span className="truncate text-[11px] font-semibold text-star">Récord {best}</span>
+          ) : (
+            <span className="truncate text-[11px] text-fog">Sin récord</span>
+          )}
+        </Link>
+      );
+    })}
+  </nav>
+);
+
 const eyebrowOf = (view: MayorView, streak: number) =>
   view.mode === "diaria"
     ? `La diaria · n.º ${dailyNumber(view.day ?? "")} · ${Math.min(view.answers.length + 1, view.total)} de ${view.total}`
@@ -142,7 +175,16 @@ const eyebrowOf = (view: MayorView, streak: number) =>
  * the server judges each answer and only then sends the hidden value. A daily that ends hands
  * over to the server-rendered result (router refresh).
  */
-export const MayorGame = ({ initialView, headerExtra }: { initialView: MayorView; headerExtra?: ReactNode }) => {
+export const MayorGame = ({
+  initialView,
+  headerExtra,
+  lensRecords,
+}: {
+  initialView: MayorView;
+  headerExtra?: ReactNode;
+  /** Free records per lens: shows the lens picker (free streak only). */
+  lensRecords?: Partial<Record<MayorLensId, number>>;
+}) => {
   const router = useRouter();
   const reduced = usePrefersReducedMotion();
   const [view, setView] = useState(initialView);
@@ -220,6 +262,7 @@ export const MayorGame = ({ initialView, headerExtra }: { initialView: MayorView
     <div className="flex flex-1 flex-col gap-4" data-mayor={ended ? "fin" : "jugando"}>
       <MayorTopBar eyebrow={eyebrowOf(view, streak)} title="Mayor o menor" chip={<LensChip>{lens.short}</LensChip>} />
       {headerExtra}
+      {lensRecords ? <LensBar current={view.lens} records={{ ...lensRecords, [view.lens]: Math.max(lensRecords[view.lens] ?? 0, view.best) }} /> : null}
       {shown ? (
         <>
           <p className="min-h-[2.6rem] text-[15px] leading-snug text-fog" aria-live="polite">
