@@ -91,11 +91,9 @@ export const OscarBallotSummary = ({ year, categories, votes, open, closesLabel 
           </svg>
           Compartir
         </ShareButton>
-        {open ? (
-          <Link href="/juegos/oscar" className={buttonClass({ variant: "ghost", size: "lg", className: "border border-chrome" })}>
-            Seguir votando
-          </Link>
-        ) : null}
+        <Link href="/juegos/oscar/grupos" className={buttonClass({ variant: "ghost", size: "lg", className: "border border-chrome" })}>
+          Retar a alguien
+        </Link>
       </div>
     </div>
   );

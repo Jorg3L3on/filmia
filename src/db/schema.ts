@@ -895,7 +895,11 @@ export const oscarWinners = pgTable(
   (table) => [primaryKey({ columns: [table.year, table.categoryId] })],
 );
 
-/** An invite-only group for one ceremony. Only the sha256 of the link's token is stored. */
+/**
+ * An invite-only group for one ceremony. The link's token is derived from the group id, this
+ * version and AUTH_SECRET (`oscarGroupToken`), so the owner can show it again; only its sha256 is
+ * stored, and «Nuevo enlace» bumps the version so the old link stops working.
+ */
 export const oscarGroups = pgTable(
   "OscarGroup",
   {
@@ -906,6 +910,7 @@ export const oscarGroups = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     tokenHash: text("tokenHash").notNull(),
+    tokenVersion: integer("tokenVersion").notNull().default(1),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
   },
   (table) => [

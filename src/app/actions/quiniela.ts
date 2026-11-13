@@ -1,6 +1,14 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { oscarSeasonYear } from "@/lib/juegos/oscar/ceremonies";
+import {
+  createOscarGroup,
+  deleteOscarGroup,
+  joinOscarGroup,
+  leaveOscarGroup,
+  regenerateOscarGroupLink,
+} from "@/lib/juegos/oscar/groups";
 import { castOscarVote, type CastOscarVoteResult } from "@/lib/juegos/oscar/store";
 import { requireUserId } from "@/lib/session";
 
@@ -16,4 +24,55 @@ export const voteOscar = async (categoryId: unknown, nomineeId: unknown): Promis
   // No revalidatePath: the ballot pages are dynamic, and a refresh per tap would slow the queue
   // of votes (server actions run one at a time).
   return castOscarVote({ userId, year: oscarSeasonYear(), categoryId, nomineeId });
+};
+
+// ── Groups (FIL-I51-3) ───────────────────────────────────────────────────
+
+export type GroupActionState = { error: string | null };
+
+/** «Retar a alguien»: a new group for this season, then its page with the link to send. */
+export const createOscarGroupAction = async (_state: GroupActionState, formData: FormData): Promise<GroupActionState> => {
+  const userId = await requireUserId();
+  let groupId: string;
+  try {
+    ({ id: groupId } = await createOscarGroup({ ownerId: userId, year: oscarSeasonYear(), name: formData.get("name") }));
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "No se pudo crear el grupo." };
+  }
+  redirect(`/juegos/oscar/grupo/${groupId}?nuevo=1`);
+};
+
+/** «Entrar al grupo» from an invite link. */
+export const joinOscarGroupAction = async (token: unknown): Promise<GroupActionState> => {
+  const userId = await requireUserId();
+  if (typeof token !== "string") {
+    return { error: "Este enlace ya no sirve." };
+  }
+  const result = await joinOscarGroup(token, userId);
+  if (!result.ok) {
+    return { error: result.reason === "lleno" ? "Este grupo ya está lleno." : "Este enlace ya no sirve." };
+  }
+  redirect(`/juegos/oscar/grupo/${result.groupId}`);
+};
+
+/** «Nuevo enlace»: the path of the new link, or null when the caller does not own the group. */
+export const regenerateOscarGroupLinkAction = async (groupId: unknown): Promise<string | null> => {
+  const userId = await requireUserId();
+  return typeof groupId === "string" ? regenerateOscarGroupLink(groupId, userId) : null;
+};
+
+export const leaveOscarGroupAction = async (groupId: unknown): Promise<GroupActionState> => {
+  const userId = await requireUserId();
+  if (typeof groupId !== "string" || !(await leaveOscarGroup(groupId, userId))) {
+    return { error: "No se pudo salir del grupo." };
+  }
+  redirect("/juegos/oscar/grupos");
+};
+
+export const deleteOscarGroupAction = async (groupId: unknown): Promise<GroupActionState> => {
+  const userId = await requireUserId();
+  if (typeof groupId !== "string" || !(await deleteOscarGroup(groupId, userId))) {
+    return { error: "No se pudo borrar el grupo." };
+  }
+  redirect("/juegos/oscar/grupos");
 };

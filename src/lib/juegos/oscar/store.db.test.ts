@@ -15,14 +15,15 @@ import {
   winnerIds,
 } from "@/lib/juegos/oscar/store";
 import { scoreOscarBallot } from "@/lib/juegos/oscar/ceremony-core";
-import { getOscarCeremony } from "@/lib/juegos/oscar/ceremonies";
+import { getOscarCeremony, registerOscarCeremonyForTests } from "@/lib/juegos/oscar/ceremonies";
 
-// The 2024 ceremony file is the rehearsal ceremony; this suite owns its rows on the local database.
-const YEAR = 2024;
+// The 2024 ceremony under a year of its own: suites run in parallel and never share rows.
+const YEAR = 2124;
+registerOscarCeremonyForTests(YEAR);
 const seed = seeder("quiniela");
-const closesAt = new Date("2024-03-10T23:00:00Z");
-const before_ = new Date("2024-03-01T12:00:00Z");
-const after_ = new Date("2024-03-10T23:00:00Z");
+const closesAt = new Date("2124-03-10T23:00:00Z");
+const before_ = new Date("2124-03-01T12:00:00Z");
+const after_ = new Date("2124-03-10T23:00:00Z");
 
 describeWithDb("Quiniela del Óscar on a local database (FIL-I51-1)", () => {
   let ana = "";

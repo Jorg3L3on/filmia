@@ -7,8 +7,19 @@
 import ceremony2024 from "@/data/oscar-ceremonies/2024.json";
 import type { OscarCeremonyFile } from "@/lib/juegos/oscar/ceremony-core";
 
-const CEREMONIES: Readonly<Record<number, OscarCeremonyFile>> = {
+const CEREMONIES: Record<number, OscarCeremonyFile> = {
   2024: ceremony2024 as OscarCeremonyFile,
+};
+
+/**
+ * Tests only: a copy of a known ceremony under a year no one plays, so DB suites that run in
+ * parallel never share rows.
+ */
+export const registerOscarCeremonyForTests = (year: number, from = 2024) => {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("registerOscarCeremonyForTests is for tests");
+  }
+  CEREMONIES[year] = { ...CEREMONIES[from]!, year };
 };
 
 /**
