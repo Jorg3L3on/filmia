@@ -3274,6 +3274,26 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   inset: -4px 0;
 }
 
+/*
+ * A selected chip (aura pill) paints its glass highlight on ::before: keep that on the pill's own
+ * edge (it drew two white lines 4 px above and below) and move the taller tap area to ::after.
+ */
+.rail-chip.liquid-glass::before {
+  inset: 0;
+}
+
+.rail-chip.liquid-glass::after {
+  content: "";
+  position: absolute;
+  inset: -4px 0;
+}
+
+/* Hoy's mood rail scrolls sideways, which also clips vertically: room for the selected ring and glow, row height unchanged. */
+.tonight-mood-rail {
+  padding-block: 6px;
+  margin-block: -6px;
+}
+
 .rail-chip-count {
   font-variant-numeric: tabular-nums;
   font-size: 0.6875rem;
