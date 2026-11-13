@@ -1,4 +1,5 @@
 import { addDays, mxToday } from "@/lib/cine-core";
+import { MAYOR_ID, MAYOR_PATH } from "@/lib/juegos/mayor/core";
 import { QUINIELA_SEASON_DATES } from "@/lib/quinielas/seasons";
 
 /**
@@ -82,12 +83,13 @@ export const JUEGOS: readonly Juego[] = [
     seasons: null,
   },
   {
-    id: "mayor",
+    id: MAYOR_ID,
     name: "Mayor o menor",
-    line: "¿Cuál tiene mejor nota en IMDb?",
-    status: "soon",
-    href: null,
-    launchedOn: null,
+    line: "¿Cuál tiene mejor nota? La diaria y tu racha.",
+    status: "available",
+    href: MAYOR_PATH,
+    // FIL-I52-6: setting it sends the launch push once per person (within LAUNCH_PUSH_DAYS).
+    launchedOn: "2026-11-13",
     seasons: null,
   },
 ];

@@ -1,5 +1,5 @@
-import { and, gte, inArray } from "drizzle-orm";
-import { db, pickEvents } from "@/db";
+import { and, gte, inArray, sql } from "drizzle-orm";
+import { db, juegoPartidas, pickEvents } from "@/db";
 import { addDays } from "@/lib/cine-core";
 import { JUEGOS_OPENED_KIND, mxDayStart, weekKeyOf } from "@/lib/juegos/core";
 import { parseTandaLens, TANDA_ANSWERED_KIND, TANDA_DEALT_KIND } from "@/lib/juegos/tanda/core";
@@ -65,6 +65,36 @@ export const juegosMetrics = (events: readonly JuegosEvent[], weeks: readonly st
   });
 };
 
+export type PartidaEvent = { userId: string; juego: string; mode: string; answered: number; startedAt: Date; finishedAt: Date | null };
+
+export type PartidasWeek = {
+  week: string;
+  juego: string;
+  /** Dailies finished that week. */
+  daily: number;
+  /** Free partidas with at least one answer (opening the page alone does not count). */
+  free: number;
+  /** Distinct people who answered anything that week, in either mode. */
+  players: number;
+};
+
+/** Pure (FIL-I52-6): partidas per game and Mexico City week (by start), aggregates only. */
+export const partidasMetrics = (rows: readonly PartidaEvent[], weeks: readonly string[]): PartidasWeek[] => {
+  const juegos = [...new Set(rows.map((row) => row.juego))].sort();
+  return juegos.flatMap((juego) =>
+    weeks.map((week) => {
+      const inWeek = rows.filter((row) => row.juego === juego && row.answered > 0 && weekKeyOf(row.startedAt) === week);
+      return {
+        week,
+        juego,
+        daily: inWeek.filter((row) => row.mode === "diaria" && row.finishedAt).length,
+        free: inWeek.filter((row) => row.mode === "libre").length,
+        players: new Set(inWeek.map((row) => row.userId)).size,
+      };
+    }),
+  );
+};
+
 export const loadJuegosMetrics = async (now = new Date(), weekCount = 6) => {
   const current = weekKeyOf(now);
   const weeks = Array.from({ length: weekCount }, (_, index) => addDays(current, -7 * (weekCount - 1 - index)));
@@ -77,5 +107,16 @@ export const loadJuegosMetrics = async (now = new Date(), weekCount = 6) => {
         gte(pickEvents.createdAt, mxDayStart(weeks[0]!)),
       ),
     );
-  return { weeks: juegosMetrics(events, weeks, current) };
+  const partidas = await db
+    .select({
+      userId: juegoPartidas.userId,
+      juego: juegoPartidas.juego,
+      mode: juegoPartidas.mode,
+      answered: sql<number>`jsonb_array_length(${juegoPartidas.answers})::int`,
+      startedAt: juegoPartidas.startedAt,
+      finishedAt: juegoPartidas.finishedAt,
+    })
+    .from(juegoPartidas)
+    .where(gte(juegoPartidas.startedAt, mxDayStart(weeks[0]!)));
+  return { weeks: juegosMetrics(events, weeks, current), partidas: partidasMetrics(partidas, weeks) };
 };
