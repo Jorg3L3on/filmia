@@ -6,6 +6,14 @@ import { DIARIA_IDS, DIARIAS } from "@/lib/juegos/diarias/core";
 import { juegosPushPlan, LAUNCH_PUSH_DAYS, launchPushLens, tandaPushLens } from "@/lib/juegos/push";
 
 describe("Las diarias: staggered launches (FIL-I54-5)", () => {
+  it("from Mayor o menor on, no two games of the cartel launch less than a week apart", () => {
+    // La tanda (12 nov) and Mayor o menor (13 nov) predate this rule; the day-by-day test below still keeps them on separate days.
+    const dates = JUEGOS.flatMap((juego) => (juego.launchedOn && juego.launchedOn >= "2026-11-13" ? [juego.launchedOn] : [])).sort();
+    for (let index = 1; index < dates.length; index += 1) {
+      assert.ok(dates[index]! >= addDays(dates[index - 1]!, LAUNCH_PUSH_DAYS), `${dates[index - 1]} → ${dates[index]}`);
+    }
+  });
+
   it("the four launch dates are a week or more apart, and after Mayor o menor's", () => {
     const dates = DIARIA_IDS.map((id) => DIARIAS[id].launchedOn).sort();
     const mayor = JUEGOS.find((juego) => juego.id === "mayor")!.launchedOn!;
@@ -20,7 +28,7 @@ describe("Las diarias: staggered launches (FIL-I54-5)", () => {
     const sent = new Set<string>();
     const launchDay = new Map<string, string>();
     let day = "2026-11-12";
-    while (day <= "2027-01-15") {
+    while (day <= "2027-02-15") {
       const plan = juegosPushPlan(
         { juegosPush: true, hasSubscription: true, openedTandaThisWeek: false, sent },
         { week: weekKeyOf(new Date(`${day}T18:00:00Z`)), today: day, juegos: JUEGOS },
@@ -36,6 +44,10 @@ describe("Las diarias: staggered launches (FIL-I54-5)", () => {
     }
     for (const id of DIARIA_IDS) {
       assert.equal(launchDay.get(id), DIARIAS[id].launchedOn, `${id}'s launch push`);
+    }
+    // Every game of the cartel with a launch date (FIL-I54's and FIL-I55's too) gets its push on its own day.
+    for (const juego of JUEGOS.filter((item) => item.launchedOn && item.launchedOn >= "2026-11-12")) {
+      assert.equal(launchDay.get(juego.id), juego.launchedOn, `${juego.id}'s launch push`);
     }
     assert.equal(new Set(launchDay.values()).size, launchDay.size, "two launches on one day");
   });

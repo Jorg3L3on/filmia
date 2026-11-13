@@ -29,7 +29,7 @@ describeWithDb("Detalle store (FIL-I54-1)", () => {
     ana = await seed.user("Ana");
     beto = await seed.user("Beto");
     for (let index = 0; index < 12; index += 1) {
-      const name = `Detalle de prueba ${index}`;
+      const name = `Detalle de prueba ${String(index).padStart(2, "0")}`;
       const film = await seed.film({ name, year: 1990 + index });
       const posterPath = `/detalle-prueba-${index}.jpg`;
       await db.update(catalog).set({ imdbVotes: DIARIA_MIN_VOTES + 5, posterPath }).where(eq(catalog.id, film.catalogId));
@@ -50,7 +50,7 @@ describeWithDb("Detalle store (FIL-I54-1)", () => {
       if (["solved", "failed"].includes(view.posters[index]!.status)) continue;
       const film = films.get(poster.catalogId)!;
       assert.ok(!json.includes(film.posterPath), `poster ${index}'s path travelled`);
-      assert.ok(!json.includes(film.name), `poster ${index}'s name travelled`);
+      assert.ok(!json.includes(JSON.stringify(film.name)), `poster ${index}'s name travelled`);
       assert.ok(!json.includes(poster.catalogId), `poster ${index}'s id travelled`);
       assert.ok(!json.includes(String(film.tmdbId)), `poster ${index}'s TMDB id travelled`);
     }

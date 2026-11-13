@@ -67,3 +67,33 @@ export const juegosPushPayload = (plan: Exclude<JuegosPushPlan, null>, epoch: st
         url: TANDA_PATH,
         tag: "juegos-tanda",
       };
+
+// ---------------------------------------------------------------------------
+// «Te retaron» (FIL-I53-3): its own switch, outside the weekly cap above
+// ---------------------------------------------------------------------------
+
+/** `PickEvent.kind` of a «te retaron» push; `lens` is `reto|<YYYY-MM-DD>` (Mexico City). */
+export const RETO_PUSH_KIND = "reto_push";
+export const retoPushLens = (day: string) => `reto|${day}`;
+
+export type RetoPushPerson = {
+  retosPush: boolean;
+  hasSubscription: boolean;
+  /** `reto_push` lenses already sent to this person. */
+  sent: ReadonlySet<string>;
+};
+
+/**
+ * Whether a reto received on `today` pushes: only the first of the day; the rest wait together in
+ * «Te toca». «Avisos de Extras» (`juegosPush`) plays no part, and this switch plays none there.
+ */
+export const shouldPushReto = (person: RetoPushPerson, today: string) =>
+  person.retosPush && person.hasSubscription && !person.sent.has(retoPushLens(today));
+
+/** No guilt, no urgency: who and which game, and that it waits. */
+export const retoPushPayload = (input: { fromName: string; juegoName: string; url: string }): PushPayload => ({
+  title: `${input.fromName} te retó`,
+  body: `${input.juegoName}. Juega cuando quieras.`,
+  url: input.url,
+  tag: "juegos-reto",
+});

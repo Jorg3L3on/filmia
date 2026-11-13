@@ -45,7 +45,8 @@ describeWithDb("Línea de tiempo store (FIL-I54-2)", () => {
   const assertYearHidden = async (view: LineaView) => {
     if (!view.card) return;
     const card = (await round()).cards[view.cardNumber]!;
-    assert.ok(!JSON.stringify(view).includes(String(card.year)), `the year ${card.year} travelled`);
+    // The random partida id could hold any four digits: leave it out of the search.
+    assert.ok(!JSON.stringify({ ...view, partidaId: "" }).includes(String(card.year)), `the year ${card.year} travelled`);
   };
 
   /** The right gap for the current card (what a cheater would need). */

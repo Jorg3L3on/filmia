@@ -19,6 +19,8 @@ const EXPECTED_PUBLIC_PATHS = [
   "/api/oauth",
   "/.well-known",
   "/conector",
+  // FIL-I53-4: a Mayor o menor reto by link, for people without an account (token + per-IP cap).
+  "/reto",
 ];
 
 const request = (path: string) => new Request(`https://filmia.test${path}`, { headers: { host: "filmia.test" } });

@@ -3,13 +3,21 @@ import { BackDisc } from "@/components/PageHeader";
 import { JuegosPortada, type GameRowState, type TandaRowState } from "@/components/juegos/JuegosPortada";
 import { JuegosSeen } from "@/components/juegos/JuegosSeen";
 import { mxToday } from "@/lib/cine-core";
-import { DAILY_JUEGO_IDS, JUEGOS, portadaOf } from "@/lib/juegos/core";
+import { LigaCard } from "@/components/juegos/LigaCard";
+import { BINGO_ID } from "@/lib/juegos/bingo/core";
+import { loadBingo } from "@/lib/juegos/bingo/store";
+import { DAILY_JUEGO_IDS, DUELOS_ID, JUEGOS, LIGA_ID, portadaOf } from "@/lib/juegos/core";
 import { DIARIA_IDS, DIARIAS } from "@/lib/juegos/diarias/core";
 import { readDiaria } from "@/lib/juegos/diarias/store";
+import { ESTRENOS_ID } from "@/lib/juegos/estrenos/core";
+import { countOpenWithoutForecast } from "@/lib/juegos/estrenos/store";
+import { ligaSummaryFor } from "@/lib/juegos/liga/store";
 import { MAYOR_ID } from "@/lib/juegos/mayor/core";
 import { readDailyMayor } from "@/lib/juegos/mayor/store";
 import { countDailyPlayers } from "@/lib/juegos/partidas";
+import { listTeToca } from "@/lib/juegos/retos/store";
 import { readTanda } from "@/lib/juegos/tanda/store";
+import { TeTocaBlock } from "@/components/juegos/RetosUi";
 import { requireUserId } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +42,11 @@ export default async function JuegosPage({ searchParams }: { searchParams: Promi
   };
   const desde = typeof params.desde === "string" ? params.desde : null;
   const rows: Record<string, GameRowState> = {};
+  // «Te toca» (FIL-I53-1, board Comp-2-portada): retos waiting for the person, on top.
+  const teToca = await listTeToca(userId, now).catch(() => []);
+  if (portada.playable.some((juego) => juego.id === DUELOS_ID)) {
+    rows[DUELOS_ID] = teToca.length > 0 ? { chip: teToca.length === 1 ? "1 te toca" : `${teToca.length} te tocan`, fresh: true } : { chip: "Retar", fresh: false };
+  }
   if (portada.playable.some((juego) => juego.id === MAYOR_ID)) {
     const today = mxToday(now);
     const [mine, played] = await Promise.all([
@@ -56,6 +69,18 @@ export default async function JuegosPage({ searchParams }: { searchParams: Promi
           : { chip: played === 0 ? "Diaria nueva" : played === 1 ? "1 ya jugó" : `${played} ya jugaron`, fresh: true };
     }),
   );
+  // FIL-I55: the quiniela and the bingo get a chip; the liga leaves the list for its own card on top.
+  const playableIds = new Set(portada.playable.map((juego) => juego.id));
+  if (playableIds.has(ESTRENOS_ID)) {
+    const open = await countOpenWithoutForecast(userId, now).catch(() => 0);
+    rows[ESTRENOS_ID] = open > 0 ? { chip: open === 1 ? "1 por pronosticar" : `${open} por pronosticar`, fresh: true } : { chip: "Al día", fresh: false };
+  }
+  if (playableIds.has(BINGO_ID)) {
+    const bingo = await loadBingo(userId, now).catch(() => null);
+    if (bingo) rows[BINGO_ID] = { chip: `${bingo.mine.squares} de 9`, fresh: bingo.mine.squares === 0 };
+  }
+  const liga = playableIds.has(LIGA_ID) ? await ligaSummaryFor(userId, now).catch(() => null) : undefined;
+  const shown = liga === undefined ? portada : { ...portada, playable: portada.playable.filter((juego) => juego.id !== LIGA_ID) };
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-5 pb-10">
@@ -68,7 +93,9 @@ export default async function JuegosPage({ searchParams }: { searchParams: Promi
           <h1 className="font-serif text-[1.9rem] font-semibold leading-none text-paper">Extras</h1>
         </div>
       </div>
-      <JuegosPortada portada={portada} tanda={tandaRow} rows={rows} daily={DAILY_JUEGO_IDS} />
+      <TeTocaBlock items={teToca} now={now} />
+      {liga !== undefined ? <LigaCard summary={liga} /> : null}
+      <JuegosPortada portada={shown} tanda={tandaRow} rows={rows} daily={DAILY_JUEGO_IDS} />
     </div>
   );
 }
