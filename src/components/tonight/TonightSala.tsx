@@ -86,9 +86,11 @@ type TonightSalaProps = {
   initialSlug?: string | null;
   /** `?carta=`: the card the user left for a ficha; the deck reopens on it. */
   initialCardId?: string | null;
+  /** Juegos' «nuevo» dot (FIL-I50-2); null hides the door (the cartel failed to load). */
+  juegosFresh?: boolean | null;
 };
 
-export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }: TonightSalaProps) => {
+export const TonightSala = ({ decks, initialSlug = null, initialCardId = null, juegosFresh = null }: TonightSalaProps) => {
   const now = useTonightClock(decks.nightEnds);
   const dayPart = now ? dayPartOf(now, decks.nightEnds) : "noche";
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
@@ -577,6 +579,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
             <TonightFilters
               moodId={mood?.id ?? null}
               onMood={chooseMood}
+              juegos={juegosFresh == null ? null : { fresh: juegosFresh }}
               className="shrink-0 px-1"
             />
             {options ? (

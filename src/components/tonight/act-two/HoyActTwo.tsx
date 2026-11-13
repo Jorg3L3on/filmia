@@ -11,6 +11,8 @@ import { PosterImage } from "@/components/PosterImage";
 import { menuVia } from "@/components/tmdb-search/SearchRowMenu";
 import { useActTwoActions, type ActTwoTitle } from "@/components/tonight/act-two/ActTwoActions";
 import { AfinaTuGusto } from "@/components/tonight/act-two/AfinaTuGusto";
+import { JuegosBlock } from "@/components/juegos/JuegosBlock";
+import type { JuegoTile } from "@/lib/juegos/store";
 import type { AfinaCard } from "@/lib/cold-start-store";
 import type { GemTitle, SeedRail } from "@/lib/service-charts-store";
 import { cn } from "@/lib/cn";
@@ -394,13 +396,26 @@ export type HoyActTwoProps = {
   signals: number | null;
   gems: ActTwoGem[];
   seedRail: SeedRail | null;
+  /** Juegos' block (FIL-I50-2, entry B), first in the act; empty hides it. */
+  juegos?: JuegoTile[];
 };
 
 /**
  * Hoy's second act (FIL-I47-1): below the sala, what the user's services carry today. Computed
  * by the nightly crons; nothing here calls TMDB.
  */
-export const HoyActTwo = ({ userPlatforms, charts, arrivals, now, stamp, afina, signals, gems, seedRail }: HoyActTwoProps) => {
+export const HoyActTwo = ({
+  userPlatforms,
+  charts,
+  arrivals,
+  now,
+  stamp,
+  afina,
+  signals,
+  gems,
+  seedRail,
+  juegos = [],
+}: HoyActTwoProps) => {
   const date = new Date(now);
   // Seen on Hoy: the dock's dot clears (FIL-I47-2).
   useEffect(() => {
@@ -434,6 +449,7 @@ export const HoyActTwo = ({ userPlatforms, charts, arrivals, now, stamp, afina, 
           En tus plataformas
         </h2>
       </header>
+      <JuegosBlock tiles={juegos} />
       {actTwoOrder(signals ?? 0).map((section) => sections[section])}
       <footer className="act-two-end">
         <p className="font-serif">Eso es todo por hoy</p>

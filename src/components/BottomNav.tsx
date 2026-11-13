@@ -13,6 +13,7 @@ import { cn } from "@/lib/cn";
 import { dockSearch, readLastDockTab, writeLastDockTab } from "@/lib/dock-search";
 import {
   DOCK_SEARCH_TRANSITION,
+  isJuegoPlayPath,
   isMobileNavCurrent,
   mobileNavItems,
   mobileNavSearch,
@@ -90,6 +91,10 @@ export const BottomNav = () => {
       dockSearch.reset();
     }
   }, [searchMode]);
+
+  if (isJuegoPlayPath(pathname)) {
+    return null;
+  }
 
   if (searchMode) {
     return (

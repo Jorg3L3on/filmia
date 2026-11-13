@@ -1,11 +1,13 @@
 import { ProfileAdminRow } from "@/components/profile/ProfileAdminRow";
 import { ProfileConnectionsRow } from "@/components/profile/ProfileConnectionsRow";
 import { ProfileGroup, ProfileSection } from "@/components/profile/ProfileRows";
+import { JuegosPushToggle } from "@/components/profile/JuegosPushToggle";
 import { PushAlertsToggle } from "@/components/profile/PushAlertsToggle";
 import { isAdmin } from "@/lib/admin";
 import { isMcpEnabled } from "@/lib/mcp-oauth/config";
 import { isPushConfigured, vapidPublicKey } from "@/lib/push/web-push";
-import { getLiveSessionUser } from "@/lib/session";
+import { loadJuegosPush } from "@/lib/juegos/push-store";
+import { getLiveSessionUser, requireUserId } from "@/lib/session";
 
 /**
  * Perfil «Tu Filmia» (FIL-I25-2, propuesta B): Conexiones and Avisos in one card, so neither
@@ -21,6 +23,7 @@ export const ProfileTuFilmia = async () => {
       <ProfileGroup>
         <ProfileConnectionsRow />
         <PushAlertsToggle vapidPublicKey={isPushConfigured() ? vapidPublicKey() : null} />
+        {isPushConfigured() ? <JuegosPushToggle initial={await loadJuegosPush(await requireUserId()).catch(() => true)} /> : null}
         {admin ? <ProfileAdminRow /> : null}
       </ProfileGroup>
     </ProfileSection>

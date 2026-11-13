@@ -45,6 +45,8 @@
     "cine:top": "tsx scripts/cine.ts top",
     "cine:avisos": "tsx scripts/cine.ts avisos",
     "cine:titulos": "tsx scripts/cine.ts titulos",
+    "juegos:avisos": "tsx scripts/juegos.ts avisos",
+    "metrics:juegos": "tsx scripts/juegos.ts metricas",
     "charts:revisar": "tsx scripts/service-charts.ts revisar",
     "charts:correr": "tsx scripts/service-charts.ts correr",
     "charts:netflix": "tsx scripts/service-charts.ts netflix",

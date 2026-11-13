@@ -93,6 +93,11 @@ export const users = pgTable(
     sessionVersion: integer("sessionVersion").notNull().default(0),
     /** Admin panel (FIL-I37): last authenticated request, written at most every 15 min. */
     lastActiveAt: timestamp("lastActiveAt", { precision: 3, mode: "date" }),
+    /**
+     * FIL-I50-5 · «Avisos de Juegos» in Perfil: the weekly tanda and a new game. Only matters with
+     * «Avisos» on (a PushSubscription); turning it off leaves every other push as it is.
+     */
+    juegosPush: boolean("juegosPush").notNull().default(true),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),

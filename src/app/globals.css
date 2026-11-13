@@ -8286,3 +8286,31 @@ html[data-que-ver-lite] .act-two-rise > *,
 html[data-que-ver-lite] .hoy-peek svg {
   animation: none;
 }
+
+/* ---------------------------------------------------------------------------
+ * Juegos · La tanda (FIL-I50-4). On a phone the game owns the whole screen (no dock, no header);
+ * the card is 280 × 420 and shrinks on short screens so the four buttons always fit.
+ * ------------------------------------------------------------------------- */
+@media (max-width: 639px) {
+  .tanda-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--canvas);
+    padding: calc(0.75rem + env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+      calc(0.75rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  }
+}
+
+.tanda-play {
+  flex: 1;
+  min-height: 0;
+}
+
+.tanda-deck {
+  height: min(26.25rem, calc(100dvh - 22.5rem));
+  min-height: 14rem;
+  aspect-ratio: 2 / 3;
+}
