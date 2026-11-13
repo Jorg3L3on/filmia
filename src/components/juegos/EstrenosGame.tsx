@@ -102,7 +102,9 @@ const Card = ({ initial }: { initial: EstrenoCard }) => {
               {card.mine == null
                 ? `No votaste. Más cerca: ${card.winners.join(", ") || "nadie"}.`
                 : card.iWon
-                  ? `Tú dijiste ${tenths(card.mine)}: ${card.winners.length > 1 ? "empate en lo más cerca" : "la más cercana"}.`
+                  ? `Tú dijiste ${tenths(card.mine)}: ${
+                      card.winners.length > 1 ? `empate con ${card.winners.filter((name) => name !== "Tú").join(", ")}, lo más cerca` : "lo más cerca de todos"
+                    }.`
                   : `Tú dijiste ${tenths(card.mine)}. Más cerca: ${card.winners.join(", ")}.`}
             </p>
           ) : !open ? (
