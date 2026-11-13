@@ -45,7 +45,7 @@ export default async function RetoPage({ params }: { params: Promise<{ id: strin
   const userId = await requireUserId();
   const { id } = await params;
   const now = new Date();
-  await expireRetos(now);
+  await expireRetos(userId, now);
   const found = await readRetoFor(userId, id);
   if (!found) notFound();
   if (found.toUserId === userId && !found.sentAt) notFound();

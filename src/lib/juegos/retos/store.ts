@@ -46,12 +46,22 @@ export const retoSideOf = (partida: Pick<PartidaRow, "content" | "mode">): RetoP
   return content?.retoId && (content.side === "from" || content.side === "to") ? { retoId: content.retoId, side: content.side } : null;
 };
 
-/** Open retos whose 48 hours ran out become `vencido` (for both sides at once). */
-export const expireRetos = async (now = new Date()) => {
+/**
+ * Open retos whose 48 hours ran out become `vencido` (for both sides at once). Only the person's
+ * own retos (sent or received): every list is someone's, and nothing else needs the sweep (the
+ * metrics count an open reto past its time as expired anyway).
+ */
+export const expireRetos = async (userId: string, now = new Date()) => {
   await db
     .update(juegoRetos)
     .set({ status: "vencido" })
-    .where(and(eq(juegoRetos.status, "abierto"), lte(juegoRetos.expiresAt, now)));
+    .where(
+      and(
+        eq(juegoRetos.status, "abierto"),
+        lte(juegoRetos.expiresAt, now),
+        or(eq(juegoRetos.fromUserId, userId), eq(juegoRetos.toUserId, userId)),
+      ),
+    );
 };
 
 /** Open retos (sent or still being played by the sender) from one account toward another. */
@@ -236,7 +246,7 @@ export type TeTocaItem = {
 
 /** «Te toca»: retos sent to the person, open, within their 48 hours, not finished by them. Oldest first. */
 export const listTeToca = async (userId: string, now = new Date()): Promise<TeTocaItem[]> => {
-  await expireRetos(now);
+  await expireRetos(userId, now);
   const rows = await retosWithScores(
     and(eq(juegoRetos.toUserId, userId), eq(juegoRetos.status, "abierto"), isNotNull(juegoRetos.sentAt), gt(juegoRetos.expiresAt, now)),
   ).orderBy(juegoRetos.sentAt);
@@ -283,7 +293,7 @@ export type Retable = {
  * and `name` are read: an email never leaves the database. `filter` narrows (Duelo de gustos).
  */
 export const listRetables = async (userId: string, now = new Date(), filter?: (ids: string[]) => Promise<Set<string>>): Promise<Retable[]> => {
-  await expireRetos(now);
+  await expireRetos(userId, now);
   const people = await db
     .select({ id: users.id, name: users.name })
     .from(users)
@@ -326,7 +336,7 @@ export type MyRetoItem = {
 
 /** The person's latest retos for Duelos: open ones and the finished ones (expired ones are gone). */
 export const listMyRetos = async (userId: string, now = new Date(), limit = 12): Promise<MyRetoItem[]> => {
-  await expireRetos(now);
+  await expireRetos(userId, now);
   const rows = await retosWithScores(
     and(
       or(eq(juegoRetos.fromUserId, userId), eq(juegoRetos.toUserId, userId)),
