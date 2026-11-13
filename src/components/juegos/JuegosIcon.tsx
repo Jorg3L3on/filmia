@@ -1,4 +1,4 @@
-/** Juegos' mark: a die face (three pips on the diagonal). Decorative. */
+/** Extras' mark: a large and a small sparkle. Decorative. */
 export const JuegosIcon = ({ className }: { className?: string }) => (
   <svg
     viewBox="0 0 24 24"
@@ -10,9 +10,7 @@ export const JuegosIcon = ({ className }: { className?: string }) => (
     aria-hidden="true"
     className={className}
   >
-    <rect x="3.5" y="3.5" width="17" height="17" rx="4.5" />
-    <circle cx="8.6" cy="8.6" r="1.3" fill="currentColor" stroke="none" />
-    <circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" />
-    <circle cx="15.4" cy="15.4" r="1.3" fill="currentColor" stroke="none" />
+    <path d="M10 3.5c.6 3.6 2.4 5.4 6 6-3.6.6-5.4 2.4-6 6-.6-3.6-2.4-5.4-6-6 3.6-.6 5.4-2.4 6-6z" />
+    <path d="M18 14.5c.3 1.7 1.1 2.5 2.8 2.8-1.7.3-2.5 1.1-2.8 2.8-.3-1.7-1.1-2.5-2.8-2.8 1.7-.3 2.5-1.1 2.8-2.8z" />
   </svg>
 );

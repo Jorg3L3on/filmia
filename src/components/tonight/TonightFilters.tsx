@@ -12,7 +12,7 @@ type TonightFiltersProps = {
   /** «Ánimo» (FIL-I31-2): one at a time; tapping the chosen one clears it. */
   moodId: string | null;
   onMood: (id: string | null) => void;
-  /** Juegos' door (FIL-I50-2, entry A): takes the label's place; `fresh` lights the «nuevo» dot. */
+  /** Extras' door (FIL-I50-2, entry A): takes the label's place; `fresh` lights the «nuevo» dot. */
   juegos?: { fresh: boolean } | null;
   className?: string;
 };
@@ -28,11 +28,11 @@ const juegosButtonClass = cn(
   focusRing,
 );
 
-/** Juegos' door on Hoy: before the moods, never in the dock (FIL-I50-2). */
+/** Extras' door on Hoy: before the moods, never in the dock (FIL-I50-2). */
 const JuegosButton = ({ fresh }: { fresh: boolean }) => (
   <Link href={`${JUEGOS_PATH}?desde=boton`} className={juegosButtonClass} data-juegos-entry="boton">
     <JuegosIcon className="size-[1.15rem]" />
-    Juegos
+    Extras
     {fresh ? (
       <>
         <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 size-3 rounded-full border-[2.5px] border-canvas bg-star" />

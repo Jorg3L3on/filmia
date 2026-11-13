@@ -87,7 +87,7 @@ const GameText = ({ juego, muted = false }: { juego: Juego; muted?: boolean }) =
   </span>
 );
 
-/** The portada (board Juegos-3): the seasonal game on top, «Para jugar hoy», «Próximamente». */
+/** The portada (board Juegos-3): the seasonal game on top, «Para hoy», «Próximamente». */
 export const JuegosPortada = ({ portada, tanda }: { portada: Portada; tanda: TandaRowState | null }) => (
   <div className="flex flex-col gap-6">
     {portada.seasonal?.href ? (
@@ -107,7 +107,7 @@ export const JuegosPortada = ({ portada, tanda }: { portada: Portada; tanda: Tan
     {portada.playable.length > 0 ? (
       <section aria-labelledby="juegos-hoy">
         <h2 id="juegos-hoy" className="text-lg font-semibold text-paper">
-          Para jugar hoy
+          Para hoy
         </h2>
         <ul className="mt-1.5">
           {portada.playable.map((juego) => (

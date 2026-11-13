@@ -3,9 +3,9 @@ import { TANDA_PATH, type Juego } from "@/lib/juegos/core";
 import type { PushPayload } from "@/lib/push/web-push";
 
 /**
- * Avisos de Juegos (FIL-I50-5). Pure: who gets what. At most one tanda push a week (only to whom
+ * Avisos de Extras (FIL-I50-5). Pure: who gets what. At most one tanda push a week (only to whom
  * has not opened that week's tanda) and one per game launch, never two on the same day, never to
- * whom turned «Avisos de Juegos» off. The copy has no guilt and no urgency.
+ * whom turned «Avisos de Extras» off. The copy has no guilt and no urgency.
  */
 
 /** A launch is news for a week; after that the game is just on the portada. */
@@ -56,9 +56,9 @@ export const juegosPushPlan = (
 export const juegosPushPayload = (plan: Exclude<JuegosPushPlan, null>, epoch: string): PushPayload =>
   plan.kind === "launch"
     ? {
-        title: `Nuevo en Juegos: ${plan.juego.name}`,
+        title: `Nuevo en Extras: ${plan.juego.name}`,
         body: plan.juego.line,
-        url: plan.juego.href ?? "/juegos",
+        url: plan.juego.href ?? "/extras",
         tag: `juegos-launch-${plan.juego.id}`,
       }
     : {

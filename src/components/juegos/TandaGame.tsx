@@ -106,7 +106,7 @@ const TopBar = ({ eyebrow, title, onUndo, canUndo }: { eyebrow: string; title: s
   <div className="flex items-center gap-3">
     <Link
       href={JUEGOS_PATH}
-      aria-label="Volver a Juegos"
+      aria-label="Volver a Extras"
       className={cn("relative flex size-11 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-paper", focusRing)}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="size-5">
@@ -216,7 +216,7 @@ const Corte = ({ cards, epoch, corte }: { cards: TandaCard[]; epoch: string; cor
           href={JUEGOS_PATH}
           className={cn("inline-flex h-12 flex-1 items-center justify-center rounded-[var(--radius-button)] border border-line bg-chrome font-semibold text-paper", focusRing)}
         >
-          Volver a Juegos
+          Volver a Extras
         </Link>
       </div>
     </div>
@@ -391,7 +391,7 @@ export const TandaGame = ({
           El lunes llega otra tanda. Por ahora no hay cartas nuevas para ti.
         </p>
         <Link href={JUEGOS_PATH} className={cn("self-start text-sm font-semibold text-accent", focusRing)}>
-          Volver a Juegos
+          Volver a Extras
         </Link>
       </div>
     );

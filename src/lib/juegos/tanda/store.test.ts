@@ -1,7 +1,7 @@
 import "@/lib/test-support/node-async-local-storage";
 
 import assert from "node:assert/strict";
-import { after, before, describe, it } from "node:test";
+import { after, before, it } from "node:test";
 import { and, eq } from "drizzle-orm";
 import { db, listItems, lists, pickEvents, titles } from "@/db";
 import { closeLocalPg } from "@/db/local-pg";

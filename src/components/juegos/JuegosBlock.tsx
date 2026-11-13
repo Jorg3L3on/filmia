@@ -7,7 +7,7 @@ import type { JuegoTile } from "@/lib/juegos/store";
 import { focusRing } from "@/lib/ui";
 
 /**
- * Juegos in Hoy's second act (FIL-I50-2, entry B, board Juegos-2): up to two cards and «Ver todos».
+ * Extras in Hoy's second act (FIL-I50-2, entry B, board Juegos-2): up to two cards and «Ver todos».
  * Nothing when there is nothing to play; its data failing only hides it.
  */
 export const JuegosBlock = ({ tiles }: { tiles: readonly JuegoTile[] }) => {
@@ -19,7 +19,7 @@ export const JuegosBlock = ({ tiles }: { tiles: readonly JuegoTile[] }) => {
       <div className="flex items-end justify-between gap-3 px-4">
         <div className="act-two-head !px-0">
           <h2 id="act-two-juegos-title" className="font-serif">
-            Juegos
+            Extras
           </h2>
         </div>
         <Link

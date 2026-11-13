@@ -17,7 +17,7 @@ const juego = (overrides: Partial<Juego>): Juego => ({
   name: "X",
   line: "",
   status: "available",
-  href: "/juegos/x",
+  href: "/extras/x",
   launchedOn: "2026-11-12",
   season: null,
   ...overrides,
@@ -99,18 +99,18 @@ describe("La tanda's week", () => {
 
 describe("Juegos in the navigation", () => {
   it("lights Hoy, hides the dock only while playing", () => {
-    assert.equal(isJuegosPath("/juegos"), true);
-    assert.equal(isJuegosPath("/juegos/tanda"), true);
-    assert.equal(isJuegosPath("/juegosx"), false);
-    assert.equal(isJuegoPlayPath("/juegos"), false);
-    assert.equal(isJuegoPlayPath("/juegos/tanda"), true);
-    assert.equal(isMobileNavCurrent("/", "/juegos"), true);
-    assert.equal(isMobileNavCurrent("/", "/juegos/tanda?x=1"), true);
-    assert.equal(isMobileNavCurrent("/perfil", "/juegos"), false);
+    assert.equal(isJuegosPath("/extras"), true);
+    assert.equal(isJuegosPath("/extras/tanda"), true);
+    assert.equal(isJuegosPath("/extrasx"), false);
+    assert.equal(isJuegoPlayPath("/extras"), false);
+    assert.equal(isJuegoPlayPath("/extras/tanda"), true);
+    assert.equal(isMobileNavCurrent("/", "/extras"), true);
+    assert.equal(isMobileNavCurrent("/", "/extras/tanda?x=1"), true);
+    assert.equal(isMobileNavCurrent("/perfil", "/extras"), false);
   });
 
   it("has no Juegos entry in the dock or the desktop header", () => {
-    assert.ok(!mobileNavItems.some((item) => item.href.startsWith("/juegos")));
-    assert.ok(!desktopNavItems.some((item) => item.href.startsWith("/juegos")));
+    assert.ok(!mobileNavItems.some((item) => item.href.startsWith("/extras")));
+    assert.ok(!desktopNavItems.some((item) => item.href.startsWith("/extras")));
   });
 });

@@ -9,11 +9,11 @@ import { requireUserId } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Juegos" } as const;
+export const metadata = { title: "Extras" } as const;
 
 type JuegosSearchParams = Record<string, string | string[] | undefined>;
 
-/** Juegos (FIL-I50-2): the cartel. Reached only from Hoy (its button and its second act). */
+/** Extras (FIL-I50-2): the cartel. Reached only from Hoy (its button and its second act). */
 export default async function JuegosPage({ searchParams }: { searchParams: Promise<JuegosSearchParams> }) {
   const userId = await requireUserId();
   const params = await searchParams;
@@ -31,13 +31,13 @@ export default async function JuegosPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-5 pb-10">
-      <NavLabel label="Juegos" />
+      <NavLabel label="Extras" />
       <JuegosSeen entry={desde} />
       <div className="flex items-center gap-3">
         <BackDisc href="/" label="Volver a Hoy" />
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Hoy</p>
-          <h1 className="font-serif text-[1.9rem] font-semibold leading-none text-paper">Juegos</h1>
+          <h1 className="font-serif text-[1.9rem] font-semibold leading-none text-paper">Extras</h1>
         </div>
       </div>
       <JuegosPortada portada={portada} tanda={tandaRow} />

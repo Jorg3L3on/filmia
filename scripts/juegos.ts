@@ -25,7 +25,7 @@ const avisos = async () => {
   const { selectJuegosPushTargets } = await import("../src/lib/juegos/push-store");
   const targets = await selectJuegosPushTargets(new Date());
   if (targets.length === 0) {
-    console.log("Nadie recibiría un aviso de Juegos ahora.");
+    console.log("Nadie recibiría un aviso de Extras ahora.");
     return;
   }
   // Ids only: no emails or names in the console.

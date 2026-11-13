@@ -1,11 +1,11 @@
 import { addDays, mxToday } from "@/lib/cine-core";
 
 /**
- * Juegos (FIL-I50): the section's cartel and its pure rules. A game is listed here in code; the
+ * Extras (FIL-I50; «Juegos» in the plan, renamed by Jorge because not everything in it is a game): the section's cartel and its pure rules. A game is listed here in code; the
  * portada and Hoy's two doors read only this. Pure: no database, no TMDB.
  */
 
-export const JUEGOS_PATH = "/juegos";
+export const JUEGOS_PATH = "/extras";
 
 export type JuegoStatus = "available" | "soon" | "seasonal";
 
@@ -24,7 +24,7 @@ export type Juego = {
 };
 
 export const TANDA_ID = "tanda";
-export const TANDA_PATH = "/juegos/tanda";
+export const TANDA_PATH = "/extras/tanda";
 
 export const JUEGOS: readonly Juego[] = [
   {

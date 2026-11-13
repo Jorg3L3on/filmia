@@ -9,7 +9,7 @@ import { showActionError } from "@/lib/toast-alerts";
 import { focusRing } from "@/lib/ui";
 
 /**
- * Perfil «Avisos de Juegos» (FIL-I50-5): the weekly tanda and a new game, at most one a week plus
+ * Perfil «Avisos de Extras» (FIL-I50-5): the weekly tanda and a new game, at most one a week plus
  * one per launch. Its own switch: turning it off leaves «Avisos de Quiero ver» as it is. It only
  * reaches devices where «Avisos» are on.
  */
@@ -32,14 +32,14 @@ export const JuegosPushToggle = ({ initial }: { initial: boolean }) => {
     <ProfileRow
       icon={<JuegosIcon />}
       iconClassName="bg-accent/15 text-accent"
-      label="Avisos de Juegos"
-      hint="Tu tanda de la semana · Juegos nuevos"
+      label="Avisos de Extras"
+      hint="Tu tanda de la semana · Lo nuevo en Extras"
       value={
         <button
           type="button"
           role="switch"
           aria-checked={on}
-          aria-label="Avisarme de la tanda de la semana y de los juegos nuevos"
+          aria-label="Avisarme de la tanda de la semana y de lo nuevo en Extras"
           disabled={isPending}
           onClick={toggle}
           className={cn(

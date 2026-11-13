@@ -18,7 +18,7 @@ const tanda: Juego = {
   name: "La tanda",
   line: "Diez cartas",
   status: "available",
-  href: "/juegos/tanda",
+  href: "/extras/tanda",
   launchedOn: "2026-11-12",
   season: null,
 };
@@ -45,7 +45,7 @@ describe("Avisos de Juegos: who gets what (FIL-I50-5)", () => {
   });
 
   it("one push per launch, while the launch is news, before the tanda", () => {
-    const muro: Juego = { ...tanda, id: "muro", name: "El muro", href: "/juegos/muro", launchedOn: "2026-11-24" };
+    const muro: Juego = { ...tanda, id: "muro", name: "El muro", href: "/extras/muro", launchedOn: "2026-11-24" };
     assert.deepEqual(juegosPushPlan(person(), { week, today, juegos: [tanda, muro] }), { kind: "launch", juego: muro });
     assert.deepEqual(juegosPushPlan(person({ sent: new Set([launchPushLens("muro")]) }), { week, today, juegos: [tanda, muro] }), {
       kind: "tanda",
@@ -56,7 +56,7 @@ describe("Avisos de Juegos: who gets what (FIL-I50-5)", () => {
   it("says it without guilt or urgency", () => {
     const payload = juegosPushPayload({ kind: "tanda" }, "2001–2015");
     assert.equal(payload.title, "Tu tanda de la semana ya está");
-    assert.equal(payload.url, "/juegos/tanda");
+    assert.equal(payload.url, "/extras/tanda");
     assert.doesNotMatch(`${payload.title} ${payload.body}`, /no te pierdas|última|rápido|ya casi|racha|!/i);
   });
 });
@@ -67,7 +67,7 @@ describe("Juegos metrics (FIL-I50-6)", () => {
     const events = [
       { userId: "a", kind: "juegos_opened", lens: "boton", createdAt: at("2026-11-17T18:00:00Z") },
       { userId: "b", kind: "juegos_opened", lens: "bloque", createdAt: at("2026-11-18T18:00:00Z") },
-      ...Array.from({ length: 10 }, (_, i) => ({ userId: "a", kind: "tanda_dealt", lens: "2026-11-16|p", createdAt: at("2026-11-17T18:00:00Z") })),
+      ...Array.from({ length: 10 }, () => ({ userId: "a", kind: "tanda_dealt", lens: "2026-11-16|p", createdAt: at("2026-11-17T18:00:00Z") })),
       ...Array.from({ length: 10 }, (_, i) => ({ userId: "a", kind: "tanda_answered", lens: `2026-11-16|liked|new`, createdAt: at(`2026-11-17T18:0${i % 10}:00Z`) })),
       ...Array.from({ length: 10 }, () => ({ userId: "b", kind: "tanda_dealt", lens: "2026-11-16|p", createdAt: at("2026-11-18T18:00:00Z") })),
       { userId: "b", kind: "tanda_answered", lens: "2026-11-16|no|old", createdAt: at("2026-11-18T18:01:00Z") },
