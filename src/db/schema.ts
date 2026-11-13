@@ -1049,6 +1049,50 @@ export const juegoRetos = pgTable(
   ],
 );
 
+// ── Quiniela de estrenos (FIL-I55-1) ─────────────────────────────────────
+/**
+ * A release on the quiniela: one of the month's most awaited films from `CinemaRelease`, picked
+ * once and kept. Forecasts close on `releaseDate` (Mexico City) and the Extras cron resolves it on
+ * `resolveOn` (14 days later) from `Catalog.imdbRating`; without a rating it waits and retries.
+ */
+export const juegoEstrenos = pgTable(
+  "JuegoEstreno",
+  {
+    catalogId: text("catalogId")
+      .primaryKey()
+      .references(() => catalog.id, { onDelete: "cascade" }),
+    /** `YYYY-MM` of the release, Mexico City: the month whose quiniela it belongs to. */
+    month: text("month").notNull(),
+    /** `YYYY-MM-DD`: from this day on nobody can change a forecast. */
+    releaseDate: text("releaseDate").notNull(),
+    /** `YYYY-MM-DD`: the cron resolves it from this day on. */
+    resolveOn: text("resolveOn").notNull(),
+    /** The IMDb rating it got, in tenths (71 = 7.1). Null until resolved. */
+    actual: integer("actual"),
+    resolvedAt: timestamp("resolvedAt", { precision: 3, mode: "date" }),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [index("JuegoEstreno_month_idx").on(table.month), index("JuegoEstreno_resolveOn_idx").on(table.resolveOn)],
+);
+
+/** One person's forecast for one release, in tenths (74 = 7.4). Never written to `Title`. */
+export const juegoPronosticos = pgTable(
+  "JuegoPronostico",
+  {
+    id: text("id").primaryKey(),
+    catalogId: text("catalogId")
+      .notNull()
+      .references(() => juegoEstrenos.catalogId, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    guess: integer("guess").notNull(),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("JuegoPronostico_catalogId_userId_key").on(table.catalogId, table.userId)],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   titles: many(titles),
   lists: many(lists),
