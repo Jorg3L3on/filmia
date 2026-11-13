@@ -1,6 +1,5 @@
 import { Button } from "@/components/Button";
 import type { UniversoView } from "@/lib/universo/store";
-import { VISTE_PATH } from "@/lib/piezas/core";
 
 const ISLAND_WORD = (n: number) => (n === 1 ? "Una isla" : n === 2 ? "Dos islas" : n === 3 ? "Tres islas" : `${n} islas`);
 
@@ -33,11 +32,14 @@ export const ClosestPanel = ({ view }: { view: UniversoView }) => {
           {closest.node.count + 1} de {closest.node.total}
         </p>
       ) : null}
-      <div className="mt-3 flex flex-col gap-2">
-        <Button href={VISTE_PATH} variant="ghost" size="md">
-          ¿La viste?
-        </Button>
-      </div>
+      {closest.next ? (
+        <div className="mt-3 flex flex-col gap-2">
+          {/* The next film's ficha: «Vi esto» or Quiero ver from there (FIL-I50-8, «¿Las viste?» is gone). */}
+          <Button href={`/titulos/tmdb/pelicula/${closest.next.tmdbId}`} variant="ghost" size="md">
+            Ver {closest.next.name}
+          </Button>
+        </div>
+      ) : null}
     </section>
   );
 };

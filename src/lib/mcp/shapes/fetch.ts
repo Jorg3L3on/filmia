@@ -30,7 +30,9 @@ export const titleFetchText = (detail: TitleDetail) => {
     .filter(Boolean)
     .join(" · ");
   const lines = [head, STATUS_TEXT[detail.status]];
-  if (detail.own?.watchedAt) lines.push(`La vio el ${isoDay(detail.own.watchedAt)}.`);
+  if (detail.own?.watchedAt) {
+    lines.push(detail.own.watchedUndated ? "La vio (sin fecha)." : `La vio el ${isoDay(detail.own.watchedAt)}.`);
+  }
   const rating = stars(detail.own?.rating);
   if (rating) lines.push(`Su calificación: ${rating}.`);
   if (detail.own?.review) lines.push(`Su reseña: «${detail.own.review}»`);

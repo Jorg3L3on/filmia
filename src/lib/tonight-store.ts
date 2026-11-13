@@ -59,8 +59,6 @@ import {
   type TonightTitle,
 } from "@/lib/tonight";
 import { parseStoredWatchProviders } from "@/lib/watch-providers";
-import { hasVisteSeeds, visteDoorLens, visteStatus } from "@/lib/piezas/viste";
-import { isTmdbConfigured } from "@/lib/tmdb";
 
 export const TONIGHT_STALE_MS = 24 * 60 * 60 * 1000;
 export const TONIGHT_EVENTS_WINDOW_DAYS = 30;
@@ -932,7 +930,7 @@ export const getTonightDecks = async (
     const fresh = await loadDeckRecos(userId, input.userPlatforms, input.events, now, queueLenses);
     const freshWarming = await refillRecosIfThin(userId, fresh.recos.length, now).catch(() => false);
     return {
-      lenses: await withPiezas(userId, await withCardReasons(userId, composeLenses(queueLenses, fresh.pool), rowsById), now),
+      lenses: await withCardReasons(userId, composeLenses(queueLenses, fresh.pool), rowsById),
       nightEnds: input.nightEnds,
       userPlatforms: input.userPlatforms,
       profileSize: result.profileSize,
@@ -1025,7 +1023,7 @@ export const getTonightDecks = async (
   const recosWarming = await refillRecosIfThin(userId, recos.length, now).catch(() => false);
 
   return {
-    lenses: await withPiezas(userId, await withCardReasons(userId, composeLenses(queueLenses, pool), rowsById), now),
+    lenses: await withCardReasons(userId, composeLenses(queueLenses, pool), rowsById),
     nightEnds: prefs.nightEnds,
     userPlatforms: prefs.userPlatforms,
     profileSize: 0,
@@ -1034,25 +1032,6 @@ export const getTonightDecks = async (
     recosWarming,
     tally: await loadNightTally(userId, now).catch(() => EMPTY_TALLY),
   };
-};
-
-/**
- * FIL-I26 joins the deck after composition: the door to «¿Las viste?» goes last. On its own: a
- * failure there never costs the person their Hoy.
- */
-const withPiezas = async (userId: string, lenses: TonightLensView[], now: Date) => {
-  let placed = lenses;
-  try {
-    if (isTmdbConfigured()) {
-      const [status, seeds] = await Promise.all([visteStatus(userId, now), hasVisteSeeds(userId)]);
-      if (seeds) {
-        placed = [...placed, visteDoorLens(status.answered)];
-      }
-    }
-  } catch {
-    // No door today.
-  }
-  return placed;
 };
 
 const countQueue = async (userId: string) => {

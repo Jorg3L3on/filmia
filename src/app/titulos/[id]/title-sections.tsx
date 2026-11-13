@@ -299,6 +299,7 @@ export const TitleActionsBlock = async ({
       titleName={title.name}
       watched={Boolean(title.watchedAt)}
       watchedAt={title.watchedAt ? toDateInput(title.watchedAt) : null}
+      watchedUndated={title.watchedUndated}
       inWatchlist={inWatchlist}
       listCount={listCount}
       rating={title.rating}

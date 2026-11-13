@@ -91,6 +91,7 @@ const HistorialHome = async ({
   const titleFilters = {
     sort: "watched" as const,
     onlyWatched: true,
+    onlyDated: true,
     seriesStatus,
     kind: kindFilter,
   };

@@ -62,7 +62,7 @@ describe("restoreTitleWatched stays off markTitleWatched", () => {
     const action = body(actions, "restoreTitleWatched");
     const impl = body(writes, "restoreWatchedFor");
     assert.match(action, /requireUserId\(\)/);
-    assert.match(action, /restoreWatchedFor\(userId, titleId, isoDate\)/);
+    assert.match(action, /restoreWatchedFor\(userId, titleId, isoDate[,)]/);
     assert.doesNotMatch(action, /markTitleWatched|markWatchedFor/);
     assert.match(impl, /isNull\(titles\.watchedAt\)/);
     assert.match(impl, /isValidIsoDate\(isoDate\)/);

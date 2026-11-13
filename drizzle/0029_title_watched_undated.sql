@@ -1,0 +1,1 @@
+ALTER TABLE "Title" ADD COLUMN "watchedUndated" boolean DEFAULT false NOT NULL;

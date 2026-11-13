@@ -1,0 +1,69 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { NavLabel } from "@/components/NavOriginTracker";
+import { BackDisc } from "@/components/PageHeader";
+import { QuinielaGroupCreate } from "@/components/quinielas/QuinielaGroupControls";
+import { cn } from "@/lib/cn";
+import { personFirstName } from "@/lib/person-avatar";
+import { getCeremony } from "@/lib/quinielas/ceremonies";
+import { listMyGroups } from "@/lib/quinielas/groups";
+import { ceremonyInfo, ceremonyPath } from "@/lib/quinielas/hub-core";
+import { requireUser } from "@/lib/session";
+import { focusRing } from "@/lib/ui";
+
+export const dynamic = "force-dynamic";
+
+export const metadata = { title: "Retar a alguien" } as const;
+
+/** «Retar a alguien» (FIL-I51-3): your groups for this ceremony and a new one. No public table. */
+export default async function GruposPage({ params }: { params: Promise<{ ceremonia: string }> }) {
+  const user = await requireUser();
+  const file = getCeremony((await params).ceremonia);
+  if (!file) {
+    notFound();
+  }
+  const ceremony = ceremonyInfo(file);
+  const groups = await listMyGroups(user.id, file.id);
+  return (
+    <div className="mx-auto flex w-full max-w-md flex-col gap-6">
+      <NavLabel label="Retar a alguien" />
+      <div className="flex items-center gap-3">
+        <BackDisc href={`${ceremonyPath(file.id)}/boleta`} label="Volver a tu boleta" />
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-star">{ceremony.title}</p>
+          <h1 className="mt-1 font-serif text-[1.9rem] font-semibold leading-none text-paper">Retar a alguien</h1>
+        </div>
+      </div>
+      <p className="text-sm text-fog">
+        Haz un grupo para esta entrega y manda el enlace. Solo entra quien lo tenga; en el grupo todos ven la boleta y
+        los aciertos de los demás.
+      </p>
+      {groups.length > 0 ? (
+        <section aria-labelledby="tus-grupos" className="flex flex-col gap-2">
+          <h2 id="tus-grupos" className="font-serif text-xl text-paper">
+            Tus grupos
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {groups.map((group) => (
+              <li key={group.id}>
+                <Link
+                  href={`/extras/quinielas/grupo/${group.id}`}
+                  className={cn("flex min-h-14 flex-col justify-center rounded-2xl border border-chrome bg-surface px-4 py-2.5 hover:border-star/50", focusRing)}
+                >
+                  <span className="font-semibold text-paper">{group.name}</span>
+                  <span className="text-xs text-fog">{group.ownerId === user.id ? "Lo creaste tú" : `De ${group.ownerName}`}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      <section aria-labelledby="nuevo-grupo" className="flex flex-col gap-3 rounded-2xl border border-chrome bg-surface p-4">
+        <h2 id="nuevo-grupo" className="font-serif text-xl text-paper">
+          {groups.length > 0 ? "Otro grupo" : "Nuevo grupo"}
+        </h2>
+        <QuinielaGroupCreate ceremonyId={file.id} ownerFirstName={personFirstName(user.name)} />
+      </section>
+    </div>
+  );
+}

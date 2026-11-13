@@ -39,7 +39,7 @@ import {
   TONIGHT_MOOD_PARAM,
   widerBudget,
 } from "@/lib/tonight/budget";
-import { closingCardFor, tallyCount } from "@/lib/tonight/closing-card";
+import { tallyCount } from "@/lib/tonight/closing-card";
 import { pickRefOf } from "@/lib/tonight/reco-card";
 import { rankForNow, TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import { dayPartOf } from "@/lib/tonight/time";
@@ -86,9 +86,11 @@ type TonightSalaProps = {
   initialSlug?: string | null;
   /** `?carta=`: the card the user left for a ficha; the deck reopens on it. */
   initialCardId?: string | null;
+  /** Juegos' «nuevo» dot (FIL-I50-2); null hides the door (the cartel failed to load). */
+  juegosFresh?: boolean | null;
 };
 
-export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }: TonightSalaProps) => {
+export const TonightSala = ({ decks, initialSlug = null, initialCardId = null, juegosFresh = null }: TonightSalaProps) => {
   const now = useTonightClock(decks.nightEnds);
   const dayPart = now ? dayPartOf(now, decks.nightEnds) : "noche";
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
@@ -230,13 +232,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
       starts.set(lens.slug, all.length);
       all.push(...(lensCards.get(lens.slug) ?? []));
     }
-    const dealtCount = all.length;
-    // One closing card after the whole deck, never per lens (FIL-I21-6).
-    const last = lenses[lenses.length - 1];
-    if (last) {
-      all.push(closingCardFor(last.slug));
-    }
-    return { cards: all, lensStarts: starts, dealt: dealtCount };
+    // The deck ends on its last film: no closing card (FIL-I50-8, Jorge).
+    return { cards: all, lensStarts: starts, dealt: all.length };
   }, [lensCards, lenses]);
 
   // «Ver esta noche» on a card (UX-16): the pinned film leads Para ti once the decks refresh, so
@@ -561,12 +558,9 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
       <div className="diario-que-ver-shell tonight-sala flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-sm:gap-1">
         {/* The page's one heading (UX-18): the eyebrow and deck carry the visible titles. */}
         <h1 className="sr-only">Hoy</h1>
-        {/* Desktop keeps the three rows; the phone folds the eyebrow into the rail (FIL-I21-3). */}
+        {/* Desktop keeps the eyebrow row; on the phone the bedtime chip closes the mood row (FIL-I21-3). */}
         <div className="tonight-eyebrow-row shrink-0 max-sm:hidden">
           <TonightEyebrow now={now} nightEnds={decks.nightEnds} />
-        </div>
-        <div className="sm:hidden">
-          <TonightEyebrow now={now} nightEnds={decks.nightEnds} compact />
         </div>
         {!now ? (
           <HoyDeckSkeleton />
@@ -577,11 +571,14 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null }:
             <TonightFilters
               moodId={mood?.id ?? null}
               onMood={chooseMood}
+              juegos={juegosFresh == null ? null : { fresh: juegosFresh }}
+              trailing={dayPart === "noche" ? <TonightEyebrow now={now} nightEnds={decks.nightEnds} compact /> : null}
               className="shrink-0 px-1"
             />
             {options ? (
               <>
-                <h2 className="shrink-0 px-1 text-sm font-medium text-paper">
+                {/* Room above (the moods) and below (the cards): the phone sala packs its rows tight. */}
+                <h2 className="shrink-0 px-1 pb-2 pt-2.5 text-sm font-medium text-paper sm:py-0">
                   {OPTIONS_HEADING[options.cards.length] || "Sin resultados"}
                 </h2>
                 {options.cards.length > 0 ? (

@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, listItems, lists, titles, type TitleKind } from "@/db";
 import { findCatalogByTmdb, findOrCreateCatalog } from "@/lib/catalog";
 import { catalogIdOfOwnTitle, catalogIdOfTitle } from "@/lib/list-items";
@@ -22,6 +22,12 @@ export type AddTitleFromTmdbInput = {
   addToWatchlist?: boolean;
   destination?: AddTitleDestination;
   watchedAt?: string | null;
+  /**
+   * FIL-I50 · Juegos: «vista alguna vez». Stores `watchedAt` (so every «la vio» reader keeps
+   * working) with `watchedUndated`, which keeps it out of the diary. A film already watched keeps
+   * its own date.
+   */
+  undated?: boolean;
 };
 
 export type AddTitleFromTmdbResult =
@@ -88,6 +94,7 @@ const markExistingWatched = async (
   userId: string,
   titleId: string,
   watchedAt?: string | null,
+  undated = false,
 ) => {
   await ensureDefaultLists(userId);
 
@@ -96,10 +103,16 @@ const markExistingWatched = async (
     columns: { id: true },
   });
 
-  const updateTitle = db
-    .update(titles)
-    .set({ watchedAt: resolveWatchedAt(watchedAt) })
-    .where(eq(titles.id, titleId));
+  // Undated (a game answer) only fills an unwatched title: a dated entry is never downgraded.
+  const updateTitle = undated
+    ? db
+        .update(titles)
+        .set({ watchedAt: resolveWatchedAt(null), watchedUndated: true })
+        .where(and(eq(titles.id, titleId), isNull(titles.watchedAt)))
+    : db
+        .update(titles)
+        .set({ watchedAt: resolveWatchedAt(watchedAt), watchedUndated: false })
+        .where(eq(titles.id, titleId));
 
   if (!watchlist) {
     await updateTitle;
@@ -163,7 +176,7 @@ export const upsertTitleFromTmdbForUser = async (
 
   if (existing) {
     if (markWatched) {
-      await markExistingWatched(userId, existing.id, input.watchedAt);
+      await markExistingWatched(userId, existing.id, input.watchedAt, input.undated);
     } else if (addToWatchlist) {
       await enqueueInWatchlist(userId, existing.id);
     }
@@ -186,7 +199,8 @@ export const upsertTitleFromTmdbForUser = async (
       id: createId(),
       userId,
       catalogId: shared.id,
-      watchedAt: markWatched ? resolveWatchedAt(input.watchedAt) : null,
+      watchedAt: markWatched ? resolveWatchedAt(input.undated ? null : input.watchedAt) : null,
+      watchedUndated: Boolean(markWatched && input.undated),
       createdAt: now,
       updatedAt: now,
     })
@@ -202,7 +216,7 @@ export const upsertTitleFromTmdbForUser = async (
       return { ok: false, error: "No se pudo guardar." };
     }
     if (markWatched) {
-      await markExistingWatched(userId, winner.id, input.watchedAt);
+      await markExistingWatched(userId, winner.id, input.watchedAt, input.undated);
     } else if (addToWatchlist) {
       await enqueueInWatchlist(userId, winner.id);
     }

@@ -30,6 +30,10 @@
     {
       "path": "/api/cron/cine",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/juegos",
+      "schedule": "0 15 * * *"
     }
   ]
 }

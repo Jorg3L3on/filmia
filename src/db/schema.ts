@@ -93,6 +93,11 @@ export const users = pgTable(
     sessionVersion: integer("sessionVersion").notNull().default(0),
     /** Admin panel (FIL-I37): last authenticated request, written at most every 15 min. */
     lastActiveAt: timestamp("lastActiveAt", { precision: 3, mode: "date" }),
+    /**
+     * FIL-I50-5 · «Avisos de Juegos» in Perfil: the weekly tanda and a new game. Only matters with
+     * «Avisos» on (a PushSubscription); turning it off leaves every other push as it is.
+     */
+    juegosPush: boolean("juegosPush").notNull().default(true),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),
@@ -198,6 +203,12 @@ export const titles = pgTable(
     review: text("review"),
     platform: platformEnum("platform"),
     watchedAt: timestamp("watchedAt", { precision: 3, mode: "date" }),
+    /**
+     * FIL-I50 · Juegos: «vista alguna vez», answered in a game. `watchedAt` is still set (every
+     * «la vio» reader keeps working) but it is not a diary date: the diary, «Tu año en cine» and the
+     * week strip skip these rows. Logging the film with a date from the ficha sets it back to false.
+     */
+    watchedUndated: boolean("watchedUndated").notNull().default(false),
     seriesStatus: seriesStatusEnum("seriesStatus"),
     seriesSeason: integer("seriesSeason"),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
@@ -833,6 +844,96 @@ export const mcpIdempotencyKeys = pgTable(
   (table) => [
     primaryKey({ columns: [table.userId, table.key] }),
     index("McpIdempotencyKey_createdAt_idx").on(table.createdAt),
+  ],
+);
+
+// ── Quinielas de premios (FIL-I51) ───────────────────────────────────────
+// Categories and nominees live in `src/data/quinielas/<ceremonyId>.json`; these tables hold what
+// changes. `ceremonyId` is the file's id («oscar-2027», «emmy-2026»), checked against the registry
+// in code, so a new award or year needs no migration.
+
+/** A ceremony open for ballots. No row = «Abre con las nominaciones». */
+export const quinielaCeremonies = pgTable("QuinielaCeremony", {
+  ceremonyId: text("ceremonyId").primaryKey(),
+  /** Ballots close when the ceremony starts; the server refuses votes from then on. */
+  closesAt: timestamp("closesAt", { precision: 3, mode: "date" }).notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+/** One vote per person, ceremony and category («quién va a ganar»); changing it rewrites the row. */
+export const quinielaVotes = pgTable(
+  "QuinielaVote",
+  {
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    ceremonyId: text("ceremonyId").notNull(),
+    categoryId: text("categoryId").notNull(),
+    nomineeId: text("nomineeId").notNull(),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.ceremonyId, table.categoryId] }),
+    index("QuinielaVote_ceremonyId_idx").on(table.ceremonyId),
+  ],
+);
+
+/** The winner of a category, entered from /admin/quinielas the night of the ceremony (and corrected there). */
+export const quinielaWinners = pgTable(
+  "QuinielaWinner",
+  {
+    ceremonyId: text("ceremonyId").notNull(),
+    categoryId: text("categoryId").notNull(),
+    nomineeId: text("nomineeId").notNull(),
+    announcedAt: timestamp("announcedAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+    enteredByUserId: text("enteredByUserId").references(() => users.id, { onDelete: "set null" }),
+  },
+  (table) => [primaryKey({ columns: [table.ceremonyId, table.categoryId] })],
+);
+
+/**
+ * An invite-only group for one ceremony (Jorge: one group per award, it does not carry over). The
+ * link's token is derived from the group id, this version and AUTH_SECRET (`quinielaGroupToken`),
+ * so the owner can show it again; only its sha256 is stored, and «Nuevo enlace» bumps the version.
+ */
+export const quinielaGroups = pgTable(
+  "QuinielaGroup",
+  {
+    id: text("id").primaryKey(),
+    ceremonyId: text("ceremonyId").notNull(),
+    ownerId: text("ownerId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    tokenHash: text("tokenHash").notNull(),
+    tokenVersion: integer("tokenVersion").notNull().default(1),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("QuinielaGroup_tokenHash_key").on(table.tokenHash),
+    index("QuinielaGroup_ownerId_idx").on(table.ownerId),
+  ],
+);
+
+/** Members of a group, the owner included. */
+export const quinielaGroupMembers = pgTable(
+  "QuinielaGroupMember",
+  {
+    groupId: text("groupId")
+      .notNull()
+      .references(() => quinielaGroups.id, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    joinedAt: timestamp("joinedAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.groupId, table.userId] }),
+    index("QuinielaGroupMember_userId_idx").on(table.userId),
   ],
 );
 
