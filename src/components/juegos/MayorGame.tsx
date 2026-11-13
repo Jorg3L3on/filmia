@@ -8,7 +8,8 @@ import { PosterImage } from "@/components/PosterImage";
 import { cn } from "@/lib/cn";
 import { JUEGOS_PATH } from "@/lib/juegos/core";
 import { dailyNumber, MAYOR_DAILY_PATH, MAYOR_LENS_IDS, MAYOR_LENSES, MAYOR_PATH, type MayorGuess, type MayorLensId } from "@/lib/juegos/mayor/core";
-import type { MayorStep, MayorView } from "@/lib/juegos/mayor/store";
+import type { MayorAnswerOutcome, MayorStep, MayorView } from "@/lib/juegos/mayor/store";
+import { RETAR_PATH, suddenDeathTrack } from "@/lib/juegos/retos/core";
 import { usePrefersReducedMotion } from "@/lib/motion";
 import { showActionError } from "@/lib/toast-alerts";
 import { buttonClass, focusRing } from "@/lib/ui";
@@ -18,11 +19,23 @@ const REVEAL_MS = 950;
 
 type Reveal = { value: string; correct: boolean };
 
-export const MayorTopBar = ({ eyebrow, title, chip, backHref = JUEGOS_PATH }: { eyebrow: string; title: string; chip?: ReactNode; backHref?: string }) => (
+export const MayorTopBar = ({
+  eyebrow,
+  title,
+  chip,
+  backHref = JUEGOS_PATH,
+  backLabel,
+}: {
+  eyebrow: string;
+  title: string;
+  chip?: ReactNode;
+  backHref?: string;
+  backLabel?: string;
+}) => (
   <div className="flex items-center gap-3">
     <Link
       href={backHref}
-      aria-label={backHref === JUEGOS_PATH ? "Volver a Extras" : "Volver a Mayor o menor"}
+      aria-label={backLabel ?? (backHref === JUEGOS_PATH ? "Volver a Extras" : "Volver a Mayor o menor")}
       className={cn("relative flex size-11 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-paper", focusRing)}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="size-5">
@@ -166,9 +179,50 @@ const LensBar = ({ current, records }: { current: MayorLensId; records: Partial<
 );
 
 const eyebrowOf = (view: MayorView, streak: number) =>
-  view.mode === "diaria"
+  view.mode === "reto"
+    ? `Muerte súbita · racha de ${streak}`
+    : view.mode === "diaria"
     ? `La diaria · n.º ${dailyNumber(view.day ?? "")} · ${Math.min(view.answers.length + 1, view.total)} de ${view.total}`
     : `Racha de ${streak} · tu mejor: ${view.best}`;
+
+/** Muerte súbita (FIL-I53-2, board M-4-subita): the person's progress and where the rival fell. */
+export const SuddenDeathBar = ({ rival, view }: { rival: MayorRival; view: MayorView }) => {
+  const track = suddenDeathTrack({ rivalName: rival.name, rivalScore: rival.score, mine: view.score, total: view.total });
+  return (
+    <div className="flex flex-col gap-2" data-mayor="subita">
+      <div className="relative mx-3 h-14" role="img" aria-label={track.label}>
+        <span className="absolute inset-x-0 top-5 h-1 rounded-full bg-chrome" />
+        <span className="absolute left-0 top-5 h-1 rounded-full bg-accent transition-[width] duration-300" style={{ width: `${track.mePct}%` }} />
+        {track.rivalPct != null ? (
+          <>
+            <span
+              className="absolute top-0 flex size-6 -translate-x-1/2 items-center justify-center rounded-full border-2 border-canvas bg-affinity text-[11px] font-bold text-ink"
+              style={{ left: `${track.rivalPct}%` }}
+              data-mayor-marca="rival"
+              data-par={track.rivalPair ?? undefined}
+            >
+              {rival.initial}
+            </span>
+            <span
+              className="absolute top-9 -translate-x-1/2 whitespace-nowrap text-[11px] text-fog"
+              style={{ left: `${Math.min(Math.max(track.rivalPct, 18), 82)}%` }}
+            >
+              aquí cayó {rival.name}
+            </span>
+          </>
+        ) : null}
+        <span
+          className="absolute top-[0.9rem] z-10 flex size-4 -translate-x-1/2 items-center justify-center rounded-full bg-accent ring-2 ring-canvas"
+          style={{ left: `${track.mePct}%` }}
+          data-mayor-marca="tu"
+        />
+      </div>
+      <p className="text-center text-xs text-fog">{track.line}</p>
+    </div>
+  );
+};
+
+export type MayorRival = { name: string; initial: string; score: number };
 
 /**
  * Mayor o menor's play screen (board Main), for a free streak or the daily. Buttons do everything;
@@ -179,11 +233,23 @@ export const MayorGame = ({
   initialView,
   headerExtra,
   lensRecords,
+  answerAction = answerMayorStep,
+  rival,
+  title = "Mayor o menor",
+  backHref,
+  backLabel,
 }: {
   initialView: MayorView;
   headerExtra?: ReactNode;
   /** Free records per lens: shows the lens picker (free streak only). */
   lensRecords?: Partial<Record<MayorLensId, number>>;
+  /** Where answers go: the free/daily action by default; a reto or a link passes its own (FIL-I53). */
+  answerAction?: (partidaId: string, index: number, guess: string) => Promise<MayorAnswerOutcome>;
+  /** Muerte súbita: the sender's streak, drawn on a bar over the game. */
+  rival?: MayorRival | null;
+  title?: string;
+  backHref?: string;
+  backLabel?: string;
 }) => {
   const router = useRouter();
   const reduced = usePrefersReducedMotion();
@@ -205,7 +271,7 @@ export const MayorGame = ({
     if (!shown || pending || reveal) return;
     setPending(true);
     try {
-      const outcome = await answerMayorStep(view.partidaId, shown.index, guess);
+      const outcome = await answerAction(view.partidaId, shown.index, guess);
       if (!outcome.ok) {
         if (outcome.view) {
           setView(outcome.view);
@@ -219,7 +285,8 @@ export const MayorGame = ({
       if (outcome.view.finished) {
         // The last pair and its value stay on screen; the daily then shows its result.
         setView(outcome.view);
-        if (outcome.view.mode === "diaria") timer.current = window.setTimeout(() => router.refresh(), REVEAL_MS + 400);
+        // The daily and a reto hand over to their server-rendered result.
+        if (outcome.view.mode !== "libre") timer.current = window.setTimeout(() => router.refresh(), REVEAL_MS + 400);
         return;
       }
       timer.current = window.setTimeout(
@@ -260,8 +327,9 @@ export const MayorGame = ({
 
   return (
     <div className="flex flex-1 flex-col gap-4" data-mayor={ended ? "fin" : "jugando"}>
-      <MayorTopBar eyebrow={eyebrowOf(view, streak)} title="Mayor o menor" chip={<LensChip>{lens.short}</LensChip>} />
+      <MayorTopBar eyebrow={eyebrowOf(view, streak)} title={title} chip={<LensChip>{lens.short}</LensChip>} backHref={backHref} backLabel={backLabel} />
       {headerExtra}
+      {rival ? <SuddenDeathBar rival={rival} view={view} /> : null}
       {lensRecords ? <LensBar current={view.lens} records={{ ...lensRecords, [view.lens]: Math.max(lensRecords[view.lens] ?? 0, view.best) }} /> : null}
       {shown ? (
         <>
@@ -293,6 +361,15 @@ export const MayorGame = ({
               La diaria
             </Link>
           </div>
+          {view.score > 0 ? (
+            <Link
+              href={`${RETAR_PATH}?juego=mayor&partida=${view.partidaId}`}
+              className={cn("mt-3 flex min-h-11 items-center justify-center gap-2 rounded-full text-sm font-semibold text-accent", focusRing)}
+              data-mayor="retar"
+            >
+              Retar a alguien con esta racha
+            </Link>
+          ) : null}
         </div>
       ) : ended ? (
         <p className="pb-2 text-center text-sm text-fog" aria-live="polite">

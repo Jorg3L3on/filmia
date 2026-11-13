@@ -24,16 +24,16 @@ const juego = (overrides: Partial<Juego>): Juego => ({
 });
 
 describe("Juegos cartel (FIL-I50-2)", () => {
-  it("La tanda and Mayor o menor are playable; the rest, quinielas included, in «Próximamente» off season", () => {
+  it("La tanda, Duelos and Mayor o menor are playable; the rest, quinielas included, in «Próximamente» off season", () => {
     const portada = portadaOf(JUEGOS, "2026-11-20");
     assert.equal(portada.seasonal, null);
     assert.deepEqual(
       portada.playable.map((item) => item.id),
-      ["tanda", "mayor"],
+      ["tanda", "duelos", "mayor"],
     );
     assert.deepEqual(
       portada.soon.map((item) => item.id),
-      ["quiniela", "muro", "duelos", "linea"],
+      ["quiniela", "muro", "linea"],
     );
   });
 
@@ -42,8 +42,15 @@ describe("Juegos cartel (FIL-I50-2)", () => {
     assert.equal(mayor?.status, "available");
     assert.equal(mayor?.href, "/extras/mayor-o-menor");
     assert.equal(mayor?.launchedOn, "2026-11-13");
-    assert.deepEqual(portadaOf(JUEGOS, "2026-11-12").playable.map((item) => item.id), ["tanda"]);
+    assert.deepEqual(portadaOf(JUEGOS, "2026-11-12").playable.map((item) => item.id), ["tanda", "duelos"]);
     assert.ok(portadaOf(JUEGOS, "2026-11-12").soon.some((item) => item.id === "mayor"));
+  });
+
+  it("Duelos is available without a launch date: no launch push, no «nuevo» dot (FIL-I53-7)", () => {
+    const duelos = JUEGOS.find((item) => item.id === "duelos");
+    assert.equal(duelos?.status, "available");
+    assert.equal(duelos?.href, "/extras/duelos");
+    assert.equal(duelos?.launchedOn, null);
   });
 
   it("the quinielas are on top inside any ceremony's window, without a launch (no push, no dot) (FIL-I51-8)", () => {
@@ -143,6 +150,8 @@ describe("Juegos in the navigation", () => {
     assert.equal(isJuegosPath("/extrasx"), false);
     assert.equal(isJuegoPlayPath("/extras"), false);
     assert.equal(isJuegoPlayPath("/extras/tanda"), true);
+    // FIL-I53-4: the public reto link plays without the dock too.
+    assert.equal(isJuegoPlayPath("/reto/abc"), true);
     assert.equal(isMobileNavCurrent("/", "/extras"), true);
     assert.equal(isMobileNavCurrent("/", "/extras/tanda?x=1"), true);
     assert.equal(isMobileNavCurrent("/perfil", "/extras"), false);

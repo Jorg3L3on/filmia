@@ -98,6 +98,16 @@ export const users = pgTable(
      * «Avisos» on (a PushSubscription); turning it off leaves every other push as it is.
      */
     juegosPush: boolean("juegosPush").notNull().default(true),
+    /**
+     * FIL-I53-3 · «Te retaron» in Perfil: at most one push a day when someone sends a reto. Its own
+     * switch: «Avisos de Extras» does not turn it off, and the other way round.
+     */
+    retosPush: boolean("retosPush").notNull().default(true),
+    /**
+     * FIL-I53-6 · «Usar mis notas en juegos»: Duelo de gustos may show this person's own ratings
+     * (`Title.rating`) to whom they duel. Off by default; turning it off cancels open duels.
+     */
+    juegosNotas: boolean("juegosNotas").notNull().default(false),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),
@@ -992,6 +1002,50 @@ export const juegoPartidas = pgTable(
     index("JuegoPartida_userId_juego_mode_idx").on(table.userId, table.juego, table.mode),
     index("JuegoPartida_juego_day_idx").on(table.juego, table.day),
     index("JuegoPartida_startedAt_idx").on(table.startedAt),
+  ],
+);
+
+// ── Retos uno contra uno (FIL-I53) ───────────────────────────────────────
+/**
+ * A reto: one person plays a partida and sends exactly that content to another account (or, for
+ * Mayor o menor only, to a link). Nobody plays live; the reto is open for 48 hours from `sentAt`
+ * and an expired one simply stops being listed, with no penalty. `content` is the game's JSON both
+ * sides play (it never reaches the client whole). FIL-I55 adds points on top of finished retos.
+ */
+export const juegoRetos = pgTable(
+  "JuegoReto",
+  {
+    id: text("id").primaryKey(),
+    juego: text("juego").notNull(),
+    lens: text("lens").notNull(),
+    seed: text("seed").notNull(),
+    content: jsonb("content").notNull(),
+    fromUserId: text("fromUserId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Null for a link reto (FIL-I53-4). */
+    toUserId: text("toUserId").references(() => users.id, { onDelete: "cascade" }),
+    fromPartidaId: text("fromPartidaId").references(() => juegoPartidas.id, { onDelete: "set null" }),
+    toPartidaId: text("toPartidaId").references(() => juegoPartidas.id, { onDelete: "set null" }),
+    /** sha256 of the link token (FIL-I53-4); the token itself is only in the link. */
+    linkTokenHash: text("linkTokenHash"),
+    /** What the person without an account answered on the link: `{ answers, score, finishedAt }`. Nothing personal. */
+    linkResult: jsonb("linkResult"),
+    /** `abierto` · `jugado` · `vencido` · `cancelado` (gustos when a person turns off their notes). */
+    status: text("status").notNull().default("abierto"),
+    /** The reto this one answers («Revancha»). */
+    rematchOf: text("rematchOf"),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+    /** When the sender finished their side: from then on the other person sees it. Null while the sender plays. */
+    sentAt: timestamp("sentAt", { precision: 3, mode: "date" }),
+    expiresAt: timestamp("expiresAt", { precision: 3, mode: "date" }).notNull(),
+    finishedAt: timestamp("finishedAt", { precision: 3, mode: "date" }),
+  },
+  (table) => [
+    index("JuegoReto_toUserId_status_idx").on(table.toUserId, table.status),
+    index("JuegoReto_fromUserId_toUserId_idx").on(table.fromUserId, table.toUserId),
+    index("JuegoReto_createdAt_idx").on(table.createdAt),
+    uniqueIndex("JuegoReto_linkTokenHash_key").on(table.linkTokenHash),
   ],
 );
 

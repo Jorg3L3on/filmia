@@ -56,6 +56,17 @@ const metrics = async () => {
   }
 };
 
+/** FIL-I53-7: retos per week (sent to an account, by link, played, expired). */
+const retosReport = async () => {
+  const { loadRetosMetrics } = await import("../src/lib/juegos/retos/metrics");
+  const weeks = await loadRetosMetrics(new Date(), Number(flag("semanas") ?? 6));
+  console.log("");
+  console.log("Retos        mandados  por enlace  jugados  vencidos");
+  for (const row of weeks) {
+    console.log(`${row.week}  ${String(row.sent).padStart(8)}  ${String(row.byLink).padStart(10)}  ${String(row.played).padStart(7)}  ${String(row.expired).padStart(8)}`);
+  }
+};
+
 const main = async () => {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL no está definida (usa --env=<ruta al .env>).");
@@ -66,6 +77,7 @@ const main = async () => {
   }
   if (command === "metricas") {
     await metrics();
+    await retosReport();
   } else {
     await avisos();
   }

@@ -232,6 +232,13 @@
       "when": 1794593692500,
       "tag": "0033_juego_partidas",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1794595999715,
+      "tag": "0034_retos",
+      "breakpoints": true
     }
   ]
 }

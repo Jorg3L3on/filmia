@@ -12,6 +12,9 @@ import {
   SESSION_EXPIRED_VALUE,
 } from "@/lib/session-expired-copy";
 import { isToastBenchEnabled } from "@/lib/toast";
+import { retoLinkGate } from "@/lib/juegos/retos/link-gate";
+import { postgresRetoLinkLookup } from "@/lib/juegos/retos/link-lookup";
+import { postgresRateLimitStore } from "@/lib/rate-limit-store";
 
 const LOGIN_PATH = "/login";
 
@@ -25,6 +28,8 @@ const SIGNUP_PATH = "/registro";
 // authenticates on its own: /api/mcp and /mcp check the bearer token, /api/oauth and
 // /.well-known are the OAuth server (its consent POST checks the session and Origin itself).
 // /conector is the connector's public guide (its OAuth service_documentation).
+// /reto is a Mayor o menor challenge by link for people without an account (FIL-I53-4): the page
+// checks its token itself, and opening it is rate-limited per IP right here.
 // /oauth/consent is NOT here: it needs the Filmia session like any page.
 export const PUBLIC_PATHS = [
   LOGIN_PATH,
@@ -38,6 +43,7 @@ export const PUBLIC_PATHS = [
   "/api/oauth",
   "/.well-known",
   "/conector",
+  "/reto",
 ];
 
 export const isPublicPath = (pathname: string) => {
@@ -59,6 +65,11 @@ export const proxy = async (request: Request) => {
   // a signed-out check would redirect the worker script to /login.
   if (isProxyStaticAsset(pathname) || pathname.startsWith("/api/auth")) {
     return NextResponse.next();
+  }
+
+  const limited = await retoLinkGate(request, postgresRateLimitStore, postgresRetoLinkLookup);
+  if (limited) {
+    return limited;
   }
 
   const token = request.headers

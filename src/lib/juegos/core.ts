@@ -32,6 +32,7 @@ export type Juego = {
 export const TANDA_ID = "tanda";
 export const TANDA_PATH = "/extras/tanda";
 export const QUINIELAS_ID = "quiniela";
+export const DUELOS_ID = "duelos";
 export const QUINIELAS_PATH = "/extras/quinielas";
 
 export const JUEGOS: readonly Juego[] = [
@@ -65,11 +66,12 @@ export const JUEGOS: readonly Juego[] = [
     seasons: null,
   },
   {
-    id: "duelos",
+    id: DUELOS_ID,
     name: "Duelos",
-    line: "Dos que te gustaron. Salen tus cuatro.",
-    status: "soon",
-    href: null,
+    line: "Reta a alguien: Mayor o menor, trivia o gustos.",
+    status: "available",
+    href: "/extras/duelos",
+    // FIL-I53-7: null = playable without a launch push or Hoy's «nuevo» dot. Set the deploy day to send them.
     launchedOn: null,
     seasons: null,
   },

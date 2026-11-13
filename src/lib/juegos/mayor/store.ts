@@ -337,3 +337,38 @@ export const readShareableDaily = async (userId: string, partidaId: string) => {
   const answers = answersOf(partida);
   return { day: partida.day, lens: lensOf(partida), answers, score: partida.score, total: stepsOf(sequenceOf(partida), lensOf(partida)) };
 };
+
+// ---------------------------------------------------------------------------
+// Retos (FIL-I53-1/2): the same sequence for two people
+// ---------------------------------------------------------------------------
+
+/** The films of a partida, in order: what a reto sends to the other person. */
+export const mayorSequenceOf = sequenceOf;
+
+/** A fresh sequence for a reto played before choosing whom it goes to (Revancha). */
+export const drawMayorSequence = async (lens: MayorLensId, seed: string, sources = defaultSources) =>
+  buildSequence({ pool: await sources.pool(lens), lens, seed, length: MAYOR_FREE_LENGTH });
+
+/** A partida over a given sequence for one side of a reto; it ends at the first miss, like a free streak. */
+export const createRetoMayorPartida = async (input: {
+  userId: string;
+  lens: MayorLensId;
+  sequence: string[];
+  retoId: string;
+  side: "from" | "to";
+  now?: Date;
+}) =>
+  createPartida({
+    userId: input.userId,
+    juego: MAYOR_ID,
+    mode: "reto",
+    lens: input.lens,
+    content: { sequence: input.sequence, retoId: input.retoId, side: input.side },
+    now: input.now,
+  });
+
+/** The client view of any Mayor o menor partida of the person (hidden values stay hidden). */
+export const viewMayorPartida = async (userId: string, partidaId: string) => {
+  const partida = await readPartida(userId, partidaId);
+  return partida && partida.juego === MAYOR_ID ? viewOf(partida) : null;
+};
