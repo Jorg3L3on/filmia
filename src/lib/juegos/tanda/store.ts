@@ -50,7 +50,10 @@ export type TandaCard = {
 
 export type TandaState = {
   week: string;
+  /** 1 for the week's tanda, then one more for every «Otra tanda» (FIL-I50-7). */
+  round: number;
   epoch: string;
+  /** The current round's ten. */
   cards: TandaCard[];
 };
 
@@ -77,7 +80,9 @@ const toCard = (film: CatalogRow, slot: TandaSlot, answer: TandaAnswer | null): 
 });
 
 const stateOf = async (week: string, events: Awaited<ReturnType<typeof weekEvents>>): Promise<TandaState> => {
-  const dealt = events.filter((event) => event.kind === TANDA_DEALT_KIND && event.catalogId);
+  const allDealt = events.filter((event) => event.kind === TANDA_DEALT_KIND && event.catalogId);
+  const round = allDealt.reduce((max, event) => Math.max(max, parseTandaLens(event.lens).round), 1);
+  const dealt = allDealt.filter((event) => parseTandaLens(event.lens).round === round);
   const answers = new Map<string, TandaAnswer>();
   for (const event of events) {
     const { answer } = parseTandaLens(event.lens);
@@ -89,7 +94,8 @@ const stateOf = async (week: string, events: Awaited<ReturnType<typeof weekEvent
   const byId = new Map(films.map((film) => [film.id, film]));
   return {
     week,
-    epoch: epochLabel(epochsOfWeek(week).main),
+    round,
+    epoch: epochLabel(epochsOfWeek(week, round).main),
     cards: dealt.flatMap((event) => {
       const film = byId.get(event.catalogId!);
       return film ? [toCard(film, parseTandaLens(event.lens).slot ?? "p", answers.get(film.id) ?? null)] : [];
@@ -101,33 +107,6 @@ const stateOf = async (week: string, events: Awaited<ReturnType<typeof weekEvent
 export const readTanda = async (userId: string, now = new Date()) => {
   const week = weekKeyOf(now);
   return stateOf(week, await weekEvents(userId, week));
-};
-
-/** How far the person is this week, for Hoy and the portada. */
-export const tandaProgress = async (userId: string, now = new Date()) => {
-  const week = weekKeyOf(now);
-  const events = await db.query.pickEvents.findMany({
-    where: and(
-      eq(pickEvents.userId, userId),
-      inArray(pickEvents.kind, [TANDA_DEALT_KIND, TANDA_ANSWERED_KIND]),
-      like(pickEvents.lens, `${week}|%`),
-    ),
-    columns: { kind: true, lens: true, catalogId: true },
-  });
-  const answered = new Set(events.filter((event) => event.kind === TANDA_ANSWERED_KIND).map((event) => event.catalogId));
-  const seen = events.filter((event) => {
-    const { answer } = parseTandaLens(event.lens);
-    return event.kind === TANDA_ANSWERED_KIND && answer != null && isSeenAnswer(answer);
-  }).length;
-  const dealt = events.filter((event) => event.kind === TANDA_DEALT_KIND).length;
-  return {
-    week,
-    epoch: epochLabel(epochsOfWeek(week).main),
-    dealt,
-    answered: answered.size,
-    seen,
-    done: dealt > 0 && answered.size >= dealt,
-  };
 };
 
 /** TMDB films in the library, or already asked in a game or in ¿Las viste?: never dealt again. */
@@ -155,12 +134,12 @@ export type TandaSources = { discover: typeof discoverTmdb; related: typeof getT
 const TMDB_SOURCES: TandaSources = { discover: discoverTmdb, related: getTmdbRelated };
 
 /** Deals the week's ten (at most 5 TMDB calls) and stores them; empty without TMDB or candidates. */
-const dealTanda = async (userId: string, week: string, now: Date, sources: TandaSources | null): Promise<void> => {
+const dealTanda = async (userId: string, week: string, now: Date, sources: TandaSources | null, round = 1): Promise<void> => {
   if (!sources && !isTmdbConfigured()) {
     return;
   }
   const { discover, related } = sources ?? TMDB_SOURCES;
-  const { main, wild } = epochsOfWeek(week);
+  const { main, wild } = epochsOfWeek(week, round);
   const [ctx, exclude] = await Promise.all([loadLibraryContext(userId, now), excludedTmdbIds(userId)]);
   const year = Number(ctx.today.slice(0, 4));
   const ok = usable(year);
@@ -207,7 +186,7 @@ const dealTanda = async (userId: string, week: string, now: Date, sources: Tanda
       titleId: null,
       catalogId: film.id,
       kind: TANDA_DEALT_KIND,
-      lens: dealtLens(week, slot),
+      lens: dealtLens(week, slot, round),
       // Keep the order they were dealt in.
       createdAt: new Date(now.getTime() + index),
     })),
@@ -223,6 +202,30 @@ export const openTanda = async (userId: string, now = new Date(), sources: Tanda
   }
   await dealTanda(userId, week, now, sources);
   return stateOf(week, await weekEvents(userId, week));
+};
+
+export type NextTandaOutcome = { ok: true; state: TandaState; exhausted: boolean } | { ok: false; error: string };
+
+/**
+ * «Otra tanda» (FIL-I50-7): ten more once the current ten are answered, as many times as the person
+ * wants. Each round moves one epoch on; `exhausted` when TMDB has nothing left to deal.
+ */
+export const dealNextTanda = async (
+  userId: string,
+  now = new Date(),
+  sources: TandaSources | null = null,
+): Promise<NextTandaOutcome> => {
+  const week = weekKeyOf(now);
+  const current = await stateOf(week, await weekEvents(userId, week));
+  if (current.cards.length === 0) {
+    return { ok: true, state: await openTanda(userId, now, sources), exhausted: false };
+  }
+  if (current.cards.some((card) => !card.answer)) {
+    return { ok: false, error: "Termina esta tanda primero." };
+  }
+  await dealTanda(userId, week, now, sources, current.round + 1);
+  const state = await stateOf(week, await weekEvents(userId, week));
+  return { ok: true, state, exhausted: state.round === current.round };
 };
 
 export type TandaOutcome = { ok: true; titleId: string | null } | { ok: false; error: string };
@@ -297,11 +300,21 @@ export const answerTanda = async (
  */
 export const undoLastTanda = async (userId: string, now = new Date()): Promise<{ ok: true; catalogId: string } | { ok: false; error: string }> => {
   const week = weekKeyOf(now);
-  const last = await db.query.pickEvents.findFirst({
-    where: and(eq(pickEvents.userId, userId), eq(pickEvents.kind, TANDA_ANSWERED_KIND), like(pickEvents.lens, `${week}|%`)),
-    orderBy: [desc(pickEvents.createdAt)],
-    columns: { id: true, lens: true, titleId: true, catalogId: true },
-  });
+  // Only within the current round: Deshacer never reopens a finished one.
+  const { cards } = await readTanda(userId, now);
+  const roundIds = cards.map((card) => card.catalogId);
+  const last = roundIds.length
+    ? await db.query.pickEvents.findFirst({
+        where: and(
+          eq(pickEvents.userId, userId),
+          eq(pickEvents.kind, TANDA_ANSWERED_KIND),
+          like(pickEvents.lens, `${week}|%`),
+          inArray(pickEvents.catalogId, roundIds),
+        ),
+        orderBy: [desc(pickEvents.createdAt)],
+        columns: { id: true, lens: true, titleId: true, catalogId: true },
+      })
+    : undefined;
   if (!last?.catalogId) {
     return { ok: false, error: "No hay nada que deshacer." };
   }

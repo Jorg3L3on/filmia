@@ -5,7 +5,15 @@ import { JUEGOS_PATH, parseJuegosEntry, TANDA_PATH } from "@/lib/juegos/core";
 import { setJuegosPushFor } from "@/lib/juegos/push-store";
 import { recordJuegosOpened } from "@/lib/juegos/store";
 import { isSeenAnswer, isTandaAnswer } from "@/lib/juegos/tanda/core";
-import { answerTanda, tandaCorte, undoLastTanda, type TandaCorte, type TandaOutcome } from "@/lib/juegos/tanda/store";
+import {
+  answerTanda,
+  dealNextTanda,
+  tandaCorte,
+  undoLastTanda,
+  type NextTandaOutcome,
+  type TandaCorte,
+  type TandaOutcome,
+} from "@/lib/juegos/tanda/store";
 import { requireUserId } from "@/lib/session";
 
 /** A visit to the portada: Hoy's «nuevo» dot goes off (FIL-I50-2). */
@@ -43,6 +51,16 @@ export const undoTandaAnswer = async () => {
   const outcome = await undoLastTanda(userId);
   if (outcome.ok) {
     revalidateTanda(true);
+  }
+  return outcome;
+};
+
+/** «Otra tanda» (FIL-I50-7): ten more, as many times as the person wants. */
+export const nextTanda = async (): Promise<NextTandaOutcome> => {
+  const userId = await requireUserId();
+  const outcome = await dealNextTanda(userId).catch(() => ({ ok: false as const, error: "No pudimos repartir otra tanda." }));
+  if (outcome.ok) {
+    revalidatePath(JUEGOS_PATH);
   }
   return outcome;
 };

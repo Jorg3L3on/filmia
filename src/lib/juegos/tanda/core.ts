@@ -33,8 +33,9 @@ export const weekIndex = (weekKey: string) =>
 
 const mod = (value: number, size: number) => ((value % size) + size) % size;
 
-export const epochsOfWeek = (weekKey: string) => {
-  const index = weekIndex(weekKey);
+/** The epochs of a round: the week's first, then one step further for every «Otra tanda». */
+export const epochsOfWeek = (weekKey: string, round = 1) => {
+  const index = weekIndex(weekKey) + Math.max(0, round - 1);
   return {
     main: TANDA_EPOCHS[mod(index, TANDA_EPOCHS.length)]!,
     wild: TANDA_EPOCHS[mod(index + Math.floor(TANDA_EPOCHS.length / 2), TANDA_EPOCHS.length)]!,
@@ -121,17 +122,24 @@ export const TANDA_ANSWER_LABEL: Record<TandaAnswer, string> = {
 export const TANDA_DEALT_KIND = "tanda_dealt";
 export const TANDA_ANSWERED_KIND = "tanda_answered";
 
-/** `tanda_dealt` lens: `<week>|<slot>`. */
-export const dealtLens = (weekKey: string, slot: TandaSlot) => `${weekKey}|${slot}`;
+/**
+ * `tanda_dealt` lens: `<week>|<slot>` for the week's first round, `<week>|<slot>|<round>` for each
+ * «Otra tanda» after it (FIL-I50-7). An answer belongs to the round its card was dealt in.
+ */
+export const dealtLens = (weekKey: string, slot: TandaSlot, round = 1) =>
+  round <= 1 ? `${weekKey}|${slot}` : `${weekKey}|${slot}|${round}`;
 /** `tanda_answered` lens: `<week>|<answer>|<new|old>`, «new» when the answer created the title. */
 export const answeredLens = (weekKey: string, answer: TandaAnswer, createdTitle: boolean) =>
   `${weekKey}|${answer}|${createdTitle ? "new" : "old"}`;
 
 export const parseTandaLens = (lens: string | null) => {
   const [week, second, third] = (lens ?? "").split("|");
+  const slot = (second === "p" || second === "a" || second === "c" ? second : null) as TandaSlot | null;
+  const round = slot && third && /^\d+$/.test(third) ? Number(third) : 1;
   return {
     week: week ?? "",
-    slot: (second === "p" || second === "a" || second === "c" ? second : null) as TandaSlot | null,
+    slot,
+    round,
     answer: isTandaAnswer(second) ? second : null,
     createdTitle: third === "new",
   };

@@ -13,7 +13,7 @@ export const metadata = { title: "La tanda" } as const;
 export default async function TandaPage() {
   const userId = await requireUserId();
   const now = new Date();
-  const fallback: TandaState = { week: weekKeyOf(now), epoch: epochLabel(epochsOfWeek(weekKeyOf(now)).main), cards: [] };
+  const fallback: TandaState = { week: weekKeyOf(now), round: 1, epoch: epochLabel(epochsOfWeek(weekKeyOf(now)).main), cards: [] };
   const state = await openTanda(userId, now).catch(() => fallback);
   const finished = state.cards.length > 0 && state.cards.every((card) => card.answer);
   // A finished tanda opens on its Corte.
@@ -21,7 +21,7 @@ export default async function TandaPage() {
   return (
     <div className="tanda-screen mx-auto flex w-full max-w-md flex-1 flex-col">
       <NavLabel label="La tanda" />
-      <TandaGame key={state.week} initialCards={state.cards} epoch={state.epoch} initialCorte={corte} />
+      <TandaGame key={state.week} initialState={state} initialCorte={corte} />
     </div>
   );
 }

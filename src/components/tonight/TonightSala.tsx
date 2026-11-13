@@ -39,7 +39,7 @@ import {
   TONIGHT_MOOD_PARAM,
   widerBudget,
 } from "@/lib/tonight/budget";
-import { closingCardFor, tallyCount } from "@/lib/tonight/closing-card";
+import { tallyCount } from "@/lib/tonight/closing-card";
 import { pickRefOf } from "@/lib/tonight/reco-card";
 import { rankForNow, TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import { dayPartOf } from "@/lib/tonight/time";
@@ -232,13 +232,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null, j
       starts.set(lens.slug, all.length);
       all.push(...(lensCards.get(lens.slug) ?? []));
     }
-    const dealtCount = all.length;
-    // One closing card after the whole deck, never per lens (FIL-I21-6).
-    const last = lenses[lenses.length - 1];
-    if (last) {
-      all.push(closingCardFor(last.slug));
-    }
-    return { cards: all, lensStarts: starts, dealt: dealtCount };
+    // The deck ends on its last film: no closing card (FIL-I50-8, Jorge).
+    return { cards: all, lensStarts: starts, dealt: all.length };
   }, [lensCards, lenses]);
 
   // «Ver esta noche» on a card (UX-16): the pinned film leads Para ti once the decks refresh, so

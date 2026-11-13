@@ -52,11 +52,11 @@ const run = () => {
   assert(metrics.includes("lite && cinematic ? 0 : rotateY"), "Lite sala: neighbours do not rotate");
   const chapterCss = css.slice(css.indexOf("/* --- Hoy: chapters and progress"), css.indexOf("/* Mode toggle"));
   assert(!/filter:\s*blur|backdrop-filter/.test(chapterCss), "Chapter bar and compact header add no filter");
-  // Closing card (FIL-I21-6): one sentinel after the whole deck, never per lens; no footer, no impressions.
+  // FIL-I50-8 (Jorge): the deck ends on its last film. No closing card and no «¿Las viste?» door;
+  // the empty state keeps its own card.
   const closingSala = read("src/components/tonight/TonightSala.tsx");
-  const loopEnd = closingSala.indexOf("const dealtCount = all.length;");
-  assert(loopEnd > 0 && closingSala.indexOf("all.push(closingCardFor(last.slug))") > loopEnd && closingSala.indexOf("for (const lens of lenses)") < loopEnd, "The closing card is pushed once, after the lens loop");
-  assert((closingSala.match(/closingCardFor\(/g) ?? []).length === 1 && closingSala.includes("<TonightClosingEmpty />"), "One closing card; the empty state uses the same card");
+  assert(!closingSala.includes("closingCardFor(") && closingSala.includes("<TonightClosingEmpty />"), "No closing card after the deck; the empty state keeps its card");
+  assert(!read("src/lib/tonight-store.ts").includes("visteDoorLens"), "No «¿Las viste?» door at the end of the deck");
   assert(
     closingSala.includes("const unseen = title.closing || title.portal") &&
       closingSala.includes("unseen ? null : pickRefOf(title)"),

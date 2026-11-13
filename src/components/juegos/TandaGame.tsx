@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
-import { answerTandaCard, loadTandaCorte, undoTandaAnswer } from "@/app/actions/juegos";
+import { answerTandaCard, loadTandaCorte, nextTanda, undoTandaAnswer } from "@/app/actions/juegos";
 import { PosterImage } from "@/components/PosterImage";
 import { cn } from "@/lib/cn";
 import { JUEGOS_PATH } from "@/lib/juegos/core";
 import { corteHeadline, isSeenAnswer, TANDA_ANSWER_LABEL, type TandaAnswer } from "@/lib/juegos/tanda/core";
-import type { TandaCard, TandaCorte } from "@/lib/juegos/tanda/store";
+import type { TandaCard, TandaCorte, TandaState } from "@/lib/juegos/tanda/store";
 import { usePrefersReducedMotion } from "@/lib/motion";
 import { showActionError, TOAST_COPY, toastPoster } from "@/lib/toast-alerts";
 import { focusRing } from "@/lib/ui";
@@ -136,7 +136,20 @@ const TopBar = ({ eyebrow, title, onUndo, canUndo }: { eyebrow: string; title: s
   </div>
 );
 
-const Corte = ({ cards, epoch, corte }: { cards: TandaCard[]; epoch: string; corte: TandaCorte | null }) => {
+/** «La tanda · 2010–2019», «La tanda 2 · 1985–1999» for each «Otra tanda». */
+const eyebrowOf = (round: number, epoch: string) => `La tanda${round > 1 ? ` ${round}` : ""} · ${epoch}`;
+
+type CorteProps = {
+  cards: TandaCard[];
+  round: number;
+  epoch: string;
+  corte: TandaCorte | null;
+  onMore: () => void;
+  dealing: boolean;
+  exhausted: boolean;
+};
+
+const Corte = ({ cards, round, epoch, corte, onMore, dealing, exhausted }: CorteProps) => {
   const seenCards = cards.filter((card) => card.answer && isSeenAnswer(card.answer));
   const counts = { liked: 0, loved: 0, meh: 0 };
   for (const card of seenCards) counts[card.answer as keyof typeof counts] += 1;
@@ -148,7 +161,7 @@ const Corte = ({ cards, epoch, corte }: { cards: TandaCard[]; epoch: string; cor
   const people = corte?.newPeople ?? [];
   return (
     <div className="flex flex-col gap-5" data-tanda="corte">
-      <TopBar eyebrow={`Corte · La tanda · ${epoch}`} title="Las que todos vimos" />
+      <TopBar eyebrow={`Corte · ${eyebrowOf(round, epoch)}`} title="Las que todos vimos" />
       <div className="text-center">
         <p className="font-serif text-[4.2rem] font-semibold leading-none text-paper">
           {seenCards.length} <span className="text-[2.2rem] font-medium italic text-fog">de</span> {cards.length}
@@ -205,18 +218,35 @@ const Corte = ({ cards, epoch, corte }: { cards: TandaCard[]; epoch: string; cor
           <div className="mt-3 h-16 animate-pulse rounded-xl bg-white/[0.04]" aria-hidden="true" />
         )}
       </section>
+      {exhausted ? (
+        <p className="text-center text-sm text-fog" role="status">
+          Por ahora no hay más cartas para ti. El lunes llega otra tanda.
+        </p>
+      ) : null}
       <div className="flex gap-3 pt-1">
+        {exhausted ? null : (
+          <button
+            type="button"
+            onClick={onMore}
+            disabled={dealing}
+            data-tanda-more
+            className={cn(
+              "inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-accent font-semibold text-ink transition-opacity hover:bg-accent-hover disabled:opacity-60",
+              focusRing,
+            )}
+          >
+            {dealing ? "Repartiendo…" : "Otra tanda"}
+          </button>
+        )}
         <Link
           href="/"
-          className={cn("inline-flex h-12 flex-1 items-center justify-center rounded-[var(--radius-button)] bg-accent font-semibold text-ink hover:bg-accent-hover", focusRing)}
+          className={cn(
+            "inline-flex h-12 flex-1 items-center justify-center rounded-[var(--radius-button)] font-semibold",
+            exhausted ? "bg-accent text-ink hover:bg-accent-hover" : "border border-line bg-chrome text-paper",
+            focusRing,
+          )}
         >
           Listo
-        </Link>
-        <Link
-          href={JUEGOS_PATH}
-          className={cn("inline-flex h-12 flex-1 items-center justify-center rounded-[var(--radius-button)] border border-line bg-chrome font-semibold text-paper", focusRing)}
-        >
-          Volver a Extras
         </Link>
       </div>
     </div>
@@ -228,16 +258,13 @@ const Corte = ({ cards, epoch, corte }: { cards: TandaCard[]; epoch: string; cor
  * answered with four buttons that go the same way; Deshacer; the strip; the Corte at the end.
  * Only `transform` and `opacity` move. With reduced motion the card fades instead of flying.
  */
-export const TandaGame = ({
-  initialCards,
-  epoch,
-  initialCorte,
-}: {
-  initialCards: TandaCard[];
-  epoch: string;
-  initialCorte: TandaCorte | null;
-}) => {
+export const TandaGame = ({ initialState, initialCorte }: { initialState: TandaState; initialCorte: TandaCorte | null }) => {
+  const initialCards = initialState.cards;
   const [cards, setCards] = useState(initialCards);
+  const [round, setRound] = useState(initialState.round);
+  const [epoch, setEpoch] = useState(initialState.epoch);
+  const [dealing, setDealing] = useState(false);
+  const [exhausted, setExhausted] = useState(false);
   const [motion, setMotion] = useState<Motion>(REST);
   const [corte, setCorte] = useState<TandaCorte | null>(initialCorte);
   const [busyUndo, setBusyUndo] = useState(false);
@@ -349,6 +376,32 @@ export const TandaGame = ({
       .finally(() => setBusyUndo(false));
   };
 
+  /** «Otra tanda»: ten more, the same screen from the first card (FIL-I50-7). */
+  const more = () => {
+    if (dealing) return;
+    setDealing(true);
+    void nextTanda()
+      .then((outcome) => {
+        if (!outcome.ok) {
+          showActionError({ title: "No se pudo repartir", description: outcome.error });
+          return;
+        }
+        if (outcome.exhausted) {
+          setExhausted(true);
+          return;
+        }
+        setCards(outcome.state.cards);
+        setRound(outcome.state.round);
+        setEpoch(outcome.state.epoch);
+        setOrder([]);
+        setCorte(null);
+        setMotion(REST);
+        window.scrollTo({ top: 0 });
+      })
+      .catch(() => showActionError({ title: "No se pudo repartir", description: "Revisa tu conexión." }))
+      .finally(() => setDealing(false));
+  };
+
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!card || motion.leaving || event.button !== 0) return;
     // iPhone's «back» lives on the screen's edge: a press there is the system's, not the card's.
@@ -386,7 +439,7 @@ export const TandaGame = ({
   if (cards.length === 0) {
     return (
       <div className="flex flex-col gap-6" data-tanda="vacia">
-        <TopBar eyebrow={`La tanda · ${epoch}`} title="Las que todos vimos" />
+        <TopBar eyebrow={eyebrowOf(round, epoch)} title="Las que todos vimos" />
         <p className="rounded-2xl border border-line bg-surface px-4 py-5 text-[15px] leading-snug text-fog">
           El lunes llega otra tanda. Por ahora no hay cartas nuevas para ti.
         </p>
@@ -398,7 +451,9 @@ export const TandaGame = ({
   }
 
   if (finished) {
-    return <Corte cards={cards} epoch={epoch} corte={corte} />;
+    return (
+      <Corte cards={cards} round={round} epoch={epoch} corte={corte} onMore={more} dealing={dealing} exhausted={exhausted} />
+    );
   }
 
   const width = cardWidth;
@@ -430,7 +485,7 @@ export const TandaGame = ({
 
   return (
     <div className="tanda-play flex flex-col" data-tanda="jugando">
-      <TopBar eyebrow={`La tanda · ${epoch}`} title="Las que todos vimos" onUndo={undo} canUndo={order.length > 0 && !busyUndo} />
+      <TopBar eyebrow={eyebrowOf(round, epoch)} title="Las que todos vimos" onUndo={undo} canUndo={order.length > 0 && !busyUndo} />
       <div className="mt-3 flex items-center gap-3">
         <Strip cards={cards} current={current} />
         <span className="shrink-0 text-sm tabular-nums text-fog">

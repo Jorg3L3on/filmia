@@ -10,7 +10,7 @@ import { loadTitles, loadWatchedBetween } from "@/lib/queries";
 import { describeWithDb } from "@/lib/test-support/local-db";
 import { seeder } from "@/lib/test-support/seed";
 import { TANDA_ANSWERED_KIND, TANDA_DEALT_KIND } from "@/lib/juegos/tanda/core";
-import { answerTanda, openTanda, readTanda, undoLastTanda, type TandaSources } from "@/lib/juegos/tanda/store";
+import { answerTanda, dealNextTanda, openTanda, readTanda, undoLastTanda, type TandaSources } from "@/lib/juegos/tanda/store";
 import type { TmdbDiscoverResult } from "@/lib/tmdb";
 
 /** FIL-I50-3 · La tanda on the database, with TMDB stubbed by films the suite seeded. */
@@ -56,7 +56,7 @@ describeWithDb("La tanda store (FIL-I50-3)", () => {
   before(async () => {
     userId = await seed.user("Cero");
     pool = [];
-    for (let index = 0; index < 14; index += 1) {
+    for (let index = 0; index < 26; index += 1) {
       const film = await seed.film({ name: `Película ${index + 1}`, year: 2005 });
       pool.push({ ...film, name: `Película ${index + 1}` });
     }
@@ -159,5 +159,50 @@ describeWithDb("La tanda store (FIL-I50-3)", () => {
     assert.equal(kept.impliedRating, null, "stars of their own: no implied rating");
     await undoLastTanda(userId, now);
     assert.ok(await ownTitle(target.catalogId));
+  });
+
+  it("«Otra tanda» only once the ten are answered, then ten new ones (FIL-I50-7)", async () => {
+    const first = await readTanda(userId, now);
+    assert.equal((await dealNextTanda(userId, now, sources())).ok, false, "not before the ten are answered");
+    let tick = 120_000;
+    for (const card of first.cards.filter((item) => !item.answer)) {
+      tick += 1;
+      await answerTanda(userId, card.catalogId, "no", new Date(now.getTime() + tick));
+    }
+    const next = await dealNextTanda(userId, now, sources());
+    assert.ok(next.ok);
+    assert.equal(next.state.round, 2);
+    assert.equal(next.exhausted, false);
+    assert.equal(next.state.cards.length, 10);
+    const firstIds = new Set(first.cards.map((card) => card.catalogId));
+    assert.ok(next.state.cards.every((card) => !firstIds.has(card.catalogId)), "nothing from round 1");
+    const owned = await db.query.titles.findMany({ where: eq(titles.userId, userId), columns: { catalogId: true } });
+    assert.ok(next.state.cards.every((card) => !owned.some((row) => row.catalogId === card.catalogId)), "nothing in the library");
+
+    // Deshacer never reaches back into round 1.
+    assert.deepEqual(await undoLastTanda(userId, now), { ok: false, error: "No hay nada que deshacer." });
+
+    // Reopening halfway through round 2 gives round 2 with its answers.
+    await answerTanda(userId, next.state.cards[0]!.catalogId, "liked", new Date(now.getTime() + 200_000));
+    const reopened = await openTanda(userId, new Date("2026-11-20T03:00:00Z"), sources());
+    assert.equal(reopened.round, 2);
+    assert.equal(reopened.cards[0]!.answer, "liked");
+    assert.deepEqual(
+      reopened.cards.map((card) => card.catalogId),
+      next.state.cards.map((card) => card.catalogId),
+    );
+  });
+
+  it("says so when nothing is left to deal", async () => {
+    const round = await readTanda(userId, now);
+    let tick = 300_000;
+    for (const card of round.cards.filter((item) => !item.answer)) {
+      tick += 1;
+      await answerTanda(userId, card.catalogId, "no", new Date(now.getTime() + tick));
+    }
+    const empty = await dealNextTanda(userId, now, { discover: async () => [], related: async () => [] });
+    assert.ok(empty.ok);
+    assert.equal(empty.exhausted, true);
+    assert.equal(empty.state.round, 2);
   });
 });

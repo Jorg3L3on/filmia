@@ -59,6 +59,8 @@ describe("La tanda's deal (FIL-I50-3)", () => {
     assert.notDeepEqual(one.main, next.main);
     assert.notDeepEqual(one.main, one.wild);
     assert.ok(TANDA_EPOCHS.includes(one.main));
+    // «Otra tanda» moves to the next epoch, so a second round is not the same ten again.
+    assert.deepEqual(epochsOfWeek("2026-11-09", 2).main, next.main);
   });
 });
 
@@ -71,10 +73,13 @@ describe("La tanda's answers", () => {
   });
 
   it("encodes the week, the slot and whether the answer created the title", () => {
-    assert.deepEqual(parseTandaLens(dealtLens("2026-11-09", "a")), { week: "2026-11-09", slot: "a", answer: null, createdTitle: false });
+    assert.deepEqual(parseTandaLens(dealtLens("2026-11-09", "a")), { week: "2026-11-09", slot: "a", round: 1, answer: null, createdTitle: false });
+    assert.deepEqual(parseTandaLens(dealtLens("2026-11-09", "c", 3)), { week: "2026-11-09", slot: "c", round: 3, answer: null, createdTitle: false });
+    assert.equal(dealtLens("2026-11-09", "p", 1), "2026-11-09|p");
     assert.deepEqual(parseTandaLens(answeredLens("2026-11-09", "loved", true)), {
       week: "2026-11-09",
       slot: null,
+      round: 1,
       answer: "loved",
       createdTitle: true,
     });
