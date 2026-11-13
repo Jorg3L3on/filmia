@@ -67,6 +67,9 @@ describe("quiniela/ceremony file (FIL-I51-1)", () => {
   it("prefers the Mexican title once TMDB filled it", () => {
     const nominee = { id: "tt14230458", film: { title: "Poor Things", imdbId: "tt14230458", titleEs: "Pobres criaturas" } };
     assert.equal(nomineeName(nominee), "Pobres criaturas");
+    // No Spanish title on TMDB: it answers with the original script; keep the Academy's.
+    const pig = { id: "tt10346066", film: { title: "Letter to a Pig", imdbId: "tt10346066", titleEs: "מכתב לחזיר" } };
+    assert.equal(nomineeName(pig), "Letter to a Pig");
   });
 
   it("the committed 2024 file is what the script builds from the fixture", () => {

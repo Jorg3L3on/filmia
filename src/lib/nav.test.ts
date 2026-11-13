@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   desktopNavItems,
   isAuthChromePath,
+  isDocklessGamePath,
   isDesktopNavCurrent,
   isImmersiveFichaPath,
   isCurrentPath,
@@ -52,6 +53,17 @@ describe("isAuthChromePath", () => {
     assert.equal(isAuthChromePath("/oauth/consent?client_id=x"), true);
     assert.equal(isAuthChromePath("/"), false);
     assert.equal(isAuthChromePath("/perfil"), false);
+  });
+});
+
+describe("isDocklessGamePath (FIL-I51-2)", () => {
+  it("hides the dock inside a game, not on the Juegos portada", () => {
+    assert.equal(isDocklessGamePath("/juegos/oscar"), true);
+    assert.equal(isDocklessGamePath("/juegos/oscar/boleta?x=1"), true);
+    assert.equal(isDocklessGamePath("/juegos/tanda"), true);
+    assert.equal(isDocklessGamePath("/juegos"), false);
+    assert.equal(isDocklessGamePath("/juegos/"), false);
+    assert.equal(isDocklessGamePath("/"), false);
   });
 });
 

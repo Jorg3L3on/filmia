@@ -251,8 +251,14 @@ export const findCategory = (file: OscarCeremonyFile, categoryId: string) =>
 export const findNominee = (file: OscarCeremonyFile, categoryId: string, nomineeId: string) =>
   findCategory(file, categoryId)?.nominees.find((nominee) => nominee.id === nomineeId) ?? null;
 
-/** Mexican title when TMDB has one, else the Academy's. */
-export const nomineeFilmTitle = (nominee: OscarNominee) => nominee.film.titleEs?.trim() || nominee.film.title;
+/** TMDB falls back to the original title when it has no Spanish one (Hebrew, Japanese…). */
+const isLatinScript = (value: string) => /[A-Za-zÀ-ÿ]/.test(value);
+
+/** Mexican title when TMDB has one in Latin script, else the Academy's. */
+export const nomineeFilmTitle = (nominee: OscarNominee) => {
+  const titleEs = nominee.film.titleEs?.trim();
+  return titleEs && isLatinScript(titleEs) ? titleEs : nominee.film.title;
+};
 
 /** What a nominee is called on the ballot: the person, «the song», or the film. */
 export const nomineeName = (nominee: OscarNominee) =>
