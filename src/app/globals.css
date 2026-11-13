@@ -6653,11 +6653,6 @@ html[data-que-ver-lite] .projector-beam {
  * Rediseño cinemático · B · Hoy «La sala» y ficha «Secuencia de créditos» (FIL-I46-2)
  * ---------------------------------------------------------------------- */
 
-/* The beam sits behind the cards (z-[1]) and over the atmosphere (z 0). */
-.tonight-beam {
-  inset: -14% -6% 18%;
-}
-
 /* Sheen: a band of light crosses the hero; idle most of the cycle. Hero only. */
 .coverflow-card-sheen {
   position: absolute;
