@@ -79,7 +79,7 @@ export const DetalleGame = ({ initialView }: { initialView: DetalleView }) => {
       .finally(() => setPending(false));
   };
 
-  const eyebrow = `La diaria · n.º ${view.number} · póster ${Math.min((view.current ?? DETALLE_POSTERS - 1) + 1, DETALLE_POSTERS)} de ${DETALLE_POSTERS}`;
+  const eyebrow = `n.º ${view.number} · póster ${Math.min((view.current ?? DETALLE_POSTERS - 1) + 1, DETALLE_POSTERS)} de ${DETALLE_POSTERS}`;
 
   return (
     <div className="flex flex-1 flex-col gap-5" data-detalle="juego">

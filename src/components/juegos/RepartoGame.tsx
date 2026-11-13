@@ -75,7 +75,7 @@ export const RepartoGame = ({ initialView }: { initialView: RepartoView }) => {
   return (
     <div className="flex flex-1 flex-col gap-4" data-reparto="juego">
       <MayorTopBar
-        eyebrow={`La diaria · n.º ${view.number} · intento ${Math.min(view.tries + 1, view.maxTries)} de ${view.maxTries}`}
+        eyebrow={`n.º ${view.number} · intento ${Math.min(view.tries + 1, view.maxTries)} de ${view.maxTries}`}
         title="Reparto misterioso"
         backHref={JUEGOS_PATH}
       />

@@ -1,6 +1,7 @@
 "use server";
 
 import { parseTitleGuess } from "@/lib/juegos/diarias/core";
+import { answerCuadricula, type CuadriculaOutcome } from "@/lib/juegos/diarias/cuadricula-store";
 import { answerDetalle, type DetalleOutcome } from "@/lib/juegos/diarias/detalle-store";
 import { answerLinea, type LineaOutcome } from "@/lib/juegos/diarias/linea-store";
 import { answerReparto, type RepartoOutcome } from "@/lib/juegos/diarias/reparto-store";
@@ -35,4 +36,12 @@ export const answerRepartoTry = async (partidaId: string, step: number, guess: u
   const parsed = guess == null ? null : parseTitleGuess(guess);
   if (typeof partidaId !== "string" || !validStep(step) || (guess != null && !parsed)) return { ok: false, error: "Respuesta no válida." };
   return answerReparto(userId, partidaId, step, parsed);
+};
+
+/** La cuadrícula (FIL-I54-4): a film into cell `cell` (0–8, row by row). */
+export const answerCuadriculaCell = async (partidaId: string, step: number, cell: number, guess: unknown): Promise<CuadriculaOutcome> => {
+  const userId = await requireUserId();
+  const parsed = parseTitleGuess(guess);
+  if (typeof partidaId !== "string" || !validStep(step) || !Number.isInteger(cell) || !parsed) return { ok: false, error: "Respuesta no válida." };
+  return answerCuadricula(userId, partidaId, step, cell, parsed);
 };

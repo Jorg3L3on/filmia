@@ -107,12 +107,13 @@ describe("Detalle: a partida from its answers (FIL-I54-1)", () => {
 
 describe("Las diarias: what they share (FIL-I54)", () => {
   it("numbers, guesses and the shared text name no film", () => {
-    assert.equal(diariaNumber("detalle", "2026-11-13"), 1);
-    assert.equal(diariaNumber("detalle", "2026-11-22"), 10);
+    assert.equal(diariaNumber("detalle", "2026-11-20"), 1, "before the launch it is still n.º 1");
+    assert.equal(diariaNumber("detalle", "2026-11-23"), 1);
+    assert.equal(diariaNumber("detalle", "2026-12-02"), 10);
     assert.deepEqual(parseTitleGuess({ tmdbId: "603", name: " Matrix " }), { tmdbId: 603, name: "Matrix" });
     assert.equal(parseTitleGuess({ tmdbId: 0, name: "x" }), null);
     assert.equal(parseTitleGuess({ tmdbId: 3, name: "" }), null);
-    const text = diariaShareText({ id: "detalle", day: "2026-11-14", score: "10 de 18", marks: "🟨🟥🟩", url: "https://x/extras" });
+    const text = diariaShareText({ id: "detalle", day: "2026-11-24", score: "10 de 18", marks: "🟨🟥🟩", url: "https://x/extras" });
     assert.equal(text, "Filmia · Detalle n.º 2\n10 de 18\n🟨🟥🟩\nhttps://x/extras");
   });
 });

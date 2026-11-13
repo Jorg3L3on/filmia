@@ -33,7 +33,7 @@ describe("Juegos cartel (FIL-I50-2)", () => {
     );
     assert.deepEqual(
       portada.soon.map((item) => item.id),
-      ["quiniela", "muro", "duelos", "linea"],
+      ["quiniela", "muro", "duelos", "detalle", "linea", "reparto", "cuadricula"],
     );
   });
 

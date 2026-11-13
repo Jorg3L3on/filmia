@@ -72,7 +72,7 @@ export const LineaGame = ({ initialView }: { initialView: LineaView }) => {
   return (
     <div className="flex flex-1 flex-col gap-4" data-linea="juego">
       <MayorTopBar
-        eyebrow={view.finished ? `La diaria · n.º ${view.number}` : `La diaria · n.º ${view.number} · carta ${view.cardNumber} de ${view.total}`}
+        eyebrow={view.finished ? `La diaria · n.º ${view.number}` : `n.º ${view.number} · carta ${view.cardNumber} de ${view.total}`}
         title="Línea de tiempo"
         backHref={JUEGOS_PATH}
         chip={<Hearts lives={view.lives} max={view.maxLives} />}

@@ -50,9 +50,10 @@ const metrics = async () => {
     console.log("Partidas: ninguna todavía.");
     return;
   }
-  console.log("Partidas      juego    diarias  libres  personas");
+  // FIL-I54-5: «cuadricula» is the longest game id; the column fits it.
+  console.log(`${"Partidas".padEnd(10)}  ${"juego".padEnd(10)}  diarias  libres  personas`);
   for (const row of report.partidas) {
-    console.log(`${row.week}  ${row.juego.padEnd(7)}  ${String(row.daily).padStart(7)}  ${String(row.free).padStart(6)}  ${String(row.players).padStart(8)}`);
+    console.log(`${row.week}  ${row.juego.padEnd(10)}  ${String(row.daily).padStart(7)}  ${String(row.free).padStart(6)}  ${String(row.players).padStart(8)}`);
   }
 };
 

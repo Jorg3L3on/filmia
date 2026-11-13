@@ -3,7 +3,9 @@ import { BackDisc } from "@/components/PageHeader";
 import { JuegosPortada, type GameRowState, type TandaRowState } from "@/components/juegos/JuegosPortada";
 import { JuegosSeen } from "@/components/juegos/JuegosSeen";
 import { mxToday } from "@/lib/cine-core";
-import { JUEGOS, portadaOf } from "@/lib/juegos/core";
+import { DAILY_JUEGO_IDS, JUEGOS, portadaOf } from "@/lib/juegos/core";
+import { DIARIA_IDS, DIARIAS } from "@/lib/juegos/diarias/core";
+import { readDiaria } from "@/lib/juegos/diarias/store";
 import { MAYOR_ID } from "@/lib/juegos/mayor/core";
 import { readDailyMayor } from "@/lib/juegos/mayor/store";
 import { countDailyPlayers } from "@/lib/juegos/partidas";
@@ -42,6 +44,18 @@ export default async function JuegosPage({ searchParams }: { searchParams: Promi
       ? { chip: `Hoy: ${mine.score} de ${mine.total}`, fresh: false }
       : { chip: played === 0 ? "Diaria nueva" : played === 1 ? "1 ya jugó" : `${played} ya jugaron`, fresh: true };
   }
+  // FIL-I54-5: each daily says whether the person played it today and how many already did.
+  const today = mxToday(now);
+  await Promise.all(
+    DIARIA_IDS.filter((id) => portada.playable.some((juego) => juego.id === id)).map(async (id) => {
+      const [mine, played] = await Promise.all([readDiaria(userId, id, today).catch(() => null), countDailyPlayers(id, today).catch(() => 0)]);
+      rows[id] = mine?.finishedAt
+        ? { chip: `Hoy: ${mine.score} de ${DIARIAS[id].total}`, fresh: false }
+        : mine
+          ? { chip: "A medias", fresh: true }
+          : { chip: played === 0 ? "Diaria nueva" : played === 1 ? "1 ya jugó" : `${played} ya jugaron`, fresh: true };
+    }),
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-5 pb-10">
@@ -54,7 +68,7 @@ export default async function JuegosPage({ searchParams }: { searchParams: Promi
           <h1 className="font-serif text-[1.9rem] font-semibold leading-none text-paper">Extras</h1>
         </div>
       </div>
-      <JuegosPortada portada={portada} tanda={tandaRow} rows={rows} />
+      <JuegosPortada portada={portada} tanda={tandaRow} rows={rows} daily={DAILY_JUEGO_IDS} />
     </div>
   );
 }

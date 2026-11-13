@@ -22,24 +22,29 @@ export const DIARIA_NO_REPEAT_DAYS = 60;
 export type DiariaDef = {
   id: DiariaId;
   name: string;
+  /** The cartel's line on the portada. */
+  line: string;
   path: string;
-  /** Day of n.º 1 (Mexico City). */
-  epoch: string;
-  /** «18 puntos», «7 cartas»: the unit of the score on the table. */
-  unit: string;
+  /**
+   * Launch day (Mexico City): the cartel's `launchedOn` (it sends the launch push once) and the
+   * day of n.º 1. One a week (FIL-I54-5), so nobody gets two launch pushes close together.
+   */
+  launchedOn: string;
+  /** Best possible score («13 de 18»). */
+  total: number;
 };
 
 export const DIARIAS: Record<DiariaId, DiariaDef> = {
-  detalle: { id: "detalle", name: "Detalle", path: "/extras/detalle", epoch: "2026-11-13", unit: "puntos" },
-  linea: { id: "linea", name: "Línea de tiempo", path: "/extras/linea", epoch: "2026-11-13", unit: "cartas" },
-  reparto: { id: "reparto", name: "Reparto misterioso", path: "/extras/reparto", epoch: "2026-11-13", unit: "puntos" },
-  cuadricula: { id: "cuadricula", name: "La cuadrícula", path: "/extras/cuadricula", epoch: "2026-11-13", unit: "casillas" },
+  detalle: { id: "detalle", name: "Detalle", line: "Un recorte del póster que se abre en seis pasos.", path: "/extras/detalle", launchedOn: "2026-11-23", total: 18 },
+  linea: { id: "linea", name: "Línea de tiempo", line: "Ocho películas a su año, con tres vidas.", path: "/extras/linea", launchedOn: "2026-11-30", total: 8 },
+  reparto: { id: "reparto", name: "Reparto misterioso", line: "Adivina la película por su reparto.", path: "/extras/reparto", launchedOn: "2026-12-07", total: 6 },
+  cuadricula: { id: "cuadricula", name: "La cuadrícula", line: "Tres personas por tres condiciones, nueve intentos.", path: "/extras/cuadricula", launchedOn: "2026-12-14", total: 9 },
 };
 
 const daysBetween = (from: string, to: string) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
 
 /** «Detalle n.º 4». */
-export const diariaNumber = (id: DiariaId, day: string) => Math.max(1, daysBetween(DIARIAS[id].epoch, day) + 1);
+export const diariaNumber = (id: DiariaId, day: string) => Math.max(1, daysBetween(DIARIAS[id].launchedOn, day) + 1);
 
 /** The seed of the day's round: the same for every account. */
 export const diariaSeed = (id: DiariaId, day: string) => `${id}|diaria|${day}`;
