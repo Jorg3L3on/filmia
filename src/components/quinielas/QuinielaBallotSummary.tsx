@@ -3,11 +3,12 @@ import { BackDisc } from "@/components/PageHeader";
 import { PosterImage } from "@/components/PosterImage";
 import { ShareButton } from "@/components/share/ShareButton";
 import { cn } from "@/lib/cn";
+import type { CeremonyInfo } from "@/lib/quinielas/hub-core";
 import { ballotRows, votedCount, type BallotCategory } from "@/lib/quinielas/view";
 import { buttonClass, focusRing } from "@/lib/ui";
 
-type OscarBallotSummaryProps = {
-  year: number;
+type QuinielaBallotSummaryProps = {
+  ceremony: CeremonyInfo;
   categories: BallotCategory[];
   votes: Record<string, string>;
   open: boolean;
@@ -19,15 +20,16 @@ type OscarBallotSummaryProps = {
  * «Tu boleta» (FIL-I51-2, canvas `Oscar-2-boleta-completa`): every category with its pick, a link
  * back to vote while the ballot is open, and the image to share. Closed, it is read-only.
  */
-export const OscarBallotSummary = ({ year, categories, votes, open, closesLabel }: OscarBallotSummaryProps) => {
+export const QuinielaBallotSummary = ({ ceremony, categories, votes, open, closesLabel }: QuinielaBallotSummaryProps) => {
+  const base = `/extras/quinielas/${ceremony.id}`;
   const rows = ballotRows(categories, votes);
   const voted = votedCount(categories, votes);
   return (
     <div className="flex flex-1 flex-col" data-quiniela-summary>
       <div className="flex items-center gap-3">
-        <BackDisc href={open ? "/extras/quinielas" : "/extras"} label={open ? "Volver a votar" : "Volver a Extras"} />
+        <BackDisc href={base} label={open ? "Volver a votar" : `Volver a ${ceremony.night.toLowerCase()}`} />
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-star">Quiniela del Óscar {year}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-star">{ceremony.title}</p>
           <h1 className="mt-1 font-serif text-[1.9rem] font-semibold leading-none text-paper">Tu boleta</h1>
         </div>
         <span className="shrink-0 rounded-full border border-chrome bg-well px-3 py-1.5 text-[13px] text-paper" data-quiniela-count>
@@ -63,7 +65,7 @@ export const OscarBallotSummary = ({ year, categories, votes, open, closesLabel 
             <li key={category.id} className="border-t border-line" data-row={category.id}>
               {open ? (
                 <Link
-                  href={`/extras/quinielas?c=${category.id}`}
+                  href={`${base}?c=${category.id}`}
                   className={cn("flex min-h-[52px] items-center gap-3 py-[7px] hover:bg-well/40", focusRing)}
                   aria-label={`${category.label}: ${pick ? pick.name : "sin voto"}. Cambiar`}
                 >
@@ -79,11 +81,11 @@ export const OscarBallotSummary = ({ year, categories, votes, open, closesLabel 
 
       <div className="mt-6 flex gap-2.5 pb-2">
         <ShareButton
-          path="/extras/quinielas"
-          imagePath="/extras/quinielas/imagen"
-          fileName={`quiniela-oscar-${year}.png`}
-          title={`Mi quiniela del Óscar ${year}`}
-          text={`Así va mi quiniela del Óscar ${year}. ¿Y la tuya?`}
+          path={base}
+          imagePath={`${base}/imagen`}
+          fileName={`quiniela-${ceremony.id}.png`}
+          title={`Mi ${ceremony.title.charAt(0).toLowerCase()}${ceremony.title.slice(1)}`}
+          text={`Así va mi ${ceremony.title.charAt(0).toLowerCase()}${ceremony.title.slice(1)}. ¿Y la tuya?`}
           className={buttonClass({ size: "lg", className: "flex-1 gap-2 bg-star hover:bg-star/90" })}
         >
           <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -91,7 +93,7 @@ export const OscarBallotSummary = ({ year, categories, votes, open, closesLabel 
           </svg>
           Compartir
         </ShareButton>
-        <Link href="/extras/quinielas/grupos" className={buttonClass({ variant: "ghost", size: "lg", className: "border border-chrome" })}>
+        <Link href={`${base}/grupos`} className={buttonClass({ variant: "ghost", size: "lg", className: "border border-chrome" })}>
           Retar a alguien
         </Link>
       </div>

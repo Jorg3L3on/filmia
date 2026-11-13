@@ -1,0 +1,164 @@
+{
+ "v": 2,
+ "id": "emmy-2099",
+ "award": "emmy",
+ "year": 2099,
+ "edition": null,
+ "nominationsOn": "2024-01-01",
+ "ceremonyOn": "2024-03-31",
+ "source": {
+  "manual": true,
+  "builtAt": "2026-11-13",
+  "url": "fixture: nombres inventados para probar series en local"
+ },
+ "categories": [
+  {
+   "id": "serie-drama",
+   "label": "Mejor serie de drama",
+   "short": "Serie drama",
+   "kind": "series",
+   "nominees": [
+    {
+     "id": "s-serie-faro",
+     "work": {
+      "title": "Serie Faro",
+      "kind": "tv",
+      "imdbId": null
+     }
+    },
+    {
+     "id": "s-los-tres-cuerpos",
+     "work": {
+      "title": "Los Tres Cuerpos",
+      "kind": "tv",
+      "imdbId": null
+     }
+    },
+    {
+     "id": "s-caballos-lentos",
+     "work": {
+      "title": "Caballos Lentos",
+      "kind": "tv",
+      "imdbId": null
+     }
+    },
+    {
+     "id": "s-la-corona-de-sal",
+     "work": {
+      "title": "La Corona de Sal",
+      "kind": "tv",
+      "imdbId": null
+     }
+    }
+   ]
+  },
+  {
+   "id": "serie-comedia",
+   "label": "Mejor serie de comedia",
+   "short": "Serie comedia",
+   "kind": "series",
+   "nominees": [
+    {
+     "id": "s-el-oso-de-prueba",
+     "work": {
+      "title": "El Oso de Prueba",
+      "kind": "tv",
+      "imdbId": null
+     }
+    },
+    {
+     "id": "s-hacks-de-prueba",
+     "work": {
+      "title": "Hacks de Prueba",
+      "kind": "tv",
+      "imdbId": null
+     }
+    },
+    {
+     "id": "s-abbott-escuela",
+     "work": {
+      "title": "Abbott Escuela",
+      "kind": "tv",
+      "imdbId": null
+     }
+    }
+   ]
+  },
+  {
+   "id": "actriz-drama",
+   "label": "Mejor actriz principal en serie de drama",
+   "short": "Actriz drama",
+   "kind": "person",
+   "nominees": [
+    {
+     "id": "p-ana-prueba",
+     "work": {
+      "title": "Serie Faro",
+      "kind": "tv",
+      "imdbId": null
+     },
+     "person": {
+      "name": "Ana Prueba",
+      "imdbId": null
+     }
+    },
+    {
+     "id": "p-bea-ensayo",
+     "work": {
+      "title": "Los Tres Cuerpos",
+      "kind": "tv",
+      "imdbId": null
+     },
+     "person": {
+      "name": "Bea Ensayo",
+      "imdbId": null
+     }
+    },
+    {
+     "id": "p-carla-muestra",
+     "work": {
+      "title": "Caballos Lentos",
+      "kind": "tv",
+      "imdbId": null
+     },
+     "person": {
+      "name": "Carla Muestra",
+      "imdbId": null
+     }
+    }
+   ]
+  },
+  {
+   "id": "actor-drama",
+   "label": "Mejor actor principal en serie de drama",
+   "short": "Actor drama",
+   "kind": "person",
+   "nominees": [
+    {
+     "id": "p-diego-prueba",
+     "work": {
+      "title": "La Corona de Sal",
+      "kind": "tv",
+      "imdbId": null
+     },
+     "person": {
+      "name": "Diego Prueba",
+      "imdbId": null
+     }
+    },
+    {
+     "id": "p-eli-ensayo",
+     "work": {
+      "title": "Serie Faro",
+      "kind": "tv",
+      "imdbId": null
+     },
+     "person": {
+      "name": "Eli Ensayo",
+      "imdbId": null
+     }
+    }
+   ]
+  }
+ ]
+}

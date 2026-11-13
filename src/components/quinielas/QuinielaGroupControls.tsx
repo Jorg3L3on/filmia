@@ -3,15 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useState, useTransition } from "react";
 import {
-  createOscarGroupAction,
-  deleteOscarGroupAction,
-  joinOscarGroupAction,
-  leaveOscarGroupAction,
-  regenerateOscarGroupLinkAction,
+  createGroupAction,
+  deleteGroupAction,
+  joinGroupAction,
+  leaveGroupAction,
+  regenerateGroupLinkAction,
   type GroupActionState,
 } from "@/app/actions/quiniela";
 import { ShareButton } from "@/components/share/ShareButton";
-import { OSCAR_GROUP_NAME_MAX } from "@/lib/quinielas/group-limits";
+import { QUINIELA_GROUP_NAME_MAX } from "@/lib/quinielas/group-limits";
 import { showToast } from "@/lib/toast";
 import { showActionError, TOAST_COPY } from "@/lib/toast-alerts";
 import { buttonClass, fieldClass } from "@/lib/ui";
@@ -19,15 +19,16 @@ import { buttonClass, fieldClass } from "@/lib/ui";
 const initial: GroupActionState = { error: null };
 
 /** «Crear un grupo»: optional name, then the group's page with its link. */
-export const OscarGroupCreate = ({ ownerFirstName }: { ownerFirstName: string }) => {
-  const [state, action, pending] = useActionState(createOscarGroupAction, initial);
+export const QuinielaGroupCreate = ({ ceremonyId, ownerFirstName }: { ceremonyId: string; ownerFirstName: string }) => {
+  const [state, action, pending] = useActionState(createGroupAction, initial);
   return (
     <form action={action} className="flex flex-col gap-3" data-quiniela-create>
+      <input type="hidden" name="ceremonyId" value={ceremonyId} />
       <label className="flex flex-col gap-1.5 text-sm text-fog">
         Nombre del grupo (opcional)
         <input
           name="name"
-          maxLength={OSCAR_GROUP_NAME_MAX}
+          maxLength={QUINIELA_GROUP_NAME_MAX}
           placeholder={`La quiniela de ${ownerFirstName}`}
           className={fieldClass}
           autoComplete="off"
@@ -46,7 +47,20 @@ export const OscarGroupCreate = ({ ownerFirstName }: { ownerFirstName: string })
 };
 
 /** The owner's invite: share or copy the link; «Nuevo enlace» retires the old one. */
-export const OscarGroupInvite = ({ groupId, path, groupName }: { groupId: string; path: string; groupName: string }) => {
+export const QuinielaGroupInvite = ({
+  groupId,
+  path,
+  groupName,
+  ceremonyId,
+  ceremonyTitle,
+}: {
+  groupId: string;
+  path: string;
+  groupName: string;
+  ceremonyId: string;
+  /** «Quiniela del Óscar 2027». */
+  ceremonyTitle: string;
+}) => {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -62,7 +76,7 @@ export const OscarGroupInvite = ({ groupId, path, groupName }: { groupId: string
 
   const regenerate = () =>
     startTransition(async () => {
-      const next = await regenerateOscarGroupLinkAction(groupId).catch(() => null);
+      const next = await regenerateGroupLinkAction(groupId).catch(() => null);
       setConfirming(false);
       if (!next) {
         showActionError({ title: "No se pudo cambiar el enlace" });
@@ -80,10 +94,10 @@ export const OscarGroupInvite = ({ groupId, path, groupName }: { groupId: string
       <div className="flex gap-2.5">
         <ShareButton
           path={path}
-          imagePath="/extras/quinielas/imagen"
-          fileName="quiniela-oscar.png"
+          imagePath={`/extras/quinielas/${ceremonyId}/imagen`}
+          fileName={`quiniela-${ceremonyId}.png`}
           title={groupName}
-          text={`Te reto a la quiniela del Óscar en Filmia: «${groupName}».`}
+          text={`Te reto en Filmia: ${ceremonyTitle}, «${groupName}».`}
           className={buttonClass({ size: "lg", className: "flex-1 bg-star hover:bg-star/90" })}
         >
           Invitar
@@ -112,13 +126,13 @@ export const OscarGroupInvite = ({ groupId, path, groupName }: { groupId: string
 };
 
 /** «Salir del grupo» for members, «Borrar el grupo» for its owner; both ask once. */
-export const OscarGroupLeave = ({ groupId, owner }: { groupId: string; owner: boolean }) => {
+export const QuinielaGroupLeave = ({ groupId, owner }: { groupId: string; owner: boolean }) => {
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const run = () =>
     startTransition(async () => {
-      const result = await (owner ? deleteOscarGroupAction(groupId) : leaveOscarGroupAction(groupId));
+      const result = await (owner ? deleteGroupAction(groupId) : leaveGroupAction(groupId));
       setError(result.error);
     });
   const label = owner ? "Borrar el grupo" : "Salir del grupo";
@@ -149,7 +163,7 @@ export const OscarGroupLeave = ({ groupId, owner }: { groupId: string; owner: bo
 };
 
 /** «Entrar al grupo» on the invite page. */
-export const OscarGroupJoin = ({ token }: { token: string }) => {
+export const QuinielaGroupJoin = ({ token }: { token: string }) => {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   return (
@@ -159,7 +173,7 @@ export const OscarGroupJoin = ({ token }: { token: string }) => {
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
-            const result = await joinOscarGroupAction(token);
+            const result = await joinGroupAction(token);
             setError(result.error);
           })
         }

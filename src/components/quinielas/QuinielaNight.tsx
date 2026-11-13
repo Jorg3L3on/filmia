@@ -2,10 +2,11 @@ import Link from "next/link";
 import { BackDisc } from "@/components/PageHeader";
 import { PosterImage } from "@/components/PosterImage";
 import { ShareButton } from "@/components/share/ShareButton";
-import { OscarGroupTable } from "@/components/quinielas/OscarGroupTable";
-import { OscarLiveRefresh } from "@/components/quinielas/OscarLiveRefresh";
+import { QuinielaGroupTable } from "@/components/quinielas/QuinielaGroupTable";
+import { QuinielaLiveRefresh } from "@/components/quinielas/QuinielaLiveRefresh";
 import { cn } from "@/lib/cn";
-import type { OscarGroupStanding, OscarGroupSummary } from "@/lib/quinielas/groups";
+import type { GroupStanding, GroupSummary } from "@/lib/quinielas/groups";
+import type { CeremonyInfo } from "@/lib/quinielas/hub-core";
 import type { NightSummary } from "@/lib/quinielas/view";
 import { buttonClass } from "@/lib/ui";
 
@@ -23,18 +24,18 @@ const Check = ({ hit }: { hit: boolean }) => (
 );
 
 /**
- * La noche del Óscar (FIL-I51-4, canvas `Oscar-3-noche`): hits so far, the last categories
+ * La noche de una entrega (FIL-I51-4, canvas `Oscar-3-noche`): hits so far, the last categories
  * announced, what is still to come with your vote, and your groups. When every category has a
  * winner it becomes the final result with its image to share.
  */
-export const OscarNight = ({
-  year,
+export const QuinielaNight = ({
+  ceremony,
   night,
   groups,
 }: {
-  year: number;
+  ceremony: CeremonyInfo;
   night: NightSummary;
-  groups: { group: OscarGroupSummary; standings: OscarGroupStanding[] }[];
+  groups: { group: GroupSummary; standings: GroupStanding[] }[];
 }) => {
   const live = night.announced > 0 && !night.finished;
   const dotsLabel =
@@ -43,9 +44,9 @@ export const OscarNight = ({
       : `${night.announced} categorías anunciadas: ${night.hits} aciertos y ${night.announced - night.hits} fallos; ${night.remaining} por anunciar`;
   return (
     <div className="flex flex-col gap-5" data-quiniela-night={night.finished ? "final" : live ? "live" : "waiting"}>
-      {night.finished ? null : <OscarLiveRefresh />}
+      {night.finished ? null : <QuinielaLiveRefresh />}
       <div className="flex items-center gap-3">
-        <BackDisc href="/extras" label="Volver a Extras" />
+        <BackDisc href="/extras/quinielas" label="Volver a las quinielas" />
         <div className="min-w-0 flex-1">
           {live ? (
             <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-danger">
@@ -53,10 +54,10 @@ export const OscarNight = ({
               En vivo
             </p>
           ) : (
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-star">Quiniela del Óscar {year}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-star">{ceremony.title}</p>
           )}
           <h1 className="mt-1 font-serif text-[1.75rem] font-semibold leading-none text-paper">
-            {night.finished ? "Tu resultado" : "La noche del Óscar"}
+            {night.finished ? "Tu resultado" : ceremony.night}
           </h1>
         </div>
       </div>
@@ -129,26 +130,26 @@ export const OscarNight = ({
             </Link>
             <span className="text-xs text-fog">por invitación</span>
           </div>
-          <OscarGroupTable standings={standings} total={night.total} announced={night.announced} />
+          <QuinielaGroupTable standings={standings} total={night.total} announced={night.announced} />
         </section>
       ))}
 
       <div className="flex gap-2.5 pb-2">
         <ShareButton
-          path="/extras/quinielas"
-          imagePath={night.announced > 0 ? "/extras/quinielas/resultado/imagen" : "/extras/quinielas/imagen"}
-          fileName={`quiniela-oscar-${year}.png`}
-          title={`Mi quiniela del Óscar ${year}`}
+          path={`/extras/quinielas/${ceremony.id}`}
+          imagePath={`/extras/quinielas/${ceremony.id}/${night.announced > 0 ? "resultado/imagen" : "imagen"}`}
+          fileName={`quiniela-${ceremony.id}.png`}
+          title={`Mi ${ceremony.title.charAt(0).toLowerCase()}${ceremony.title.slice(1)}`}
           text={
             night.finished
-              ? `Acerté ${night.hits} de ${night.total} en la quiniela del Óscar ${year}.`
-              : `Voy ${night.hits} de ${night.announced} en la quiniela del Óscar ${year}.`
+              ? `Acerté ${night.hits} de ${night.total} en la ${ceremony.title.charAt(0).toLowerCase()}${ceremony.title.slice(1)}.`
+              : `Voy ${night.hits} de ${night.announced} en la ${ceremony.title.charAt(0).toLowerCase()}${ceremony.title.slice(1)}.`
           }
           className={buttonClass({ size: "lg", className: "flex-1 bg-star hover:bg-star/90" })}
         >
           {night.finished ? "Compartir mi resultado" : "Compartir cómo voy"}
         </ShareButton>
-        <Link href="/extras/quinielas/boleta" className={buttonClass({ variant: "ghost", size: "lg", className: "border border-chrome" })}>
+        <Link href={`/extras/quinielas/${ceremony.id}/boleta`} className={buttonClass({ variant: "ghost", size: "lg", className: "border border-chrome" })}>
           Mi boleta
         </Link>
       </div>

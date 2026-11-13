@@ -1,16 +1,16 @@
 /**
- * Quiniela del Óscar (FIL-I51-4): what /admin/quiniela does the night of the ceremony. Every
+ * Quinielas de premios (FIL-I51-4): what /admin/quinielas does the night of a ceremony. Every
  * function checks `isAdmin` itself, so a server action reached without the page still refuses.
  */
 import { isAdmin } from "@/lib/admin";
-import { getOscarCeremony } from "@/lib/quinielas/ceremonies";
-import { clearOscarWinner, setOscarClosesAt, setOscarWinner } from "@/lib/quinielas/store";
+import { getCeremony } from "@/lib/quinielas/ceremonies";
+import { clearWinner, setClosesAt, setWinner } from "@/lib/quinielas/store";
 
 type Actor = { id: string; email?: string | null } | null | undefined;
 
-export type OscarAdminResult = { ok: true } | { ok: false; error: string };
+export type QuinielaAdminResult = { ok: true } | { ok: false; error: string };
 
-const NOT_ADMIN: OscarAdminResult = { ok: false, error: "Solo el admin puede hacer esto." };
+const NOT_ADMIN: QuinielaAdminResult = { ok: false, error: "Solo el admin puede hacer esto." };
 
 /**
  * `datetime-local` («2027-03-14T18:00») in Mexico City time → UTC. Mexico City has kept UTC−6 all
@@ -27,48 +27,48 @@ export const mexicoCityLocalToUtc = (local: string): Date | null => {
 /** The reverse, for the input's value. */
 export const utcToMexicoCityLocal = (date: Date) => new Date(date.getTime() - 6 * 3600_000).toISOString().slice(0, 16);
 
-export const adminSetOscarClose = async (
+export const adminSetClose = async (
   actor: Actor,
-  input: { year: number; local: string },
+  input: { ceremonyId: string; local: string },
   adminEmails?: string,
-): Promise<OscarAdminResult> => {
+): Promise<QuinielaAdminResult> => {
   if (!actor || !isAdmin(actor, adminEmails)) {
     return NOT_ADMIN;
   }
   const closesAt = mexicoCityLocalToUtc(input.local);
-  if (!closesAt || !getOscarCeremony(input.year)) {
+  if (!closesAt || !getCeremony(input.ceremonyId)) {
     return { ok: false, error: "Revisa la fecha y la entrega." };
   }
-  await setOscarClosesAt(input.year, closesAt);
+  await setClosesAt(input.ceremonyId, closesAt);
   return { ok: true };
 };
 
 /** Enter or correct a category's winner. Correcting recomputes everyone's hits on the next read. */
-export const adminSetOscarWinner = async (
+export const adminSetWinner = async (
   actor: Actor,
-  input: { year: number; categoryId: string; nomineeId: string },
+  input: { ceremonyId: string; categoryId: string; nomineeId: string },
   adminEmails?: string,
   now?: Date,
-): Promise<OscarAdminResult> => {
+): Promise<QuinielaAdminResult> => {
   if (!actor || !isAdmin(actor, adminEmails)) {
     return NOT_ADMIN;
   }
   try {
-    await setOscarWinner({ ...input, enteredByUserId: actor.id, now });
+    await setWinner({ ...input, enteredByUserId: actor.id, now });
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "No se pudo guardar." };
   }
 };
 
-export const adminClearOscarWinner = async (
+export const adminClearWinner = async (
   actor: Actor,
-  input: { year: number; categoryId: string },
+  input: { ceremonyId: string; categoryId: string },
   adminEmails?: string,
-): Promise<OscarAdminResult> => {
+): Promise<QuinielaAdminResult> => {
   if (!actor || !isAdmin(actor, adminEmails)) {
     return NOT_ADMIN;
   }
-  await clearOscarWinner(input.year, input.categoryId);
+  await clearWinner(input.ceremonyId, input.categoryId);
   return { ok: true };
 };

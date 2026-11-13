@@ -1,19 +1,19 @@
-CREATE TABLE "OscarCeremony" (
-	"year" integer PRIMARY KEY NOT NULL,
+CREATE TABLE "QuinielaCeremony" (
+	"ceremonyId" text PRIMARY KEY NOT NULL,
 	"closesAt" timestamp (3) NOT NULL,
 	"updatedAt" timestamp (3) DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "OscarGroupMember" (
+CREATE TABLE "QuinielaGroupMember" (
 	"groupId" text NOT NULL,
 	"userId" text NOT NULL,
 	"joinedAt" timestamp (3) DEFAULT now() NOT NULL,
-	CONSTRAINT "OscarGroupMember_groupId_userId_pk" PRIMARY KEY("groupId","userId")
+	CONSTRAINT "QuinielaGroupMember_groupId_userId_pk" PRIMARY KEY("groupId","userId")
 );
 --> statement-breakpoint
-CREATE TABLE "OscarGroup" (
+CREATE TABLE "QuinielaGroup" (
 	"id" text PRIMARY KEY NOT NULL,
-	"year" integer NOT NULL,
+	"ceremonyId" text NOT NULL,
 	"ownerId" text NOT NULL,
 	"name" text NOT NULL,
 	"tokenHash" text NOT NULL,
@@ -21,31 +21,31 @@ CREATE TABLE "OscarGroup" (
 	"createdAt" timestamp (3) DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "OscarVote" (
+CREATE TABLE "QuinielaVote" (
 	"userId" text NOT NULL,
-	"year" integer NOT NULL,
+	"ceremonyId" text NOT NULL,
 	"categoryId" text NOT NULL,
 	"nomineeId" text NOT NULL,
 	"createdAt" timestamp (3) DEFAULT now() NOT NULL,
 	"updatedAt" timestamp (3) DEFAULT now() NOT NULL,
-	CONSTRAINT "OscarVote_userId_year_categoryId_pk" PRIMARY KEY("userId","year","categoryId")
+	CONSTRAINT "QuinielaVote_userId_ceremonyId_categoryId_pk" PRIMARY KEY("userId","ceremonyId","categoryId")
 );
 --> statement-breakpoint
-CREATE TABLE "OscarWinner" (
-	"year" integer NOT NULL,
+CREATE TABLE "QuinielaWinner" (
+	"ceremonyId" text NOT NULL,
 	"categoryId" text NOT NULL,
 	"nomineeId" text NOT NULL,
 	"announcedAt" timestamp (3) DEFAULT now() NOT NULL,
 	"enteredByUserId" text,
-	CONSTRAINT "OscarWinner_year_categoryId_pk" PRIMARY KEY("year","categoryId")
+	CONSTRAINT "QuinielaWinner_ceremonyId_categoryId_pk" PRIMARY KEY("ceremonyId","categoryId")
 );
 --> statement-breakpoint
-ALTER TABLE "OscarGroupMember" ADD CONSTRAINT "OscarGroupMember_groupId_OscarGroup_id_fk" FOREIGN KEY ("groupId") REFERENCES "public"."OscarGroup"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "OscarGroupMember" ADD CONSTRAINT "OscarGroupMember_userId_User_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "OscarGroup" ADD CONSTRAINT "OscarGroup_ownerId_User_id_fk" FOREIGN KEY ("ownerId") REFERENCES "public"."User"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "OscarVote" ADD CONSTRAINT "OscarVote_userId_User_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "OscarWinner" ADD CONSTRAINT "OscarWinner_enteredByUserId_User_id_fk" FOREIGN KEY ("enteredByUserId") REFERENCES "public"."User"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "OscarGroupMember_userId_idx" ON "OscarGroupMember" USING btree ("userId");--> statement-breakpoint
-CREATE UNIQUE INDEX "OscarGroup_tokenHash_key" ON "OscarGroup" USING btree ("tokenHash");--> statement-breakpoint
-CREATE INDEX "OscarGroup_ownerId_idx" ON "OscarGroup" USING btree ("ownerId");--> statement-breakpoint
-CREATE INDEX "OscarVote_year_idx" ON "OscarVote" USING btree ("year");
+ALTER TABLE "QuinielaGroupMember" ADD CONSTRAINT "QuinielaGroupMember_groupId_QuinielaGroup_id_fk" FOREIGN KEY ("groupId") REFERENCES "public"."QuinielaGroup"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "QuinielaGroupMember" ADD CONSTRAINT "QuinielaGroupMember_userId_User_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "QuinielaGroup" ADD CONSTRAINT "QuinielaGroup_ownerId_User_id_fk" FOREIGN KEY ("ownerId") REFERENCES "public"."User"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "QuinielaVote" ADD CONSTRAINT "QuinielaVote_userId_User_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "QuinielaWinner" ADD CONSTRAINT "QuinielaWinner_enteredByUserId_User_id_fk" FOREIGN KEY ("enteredByUserId") REFERENCES "public"."User"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "QuinielaGroupMember_userId_idx" ON "QuinielaGroupMember" USING btree ("userId");--> statement-breakpoint
+CREATE UNIQUE INDEX "QuinielaGroup_tokenHash_key" ON "QuinielaGroup" USING btree ("tokenHash");--> statement-breakpoint
+CREATE INDEX "QuinielaGroup_ownerId_idx" ON "QuinielaGroup" USING btree ("ownerId");--> statement-breakpoint
+CREATE INDEX "QuinielaVote_ceremonyId_idx" ON "QuinielaVote" USING btree ("ceremonyId");

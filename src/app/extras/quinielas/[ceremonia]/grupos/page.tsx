@@ -1,12 +1,13 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { NavLabel } from "@/components/NavOriginTracker";
 import { BackDisc } from "@/components/PageHeader";
-import { OscarGroupCreate } from "@/components/quinielas/OscarGroupControls";
-import { OscarSoon } from "@/components/quinielas/OscarSoon";
+import { QuinielaGroupCreate } from "@/components/quinielas/QuinielaGroupControls";
 import { cn } from "@/lib/cn";
-import { getOscarCeremony, oscarSeasonYear } from "@/lib/quinielas/ceremonies";
-import { listMyOscarGroups } from "@/lib/quinielas/groups";
 import { personFirstName } from "@/lib/person-avatar";
+import { getCeremony } from "@/lib/quinielas/ceremonies";
+import { listMyGroups } from "@/lib/quinielas/groups";
+import { ceremonyInfo, ceremonyPath } from "@/lib/quinielas/hub-core";
 import { requireUser } from "@/lib/session";
 import { focusRing } from "@/lib/ui";
 
@@ -14,31 +15,28 @@ export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Retar a alguien" } as const;
 
-/** «Retar a alguien» (FIL-I51-3): your groups for this season and a new one. No public table. */
-export default async function QuinielaGruposPage() {
+/** «Retar a alguien» (FIL-I51-3): your groups for this ceremony and a new one. No public table. */
+export default async function GruposPage({ params }: { params: Promise<{ ceremonia: string }> }) {
   const user = await requireUser();
-  const year = oscarSeasonYear();
-  if (!getOscarCeremony(year)) {
-    return (
-      <div className="mx-auto flex w-full max-w-md flex-col">
-        <OscarSoon year={year} />
-      </div>
-    );
+  const file = getCeremony((await params).ceremonia);
+  if (!file) {
+    notFound();
   }
-  const groups = await listMyOscarGroups(user.id, year);
+  const ceremony = ceremonyInfo(file);
+  const groups = await listMyGroups(user.id, file.id);
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-6">
       <NavLabel label="Retar a alguien" />
       <div className="flex items-center gap-3">
-        <BackDisc href="/extras/quinielas/boleta" label="Volver a tu boleta" />
+        <BackDisc href={`${ceremonyPath(file.id)}/boleta`} label="Volver a tu boleta" />
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-star">Quiniela del Óscar {year}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-star">{ceremony.title}</p>
           <h1 className="mt-1 font-serif text-[1.9rem] font-semibold leading-none text-paper">Retar a alguien</h1>
         </div>
       </div>
       <p className="text-sm text-fog">
-        Haz un grupo y manda el enlace. Solo entra quien lo tenga; cada quien ve los aciertos del grupo, nunca la boleta de
-        los demás.
+        Haz un grupo para esta entrega y manda el enlace. Solo entra quien lo tenga; cada quien ve los aciertos del grupo,
+        nunca la boleta de los demás.
       </p>
       {groups.length > 0 ? (
         <section aria-labelledby="tus-grupos" className="flex flex-col gap-2">
@@ -64,7 +62,7 @@ export default async function QuinielaGruposPage() {
         <h2 id="nuevo-grupo" className="font-serif text-xl text-paper">
           {groups.length > 0 ? "Otro grupo" : "Nuevo grupo"}
         </h2>
-        <OscarGroupCreate ownerFirstName={personFirstName(user.name)} />
+        <QuinielaGroupCreate ceremonyId={file.id} ownerFirstName={personFirstName(user.name)} />
       </section>
     </div>
   );

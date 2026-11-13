@@ -1,5 +1,5 @@
 {
-  "id": "c823d1e8-df30-41ce-80f3-47efe56c2e57",
+  "id": "75b145bf-d27f-45ca-94c7-eaad9b7bf3de",
   "prevId": "118dee04-cdca-4060-b63e-0b217d727459",
   "version": "7",
   "dialect": "postgresql",
@@ -2011,379 +2011,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.OscarCeremony": {
-      "name": "OscarCeremony",
-      "schema": "",
-      "columns": {
-        "year": {
-          "name": "year",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "closesAt": {
-          "name": "closesAt",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.OscarGroupMember": {
-      "name": "OscarGroupMember",
-      "schema": "",
-      "columns": {
-        "groupId": {
-          "name": "groupId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "userId": {
-          "name": "userId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "joinedAt": {
-          "name": "joinedAt",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "OscarGroupMember_userId_idx": {
-          "name": "OscarGroupMember_userId_idx",
-          "columns": [
-            {
-              "expression": "userId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "OscarGroupMember_groupId_OscarGroup_id_fk": {
-          "name": "OscarGroupMember_groupId_OscarGroup_id_fk",
-          "tableFrom": "OscarGroupMember",
-          "tableTo": "OscarGroup",
-          "columnsFrom": [
-            "groupId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "OscarGroupMember_userId_User_id_fk": {
-          "name": "OscarGroupMember_userId_User_id_fk",
-          "tableFrom": "OscarGroupMember",
-          "tableTo": "User",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "OscarGroupMember_groupId_userId_pk": {
-          "name": "OscarGroupMember_groupId_userId_pk",
-          "columns": [
-            "groupId",
-            "userId"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.OscarGroup": {
-      "name": "OscarGroup",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "year": {
-          "name": "year",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "ownerId": {
-          "name": "ownerId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "tokenHash": {
-          "name": "tokenHash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "tokenVersion": {
-          "name": "tokenVersion",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "OscarGroup_tokenHash_key": {
-          "name": "OscarGroup_tokenHash_key",
-          "columns": [
-            {
-              "expression": "tokenHash",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "OscarGroup_ownerId_idx": {
-          "name": "OscarGroup_ownerId_idx",
-          "columns": [
-            {
-              "expression": "ownerId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "OscarGroup_ownerId_User_id_fk": {
-          "name": "OscarGroup_ownerId_User_id_fk",
-          "tableFrom": "OscarGroup",
-          "tableTo": "User",
-          "columnsFrom": [
-            "ownerId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.OscarVote": {
-      "name": "OscarVote",
-      "schema": "",
-      "columns": {
-        "userId": {
-          "name": "userId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "year": {
-          "name": "year",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "categoryId": {
-          "name": "categoryId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "nomineeId": {
-          "name": "nomineeId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "OscarVote_year_idx": {
-          "name": "OscarVote_year_idx",
-          "columns": [
-            {
-              "expression": "year",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "OscarVote_userId_User_id_fk": {
-          "name": "OscarVote_userId_User_id_fk",
-          "tableFrom": "OscarVote",
-          "tableTo": "User",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "OscarVote_userId_year_categoryId_pk": {
-          "name": "OscarVote_userId_year_categoryId_pk",
-          "columns": [
-            "userId",
-            "year",
-            "categoryId"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.OscarWinner": {
-      "name": "OscarWinner",
-      "schema": "",
-      "columns": {
-        "year": {
-          "name": "year",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "categoryId": {
-          "name": "categoryId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "nomineeId": {
-          "name": "nomineeId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "announcedAt": {
-          "name": "announcedAt",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "enteredByUserId": {
-          "name": "enteredByUserId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "OscarWinner_enteredByUserId_User_id_fk": {
-          "name": "OscarWinner_enteredByUserId_User_id_fk",
-          "tableFrom": "OscarWinner",
-          "tableTo": "User",
-          "columnsFrom": [
-            "enteredByUserId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "OscarWinner_year_categoryId_pk": {
-          "name": "OscarWinner_year_categoryId_pk",
-          "columns": [
-            "year",
-            "categoryId"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.PickEvent": {
       "name": "PickEvent",
       "schema": "",
@@ -2727,6 +2354,379 @@
         }
       },
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.QuinielaCeremony": {
+      "name": "QuinielaCeremony",
+      "schema": "",
+      "columns": {
+        "ceremonyId": {
+          "name": "ceremonyId",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "closesAt": {
+          "name": "closesAt",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.QuinielaGroupMember": {
+      "name": "QuinielaGroupMember",
+      "schema": "",
+      "columns": {
+        "groupId": {
+          "name": "groupId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "joinedAt": {
+          "name": "joinedAt",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "QuinielaGroupMember_userId_idx": {
+          "name": "QuinielaGroupMember_userId_idx",
+          "columns": [
+            {
+              "expression": "userId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "QuinielaGroupMember_groupId_QuinielaGroup_id_fk": {
+          "name": "QuinielaGroupMember_groupId_QuinielaGroup_id_fk",
+          "tableFrom": "QuinielaGroupMember",
+          "tableTo": "QuinielaGroup",
+          "columnsFrom": [
+            "groupId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "QuinielaGroupMember_userId_User_id_fk": {
+          "name": "QuinielaGroupMember_userId_User_id_fk",
+          "tableFrom": "QuinielaGroupMember",
+          "tableTo": "User",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "QuinielaGroupMember_groupId_userId_pk": {
+          "name": "QuinielaGroupMember_groupId_userId_pk",
+          "columns": [
+            "groupId",
+            "userId"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.QuinielaGroup": {
+      "name": "QuinielaGroup",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ceremonyId": {
+          "name": "ceremonyId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ownerId": {
+          "name": "ownerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tokenHash": {
+          "name": "tokenHash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tokenVersion": {
+          "name": "tokenVersion",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "QuinielaGroup_tokenHash_key": {
+          "name": "QuinielaGroup_tokenHash_key",
+          "columns": [
+            {
+              "expression": "tokenHash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "QuinielaGroup_ownerId_idx": {
+          "name": "QuinielaGroup_ownerId_idx",
+          "columns": [
+            {
+              "expression": "ownerId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "QuinielaGroup_ownerId_User_id_fk": {
+          "name": "QuinielaGroup_ownerId_User_id_fk",
+          "tableFrom": "QuinielaGroup",
+          "tableTo": "User",
+          "columnsFrom": [
+            "ownerId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.QuinielaVote": {
+      "name": "QuinielaVote",
+      "schema": "",
+      "columns": {
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ceremonyId": {
+          "name": "ceremonyId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "categoryId": {
+          "name": "categoryId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nomineeId": {
+          "name": "nomineeId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "QuinielaVote_ceremonyId_idx": {
+          "name": "QuinielaVote_ceremonyId_idx",
+          "columns": [
+            {
+              "expression": "ceremonyId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "QuinielaVote_userId_User_id_fk": {
+          "name": "QuinielaVote_userId_User_id_fk",
+          "tableFrom": "QuinielaVote",
+          "tableTo": "User",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "QuinielaVote_userId_ceremonyId_categoryId_pk": {
+          "name": "QuinielaVote_userId_ceremonyId_categoryId_pk",
+          "columns": [
+            "userId",
+            "ceremonyId",
+            "categoryId"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.QuinielaWinner": {
+      "name": "QuinielaWinner",
+      "schema": "",
+      "columns": {
+        "ceremonyId": {
+          "name": "ceremonyId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "categoryId": {
+          "name": "categoryId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nomineeId": {
+          "name": "nomineeId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "announcedAt": {
+          "name": "announcedAt",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "enteredByUserId": {
+          "name": "enteredByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "QuinielaWinner_enteredByUserId_User_id_fk": {
+          "name": "QuinielaWinner_enteredByUserId_User_id_fk",
+          "tableFrom": "QuinielaWinner",
+          "tableTo": "User",
+          "columnsFrom": [
+            "enteredByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "QuinielaWinner_ceremonyId_categoryId_pk": {
+          "name": "QuinielaWinner_ceremonyId_categoryId_pk",
+          "columns": [
+            "ceremonyId",
+            "categoryId"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},

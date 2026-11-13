@@ -51,6 +51,8 @@
     "charts:correr": "tsx scripts/service-charts.ts correr",
     "charts:netflix": "tsx scripts/service-charts.ts netflix",
     "oscars:build": "tsx scripts/oscars-build.ts",
+    "quiniela:nueva": "tsx scripts/quiniela-nueva.ts",
+    "quiniela:tmdb": "tsx scripts/quiniela-tmdb.ts",
     "test:db": "TEST_DATABASE_URL=${TEST_DATABASE_URL:-postgresql://localhost:5432/filmia_test} tsx --test --test-concurrency=4 \"src/**/*.test.ts\" \"scripts/**/*.test.ts\"",
     "test:db:setup": "bash scripts/setup-test-db.sh"
   },

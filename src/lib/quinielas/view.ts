@@ -1,19 +1,15 @@
 /**
- * Quiniela del Óscar (FIL-I51-2): what the ballot screens draw, pure and client-safe. The server
- * builds it from the ceremony file (`loadOscarBallot`); components never read the file itself.
+ * Quinielas de premios (FIL-I51-2): what the ballot screens draw, pure and client-safe. The server
+ * builds it from the ceremony file (`loadBallot`); components never read the file itself.
  */
-import {
-  nomineeDetail,
-  nomineeName,
-  type OscarCeremonyFile,
-  type OscarCategoryKind,
-} from "@/lib/quinielas/ceremony-core";
+import type { QuinielaCategoryKind } from "@/lib/quinielas/awards";
+import { nomineeDetail, nomineeName, type QuinielaCeremonyFile } from "@/lib/quinielas/ceremony-core";
 
 export type BallotNominee = {
   id: string;
-  /** Person, «song» or film, Mexican title when known. */
+  /** Person, «song», film or series, Mexican title when known. */
   name: string;
-  /** The film for people and songs, the country for international films. */
+  /** The work for people and songs, the country for international films. */
   detail: string | null;
   posterPath: string | null;
 };
@@ -22,11 +18,11 @@ export type BallotCategory = {
   id: string;
   label: string;
   short: string;
-  kind: OscarCategoryKind;
+  kind: QuinielaCategoryKind;
   nominees: BallotNominee[];
 };
 
-export const toBallotCategories = (file: OscarCeremonyFile): BallotCategory[] =>
+export const toBallotCategories = (file: QuinielaCeremonyFile): BallotCategory[] =>
   file.categories.map((category) => ({
     id: category.id,
     label: category.label,
@@ -36,7 +32,7 @@ export const toBallotCategories = (file: OscarCeremonyFile): BallotCategory[] =>
       id: nominee.id,
       name: nomineeName(nominee),
       detail: nomineeDetail(nominee),
-      posterPath: nominee.film.posterPath ?? null,
+      posterPath: nominee.work.posterPath ?? null,
     })),
   }));
 
@@ -74,7 +70,7 @@ const CLOSE_FORMAT = new Intl.DateTimeFormat("es-MX", {
 });
 
 /** «domingo 10 de marzo, 5:00 p.m.» in Mexico City time. */
-export const formatOscarClose = (closesAt: Date) => CLOSE_FORMAT.format(closesAt);
+export const formatClose = (closesAt: Date) => CLOSE_FORMAT.format(closesAt);
 
 // ── La noche (FIL-I51-4) ─────────────────────────────────────────────────
 
@@ -100,7 +96,7 @@ export type NightSummary = {
 };
 
 /** What the live screen shows from the winners entered so far. */
-export const oscarNightSummary = (
+export const nightSummary = (
   categories: readonly BallotCategory[],
   votes: Readonly<Record<string, string>>,
   winners: Readonly<Record<string, { nomineeId: string; announcedAt: Date }>>,

@@ -38,8 +38,8 @@ export function AdminPanel({ usage, users, now }: { usage: ApiUsageDay[] | null;
           <h1 className="font-serif text-[2.1rem] font-semibold leading-tight text-paper">Uso de Filmia</h1>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <Link href="/admin/quiniela" className="text-sm text-star underline-offset-2 hover:underline">
-            Quiniela del Óscar →
+          <Link href="/admin/quinielas" className="text-sm text-star underline-offset-2 hover:underline">
+            Quinielas de premios →
           </Link>
           <p className="text-sm text-fog">Hoy, {todayFormat.format(now).replace(".", "")} · días en UTC</p>
         </div>

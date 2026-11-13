@@ -1,7 +1,11 @@
 {
- "v": 1,
- "ceremony": 96,
+ "v": 2,
+ "id": "oscar-2024",
+ "award": "oscar",
  "year": 2024,
+ "edition": 96,
+ "nominationsOn": "2024-01-23",
+ "ceremonyOn": "2024-03-10",
  "source": {
   "repo": "DLu/oscar_data",
   "sha": "c5e9716b7e020e70205d6b95f5a5678526c1b45f",
@@ -13,75 +17,84 @@
    "label": "Mejor película",
    "short": "Película",
    "kind": "film",
-   "canonical": "BEST PICTURE",
    "nominees": [
     {
      "id": "tt23561236",
-     "film": {
+     "work": {
       "title": "American Fiction",
+      "kind": "movie",
       "imdbId": "tt23561236"
      }
     },
     {
      "id": "tt17009710",
-     "film": {
+     "work": {
       "title": "Anatomy of a Fall",
+      "kind": "movie",
       "imdbId": "tt17009710"
      }
     },
     {
      "id": "tt1517268",
-     "film": {
+     "work": {
       "title": "Barbie",
+      "kind": "movie",
       "imdbId": "tt1517268"
      }
     },
     {
      "id": "tt14849194",
-     "film": {
+     "work": {
       "title": "The Holdovers",
+      "kind": "movie",
       "imdbId": "tt14849194"
      }
     },
     {
      "id": "tt5537002",
-     "film": {
+     "work": {
       "title": "Killers of the Flower Moon",
+      "kind": "movie",
       "imdbId": "tt5537002"
      }
     },
     {
      "id": "tt5535276",
-     "film": {
+     "work": {
       "title": "Maestro",
+      "kind": "movie",
       "imdbId": "tt5535276"
      }
     },
     {
      "id": "tt15398776",
-     "film": {
+     "work": {
       "title": "Oppenheimer",
+      "kind": "movie",
       "imdbId": "tt15398776"
      }
     },
     {
      "id": "tt13238346",
-     "film": {
+     "work": {
       "title": "Past Lives",
+      "kind": "movie",
       "imdbId": "tt13238346"
      }
     },
     {
      "id": "tt14230458",
-     "film": {
+     "work": {
       "title": "Poor Things",
+      "kind": "movie",
       "imdbId": "tt14230458"
      }
     },
     {
      "id": "tt7160372",
-     "film": {
+     "work": {
       "title": "The Zone of Interest",
+      "kind": "movie",
       "imdbId": "tt7160372"
      }
     }
@@ -92,12 +105,12 @@
    "label": "Mejor dirección",
    "short": "Dirección",
    "kind": "person",
-   "canonical": "DIRECTING",
    "nominees": [
     {
      "id": "nm2630323",
-     "film": {
+     "work": {
       "title": "Anatomy of a Fall",
+      "kind": "movie",
       "imdbId": "tt17009710"
      },
      "person": {
@@ -107,8 +120,9 @@
     },
     {
      "id": "nm0000217",
-     "film": {
+     "work": {
       "title": "Killers of the Flower Moon",
+      "kind": "movie",
       "imdbId": "tt5537002"
      },
      "person": {
@@ -118,8 +132,9 @@
     },
     {
      "id": "nm0634240",
-     "film": {
+     "work": {
       "title": "Oppenheimer",
+      "kind": "movie",
       "imdbId": "tt15398776"
      },
      "person": {
@@ -129,8 +144,9 @@
     },
     {
      "id": "nm0487166",
-     "film": {
+     "work": {
       "title": "Poor Things",
+      "kind": "movie",
       "imdbId": "tt14230458"
      },
      "person": {
@@ -140,8 +156,9 @@
     },
     {
      "id": "nm0322242",
-     "film": {
+     "work": {
       "title": "The Zone of Interest",
+      "kind": "movie",
       "imdbId": "tt7160372"
      },
      "person": {
@@ -156,12 +173,12 @@
    "label": "Mejor actriz",
    "short": "Actriz",
    "kind": "person",
-   "canonical": "ACTRESS IN A LEADING ROLE",
    "nominees": [
     {
      "id": "nm0000906",
-     "film": {
+     "work": {
       "title": "Nyad",
+      "kind": "movie",
       "imdbId": "tt5302918"
      },
      "person": {
@@ -171,8 +188,9 @@
     },
     {
      "id": "nm4291409",
-     "film": {
+     "work": {
       "title": "Killers of the Flower Moon",
+      "kind": "movie",
       "imdbId": "tt5537002"
      },
      "person": {
@@ -182,8 +200,9 @@
     },
     {
      "id": "nm1197689",
-     "film": {
+     "work": {
       "title": "Anatomy of a Fall",
+      "kind": "movie",
       "imdbId": "tt17009710"
      },
      "person": {
@@ -193,8 +212,9 @@
     },
     {
      "id": "nm1659547",
-     "film": {
+     "work": {
       "title": "Maestro",
+      "kind": "movie",
       "imdbId": "tt5535276"
      },
      "person": {
@@ -204,8 +224,9 @@
     },
     {
      "id": "nm1297015",
-     "film": {
+     "work": {
       "title": "Poor Things",
+      "kind": "movie",
       "imdbId": "tt14230458"
      },
      "person": {
@@ -220,12 +241,12 @@
    "label": "Mejor actor",
    "short": "Actor",
    "kind": "person",
-   "canonical": "ACTOR IN A LEADING ROLE",
    "nominees": [
     {
      "id": "nm0177896",
-     "film": {
+     "work": {
       "title": "Maestro",
+      "kind": "movie",
       "imdbId": "tt5535276"
      },
      "person": {
@@ -235,8 +256,9 @@
     },
     {
      "id": "nm0231458",
-     "film": {
+     "work": {
       "title": "Rustin",
+      "kind": "movie",
       "imdbId": "tt14160834"
      },
      "person": {
@@ -246,8 +268,9 @@
     },
     {
      "id": "nm0316079",
-     "film": {
+     "work": {
       "title": "The Holdovers",
+      "kind": "movie",
       "imdbId": "tt14849194"
      },
      "person": {
@@ -257,8 +280,9 @@
     },
     {
      "id": "nm0614165",
-     "film": {
+     "work": {
       "title": "Oppenheimer",
+      "kind": "movie",
       "imdbId": "tt15398776"
      },
      "person": {
@@ -268,8 +292,9 @@
     },
     {
      "id": "nm0942482",
-     "film": {
+     "work": {
       "title": "American Fiction",
+      "kind": "movie",
       "imdbId": "tt23561236"
      },
      "person": {
@@ -284,12 +309,12 @@
    "label": "Mejor actriz de reparto",
    "short": "Actriz de reparto",
    "kind": "person",
-   "canonical": "ACTRESS IN A SUPPORTING ROLE",
    "nominees": [
     {
      "id": "nm1289434",
-     "film": {
+     "work": {
       "title": "Oppenheimer",
+      "kind": "movie",
       "imdbId": "tt15398776"
      },
      "person": {
@@ -299,8 +324,9 @@
     },
     {
      "id": "nm5335029",
-     "film": {
+     "work": {
       "title": "The Color Purple",
+      "kind": "movie",
       "imdbId": "tt1200263"
      },
      "person": {
@@ -310,8 +336,9 @@
     },
     {
      "id": "nm1065229",
-     "film": {
+     "work": {
       "title": "Barbie",
+      "kind": "movie",
       "imdbId": "tt1517268"
      },
      "person": {
@@ -321,8 +348,9 @@
     },
     {
      "id": "nm0000149",
-     "film": {
+     "work": {
       "title": "Nyad",
+      "kind": "movie",
       "imdbId": "tt5302918"
      },
      "person": {
@@ -332,8 +360,9 @@
     },
     {
      "id": "nm5007768",
-     "film": {
+     "work": {
       "title": "The Holdovers",
+      "kind": "movie",
       "imdbId": "tt14849194"
      },
      "person": {
@@ -348,12 +377,12 @@
    "label": "Mejor actor de reparto",
    "short": "Actor de reparto",
    "kind": "person",
-   "canonical": "ACTOR IN A SUPPORTING ROLE",
    "nominees": [
     {
      "id": "nm1250791",
-     "film": {
+     "work": {
       "title": "American Fiction",
+      "kind": "movie",
       "imdbId": "tt23561236"
      },
      "person": {
@@ -363,8 +392,9 @@
     },
     {
      "id": "nm0000134",
-     "film": {
+     "work": {
       "title": "Killers of the Flower Moon",
+      "kind": "movie",
       "imdbId": "tt5537002"
      },
      "person": {
@@ -374,8 +404,9 @@
     },
     {
      "id": "nm0000375",
-     "film": {
+     "work": {
       "title": "Oppenheimer",
+      "kind": "movie",
       "imdbId": "tt15398776"
      },
      "person": {
@@ -385,8 +416,9 @@
     },
     {
      "id": "nm0331516",
-     "film": {
+     "work": {
       "title": "Barbie",
+      "kind": "movie",
       "imdbId": "tt1517268"
      },
      "person": {
@@ -396,8 +428,9 @@
     },
     {
      "id": "nm0749263",
-     "film": {
+     "work": {
       "title": "Poor Things",
+      "kind": "movie",
       "imdbId": "tt14230458"
      },
      "person": {
@@ -412,40 +445,44 @@
    "label": "Mejor guion original",
    "short": "Guion original",
    "kind": "film",
-   "canonical": "WRITING (Original Screenplay)",
    "nominees": [
     {
      "id": "tt17009710",
-     "film": {
+     "work": {
       "title": "Anatomy of a Fall",
+      "kind": "movie",
       "imdbId": "tt17009710"
      }
     },
     {
      "id": "tt14849194",
-     "film": {
+     "work": {
       "title": "The Holdovers",
+      "kind": "movie",
       "imdbId": "tt14849194"
      }
     },
     {
      "id": "tt5535276",
-     "film": {
+     "work": {
       "title": "Maestro",
+      "kind": "movie",
       "imdbId": "tt5535276"
      }
     },
     {
      "id": "tt13651794",
-     "film": {
+     "work": {
       "title": "May December",
+      "kind": "movie",
       "imdbId": "tt13651794"
      }
     },
     {
      "id": "tt13238346",
-     "film": {
+     "work": {
       "title": "Past Lives",
+      "kind": "movie",
       "imdbId": "tt13238346"
      }
     }
@@ -456,40 +493,44 @@
    "label": "Mejor guion adaptado",
    "short": "Guion adaptado",
    "kind": "film",
-   "canonical": "WRITING (Adapted Screenplay)",
    "nominees": [
     {
      "id": "tt23561236",
-     "film": {
+     "work": {
       "title": "American Fiction",
+      "kind": "movie",
       "imdbId": "tt23561236"
      }
     },
     {
      "id": "tt1517268",
-     "film": {
+     "work": {
       "title": "Barbie",
+      "kind": "movie",
       "imdbId": "tt1517268"
      }
     },
     {
      "id": "tt15398776",
-     "film": {
+     "work": {
       "title": "Oppenheimer",
+      "kind": "movie",
       "imdbId": "tt15398776"
      }
     },
     {
      "id": "tt14230458",
-     "film": {
+     "work": {
       "title": "Poor Things",
+      "kind": "movie",
       "imdbId": "tt14230458"
      }
     },
     {
      "id": "tt7160372",
-     "film": {
+     "work": {
       "title": "The Zone of Interest",
+      "kind": "movie",
       "imdbId": "tt7160372"
      }
     }
@@ -500,40 +541,44 @@
    "label": "Mejor película animada",
    "short": "Animada",
    "kind": "film",
-   "canonical": "ANIMATED FEATURE FILM",
    "nominees": [
     {
      "id": "tt6587046",
-     "film": {
+     "work": {
       "title": "The Boy and the Heron",
+      "kind": "movie",
       "imdbId": "tt6587046"
      }
     },
     {
      "id": "tt15789038",
-     "film": {
+     "work": {
       "title": "Elemental",
+      "kind": "movie",
       "imdbId": "tt15789038"
      }
     },
     {
      "id": "tt19500164",
-     "film": {
+     "work": {
       "title": "Nimona",
+      "kind": "movie",
       "imdbId": "tt19500164"
      }
     },
     {
      "id": "tt13429870",
-     "film": {
+     "work": {
       "title": "Robot Dreams",
+      "kind": "movie",
       "imdbId": "tt13429870"
      }
     },
     {
      "id": "tt9362722",
-     "film": {
+     "work": {
       "title": "Spider-Man: Across the Spider-Verse",
+      "kind": "movie",
       "imdbId": "tt9362722"
      }
     }
@@ -544,44 +589,48 @@
    "label": "Mejor película internacional",
    "short": "Internacional",
    "kind": "film",
-   "canonical": "INTERNATIONAL FEATURE FILM",
    "nominees": [
     {
      "id": "tt14225838",
-     "film": {
+     "work": {
       "title": "Io Capitano",
+      "kind": "movie",
       "imdbId": "tt14225838"
      },
      "country": "Italy"
     },
     {
      "id": "tt27503384",
-     "film": {
+     "work": {
       "title": "Perfect Days",
+      "kind": "movie",
       "imdbId": "tt27503384"
      },
      "country": "Japan"
     },
     {
      "id": "tt16277242",
-     "film": {
+     "work": {
       "title": "Society of the Snow",
+      "kind": "movie",
       "imdbId": "tt16277242"
      },
      "country": "Spain"
     },
     {
      "id": "tt26612950",
-     "film": {
+     "work": {
       "title": "The Teachers' Lounge",
+      "kind": "movie",
       "imdbId": "tt26612950"
      },
      "country": "Germany"
     },
     {
      "id": "tt7160372",
-     "film": {
+     "work": {
       "title": "The Zone of Interest",
+      "kind": "movie",
       "imdbId": "tt7160372"
      },
      "country": "United Kingdom"
@@ -593,40 +642,44 @@
    "label": "Mejor documental",
    "short": "Documental",
    "kind": "film",
-   "canonical": "DOCUMENTARY (Feature)",
    "nominees": [
     {
      "id": "tt21376900",
-     "film": {
+     "work": {
       "title": "Bobi Wine: The People's President",
+      "kind": "movie",
       "imdbId": "tt21376900"
      }
     },
     {
      "id": "tt24082488",
-     "film": {
+     "work": {
       "title": "The Eternal Memory",
+      "kind": "movie",
       "imdbId": "tt24082488"
      }
     },
     {
      "id": "tt27502426",
-     "film": {
+     "work": {
       "title": "Four Daughters",
+      "kind": "movie",
       "imdbId": "tt27502426"
      }
     },
     {
      "id": "tt21688772",
-     "film": {
+     "work": {
       "title": "To Kill a Tiger",
+      "kind": "movie",
       "imdbId": "tt21688772"
      }
     },
     {
      "id": "tt24082438",
-     "film": {
+     "work": {
       "title": "20 Days in Mariupol",
+      "kind": "movie",
       "imdbId": "tt24082438"
      }
     }
@@ -637,40 +690,44 @@
    "label": "Mejor fotografía",
    "short": "Fotografía",
    "kind": "film",
-   "canonical": "CINEMATOGRAPHY",
    "nominees": [
     {
      "id": "tt21113540",
-     "film": {
+     "work": {
       "title": "El Conde",
+      "kind": "movie",
       "imdbId": "tt21113540"
      }
     },
     {
      "id": "tt5537002",
-     "film": {
+     "work": {
       "title": "Killers of the Flower Moon",
+      "kind": "movie",
       "imdbId": "tt5537002"
      }
     },
     {
      "id": "tt5535276",
-     "film": {
+     "work": {
       "title": "Maestro",
+      "kind": "movie",
       "imdbId": "tt5535276"
      }
     },
     {
      "id": "tt15398776",
-     "film": {
+     "work": {
       "title": "Oppenheimer",
+      "kind": "movie",
       "imdbId": "tt15398776"
      }
     },
     {
      "id": "tt14230458",
-     "film": {
+     "work": {
       "title": "Poor Things",
+      "kind": "movie",
       "imdbId": "tt14230458"
      }
     }
@@ -681,40 +738,44 @@
    "label": "Mejor montaje",
    "short": "Montaje",
    "kind": "film",
-   "canonical": "FILM EDITING",
    "nominees": [
     {
      "id": "tt17009710",
-     "film": {
+     "work": {
       "title": "Anatomy of a Fall",
+      "kind": "movie",
       "imdbId": "tt17009710"
      }
     },
     {
      "id": "tt14849194",
-     "film": {
+     "work": {
       "title": "The Holdovers",
+      "kind": "movie",
       "imdbId": "tt14849194"
      }
     },
     {
      "id": "tt5537002",
-     "film": {
+     "work": {
       "title": "Killers of the Flower Moon",
+      "kind": "movie",
       "imdbId": "tt5537002"
      }
     },
     {
      "id": "tt15398776",
-     "film": {
+     "work": {
       "title": "Oppenheimer",
+      "kind": "movie",
       "imdbId": "tt15398776"
      }
     },
     {
      "id": "tt14230458",
-     "film": {
+     "work": {
       "title": "Poor Things",
+      "kind": "movie",
       "imdbId": "tt14230458"
      }
     }
@@ -725,40 +786,44 @@
    "label": "Mejor diseño de producción",
    "short": "Diseño de producción",
    "kind": "film",
-   "canonical": "ART DIRECTION",
    "nominees": [
     {
      "id": "tt1517268",
-     "film": {
+     "work": {
       "title": "Barbie",
+      "kind": "movie",
       "imdbId": "tt1517268"
      }
     },
     {
      "id": "tt5537002",
-     "film": {
+     "work": {
       "title": "Killers of the Flower Moon",
+      "kind": "movie",
       "imdbId": "tt5537002"
      }
     },
     {
      "id": "tt13287846",
-     "film": {
+     "work": {
       "title": "Napoleon",
+      "kind": "movie",
       "imdbId": "tt13287846"
      }
     },
     {
      "id": "tt15398776",
-     "film": {
+     "work": {
       "title": "Oppenheimer",
+      "kind": "movie",
       "imdbId": "tt15398776"
      }
     },
     {
      "id": "tt14230458",
-     "film": {
+     "work": {
       "title": "Poor Things",
+      "kind": "movie",
       "imdbId": "tt14230458"
      }
     }
@@ -769,40 +834,44 @@
    "label": "Mejor vestuario",
    "short": "Vestuario",
    "kind": "film",
-   "canonical": "COSTUME DESIGN",
    "nominees": [
     {
      "id": "tt1517268",
-     "film": {
+     "work": {
       "title": "Barbie",
+      "kind": "movie",
       "imdbId": "tt1517268"
      }
     },
     {
      "id": "tt5537002",
-     "film": {
+     "work": {
       "title": "Killers of the Flower Moon",
+      "kind": "movie",
       "imdbId": "tt5537002"
      }
     },
     {
      "id": "tt13287846",
-     "film": {
+     "work": {
       "title": "Napoleon",
+      "kind": "movie",
       "imdbId": "tt13287846"
      }
     },
     {
      "id": "tt15398776",
-     "film": {
+     "work": {
       "title": "Oppenheimer",
+      "kind": "movie",
       "imdbId": "tt15398776"
      }
     },
     {
      "id": "tt14230458",
-     "film": {
+     "work": {
       "title": "Poor Things",
+      "kind": "movie",
       "imdbId": "tt14230458"
      }
     }
@@ -813,40 +882,44 @@
    "label": "Mejor maquillaje y peluquería",
    "short": "Maquillaje",
    "kind": "film",
-   "canonical": "MAKEUP AND HAIRSTYLING",
    "nominees": [
     {
      "id": "tt14454876",
-     "film": {
+     "work": {
       "title": "Golda",
+      "kind": "movie",
       "imdbId": "tt14454876"
      }
     },
     {
      "id": "tt5535276",
-     "film": {
+     "work": {
       "title": "Maestro",
+      "kind": "movie",
       "imdbId": "tt5535276"
      }
     },
     {
      "id": "tt15398776",
-     "film": {
+     "work": {
       "title": "Oppenheimer",
+      "kind": "movie",
       "imdbId": "tt15398776"
      }
     },
     {
      "id": "tt14230458",
-     "film": {
+     "work": {
       "title": "Poor Things",
+      "kind": "movie",
       "imdbId": "tt14230458"
      }
     },
     {
      "id": "tt16277242",
-     "film": {
+     "work": {
       "title": "Society of the Snow",
+      "kind": "movie",
       "imdbId": "tt16277242"
      }
     }
@@ -857,40 +930,44 @@
    "label": "Mejor banda sonora",
    "short": "Banda sonora",
    "kind": "film",
-   "canonical": "MUSIC (Original Score)",
    "nominees": [
     {
      "id": "tt23561236",
-     "film": {
+     "work": {
       "title": "American Fiction",
+      "kind": "movie",
       "imdbId": "tt23561236"
      }
     },
     {
      "id": "tt1462764",
-     "film": {
+     "work": {
       "title": "Indiana Jones and the Dial of Destiny",
+      "kind": "movie",
       "imdbId": "tt1462764"
      }
     },
     {
      "id": "tt5537002",
-     "film": {
+     "work": {
       "title": "Killers of the Flower Moon",
+      "kind": "movie",
       "imdbId": "tt5537002"
      }
     },
     {
      "id": "tt15398776",
-     "film": {
+     "work": {
       "title": "Oppenheimer",
+      "kind": "movie",
       "imdbId": "tt15398776"
      }
     },
     {
      "id": "tt14230458",
-     "film": {
+     "work": {
       "title": "Poor Things",
+      "kind": "movie",
       "imdbId": "tt14230458"
      }
     }
@@ -901,44 +978,48 @@
    "label": "Mejor canción original",
    "short": "Canción",
    "kind": "song",
-   "canonical": "MUSIC (Original Song)",
    "nominees": [
     {
      "id": "tt8105234:the-fire-inside",
-     "film": {
+     "work": {
       "title": "Flamin' Hot",
+      "kind": "movie",
       "imdbId": "tt8105234"
      },
      "song": "The Fire Inside"
     },
     {
      "id": "tt1517268:i-m-just-ken",
-     "film": {
+     "work": {
       "title": "Barbie",
+      "kind": "movie",
       "imdbId": "tt1517268"
      },
      "song": "I'm Just Ken"
     },
     {
      "id": "tt28865980:it-never-went-away",
-     "film": {
+     "work": {
       "title": "American Symphony",
+      "kind": "movie",
       "imdbId": "tt28865980"
      },
      "song": "It Never Went Away"
     },
     {
      "id": "tt5537002:wahzhazhe-a-song-for-my-people",
-     "film": {
+     "work": {
       "title": "Killers of the Flower Moon",
+      "kind": "movie",
       "imdbId": "tt5537002"
      },
      "song": "Wahzhazhe (A Song For My People)"
     },
     {
      "id": "tt1517268:what-was-i-made-for",
-     "film": {
+     "work": {
       "title": "Barbie",
+      "kind": "movie",
       "imdbId": "tt1517268"
      },
      "song": "What Was I Made For?"
@@ -950,40 +1031,44 @@
    "label": "Mejor sonido",
    "short": "Sonido",
    "kind": "film",
-   "canonical": "SOUND MIXING",
    "nominees": [
     {
      "id": "tt11858890",
-     "film": {
+     "work": {
       "title": "The Creator",
+      "kind": "movie",
       "imdbId": "tt11858890"
      }
     },
     {
      "id": "tt5535276",
-     "film": {
+     "work": {
       "title": "Maestro",
+      "kind": "movie",
       "imdbId": "tt5535276"
      }
     },
     {
      "id": "tt9603212",
-     "film": {
+     "work": {
       "title": "Mission: Impossible - Dead Reckoning Part One",
+      "kind": "movie",
       "imdbId": "tt9603212"
      }
     },
     {
      "id": "tt15398776",
-     "film": {
+     "work": {
       "title": "Oppenheimer",
+      "kind": "movie",
       "imdbId": "tt15398776"
      }
     },
     {
      "id": "tt7160372",
-     "film": {
+     "work": {
       "title": "The Zone of Interest",
+      "kind": "movie",
       "imdbId": "tt7160372"
      }
     }
@@ -994,40 +1079,44 @@
    "label": "Mejores efectos visuales",
    "short": "Efectos visuales",
    "kind": "film",
-   "canonical": "VISUAL EFFECTS",
    "nominees": [
     {
      "id": "tt11858890",
-     "film": {
+     "work": {
       "title": "The Creator",
+      "kind": "movie",
       "imdbId": "tt11858890"
      }
     },
     {
      "id": "tt23289160",
-     "film": {
+     "work": {
       "title": "Godzilla Minus One",
+      "kind": "movie",
       "imdbId": "tt23289160"
      }
     },
     {
      "id": "tt6791350",
-     "film": {
+     "work": {
       "title": "Guardians of the Galaxy Vol. 3",
+      "kind": "movie",
       "imdbId": "tt6791350"
      }
     },
     {
      "id": "tt9603212",
-     "film": {
+     "work": {
       "title": "Mission: Impossible - Dead Reckoning Part One",
+      "kind": "movie",
       "imdbId": "tt9603212"
      }
     },
     {
      "id": "tt13287846",
-     "film": {
+     "work": {
       "title": "Napoleon",
+      "kind": "movie",
       "imdbId": "tt13287846"
      }
     }
@@ -1038,40 +1127,44 @@
    "label": "Mejor cortometraje documental",
    "short": "Corto documental",
    "kind": "film",
-   "canonical": "DOCUMENTARY (Short Subject)",
    "nominees": [
     {
      "id": "tt29361805",
-     "film": {
+     "work": {
       "title": "The ABCs of Book Banning",
+      "kind": "movie",
       "imdbId": "tt29361805"
      }
     },
     {
      "id": "tt28627868",
-     "film": {
+     "work": {
       "title": "The Barber of Little Rock",
+      "kind": "movie",
       "imdbId": "tt28627868"
      }
     },
     {
      "id": "tt30523942",
-     "film": {
+     "work": {
       "title": "Island in Between",
+      "kind": "movie",
       "imdbId": "tt30523942"
      }
     },
     {
      "id": "tt29118186",
-     "film": {
+     "work": {
       "title": "The Last Repair Shop",
+      "kind": "movie",
       "imdbId": "tt29118186"
      }
     },
     {
      "id": "tt26218316",
-     "film": {
+     "work": {
       "title": "Nai Nai & Wài Pó",
+      "kind": "movie",
       "imdbId": "tt26218316"
      }
     }
@@ -1082,40 +1175,44 @@
    "label": "Mejor cortometraje animado",
    "short": "Corto animado",
    "kind": "film",
-   "canonical": "SHORT FILM (Animated)",
    "nominees": [
     {
      "id": "tt10346066",
-     "film": {
+     "work": {
       "title": "Letter to a Pig",
+      "kind": "movie",
       "imdbId": "tt10346066"
      }
     },
     {
      "id": "tt11020596",
-     "film": {
+     "work": {
       "title": "Ninety-Five Senses",
+      "kind": "movie",
       "imdbId": "tt11020596"
      }
     },
     {
      "id": "tt28058015",
-     "film": {
+     "work": {
       "title": "Our Uniform",
+      "kind": "movie",
       "imdbId": "tt28058015"
      }
     },
     {
      "id": "tt20862526",
-     "film": {
+     "work": {
       "title": "Pachyderme",
+      "kind": "movie",
       "imdbId": "tt20862526"
      }
     },
     {
      "id": "tt29795707",
-     "film": {
+     "work": {
       "title": "WAR IS OVER! Inspired by the Music of John & Yoko",
+      "kind": "movie",
       "imdbId": "tt29795707"
      }
     }
@@ -1126,40 +1223,44 @@
    "label": "Mejor cortometraje",
    "short": "Cortometraje",
    "kind": "film",
-   "canonical": "SHORT FILM (Live Action)",
    "nominees": [
     {
      "id": "tt28532006",
-     "film": {
+     "work": {
       "title": "The After",
+      "kind": "movie",
       "imdbId": "tt28532006"
      }
     },
     {
      "id": "tt22749100",
-     "film": {
+     "work": {
       "title": "Invincible",
+      "kind": "movie",
       "imdbId": "tt22749100"
      }
     },
     {
      "id": "tt26600054",
-     "film": {
+     "work": {
       "title": "Knight of Fortune",
+      "kind": "movie",
       "imdbId": "tt26600054"
      }
     },
     {
      "id": "tt27759823",
-     "film": {
+     "work": {
       "title": "Red, White and Blue",
+      "kind": "movie",
       "imdbId": "tt27759823"
      }
     },
     {
      "id": "tt16968450",
-     "film": {
+     "work": {
       "title": "The Wonderful Story of Henry Sugar",
+      "kind": "movie",
       "imdbId": "tt16968450"
      }
     }

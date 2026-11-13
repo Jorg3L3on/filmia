@@ -1,9 +1,11 @@
 import { ImageResponse } from "next/og";
 import { loadOgMark, OG_COLORS } from "@/components/share/og";
-import { loadOscarBallot } from "@/lib/quinielas/ballot-load";
-import { oscarSeasonYear } from "@/lib/quinielas/ceremonies";
-import { getOscarWinners } from "@/lib/quinielas/store";
-import { oscarNightSummary } from "@/lib/quinielas/view";
+import { AWARDS } from "@/lib/quinielas/awards";
+import { loadBallot } from "@/lib/quinielas/ballot-load";
+import { getCeremony } from "@/lib/quinielas/ceremonies";
+import { ceremonyInfo } from "@/lib/quinielas/hub-core";
+import { getWinners } from "@/lib/quinielas/store";
+import { nightSummary } from "@/lib/quinielas/view";
 import { requireUserId } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -16,15 +18,20 @@ const NO = "#ef6b6b";
  * «Acerté 15 de 23» (FIL-I51-4): the signed-in person's result, or how they are doing mid-night, as
  * a 9:16 PNG for the share sheet. Private and never cached: it changes with every winner.
  */
-export async function GET() {
+export async function GET(_request: Request, { params }: { params: Promise<{ ceremonia: string }> }) {
   const userId = await requireUserId();
-  const year = oscarSeasonYear();
+  const file = getCeremony((await params).ceremonia);
+  if (!file) {
+    return new Response("No encontrado", { status: 404 });
+  }
+  const ceremony = ceremonyInfo(file);
+  const accent = AWARDS[file.award].accent;
   const [{ categories, votes }, winners, mark] = await Promise.all([
-    loadOscarBallot(userId, year),
-    getOscarWinners(year),
+    loadBallot(userId, file.id),
+    getWinners(file.id),
     loadOgMark(),
   ]);
-  const night = oscarNightSummary(categories, votes, winners);
+  const night = nightSummary(categories, votes, winners);
   const rowSize = categories.length > 20 ? 27 : 31;
 
   return new ImageResponse(
@@ -36,7 +43,7 @@ export async function GET() {
           display: "flex",
           flexDirection: "column",
           backgroundColor: OG_COLORS.canvas,
-          backgroundImage: "radial-gradient(circle at 50% 14%, rgba(242,193,78,0.28), rgba(14,17,20,0) 52%)",
+          backgroundImage: `radial-gradient(circle at 50% 14%, ${accent}47, rgba(14,17,20,0) 52%)`,
           padding: "150px 80px 110px",
           fontFamily: "sans-serif",
         }}
@@ -47,8 +54,8 @@ export async function GET() {
           Filmia
         </div>
         <div style={{ display: "flex", flexDirection: "column", marginTop: 44 }}>
-          <div style={{ display: "flex", fontSize: 30, letterSpacing: 4, color: OG_COLORS.star, textTransform: "uppercase" }}>
-            Quiniela del Óscar {year}
+          <div style={{ display: "flex", fontSize: 30, letterSpacing: 4, color: accent, textTransform: "uppercase" }}>
+            {ceremony.title}
           </div>
           <div style={{ display: "flex", alignItems: "baseline", color: OG_COLORS.paper, marginTop: 8 }}>
             <span style={{ fontSize: 60, marginRight: 18 }}>{night.finished ? "Acerté" : "Voy"}</span>

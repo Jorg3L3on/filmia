@@ -1,149 +1,169 @@
 /**
- * Quiniela del Óscar (FIL-I51): the database side of ballots, closing times and winners. Callers
- * check who is signed in (and `requireAdmin` for winners); these functions validate against the
- * ceremony file and refuse votes once the ballot is closed, in the same statement that writes.
+ * Quinielas de premios (FIL-I51): the database side of ballots, closing times and winners, per
+ * ceremony (`oscar-2027`). Callers check who is signed in (and `isAdmin` for winners); these
+ * functions validate against the ceremony file and refuse votes once the ballot is closed, in the
+ * same statement that writes.
  */
 import { and, eq, sql } from "drizzle-orm";
-import { db, oscarCeremonies, oscarVotes, oscarWinners } from "@/db";
-import { getOscarCeremony } from "@/lib/quinielas/ceremonies";
-import {
-  findNominee,
-  oscarBallotPhase,
-  type OscarBallotPhase,
-  type OscarCeremonyFile,
-} from "@/lib/quinielas/ceremony-core";
+import { db, quinielaCeremonies, quinielaVotes, quinielaWinners } from "@/db";
+import { getCeremony } from "@/lib/quinielas/ceremonies";
+import { ballotPhase, findNominee, type QuinielaBallotPhase, type QuinielaCeremonyFile } from "@/lib/quinielas/ceremony-core";
 
 /** `timestamp(3)` columns hold UTC; a cast keeps comparisons off the session time zone. */
 const utc = (date: Date) => sql`${date.toISOString()}::timestamp`;
 
-export const getOscarClosesAt = async (year: number): Promise<Date | null> => {
-  const row = await db.query.oscarCeremonies.findFirst({ where: eq(oscarCeremonies.year, year) });
+export const getClosesAt = async (ceremonyId: string): Promise<Date | null> => {
+  const row = await db.query.quinielaCeremonies.findFirst({ where: eq(quinielaCeremonies.ceremonyId, ceremonyId) });
   return row?.closesAt ?? null;
 };
 
+/** Closing times of every ceremony that has one (the hub). */
+export const getClosingTimes = async (): Promise<Record<string, Date>> => {
+  const rows = await db.select().from(quinielaCeremonies);
+  return Object.fromEntries(rows.map((row) => [row.ceremonyId, row.closesAt]));
+};
+
 /** Opens (or moves the closing time of) a ceremony's ballots. Admin only: the caller checks. */
-export const setOscarClosesAt = async (year: number, closesAt: Date) => {
-  if (!getOscarCeremony(year)) {
-    throw new Error(`No hay archivo de la entrega ${year}.`);
+export const setClosesAt = async (ceremonyId: string, closesAt: Date) => {
+  if (!getCeremony(ceremonyId)) {
+    throw new Error(`No hay archivo de la entrega ${ceremonyId}.`);
   }
   await db
-    .insert(oscarCeremonies)
-    .values({ year, closesAt })
-    .onConflictDoUpdate({ target: oscarCeremonies.year, set: { closesAt, updatedAt: new Date() } });
+    .insert(quinielaCeremonies)
+    .values({ ceremonyId, closesAt })
+    .onConflictDoUpdate({ target: quinielaCeremonies.ceremonyId, set: { closesAt, updatedAt: new Date() } });
 };
 
-export type OscarSeason = {
-  year: number;
-  ceremony: OscarCeremonyFile | null;
+export type QuinielaSeason = {
+  ceremony: QuinielaCeremonyFile | null;
   closesAt: Date | null;
-  phase: OscarBallotPhase;
+  phase: QuinielaBallotPhase;
 };
 
-export const getOscarSeason = async (year: number, now = new Date()): Promise<OscarSeason> => {
-  const ceremony = getOscarCeremony(year);
-  const closesAt = ceremony ? await getOscarClosesAt(year) : null;
-  return { year, ceremony, closesAt, phase: oscarBallotPhase({ hasCeremony: Boolean(ceremony), closesAt, now }) };
+export const getSeason = async (ceremonyId: string, now = new Date()): Promise<QuinielaSeason> => {
+  const ceremony = getCeremony(ceremonyId);
+  const closesAt = ceremony ? await getClosesAt(ceremonyId) : null;
+  return { ceremony, closesAt, phase: ballotPhase({ hasCeremony: Boolean(ceremony), closesAt, now }) };
 };
 
 // ── Votes ────────────────────────────────────────────────────────────────
 
-export type CastOscarVoteResult =
-  | { ok: true; nomineeId: string }
-  | { ok: false; reason: "invalida" | "cerrada" };
+export type CastVoteResult = { ok: true; nomineeId: string } | { ok: false; reason: "invalida" | "cerrada" };
 
 /**
  * Votes (or changes the vote) in one category. The insert only happens while the ceremony has a
  * closing time in the future, so a vote that arrives after the close is refused even if the page
  * still showed the ballot open.
  */
-export const castOscarVote = async (input: {
+export const castVote = async (input: {
   userId: string;
-  year: number;
+  ceremonyId: string;
   categoryId: string;
   nomineeId: string;
   now?: Date;
-}): Promise<CastOscarVoteResult> => {
-  const ceremony = getOscarCeremony(input.year);
+}): Promise<CastVoteResult> => {
+  const ceremony = getCeremony(input.ceremonyId);
   if (!ceremony || !findNominee(ceremony, input.categoryId, input.nomineeId)) {
     return { ok: false, reason: "invalida" };
   }
   const now = input.now ?? new Date();
   const rows = await db
-    .insert(oscarVotes)
+    .insert(quinielaVotes)
     .select(
-      sql`SELECT ${input.userId}, ${input.year}::integer, ${input.categoryId}, ${input.nomineeId}, ${utc(now)}, ${utc(now)}
+      sql`SELECT ${input.userId}, ${input.ceremonyId}, ${input.categoryId}, ${input.nomineeId}, ${utc(now)}, ${utc(now)}
           WHERE EXISTS (
-            SELECT 1 FROM "OscarCeremony" WHERE "year" = ${input.year} AND "closesAt" > ${utc(now)}
+            SELECT 1 FROM "QuinielaCeremony" WHERE "ceremonyId" = ${input.ceremonyId} AND "closesAt" > ${utc(now)}
           )`,
     )
     .onConflictDoUpdate({
-      target: [oscarVotes.userId, oscarVotes.year, oscarVotes.categoryId],
+      target: [quinielaVotes.userId, quinielaVotes.ceremonyId, quinielaVotes.categoryId],
       set: { nomineeId: sql`excluded."nomineeId"`, updatedAt: sql`excluded."updatedAt"` },
     })
-    .returning({ nomineeId: oscarVotes.nomineeId });
+    .returning({ nomineeId: quinielaVotes.nomineeId });
   return rows[0] ? { ok: true, nomineeId: rows[0].nomineeId } : { ok: false, reason: "cerrada" };
 };
 
 /** categoryId → nomineeId of one person's ballot. */
-export const getOscarVotes = async (userId: string, year: number): Promise<Record<string, string>> => {
+export const getVotes = async (userId: string, ceremonyId: string): Promise<Record<string, string>> => {
   const rows = await db
-    .select({ categoryId: oscarVotes.categoryId, nomineeId: oscarVotes.nomineeId })
-    .from(oscarVotes)
-    .where(and(eq(oscarVotes.userId, userId), eq(oscarVotes.year, year)));
+    .select({ categoryId: quinielaVotes.categoryId, nomineeId: quinielaVotes.nomineeId })
+    .from(quinielaVotes)
+    .where(and(eq(quinielaVotes.userId, userId), eq(quinielaVotes.ceremonyId, ceremonyId)));
   return Object.fromEntries(rows.map((row) => [row.categoryId, row.nomineeId]));
+};
+
+/** ceremonyId → how many categories this person voted (the hub). */
+export const getVoteCounts = async (userId: string): Promise<Record<string, number>> => {
+  const rows = await db
+    .select({ ceremonyId: quinielaVotes.ceremonyId, count: sql<number>`count(*)::int` })
+    .from(quinielaVotes)
+    .where(eq(quinielaVotes.userId, userId))
+    .groupBy(quinielaVotes.ceremonyId);
+  return Object.fromEntries(rows.map((row) => [row.ceremonyId, row.count]));
 };
 
 // ── Winners ──────────────────────────────────────────────────────────────
 
-export type OscarWinnerEntry = { nomineeId: string; announcedAt: Date };
+export type WinnerEntry = { nomineeId: string; announcedAt: Date };
 
 /** categoryId → winner, for the ceremony. */
-export const getOscarWinners = async (year: number): Promise<Record<string, OscarWinnerEntry>> => {
+export const getWinners = async (ceremonyId: string): Promise<Record<string, WinnerEntry>> => {
   const rows = await db
     .select({
-      categoryId: oscarWinners.categoryId,
-      nomineeId: oscarWinners.nomineeId,
-      announcedAt: oscarWinners.announcedAt,
+      categoryId: quinielaWinners.categoryId,
+      nomineeId: quinielaWinners.nomineeId,
+      announcedAt: quinielaWinners.announcedAt,
     })
-    .from(oscarWinners)
-    .where(eq(oscarWinners.year, year));
+    .from(quinielaWinners)
+    .where(eq(quinielaWinners.ceremonyId, ceremonyId));
   return Object.fromEntries(rows.map((row) => [row.categoryId, { nomineeId: row.nomineeId, announcedAt: row.announcedAt }]));
 };
 
-export const winnerIds = (winners: Readonly<Record<string, OscarWinnerEntry>>) =>
+/** ceremonyId → how many categories have a winner (the hub). */
+export const getWinnerCounts = async (): Promise<Record<string, number>> => {
+  const rows = await db
+    .select({ ceremonyId: quinielaWinners.ceremonyId, count: sql<number>`count(*)::int` })
+    .from(quinielaWinners)
+    .groupBy(quinielaWinners.ceremonyId);
+  return Object.fromEntries(rows.map((row) => [row.ceremonyId, row.count]));
+};
+
+export const winnerIds = (winners: Readonly<Record<string, WinnerEntry>>) =>
   Object.fromEntries(Object.entries(winners).map(([categoryId, entry]) => [categoryId, entry.nomineeId]));
 
 /**
  * Enters or corrects a category's winner. Admin only: the caller checks. A correction keeps the
  * original announcement time, so the live order does not jump.
  */
-export const setOscarWinner = async (input: {
-  year: number;
+export const setWinner = async (input: {
+  ceremonyId: string;
   categoryId: string;
   nomineeId: string;
   enteredByUserId: string;
   now?: Date;
 }) => {
-  const ceremony = getOscarCeremony(input.year);
+  const ceremony = getCeremony(input.ceremonyId);
   if (!ceremony || !findNominee(ceremony, input.categoryId, input.nomineeId)) {
     throw new Error("Esa nominada no está en la entrega.");
   }
   await db
-    .insert(oscarWinners)
+    .insert(quinielaWinners)
     .values({
-      year: input.year,
+      ceremonyId: input.ceremonyId,
       categoryId: input.categoryId,
       nomineeId: input.nomineeId,
       enteredByUserId: input.enteredByUserId,
       announcedAt: input.now ?? new Date(),
     })
     .onConflictDoUpdate({
-      target: [oscarWinners.year, oscarWinners.categoryId],
+      target: [quinielaWinners.ceremonyId, quinielaWinners.categoryId],
       set: { nomineeId: input.nomineeId, enteredByUserId: input.enteredByUserId },
     });
 };
 
 /** Takes a winner back (entered by mistake in the wrong category). Admin only. */
-export const clearOscarWinner = async (year: number, categoryId: string) => {
-  await db.delete(oscarWinners).where(and(eq(oscarWinners.year, year), eq(oscarWinners.categoryId, categoryId)));
+export const clearWinner = async (ceremonyId: string, categoryId: string) => {
+  await db
+    .delete(quinielaWinners)
+    .where(and(eq(quinielaWinners.ceremonyId, ceremonyId), eq(quinielaWinners.categoryId, categoryId)));
 };

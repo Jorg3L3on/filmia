@@ -3,15 +3,17 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { voteOscar } from "@/app/actions/quiniela";
+import { vote } from "@/app/actions/quiniela";
 import { BackDisc } from "@/components/PageHeader";
 import { PosterImage } from "@/components/PosterImage";
 import { cn } from "@/lib/cn";
+import type { CeremonyInfo } from "@/lib/quinielas/hub-core";
 import { startCategoryIndex, votedCount, type BallotCategory } from "@/lib/quinielas/view";
 import { showActionError } from "@/lib/toast-alerts";
 import { buttonClass, focusRing } from "@/lib/ui";
 
-type OscarBallotProps = {
+type QuinielaBallotProps = {
+  ceremony: CeremonyInfo;
   categories: BallotCategory[];
   initialVotes: Record<string, string>;
   /** `?c=` from the URL: reopen on that category. */
@@ -21,11 +23,12 @@ type OscarBallotProps = {
 };
 
 /**
- * Quiniela del Óscar, la boleta (FIL-I51-2, canvas `Oscar-1-boleta`): one category at a time, one
+ * La boleta de una quiniela (FIL-I51-2, canvas `Oscar-1-boleta`): one category at a time, one
  * vote each, changeable until the close. A vote shows at once and goes back to the previous one if
  * the server does not keep it.
  */
-export const OscarBallot = ({ categories, initialVotes, askedCategory, closesLabel }: OscarBallotProps) => {
+export const QuinielaBallot = ({ ceremony, categories, initialVotes, askedCategory, closesLabel }: QuinielaBallotProps) => {
+  const base = `/extras/quinielas/${ceremony.id}`;
   const router = useRouter();
   const [votes, setVotes] = useState(initialVotes);
   const [index, setIndex] = useState(() => startCategoryIndex(categories, initialVotes, askedCategory));
@@ -67,7 +70,7 @@ export const OscarBallot = ({ categories, initialVotes, askedCategory, closesLab
       return;
     }
     event.preventDefault();
-    const href = event.currentTarget.getAttribute("href") ?? "/extras/quinielas/boleta";
+    const href = event.currentTarget.getAttribute("href") ?? `${base}/boleta`;
     void Promise.allSettled([...inflight.current]).then(() => router.push(href));
   };
 
@@ -87,7 +90,7 @@ export const OscarBallot = ({ categories, initialVotes, askedCategory, closesLab
     setVotes((current) => ({ ...current, [categoryId]: nomineeId }));
     setSaving((count) => count + 1);
     const run = (async () => {
-      const result = await voteOscar(categoryId, nomineeId).catch(() => null);
+      const result = await vote(ceremony.id, categoryId, nomineeId).catch(() => null);
       setSaving((count) => count - 1);
       if (result?.ok || pending.current.get(categoryId) !== attempt) {
         return;
@@ -113,10 +116,10 @@ export const OscarBallot = ({ categories, initialVotes, askedCategory, closesLab
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex items-start gap-3">
-        <BackDisc href="/extras" label="Volver a Extras" />
+        <BackDisc href="/extras/quinielas" label="Volver a las quinielas" />
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-star">
-            Quiniela · {index + 1} de {total}
+            {ceremony.awardName} · {index + 1} de {total}
           </p>
           <h1
             ref={headingRef}
@@ -128,7 +131,7 @@ export const OscarBallot = ({ categories, initialVotes, askedCategory, closesLab
           </h1>
         </div>
         <Link
-          href="/extras/quinielas/boleta"
+          href={`${base}/boleta`}
           onClick={afterSaved}
           className={cn(
             "press-scale inline-flex h-10 shrink-0 items-center rounded-full border border-chrome bg-well px-3 text-[13px] font-medium text-paper hover:border-star/60",
@@ -228,7 +231,7 @@ export const OscarBallot = ({ categories, initialVotes, askedCategory, closesLab
               <span className="truncate">Siguiente: {next.short.toLowerCase()}</span>
             </button>
           ) : (
-            <Link href="/extras/quinielas/boleta" onClick={afterSaved} className={buttonClass({ size: "lg", className: "flex-1 bg-star hover:bg-star/90" })}>
+            <Link href={`${base}/boleta`} onClick={afterSaved} className={buttonClass({ size: "lg", className: "flex-1 bg-star hover:bg-star/90" })}>
               Ver tu boleta
             </Link>
           )}

@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
 import { NavLabel } from "@/components/NavOriginTracker";
 import { BackDisc } from "@/components/PageHeader";
-import { OscarGroupInvite, OscarGroupLeave } from "@/components/quinielas/OscarGroupControls";
-import { OscarGroupTable } from "@/components/quinielas/OscarGroupTable";
-import { getOscarCeremony } from "@/lib/quinielas/ceremonies";
-import { getOscarGroupForMember, oscarGroupStandings, ownerOscarGroupLink } from "@/lib/quinielas/groups";
-import { getOscarWinners } from "@/lib/quinielas/store";
+import { QuinielaGroupInvite, QuinielaGroupLeave } from "@/components/quinielas/QuinielaGroupControls";
+import { QuinielaGroupTable } from "@/components/quinielas/QuinielaGroupTable";
+import { getCeremony } from "@/lib/quinielas/ceremonies";
+import { getGroupForMember, groupStandings, ownerGroupLink } from "@/lib/quinielas/groups";
+import { ceremonyInfo, ceremonyPath } from "@/lib/quinielas/hub-core";
+import { getWinners } from "@/lib/quinielas/store";
 import { requireUserId } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -15,19 +16,20 @@ export const metadata = { title: "Tu grupo" } as const;
 type GroupPageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ nuevo?: string }> };
 
 /** One quiniela group (FIL-I51-3): its table, and the link for its owner. Members only: 404 otherwise. */
-export default async function QuinielaGrupoPage({ params, searchParams }: GroupPageProps) {
+export default async function GrupoPage({ params, searchParams }: GroupPageProps) {
   const userId = await requireUserId();
   const [{ id }, { nuevo }] = await Promise.all([params, searchParams]);
-  const group = await getOscarGroupForMember(id, userId);
-  const ceremony = group ? getOscarCeremony(group.year) : null;
-  if (!group || !ceremony) {
+  const group = await getGroupForMember(id, userId);
+  const file = group ? getCeremony(group.ceremonyId) : null;
+  if (!group || !file) {
     notFound();
   }
+  const ceremony = ceremonyInfo(file);
   const owner = group.ownerId === userId;
   const [standings, winners, link] = await Promise.all([
-    oscarGroupStandings(group, userId),
-    getOscarWinners(group.year),
-    owner ? ownerOscarGroupLink(group.id, userId) : null,
+    groupStandings(group, userId),
+    getWinners(file.id),
+    owner ? ownerGroupLink(group.id, userId) : null,
   ]);
   const announced = Object.keys(winners).length;
 
@@ -35,11 +37,9 @@ export default async function QuinielaGrupoPage({ params, searchParams }: GroupP
     <div className="mx-auto flex w-full max-w-md flex-col gap-6">
       <NavLabel label={group.name} />
       <div className="flex items-center gap-3">
-        <BackDisc href="/extras/quinielas/grupos" label="Volver a tus grupos" />
+        <BackDisc href={`${ceremonyPath(file.id)}/grupos`} label="Volver a tus grupos" />
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-star">
-            Quiniela del Óscar {group.year}
-          </p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-star">{ceremony.title}</p>
           <h1 className="mt-1 font-serif text-[1.75rem] font-semibold leading-tight text-paper">{group.name}</h1>
         </div>
       </div>
@@ -50,7 +50,7 @@ export default async function QuinielaGrupoPage({ params, searchParams }: GroupP
             {nuevo ? "Listo: ahora invita" : "Invitar"}
           </h2>
           <p className="text-sm text-fog">Quien abra el enlace entra al grupo. Solo entra quien lo tenga.</p>
-          <OscarGroupInvite groupId={group.id} path={link} groupName={group.name} />
+          <QuinielaGroupInvite groupId={group.id} path={link} groupName={group.name} ceremonyId={file.id} ceremonyTitle={ceremony.title} />
         </section>
       ) : null}
 
@@ -60,13 +60,13 @@ export default async function QuinielaGrupoPage({ params, searchParams }: GroupP
             Tu grupo
           </h2>
           <span className="text-xs text-fog">
-            {announced > 0 ? `${announced} de ${ceremony.categories.length} anunciadas` : "categorías votadas"}
+            {announced > 0 ? `${announced} de ${file.categories.length} anunciadas` : "categorías votadas"}
           </span>
         </div>
-        <OscarGroupTable standings={standings} total={ceremony.categories.length} announced={announced} />
+        <QuinielaGroupTable standings={standings} total={file.categories.length} announced={announced} />
       </section>
 
-      <OscarGroupLeave groupId={group.id} owner={owner} />
+      <QuinielaGroupLeave groupId={group.id} owner={owner} />
     </div>
   );
 }

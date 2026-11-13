@@ -1,16 +1,16 @@
 import { cn } from "@/lib/cn";
-import type { OscarGroupStanding } from "@/lib/quinielas/groups";
+import type { GroupStanding } from "@/lib/quinielas/groups";
 
 /**
  * «Tu grupo» (FIL-I51-3): first names and hits; before any winner, how far each ballot is. Never an
  * email and never someone else's picks.
  */
-export const OscarGroupTable = ({
+export const QuinielaGroupTable = ({
   standings,
   total,
   announced,
 }: {
-  standings: OscarGroupStanding[];
+  standings: GroupStanding[];
   total: number;
   announced: number;
 }) => {

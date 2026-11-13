@@ -1,24 +1,24 @@
 /**
- * Quiniela del Óscar (FIL-I51-2): the season, the categories ready to draw, and one person's votes.
- * Nominees without a poster or a Mexican title in the file (built without TMDB, or written by hand)
- * are looked up by IMDb id with the app's 24 h TMDB cache; when TMDB fails they keep the Academy's
- * English title and no poster.
+ * Quinielas de premios (FIL-I51-2): a ceremony's season, its categories ready to draw, and one
+ * person's votes. Nominees without a poster or a Mexican title in the file (written by hand, or
+ * built without TMDB) are looked up by IMDb id, films and series alike, with the app's 24 h TMDB
+ * cache; when TMDB fails they keep the awards' title and no poster.
  */
-import { getOscarCeremony } from "@/lib/quinielas/ceremonies";
-import type { OscarCeremonyFile } from "@/lib/quinielas/ceremony-core";
-import { getOscarSeason, getOscarVotes, type OscarSeason } from "@/lib/quinielas/store";
+import { getCeremony } from "@/lib/quinielas/ceremonies";
+import type { QuinielaCeremonyFile } from "@/lib/quinielas/ceremony-core";
+import { getSeason, getVotes, type QuinielaSeason } from "@/lib/quinielas/store";
 import { toBallotCategories, type BallotCategory } from "@/lib/quinielas/view";
-import { findTmdbMovieByImdbId, isTmdbConfigured } from "@/lib/tmdb";
+import { findTmdbWorkByImdbId, isTmdbConfigured } from "@/lib/tmdb";
 
-const withTmdb = async (file: OscarCeremonyFile): Promise<OscarCeremonyFile> => {
+const withTmdb = async (file: QuinielaCeremonyFile): Promise<QuinielaCeremonyFile> => {
   if (!isTmdbConfigured()) {
     return file;
   }
-  const missing = new Set<string>();
+  const missing = new Map<string, "movie" | "tv">();
   for (const category of file.categories) {
     for (const nominee of category.nominees) {
-      if (nominee.film.imdbId && (nominee.film.posterPath === undefined || nominee.film.titleEs === undefined)) {
-        missing.add(nominee.film.imdbId);
+      if (nominee.work.imdbId && (nominee.work.posterPath === undefined || nominee.work.titleEs === undefined)) {
+        missing.set(nominee.work.imdbId, nominee.work.kind);
       }
     }
   }
@@ -27,7 +27,9 @@ const withTmdb = async (file: OscarCeremonyFile): Promise<OscarCeremonyFile> => 
   }
   const found = new Map(
     await Promise.all(
-      [...missing].map(async (imdbId) => [imdbId, await findTmdbMovieByImdbId(imdbId).catch(() => null)] as const),
+      [...missing].map(
+        async ([imdbId, kind]) => [imdbId, await findTmdbWorkByImdbId(imdbId, kind).catch(() => null)] as const,
+      ),
     ),
   );
   return {
@@ -35,15 +37,15 @@ const withTmdb = async (file: OscarCeremonyFile): Promise<OscarCeremonyFile> => 
     categories: file.categories.map((category) => ({
       ...category,
       nominees: category.nominees.map((nominee) => {
-        const movie = nominee.film.imdbId ? found.get(nominee.film.imdbId) : null;
-        return movie
+        const work = nominee.work.imdbId ? found.get(nominee.work.imdbId) : null;
+        return work
           ? {
               ...nominee,
-              film: {
-                ...nominee.film,
-                tmdbId: nominee.film.tmdbId ?? movie.tmdbId,
-                titleEs: nominee.film.titleEs ?? movie.title,
-                posterPath: nominee.film.posterPath ?? movie.posterPath,
+              work: {
+                ...nominee.work,
+                tmdbId: nominee.work.tmdbId ?? work.tmdbId,
+                titleEs: nominee.work.titleEs ?? work.title,
+                posterPath: nominee.work.posterPath ?? work.posterPath,
               },
             }
           : nominee;
@@ -52,23 +54,23 @@ const withTmdb = async (file: OscarCeremonyFile): Promise<OscarCeremonyFile> => 
   };
 };
 
-/** The ceremony's categories ready to draw, or null when the year has no file. */
-export const loadOscarCategories = async (year: number): Promise<BallotCategory[] | null> => {
-  const file = getOscarCeremony(year);
+/** The ceremony's categories ready to draw, or null when there is no such ceremony. */
+export const loadCategories = async (ceremonyId: string): Promise<BallotCategory[] | null> => {
+  const file = getCeremony(ceremonyId);
   return file ? toBallotCategories(await withTmdb(file)) : null;
 };
 
-export type OscarBallotData = {
-  season: OscarSeason;
+export type BallotData = {
+  season: QuinielaSeason;
   categories: BallotCategory[];
   votes: Record<string, string>;
 };
 
-export const loadOscarBallot = async (userId: string, year: number, now = new Date()): Promise<OscarBallotData> => {
-  const season = await getOscarSeason(year, now);
+export const loadBallot = async (userId: string, ceremonyId: string, now = new Date()): Promise<BallotData> => {
+  const season = await getSeason(ceremonyId, now);
   if (season.phase === "pronto") {
     return { season, categories: [], votes: {} };
   }
-  const [categories, votes] = await Promise.all([loadOscarCategories(year), getOscarVotes(userId, year)]);
+  const [categories, votes] = await Promise.all([loadCategories(ceremonyId), getVotes(userId, ceremonyId)]);
   return { season, categories: categories ?? [], votes };
 };

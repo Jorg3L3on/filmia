@@ -1,4 +1,5 @@
 import { addDays, mxToday } from "@/lib/cine-core";
+import { QUINIELA_SEASON_DATES } from "@/lib/quinielas/seasons";
 
 /**
  * Extras (FIL-I50; «Juegos» in the plan, renamed by Jorge because not everything in it is a game): the section's cartel and its pure rules. A game is listed here in code; the
@@ -19,8 +20,12 @@ export type Juego = {
   href: string | null;
   /** `YYYY-MM-DD` (Mexico City) it became playable: from then on Hoy shows the «nuevo» dot once. */
   launchedOn: string | null;
-  /** A seasonal game is on the portada's top only inside this window (`YYYY-MM-DD`, inclusive). */
-  season: { from: string; to: string } | null;
+  /**
+   * A seasonal game is on the portada's top only inside one of these windows (`YYYY-MM-DD`,
+   * inclusive); outside them it waits in «Próximamente». Several windows: the quinielas have one
+   * per ceremony (FIL-I51-8).
+   */
+  seasons: readonly { from: string; to: string }[] | null;
 };
 
 export const TANDA_ID = "tanda";
@@ -36,18 +41,18 @@ export const JUEGOS: readonly Juego[] = [
     status: "available",
     href: TANDA_PATH,
     launchedOn: "2026-11-12",
-    season: null,
+    seasons: null,
   },
   {
     id: QUINIELAS_ID,
     name: "Quinielas de premios",
     line: "Óscar, Globos de Oro, Emmy y BAFTA: predice quién gana y sigue tus aciertos en vivo.",
-    // FIL-I51-8 turns it «seasonal» with the windows of each ceremony. launchedOn stays null until
-    // the first ceremony opens (FIL-I51-10): setting it sends the launch push.
-    status: "available",
+    // On top while any ceremony is in season (nominations → a week after the night). launchedOn
+    // stays null until the first real ceremony opens (FIL-I51-10): setting it sends the launch push.
+    status: "seasonal",
     href: QUINIELAS_PATH,
     launchedOn: null,
-    season: null,
+    seasons: QUINIELA_SEASON_DATES.map((dates) => ({ from: dates.nominationsOn, to: addDays(dates.ceremonyOn, 7) })),
   },
   {
     id: "muro",
@@ -56,7 +61,7 @@ export const JUEGOS: readonly Juego[] = [
     status: "soon",
     href: null,
     launchedOn: null,
-    season: null,
+    seasons: null,
   },
   {
     id: "duelos",
@@ -65,7 +70,7 @@ export const JUEGOS: readonly Juego[] = [
     status: "soon",
     href: null,
     launchedOn: null,
-    season: null,
+    seasons: null,
   },
   {
     id: "linea",
@@ -74,7 +79,7 @@ export const JUEGOS: readonly Juego[] = [
     status: "soon",
     href: null,
     launchedOn: null,
-    season: null,
+    seasons: null,
   },
   {
     id: "mayor",
@@ -83,14 +88,16 @@ export const JUEGOS: readonly Juego[] = [
     status: "soon",
     href: null,
     launchedOn: null,
-    season: null,
+    seasons: null,
   },
 ];
 
 const launched = (juego: Juego, today: string) => juego.href != null && (juego.launchedOn == null || juego.launchedOn <= today);
 
 const inSeason = (juego: Juego, today: string) =>
-  juego.status === "seasonal" && juego.season != null && juego.season.from <= today && today <= juego.season.to && launched(juego, today);
+  juego.status === "seasonal" &&
+  (juego.seasons ?? []).some((window) => window.from <= today && today <= window.to) &&
+  launched(juego, today);
 
 export type Portada = {
   /** «De temporada»: on top while its window is open. */

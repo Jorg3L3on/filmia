@@ -1,41 +1,49 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { oscarSeasonYear } from "@/lib/quinielas/ceremonies";
+import { getCeremony } from "@/lib/quinielas/ceremonies";
 import {
-  createOscarGroup,
-  deleteOscarGroup,
-  joinOscarGroup,
-  leaveOscarGroup,
-  regenerateOscarGroupLink,
+  createGroup,
+  deleteGroup,
+  getGroupForMember,
+  joinGroup,
+  leaveGroup,
+  regenerateGroupLink,
 } from "@/lib/quinielas/groups";
-import { castOscarVote, type CastOscarVoteResult } from "@/lib/quinielas/store";
+import { ceremonyPath } from "@/lib/quinielas/hub-core";
+import { castVote, type CastVoteResult } from "@/lib/quinielas/store";
 import { requireUserId } from "@/lib/session";
 
+const isShortString = (value: unknown, max: number): value is string => typeof value === "string" && value.length <= max;
+
 /**
- * Quiniela del Óscar (FIL-I51-2): vote (or change the vote) in one category of this season's
- * ballot. The store refuses it once the ballot is closed, whatever the page showed.
+ * Quinielas (FIL-I51-2): vote (or change the vote) in one category of a ceremony's ballot. The store
+ * refuses it once the ballot is closed, whatever the page showed.
  */
-export const voteOscar = async (categoryId: unknown, nomineeId: unknown): Promise<CastOscarVoteResult> => {
+export const vote = async (ceremonyId: unknown, categoryId: unknown, nomineeId: unknown): Promise<CastVoteResult> => {
   const userId = await requireUserId();
-  if (typeof categoryId !== "string" || typeof nomineeId !== "string" || categoryId.length > 80 || nomineeId.length > 120) {
+  if (!isShortString(ceremonyId, 40) || !isShortString(categoryId, 80) || !isShortString(nomineeId, 120)) {
     return { ok: false, reason: "invalida" };
   }
   // No revalidatePath: the ballot pages are dynamic, and a refresh per tap would slow the queue
   // of votes (server actions run one at a time).
-  return castOscarVote({ userId, year: oscarSeasonYear(), categoryId, nomineeId });
+  return castVote({ userId, ceremonyId, categoryId, nomineeId });
 };
 
 // ── Groups (FIL-I51-3) ───────────────────────────────────────────────────
 
 export type GroupActionState = { error: string | null };
 
-/** «Retar a alguien»: a new group for this season, then its page with the link to send. */
-export const createOscarGroupAction = async (_state: GroupActionState, formData: FormData): Promise<GroupActionState> => {
+/** «Retar a alguien»: a new group for the ceremony, then its page with the link to send. */
+export const createGroupAction = async (_state: GroupActionState, formData: FormData): Promise<GroupActionState> => {
   const userId = await requireUserId();
+  const ceremonyId = formData.get("ceremonyId");
+  if (!getCeremony(ceremonyId)) {
+    return { error: "Esta entrega no tiene quiniela." };
+  }
   let groupId: string;
   try {
-    ({ id: groupId } = await createOscarGroup({ ownerId: userId, year: oscarSeasonYear(), name: formData.get("name") }));
+    ({ id: groupId } = await createGroup({ ownerId: userId, ceremonyId: ceremonyId as string, name: formData.get("name") }));
   } catch (error) {
     return { error: error instanceof Error ? error.message : "No se pudo crear el grupo." };
   }
@@ -43,12 +51,12 @@ export const createOscarGroupAction = async (_state: GroupActionState, formData:
 };
 
 /** «Entrar al grupo» from an invite link. */
-export const joinOscarGroupAction = async (token: unknown): Promise<GroupActionState> => {
+export const joinGroupAction = async (token: unknown): Promise<GroupActionState> => {
   const userId = await requireUserId();
   if (typeof token !== "string") {
     return { error: "Este enlace ya no sirve." };
   }
-  const result = await joinOscarGroup(token, userId);
+  const result = await joinGroup(token, userId);
   if (!result.ok) {
     return { error: result.reason === "lleno" ? "Este grupo ya está lleno." : "Este enlace ya no sirve." };
   }
@@ -56,23 +64,25 @@ export const joinOscarGroupAction = async (token: unknown): Promise<GroupActionS
 };
 
 /** «Nuevo enlace»: the path of the new link, or null when the caller does not own the group. */
-export const regenerateOscarGroupLinkAction = async (groupId: unknown): Promise<string | null> => {
+export const regenerateGroupLinkAction = async (groupId: unknown): Promise<string | null> => {
   const userId = await requireUserId();
-  return typeof groupId === "string" ? regenerateOscarGroupLink(groupId, userId) : null;
+  return typeof groupId === "string" ? regenerateGroupLink(groupId, userId) : null;
 };
 
-export const leaveOscarGroupAction = async (groupId: unknown): Promise<GroupActionState> => {
+export const leaveGroupAction = async (groupId: unknown): Promise<GroupActionState> => {
   const userId = await requireUserId();
-  if (typeof groupId !== "string" || !(await leaveOscarGroup(groupId, userId))) {
+  const group = typeof groupId === "string" ? await getGroupForMember(groupId, userId) : null;
+  if (!group || !(await leaveGroup(group.id, userId))) {
     return { error: "No se pudo salir del grupo." };
   }
-  redirect("/extras/quinielas/grupos");
+  redirect(`${ceremonyPath(group.ceremonyId)}/grupos`);
 };
 
-export const deleteOscarGroupAction = async (groupId: unknown): Promise<GroupActionState> => {
+export const deleteGroupAction = async (groupId: unknown): Promise<GroupActionState> => {
   const userId = await requireUserId();
-  if (typeof groupId !== "string" || !(await deleteOscarGroup(groupId, userId))) {
+  const ceremonyId = typeof groupId === "string" ? await deleteGroup(groupId, userId) : null;
+  if (!ceremonyId) {
     return { error: "No se pudo borrar el grupo." };
   }
-  redirect("/extras/quinielas/grupos");
+  redirect(`${ceremonyPath(ceremonyId)}/grupos`);
 };
