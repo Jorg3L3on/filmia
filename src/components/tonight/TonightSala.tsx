@@ -558,12 +558,9 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null, j
       <div className="diario-que-ver-shell tonight-sala flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-sm:gap-1">
         {/* The page's one heading (UX-18): the eyebrow and deck carry the visible titles. */}
         <h1 className="sr-only">Hoy</h1>
-        {/* Desktop keeps the three rows; the phone folds the eyebrow into the rail (FIL-I21-3). */}
+        {/* Desktop keeps the eyebrow row; on the phone the bedtime chip closes the mood row (FIL-I21-3). */}
         <div className="tonight-eyebrow-row shrink-0 max-sm:hidden">
           <TonightEyebrow now={now} nightEnds={decks.nightEnds} />
-        </div>
-        <div className="sm:hidden">
-          <TonightEyebrow now={now} nightEnds={decks.nightEnds} compact />
         </div>
         {!now ? (
           <HoyDeckSkeleton />
@@ -575,6 +572,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null, j
               moodId={mood?.id ?? null}
               onMood={chooseMood}
               juegos={juegosFresh == null ? null : { fresh: juegosFresh }}
+              trailing={dayPart === "noche" ? <TonightEyebrow now={now} nightEnds={decks.nightEnds} compact /> : null}
               className="shrink-0 px-1"
             />
             {options ? (

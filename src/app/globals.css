@@ -1936,18 +1936,9 @@ html[data-que-ver-grade="live"] body {
 }
 
 /* Phone header (FIL-I21-3): bedtime chip up in the brand row; the eyebrow over the rail. */
-.tonight-bedtime-fixed {
-  position: fixed;
-  top: calc(env(safe-area-inset-top) + 10px);
-  right: max(1rem, env(safe-area-inset-right));
-  z-index: 41;
-}
-
-/* The phone chip is portaled to body, out of its sm:hidden wrapper: hide it where the eyebrow row shows its own. */
-@media (min-width: 640px) {
-  .tonight-bedtime-fixed {
-    display: none;
-  }
+/* Phone bedtime chip: last in the mood row, in the flow (it used to float fixed over the moods). */
+.tonight-bedtime-inline {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Phone: two rows before the stage (header 48 + eyebrow/rail/bar ≈ 68 → stage at ~116 px). */
@@ -3755,6 +3746,12 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
     mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
     padding-right: 2.5rem;
   }
+
+  /* With the bedtime chip closing the row, the rail stops before it and fades there. */
+  .tonight-mood-rail.has-trailing {
+    margin-right: 0;
+    padding-right: 1.75rem;
+  }
 }
 
 /* Lens rail: neighbors in the same serif voice as the active lens, readable. */
@@ -5426,8 +5423,7 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
    * title + button with the act-two peek, then the dock.
    */
   html[data-launch="hoy"] .site-header,
-  html[data-launch="hoy"] .tonight-bedtime-fixed,
-  html[data-launch="hoy"] .hoy-act-one .diario-que-ver-body > .shrink-0,
+    html[data-launch="hoy"] .hoy-act-one .diario-que-ver-body > .shrink-0,
   html[data-launch="hoy"] .hoy-act-one .deck-footer-swap,
   html[data-launch="hoy"] .hoy-peek.is-visible,
   html[data-launch="hoy"] nav[aria-label="Principal móvil"] {
@@ -8147,16 +8143,6 @@ body:has(.hoy-act-one) {
   margin-top: 0.4rem;
   font-size: 0.625rem;
   color: var(--faint);
-}
-
-/* Act two covers the screen: the sala's floating bedtime chip (portaled to body) steps aside. */
-html[data-acto-dos] .tonight-bedtime-fixed {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.tonight-bedtime-fixed {
-  transition: opacity var(--duration-enter) var(--ease-out);
 }
 
 /* The Hoy tab dot (FIL-I47-2): the ranking or arrivals changed since the last visit. */

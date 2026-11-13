@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { catalogBarChipClass } from "@/components/catalog-filters/filter-ui";
 import { JuegosIcon } from "@/components/juegos/JuegosIcon";
 import { cn } from "@/lib/cn";
@@ -14,6 +15,8 @@ type TonightFiltersProps = {
   onMood: (id: string | null) => void;
   /** Extras' door (FIL-I50-2, entry A): takes the label's place; `fresh` lights the «nuevo» dot. */
   juegos?: { fresh: boolean } | null;
+  /** Phone only: the bedtime chip, last in the row so the moods scroll under nothing. */
+  trailing?: ReactNode;
   className?: string;
 };
 
@@ -43,7 +46,7 @@ const JuegosButton = ({ fresh }: { fresh: boolean }) => (
 );
 
 /** «Ánimo» over the deck (FIL-I31-2): one tap narrows Hoy. */
-export const TonightFilters = ({ moodId, onMood, juegos = null, className }: TonightFiltersProps) => (
+export const TonightFilters = ({ moodId, onMood, juegos = null, trailing = null, className }: TonightFiltersProps) => (
   <div className={cn("flex flex-col gap-1", className)}>
     <div className="flex items-center gap-2">
       {juegos ? (
@@ -62,7 +65,7 @@ export const TonightFilters = ({ moodId, onMood, juegos = null, className }: Ton
       <div
         role="group"
         aria-labelledby="tonight-mood-label"
-        className="rail rail-fade tonight-mood-rail flex min-w-0 gap-1.5 overflow-x-auto"
+        className={cn("rail rail-fade tonight-mood-rail flex min-w-0 flex-1 gap-1.5 overflow-x-auto", trailing ? "has-trailing" : null)}
       >
         {MOODS.map((mood) => (
           <button
@@ -76,6 +79,7 @@ export const TonightFilters = ({ moodId, onMood, juegos = null, className }: Ton
           </button>
         ))}
       </div>
+      {trailing ? <div className="flex shrink-0 sm:hidden">{trailing}</div> : null}
     </div>
   </div>
 );

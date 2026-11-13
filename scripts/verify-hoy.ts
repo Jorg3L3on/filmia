@@ -45,7 +45,7 @@ const run = () => {
   assert(salaSrc.includes("indicator={chapterBar}") && salaSrc.includes("remaining = Math.max(0, dealt - 1 - resolvedHero)") && salaSrc.includes("positionInLens"), "Hoy renders the chapter bar instead of the dots; «quedan N» = cards left in the whole deck");
   const rail = read("src/components/GenreCoverflow.tsx");
   assert(rail.includes("indicator ? (") && rail.includes("genre-coverflow-dots"), "The rail keeps its dots when no indicator is given (Historial, lists)");
-  assert(salaSrc.includes("compact />") && read("src/components/tonight/TonightEyebrow.tsx").includes("tonight-bedtime-fixed") && css.includes(".tonight-bedtime-fixed") && css.includes("max-height: 700px"), "Phone header: bedtime chip in the brand row, eyebrow folded into the rail, SE/mini rule");
+  assert(salaSrc.includes("compact />") && read("src/components/tonight/TonightEyebrow.tsx").includes("tonight-bedtime-inline") && css.includes(".tonight-bedtime-inline") && css.includes("max-height: 700px"), "Phone: bedtime chip in the flow at the end of the mood row, SE/mini rule");
   // Asomo (FIL-I21-4): phone neighbours spread ×1.72, no blur at ±1, lite without rotation; no new filter.
   const metrics = read("src/lib/coverflow-metrics.ts");
   assert(metrics.includes("COVERFLOW_ASOMO_SPREAD = 1.72") && metrics.includes("distance * 0.14") && metrics.includes("distance * 32") && metrics.includes("distance * 0.3)") && metrics.includes("distance < 1.5 ? 0"), "Asomo numbers: ×1.72, scale 1 − 0.14·d, 32°, brightness 0.70 at ±1, no blur at ±1");
