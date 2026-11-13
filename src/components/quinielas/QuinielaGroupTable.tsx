@@ -3,7 +3,7 @@ import type { GroupStanding } from "@/lib/quinielas/groups";
 
 /**
  * «Tu grupo» (FIL-I51-3): first names and hits; before any winner, how far each ballot is. Never an
- * email and never someone else's picks.
+ * email; the picks themselves are in «Las boletas» (FIL-I51-13).
  */
 export const QuinielaGroupTable = ({
   standings,

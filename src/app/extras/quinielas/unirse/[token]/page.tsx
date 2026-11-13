@@ -36,7 +36,8 @@ export default async function UnirsePage({ params }: { params: Promise<{ token: 
         <h1 className="font-serif text-[2.1rem] leading-[1.05] text-paper">{group.name}</h1>
       </div>
       <p className="text-sm text-fog">
-        Elige quién gana cada categoría y la noche de la ceremonia ve quién atinó más. En el grupo solo se ven los aciertos.
+        Elige quién gana cada categoría y la noche de la ceremonia ve quién atinó más. Al entrar, el grupo verá tu boleta y
+        tú la de los demás.
       </p>
       <QuinielaGroupJoin token={token} />
     </div>

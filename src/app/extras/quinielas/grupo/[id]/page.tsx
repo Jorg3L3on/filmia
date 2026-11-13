@@ -2,11 +2,13 @@ import { notFound } from "next/navigation";
 import { NavLabel } from "@/components/NavOriginTracker";
 import { BackDisc } from "@/components/PageHeader";
 import { QuinielaGroupInvite, QuinielaGroupLeave } from "@/components/quinielas/QuinielaGroupControls";
+import { QuinielaGroupBallots } from "@/components/quinielas/QuinielaGroupBallots";
 import { QuinielaGroupTable } from "@/components/quinielas/QuinielaGroupTable";
+import { loadCategories } from "@/lib/quinielas/ballot-load";
 import { getCeremony } from "@/lib/quinielas/ceremonies";
-import { getGroupForMember, groupStandings, ownerGroupLink } from "@/lib/quinielas/groups";
+import { getGroupForMember, groupBallots, groupStandings, ownerGroupLink } from "@/lib/quinielas/groups";
 import { ceremonyInfo, ceremonyPath } from "@/lib/quinielas/hub-core";
-import { getWinners } from "@/lib/quinielas/store";
+import { getWinners, winnerIds } from "@/lib/quinielas/store";
 import { requireUserId } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +17,10 @@ export const metadata = { title: "Tu grupo" } as const;
 
 type GroupPageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ nuevo?: string }> };
 
-/** One quiniela group (FIL-I51-3): its table, and the link for its owner. Members only: 404 otherwise. */
+/**
+ * One quiniela group (FIL-I51-3): its table, everyone's ballot (FIL-I51-13) and the link for its
+ * owner. Members only: 404 otherwise.
+ */
 export default async function GrupoPage({ params, searchParams }: GroupPageProps) {
   const userId = await requireUserId();
   const [{ id }, { nuevo }] = await Promise.all([params, searchParams]);
@@ -26,8 +31,10 @@ export default async function GrupoPage({ params, searchParams }: GroupPageProps
   }
   const ceremony = ceremonyInfo(file);
   const owner = group.ownerId === userId;
-  const [standings, winners, link] = await Promise.all([
+  const [standings, ballots, categories, winners, link] = await Promise.all([
     groupStandings(group, userId),
+    groupBallots(group, userId),
+    loadCategories(file.id),
     getWinners(file.id),
     owner ? ownerGroupLink(group.id, userId) : null,
   ]);
@@ -64,6 +71,16 @@ export default async function GrupoPage({ params, searchParams }: GroupPageProps
           </span>
         </div>
         <QuinielaGroupTable standings={standings} total={file.categories.length} announced={announced} />
+      </section>
+
+      <section aria-labelledby="boletas" className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 id="boletas" className="font-serif text-xl text-paper">
+            Las boletas
+          </h2>
+          <span className="text-xs text-fog">cómo votó cada quien</span>
+        </div>
+        <QuinielaGroupBallots categories={categories ?? []} group={ballots} winners={winnerIds(winners)} />
       </section>
 
       <QuinielaGroupLeave groupId={group.id} owner={owner} />

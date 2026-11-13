@@ -35,8 +35,8 @@ export default async function GruposPage({ params }: { params: Promise<{ ceremon
         </div>
       </div>
       <p className="text-sm text-fog">
-        Haz un grupo para esta entrega y manda el enlace. Solo entra quien lo tenga; cada quien ve los aciertos del grupo,
-        nunca la boleta de los demás.
+        Haz un grupo para esta entrega y manda el enlace. Solo entra quien lo tenga; en el grupo todos ven la boleta y
+        los aciertos de los demás.
       </p>
       {groups.length > 0 ? (
         <section aria-labelledby="tus-grupos" className="flex flex-col gap-2">

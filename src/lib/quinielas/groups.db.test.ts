@@ -12,6 +12,7 @@ import {
   deleteGroup,
   getGroupByToken,
   getGroupForMember,
+  groupBallots,
   groupStandings,
   groupToken,
   joinGroup,
@@ -89,15 +90,26 @@ describeWithDb("Quiniela groups on a local database (FIL-I51-3, one per ceremony
     assert.deepEqual(table.map((row) => [row.name, row.hits]), [["Ana", 1], ["Luis", 0]]);
   });
 
-  it("the table carries no email and no picks", async () => {
+  it("the table carries no email", async () => {
     const table = await groupStandings((await getGroupForMember(groupId, ana))!, ana);
-    const json = JSON.stringify(table);
-    assert.ok(!json.includes("@"), json);
-    assert.ok(!json.includes("nm1297015"), json);
+    assert.ok(!JSON.stringify(table).includes("@"));
     assert.deepEqual(Object.keys(table[0]!).sort(), ["hits", "isOwner", "isYou", "name", "voted"]);
   });
 
-  it("someone outside the group cannot read it", async () => {
+  it("members see everyone's ballot, «Tú» first, while voting is still open (FIL-I51-13)", async () => {
+    const forLuis = await groupBallots((await getGroupForMember(groupId, luis))!, luis);
+    assert.deepEqual(forLuis.members, [
+      { name: "Luis", isYou: true },
+      { name: "Ana", isYou: false },
+    ]);
+    assert.deepEqual(forLuis.ballots, [{ actriz: "nm4291409", actor: "nm0614165" }, { actriz: "nm1297015" }]);
+    const json = JSON.stringify(forLuis);
+    assert.ok(!json.includes("@"), json);
+    assert.ok(!json.includes(luis) && !json.includes(ana), "no user ids either");
+  });
+
+  it("someone outside the group cannot read it, nor its ballots", async () => {
+    // The pages only call groupBallots after getGroupForMember, which is null for Eva.
     assert.equal(await getGroupForMember(groupId, eva), null);
     assert.equal(await getGroupForMember("no-existe", eva), null);
   });

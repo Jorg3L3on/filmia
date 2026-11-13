@@ -1,8 +1,9 @@
 /**
  * Quinielas de premios (FIL-I51-3): invite-only groups, one per ceremony (Jorge: a group does not
  * carry over to the next award). A link is the only way in; there is no global table and no list of
- * other people's groups. The group table shows first names and hits, never an email: the queries
- * here never select one.
+ * other people's groups. Members see each other's first names, hits and ballots (FIL-I51-13: being
+ * in the group means sharing your ballot with it, at any time), never an email: the queries here
+ * never select one.
  */
 import { createHash, createHmac } from "node:crypto";
 import { createId } from "@paralleldrive/cuid2";
@@ -206,6 +207,59 @@ export const listMyGroups = async (userId: string, ceremonyId: string) =>
       .orderBy(asc(quinielaGroups.createdAt))
   ).map(toSummary);
 
+/** Every member (joining order) with their ballot for the group's ceremony. Never an email. */
+const memberBallots = async (group: Pick<GroupSummary, "id" | "ceremonyId">) => {
+  const members = await db
+    .select({ userId: quinielaGroupMembers.userId, name: users.name })
+    .from(quinielaGroupMembers)
+    .innerJoin(users, eq(users.id, quinielaGroupMembers.userId))
+    .where(eq(quinielaGroupMembers.groupId, group.id))
+    .orderBy(asc(quinielaGroupMembers.joinedAt));
+  if (members.length === 0) {
+    return [];
+  }
+  const votes = await db
+    .select({ userId: quinielaVotes.userId, categoryId: quinielaVotes.categoryId, nomineeId: quinielaVotes.nomineeId })
+    .from(quinielaVotes)
+    .where(
+      and(
+        eq(quinielaVotes.ceremonyId, group.ceremonyId),
+        inArray(
+          quinielaVotes.userId,
+          members.map((member) => member.userId),
+        ),
+      ),
+    );
+  return members.map((member) => ({
+    userId: member.userId,
+    name: member.name,
+    ballot: Object.fromEntries(
+      votes.filter((vote) => vote.userId === member.userId).map((vote) => [vote.categoryId, vote.nomineeId]),
+    ) as Record<string, string>,
+  }));
+};
+
+export type GroupBallots = {
+  /** «Tú» first, then the rest in joining order. */
+  members: { name: string; isYou: boolean }[];
+  /** Same order as `members`: categoryId → nomineeId. */
+  ballots: Record<string, string>[];
+};
+
+/**
+ * Everyone's ballot in the group (FIL-I51-13). The caller has checked membership
+ * (`getGroupForMember`); visible at any time, also while the ballots are open (Jorge).
+ */
+export const groupBallots = async (group: Pick<GroupSummary, "id" | "ceremonyId">, viewerId: string): Promise<GroupBallots> => {
+  const members = (await memberBallots(group)).sort(
+    (a, b) => Number(b.userId === viewerId) - Number(a.userId === viewerId),
+  );
+  return {
+    members: members.map((member) => ({ name: personFirstName(member.name), isYou: member.userId === viewerId })),
+    ballots: members.map((member) => member.ballot),
+  };
+};
+
 export type GroupStanding = {
   /** Only to mark «Tú»; the page never prints it. */
   isYou: boolean;
@@ -216,39 +270,23 @@ export type GroupStanding = {
 };
 
 /**
- * The group's table: first name, categories voted and hits so far, best first. Picks stay private
- * (no one sees another member's ballot), and there is no email anywhere in it.
+ * The group's table: first name, categories voted and hits so far, best first. No email anywhere
+ * in it; the ballots themselves are in `groupBallots`.
  */
 export const groupStandings = async (
   group: Pick<GroupSummary, "id" | "ceremonyId" | "ownerId">,
   viewerId: string,
 ): Promise<GroupStanding[]> => {
   const ceremony = getCeremony(group.ceremonyId);
-  const members = await db
-    .select({ userId: quinielaGroupMembers.userId, name: users.name, joinedAt: quinielaGroupMembers.joinedAt })
-    .from(quinielaGroupMembers)
-    .innerJoin(users, eq(users.id, quinielaGroupMembers.userId))
-    .where(eq(quinielaGroupMembers.groupId, group.id))
-    .orderBy(asc(quinielaGroupMembers.joinedAt));
+  const members = await memberBallots(group);
   if (!ceremony || members.length === 0) {
     return [];
   }
-  const ids = members.map((member) => member.userId);
-  const [votes, winners] = await Promise.all([
-    db
-      .select({ userId: quinielaVotes.userId, categoryId: quinielaVotes.categoryId, nomineeId: quinielaVotes.nomineeId })
-      .from(quinielaVotes)
-      .where(and(eq(quinielaVotes.ceremonyId, group.ceremonyId), inArray(quinielaVotes.userId, ids))),
-    getWinners(group.ceremonyId),
-  ]);
   const categoryIds = ceremony.categories.map((category) => category.id);
-  const won = winnerIds(winners);
+  const won = winnerIds(await getWinners(group.ceremonyId));
   return members
     .map((member) => {
-      const ballot = Object.fromEntries(
-        votes.filter((vote) => vote.userId === member.userId).map((vote) => [vote.categoryId, vote.nomineeId]),
-      );
-      const score = scoreBallot(categoryIds, ballot, won);
+      const score = scoreBallot(categoryIds, member.ballot, won);
       return {
         isYou: member.userId === viewerId,
         isOwner: member.userId === group.ownerId,
