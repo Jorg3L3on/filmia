@@ -5,6 +5,7 @@ import { config as loadEnv } from "dotenv";
  *
  *   npm run juegos:avisos            # read-only: who would get a Juegos push now, and which one
  *   npm run metrics:juegos           # read-only: aggregates of Juegos, La tanda (FIL-I50-6) and partidas (FIL-I52-6)
+ *   npm run metrics:juegos -- --liga # the liga review window: four weeks before its launch and four after (FIL-I55-4)
  *
  * Both take --env=<path to .env>. With FILMIA_LOCAL_PG=1 they talk to the local Postgres in DATABASE_URL.
  * Nothing here sends a push or writes a row: the daily cron does that.
@@ -67,6 +68,20 @@ const retosReport = async () => {
   }
 };
 
+/** FIL-I55-4: people who play and partidas per person, per week, before and after the liga. */
+const ligaReport = async () => {
+  const { loadLigaMetrics } = await import("../src/lib/juegos/liga/metrics");
+  const report = await loadLigaMetrics(new Date(), Number(flag("semanas") ?? 6), args.includes("--liga"));
+  console.log("");
+  console.log(`Liga (lanzamiento: semana del ${report.launchWeek ?? "—"})`);
+  console.log("Semana       personas  partidas  por persona  liga");
+  for (const row of report.weeks) {
+    console.log(
+      `${row.week}  ${String(row.players).padStart(8)}  ${String(row.partidas).padStart(8)}  ${(row.perPerson == null ? "—" : row.perPerson.toFixed(1)).padStart(11)}  ${row.phase ?? "—"}`,
+    );
+  }
+};
+
 const main = async () => {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL no está definida (usa --env=<ruta al .env>).");
@@ -78,6 +93,7 @@ const main = async () => {
   if (command === "metricas") {
     await metrics();
     await retosReport();
+    await ligaReport();
   } else {
     await avisos();
   }

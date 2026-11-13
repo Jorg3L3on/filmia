@@ -3,7 +3,13 @@ import { BackDisc } from "@/components/PageHeader";
 import { JuegosPortada, type GameRowState, type TandaRowState } from "@/components/juegos/JuegosPortada";
 import { JuegosSeen } from "@/components/juegos/JuegosSeen";
 import { mxToday } from "@/lib/cine-core";
-import { DUELOS_ID, JUEGOS, portadaOf } from "@/lib/juegos/core";
+import { LigaCard } from "@/components/juegos/LigaCard";
+import { BINGO_ID } from "@/lib/juegos/bingo/core";
+import { loadBingo } from "@/lib/juegos/bingo/store";
+import { DUELOS_ID, JUEGOS, LIGA_ID, portadaOf } from "@/lib/juegos/core";
+import { ESTRENOS_ID } from "@/lib/juegos/estrenos/core";
+import { countOpenWithoutForecast } from "@/lib/juegos/estrenos/store";
+import { ligaSummaryFor } from "@/lib/juegos/liga/store";
 import { MAYOR_ID } from "@/lib/juegos/mayor/core";
 import { readDailyMayor } from "@/lib/juegos/mayor/store";
 import { countDailyPlayers } from "@/lib/juegos/partidas";
@@ -49,6 +55,18 @@ export default async function JuegosPage({ searchParams }: { searchParams: Promi
       ? { chip: `Hoy: ${mine.score} de ${mine.total}`, fresh: false }
       : { chip: played === 0 ? "Diaria nueva" : played === 1 ? "1 ya jugó" : `${played} ya jugaron`, fresh: true };
   }
+  // FIL-I55: the quiniela and the bingo get a chip; the liga leaves the list for its own card on top.
+  const playableIds = new Set(portada.playable.map((juego) => juego.id));
+  if (playableIds.has(ESTRENOS_ID)) {
+    const open = await countOpenWithoutForecast(userId, now).catch(() => 0);
+    rows[ESTRENOS_ID] = open > 0 ? { chip: open === 1 ? "1 por pronosticar" : `${open} por pronosticar`, fresh: true } : { chip: "Al día", fresh: false };
+  }
+  if (playableIds.has(BINGO_ID)) {
+    const bingo = await loadBingo(userId, now).catch(() => null);
+    if (bingo) rows[BINGO_ID] = { chip: `${bingo.mine.squares} de 9`, fresh: bingo.mine.squares === 0 };
+  }
+  const liga = playableIds.has(LIGA_ID) ? await ligaSummaryFor(userId, now).catch(() => null) : undefined;
+  const shown = liga === undefined ? portada : { ...portada, playable: portada.playable.filter((juego) => juego.id !== LIGA_ID) };
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-5 pb-10">
@@ -62,7 +80,8 @@ export default async function JuegosPage({ searchParams }: { searchParams: Promi
         </div>
       </div>
       <TeTocaBlock items={teToca} now={now} />
-      <JuegosPortada portada={portada} tanda={tandaRow} rows={rows} />
+      {liga !== undefined ? <LigaCard summary={liga} /> : null}
+      <JuegosPortada portada={shown} tanda={tandaRow} rows={rows} />
     </div>
   );
 }

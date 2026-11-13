@@ -10,6 +10,7 @@ import {
   weekKeyOf,
   type Juego,
 } from "@/lib/juegos/core";
+import { LAUNCH_PUSH_DAYS } from "@/lib/juegos/push";
 import { isJuegoPlayPath, isJuegosPath, isMobileNavCurrent, mobileNavItems, desktopNavItems } from "@/lib/nav";
 
 const juego = (overrides: Partial<Juego>): Juego => ({
@@ -33,8 +34,24 @@ describe("Juegos cartel (FIL-I50-2)", () => {
     );
     assert.deepEqual(
       portada.soon.map((item) => item.id),
-      ["quiniela", "muro", "linea"],
+      ["quiniela", "muro", "linea", "estrenos", "bingo", "liga"],
     );
+  });
+
+  it("FIL-I55: the quiniela, the bingo and the liga launch a week apart, each with its own push week", () => {
+    const launches = JUEGOS.filter((item) => item.launchedOn).map((item) => ({ id: item.id, on: item.launchedOn! }));
+    for (const id of ["estrenos", "bingo", "liga"]) {
+      const mine = launches.find((launch) => launch.id === id);
+      assert.ok(mine, `${id} has a launch date`);
+      for (const other of launches) {
+        if (other.id === id) continue;
+        const gap = Math.abs(Date.parse(mine.on) - Date.parse(other.on)) / 86_400_000;
+        assert.ok(gap >= LAUNCH_PUSH_DAYS, `${id} (${mine.on}) and ${other.id} (${other.on}) are ${gap} days apart`);
+      }
+    }
+    // FIL-I54's diarias (not on this branch) launch on Mondays up to 2026-12-14; ours start after its push week.
+    assert.ok(launches.filter((launch) => ["estrenos", "bingo", "liga"].includes(launch.id)).every((launch) => launch.on >= "2026-12-21"));
+    assert.deepEqual(portadaOf(JUEGOS, "2027-01-11").playable.slice(-3).map((item) => item.id), ["estrenos", "bingo", "liga"]);
   });
 
   it("Mayor o menor launches on its day with its own route (FIL-I52-6)", () => {

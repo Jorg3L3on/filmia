@@ -1,4 +1,6 @@
 import { addDays, mxToday } from "@/lib/cine-core";
+import { BINGO_ID, BINGO_PATH } from "@/lib/juegos/bingo/core";
+import { ESTRENOS_ID, ESTRENOS_PATH } from "@/lib/juegos/estrenos/core";
 import { MAYOR_ID, MAYOR_PATH } from "@/lib/juegos/mayor/core";
 import { QUINIELA_SEASON_DATES } from "@/lib/quinielas/seasons";
 
@@ -34,6 +36,9 @@ export const TANDA_PATH = "/extras/tanda";
 export const QUINIELAS_ID = "quiniela";
 export const DUELOS_ID = "duelos";
 export const QUINIELAS_PATH = "/extras/quinielas";
+/** La liga de la semana (FIL-I55-3); here and not in `liga/core.ts`, which imports this file. */
+export const LIGA_ID = "liga";
+export const LIGA_PATH = "/extras/liga";
 
 export const JUEGOS: readonly Juego[] = [
   {
@@ -92,6 +97,35 @@ export const JUEGOS: readonly Juego[] = [
     href: MAYOR_PATH,
     // FIL-I52-6: setting it sends the launch push once per person (within LAUNCH_PUSH_DAYS).
     launchedOn: "2026-11-13",
+    seasons: null,
+  },
+  // FIL-I55 (grupo y liga): launches a week apart and after FIL-I54's last diaria (2026-12-14), so
+  // each launch push has its own week. The liga goes last: it adds up everything else.
+  {
+    id: ESTRENOS_ID,
+    name: "Quiniela de estrenos",
+    line: "¿Qué nota de IMDb tendrá? Gana quien quede más cerca.",
+    status: "available",
+    href: ESTRENOS_PATH,
+    launchedOn: "2026-12-21",
+    seasons: null,
+  },
+  {
+    id: BINGO_ID,
+    name: "Bingo del mes",
+    line: "Nueve casillas que se tachan con lo que registras.",
+    status: "available",
+    href: BINGO_PATH,
+    launchedOn: "2027-01-04",
+    seasons: null,
+  },
+  {
+    id: LIGA_ID,
+    name: "La liga de la semana",
+    line: "Una tabla que suma diarias, duelos y bingo. Empieza cada lunes.",
+    status: "available",
+    href: LIGA_PATH,
+    launchedOn: "2027-01-11",
     seasons: null,
   },
 ];
