@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   OMDB_DAILY_LIMIT,
   quotaTone,
@@ -36,7 +37,12 @@ export function AdminPanel({ usage, users, now }: { usage: ApiUsageDay[] | null;
           <p className="text-xs uppercase tracking-[0.08em] text-fog">Admin · solo tú</p>
           <h1 className="font-serif text-[2.1rem] font-semibold leading-tight text-paper">Uso de Filmia</h1>
         </div>
-        <p className="text-sm text-fog">Hoy, {todayFormat.format(now).replace(".", "")} · días en UTC</p>
+        <div className="flex flex-col items-end gap-1">
+          <Link href="/admin/quiniela" className="text-sm text-star underline-offset-2 hover:underline">
+            Quiniela del Óscar →
+          </Link>
+          <p className="text-sm text-fog">Hoy, {todayFormat.format(now).replace(".", "")} · días en UTC</p>
+        </div>
       </header>
 
       <ApiUsageSection usage={usage} />
