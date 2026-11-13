@@ -964,6 +964,29 @@ export const findTmdbMovieByImdbId = async (
   return movie ? { tmdbId: movie.id, title: movie.title?.trim() || null, posterPath: movie.poster_path ?? null } : null;
 };
 
+/**
+ * A film or a series by its IMDb id (FIL-I51: the nominees of a quiniela): es-MX title and poster.
+ * `kind` says where to look first; a nominee written by hand with the wrong kind still resolves.
+ * Same 24 h cache as the rest; null when TMDB has neither.
+ */
+export const findTmdbWorkByImdbId = async (
+  imdbId: string,
+  kind: "movie" | "tv",
+): Promise<{ kind: "movie" | "tv"; tmdbId: number; title: string | null; posterPath: string | null } | null> => {
+  if (!/^tt\d+$/.test(imdbId)) {
+    return null;
+  }
+  const data = await tmdbFetch<{
+    movie_results?: { id: number; title?: string | null; poster_path?: string | null }[];
+    tv_results?: { id: number; name?: string | null; poster_path?: string | null }[];
+  }>(`/find/${imdbId}`, { external_source: "imdb_id" });
+  const movie = data.movie_results?.[0];
+  const tv = data.tv_results?.[0];
+  const asMovie = movie ? { kind: "movie" as const, tmdbId: movie.id, title: movie.title?.trim() || null, posterPath: movie.poster_path ?? null } : null;
+  const asTv = tv ? { kind: "tv" as const, tmdbId: tv.id, title: tv.name?.trim() || null, posterPath: tv.poster_path ?? null } : null;
+  return kind === "tv" ? (asTv ?? asMovie) : (asMovie ?? asTv);
+};
+
 // ---------------------------------------------------------------------------
 // A person's credits, raw (Universo's «N»). Same 24 h cache as the rest of the metadata.
 // ---------------------------------------------------------------------------

@@ -19,12 +19,12 @@ const juego = (overrides: Partial<Juego>): Juego => ({
   status: "available",
   href: "/extras/x",
   launchedOn: "2026-11-12",
-  season: null,
+  seasons: null,
   ...overrides,
 });
 
 describe("Juegos cartel (FIL-I50-2)", () => {
-  it("launches with La tanda playable and the rest in «Próximamente»", () => {
+  it("launches with La tanda playable and the rest, quinielas included, in «Próximamente» off season", () => {
     const portada = portadaOf(JUEGOS, "2026-11-20");
     assert.equal(portada.seasonal, null);
     assert.deepEqual(
@@ -37,8 +37,38 @@ describe("Juegos cartel (FIL-I50-2)", () => {
     );
   });
 
+  it("the quinielas are on top inside any ceremony's window, without a launch (no push, no dot) (FIL-I51-8)", () => {
+    const quiniela = JUEGOS.find((item) => item.id === "quiniela");
+    assert.equal(quiniela?.href, "/extras/quinielas");
+    assert.equal(quiniela?.status, "seasonal");
+    assert.equal(quiniela?.launchedOn, null);
+    // The 2024 rehearsal ceremony: nominations 2024-01-23, night 2024-03-10, results a week more.
+    assert.equal(portadaOf(JUEGOS, "2024-02-01").seasonal?.id, "quiniela");
+    assert.equal(portadaOf(JUEGOS, "2024-03-17").seasonal?.id, "quiniela");
+    assert.equal(portadaOf(JUEGOS, "2024-03-18").seasonal, null);
+    assert.equal(latestLaunchOn(JUEGOS, "2026-11-20"), "2026-11-12");
+  });
+
+  it("a seasonal game with several windows is on top in each of them and not between", () => {
+    const multi = juego({
+      id: "multi",
+      status: "seasonal",
+      seasons: [
+        { from: "2026-12-07", to: "2027-01-17" },
+        { from: "2027-01-19", to: "2027-03-21" },
+        { from: "2027-07-14", to: "2027-09-26" },
+      ],
+    });
+    for (const day of ["2026-12-07", "2027-01-17", "2027-02-20", "2027-08-01"]) {
+      assert.equal(portadaOf([multi], day).seasonal?.id, "multi", day);
+    }
+    for (const day of ["2026-12-06", "2027-01-18", "2027-05-01"]) {
+      assert.equal(portadaOf([multi], day).seasonal, null, day);
+    }
+  });
+
   it("puts a seasonal game on top only inside its window", () => {
-    const oscar = juego({ id: "oscar", status: "seasonal", season: { from: "2027-01-22", to: "2027-03-14" }, launchedOn: "2027-01-22" });
+    const oscar = juego({ id: "oscar", status: "seasonal", seasons: [{ from: "2027-01-22", to: "2027-03-14" }], launchedOn: "2027-01-22" });
     assert.equal(portadaOf([oscar], "2027-02-01").seasonal?.id, "oscar");
     assert.equal(portadaOf([oscar], "2027-04-01").seasonal, null);
     assert.deepEqual(

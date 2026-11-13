@@ -20,7 +20,7 @@ const tanda: Juego = {
   status: "available",
   href: "/extras/tanda",
   launchedOn: "2026-11-12",
-  season: null,
+  seasons: null,
 };
 const person = (overrides: Partial<Parameters<typeof juegosPushPlan>[0]> = {}) => ({
   juegosPush: true,
