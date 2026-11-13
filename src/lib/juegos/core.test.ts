@@ -24,17 +24,24 @@ const juego = (overrides: Partial<Juego>): Juego => ({
 });
 
 describe("Juegos cartel (FIL-I50-2)", () => {
-  it("launches with La tanda playable and the rest in «Próximamente»", () => {
+  it("launches with La tanda and the quinielas playable and the rest in «Próximamente»", () => {
     const portada = portadaOf(JUEGOS, "2026-11-20");
     assert.equal(portada.seasonal, null);
     assert.deepEqual(
       portada.playable.map((item) => item.id),
-      ["tanda"],
+      ["tanda", "quiniela"],
     );
     assert.deepEqual(
       portada.soon.map((item) => item.id),
-      ["quiniela", "muro", "duelos", "linea", "mayor"],
+      ["muro", "duelos", "linea", "mayor"],
     );
+  });
+
+  it("the quinielas entry opens /extras/quinielas and has not launched (no push, no dot) (FIL-I51-6)", () => {
+    const quiniela = JUEGOS.find((item) => item.id === "quiniela");
+    assert.equal(quiniela?.href, "/extras/quinielas");
+    assert.equal(quiniela?.launchedOn, null);
+    assert.equal(latestLaunchOn(JUEGOS, "2026-11-20"), "2026-11-12");
   });
 
   it("puts a seasonal game on top only inside its window", () => {

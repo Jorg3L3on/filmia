@@ -5,14 +5,14 @@ import type { ReactNode } from "react";
 import { ToastHost } from "@/components/ToastHost";
 import { FilmGrain } from "@/components/atmosphere/FilmGrain";
 import { PosterFlightCapture } from "@/components/atmosphere/PosterFlightCapture";
-import { isAuthChromePath, isDocklessGamePath, isImmersiveFichaPath } from "@/lib/nav";
+import { isAuthChromePath, isImmersiveFichaPath, isJuegoPlayPath } from "@/lib/nav";
 
 type AuthChromeGateProps = {
   header: ReactNode;
   prefetch: ReactNode;
   bottomNav: ReactNode;
   mainClassName: string;
-  /** Games (`isDocklessGamePath`): no dock and no bottom room for it. */
+  /** Inside an Extra (`isJuegoPlayPath`): BottomNav hides the dock, so no bottom room for it. */
   docklessMainClassName: string;
   children: ReactNode;
 };
@@ -27,7 +27,7 @@ export const AuthChromeGate = ({
   children,
 }: AuthChromeGateProps) => {
   const pathname = usePathname();
-  const dockless = isDocklessGamePath(pathname);
+  const dockless = isJuegoPlayPath(pathname);
 
   return (
     <>
@@ -52,7 +52,7 @@ export const AuthChromeGate = ({
           <main id="contenido" tabIndex={-1} className={dockless ? docklessMainClassName : mainClassName}>
             {children}
           </main>
-          {dockless ? null : bottomNav}
+          {bottomNav}
           {/* The app's one grain layer (FIL-I46-1); never under reduced motion or lite sala. */}
           <FilmGrain />
           <PosterFlightCapture />

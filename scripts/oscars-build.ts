@@ -24,7 +24,7 @@ import {
   buildOscarCeremony,
   unknownBallotCategories,
   type OscarCeremonyFile,
-} from "../src/lib/juegos/oscar/ceremony-core";
+} from "../src/lib/quinielas/ceremony-core";
 
 const SOURCE_URL = `https://raw.githubusercontent.com/${OSCAR_DATA_REPO}/${OSCAR_DATA_SHA}/oscars.csv`;
 const OUT = fileURLToPath(new URL("../src/data/oscars-by-person.json", import.meta.url));

@@ -25,6 +25,8 @@ export type Juego = {
 
 export const TANDA_ID = "tanda";
 export const TANDA_PATH = "/extras/tanda";
+export const QUINIELAS_ID = "quiniela";
+export const QUINIELAS_PATH = "/extras/quinielas";
 
 export const JUEGOS: readonly Juego[] = [
   {
@@ -37,11 +39,13 @@ export const JUEGOS: readonly Juego[] = [
     season: null,
   },
   {
-    id: "quiniela",
-    name: "Quiniela del Óscar",
-    line: "Predice quién gana cada categoría y sigue tus aciertos en vivo.",
-    status: "soon",
-    href: null,
+    id: QUINIELAS_ID,
+    name: "Quinielas de premios",
+    line: "Óscar, Globos de Oro, Emmy y BAFTA: predice quién gana y sigue tus aciertos en vivo.",
+    // FIL-I51-8 turns it «seasonal» with the windows of each ceremony. launchedOn stays null until
+    // the first ceremony opens (FIL-I51-10): setting it sends the launch push.
+    status: "available",
+    href: QUINIELAS_PATH,
     launchedOn: null,
     season: null,
   },

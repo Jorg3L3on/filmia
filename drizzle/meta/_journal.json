@@ -218,6 +218,13 @@
       "when": 1794534422076,
       "tag": "0031_user_juegos_push",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1794538814901,
+      "tag": "0032_quinielas",
+      "breakpoints": true
     }
   ]
 }

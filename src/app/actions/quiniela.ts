@@ -1,15 +1,15 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { oscarSeasonYear } from "@/lib/juegos/oscar/ceremonies";
+import { oscarSeasonYear } from "@/lib/quinielas/ceremonies";
 import {
   createOscarGroup,
   deleteOscarGroup,
   joinOscarGroup,
   leaveOscarGroup,
   regenerateOscarGroupLink,
-} from "@/lib/juegos/oscar/groups";
-import { castOscarVote, type CastOscarVoteResult } from "@/lib/juegos/oscar/store";
+} from "@/lib/quinielas/groups";
+import { castOscarVote, type CastOscarVoteResult } from "@/lib/quinielas/store";
 import { requireUserId } from "@/lib/session";
 
 /**
@@ -39,7 +39,7 @@ export const createOscarGroupAction = async (_state: GroupActionState, formData:
   } catch (error) {
     return { error: error instanceof Error ? error.message : "No se pudo crear el grupo." };
   }
-  redirect(`/juegos/oscar/grupo/${groupId}?nuevo=1`);
+  redirect(`/extras/quinielas/grupo/${groupId}?nuevo=1`);
 };
 
 /** «Entrar al grupo» from an invite link. */
@@ -52,7 +52,7 @@ export const joinOscarGroupAction = async (token: unknown): Promise<GroupActionS
   if (!result.ok) {
     return { error: result.reason === "lleno" ? "Este grupo ya está lleno." : "Este enlace ya no sirve." };
   }
-  redirect(`/juegos/oscar/grupo/${result.groupId}`);
+  redirect(`/extras/quinielas/grupo/${result.groupId}`);
 };
 
 /** «Nuevo enlace»: the path of the new link, or null when the caller does not own the group. */
@@ -66,7 +66,7 @@ export const leaveOscarGroupAction = async (groupId: unknown): Promise<GroupActi
   if (typeof groupId !== "string" || !(await leaveOscarGroup(groupId, userId))) {
     return { error: "No se pudo salir del grupo." };
   }
-  redirect("/juegos/oscar/grupos");
+  redirect("/extras/quinielas/grupos");
 };
 
 export const deleteOscarGroupAction = async (groupId: unknown): Promise<GroupActionState> => {
@@ -74,5 +74,5 @@ export const deleteOscarGroupAction = async (groupId: unknown): Promise<GroupAct
   if (typeof groupId !== "string" || !(await deleteOscarGroup(groupId, userId))) {
     return { error: "No se pudo borrar el grupo." };
   }
-  redirect("/juegos/oscar/grupos");
+  redirect("/extras/quinielas/grupos");
 };

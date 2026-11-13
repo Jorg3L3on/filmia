@@ -17,12 +17,6 @@ export const isAuthChromePath = (pathname: string) => {
   );
 };
 
-/**
- * Inside a game of Juegos (FIL-I51-2, and La tanda in FIL-I50-4): no dock, so the game's own bottom
- * bar has the screen. The /juegos portada keeps it.
- */
-export const isDocklessGamePath = (pathname: string) => /^\/juegos\/[^/]+/.test(pathOnly(pathname));
-
 /** The ficha is immersive on mobile (FIL-I4, dirección A): no global header, the back pill floats on the backdrop. */
 export const isImmersiveFichaPath = (pathname: string) =>
   /^\/titulos\/(?:[^/]+|tmdb\/(?:pelicula|serie)\/\d+)\/?$/.test(pathOnly(pathname));

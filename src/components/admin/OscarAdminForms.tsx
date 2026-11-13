@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { clearOscarWinnerAction, setOscarCloseAction, setOscarWinnerAction } from "@/app/actions/quiniela-admin";
-import type { OscarAdminResult } from "@/lib/juegos/oscar/admin";
+import type { OscarAdminResult } from "@/lib/quinielas/admin";
 import { buttonClass, fieldClass } from "@/lib/ui";
 
 const Status = ({ state, okText }: { state: OscarAdminResult | null; okText: string }) =>

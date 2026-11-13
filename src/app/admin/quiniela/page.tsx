@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { OscarCloseForm, OscarWinnerForm } from "@/components/admin/OscarAdminForms";
 import { requireAdmin } from "@/lib/admin";
-import { utcToMexicoCityLocal } from "@/lib/juegos/oscar/admin";
-import { loadOscarCategories } from "@/lib/juegos/oscar/ballot-load";
-import { knownOscarCeremonyYears, oscarSeasonYear } from "@/lib/juegos/oscar/ceremonies";
-import { getOscarClosesAt, getOscarWinners } from "@/lib/juegos/oscar/store";
+import { utcToMexicoCityLocal } from "@/lib/quinielas/admin";
+import { loadOscarCategories } from "@/lib/quinielas/ballot-load";
+import { knownOscarCeremonyYears, oscarSeasonYear } from "@/lib/quinielas/ceremonies";
+import { getOscarClosesAt, getOscarWinners } from "@/lib/quinielas/store";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
 

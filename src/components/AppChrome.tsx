@@ -5,7 +5,7 @@ import { AuthChromeGate } from "@/components/AuthChromeGate";
 export const appMainClassName =
   "app-main mx-auto flex w-full min-h-0 min-w-0 max-w-6xl flex-1 flex-col pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(6rem,calc(5.5rem+env(safe-area-inset-bottom)))] pt-[calc(1.5rem+env(safe-area-inset-top))] sm:pb-10 sm:pt-8";
 
-/** Same frame without the room the dock needs (games, FIL-I51-2). */
+/** Same frame without the room the dock needs: inside an Extra, where BottomNav hides it (FIL-I51). */
 export const appMainDocklessClassName = appMainClassName.replace(
   "pb-[max(6rem,calc(5.5rem+env(safe-area-inset-bottom)))]",
   "pb-[max(1rem,env(safe-area-inset-bottom))]",

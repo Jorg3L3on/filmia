@@ -6,7 +6,7 @@ import {
   adminSetOscarClose,
   adminSetOscarWinner,
   type OscarAdminResult,
-} from "@/lib/juegos/oscar/admin";
+} from "@/lib/quinielas/admin";
 import { getLiveSessionUser } from "@/lib/session";
 
 const yearOf = (formData: FormData) => Number(formData.get("year"));
