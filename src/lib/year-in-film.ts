@@ -10,6 +10,8 @@ export type FilmEntry = {
   name: string;
   posterPath: string | null;
   watchedAt: Date | string | null;
+  /** FIL-I50: a game's «vista alguna vez» has no diary day and counts nowhere here. */
+  watchedUndated?: boolean;
   runtimeMinutes: number | null;
   kind: "MOVIE" | "SERIES";
   rating: number | null;
@@ -29,7 +31,7 @@ export type YearInFilm = {
 /** Below this the year card invites instead of showing zeros. */
 export const YEAR_MIN_ENTRIES = 3;
 
-const dayOf = (entry: FilmEntry) => toDateInput(entry.watchedAt);
+const dayOf = (entry: FilmEntry) => (entry.watchedUndated ? "" : toDateInput(entry.watchedAt));
 
 /** Monday-based week index of a `YYYY-MM-DD` day (days since 1970-01-05, a Monday, / 7). */
 export const weekIndexOf = (day: string) => Math.floor((Date.parse(`${day}T00:00:00Z`) - Date.UTC(1970, 0, 5)) / (7 * 86_400_000));
@@ -101,10 +103,12 @@ export const monthInFilm = (entries: readonly FilmEntry[], month: string): Month
  * Diario «Tira» (FIL-I46-5): the month's entries in the calendar's order — days ascending, and
  * within a day the order the calendar shows them in (`groupTitlesByWatchedDay` keeps it).
  */
-export const stripOrder = <T extends { watchedAt: Date | string | null | undefined }>(titles: T[]) => {
+export const stripOrder = <T extends { watchedAt: Date | string | null | undefined; watchedUndated?: boolean }>(
+  titles: T[],
+) => {
   const byDay = new Map<string, T[]>();
   for (const title of titles) {
-    const day = toDateInput(title.watchedAt);
+    const day = title.watchedUndated ? "" : toDateInput(title.watchedAt);
     if (!day) continue;
     byDay.set(day, [...(byDay.get(day) ?? []), title]);
   }

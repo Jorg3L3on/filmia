@@ -223,6 +223,7 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
           titleId={title.id}
           titleName={title.name}
           watchedAt={title.watchedAt}
+          undated={title.watchedUndated}
           rating={title.rating}
           review={title.review}
           platform={title.platform}

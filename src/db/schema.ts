@@ -198,6 +198,12 @@ export const titles = pgTable(
     review: text("review"),
     platform: platformEnum("platform"),
     watchedAt: timestamp("watchedAt", { precision: 3, mode: "date" }),
+    /**
+     * FIL-I50 · Juegos: «vista alguna vez», answered in a game. `watchedAt` is still set (every
+     * «la vio» reader keeps working) but it is not a diary date: the diary, «Tu año en cine» and the
+     * week strip skip these rows. Logging the film with a date from the ficha sets it back to false.
+     */
+    watchedUndated: boolean("watchedUndated").notNull().default(false),
     seriesStatus: seriesStatusEnum("seriesStatus"),
     seriesSeason: integer("seriesSeason"),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })

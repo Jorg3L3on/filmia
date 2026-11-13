@@ -41,7 +41,8 @@ const libraryItem = (entry: LibraryEntry) => ({
   }),
   status: entry.status,
   my_rating: entry.rating ?? null,
-  watched_on: isoDay(entry.watchedAt),
+  // FIL-I50: a game answer is watched without a day; never report a made-up date.
+  watched_on: entry.watchedUndated ? null : isoDay(entry.watchedAt),
   series_status: seriesStatus(entry.seriesStatus),
   added_to_pending_on: isoDay(entry.addedToWatchlistAt),
   note: entry.queueNote,
@@ -149,7 +150,7 @@ export const getTitleTool = defineTool({
       }),
       status: detail.status,
       my_rating: own?.rating ?? null,
-      watched_on: isoDay(own?.watchedAt),
+      watched_on: own?.watchedUndated ? null : isoDay(own?.watchedAt),
       in_library: Boolean(own),
       series_status: seriesStatus(own?.seriesStatus ?? null),
       my_review: own?.review ?? null,

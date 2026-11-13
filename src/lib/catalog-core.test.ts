@@ -12,6 +12,7 @@ const personal = (overrides: Partial<UserTitle> = {}): UserTitle => ({
   review: "mine",
   platform: "NETFLIX",
   watchedAt: new Date("2026-10-01T12:00:00.000Z"),
+  watchedUndated: false,
   seriesStatus: null,
   seriesSeason: null,
   createdAt: new Date("2026-09-01T00:00:00.000Z"),

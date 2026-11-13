@@ -116,7 +116,7 @@ export const undoMarkWatched = async (titleId: string) => {
   const watchlist = await ensureWatchlist(userId);
   const updated = await db
     .update(titles)
-    .set({ watchedAt: null })
+    .set({ watchedAt: null, watchedUndated: false })
     .where(and(eq(titles.id, titleId), eq(titles.userId, userId)))
     .returning({ id: titles.id });
 
@@ -151,7 +151,7 @@ export const clearTitleWatched = async (titleId: string) => {
 
   const updated = await db
     .update(titles)
-    .set({ watchedAt: null })
+    .set({ watchedAt: null, watchedUndated: false })
     .where(and(eq(titles.id, titleId), eq(titles.userId, userId)))
     .returning({ id: titles.id });
 
@@ -168,9 +168,9 @@ export const clearTitleWatched = async (titleId: string) => {
  * Session and ownership are required: the update matches `userId` and only fills a
  * null `watchedAt`, so it never overwrites a newer date or another person's row.
  */
-export const restoreTitleWatched = async (titleId: string, isoDate: string) => {
+export const restoreTitleWatched = async (titleId: string, isoDate: string, undated = false) => {
   const userId = await requireUserId();
-  return restoreWatchedFor(userId, titleId, isoDate);
+  return restoreWatchedFor(userId, titleId, isoDate, undated === true);
 };
 
 export const updateWatchlistNote = async (titleId: string, formData: FormData) => {

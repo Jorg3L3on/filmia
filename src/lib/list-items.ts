@@ -24,6 +24,7 @@ export const titleWithoutEntry = (row: CatalogRow) =>
     review: null,
     platform: null,
     watchedAt: null,
+    watchedUndated: false,
     seriesStatus: null,
     seriesSeason: null,
     createdAt: row.createdAt,
