@@ -50,6 +50,8 @@ type FichaWatchedSectionProps = {
   titleId: string;
   titleName: string;
   watchedAt: Date | string;
+  /** FIL-I50: answered in a game, «vista alguna vez» — no diary day to show. */
+  undated?: boolean;
   rating: number | null;
   review: string | null;
   platform: Platform | null;
@@ -62,6 +64,7 @@ export const FichaWatchedSection = ({
   titleId,
   titleName,
   watchedAt,
+  undated = false,
   rating,
   review,
   platform,
@@ -78,7 +81,7 @@ export const FichaWatchedSection = ({
     const clear = clearTitleWatched(titleId);
     showDiaryRemovedToast({
       clear,
-      restore: () => restoreTitleWatched(titleId, isoDate),
+      restore: () => restoreTitleWatched(titleId, isoDate, undated),
       onUndo: () => setHidden(false),
       onUndoFailed: () => setHidden(true),
       poster,
@@ -98,7 +101,7 @@ export const FichaWatchedSection = ({
           );
           showDiaryRemovedToast({
             clear: Promise.resolve(),
-            restore: () => restoreTitleWatched(titleId, isoDate),
+            restore: () => restoreTitleWatched(titleId, isoDate, undated),
             onUndo: () => setHidden(false),
             onUndoFailed: () => setHidden(true),
             poster,
@@ -121,7 +124,9 @@ export const FichaWatchedSection = ({
         <h2 className="font-serif text-xl text-paper">{titleName}</h2>
         <p className="flex flex-wrap items-center gap-2 text-sm text-fog">
           <WatchedBadge />
-          Vista el {formatWatchedDate(typeof watchedAt === "string" ? new Date(watchedAt) : watchedAt)}
+          {undated
+            ? "Vista"
+            : `Vista el ${formatWatchedDate(typeof watchedAt === "string" ? new Date(watchedAt) : watchedAt)}`}
         </p>
       </header>
 
@@ -129,7 +134,7 @@ export const FichaWatchedSection = ({
 
       <div className="flex flex-wrap gap-3">
         <Button type="button" onClick={() => setOpen(true)}>
-          Editar registro
+          {undated ? "Agregar al diario" : "Editar registro"}
         </Button>
         <ShareButton
           path={sharePath}
@@ -142,7 +147,7 @@ export const FichaWatchedSection = ({
           Compartir
         </ShareButton>
         <Button type="button" variant="danger" onClick={handleRemove}>
-          Quitar del diario
+          {undated ? "Quitar de vistas" : "Quitar del diario"}
         </Button>
       </div>
 
@@ -150,7 +155,7 @@ export const FichaWatchedSection = ({
         open={open}
         titleId={titleId}
         titleName={titleName}
-        initialWatchedAt={toDateInput(watchedAt)}
+        initialWatchedAt={undated ? null : toDateInput(watchedAt)}
         rating={rating}
         review={review}
         platform={platform}

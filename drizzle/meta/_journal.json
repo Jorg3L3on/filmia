@@ -204,6 +204,20 @@
       "when": 1794374990753,
       "tag": "0028_service_chart",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1794532625574,
+      "tag": "0029_title_watched_undated",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1794534422076,
+      "tag": "0031_user_juegos_push",
+      "breakpoints": true
     }
   ]
 }

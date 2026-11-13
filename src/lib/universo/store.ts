@@ -108,7 +108,7 @@ export const loadTotals = async (people: ReadonlyArray<{ id: number; role: Threa
 
 export type UniversoView = {
   universo: Universo;
-  closest: (ClosestIsland & { next: { name: string; platformLabel: string | null } | null }) | null;
+  closest: (ClosestIsland & { next: { name: string; tmdbId: number; platformLabel: string | null } | null }) | null;
 };
 
 /**
@@ -171,7 +171,7 @@ const nextFilmOf = async (userId: string, personIds: readonly number[]) => {
     const film = await db.query.catalog.findFirst({
       where: and(eq(catalog.tmdbId, next.tmdbId), eq(catalog.kind, "MOVIE")),
     });
-    return { name: next.name, platformLabel: film ? platformLabelOf(film, ctx.platforms) : null };
+    return { name: next.name, tmdbId: next.tmdbId, platformLabel: film ? platformLabelOf(film, ctx.platforms) : null };
   } catch {
     return null;
   }

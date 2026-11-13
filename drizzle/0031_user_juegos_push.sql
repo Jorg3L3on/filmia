@@ -1,0 +1,1 @@
+ALTER TABLE "User" ADD COLUMN "juegosPush" boolean DEFAULT true NOT NULL;

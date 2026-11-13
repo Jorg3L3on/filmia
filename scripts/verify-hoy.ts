@@ -45,18 +45,18 @@ const run = () => {
   assert(salaSrc.includes("indicator={chapterBar}") && salaSrc.includes("remaining = Math.max(0, dealt - 1 - resolvedHero)") && salaSrc.includes("positionInLens"), "Hoy renders the chapter bar instead of the dots; «quedan N» = cards left in the whole deck");
   const rail = read("src/components/GenreCoverflow.tsx");
   assert(rail.includes("indicator ? (") && rail.includes("genre-coverflow-dots"), "The rail keeps its dots when no indicator is given (Historial, lists)");
-  assert(salaSrc.includes("compact />") && read("src/components/tonight/TonightEyebrow.tsx").includes("tonight-bedtime-fixed") && css.includes(".tonight-bedtime-fixed") && css.includes("max-height: 700px"), "Phone header: bedtime chip in the brand row, eyebrow folded into the rail, SE/mini rule");
+  assert(salaSrc.includes("compact />") && read("src/components/tonight/TonightEyebrow.tsx").includes("tonight-bedtime-inline") && css.includes(".tonight-bedtime-inline") && css.includes("max-height: 700px"), "Phone: bedtime chip in the flow at the end of the mood row, SE/mini rule");
   // Asomo (FIL-I21-4): phone neighbours spread ×1.72, no blur at ±1, lite without rotation; no new filter.
   const metrics = read("src/lib/coverflow-metrics.ts");
   assert(metrics.includes("COVERFLOW_ASOMO_SPREAD = 1.72") && metrics.includes("distance * 0.14") && metrics.includes("distance * 32") && metrics.includes("distance * 0.3)") && metrics.includes("distance < 1.5 ? 0"), "Asomo numbers: ×1.72, scale 1 − 0.14·d, 32°, brightness 0.70 at ±1, no blur at ±1");
   assert(metrics.includes("lite && cinematic ? 0 : rotateY"), "Lite sala: neighbours do not rotate");
   const chapterCss = css.slice(css.indexOf("/* --- Hoy: chapters and progress"), css.indexOf("/* Mode toggle"));
   assert(!/filter:\s*blur|backdrop-filter/.test(chapterCss), "Chapter bar and compact header add no filter");
-  // Closing card (FIL-I21-6): one sentinel after the whole deck, never per lens; no footer, no impressions.
+  // FIL-I50-8 (Jorge): the deck ends on its last film. No closing card and no «¿Las viste?» door;
+  // the empty state keeps its own card.
   const closingSala = read("src/components/tonight/TonightSala.tsx");
-  const loopEnd = closingSala.indexOf("const dealtCount = all.length;");
-  assert(loopEnd > 0 && closingSala.indexOf("all.push(closingCardFor(last.slug))") > loopEnd && closingSala.indexOf("for (const lens of lenses)") < loopEnd, "The closing card is pushed once, after the lens loop");
-  assert((closingSala.match(/closingCardFor\(/g) ?? []).length === 1 && closingSala.includes("<TonightClosingEmpty />"), "One closing card; the empty state uses the same card");
+  assert(!closingSala.includes("closingCardFor(") && closingSala.includes("<TonightClosingEmpty />"), "No closing card after the deck; the empty state keeps its card");
+  assert(!read("src/lib/tonight-store.ts").includes("visteDoorLens"), "No «¿Las viste?» door at the end of the deck");
   assert(
     closingSala.includes("const unseen = title.closing || title.portal") &&
       closingSala.includes("unseen ? null : pickRefOf(title)"),

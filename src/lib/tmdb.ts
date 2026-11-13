@@ -478,6 +478,9 @@ export type TmdbDiscoverOptions = {
   kind?: TitleKind;
   /** `primary_release_year` for movies, `first_air_date_year` for series. */
   year?: number;
+  /** Movies only: `primary_release_date.gte` / `.lte` years, inclusive (La tanda's epoch, FIL-I50-3). */
+  yearFrom?: number;
+  yearTo?: number;
   sortBy?: TmdbDiscoverSort;
   voteCountGte?: number;
   /** Release-date region (ISO 3166-1), e.g. "MX". */
@@ -557,6 +560,12 @@ export const discoverTmdb = async (
   };
   if (options.year) {
     params[kind === "SERIES" ? "first_air_date_year" : "primary_release_year"] = String(options.year);
+  }
+  if (kind === "MOVIE" && options.yearFrom != null) {
+    params["primary_release_date.gte"] = `${options.yearFrom}-01-01`;
+  }
+  if (kind === "MOVIE" && options.yearTo != null) {
+    params["primary_release_date.lte"] = `${options.yearTo}-12-31`;
   }
   if (options.voteCountGte != null) {
     params["vote_count.gte"] = String(options.voteCountGte);

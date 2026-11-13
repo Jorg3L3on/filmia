@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 import { dayPartOf, nightEndsLabel } from "@/lib/tonight/time";
 import type { NightEnds } from "@/lib/tonight";
@@ -10,7 +9,7 @@ import { focusRing } from "@/lib/ui";
 type TonightEyebrowProps = {
   now: Date | null;
   nightEnds: NightEnds;
-  /** Phone layout: the bedtime chip up in the brand row. */
+  /** Phone layout: the chip closes the mood row, moon and time only (the label says the rest). */
   compact?: boolean;
 };
 
@@ -28,12 +27,12 @@ export const TonightEyebrow = ({ now, nightEnds, compact = false }: TonightEyebr
         aria-label={`Terminas de ver a las ${bedtime}. Cambiar en Perfil`}
         className={cn(
           "tab-transition inline-flex h-7 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-black/30 px-2.5 text-[11px] font-semibold tracking-[0.04em] text-paper/85 backdrop-blur hover:border-accent/50 hover:text-paper",
-          compact && "tonight-bedtime-fixed",
+          compact && "tonight-bedtime-inline h-9 px-3",
           focusRing,
         )}
       >
         <MoonIcon />
-        Hasta las {bedtime}
+        {compact ? bedtime : `Hasta las ${bedtime}`}
       </Link>
     ) : null;
 
@@ -42,9 +41,9 @@ export const TonightEyebrow = ({ now, nightEnds, compact = false }: TonightEyebr
   }
 
   if (compact) {
-    // Phone (FIL-I21-3): the chip joins the brand row, fixed over the header. Portaled to <body>
-    // so the sala's stacking context (isolation: isolate, under the sticky header) cannot hide it.
-    return typeof document !== "undefined" ? createPortal(chip, document.body) : chip;
+    // Phone: in the flow at the end of the mood row. It used to float fixed at the top right and
+    // covered the moods once the phone header was gone (Jorge, FIL-I50).
+    return chip;
   }
 
   return <div className="tonight-eyebrow mx-auto flex w-full max-w-lg items-center justify-end gap-3 px-1">{chip}</div>;

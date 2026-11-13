@@ -57,11 +57,23 @@ export const isWatchlistPath = (pathname: string) => {
   return path === "/watchlist" || path.startsWith("/watchlist/");
 };
 
+/** Extras (FIL-I50, code name «juegos») belongs to Hoy: its only doors are there, and the dock keeps Hoy lit. */
+export const isJuegosPath = (pathname: string) => {
+  const path = pathOnly(pathname);
+  return path === "/extras" || path.startsWith("/extras/");
+};
+
+/** A game being played (La tanda): no dock, the answer buttons own the bottom of the screen. */
+export const isJuegoPlayPath = (pathname: string) => isJuegosPath(pathname) && pathOnly(pathname) !== "/extras";
+
 /**
  * Bottom-nav active state: Cine on /cine/*; Listas on the hub and on Quiero ver (FIL-34);
- * Perfil on /perfil and Tu diario.
+ * Perfil on /perfil and Tu diario; Hoy on Extras.
  */
 export const isMobileNavCurrent = (href: string, pathname: string) => {
+  if (href === "/") {
+    return isCurrentPath("/", pathname) || isJuegosPath(pathname);
+  }
   if (href === "/cine") {
     return isCinePath(pathname);
   }

@@ -5,6 +5,7 @@ import { HoySkeleton } from "@/components/PageSkeletons";
 import { RecosRefresher, RecosWarming } from "@/components/tonight/RecosWarming";
 import { HoyActTwoServer } from "@/components/tonight/act-two/HoyActTwoServer";
 import { TonightSala } from "@/components/tonight/TonightSala";
+import { loadJuegosNovedad } from "@/lib/juegos/store";
 import { parseDeckCard } from "@/lib/nav-origin";
 import { TONIGHT_LENS_PARAM } from "@/lib/tonight/serve";
 import {
@@ -65,7 +66,11 @@ const HoyShell = async ({
   }
 
   const userId = await requireUserId();
-  const decks = await getTonightDecks(userId);
+  const [decks, juegosFresh] = await Promise.all([
+    getTonightDecks(userId),
+    // Juegos' door must never take Hoy down (FIL-I50-2): no dot is the fallback.
+    loadJuegosNovedad(userId).catch(() => false),
+  ]);
 
   if (decks.userPlatforms.length === 0) {
     return (
@@ -112,7 +117,12 @@ const HoyShell = async ({
     <>
       {/* Act one: the sala, the first screen. Act two slides over it (FIL-I47). */}
       <div className="hoy-act-one">
-        <TonightSala decks={decks} initialSlug={initialSlug} initialCardId={parseDeckCard(params.carta)} />
+        <TonightSala
+          decks={decks}
+          initialSlug={initialSlug}
+          initialCardId={parseDeckCard(params.carta)}
+          juegosFresh={juegosFresh}
+        />
       </div>
       {decks.recosWarming ? <RecosRefresher /> : null}
       <Suspense fallback={null}>

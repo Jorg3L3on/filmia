@@ -1936,18 +1936,9 @@ html[data-que-ver-grade="live"] body {
 }
 
 /* Phone header (FIL-I21-3): bedtime chip up in the brand row; the eyebrow over the rail. */
-.tonight-bedtime-fixed {
-  position: fixed;
-  top: calc(env(safe-area-inset-top) + 10px);
-  right: max(1rem, env(safe-area-inset-right));
-  z-index: 41;
-}
-
-/* The phone chip is portaled to body, out of its sm:hidden wrapper: hide it where the eyebrow row shows its own. */
-@media (min-width: 640px) {
-  .tonight-bedtime-fixed {
-    display: none;
-  }
+/* Phone bedtime chip: last in the mood row, in the flow (it used to float fixed over the moods). */
+.tonight-bedtime-inline {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Phone: two rows before the stage (header 48 + eyebrow/rail/bar ≈ 68 → stage at ~116 px). */
@@ -3283,6 +3274,26 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   inset: -4px 0;
 }
 
+/*
+ * A selected chip (aura pill) paints its glass highlight on ::before: keep that on the pill's own
+ * edge (it drew two white lines 4 px above and below) and move the taller tap area to ::after.
+ */
+.rail-chip.liquid-glass::before {
+  inset: 0;
+}
+
+.rail-chip.liquid-glass::after {
+  content: "";
+  position: absolute;
+  inset: -4px 0;
+}
+
+/* Hoy's mood rail scrolls sideways, which also clips vertically: room for the selected ring and glow, row height unchanged. */
+.tonight-mood-rail {
+  padding-block: 6px;
+  margin-block: -6px;
+}
+
 .rail-chip-count {
   font-variant-numeric: tabular-nums;
   font-size: 0.6875rem;
@@ -3754,6 +3765,12 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
     -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
     mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
     padding-right: 2.5rem;
+  }
+
+  /* With the bedtime chip closing the row, the rail stops before it and fades there. */
+  .tonight-mood-rail.has-trailing {
+    margin-right: 0;
+    padding-right: 1.75rem;
   }
 }
 
@@ -5426,8 +5443,7 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
    * title + button with the act-two peek, then the dock.
    */
   html[data-launch="hoy"] .site-header,
-  html[data-launch="hoy"] .tonight-bedtime-fixed,
-  html[data-launch="hoy"] .hoy-act-one .diario-que-ver-body > .shrink-0,
+    html[data-launch="hoy"] .hoy-act-one .diario-que-ver-body > .shrink-0,
   html[data-launch="hoy"] .hoy-act-one .deck-footer-swap,
   html[data-launch="hoy"] .hoy-peek.is-visible,
   html[data-launch="hoy"] nav[aria-label="Principal móvil"] {
@@ -6636,11 +6652,6 @@ html[data-que-ver-lite] .projector-beam {
 /* ----------------------------------------------------------------------
  * Rediseño cinemático · B · Hoy «La sala» y ficha «Secuencia de créditos» (FIL-I46-2)
  * ---------------------------------------------------------------------- */
-
-/* The beam sits behind the cards (z-[1]) and over the atmosphere (z 0). */
-.tonight-beam {
-  inset: -14% -6% 18%;
-}
 
 /* Sheen: a band of light crosses the hero; idle most of the cycle. Hero only. */
 .coverflow-card-sheen {
@@ -8149,16 +8160,6 @@ body:has(.hoy-act-one) {
   color: var(--faint);
 }
 
-/* Act two covers the screen: the sala's floating bedtime chip (portaled to body) steps aside. */
-html[data-acto-dos] .tonight-bedtime-fixed {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.tonight-bedtime-fixed {
-  transition: opacity var(--duration-enter) var(--ease-out);
-}
-
 /* The Hoy tab dot (FIL-I47-2): the ranking or arrivals changed since the last visit. */
 .dock-novedad {
   position: absolute;
@@ -8285,4 +8286,32 @@ html[data-acto-dos] .tonight-bedtime-fixed {
 html[data-que-ver-lite] .act-two-rise > *,
 html[data-que-ver-lite] .hoy-peek svg {
   animation: none;
+}
+
+/* ---------------------------------------------------------------------------
+ * Juegos · La tanda (FIL-I50-4). On a phone the game owns the whole screen (no dock, no header);
+ * the card is 280 × 420 and shrinks on short screens so the four buttons always fit.
+ * ------------------------------------------------------------------------- */
+@media (max-width: 639px) {
+  .tanda-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--canvas);
+    padding: calc(0.75rem + env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+      calc(0.75rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  }
+}
+
+.tanda-play {
+  flex: 1;
+  min-height: 0;
+}
+
+.tanda-deck {
+  height: min(26.25rem, calc(100dvh - 22.5rem));
+  min-height: 14rem;
+  aspect-ratio: 2 / 3;
 }

@@ -8,6 +8,7 @@ import { actTwoStamp, chartPlatformsFor } from "@/lib/service-charts";
 import { getPinnedTonightTitleId } from "@/lib/tonight-store";
 import { countUserSignals, loadAfinaCards } from "@/lib/cold-start-store";
 import { afinaMode } from "@/lib/tonight/cold-start";
+import { loadJuegosTiles } from "@/lib/juegos/store";
 
 /**
  * Loads Hoy's second act (FIL-I47-1) in its own Suspense boundary, so the sala never waits on it.
@@ -15,10 +16,12 @@ import { afinaMode } from "@/lib/tonight/cold-start";
  */
 export const HoyActTwoServer = async ({ userId, userPlatforms }: { userId: string; userPlatforms: Platform[] }) => {
   const now = new Date();
-  const [charts, arrivals, seedRail] = await Promise.all([
+  const [charts, arrivals, seedRail, juegos] = await Promise.all([
     getServiceCharts(userPlatforms),
     getRecentArrivals(userId, userPlatforms, now).catch(() => []),
     getSeedRail(userId),
+    // Juegos' block (FIL-I50-2, entry B): if it fails it is simply not there.
+    loadJuegosTiles(userId, now).catch(() => []),
   ]);
   const gems = await getGems(userId, userPlatforms, charts);
   if (chartPlatformsFor(userPlatforms, charts).length === 0 && arrivals.length === 0 && gems.length === 0 && !seedRail) {
@@ -52,6 +55,7 @@ export const HoyActTwoServer = async ({ userId, userPlatforms }: { userId: strin
         signals={signals}
         gems={gems}
         seedRail={seedRail}
+        juegos={juegos}
       />
     </ActTwoActionsProvider>
   );

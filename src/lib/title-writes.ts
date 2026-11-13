@@ -117,6 +117,8 @@ export const markWatchedFor = async (userId: string, titleId: string, input: Mar
     .update(titles)
     .set({
       watchedAt: input.watchedAt,
+      // A date logged from the ficha, the diary or MCP makes a game's «vista alguna vez» a diary entry.
+      watchedUndated: false,
       ...(input.rating !== undefined ? { rating: input.rating } : {}),
       ...(input.review !== undefined ? { review: input.review } : {}),
       ...(input.platform !== undefined ? { platform: input.platform } : {}),
@@ -143,13 +145,13 @@ export const markWatchedFor = async (userId: string, titleId: string, input: Mar
  * person logged during the undo window is left alone. Does not touch rating, review,
  * platform, or Quiero ver (unlike `markWatchedFor`).
  */
-export const restoreWatchedFor = async (userId: string, titleId: string, isoDate: string) => {
+export const restoreWatchedFor = async (userId: string, titleId: string, isoDate: string, undated = false) => {
   if (!isValidIsoDate(isoDate)) {
     throw new DomainError("validation", "La fecha vista no es válida.");
   }
   const updated = await db
     .update(titles)
-    .set({ watchedAt: isoDateToUtcNoon(isoDate) })
+    .set({ watchedAt: isoDateToUtcNoon(isoDate), watchedUndated: undated })
     .where(and(eq(titles.id, titleId), eq(titles.userId, userId), isNull(titles.watchedAt)))
     .returning({ watchedAt: titles.watchedAt });
   const watchedAt = updated[0]?.watchedAt;

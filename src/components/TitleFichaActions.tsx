@@ -63,6 +63,8 @@ type TitleFichaActionsProps = {
   watched: boolean;
   /** Calendar day `YYYY-MM-DD` already on the entry. Deshacer puts this date back. */
   watchedAt?: string | null;
+  /** FIL-I50: watched in a game, without a diary day; Deshacer puts it back undated. */
+  watchedUndated?: boolean;
   inWatchlist: boolean;
   /** Saved lists (Quiero ver excluded). */
   listCount: number;
@@ -117,6 +119,7 @@ export const TitleFichaActions = ({
   titleName,
   watched,
   watchedAt = null,
+  watchedUndated = false,
   inWatchlist,
   listCount,
   rating,
@@ -297,7 +300,7 @@ export const TitleFichaActions = ({
     const clear = clearAfterPendingSave(pendingSave, () => clearTitleWatched(id));
     showDiaryRemovedToast({
       clear,
-      restore: () => restoreTitleWatched(id, isoDate),
+      restore: () => restoreTitleWatched(id, isoDate, watchedUndated && isoDate === watchedAt),
       onUndo: () => setDiaryHold("restoring"),
       onUndoFailed: () => setDiaryHold(null),
       poster,
@@ -328,7 +331,7 @@ export const TitleFichaActions = ({
               await clearTitleWatched(id);
               showDiaryRemovedToast({
                 clear: Promise.resolve(),
-                restore: () => restoreTitleWatched(id, isoDate),
+                restore: () => restoreTitleWatched(id, isoDate, watchedUndated && isoDate === watchedAt),
                 onUndo: () => setDiaryHold("restoring"),
                 onUndoFailed: () => setDiaryHold(null),
                 poster,

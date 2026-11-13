@@ -70,9 +70,14 @@ type TitleFilters = {
   platform?: Platform | "ALL";
   sort?: "recent" | "watched" | "rating" | "name" | "year";
   onlyWatched?: boolean;
+  /** Diary entries only: watched with a date (FIL-I50 game answers are watched but undated). */
+  onlyDated?: boolean;
   seriesStatus?: SeriesStatusFilter;
   watchedMonth?: string;
 };
+
+/** A diary entry: watched with a real date. Game answers (`watchedUndated`) never are. */
+export const datedWatch = () => and(isNotNull(titles.watchedAt), eq(titles.watchedUndated, false))!;
 
 const EMPTY_TITLE_FILTERS: TitleFilters = {};
 
@@ -129,6 +134,7 @@ const buildTitleConditions = (userId: string, filters: TitleFilters) => {
     kind,
     platform,
     onlyWatched = false,
+    onlyDated = false,
     seriesStatus,
     watchedMonth,
   } = filters;
@@ -149,6 +155,10 @@ const buildTitleConditions = (userId: string, filters: TitleFilters) => {
 
   if (onlyWatched) {
     conditions.push(isNotNull(titles.watchedAt));
+  }
+
+  if (onlyDated || watchedMonth) {
+    conditions.push(datedWatch());
   }
 
   if (watchedMonth) {
@@ -204,6 +214,7 @@ export const getLatestWatchedMonth = cache(async (filters: TitleFilters = EMPTY_
         ...buildTitleConditions(userId, {
           ...filters,
           onlyWatched: true,
+          onlyDated: true,
           watchedMonth: undefined,
         }),
       ),
@@ -478,7 +489,7 @@ export const getUserStreamingPlatforms = cache(async () => {
 export const getRecentWatchedTitles = cache(async (limit = 3) => {
   const userId = await requireUserId();
   const rows = await db.query.titles.findMany({
-    where: and(eq(titles.userId, userId), isNotNull(titles.watchedAt)),
+    where: and(eq(titles.userId, userId), datedWatch()),
     orderBy: [desc(titles.watchedAt), asc(titles.createdAt)],
     limit,
     with: WITH_CATALOG,
@@ -486,11 +497,15 @@ export const getRecentWatchedTitles = cache(async (limit = 3) => {
   return rows.map((row) => flattenTitle(row));
 });
 
-/** Everything watched from `since` (inclusive) until `until` (exclusive), newest first (diario, MCP). */
+/**
+ * Diary entries from `since` (inclusive) until `until` (exclusive), newest first (diario, «Tu año
+ * en cine», the week strip, MCP). Undated game answers have no day, so they are never in a range.
+ */
 export const loadWatchedBetween = async (userId: string, since: Date, until?: Date) => {
   const rows = await db.query.titles.findMany({
     where: and(
       eq(titles.userId, userId),
+      eq(titles.watchedUndated, false),
       gte(titles.watchedAt, since),
       until ? lt(titles.watchedAt, until) : undefined,
     ),
