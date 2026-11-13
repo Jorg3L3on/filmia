@@ -8,7 +8,8 @@ import { db, juegoPartidas, juegoRondas, users } from "@/db";
  * its own id, lens and JSON; this file never reads `Catalog` and never writes `Title`.
  */
 
-export type PartidaMode = "libre" | "diaria";
+/** «reto» (FIL-I53): a partida played for a reto; its content carries `{ retoId, side }`. */
+export type PartidaMode = "libre" | "diaria" | "reto";
 
 export type PartidaRow = typeof juegoPartidas.$inferSelect;
 export type RondaRow = typeof juegoRondas.$inferSelect;

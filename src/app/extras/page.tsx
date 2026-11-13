@@ -3,11 +3,13 @@ import { BackDisc } from "@/components/PageHeader";
 import { JuegosPortada, type GameRowState, type TandaRowState } from "@/components/juegos/JuegosPortada";
 import { JuegosSeen } from "@/components/juegos/JuegosSeen";
 import { mxToday } from "@/lib/cine-core";
-import { JUEGOS, portadaOf } from "@/lib/juegos/core";
+import { DUELOS_ID, JUEGOS, portadaOf } from "@/lib/juegos/core";
 import { MAYOR_ID } from "@/lib/juegos/mayor/core";
 import { readDailyMayor } from "@/lib/juegos/mayor/store";
 import { countDailyPlayers } from "@/lib/juegos/partidas";
+import { listTeToca } from "@/lib/juegos/retos/store";
 import { readTanda } from "@/lib/juegos/tanda/store";
+import { TeTocaBlock } from "@/components/juegos/RetosUi";
 import { requireUserId } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +34,11 @@ export default async function JuegosPage({ searchParams }: { searchParams: Promi
   };
   const desde = typeof params.desde === "string" ? params.desde : null;
   const rows: Record<string, GameRowState> = {};
+  // «Te toca» (FIL-I53-1, board Comp-2-portada): retos waiting for the person, on top.
+  const teToca = await listTeToca(userId, now).catch(() => []);
+  if (portada.playable.some((juego) => juego.id === DUELOS_ID)) {
+    rows[DUELOS_ID] = teToca.length > 0 ? { chip: teToca.length === 1 ? "1 te toca" : `${teToca.length} te tocan`, fresh: true } : { chip: "Retar", fresh: false };
+  }
   if (portada.playable.some((juego) => juego.id === MAYOR_ID)) {
     const today = mxToday(now);
     const [mine, played] = await Promise.all([
@@ -54,6 +61,7 @@ export default async function JuegosPage({ searchParams }: { searchParams: Promi
           <h1 className="font-serif text-[1.9rem] font-semibold leading-none text-paper">Extras</h1>
         </div>
       </div>
+      <TeTocaBlock items={teToca} now={now} />
       <JuegosPortada portada={portada} tanda={tandaRow} rows={rows} />
     </div>
   );

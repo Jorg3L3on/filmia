@@ -32,6 +32,8 @@ export const RATE_LIMITS = {
   mcpConnection: { name: "mcp:connection", limit: 120, windowMs: MINUTE },
   /** New personal tokens per account (FIL-I20-6). */
   personalTokenAccount: { name: "mcp:token", limit: 10, windowMs: 60 * MINUTE },
+  /** Opening a public reto link (FIL-I53-4), per IP: the page is outside the session wall. */
+  retoLinkIp: { name: "reto:ip", limit: 20, windowMs: 10 * MINUTE },
 } as const satisfies Record<string, RateLimitRule>;
 
 export const RATE_LIMIT_MESSAGE = "Demasiados intentos. Espera unos minutos y vuelve a intentarlo.";
