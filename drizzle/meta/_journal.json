@@ -225,6 +225,13 @@
       "when": 1794539464992,
       "tag": "0032_quinielas",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1794593692500,
+      "tag": "0033_juego_partidas",
+      "breakpoints": true
     }
   ]
 }
