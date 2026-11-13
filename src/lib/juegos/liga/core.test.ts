@@ -48,6 +48,13 @@ describe("La liga · rules (FIL-I55-3)", () => {
     assert.equal(dailyPoints({ juego: "x", score: 4, dayBest: 4 }), 100);
   });
 
+  it("FIL-I54's dailies score against their real totals, not the day's best", () => {
+    assert.equal(dailyPoints({ juego: "detalle", score: 9, dayBest: 9 }), 50);
+    assert.equal(dailyPoints({ juego: "linea", score: 4, dayBest: 4 }), 50);
+    assert.equal(dailyPoints({ juego: "reparto", score: 3, dayBest: 3 }), 50);
+    assert.equal(dailyPoints({ juego: "cuadricula", score: 9, dayBest: 9 }), 100);
+  });
+
   it("Sunday 23:59 and Monday 00:01 in Mexico City are different weeks", () => {
     const sunday = new Date("2034-01-02T05:59:00Z"); // Sunday 1 Jan 2034, 23:59 (UTC−6)
     const monday = new Date("2034-01-02T06:01:00Z"); // Monday 2 Jan 2034, 00:01

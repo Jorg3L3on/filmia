@@ -1,5 +1,6 @@
 import { addDays, mxToday } from "@/lib/cine-core";
 import { mxDayStart, weekKeyOf } from "@/lib/juegos/core";
+import { DIARIA_IDS, DIARIAS } from "@/lib/juegos/diarias/core";
 import { MAYOR_DAILY_STEPS, MAYOR_ID } from "@/lib/juegos/mayor/core";
 
 /**
@@ -28,7 +29,11 @@ export const LIGA_POINTS = {
  * against the best score anyone made that day (so any daily the engine runs counts, with no
  * code per game); listing it makes it exact.
  */
-export const DAILY_TOTALS: Readonly<Record<string, number>> = { [MAYOR_ID]: MAYOR_DAILY_STEPS };
+export const DAILY_TOTALS: Readonly<Record<string, number>> = {
+  [MAYOR_ID]: MAYOR_DAILY_STEPS,
+  // FIL-I54: Detalle 18, Línea de tiempo 8, Reparto misterioso 6, La cuadrícula 9.
+  ...Object.fromEntries(DIARIA_IDS.map((id) => [id, DIARIAS[id].total])),
+};
 
 /**
  * Points for one finished daily: `score` out of the game's total (or of the day's best when the

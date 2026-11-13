@@ -131,9 +131,12 @@ describeWithDb("Avisos de Juegos on the database (FIL-I50-5)", () => {
     bare = await seed.user("SinDispositivo");
     for (const userId of [fresh, opened, off]) await subscribe(userId);
     await db.insert(pickEvents).values({ id: createId(), userId: opened, kind: "tanda_dealt", lens: "2026-11-23|p", createdAt: now });
-    // Launch pushes for La tanda already went out: this test is about the weekly one.
+    // Launch pushes (La tanda's, and any game launching that week, e.g. FIL-I54's Detalle) already
+    // went out: this test is about the weekly one.
     for (const userId of [fresh, opened, off]) {
-      await db.insert(pickEvents).values({ id: createId(), userId, kind: JUEGOS_PUSH_KIND, lens: launchPushLens("tanda"), createdAt: new Date("2026-11-12T16:00:00Z") });
+      for (const juego of JUEGOS.filter((item) => item.launchedOn != null)) {
+        await db.insert(pickEvents).values({ id: createId(), userId, kind: JUEGOS_PUSH_KIND, lens: launchPushLens(juego.id), createdAt: new Date("2026-11-12T16:00:00Z") });
+      }
     }
     await setJuegosPushFor(off, false);
   });

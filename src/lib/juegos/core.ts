@@ -1,4 +1,5 @@
 import { addDays, mxToday } from "@/lib/cine-core";
+import { DIARIA_IDS, DIARIAS } from "@/lib/juegos/diarias/core";
 import { BINGO_ID, BINGO_PATH } from "@/lib/juegos/bingo/core";
 import { ESTRENOS_ID, ESTRENOS_PATH } from "@/lib/juegos/estrenos/core";
 import { MAYOR_ID, MAYOR_PATH } from "@/lib/juegos/mayor/core";
@@ -81,15 +82,6 @@ export const JUEGOS: readonly Juego[] = [
     seasons: null,
   },
   {
-    id: "linea",
-    name: "Línea de tiempo",
-    line: "Ordena cuatro películas por año.",
-    status: "soon",
-    href: null,
-    launchedOn: null,
-    seasons: null,
-  },
-  {
     id: MAYOR_ID,
     name: "Mayor o menor",
     line: "¿Cuál tiene mejor nota? La diaria y tu racha.",
@@ -99,6 +91,19 @@ export const JUEGOS: readonly Juego[] = [
     launchedOn: "2026-11-13",
     seasons: null,
   },
+  // FIL-I54: Detalle, Línea de tiempo, Reparto misterioso and La cuadrícula, one launch a week
+  // (`launchedOn` sends the launch push once per person). Until then they wait in «Próximamente».
+  ...DIARIA_IDS.map(
+    (id): Juego => ({
+      id,
+      name: DIARIAS[id].name,
+      line: DIARIAS[id].line,
+      status: "available",
+      href: DIARIAS[id].path,
+      launchedOn: DIARIAS[id].launchedOn,
+      seasons: null,
+    }),
+  ),
   // FIL-I55 (grupo y liga): launches a week apart and after FIL-I54's last diaria (2026-12-14), so
   // each launch push has its own week. The liga goes last: it adds up everything else.
   {
@@ -129,6 +134,9 @@ export const JUEGOS: readonly Juego[] = [
     seasons: null,
   },
 ];
+
+/** The dailies: the same round for every account each day; the portada groups them (FIL-I54-5). */
+export const DAILY_JUEGO_IDS: readonly string[] = [MAYOR_ID, ...DIARIA_IDS];
 
 const launched = (juego: Juego, today: string) => juego.href != null && (juego.launchedOn == null || juego.launchedOn <= today);
 

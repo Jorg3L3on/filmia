@@ -6,7 +6,9 @@ import { mxToday } from "@/lib/cine-core";
 import { LigaCard } from "@/components/juegos/LigaCard";
 import { BINGO_ID } from "@/lib/juegos/bingo/core";
 import { loadBingo } from "@/lib/juegos/bingo/store";
-import { DUELOS_ID, JUEGOS, LIGA_ID, portadaOf } from "@/lib/juegos/core";
+import { DAILY_JUEGO_IDS, DUELOS_ID, JUEGOS, LIGA_ID, portadaOf } from "@/lib/juegos/core";
+import { DIARIA_IDS, DIARIAS } from "@/lib/juegos/diarias/core";
+import { readDiaria } from "@/lib/juegos/diarias/store";
 import { ESTRENOS_ID } from "@/lib/juegos/estrenos/core";
 import { countOpenWithoutForecast } from "@/lib/juegos/estrenos/store";
 import { ligaSummaryFor } from "@/lib/juegos/liga/store";
@@ -55,6 +57,18 @@ export default async function JuegosPage({ searchParams }: { searchParams: Promi
       ? { chip: `Hoy: ${mine.score} de ${mine.total}`, fresh: false }
       : { chip: played === 0 ? "Diaria nueva" : played === 1 ? "1 ya jugó" : `${played} ya jugaron`, fresh: true };
   }
+  // FIL-I54-5: each daily says whether the person played it today and how many already did.
+  const today = mxToday(now);
+  await Promise.all(
+    DIARIA_IDS.filter((id) => portada.playable.some((juego) => juego.id === id)).map(async (id) => {
+      const [mine, played] = await Promise.all([readDiaria(userId, id, today).catch(() => null), countDailyPlayers(id, today).catch(() => 0)]);
+      rows[id] = mine?.finishedAt
+        ? { chip: `Hoy: ${mine.score} de ${DIARIAS[id].total}`, fresh: false }
+        : mine
+          ? { chip: "A medias", fresh: true }
+          : { chip: played === 0 ? "Diaria nueva" : played === 1 ? "1 ya jugó" : `${played} ya jugaron`, fresh: true };
+    }),
+  );
   // FIL-I55: the quiniela and the bingo get a chip; the liga leaves the list for its own card on top.
   const playableIds = new Set(portada.playable.map((juego) => juego.id));
   if (playableIds.has(ESTRENOS_ID)) {
@@ -81,7 +95,7 @@ export default async function JuegosPage({ searchParams }: { searchParams: Promi
       </div>
       <TeTocaBlock items={teToca} now={now} />
       {liga !== undefined ? <LigaCard summary={liga} /> : null}
-      <JuegosPortada portada={shown} tanda={tandaRow} rows={rows} />
+      <JuegosPortada portada={shown} tanda={tandaRow} rows={rows} daily={DAILY_JUEGO_IDS} />
     </div>
   );
 }
