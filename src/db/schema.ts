@@ -847,6 +847,91 @@ export const mcpIdempotencyKeys = pgTable(
   ],
 );
 
+// ── Quiniela del Óscar (FIL-I51) ─────────────────────────────────────────
+// Categories and nominees live in `src/data/oscar-ceremonies/<year>.json`; these tables hold what
+// changes: when the ballots close, each vote, the winners entered from /admin and the groups.
+
+/** A ceremony that is open for ballots. No row = «Abre con las nominaciones». */
+export const oscarCeremonies = pgTable("OscarCeremony", {
+  /** The year the ceremony is held (2027 for the 99th). */
+  year: integer("year").primaryKey(),
+  /** Ballots close when the ceremony starts; the server refuses votes from then on. */
+  closesAt: timestamp("closesAt", { precision: 3, mode: "date" }).notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+/** One vote per person, ceremony and category («quién va a ganar»); changing it rewrites the row. */
+export const oscarVotes = pgTable(
+  "OscarVote",
+  {
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    year: integer("year").notNull(),
+    categoryId: text("categoryId").notNull(),
+    nomineeId: text("nomineeId").notNull(),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.year, table.categoryId] }),
+    index("OscarVote_year_idx").on(table.year),
+  ],
+);
+
+/** The winner of a category, entered from /admin the night of the ceremony (and corrected there). */
+export const oscarWinners = pgTable(
+  "OscarWinner",
+  {
+    year: integer("year").notNull(),
+    categoryId: text("categoryId").notNull(),
+    nomineeId: text("nomineeId").notNull(),
+    announcedAt: timestamp("announcedAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+    enteredByUserId: text("enteredByUserId").references(() => users.id, { onDelete: "set null" }),
+  },
+  (table) => [primaryKey({ columns: [table.year, table.categoryId] })],
+);
+
+/** An invite-only group for one ceremony. Only the sha256 of the link's token is stored. */
+export const oscarGroups = pgTable(
+  "OscarGroup",
+  {
+    id: text("id").primaryKey(),
+    year: integer("year").notNull(),
+    ownerId: text("ownerId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    tokenHash: text("tokenHash").notNull(),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("OscarGroup_tokenHash_key").on(table.tokenHash),
+    index("OscarGroup_ownerId_idx").on(table.ownerId),
+  ],
+);
+
+/** Members of a group, the owner included. */
+export const oscarGroupMembers = pgTable(
+  "OscarGroupMember",
+  {
+    groupId: text("groupId")
+      .notNull()
+      .references(() => oscarGroups.id, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    joinedAt: timestamp("joinedAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.groupId, table.userId] }),
+    index("OscarGroupMember_userId_idx").on(table.userId),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   titles: many(titles),
   lists: many(lists),
