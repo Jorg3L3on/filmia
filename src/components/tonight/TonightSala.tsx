@@ -577,7 +577,8 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null, j
             />
             {options ? (
               <>
-                <h2 className="shrink-0 px-1 text-sm font-medium text-paper">
+                {/* Room above (the moods) and below (the cards): the phone sala packs its rows tight. */}
+                <h2 className="shrink-0 px-1 pb-2 pt-2.5 text-sm font-medium text-paper sm:py-0">
                   {OPTIONS_HEADING[options.cards.length] || "Sin resultados"}
                 </h2>
                 {options.cards.length > 0 ? (
