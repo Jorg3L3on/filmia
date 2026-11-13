@@ -329,3 +329,11 @@ export const loadDailyResult = async (userId: string, view: MayorView, now = new
     notYet: Math.max(0, accounts - rows.length),
   };
 };
+
+/** A finished daily of the person, for the shared image: only numbers and squares, never films. */
+export const readShareableDaily = async (userId: string, partidaId: string) => {
+  const partida = await readPartida(userId, partidaId);
+  if (!partida || partida.juego !== MAYOR_ID || partida.mode !== "diaria" || !partida.finishedAt || !partida.day) return null;
+  const answers = answersOf(partida);
+  return { day: partida.day, lens: lensOf(partida), answers, score: partida.score, total: stepsOf(sequenceOf(partida), lensOf(partida)) };
+};

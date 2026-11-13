@@ -2,6 +2,7 @@ import Link from "next/link";
 import { NavLabel } from "@/components/NavOriginTracker";
 import { MayorDailyResult } from "@/components/juegos/MayorDailyResult";
 import { LensChip, MayorGame, MayorTopBar } from "@/components/juegos/MayorGame";
+import { MayorShareButton } from "@/components/juegos/MayorShareButton";
 import { cn } from "@/lib/cn";
 import { MAYOR_LENSES, MAYOR_PATH } from "@/lib/juegos/mayor/core";
 import { loadDailyResult, openDailyMayor } from "@/lib/juegos/mayor/store";
@@ -25,7 +26,17 @@ export default async function MayorDailyPage() {
     <div className="tanda-screen mx-auto flex w-full max-w-md flex-1 flex-col">
       <NavLabel label="La diaria" />
       {opened?.status === "ok" && opened.view.finished ? (
-        <MayorDailyResult result={await loadDailyResult(userId, opened.view, now)} />
+        <MayorDailyResult
+          result={await loadDailyResult(userId, opened.view, now)}
+          share={
+            <MayorShareButton
+              partidaId={opened.view.partidaId}
+              day={opened.view.day ?? ""}
+              lens={opened.view.lens}
+              answers={opened.view.answers}
+            />
+          }
+        />
       ) : opened?.status === "ok" ? (
         <MayorGame key={opened.view.partidaId} initialView={opened.view} />
       ) : (

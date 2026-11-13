@@ -5,13 +5,14 @@ import { after, before, it } from "node:test";
 import { and, eq, inArray } from "drizzle-orm";
 import { catalog, db, juegoPartidas, juegoRondas, titles } from "@/db";
 import { closeLocalPg } from "@/db/local-pg";
-import { dailyLensOf, MAYOR_ID, MAYOR_LENSES, MAYOR_MIN_VOTES, type MayorLensId } from "@/lib/juegos/mayor/core";
+import { dailyLensOf, MAYOR_ID, MAYOR_LENSES, MAYOR_MIN_VOTES, shareText, type MayorLensId } from "@/lib/juegos/mayor/core";
 import {
   answerMayor,
   loadMayorPool,
   openDailyMayor,
   openFreeMayor,
   readDailyMayor,
+  readShareableDaily,
   startFreeMayor,
   type MayorSources,
   type MayorView,
@@ -20,8 +21,8 @@ import { bestScoresByLens, loadDayTable } from "@/lib/juegos/partidas";
 import { describeWithDb } from "@/lib/test-support/local-db";
 import { seeder } from "@/lib/test-support/seed";
 
-/** FIL-I52-2/3/5 · Mayor o menor on the local database, over 30 fictitious films the suite seeds. */
-describeWithDb("Mayor o menor store (FIL-I52-2/3/5)", () => {
+/** FIL-I52-2/3/4/5 · Mayor o menor on the local database, over 30 fictitious films the suite seeds. */
+describeWithDb("Mayor o menor store (FIL-I52-2/3/4/5)", () => {
   const seed = seeder("t-mayor");
   // Far-off days so a re-run or the dev data never meets these rounds.
   const day1 = new Date("2031-03-04T18:00:00Z");
@@ -227,6 +228,30 @@ describeWithDb("Mayor o menor store (FIL-I52-2/3/5)", () => {
       ],
     );
     assert.ok(!JSON.stringify(table).includes("@filmia.test"));
+  });
+
+  it("the shared result names no film of the round, and only the owner's finished daily is shareable (FIL-I52-4)", async () => {
+    const opened = await openDailyMayor(ana, day1, sources);
+    assert.equal(opened.status, "ok");
+    if (opened.status !== "ok") return;
+    const shareable = await readShareableDaily(ana, opened.view.partidaId);
+    assert.ok(shareable);
+    const text = shareText({ day: shareable.day, lens: shareable.lens, answers: shareable.answers, url: "https://filmia.app/extras" });
+    const sequence = ((await db.query.juegoPartidas.findFirst({ where: eq(juegoPartidas.id, opened.view.partidaId) }))!.content as { sequence: string[] }).sequence;
+    assert.equal(sequence.length, 11);
+    for (const id of sequence) {
+      assert.ok(!text.includes(byId.get(id)!.name));
+    }
+    assert.ok(!text.includes("Película"), "no title of the round");
+    assert.match(text, /^Filmia · Mayor o menor n\.º \d+ · .+\n8 de 10\n(🟩|🟥){10}\nhttps:\/\/filmia\.app\/extras$/u);
+    // Someone else's, an unfinished one, a free streak or a made-up id: nothing.
+    assert.equal(await readShareableDaily(beto, opened.view.partidaId), null);
+    const unfinished = await openDailyMayor(beto, day2, sources);
+    assert.equal(unfinished.status, "ok");
+    if (unfinished.status === "ok") assert.equal(await readShareableDaily(beto, unfinished.view.partidaId), null);
+    const free = (await openFreeMayor(ana, "imdb", day1, sources))!;
+    assert.equal(await readShareableDaily(ana, free.partidaId), null);
+    assert.equal(await readShareableDaily(ana, "no-existe"), null);
   });
 
   it("playing never writes to Title", async () => {
