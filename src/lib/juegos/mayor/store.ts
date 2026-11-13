@@ -5,6 +5,7 @@ import { mxToday } from "@/lib/cine-core";
 import {
   buildSequence,
   dailyLensOf,
+  dayStreak,
   dailySeed,
   filmsFor,
   MAYOR_DAILY_STEPS,
@@ -21,14 +22,18 @@ import {
 } from "@/lib/juegos/mayor/core";
 import {
   bestScore,
+  countAccounts,
   createPartida,
   DailyTakenError,
+  finishedDailyDays,
   finishPartida,
   getOrCreateRonda,
+  loadDayTable,
   readDailyPartida,
   readOpenFreePartida,
   readPartida,
   recordAnswer,
+  type DayTableRow,
   type PartidaMode,
   type PartidaRow,
 } from "@/lib/juegos/partidas";
@@ -293,4 +298,34 @@ export const answerMayor = async (
   if (!stored) return { ok: false, error: "Esa ya la contestaste.", view: await viewOf(fresh) };
   const value = MAYOR_LENSES[lens].rightValue(right);
   return { ok: true, correct, revealed: value == null ? "—" : MAYOR_LENSES[lens].format(value), view: await viewOf(fresh) };
+};
+
+// ---------------------------------------------------------------------------
+// The daily's result (FIL-I52-3)
+// ---------------------------------------------------------------------------
+
+export type DailyResult = {
+  view: MayorView;
+  /** Everyone who opened today's daily, finished first by score; the person's row has `me`. */
+  table: Array<DayTableRow & { me: boolean }>;
+  /** Days in a row with a finished daily, this one included. */
+  streak: number;
+  /** Accounts that have not opened today's daily (a count, never names). */
+  notYet: number;
+};
+
+/** What the result screen needs once the person's daily is over. Database only. */
+export const loadDailyResult = async (userId: string, view: MayorView, now = new Date()): Promise<DailyResult> => {
+  const day = view.day ?? mxToday(now);
+  const [rows, days, accounts] = await Promise.all([
+    loadDayTable(MAYOR_ID, view.lens, day),
+    finishedDailyDays(userId, MAYOR_ID),
+    countAccounts(),
+  ]);
+  return {
+    view,
+    table: rows.map((row) => ({ ...row, me: row.userId === userId })),
+    streak: dayStreak(days, mxToday(now)),
+    notYet: Math.max(0, accounts - rows.length),
+  };
 };
