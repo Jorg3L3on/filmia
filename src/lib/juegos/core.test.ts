@@ -24,17 +24,26 @@ const juego = (overrides: Partial<Juego>): Juego => ({
 });
 
 describe("Juegos cartel (FIL-I50-2)", () => {
-  it("launches with La tanda playable and the rest, quinielas included, in «Próximamente» off season", () => {
+  it("La tanda and Mayor o menor are playable; the rest, quinielas included, in «Próximamente» off season", () => {
     const portada = portadaOf(JUEGOS, "2026-11-20");
     assert.equal(portada.seasonal, null);
     assert.deepEqual(
       portada.playable.map((item) => item.id),
-      ["tanda"],
+      ["tanda", "mayor"],
     );
     assert.deepEqual(
       portada.soon.map((item) => item.id),
-      ["quiniela", "muro", "duelos", "linea", "mayor"],
+      ["quiniela", "muro", "duelos", "linea"],
     );
+  });
+
+  it("Mayor o menor launches on its day with its own route (FIL-I52-6)", () => {
+    const mayor = JUEGOS.find((item) => item.id === "mayor");
+    assert.equal(mayor?.status, "available");
+    assert.equal(mayor?.href, "/extras/mayor-o-menor");
+    assert.equal(mayor?.launchedOn, "2026-11-13");
+    assert.deepEqual(portadaOf(JUEGOS, "2026-11-12").playable.map((item) => item.id), ["tanda"]);
+    assert.ok(portadaOf(JUEGOS, "2026-11-12").soon.some((item) => item.id === "mayor"));
   });
 
   it("the quinielas are on top inside any ceremony's window, without a launch (no push, no dot) (FIL-I51-8)", () => {
@@ -46,7 +55,7 @@ describe("Juegos cartel (FIL-I50-2)", () => {
     assert.equal(portadaOf(JUEGOS, "2024-02-01").seasonal?.id, "quiniela");
     assert.equal(portadaOf(JUEGOS, "2024-03-17").seasonal?.id, "quiniela");
     assert.equal(portadaOf(JUEGOS, "2024-03-18").seasonal, null);
-    assert.equal(latestLaunchOn(JUEGOS, "2026-11-20"), "2026-11-12");
+    assert.equal(latestLaunchOn(JUEGOS, "2026-11-20"), "2026-11-13");
   });
 
   it("a seasonal game with several windows is on top in each of them and not between", () => {

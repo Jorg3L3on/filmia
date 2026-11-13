@@ -4,7 +4,7 @@ import { config as loadEnv } from "dotenv";
  * FIL-I50 · Juegos from the console.
  *
  *   npm run juegos:avisos            # read-only: who would get a Juegos push now, and which one
- *   npm run metrics:juegos           # read-only: aggregates of Juegos and La tanda (FIL-I50-6)
+ *   npm run metrics:juegos           # read-only: aggregates of Juegos, La tanda (FIL-I50-6) and partidas (FIL-I52-6)
  *
  * Both take --env=<path to .env>. With FILMIA_LOCAL_PG=1 they talk to the local Postgres in DATABASE_URL.
  * Nothing here sends a push or writes a row: the daily cron does that.
@@ -43,6 +43,16 @@ const metrics = async () => {
     console.log(
       `${row.week}  ${String(row.visits).padStart(7)}  ${String(row.viaBoton).padStart(5)}  ${String(row.viaBloque).padStart(6)}  ${String(row.started).padStart(9)}  ${String(row.finished).padStart(10)}  ${row.returned7d == null ? "        —" : String(row.returned7d).padStart(9)}`,
     );
+  }
+  // FIL-I52-6: partidas of the competitive games (Mayor o menor…), per game and week.
+  console.log("");
+  if (report.partidas.length === 0) {
+    console.log("Partidas: ninguna todavía.");
+    return;
+  }
+  console.log("Partidas      juego    diarias  libres  personas");
+  for (const row of report.partidas) {
+    console.log(`${row.week}  ${row.juego.padEnd(7)}  ${String(row.daily).padStart(7)}  ${String(row.free).padStart(6)}  ${String(row.players).padStart(8)}`);
   }
 };
 

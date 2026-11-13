@@ -937,6 +937,64 @@ export const quinielaGroupMembers = pgTable(
   ],
 );
 
+// ── Partidas de Extras (FIL-I52) ─────────────────────────────────────────
+// The engine every competitive game shares: a round that is the same for everyone (the daily) and
+// a partida per person. `juego` is a cartel id from `src/lib/juegos/core.ts` and `lens` the game's
+// variant («imdb», «year»…); what a round or a partida holds is the game's own JSON. Nothing here
+// writes to `Title`.
+
+/** A round shared by every account: one per game, lens and Mexico City day, made by whoever opens it first. */
+export const juegoRondas = pgTable(
+  "JuegoRonda",
+  {
+    id: text("id").primaryKey(),
+    juego: text("juego").notNull(),
+    lens: text("lens").notNull(),
+    /** `YYYY-MM-DD`, Mexico City. */
+    day: text("day").notNull(),
+    seed: text("seed").notNull(),
+    /** The game's content, e.g. `{ sequence: [catalogId…] }` for Mayor o menor. */
+    content: jsonb("content").notNull(),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("JuegoRonda_juego_lens_day_key").on(table.juego, table.lens, table.day)],
+);
+
+/**
+ * One game played by one person: a free streak («libre», as many as they want) or the daily
+ * («diaria», one per person, game, lens and day). `content` holds what the server needs to judge
+ * (it never reaches the client whole); `answers` is one entry per answer, in order.
+ */
+export const juegoPartidas = pgTable(
+  "JuegoPartida",
+  {
+    id: text("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    juego: text("juego").notNull(),
+    mode: text("mode").notNull(),
+    lens: text("lens").notNull(),
+    /** The daily's day (`YYYY-MM-DD`, Mexico City); null for a free partida. */
+    day: text("day"),
+    rondaId: text("rondaId").references(() => juegoRondas.id, { onDelete: "cascade" }),
+    content: jsonb("content").notNull(),
+    answers: jsonb("answers").notNull().default([]),
+    score: integer("score").notNull().default(0),
+    startedAt: timestamp("startedAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+    finishedAt: timestamp("finishedAt", { precision: 3, mode: "date" }),
+  },
+  (table) => [
+    uniqueIndex("JuegoPartida_daily_key")
+      .on(table.userId, table.juego, table.lens, table.day)
+      .where(sql`"mode" = 'diaria'`),
+    index("JuegoPartida_userId_juego_mode_idx").on(table.userId, table.juego, table.mode),
+    index("JuegoPartida_juego_day_idx").on(table.juego, table.day),
+    index("JuegoPartida_startedAt_idx").on(table.startedAt),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   titles: many(titles),
   lists: many(lists),

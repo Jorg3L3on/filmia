@@ -12,6 +12,9 @@ export type TandaRowState = {
   posters: string[];
 };
 
+/** Mayor o menor's row on the portada (FIL-I52-6): how many already played today's daily. */
+export type GameRowState = { chip: string; fresh: boolean };
+
 const rowClass =
   "flex min-h-[4.5rem] w-full items-center gap-3 border-t border-line py-2.5 text-left text-paper transition-colors";
 
@@ -88,7 +91,16 @@ const GameText = ({ juego, muted = false }: { juego: Juego; muted?: boolean }) =
 );
 
 /** The portada (board Juegos-3): the seasonal game on top, «Para hoy», «Próximamente». */
-export const JuegosPortada = ({ portada, tanda }: { portada: Portada; tanda: TandaRowState | null }) => (
+export const JuegosPortada = ({
+  portada,
+  tanda,
+  rows = {},
+}: {
+  portada: Portada;
+  tanda: TandaRowState | null;
+  /** Chips of the other playable games, by id. */
+  rows?: Record<string, GameRowState>;
+}) => (
   <div className="flex flex-col gap-6">
     {portada.seasonal?.href ? (
       <Link
@@ -116,6 +128,7 @@ export const JuegosPortada = ({ portada, tanda }: { portada: Portada; tanda: Tan
                 {juego.id === "tanda" ? <TandaGlyph posters={tanda?.posters ?? []} /> : <SoonGlyph id={juego.id} />}
                 <GameText juego={juego} />
                 {juego.id === "tanda" && tanda ? <Chip tone={tanda.fresh ? "accent" : "plain"}>{tanda.chip}</Chip> : null}
+                {rows[juego.id] ? <Chip tone={rows[juego.id]!.fresh ? "accent" : "plain"}>{rows[juego.id]!.chip}</Chip> : null}
               </Link>
             </li>
           ))}
