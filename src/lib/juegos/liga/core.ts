@@ -88,6 +88,7 @@ export type LigaTotals = {
   points: number;
   partidas: number;
   duelosGanados: number;
+  duelosEmpatados: number;
   duelos: number;
   bingoLineas: number;
 };
@@ -97,12 +98,13 @@ export const tallyLiga = (events: readonly LigaEvent[]): LigaTotals[] => {
   const byUser = new Map<string, LigaTotals>();
   for (const event of events) {
     if (event.kind === "bingo" && event.lines <= 0) continue;
-    const row = byUser.get(event.userId) ?? { userId: event.userId, points: 0, partidas: 0, duelosGanados: 0, duelos: 0, bingoLineas: 0 };
+    const row = byUser.get(event.userId) ?? { userId: event.userId, points: 0, partidas: 0, duelosGanados: 0, duelosEmpatados: 0, duelos: 0, bingoLineas: 0 };
     row.points += eventPoints(event);
     if (event.kind === "diaria") row.partidas += 1;
     if (event.kind === "duelo") {
       row.duelos += 1;
       if (event.outcome === "ganado") row.duelosGanados += 1;
+      if (event.outcome === "empate") row.duelosEmpatados += 1;
     }
     if (event.kind === "bingo") row.bingoLineas += event.lines;
     byUser.set(event.userId, row);
@@ -123,10 +125,12 @@ export const rankLiga = <T extends { points: number; name: string }>(rows: reado
 };
 
 /** «14 partidas · 3 duelos ganados · 1 línea de bingo». */
-export const ligaDetail = (row: Pick<LigaTotals, "partidas" | "duelosGanados" | "duelos" | "bingoLineas">) => {
+export const ligaDetail = (row: Pick<LigaTotals, "partidas" | "duelosGanados" | "duelos" | "bingoLineas"> & { duelosEmpatados?: number }) => {
   const parts: string[] = [];
   if (row.partidas > 0) parts.push(row.partidas === 1 ? "1 diaria" : `${row.partidas} diarias`);
   if (row.duelosGanados > 0) parts.push(row.duelosGanados === 1 ? "1 duelo ganado" : `${row.duelosGanados} duelos ganados`);
+  // Only ties: a tie scores, so «jugado» would undersell it.
+  else if (row.duelos > 0 && row.duelosEmpatados === row.duelos) parts.push(row.duelos === 1 ? "1 duelo empatado" : `${row.duelos} duelos empatados`);
   else if (row.duelos > 0) parts.push(row.duelos === 1 ? "1 duelo jugado" : `${row.duelos} duelos jugados`);
   if (row.bingoLineas > 0) parts.push(row.bingoLineas === 1 ? "1 línea de bingo" : `${row.bingoLineas} líneas de bingo`);
   return parts.join(" · ");

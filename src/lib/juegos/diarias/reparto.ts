@@ -93,3 +93,7 @@ export const repartoState = (answers: readonly RepartoAnswer[]): RepartoState =>
 /** «🟥🟥🟩⬜⬜⬜». */
 export const repartoMarks = (state: Pick<RepartoState, "marks">) =>
   Array.from({ length: REPARTO_TRIES }, (_, index) => (state.marks[index] === true ? "🟩" : state.marks[index] === false ? "🟥" : "⬜")).join("");
+
+/** The attempt the header names: the one in play, or the one the round ended on (FIL-44). */
+export const repartoAttempt = (view: { tries: number; maxTries: number; finished: boolean }) =>
+  view.finished ? Math.max(1, Math.min(view.tries, view.maxTries)) : Math.min(view.tries + 1, view.maxTries);

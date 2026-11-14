@@ -87,4 +87,14 @@ describe("La liga · detail line (FIL-I55-3)", () => {
     assert.equal(ligaDetail({ partidas: 0, duelos: 2, duelosGanados: 0, bingoLineas: 0 }), "2 duelos jugados");
     assert.equal(ligaDetail({ partidas: 1, duelos: 1, duelosGanados: 1, bingoLineas: 1 }), "1 diaria · 1 duelo ganado · 1 línea de bingo");
   });
+
+  it("names ties when every duel was a tie (FIL-44)", () => {
+    assert.equal(ligaDetail({ partidas: 0, duelos: 1, duelosGanados: 0, duelosEmpatados: 1, bingoLineas: 0 }), "1 duelo empatado");
+    assert.equal(ligaDetail({ partidas: 0, duelos: 2, duelosGanados: 0, duelosEmpatados: 2, bingoLineas: 0 }), "2 duelos empatados");
+    assert.equal(ligaDetail({ partidas: 0, duelos: 2, duelosGanados: 0, duelosEmpatados: 1, bingoLineas: 0 }), "2 duelos jugados");
+    assert.equal(ligaDetail({ partidas: 0, duelos: 2, duelosGanados: 1, duelosEmpatados: 1, bingoLineas: 0 }), "1 duelo ganado");
+    const [row] = tallyLiga([{ userId: "u", kind: "duelo", at: new Date("2026-11-13T18:00:00Z"), outcome: "empate" }]);
+    assert.equal(row!.duelosEmpatados, 1);
+    assert.equal(ligaDetail(row!), "1 duelo empatado");
+  });
 });

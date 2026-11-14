@@ -8,6 +8,7 @@ import { MayorTopBar } from "@/components/juegos/MayorGame";
 import { cn } from "@/lib/cn";
 import { JUEGOS_PATH } from "@/lib/juegos/core";
 import type { TitleGuess } from "@/lib/juegos/diarias/core";
+import { repartoAttempt } from "@/lib/juegos/diarias/reparto";
 import type { RepartoView } from "@/lib/juegos/diarias/reparto-store";
 import { showActionError } from "@/lib/toast-alerts";
 import { buttonClass } from "@/lib/ui";
@@ -75,7 +76,7 @@ export const RepartoGame = ({ initialView }: { initialView: RepartoView }) => {
   return (
     <div className="flex flex-1 flex-col gap-4" data-reparto="juego">
       <MayorTopBar
-        eyebrow={`n.º ${view.number} · intento ${Math.min(view.tries + 1, view.maxTries)} de ${view.maxTries}`}
+        eyebrow={`n.º ${view.number} · intento ${repartoAttempt(view)} de ${view.maxTries}`}
         title="Reparto misterioso"
         backHref={JUEGOS_PATH}
       />
