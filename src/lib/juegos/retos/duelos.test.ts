@@ -85,6 +85,10 @@ describeWithDb("Duelos de trivia y gustos (FIL-I53-5/6)", () => {
     ana = await seed.user("Ana");
     beto = await seed.user("Beto");
     carla = await seed.user("Carla");
+    await seed.collection(ana, "Juntos", [
+      { userId: beto, role: "VIEWER" },
+      { userId: carla, role: "VIEWER" },
+    ]);
     await rate(ana, 16);
     await rate(beto, 16);
     await rate(carla, 16);
