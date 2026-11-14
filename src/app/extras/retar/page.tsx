@@ -19,7 +19,8 @@ export const metadata = { title: "Retar a alguien" } as const;
 type RetarSearchParams = Record<string, string | string[] | undefined>;
 
 /**
- * «Retar a alguien» (FIL-I53-1, board Comp-3-reto): pick the person among every account. With a
+ * «Retar a alguien» (FIL-I53-1, board Comp-3-reto): pick the person among those one already shares a
+ * list, a quiniela group or a duel with (never every account). With a
  * finished free streak of Mayor o menor the reto goes out as it is; a duel opens for the sender
  * to play first.
  */

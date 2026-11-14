@@ -11,7 +11,7 @@ import { showActionError } from "@/lib/toast-alerts";
 import { buttonClass, focusRing } from "@/lib/ui";
 
 /**
- * «¿A quién?» (board Comp-3-reto): one person from every account, or a link (Mayor o menor with a
+ * «¿A quién?» (board Comp-3-reto): one person one already knows in Filmia, or a link (Mayor o menor with a
  * finished streak only). With a streak the reto goes out at once; a duel opens for the sender to
  * play first.
  */
@@ -87,8 +87,10 @@ export const RetoPicker = ({
       {people.length === 0 ? (
         <p className="rounded-2xl border border-line bg-surface px-4 py-4 text-[15px] leading-snug text-fog" data-retos="sin-nadie">
           {juego === "gustos"
-            ? "Nadie más permite usar sus notas en juegos todavía. Cuando alguien lo encienda en su Perfil, aparecerá aquí."
-            : "Todavía no hay nadie más en Filmia a quien retar."}
+            ? "Nadie de tu gente permite usar sus notas en juegos todavía. Cuando alguien lo encienda en su Perfil, aparecerá aquí."
+            : juego === "mayor" && partidaId
+              ? "Aquí aparece quien comparte una lista o un grupo de quiniela contigo, o con quien ya jugaste un duelo. A alguien más, mándale un enlace."
+              : "Aquí aparece quien comparte una lista o un grupo de quiniela contigo, o con quien ya jugaste un duelo. Comparte una lista con alguien para poder retarle."}
         </p>
       ) : (
         <div role="radiogroup" aria-label="Persona a retar" className="flex flex-col">
