@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { DIARIA_MIN_VOTES } from "@/lib/juegos/diarias/core";
-import { buildRepartoRound, isRepartoPlayable, REPARTO_TRIES, repartoMarks, repartoState, topCast, type RepartoCandidate } from "@/lib/juegos/diarias/reparto";
+import { buildRepartoRound, isRepartoPlayable, REPARTO_TRIES, repartoAttempt, repartoMarks, repartoState, topCast, type RepartoCandidate } from "@/lib/juegos/diarias/reparto";
 
 const people = (count: number, offset = 0) => [
   { id: 900 + offset, name: `Dirección ${offset}`, role: "director", profilePath: null },
@@ -68,5 +68,15 @@ describe("Reparto misterioso: tries (FIL-I54-3)", () => {
     assert.equal(lost.shown, 6);
     assert.equal(lost.score, 0);
     assert.equal(repartoState(Array.from({ length: 5 }, () => miss)).shown, 6);
+  });
+});
+
+describe("Reparto misterioso: attempt in the header (FIL-44)", () => {
+  it("names the attempt in play, then the one the round ended on", () => {
+    assert.equal(repartoAttempt({ tries: 0, maxTries: REPARTO_TRIES, finished: false }), 1);
+    assert.equal(repartoAttempt({ tries: 2, maxTries: REPARTO_TRIES, finished: false }), 3);
+    assert.equal(repartoAttempt({ tries: 3, maxTries: REPARTO_TRIES, finished: true }), 3);
+    assert.equal(repartoAttempt({ tries: 1, maxTries: REPARTO_TRIES, finished: true }), 1);
+    assert.equal(repartoAttempt({ tries: REPARTO_TRIES, maxTries: REPARTO_TRIES, finished: true }), REPARTO_TRIES);
   });
 });
