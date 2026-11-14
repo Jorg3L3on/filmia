@@ -10,6 +10,7 @@ import {
   weekKeyOf,
   type Juego,
 } from "@/lib/juegos/core";
+import { LAUNCH_PUSH_DAYS } from "@/lib/juegos/push";
 import { isJuegoPlayPath, isJuegosPath, isMobileNavCurrent, mobileNavItems, desktopNavItems } from "@/lib/nav";
 
 const juego = (overrides: Partial<Juego>): Juego => ({
@@ -24,17 +25,49 @@ const juego = (overrides: Partial<Juego>): Juego => ({
 });
 
 describe("Juegos cartel (FIL-I50-2)", () => {
-  it("launches with La tanda playable and the rest, quinielas included, in «Próximamente» off season", () => {
+  it("La tanda, Duelos and Mayor o menor are playable; the rest, quinielas included, in «Próximamente» off season", () => {
     const portada = portadaOf(JUEGOS, "2026-11-20");
     assert.equal(portada.seasonal, null);
     assert.deepEqual(
       portada.playable.map((item) => item.id),
-      ["tanda"],
+      ["tanda", "duelos", "mayor"],
     );
     assert.deepEqual(
       portada.soon.map((item) => item.id),
-      ["quiniela", "muro", "duelos", "linea", "mayor"],
+      ["quiniela", "muro", "detalle", "linea", "reparto", "cuadricula", "estrenos", "bingo", "liga"],
     );
+  });
+
+  it("FIL-I55: the quiniela, the bingo and the liga launch a week apart, each with its own push week", () => {
+    const launches = JUEGOS.filter((item) => item.launchedOn).map((item) => ({ id: item.id, on: item.launchedOn! }));
+    for (const id of ["estrenos", "bingo", "liga"]) {
+      const mine = launches.find((launch) => launch.id === id);
+      assert.ok(mine, `${id} has a launch date`);
+      for (const other of launches) {
+        if (other.id === id) continue;
+        const gap = Math.abs(Date.parse(mine.on) - Date.parse(other.on)) / 86_400_000;
+        assert.ok(gap >= LAUNCH_PUSH_DAYS, `${id} (${mine.on}) and ${other.id} (${other.on}) are ${gap} days apart`);
+      }
+    }
+    // FIL-I54's diarias (not on this branch) launch on Mondays up to 2026-12-14; ours start after its push week.
+    assert.ok(launches.filter((launch) => ["estrenos", "bingo", "liga"].includes(launch.id)).every((launch) => launch.on >= "2026-12-21"));
+    assert.deepEqual(portadaOf(JUEGOS, "2027-01-11").playable.slice(-3).map((item) => item.id), ["estrenos", "bingo", "liga"]);
+  });
+
+  it("Mayor o menor launches on its day with its own route (FIL-I52-6)", () => {
+    const mayor = JUEGOS.find((item) => item.id === "mayor");
+    assert.equal(mayor?.status, "available");
+    assert.equal(mayor?.href, "/extras/mayor-o-menor");
+    assert.equal(mayor?.launchedOn, "2026-11-13");
+    assert.deepEqual(portadaOf(JUEGOS, "2026-11-12").playable.map((item) => item.id), ["tanda", "duelos"]);
+    assert.ok(portadaOf(JUEGOS, "2026-11-12").soon.some((item) => item.id === "mayor"));
+  });
+
+  it("Duelos is available without a launch date: no launch push, no «nuevo» dot (FIL-I53-7)", () => {
+    const duelos = JUEGOS.find((item) => item.id === "duelos");
+    assert.equal(duelos?.status, "available");
+    assert.equal(duelos?.href, "/extras/duelos");
+    assert.equal(duelos?.launchedOn, null);
   });
 
   it("the quinielas are on top inside any ceremony's window, without a launch (no push, no dot) (FIL-I51-8)", () => {
@@ -46,7 +79,7 @@ describe("Juegos cartel (FIL-I50-2)", () => {
     assert.equal(portadaOf(JUEGOS, "2024-02-01").seasonal?.id, "quiniela");
     assert.equal(portadaOf(JUEGOS, "2024-03-17").seasonal?.id, "quiniela");
     assert.equal(portadaOf(JUEGOS, "2024-03-18").seasonal, null);
-    assert.equal(latestLaunchOn(JUEGOS, "2026-11-20"), "2026-11-12");
+    assert.equal(latestLaunchOn(JUEGOS, "2026-11-20"), "2026-11-13");
   });
 
   it("a seasonal game with several windows is on top in each of them and not between", () => {
@@ -134,6 +167,8 @@ describe("Juegos in the navigation", () => {
     assert.equal(isJuegosPath("/extrasx"), false);
     assert.equal(isJuegoPlayPath("/extras"), false);
     assert.equal(isJuegoPlayPath("/extras/tanda"), true);
+    // FIL-I53-4: the public reto link plays without the dock too.
+    assert.equal(isJuegoPlayPath("/reto/abc"), true);
     assert.equal(isMobileNavCurrent("/", "/extras"), true);
     assert.equal(isMobileNavCurrent("/", "/extras/tanda?x=1"), true);
     assert.equal(isMobileNavCurrent("/perfil", "/extras"), false);

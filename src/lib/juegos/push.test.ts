@@ -6,10 +6,10 @@ import { createId } from "@paralleldrive/cuid2";
 import { eq } from "drizzle-orm";
 import { db, pickEvents, pushSubscriptions, users } from "@/db";
 import { closeLocalPg } from "@/db/local-pg";
-import type { Juego } from "@/lib/juegos/core";
+import { JUEGOS, type Juego } from "@/lib/juegos/core";
 import { juegosPushPayload, juegosPushPlan, launchPushLens, recentLaunches, tandaPushLens, JUEGOS_PUSH_KIND } from "@/lib/juegos/push";
 import { selectJuegosPushTargets, sendJuegosPushes, setJuegosPushFor } from "@/lib/juegos/push-store";
-import { juegosMetrics } from "@/lib/juegos/metrics";
+import { juegosMetrics, partidasMetrics } from "@/lib/juegos/metrics";
 import { describeWithDb } from "@/lib/test-support/local-db";
 import { seeder } from "@/lib/test-support/seed";
 
@@ -53,11 +53,44 @@ describe("Avisos de Juegos: who gets what (FIL-I50-5)", () => {
     assert.deepEqual(recentLaunches([muro], "2026-12-01"), []);
   });
 
+  it("Mayor o menor's launch goes once per person, after La tanda's (FIL-I52-6)", () => {
+    const input = { week: "2026-11-09", today: "2026-11-14", juegos: JUEGOS };
+    const mayor = JUEGOS.find((item) => item.id === "mayor")!;
+    const afterTanda = person({ sent: new Set([launchPushLens("tanda")]) });
+    assert.deepEqual(juegosPushPlan(afterTanda, input), { kind: "launch", juego: mayor });
+    const payload = juegosPushPayload({ kind: "launch", juego: mayor }, "");
+    assert.equal(payload.title, "Nuevo en Extras: Mayor o menor");
+    assert.equal(payload.url, "/extras/mayor-o-menor");
+    // Once sent, never again; a week later the launch is no longer news.
+    const both = person({ sent: new Set([launchPushLens("tanda"), launchPushLens("mayor"), tandaPushLens("2026-11-09")]) });
+    assert.equal(juegosPushPlan(both, input), null);
+    assert.ok(!recentLaunches(JUEGOS, "2026-11-20").some((item) => item.id === "mayor"));
+  });
+
   it("says it without guilt or urgency", () => {
     const payload = juegosPushPayload({ kind: "tanda" }, "2001–2015");
     assert.equal(payload.title, "Tu tanda de la semana ya está");
     assert.equal(payload.url, "/extras/tanda");
     assert.doesNotMatch(`${payload.title} ${payload.body}`, /no te pierdas|última|rápido|ya casi|racha|!/i);
+  });
+});
+
+describe("Partidas metrics (FIL-I52-6)", () => {
+  it("counts finished dailies, answered free partidas and distinct people per week", () => {
+    const at = (day: string) => new Date(`${day}T18:00:00Z`);
+    const rows = [
+      { userId: "a", juego: "mayor", mode: "diaria", answered: 10, startedAt: at("2026-11-16"), finishedAt: at("2026-11-16") },
+      { userId: "b", juego: "mayor", mode: "diaria", answered: 10, startedAt: at("2026-11-16"), finishedAt: at("2026-11-16") },
+      { userId: "b", juego: "mayor", mode: "diaria", answered: 4, startedAt: at("2026-11-17"), finishedAt: null },
+      { userId: "a", juego: "mayor", mode: "libre", answered: 3, startedAt: at("2026-11-18"), finishedAt: at("2026-11-18") },
+      { userId: "c", juego: "mayor", mode: "libre", answered: 0, startedAt: at("2026-11-18"), finishedAt: null },
+      { userId: "a", juego: "mayor", mode: "diaria", answered: 10, startedAt: at("2026-11-24"), finishedAt: at("2026-11-24") },
+    ];
+    assert.deepEqual(partidasMetrics(rows, ["2026-11-16", "2026-11-23"]), [
+      { week: "2026-11-16", juego: "mayor", daily: 2, free: 1, players: 2 },
+      { week: "2026-11-23", juego: "mayor", daily: 1, free: 0, players: 1 },
+    ]);
+    assert.deepEqual(partidasMetrics([], ["2026-11-16"]), []);
   });
 });
 
@@ -98,9 +131,12 @@ describeWithDb("Avisos de Juegos on the database (FIL-I50-5)", () => {
     bare = await seed.user("SinDispositivo");
     for (const userId of [fresh, opened, off]) await subscribe(userId);
     await db.insert(pickEvents).values({ id: createId(), userId: opened, kind: "tanda_dealt", lens: "2026-11-23|p", createdAt: now });
-    // Launch pushes for La tanda already went out: this test is about the weekly one.
+    // Launch pushes (La tanda's, and any game launching that week, e.g. FIL-I54's Detalle) already
+    // went out: this test is about the weekly one.
     for (const userId of [fresh, opened, off]) {
-      await db.insert(pickEvents).values({ id: createId(), userId, kind: JUEGOS_PUSH_KIND, lens: launchPushLens("tanda"), createdAt: new Date("2026-11-12T16:00:00Z") });
+      for (const juego of JUEGOS.filter((item) => item.launchedOn != null)) {
+        await db.insert(pickEvents).values({ id: createId(), userId, kind: JUEGOS_PUSH_KIND, lens: launchPushLens(juego.id), createdAt: new Date("2026-11-12T16:00:00Z") });
+      }
     }
     await setJuegosPushFor(off, false);
   });

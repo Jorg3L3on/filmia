@@ -98,6 +98,16 @@ export const users = pgTable(
      * «Avisos» on (a PushSubscription); turning it off leaves every other push as it is.
      */
     juegosPush: boolean("juegosPush").notNull().default(true),
+    /**
+     * FIL-I53-3 · «Te retaron» in Perfil: at most one push a day when someone sends a reto. Its own
+     * switch: «Avisos de Extras» does not turn it off, and the other way round.
+     */
+    retosPush: boolean("retosPush").notNull().default(true),
+    /**
+     * FIL-I53-6 · «Usar mis notas en juegos»: Duelo de gustos may show this person's own ratings
+     * (`Title.rating`) to whom they duel. Off by default; turning it off cancels open duels.
+     */
+    juegosNotas: boolean("juegosNotas").notNull().default(false),
     createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .notNull()
       .defaultNow(),
@@ -935,6 +945,152 @@ export const quinielaGroupMembers = pgTable(
     primaryKey({ columns: [table.groupId, table.userId] }),
     index("QuinielaGroupMember_userId_idx").on(table.userId),
   ],
+);
+
+// ── Partidas de Extras (FIL-I52) ─────────────────────────────────────────
+// The engine every competitive game shares: a round that is the same for everyone (the daily) and
+// a partida per person. `juego` is a cartel id from `src/lib/juegos/core.ts` and `lens` the game's
+// variant («imdb», «year»…); what a round or a partida holds is the game's own JSON. Nothing here
+// writes to `Title`.
+
+/** A round shared by every account: one per game, lens and Mexico City day, made by whoever opens it first. */
+export const juegoRondas = pgTable(
+  "JuegoRonda",
+  {
+    id: text("id").primaryKey(),
+    juego: text("juego").notNull(),
+    lens: text("lens").notNull(),
+    /** `YYYY-MM-DD`, Mexico City. */
+    day: text("day").notNull(),
+    seed: text("seed").notNull(),
+    /** The game's content, e.g. `{ sequence: [catalogId…] }` for Mayor o menor. */
+    content: jsonb("content").notNull(),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("JuegoRonda_juego_lens_day_key").on(table.juego, table.lens, table.day)],
+);
+
+/**
+ * One game played by one person: a free streak («libre», as many as they want) or the daily
+ * («diaria», one per person, game, lens and day). `content` holds what the server needs to judge
+ * (it never reaches the client whole); `answers` is one entry per answer, in order.
+ */
+export const juegoPartidas = pgTable(
+  "JuegoPartida",
+  {
+    id: text("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    juego: text("juego").notNull(),
+    mode: text("mode").notNull(),
+    lens: text("lens").notNull(),
+    /** The daily's day (`YYYY-MM-DD`, Mexico City); null for a free partida. */
+    day: text("day"),
+    rondaId: text("rondaId").references(() => juegoRondas.id, { onDelete: "cascade" }),
+    content: jsonb("content").notNull(),
+    answers: jsonb("answers").notNull().default([]),
+    score: integer("score").notNull().default(0),
+    startedAt: timestamp("startedAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+    finishedAt: timestamp("finishedAt", { precision: 3, mode: "date" }),
+  },
+  (table) => [
+    uniqueIndex("JuegoPartida_daily_key")
+      .on(table.userId, table.juego, table.lens, table.day)
+      .where(sql`"mode" = 'diaria'`),
+    index("JuegoPartida_userId_juego_mode_idx").on(table.userId, table.juego, table.mode),
+    index("JuegoPartida_juego_day_idx").on(table.juego, table.day),
+    index("JuegoPartida_startedAt_idx").on(table.startedAt),
+  ],
+);
+
+// ── Retos uno contra uno (FIL-I53) ───────────────────────────────────────
+/**
+ * A reto: one person plays a partida and sends exactly that content to another account (or, for
+ * Mayor o menor only, to a link). Nobody plays live; the reto is open for 48 hours from `sentAt`
+ * and an expired one simply stops being listed, with no penalty. `content` is the game's JSON both
+ * sides play (it never reaches the client whole). FIL-I55 adds points on top of finished retos.
+ */
+export const juegoRetos = pgTable(
+  "JuegoReto",
+  {
+    id: text("id").primaryKey(),
+    juego: text("juego").notNull(),
+    lens: text("lens").notNull(),
+    seed: text("seed").notNull(),
+    content: jsonb("content").notNull(),
+    fromUserId: text("fromUserId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Null for a link reto (FIL-I53-4). */
+    toUserId: text("toUserId").references(() => users.id, { onDelete: "cascade" }),
+    fromPartidaId: text("fromPartidaId").references(() => juegoPartidas.id, { onDelete: "set null" }),
+    toPartidaId: text("toPartidaId").references(() => juegoPartidas.id, { onDelete: "set null" }),
+    /** sha256 of the link token (FIL-I53-4); the token itself is only in the link. */
+    linkTokenHash: text("linkTokenHash"),
+    /** What the person without an account answered on the link: `{ answers, score, finishedAt }`. Nothing personal. */
+    linkResult: jsonb("linkResult"),
+    /** `abierto` · `jugado` · `vencido` · `cancelado` (gustos when a person turns off their notes). */
+    status: text("status").notNull().default("abierto"),
+    /** The reto this one answers («Revancha»). */
+    rematchOf: text("rematchOf"),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+    /** When the sender finished their side: from then on the other person sees it. Null while the sender plays. */
+    sentAt: timestamp("sentAt", { precision: 3, mode: "date" }),
+    expiresAt: timestamp("expiresAt", { precision: 3, mode: "date" }).notNull(),
+    finishedAt: timestamp("finishedAt", { precision: 3, mode: "date" }),
+  },
+  (table) => [
+    index("JuegoReto_toUserId_status_idx").on(table.toUserId, table.status),
+    index("JuegoReto_fromUserId_toUserId_idx").on(table.fromUserId, table.toUserId),
+    index("JuegoReto_createdAt_idx").on(table.createdAt),
+    uniqueIndex("JuegoReto_linkTokenHash_key").on(table.linkTokenHash),
+  ],
+);
+
+// ── Quiniela de estrenos (FIL-I55-1) ─────────────────────────────────────
+/**
+ * A release on the quiniela: one of the month's most awaited films from `CinemaRelease`, picked
+ * once and kept. Forecasts close on `releaseDate` (Mexico City) and the Extras cron resolves it on
+ * `resolveOn` (14 days later) from `Catalog.imdbRating`; without a rating it waits and retries.
+ */
+export const juegoEstrenos = pgTable(
+  "JuegoEstreno",
+  {
+    catalogId: text("catalogId")
+      .primaryKey()
+      .references(() => catalog.id, { onDelete: "cascade" }),
+    /** `YYYY-MM` of the release, Mexico City: the month whose quiniela it belongs to. */
+    month: text("month").notNull(),
+    /** `YYYY-MM-DD`: from this day on nobody can change a forecast. */
+    releaseDate: text("releaseDate").notNull(),
+    /** `YYYY-MM-DD`: the cron resolves it from this day on. */
+    resolveOn: text("resolveOn").notNull(),
+    /** The IMDb rating it got, in tenths (71 = 7.1). Null until resolved. */
+    actual: integer("actual"),
+    resolvedAt: timestamp("resolvedAt", { precision: 3, mode: "date" }),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [index("JuegoEstreno_month_idx").on(table.month), index("JuegoEstreno_resolveOn_idx").on(table.resolveOn)],
+);
+
+/** One person's forecast for one release, in tenths (74 = 7.4). Never written to `Title`. */
+export const juegoPronosticos = pgTable(
+  "JuegoPronostico",
+  {
+    id: text("id").primaryKey(),
+    catalogId: text("catalogId")
+      .notNull()
+      .references(() => juegoEstrenos.catalogId, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    guess: integer("guess").notNull(),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("JuegoPronostico_catalogId_userId_key").on(table.catalogId, table.userId)],
 );
 
 export const usersRelations = relations(users, ({ many }) => ({

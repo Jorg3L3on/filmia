@@ -63,8 +63,12 @@ export const isJuegosPath = (pathname: string) => {
   return path === "/extras" || path.startsWith("/extras/");
 };
 
-/** A game being played (La tanda): no dock, the answer buttons own the bottom of the screen. */
-export const isJuegoPlayPath = (pathname: string) => isJuegosPath(pathname) && pathOnly(pathname) !== "/extras";
+/**
+ * A game being played (La tanda): no dock, the answer buttons own the bottom of the screen. A reto
+ * by link (`/reto/…`, FIL-I53-4) is a game too, often opened by someone without an account.
+ */
+export const isJuegoPlayPath = (pathname: string) =>
+  (isJuegosPath(pathname) && pathOnly(pathname) !== "/extras") || pathOnly(pathname).startsWith("/reto/");
 
 /**
  * Bottom-nav active state: Cine on /cine/*; Listas on the hub and on Quiero ver (FIL-34);
