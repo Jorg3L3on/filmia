@@ -69,7 +69,7 @@ const Card = ({ initial }: { initial: EstrenoCard }) => {
 
   const others = card.others;
   const hiddenLine =
-    card.votes === 0 ? "Nadie ha votado todavía." : card.votes === 1 ? "1 persona ya votó: lo ves al guardar el tuyo." : `${card.votes} personas ya votaron: los ves al guardar el tuyo.`;
+    card.votes === 0 ? "Nadie ha votado todavía." : card.votes === 1 ? "1 persona ya votó: lo ves el día del estreno." : `${card.votes} personas ya votaron: los ves el día del estreno.`;
 
   return (
     <li
@@ -132,11 +132,7 @@ const Card = ({ initial }: { initial: EstrenoCard }) => {
       ) : null}
 
       {card.revealed ? (
-        others.length > 0 ? (
-          <Forecasts items={others} highlight={card.phase === "resuelta"} />
-        ) : card.mine != null && open ? (
-          <p className="mt-3 text-[13px] text-fog">Eres la primera persona en votar.</p>
-        ) : null
+        others.length > 0 ? <Forecasts items={others} highlight={card.phase === "resuelta"} /> : null
       ) : (
         <p className="mt-3 text-[13px] text-fog" data-estrenos="ocultos">
           {hiddenLine}

@@ -58,7 +58,7 @@ describeWithDb("Quiniela de estrenos (FIL-I55-1)", () => {
     assert.deepEqual(forAna, forBeto);
   });
 
-  it("others' forecasts never reach the client before saving one's own", async () => {
+  it("others' forecasts never reach the client before forecasts close, saved or not", async () => {
     const film = films[0]!;
     await savePronostico({ userId: ana, catalogId: film, guess: 74, now: before1 });
     const betoBefore = (await mine(beto, before1)).find((card) => card.catalogId === film)!;
@@ -71,7 +71,15 @@ describeWithDb("Quiniela de estrenos (FIL-I55-1)", () => {
     assert.ok(!payload.includes('"guess"'), "no guess of anyone is in Beto's card");
 
     await savePronostico({ userId: beto, catalogId: film, guess: 81, now: before1 });
-    const betoAfter = (await mine(beto, before1)).find((card) => card.catalogId === film)!;
+    // Saving his own reveals nothing: he could still change it to edge out Ana.
+    const betoSaved = (await mine(beto, before1)).find((card) => card.catalogId === film)!;
+    assert.equal(betoSaved.revealed, false);
+    assert.deepEqual(betoSaved.others, []);
+    assert.ok(!JSON.stringify(betoSaved).includes("Ana"), "Ana's name is not in Beto's card after saving");
+
+    // From the release day (2033-03-10, Mexico City) the forecasts are closed and shown.
+    const closed = new Date("2033-03-10T18:00:00Z");
+    const betoAfter = (await mine(beto, closed)).find((card) => card.catalogId === film)!;
     assert.equal(betoAfter.revealed, true);
     assert.deepEqual(
       betoAfter.others.map((other) => [other.name, other.guess]),
