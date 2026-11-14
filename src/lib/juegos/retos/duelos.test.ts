@@ -148,6 +148,16 @@ describeWithDb("Duelos de trivia y gustos (FIL-I53-5/6)", () => {
     assert.equal(early.ok, false);
   });
 
+  it("gustos: a stranger is refused before anything about them is read", async () => {
+    const stranger = await seed.user("Desconocida");
+    await setJuegosNotasFor(ana, true);
+    // Notas off on the stranger: the answer is still «you do not know them», never «notas off».
+    await assert.rejects(
+      startGustosReto({ userId: ana, toUserId: stranger, now: t0 }),
+      (error: unknown) => error instanceof RetoError && error.code === "target",
+    );
+  });
+
   it("gustos: with the permission off on either account the duel cannot be made", async () => {
     await setJuegosNotasFor(ana, false);
     await setJuegosNotasFor(beto, true);

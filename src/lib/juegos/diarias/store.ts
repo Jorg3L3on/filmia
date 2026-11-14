@@ -1,4 +1,5 @@
 import { and, eq, gte } from "drizzle-orm";
+import { circleOf } from "@/lib/juegos/circle";
 import { catalog, db, juegoRondas } from "@/db";
 import { addDays, mxToday } from "@/lib/cine-core";
 import { DIARIA_LENS, DIARIA_NO_REPEAT_DAYS, diariaSeed, type DiariaId } from "@/lib/juegos/diarias/core";
@@ -131,7 +132,8 @@ export type DiariaTable = {
 
 /** The day table, the person's streak and how many have not played. Database only. */
 export const loadDiariaTable = async (userId: string, juego: DiariaId, day: string, now = new Date()): Promise<DiariaTable> => {
-  const [rows, days, accounts] = await Promise.all([loadDayTable(juego, DIARIA_LENS, day), finishedDailyDays(userId, juego), countAccounts()]);
+  const circle = await circleOf(userId);
+  const [rows, days, accounts] = await Promise.all([loadDayTable(juego, DIARIA_LENS, day, circle), finishedDailyDays(userId, juego), countAccounts(circle)]);
   return {
     table: rows.map((row) => ({ ...row, me: row.userId === userId })),
     streak: dayStreak(days, mxToday(now)),

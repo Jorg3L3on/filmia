@@ -12,7 +12,7 @@ import {
   type GustosPair,
   type GustosRated,
 } from "@/lib/juegos/retos/gustos-core";
-import { claimToPartida, createReto, readReto, RetoError, setFromPartida, type RetoRow, type RetoSide } from "@/lib/juegos/retos/store";
+import { assertChallengeable, claimToPartida, createReto, readReto, RetoError, setFromPartida, type RetoRow, type RetoSide } from "@/lib/juegos/retos/store";
 
 /**
  * Duelo de gustos on the database (FIL-I53-6). Only between two people who both turned on «Usar mis
@@ -69,6 +69,8 @@ const createGustosPartida = (userId: string, retoId: string, side: RetoSide, pai
 export const startGustosReto = async (input: { userId: string; toUserId: string; rematchOf?: string | null; now?: Date }) => {
   const now = input.now ?? new Date();
   if (input.toUserId === input.userId) throw new RetoError("No puedes retarte a ti.", "self");
+  // Before anything about the other person is read: a stranger's notas setting never leaks.
+  await assertChallengeable(input.userId, input.toUserId);
   const people = await db
     .select({ id: users.id, name: users.name, juegosNotas: users.juegosNotas })
     .from(users)

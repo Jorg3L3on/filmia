@@ -1,5 +1,6 @@
 import { alias } from "drizzle-orm/pg-core";
 import { and, eq, gte, inArray, isNotNull, lt, sql, type SQL } from "drizzle-orm";
+import { circleOf } from "@/lib/juegos/circle";
 import { db, juegoPartidas, juegoRetos, users } from "@/db";
 import { addDays, mxToday } from "@/lib/cine-core";
 import { bingoCardOf, completeLines, assignBingo } from "@/lib/juegos/bingo/core";
@@ -130,16 +131,21 @@ export const parseLigaTab = (value: unknown): LigaTab => (value === "pasada" || 
 
 export type LigaRow = RankedLigaRow<LigaTotals & { name: string; initial: string; me: boolean }>;
 
-/** A table: «semana» (this week), «pasada» (last week) or «historico» (since the league began). */
+/**
+ * A table: «semana» (this week), «pasada» (last week) or «historico» (since the league began).
+ * Only the person and the people they know (`circleOf`), never every account.
+ */
 export const loadLiga = async (userId: string, tab: LigaTab, now = new Date()): Promise<{ week: string | null; rows: LigaRow[] }> => {
   const week = tab === "semana" ? weekKeyOf(now) : tab === "pasada" ? previousWeek(weekKeyOf(now)) : null;
   const range = week ? weekRange(week) : null;
+  const circle = await circleOf(userId);
   const [dailies, duelos, bingo] = await Promise.all([
     loadDailyEvents(range),
     loadDueloEvents(range),
     week ? loadBingoWeekEvents(week) : loadBingoAllTimeEvents(now),
   ]);
-  const totals = tallyLiga([...dailies, ...duelos, ...bingo]).filter((row) => row.points > 0);
+  // Points are earned against everyone, but the table only shows the person and who they know.
+  const totals = tallyLiga([...dailies, ...duelos, ...bingo]).filter((row) => row.points > 0 && circle.has(row.userId));
   const ids = totals.map((row) => row.userId);
   const people = ids.length ? await db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, ids)) : [];
   const names = retoNames(people);

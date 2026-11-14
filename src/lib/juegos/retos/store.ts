@@ -1,7 +1,10 @@
 import { createId } from "@paralleldrive/cuid2";
 import { alias } from "drizzle-orm/pg-core";
 import { and, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
-import { db, juegoPartidas, juegoRetos, listMembers, lists, quinielaGroupMembers, users } from "@/db";
+import { db, juegoPartidas, juegoRetos, users } from "@/db";
+import { connectedUserIds } from "@/lib/juegos/circle";
+
+export { connectedUserIds };
 import type { PartidaRow } from "@/lib/juegos/partidas";
 import {
   expiresAtFrom,
@@ -80,28 +83,12 @@ export const countOpenToward = async (fromUserId: string, toUserId: string, now 
   return row?.count ?? 0;
 };
 
-/**
- * The people `userId` already knows in Filmia: someone sharing a list with them (owner or member),
- * someone in one of their quiniela groups, or someone they played a duel with (either side). Only
- * these can be challenged by name; anyone else gets a link.
- */
-export const connectedUserIds = async (userId: string): Promise<Set<string>> => {
-  const myLists = db
-    .select({ id: lists.id })
-    .from(lists)
-    .where(eq(lists.userId, userId))
-    .union(db.select({ id: listMembers.listId }).from(listMembers).where(eq(listMembers.userId, userId)));
-  const myGroups = db.select({ id: quinielaGroupMembers.groupId }).from(quinielaGroupMembers).where(eq(quinielaGroupMembers.userId, userId));
-  const [owners, members, groupmates, sent, received] = await Promise.all([
-    db.select({ id: lists.userId }).from(lists).where(inArray(lists.id, myLists)),
-    db.select({ id: listMembers.userId }).from(listMembers).where(inArray(listMembers.listId, myLists)),
-    db.select({ id: quinielaGroupMembers.userId }).from(quinielaGroupMembers).where(inArray(quinielaGroupMembers.groupId, myGroups)),
-    db.select({ id: juegoRetos.toUserId }).from(juegoRetos).where(and(eq(juegoRetos.fromUserId, userId), isNotNull(juegoRetos.toUserId))),
-    db.select({ id: juegoRetos.fromUserId }).from(juegoRetos).where(eq(juegoRetos.toUserId, userId)),
-  ]);
-  const ids = new Set<string>();
-  for (const row of [...owners, ...members, ...groupmates, ...sent, ...received]) if (row.id && row.id !== userId) ids.add(row.id);
-  return ids;
+/** Refuses a target the sender does not know (or that is not onboarded). Run it before reading anything about them. */
+export const assertChallengeable = async (fromUserId: string, toUserId: string) => {
+  if (fromUserId === toUserId) throw new RetoError("No puedes retarte a ti.", "self");
+  if (!(await isChallengeable(fromUserId, toUserId))) {
+    throw new RetoError("Solo puedes retar a alguien con quien ya compartes una lista, un grupo o un duelo.", "target");
+  }
 };
 
 const isChallengeable = async (fromUserId: string, toUserId: string) =>
@@ -129,7 +116,7 @@ export const createReto = async (input: {
   const now = input.now ?? new Date();
   if (input.toUserId) {
     if (input.toUserId === input.fromUserId) throw new RetoError("No puedes retarte a ti.", "self");
-    if (!(await isChallengeable(input.fromUserId, input.toUserId))) throw new RetoError("Solo puedes retar a alguien con quien ya compartes una lista, un grupo o un duelo.", "target");
+    await assertChallengeable(input.fromUserId, input.toUserId);
     if ((await countOpenToward(input.fromUserId, input.toUserId, now)) >= RETO_MAX_OPEN_TO_SAME) {
       throw new RetoError(`Ya tienes ${RETO_MAX_OPEN_TO_SAME} retos abiertos con esa persona. Espera a que juegue.`, "cap");
     }
@@ -167,7 +154,7 @@ export const sendReto = async (retoId: string, now = new Date()): Promise<RetoRo
   const [row] = await db
     .update(juegoRetos)
     .set({ sentAt: now, expiresAt: expiresAtFrom(now) })
-    .where(and(eq(juegoRetos.id, retoId), isNull(juegoRetos.sentAt), eq(juegoRetos.status, "abierto")))
+    .where(and(eq(juegoRetos.id, retoId), isNull(juegoRetos.sentAt), eq(juegoRetos.status, "abierto"), gt(juegoRetos.expiresAt, now)))
     .returning();
   return row ?? null;
 };

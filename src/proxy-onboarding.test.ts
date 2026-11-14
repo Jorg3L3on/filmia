@@ -96,3 +96,36 @@ describe("proxy: an account that still owes the Bienvenida (FIL-41)", () => {
     assert.equal(response.headers.get("location"), null);
   });
 });
+
+describe("proxy: a revoked session posting a Server Action to a public page", () => {
+  const seed = seeder("proxy-rev");
+  let stale = "";
+  let current = "";
+
+  before(async () => {
+    if (!testDatabaseUrl) return;
+    const id = await seed.user("Revocada");
+    // The account is at version 0; a token minted for -1 stands for one issued before a password change.
+    stale = await createSessionToken({ id, email: `${id}@filmia.test`, name: "Revocada" }, { onboarded: true, sessionVersion: -1 });
+    current = await createSessionToken({ id, email: `${id}@filmia.test`, name: "Revocada" }, { onboarded: true, sessionVersion: 0 });
+  });
+
+  after(async () => {
+    if (testDatabaseUrl) await seed.cleanup();
+  });
+
+  const action = (token: string) =>
+    new Request("https://filmia.test/reto/abc", {
+      method: "POST",
+      headers: { host: "filmia.test", "next-action": "abc123", cookie: `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}` },
+      body: "[]",
+    });
+
+  it("is refused with a 401 and the cookie cleared, while a current one goes through", { skip: !testDatabaseUrl }, async () => {
+    const refused = await proxy(action(stale));
+    assert.equal(refused.status, 401);
+    assert.match(refused.headers.get("set-cookie") ?? "", new RegExp(`${SESSION_COOKIE_NAME}=;`));
+    const allowed = await proxy(action(current));
+    assert.equal(allowed.headers.get("x-middleware-next"), "1");
+  });
+});

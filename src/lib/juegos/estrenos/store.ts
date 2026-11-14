@@ -1,5 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import { and, asc, eq, gte, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { circleOf } from "@/lib/juegos/circle";
 import { catalog, cinemaReleases, db, juegoEstrenos, juegoPronosticos, users } from "@/db";
 import { addDays, mxToday } from "@/lib/cine-core";
 import {
@@ -136,6 +137,14 @@ export type EstrenoCard = {
  * What one person sees: this month's and next month's picks, plus releases resolved in the last
  * 30 days. Others' guesses are left out on the server (not hidden in the UI) until `mayRevealOthers`.
  */
+/** «Tú», the names of known winners, and strangers folded into one «N más». */
+const winnersLine = (ids: string[], userId: string, names: Map<string, string>) => {
+  const shown = ids.flatMap((id) => (id === userId ? ["Tú"] : names.has(id) ? [names.get(id)!] : []));
+  const strangers = ids.length - shown.length;
+  if (strangers > 0) shown.push(shown.length === 0 ? (strangers === 1 ? "Alguien" : `${strangers} personas`) : strangers === 1 ? "1 más" : `${strangers} más`);
+  return shown;
+};
+
 export const loadEstrenos = async (userId: string, now = new Date()): Promise<EstrenoCard[]> => {
   const today = mxToday(now);
   const since = new Date(now.getTime() - RESOLVED_VISIBLE_DAYS * 86_400_000);
@@ -153,7 +162,9 @@ export const loadEstrenos = async (userId: string, now = new Date()): Promise<Es
     .innerJoin(users, eq(users.id, juegoPronosticos.userId))
     .where(inArray(juegoPronosticos.catalogId, ids))
     .orderBy(asc(juegoPronosticos.createdAt));
-  const people = new Map(forecasts.map((forecast) => [forecast.userId, { id: forecast.userId, name: forecast.name }]));
+  // Everyone's forecast counts (votes, winners), but names only for the person's circle.
+  const circle = await circleOf(userId);
+  const people = new Map(forecasts.filter((forecast) => circle.has(forecast.userId)).map((forecast) => [forecast.userId, { id: forecast.userId, name: forecast.name }]));
   const names = retoNames([...people.values()]);
 
   const cards = rows.map(({ estreno, name, posterPath }): EstrenoCard => {
@@ -163,7 +174,7 @@ export const loadEstrenos = async (userId: string, now = new Date()): Promise<Es
     const winnerIds = new Set(estreno.actual == null ? [] : closestOf(all, estreno.actual).map((forecast) => forecast.userId));
     const others = revealed
       ? all
-          .filter((forecast) => forecast.userId !== userId)
+          .filter((forecast) => forecast.userId !== userId && circle.has(forecast.userId))
           .map((forecast) => {
             const shown = names.get(forecast.userId) ?? "Alguien";
             return { userId: forecast.userId, name: shown, initial: initialOf(shown), guess: forecast.guess, me: false, winner: winnerIds.has(forecast.userId) };
@@ -182,7 +193,7 @@ export const loadEstrenos = async (userId: string, now = new Date()): Promise<Es
       others,
       revealed,
       iWon: winnerIds.has(userId),
-      winners: [...winnerIds].map((id) => (id === userId ? "Tú" : (names.get(id) ?? "Alguien"))),
+      winners: winnersLine([...winnerIds], userId, names),
     };
   });
   // Open ones first (soonest to close), then closed, then resolved (latest first).

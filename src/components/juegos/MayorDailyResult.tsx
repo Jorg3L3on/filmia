@@ -28,7 +28,7 @@ export const dayLabel = (day: string) =>
   new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", timeZone: "UTC" }).format(new Date(`${day}T12:00:00Z`));
 
 /**
- * The daily's result (board M-3-diaria): score, squares, the day table among every account and a
+ * The daily's result (board M-3-diaria): score, squares, the day table among the person and who they know, and a
  * small streak of days. Nobody is pressed: those who have not played are a count, not names.
  */
 export const MayorDailyResult = ({ result, share }: { result: DailyResult; share?: ReactNode }) => {

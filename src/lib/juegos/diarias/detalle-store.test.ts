@@ -28,6 +28,7 @@ describeWithDb("Detalle store (FIL-I54-1)", () => {
     await cleanRounds();
     ana = await seed.user("Ana");
     beto = await seed.user("Beto");
+    await seed.collection(ana, "Juntos", [{ userId: beto, role: "VIEWER" }]);
     for (let index = 0; index < 12; index += 1) {
       const name = `Detalle de prueba ${String(index).padStart(2, "0")}`;
       const film = await seed.film({ name, year: 1990 + index });
@@ -138,6 +139,9 @@ describeWithDb("Detalle store (FIL-I54-1)", () => {
     assert.equal(mine.score, 10);
     assert.equal(mine.place, 1);
     assert.ok(table.table.some((row) => row.name === "Beto" && !row.finished));
+    // Someone who knows neither of them sees only their own row (none, before playing).
+    const dana = await seed.user("Dana");
+    assert.deepEqual((await loadDiariaTable(dana, DETALLE_ID, day, now)).table, []);
     // Nothing answered in the game writes to the library.
     assert.equal((await db.query.titles.findMany({ where: eq(titles.userId, ana) })).length, 0);
   });

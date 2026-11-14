@@ -30,7 +30,7 @@ const RULES: { label: string; points: string }[] = [
 ];
 
 /**
- * La liga de la semana (FIL-I55-3, board Comp-4-liga): every account in one table, computed on
+ * La liga de la semana (FIL-I55-3, board Comp-4-liga): the person and who they know in one table, computed on
  * read from what was played. Starts from zero every Monday (Mexico City); no prizes.
  */
 export default async function LigaPage({ searchParams }: { searchParams: Promise<LigaSearchParams> }) {
