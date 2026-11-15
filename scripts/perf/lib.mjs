@@ -64,7 +64,7 @@ export const signIn = async (context) => {
 };
 
 export const openHoy = async (page) => {
-  await page.goto(`${BASE}/`, { waitUntil: "load" });
+  await page.goto(`${BASE}/${process.env.PERF_QUERY ?? ""}`, { waitUntil: "load" });
   await page.waitForSelector('[role="listbox"][aria-label="Mazo de títulos"]', { timeout: 90000 });
   // Let the deal animation, image decodes and the lite warm-up pass.
   await page.waitForTimeout(4500);

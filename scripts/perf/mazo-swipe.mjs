@@ -37,6 +37,9 @@ CSS.nostubglass = `.ticket-stub,.ticket-stub-tab{backdrop-filter:none!important;
 CSS.onlyblend = `*,*::before,*::after{mix-blend-mode:normal!important}`;
 CSS.onlymask = `*,*::before,*::after{-webkit-mask-image:none!important;mask-image:none!important}`;
 CSS.noactone = `.hoy-act-one{animation:none!important}`;
+CSS.iso = `.que-ver-atmosphere{isolation:isolate}`;
+CSS.isobg = `.que-ver-atmosphere{isolation:isolate;background:var(--canvas)}`;
+CSS.noatmo = `.que-ver-atmosphere{display:none!important}`;
 CSS.all = [CSS.nosala, CSS.noblend, CSS.nobackdrop, CSS.noblur, CSS.noanim].join("\n");
 CSS.gpudiet = [CSS.noblend, CSS.nobackdrop, CSS.noblur].join("\n");
 

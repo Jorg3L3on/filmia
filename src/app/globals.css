@@ -2197,6 +2197,18 @@ body:has(.diario-que-ver-shell) nav[aria-label="Principal móvil"] a[data-nav="s
   animation: coverflow-idle-breath 5.6s ease-in-out infinite;
 }
 
+/* While the deck moves (the engine sets html[data-deck-moving] from the first dragged frame to
+ * rest) the slow ambient loops hold still: each of them asked the main thread for a style pass
+ * every frame of a swipe (FIL-I58-3). They resume where they stopped; a 7 s breath or a grain
+ * step held for half a second is not something an eye can follow. */
+html[data-deck-moving] .que-ver-atmosphere-grade,
+html[data-deck-moving] .que-ver-atmosphere-haze,
+html[data-deck-moving] .que-ver-atmosphere-flicker,
+html[data-deck-moving] .film-grain,
+html[data-deck-moving] .coverflow-card.is-cinematic.is-focused .coverflow-card-face {
+  animation-play-state: paused;
+}
+
 /* Stillness: ~12 s after the last touch the sala holds its frame (useDeckStillness).
    The breaths run on blurred, blended, full-viewport layers, so every frame is a full
    re-composite — a phone left on Hoy heats up. Paused in place, nothing jumps; any
