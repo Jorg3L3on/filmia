@@ -1,7 +1,7 @@
 import "@/lib/test-support/local-db";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { adminEmails, isAdmin, requireAdmin } from "@/lib/admin";
+import { adminEmails, isAdmin, isReservedAdminEmail, requireAdmin } from "@/lib/admin";
 
 const isNotFound = (error: unknown) =>
   typeof (error as { digest?: unknown })?.digest === "string" && (error as { digest: string }).digest.endsWith(";404");
@@ -28,5 +28,16 @@ describe("Admin · ADMIN_EMAILS (FIL-I37-3)", () => {
     } finally {
       process.env.ADMIN_EMAILS = previous;
     }
+  });
+});
+
+describe("Admin · reserved addresses (FIL-46)", () => {
+  it("an admin address is reserved for everyone but the account that already has it", () => {
+    const raw = "admin@ejemplo.com";
+    assert.equal(isReservedAdminEmail(" Admin@Ejemplo.com ", null, raw), true);
+    assert.equal(isReservedAdminEmail("admin@ejemplo.com", "ana@ejemplo.com", raw), true);
+    assert.equal(isReservedAdminEmail("admin@ejemplo.com", "ADMIN@ejemplo.com", raw), false);
+    assert.equal(isReservedAdminEmail("ana@ejemplo.com", null, raw), false);
+    assert.equal(isReservedAdminEmail("admin@ejemplo.com", null, ""), false);
   });
 });
