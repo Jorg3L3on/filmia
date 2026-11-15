@@ -11,7 +11,7 @@ import { buttonClass } from "@/lib/ui";
 const isAbort = (error: unknown) => error instanceof DOMException && error.name === "AbortError";
 
 /**
- * «Compartir resultado» (FIL-I52-4, board M-3-diaria): the system share sheet with the text (game,
+ * «Compartir» and «Copiar texto» (FIL-I52-4, FIL-I56-5, board M-3-diaria): the system share sheet with the text (game,
  * number, squares, a link to Extras) and the result image; without a share sheet the text goes to
  * the clipboard. Neither names a film. The image is fetched once the button is on screen, because
  * iOS only opens the sheet inside the tap's user activation.
@@ -63,8 +63,10 @@ export const MayorShareButton = ({
     }
   };
 
+  const textOf = () => shareText({ day, lens, answers, url: new URL(JUEGOS_PATH, window.location.origin).href });
+
   const share = () => {
-    const text = shareText({ day, lens, answers, url: new URL(JUEGOS_PATH, window.location.origin).href });
+    const text = textOf();
     if (typeof navigator.share !== "function") {
       void copy(text);
       return;
@@ -76,16 +78,27 @@ export const MayorShareButton = ({
     });
   };
 
+  // FIL-I56-5 (board M-6-resultado): «Compartir» leads; «Copiar texto» copies the same text.
   return (
-    <button
-      ref={buttonRef}
-      type="button"
-      onClick={share}
-      className={buttonClass({ variant: "primary", size: "lg", className: "mt-3 w-full gap-2" })}
-      data-mayor="compartir"
-    >
-      <ShareIcon className="size-5" />
-      Compartir resultado
-    </button>
+    <div className="flex gap-2.5">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={share}
+        className={buttonClass({ variant: "primary", size: "lg", className: "flex-1 gap-2" })}
+        data-mayor="compartir"
+      >
+        <ShareIcon className="size-5" />
+        Compartir
+      </button>
+      <button
+        type="button"
+        onClick={() => void copy(textOf())}
+        className={buttonClass({ variant: "secondary", size: "lg", className: "shrink-0 px-5" })}
+        data-mayor="copiar"
+      >
+        Copiar texto
+      </button>
+    </div>
   );
 };

@@ -28,6 +28,7 @@ export default async function MayorDailyPage() {
       {opened?.status === "ok" && opened.view.finished ? (
         <MayorDailyResult
           result={await loadDailyResult(userId, opened.view, now)}
+          now={now}
           share={
             <MayorShareButton
               partidaId={opened.view.partidaId}
