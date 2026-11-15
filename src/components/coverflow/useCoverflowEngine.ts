@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  startTransition,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -72,6 +73,9 @@ const JUMP_FADE_IN_MS = 240;
 const MAX_FRAME_SECONDS = 1 / 30;
 
 
+/** Past this, a gap between two drag ticks is the finger holding still. */
+const DRAG_STALL_MAX_MS = 100;
+
 export const useCoverflowEngine = (
   titlesLength: number,
   isSheet: boolean,
@@ -116,6 +120,7 @@ export const useCoverflowEngine = (
   const prevPointerTime = useRef(0);
   const isDraggingRef = useRef(false);
   const motionModeRef = useRef<"idle" | "drag" | "coast">("idle");
+  const lastDragTickRef = useRef<number | null>(null);
   const suppressClick = useRef(false);
   const titlesLengthRef = useRef(titlesLength);
   const cardWidthRef = useRef(COVERFLOW_CARD_WIDTH);
@@ -181,7 +186,8 @@ export const useCoverflowEngine = (
     }
 
     activeIndexRef.current = next;
-    setActiveIndex(next);
+    // Interruptible (FIL-I58-4): a card crossing never blocks the frame that is moving the deck.
+    startTransition(() => setActiveIndex(next));
   };
 
   const registerNode = useCallback((index: number, node: HTMLElement | null) => {
@@ -192,6 +198,7 @@ export const useCoverflowEngine = (
 
     const painted: CoverflowPaintedCard = {
       root: node,
+      mover: node.parentElement?.hasAttribute("data-coverflow-mover") ? node.parentElement : null,
       face: node.querySelector("[data-coverflow-face]"),
       dim: node.querySelector("[data-coverflow-dim]"),
       caption: node.querySelector("[data-coverflow-caption]"),
@@ -212,6 +219,9 @@ export const useCoverflowEngine = (
   const runTick = (now: number) => {
     const ceiling = maxIndex();
     const mode = motionModeRef.current;
+    if (mode !== "drag") {
+      lastDragTickRef.current = null;
+    }
     if (lastFrameRef.current != null && mode !== "drag") {
       onMotionFrameRef.current?.(now - lastFrameRef.current);
     }
@@ -223,6 +233,13 @@ export const useCoverflowEngine = (
     const frames = dt * 60;
 
     if (mode === "drag") {
+      // The finger's frames count too (FIL-I58-6). A drag ticks once per touch move, so a gap
+      // longer than a brief stall is the finger holding still, not a slow frame.
+      const lastDrag = lastDragTickRef.current;
+      if (lastDrag != null && now - lastDrag <= DRAG_STALL_MAX_MS) {
+        onMotionFrameRef.current?.(now - lastDrag);
+      }
+      lastDragTickRef.current = now;
       displayIndexRef.current = targetIndexRef.current;
       paintCards(true);
       commitActiveIndex();

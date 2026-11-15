@@ -5,8 +5,16 @@
  * motion frames actually ran.
  */
 
-/** Frames per window; only motion frames (settle, coast) are sampled. */
-export const DECK_LITE_WINDOW = 24;
+/** Frames per window; motion frames (drag, settle, coast) are sampled. */
+export const DECK_LITE_WINDOW = 40;
+/** A frame over this misses two 60 Hz refreshes: the stall a thumb feels. */
+export const DECK_LITE_LONG_FRAME_MS = 34;
+/**
+ * A window with this many long frames (2 of 40 = 5 %) is a slow window even when its median is a
+ * perfect 16.7 ms: on a weak phone one frame in twenty stalls while the median looks fine (FIL-I58-6).
+ * One stray long frame (a decode, a GC) is not enough.
+ */
+export const DECK_LITE_LONG_FRAMES = 2;
 /** A window whose median frame is slower than this (< ~38 fps) is a slow window. */
 export const DECK_LITE_SLOW_FRAME_MS = 26;
 /** Consecutive slow windows before switching: one janky moment (decode, hydration) isn't enough. */
@@ -23,6 +31,8 @@ export const createFramePaceMonitor = ({
   windowSize = DECK_LITE_WINDOW,
   slowFrameMs = DECK_LITE_SLOW_FRAME_MS,
   slowWindows = DECK_LITE_SLOW_WINDOWS,
+  longFrameMs = DECK_LITE_LONG_FRAME_MS,
+  longFrames = DECK_LITE_LONG_FRAMES,
 } = {}) => {
   let frames: number[] = [];
   let slowInARow = 0;
@@ -36,7 +46,9 @@ export const createFramePaceMonitor = ({
       if (frames.length < windowSize) {
         return false;
       }
-      slowInARow = median(frames) > slowFrameMs ? slowInARow + 1 : 0;
+      const long = frames.filter((frame) => frame > longFrameMs).length;
+      const slow = median(frames) > slowFrameMs || long >= longFrames;
+      slowInARow = slow ? slowInARow + 1 : 0;
       frames = [];
       return slowInARow >= slowWindows;
     },

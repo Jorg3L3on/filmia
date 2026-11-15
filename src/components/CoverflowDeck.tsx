@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { FrameMeter } from "@/components/coverflow/FrameMeter";
 import { DeckCard } from "@/components/coverflow/DeckCard";
 import { DeckFooterSwap } from "@/components/coverflow/DeckFooterSwap";
 import { CoverflowIndicators } from "@/components/coverflow/CoverflowIndicators";
@@ -16,6 +17,7 @@ import { cn } from "@/lib/cn";
 import { COVERFLOW_VISIBLE_SPAN } from "@/lib/coverflow-metrics";
 import { deckCardFrom, deckIndexOf, withDeckCard } from "@/lib/nav-origin";
 import { useSpringFeedback } from "@/lib/motion";
+import { replaceUrlAtRest } from "@/lib/rest-url";
 export type { CoverflowTitle };
 
 export const CoverflowDeck = ({
@@ -135,11 +137,7 @@ export const CoverflowDeck = ({
     onActiveChange?.(activeIndex, title);
     if (syncCardParam) {
       // Shallow, like Hoy's lens: the exact card survives a trip to the ficha and back.
-      window.history.replaceState(
-        null,
-        "",
-        withDeckCard(`${window.location.pathname}${window.location.search}`, title.id),
-      );
+      replaceUrlAtRest(withDeckCard(`${window.location.pathname}${window.location.search}`, title.id));
     }
     if (isSheet && !isFirst) {
       focusSpring.trigger();
@@ -172,6 +170,7 @@ export const CoverflowDeck = ({
       style={cinematic ? initialAmbientStyle : undefined}
       data-still={still ? "" : undefined}
     >
+      {cinematic ? <FrameMeter /> : null}
       <div
         ref={containerRef}
         role="listbox"
@@ -236,6 +235,7 @@ export const CoverflowDeck = ({
                   compact={isSheet}
                   cinematic={cinematic}
                   nearFocus={Math.abs(index - activeIndex) <= 1}
+                  farPoster={cinematic && stageWidth < 500 && Math.abs(index - activeIndex) >= 3}
                   showMarkSeenEye={showMarkSeenEye}
                   onSelect={handleSelectCard}
                   onPointerDown={handlePointerDown}

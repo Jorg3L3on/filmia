@@ -1060,12 +1060,19 @@ html.toast-force-reduce .toast-icon-spin .toast-spin {
 }
 
 /* Coverflow mazo: compositor-only transforms; dim/blur on face overlays. */
+/* The mover carries what changes every frame (see CardMover); the card keeps its looks. */
+.coverflow-card-mover {
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  opacity: 0;
+}
+
 .coverflow-card {
   contain: layout style;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   box-shadow: 0 14px 28px rgb(0 0 0 / 0.38);
-  opacity: 0;
 }
 
 .coverflow-card.is-focused {
@@ -1162,6 +1169,11 @@ html.toast-force-reduce .toast-icon-spin .toast-spin {
 
 .coverflow-card.is-compact .coverflow-card-specular {
   display: none;
+}
+
+/* A blend mode costs a GPU pass: only the hero's specular blends (FIL-I58-2). */
+.coverflow-card.is-cinematic:not(.is-focused) .coverflow-card-specular {
+  mix-blend-mode: normal;
 }
 
 .coverflow-cinematic,
@@ -2810,8 +2822,6 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   border-top: 1.5px dashed rgb(255 255 255 / 0.42);
   border-radius: 0 0 14px 14px;
   background: rgb(10 12 15 / 0.82);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
   color: var(--accent-tint);
   font-size: 11px;
   font-weight: 700;
@@ -2907,8 +2917,6 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
   border-top: 1.5px dashed rgb(255 255 255 / 0.42);
   border-radius: 0 0 14px 14px;
   background: rgb(10 12 15 / 0.82);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
   color: var(--paper);
   display: flex;
   align-items: center;
@@ -2937,6 +2945,10 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
 .coverflow-card.is-focused .ticket-stub-tab {
   opacity: 1;
   pointer-events: auto;
+  /* The frosted glass exists for the hero only (FIL-I58-2): nine cards each drawing a
+     backdrop-filter was about 11 GPU passes a frame on a phone. The other stubs are invisible. */
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 /* The list poster shrinks to clear the dock, so the fixed 172px pair used to
@@ -3830,6 +3842,7 @@ html[data-que-ver-lite] .coverflow-card.is-cinematic.is-focused .coverflow-card-
     transition: none;
   }
 
+  .coverflow-card-mover,
   .coverflow-card,
   .coverflow-card.is-focused,
   .coverflow-card.is-compact.is-focused,
