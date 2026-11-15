@@ -16,30 +16,21 @@ export const metadata = { title: "Mayor o menor" } as const;
 type MayorSearchParams = Record<string, string | string[] | undefined>;
 
 /**
- * Mayor o menor, free streak (FIL-I52-2, board Main): played until the first miss, with a record
- * per lens. The unfinished partida is picked up where it stopped. No dock while playing.
+ * Mayor o menor, free streak (FIL-I52-2, FIL-I56-3, board Main): played until the first miss, with
+ * a record per lens. The unfinished partida is picked up where it stopped. No dock while playing.
  */
-/** «La diaria de hoy»: one quiet row over the game, never a banner that pushes. */
+/** «La diaria de hoy» in the end screen (board M-3-fin), only while today's is not finished. */
 const DailyDoor = ({ daily }: { daily: MayorView | null }) => (
   <Link
     href={MAYOR_DAILY_PATH}
-    className={cn("flex min-h-12 items-center gap-3 rounded-2xl border border-line bg-surface px-3.5 py-2 text-left", focusRing)}
+    className={cn("mt-1.5 flex min-h-[3.75rem] items-center gap-3 rounded-[1.375rem] border border-line bg-surface px-3 py-2.5 text-left", focusRing)}
     data-mayor="puerta-diaria"
   >
-    <span className="flex min-w-0 flex-1 flex-col">
-      <b className="text-sm font-semibold text-paper">La diaria de hoy</b>
-      <span className="truncate text-xs text-fog">
-        {daily?.finished ? `Hiciste ${daily.score} de ${daily.total}` : daily ? `Llevas ${daily.answers.length} de ${daily.total}` : "Diez pares iguales para todos"}
-      </span>
+    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <b className="text-[15px] font-semibold text-paper">La diaria de hoy</b>
+      <span className="truncate text-sm text-fog">{daily ? `Llevas ${daily.answers.length} de ${daily.total}` : "Diez pares, los mismos para todos"}</span>
     </span>
-    <span
-      className={cn(
-        "shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold",
-        daily?.finished ? "border-line bg-chrome text-fog" : "border-accent/50 bg-accent/15 text-accent",
-      )}
-    >
-      {daily?.finished ? "Ver tabla" : daily ? "Seguir" : "Jugar"}
-    </span>
+    <span className="shrink-0 rounded-full border border-accent/50 bg-accent/15 px-3 py-1.5 text-xs font-semibold text-accent">{daily ? "Seguir" : "Jugar"}</span>
   </Link>
 );
 
@@ -61,7 +52,7 @@ export default async function MayorPage({ searchParams }: { searchParams: Promis
         <MayorGame
           key={view.partidaId}
           initialView={view}
-          headerExtra={<DailyDoor daily={daily} />}
+          endExtra={daily?.finished ? undefined : <DailyDoor daily={daily} />}
           lensRecords={Object.fromEntries([...records].map(([id, record]) => [id, record.best]))}
         />
       ) : (

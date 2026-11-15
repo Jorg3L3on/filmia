@@ -11,6 +11,7 @@ import { createPartida, finishPartida, readPartida, recordAnswer } from "@/lib/j
 import { RETO_MAX_OPEN_TO_SAME, RETO_MS } from "@/lib/juegos/retos/core";
 import { openMayorRetoSide, retoFromFreeMayor } from "@/lib/juegos/retos/mayor";
 import {
+  connectedUserIds,
   listMyRetos,
   listRetables,
   listTeToca,
@@ -31,6 +32,7 @@ describeWithDb("Retos (FIL-I53-1)", () => {
   let ana = "";
   let beto = "";
   let caro = "";
+  let dana = "";
   const retoIds: string[] = [];
 
   /** A finished free streak of `userId` over the seeded films, `score` right before the miss. */
@@ -53,6 +55,12 @@ describeWithDb("Retos (FIL-I53-1)", () => {
     ana = await seed.user("Ana Ruiz");
     beto = await seed.user("Beto");
     caro = await seed.user("Carolina");
+    // Ana, Beto and Carolina share a list; Dana knows nobody.
+    dana = await seed.user("Dana");
+    await seed.collection(ana, "Juntos", [
+      { userId: beto, role: "VIEWER" },
+      { userId: caro, role: "EDITOR" },
+    ]);
     for (let index = 0; index < 12; index += 1) {
       const film = await seed.film({ name: `Reto ${index + 1}`, year: 1990 + index });
       const rating = Math.round((5 + index * 0.31 + (index % 2 ? 1.2 : 0)) * 10) / 10;
@@ -149,6 +157,19 @@ describeWithDb("Retos (FIL-I53-1)", () => {
     const betoRow = people.find((person) => person.userId === beto)!;
     assert.equal(betoRow.name, "Beto");
     assert.equal(betoRow.line, "Van 1 a 0 en tu contra");
+  });
+
+  it("only people one already knows: a shared list, a quiniela group or a past duel", async () => {
+    const people = (await listRetables(ana, t0)).map((person) => person.userId);
+    assert.ok(people.includes(beto) && people.includes(caro));
+    assert.ok(!people.includes(dana), "a stranger is not offered");
+    assert.deepEqual(await listRetables(dana, t0), [], "nobody to challenge without a connection");
+    const partidaId = await finishedStreak(ana, 1);
+    await assert.rejects(
+      retoFromFreeMayor({ userId: ana, partidaId, toUserId: dana, now: t0 }),
+      (error: unknown) => error instanceof RetoError && error.code === "target",
+    );
+    assert.ok((await connectedUserIds(beto)).has(caro), "co-members of a list know each other");
   });
 
   it("nobody can challenge themself", async () => {

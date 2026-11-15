@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { and, asc, desc, eq, isNotNull, isNull, max, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, max, sql } from "drizzle-orm";
 import { db, juegoPartidas, juegoRondas, users } from "@/db";
 
 /**
@@ -228,8 +228,12 @@ export const rankDayTable = <T extends { score: number; finishedAt: Date | null 
   return [...ranked, ...open.map((row) => ({ row, place: null }))];
 };
 
-/** The day table: every account that opened the daily, across all accounts (no groups). */
-export const loadDayTable = async (juego: string, lens: string, day: string): Promise<DayTableRow[]> => {
+/**
+ * The day table: who opened the daily that day. `only` limits it to a circle (the person and the
+ * people they know, `circleOf`); every screen passes it so strangers never show up.
+ */
+export const loadDayTable = async (juego: string, lens: string, day: string, only?: Set<string>): Promise<DayTableRow[]> => {
+  if (only && only.size === 0) return [];
   const rows = await db
     .select({
       partidaId: juegoPartidas.id,
@@ -242,7 +246,13 @@ export const loadDayTable = async (juego: string, lens: string, day: string): Pr
     .from(juegoPartidas)
     .innerJoin(users, eq(users.id, juegoPartidas.userId))
     .where(
-      and(eq(juegoPartidas.juego, juego), eq(juegoPartidas.lens, lens), eq(juegoPartidas.day, day), eq(juegoPartidas.mode, "diaria")),
+      and(
+        eq(juegoPartidas.juego, juego),
+        eq(juegoPartidas.lens, lens),
+        eq(juegoPartidas.day, day),
+        eq(juegoPartidas.mode, "diaria"),
+        only ? inArray(juegoPartidas.userId, [...only]) : undefined,
+      ),
     )
     .orderBy(asc(juegoPartidas.startedAt));
   return rankDayTable(rows).map(({ row, place }) => {
@@ -271,8 +281,12 @@ export const countDailyPlayers = async (juego: string, day: string) => {
   return row?.count ?? 0;
 };
 
-/** Accounts that exist, to say how many have not played yet. */
-export const countAccounts = async () => {
-  const [row] = await db.select({ count: sql<number>`count(*)::int` }).from(users).where(isNotNull(users.onboardedAt));
+/** Accounts that exist (within `only` when given), to say how many have not played yet. */
+export const countAccounts = async (only?: Set<string>) => {
+  if (only && only.size === 0) return 0;
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(users)
+    .where(and(isNotNull(users.onboardedAt), only ? inArray(users.id, [...only]) : undefined));
   return row?.count ?? 0;
 };

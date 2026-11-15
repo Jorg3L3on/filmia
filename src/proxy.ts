@@ -81,9 +81,12 @@ export const proxy = async (request: Request) => {
 
   const isAuthScreen = pathname === LOGIN_PATH || pathname === SIGNUP_PATH;
   const publicPath = isPublicPath(pathname);
+  // A server action posted to a public page runs as the cookie's user: it must pass the same
+  // revocation check as a protected page, or a revoked cookie keeps working through /reto, /unirse…
+  const isServerAction = request.method === "POST" && request.headers.has("next-action");
   // Only requests whose answer depends on the session pay for the version lookup.
   const verified =
-    token && (!publicPath || isAuthScreen)
+    token && (!publicPath || isAuthScreen || isServerAction)
       ? await verifySessionToken(decodeURIComponent(token))
       : null;
   // A password change bumps User.sessionVersion: older tokens stop working here (FIL-I10-3).
@@ -101,6 +104,14 @@ export const proxy = async (request: Request) => {
   };
 
   if (publicPath) {
+    if (revoked && isServerAction) {
+      return respond(
+        new NextResponse(SESSION_EXPIRED_BODY, {
+          status: 401,
+          headers: { "content-type": "text/plain", [SESSION_EXPIRED_HEADER]: SESSION_EXPIRED_VALUE },
+        }),
+      );
+    }
     if (loggedIn && isAuthScreen) {
       return NextResponse.redirect(
         new URL(

@@ -2,6 +2,9 @@ import { createId } from "@paralleldrive/cuid2";
 import { alias } from "drizzle-orm/pg-core";
 import { and, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { db, juegoPartidas, juegoRetos, users } from "@/db";
+import { connectedUserIds } from "@/lib/juegos/circle";
+
+export { connectedUserIds };
 import type { PartidaRow } from "@/lib/juegos/partidas";
 import {
   expiresAtFrom,
@@ -80,8 +83,17 @@ export const countOpenToward = async (fromUserId: string, toUserId: string, now 
   return row?.count ?? 0;
 };
 
-const isChallengeable = async (userId: string) =>
-  Boolean(await db.query.users.findFirst({ where: and(eq(users.id, userId), isNotNull(users.onboardedAt)), columns: { id: true } }));
+/** Refuses a target the sender does not know (or that is not onboarded). Run it before reading anything about them. */
+export const assertChallengeable = async (fromUserId: string, toUserId: string) => {
+  if (fromUserId === toUserId) throw new RetoError("No puedes retarte a ti.", "self");
+  if (!(await isChallengeable(fromUserId, toUserId))) {
+    throw new RetoError("Solo puedes retar a alguien con quien ya compartes una lista, un grupo o un duelo.", "target");
+  }
+};
+
+const isChallengeable = async (fromUserId: string, toUserId: string) =>
+  (await connectedUserIds(fromUserId)).has(toUserId) &&
+  Boolean(await db.query.users.findFirst({ where: and(eq(users.id, toUserId), isNotNull(users.onboardedAt)), columns: { id: true } }));
 
 /**
  * A new reto. `sent` means the sender's side is already played (a finished partida): the 48 hours
@@ -104,7 +116,7 @@ export const createReto = async (input: {
   const now = input.now ?? new Date();
   if (input.toUserId) {
     if (input.toUserId === input.fromUserId) throw new RetoError("No puedes retarte a ti.", "self");
-    if (!(await isChallengeable(input.toUserId))) throw new RetoError("Esa cuenta no existe.", "target");
+    await assertChallengeable(input.fromUserId, input.toUserId);
     if ((await countOpenToward(input.fromUserId, input.toUserId, now)) >= RETO_MAX_OPEN_TO_SAME) {
       throw new RetoError(`Ya tienes ${RETO_MAX_OPEN_TO_SAME} retos abiertos con esa persona. Espera a que juegue.`, "cap");
     }
@@ -142,7 +154,7 @@ export const sendReto = async (retoId: string, now = new Date()): Promise<RetoRo
   const [row] = await db
     .update(juegoRetos)
     .set({ sentAt: now, expiresAt: expiresAtFrom(now) })
-    .where(and(eq(juegoRetos.id, retoId), isNull(juegoRetos.sentAt), eq(juegoRetos.status, "abierto")))
+    .where(and(eq(juegoRetos.id, retoId), isNull(juegoRetos.sentAt), eq(juegoRetos.status, "abierto"), gt(juegoRetos.expiresAt, now)))
     .returning();
   return row ?? null;
 };
@@ -289,15 +301,17 @@ export type Retable = {
 };
 
 /**
- * The people one can challenge: every other onboarded account (one pool, no groups). Only `id`
+ * The people one can challenge: onboarded accounts one already knows (`connectedUserIds`). Only `id`
  * and `name` are read: an email never leaves the database. `filter` narrows (Duelo de gustos).
  */
 export const listRetables = async (userId: string, now = new Date(), filter?: (ids: string[]) => Promise<Set<string>>): Promise<Retable[]> => {
   await expireRetos(userId, now);
+  const known = [...(await connectedUserIds(userId))];
+  if (known.length === 0) return [];
   const people = await db
     .select({ id: users.id, name: users.name })
     .from(users)
-    .where(and(isNotNull(users.onboardedAt), ne(users.id, userId)));
+    .where(and(isNotNull(users.onboardedAt), ne(users.id, userId), inArray(users.id, known)));
   const allowed = filter ? await filter(people.map((person) => person.id)) : null;
   const names = retoNames(people);
   const mine = await retosWithScores(or(eq(juegoRetos.fromUserId, userId), eq(juegoRetos.toUserId, userId)));

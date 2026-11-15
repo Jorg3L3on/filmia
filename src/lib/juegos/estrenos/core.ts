@@ -74,11 +74,12 @@ export const closestOf = <T extends { guess: number }>(forecasts: readonly T[], 
 };
 
 /**
- * Others' forecasts reach the client only once the person saved their own, or once forecasts are
- * closed (nothing left to copy). Before that the server sends only how many voted.
+ * Others' forecasts reach the client only once forecasts are closed (the release day). Saving one's
+ * own is not enough: a forecast can be changed until then, so seeing the others first would let
+ * the last one to change edge out the leader. Before that the server sends only how many voted.
  */
 export const mayRevealOthers = (input: { mine: number | null; releaseDate: string; today: string }) =>
-  input.mine != null || !isForecastOpen(input.releaseDate, input.today);
+  !isForecastOpen(input.releaseDate, input.today);
 
 export type EstrenoPhase = "abierta" | "cerrada" | "pendiente" | "resuelta";
 

@@ -8315,3 +8315,174 @@ html[data-que-ver-lite] .hoy-peek svg {
   min-height: 14rem;
   aspect-ratio: 2 / 3;
 }
+
+/* ---------------------------------------------------------------------------
+ * Extras · piezas comunes (FIL-I56-1, board S-1-sistema). The medallion's gold ring beats once on
+ * a hit and «+1» rises; a miss shakes the card 6 px; a square fills as its step resolves. Reduced
+ * motion keeps only fades.
+ * ------------------------------------------------------------------------- */
+.juego-medallion {
+  box-shadow: 0 0 0 7px var(--canvas), 0 16px 30px -12px #000;
+  transition:
+    border-color var(--duration-tab) var(--ease-out),
+    box-shadow var(--duration-pop) var(--spring);
+}
+
+.juego-medallion[data-state="up"] {
+  box-shadow: 0 0 0 7px var(--canvas), 0 0 0 10px rgb(240 193 74 / 0.32), 0 16px 30px -12px #000;
+}
+
+.juego-medallion-pop {
+  animation: juego-pop var(--duration-pop) var(--spring);
+}
+
+.juego-plus-one {
+  animation: juego-plus-one var(--duration-sheet) var(--ease-out) both;
+}
+
+.juego-shake {
+  animation: juego-shake var(--duration-exit) var(--ease-out);
+}
+
+.juego-square {
+  transition:
+    background-color var(--duration-press) var(--ease-out),
+    box-shadow var(--duration-press) var(--ease-out);
+}
+
+.juego-rise {
+  animation: juego-rise var(--duration-sheet) var(--ease-out) backwards;
+}
+
+@keyframes juego-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.22);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes juego-plus-one {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes juego-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+}
+
+@keyframes juego-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .juego-medallion,
+  .juego-square {
+    transition: opacity var(--duration-reduced) linear;
+  }
+
+  .juego-medallion-pop,
+  .juego-shake {
+    animation: none;
+  }
+
+  .juego-plus-one,
+  .juego-rise {
+    animation: juego-fade var(--duration-reduced) linear both;
+  }
+}
+
+@keyframes juego-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Mayor o menor (FIL-I56-3, board Main): two stacked cards, 268 px tall (poster 160 × 240) on an
+ * 844 px phone, shorter on short screens so the keys still fit; the medallion sits on the seam.
+ * After a miss the cards fold to 112 px and the end screen rises (FIL-I56-4).
+ * ------------------------------------------------------------------------- */
+.mayor-stack {
+  --mayor-card-h: clamp(12rem, calc((100dvh - 16rem) / 2), 16.75rem);
+}
+
+.mayor-stack-compact {
+  --mayor-card-h: 7rem;
+}
+
+.mayor-card {
+  height: var(--mayor-card-h);
+  transition:
+    height var(--duration-sheet) var(--ease-out),
+    border-color var(--duration-tab) var(--ease-out);
+}
+
+.mayor-poster {
+  height: calc(var(--mayor-card-h) - 26px);
+  aspect-ratio: 2 / 3;
+  transition: height var(--duration-sheet) var(--ease-out);
+}
+
+.mayor-stack-compact .mayor-poster {
+  height: 92px;
+}
+
+.mayor-medallion {
+  top: calc(var(--mayor-card-h) + 6px - 2.375rem);
+  transition:
+    top var(--duration-sheet) var(--ease-out),
+    border-color var(--duration-tab) var(--ease-out),
+    box-shadow var(--duration-pop) var(--spring);
+}
+
+.mayor-stack-compact .mayor-medallion {
+  top: calc(var(--mayor-card-h) + 6px - 1.625rem);
+}
+
+.mayor-relevo {
+  animation: mayor-relevo var(--duration-morph) var(--ease-out) backwards;
+}
+
+@keyframes mayor-relevo {
+  from {
+    transform: translateY(calc(var(--mayor-card-h) + 0.75rem));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mayor-card,
+  .mayor-poster,
+  .mayor-medallion {
+    transition: none;
+  }
+
+  .mayor-relevo {
+    animation: juego-fade var(--duration-reduced) linear both;
+  }
+}

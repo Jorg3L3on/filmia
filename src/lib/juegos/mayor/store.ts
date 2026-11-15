@@ -1,5 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import { and, eq, gte, inArray, isNotNull } from "drizzle-orm";
+import { circleOf } from "@/lib/juegos/circle";
 import { catalog, db } from "@/db";
 import { mxToday } from "@/lib/cine-core";
 import {
@@ -317,10 +318,11 @@ export type DailyResult = {
 /** What the result screen needs once the person's daily is over. Database only. */
 export const loadDailyResult = async (userId: string, view: MayorView, now = new Date()): Promise<DailyResult> => {
   const day = view.day ?? mxToday(now);
+  const circle = await circleOf(userId);
   const [rows, days, accounts] = await Promise.all([
-    loadDayTable(MAYOR_ID, view.lens, day),
+    loadDayTable(MAYOR_ID, view.lens, day, circle),
     finishedDailyDays(userId, MAYOR_ID),
-    countAccounts(),
+    countAccounts(circle),
   ]);
   return {
     view,
