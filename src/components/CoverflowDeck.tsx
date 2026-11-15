@@ -235,7 +235,7 @@ export const CoverflowDeck = ({
                   compact={isSheet}
                   cinematic={cinematic}
                   nearFocus={Math.abs(index - activeIndex) <= 1}
-                  farPoster={cinematic && stageWidth < 500 && Math.abs(index - activeIndex) >= 3}
+                  farPoster={cinematic && stageWidth < 500 && Math.abs(index - activeIndex) >= 4}
                   showMarkSeenEye={showMarkSeenEye}
                   onSelect={handleSelectCard}
                   onPointerDown={handlePointerDown}

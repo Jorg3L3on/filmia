@@ -61,3 +61,25 @@ type DeviceHints = { deviceMemory?: number; hardwareConcurrency?: number };
 export const isLowEndDevice = ({ deviceMemory, hardwareConcurrency }: DeviceHints) =>
   (deviceMemory != null && deviceMemory <= 2) ||
   (hardwareConcurrency != null && hardwareConcurrency > 0 && hardwareConcurrency <= 2);
+
+/**
+ * How long a drag frame took, or null when it says nothing about the phone (FIL-I58-8).
+ * A drag paints once per pointer move, so the gap between two drag ticks is mostly the finger:
+ * a slow or hesitating thumb leaves 35–100 ms between moves with no frame owed, and counting
+ * those made a fast phone look slow. A gap counts only when the move that asked for this tick
+ * arrived within one refresh of the previous tick: then a frame was owed and the whole gap is
+ * the phone's.
+ */
+export const DRAG_FRAME_OWED_MS = 20;
+export const DRAG_STALL_MAX_MS = 100;
+
+export const dragFrameMs = (previousTick: number | null, moveAt: number | null, now: number) => {
+  if (previousTick == null || moveAt == null) {
+    return null;
+  }
+  const gap = now - previousTick;
+  if (gap > DRAG_STALL_MAX_MS || moveAt - previousTick > DRAG_FRAME_OWED_MS) {
+    return null;
+  }
+  return gap;
+};

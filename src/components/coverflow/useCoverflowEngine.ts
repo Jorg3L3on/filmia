@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { dragFrameMs } from "@/lib/deck-lite";
 import {
   compositorReleaseEnabled,
   planRelease,
@@ -95,8 +96,6 @@ const markDeckMoving = (moving: boolean) => {
   }
 };
 
-/** Past this, a gap between two drag ticks is the finger holding still. */
-const DRAG_STALL_MAX_MS = 100;
 
 export const useCoverflowEngine = (
   titlesLength: number,
@@ -150,6 +149,8 @@ export const useCoverflowEngine = (
     timers: number[];
   } | null>(null);
   const lastDragTickRef = useRef<number | null>(null);
+  /** When the pointer move that asked for the next drag tick happened (event clock). */
+  const dragMoveAtRef = useRef<number | null>(null);
   const suppressClick = useRef(false);
   const titlesLengthRef = useRef(titlesLength);
   const cardWidthRef = useRef(COVERFLOW_CARD_WIDTH);
@@ -363,13 +364,14 @@ export const useCoverflowEngine = (
     const frames = dt * 60;
 
     if (mode === "drag") {
-      // The finger's frames count too (FIL-I58-6). A drag ticks once per touch move, so a gap
-      // longer than a brief stall is the finger holding still, not a slow frame.
-      const lastDrag = lastDragTickRef.current;
-      if (lastDrag != null && now - lastDrag <= DRAG_STALL_MAX_MS) {
-        onMotionFrameRef.current?.(now - lastDrag);
+      // The finger's frames count too (FIL-I58-6), but only the gaps the phone made, not the
+      // ones the finger made (FIL-I58-8, see dragFrameMs).
+      const dragFrame = dragFrameMs(lastDragTickRef.current, dragMoveAtRef.current, now);
+      if (dragFrame != null) {
+        onMotionFrameRef.current?.(dragFrame);
       }
       lastDragTickRef.current = now;
+      dragMoveAtRef.current = null;
       displayIndexRef.current = targetIndexRef.current;
       paintCards(true);
       commitActiveIndex();
@@ -693,6 +695,11 @@ export const useCoverflowEngine = (
       const next = clampCoverflowIndex(raw, ceiling);
       targetIndexRef.current = next;
       displayIndexRef.current = next;
+      // The first move since the last tick is the one that asked for the next frame.
+      // event.timeStamp is when the move happened, even if this handler runs late; an old
+      // engine with an epoch-based timeStamp falls back to now.
+      const moveAt = Math.abs(event.timeStamp - now) < 1000 ? event.timeStamp : now;
+      dragMoveAtRef.current ??= moveAt;
       ensureTick();
     };
 

@@ -49,3 +49,37 @@ describe("deck lite", () => {
     assert.equal(isLowEndDevice({}), false);
   });
 });
+
+describe("dragFrameMs", () => {
+  it("counts a gap when the move came right after the previous tick", async () => {
+    const { dragFrameMs } = await import("./deck-lite");
+    assert.equal(dragFrameMs(1000, 1004, 1017), 17);
+    // The phone was late: the move was in at once, the frame came 50 ms later.
+    assert.equal(dragFrameMs(1000, 1003, 1050), 50);
+  });
+
+  it("ignores a gap the finger made (a late move, a pause, the first tick)", async () => {
+    const { dragFrameMs } = await import("./deck-lite");
+    assert.equal(dragFrameMs(1000, 1045, 1050), null);
+    assert.equal(dragFrameMs(1000, 1002, 1200), null);
+    assert.equal(dragFrameMs(null, 1002, 1016), null);
+  });
+
+  it("a slow drag on a fast phone never trips lite", async () => {
+    const { dragFrameMs, createFramePaceMonitor: create } = await import("./deck-lite");
+    const monitor = create();
+    let tick = 0;
+    let tripped = false;
+    // A thumb moving every 40–90 ms; each move is painted on the next 60 Hz refresh.
+    for (let i = 0; i < 400; i += 1) {
+      const moveAt = tick + 40 + ((i * 37) % 50);
+      const now = Math.ceil(moveAt / 16.7) * 16.7;
+      const frame = dragFrameMs(tick, moveAt, now);
+      if (frame != null) {
+        tripped ||= monitor.push(frame);
+      }
+      tick = now;
+    }
+    assert.equal(tripped, false);
+  });
+});
