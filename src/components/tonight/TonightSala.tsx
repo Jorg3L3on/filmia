@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { flushRestUrl, replaceUrlAtRest } from "@/lib/rest-url";
 import { universoBridge } from "@/app/actions/universo";
 import { markNotTonight, sendTasteFeedback, undoNotInterested, undoNotTonight } from "@/app/actions/tonight";
 import { removeFromWatchlist, undoMarkWatched } from "@/app/actions/watchlist";
@@ -459,6 +460,35 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null, j
     });
   };
 
+  // The deck's cards read these through context. The handlers object above is new every render
+  // (its closures capture state), which re-rendered every DeckCard whenever the sala did, a card
+  // crossing included. This one keeps its identity: the data fields change rarely, and the
+  // functions call the latest closure through a ref (FIL-I58-4).
+  const latestHandlers = useRef(handlers);
+  useLayoutEffect(() => {
+    latestHandlers.current = handlers;
+  });
+  const { lens: hLens, dayPart: hDayPart, now: hNow, doubleFeatureFor: hDouble, closing: hClosing } = handlers;
+  const stableHandlers = useMemo<TonightHandlers>(
+    () => ({
+      lens: hLens,
+      dayPart: hDayPart,
+      now: hNow,
+      doubleFeatureFor: hDouble,
+      closing: hClosing,
+      onWhy: (title) => latestHandlers.current.onWhy(title),
+      onOpenMenu: (title) => latestHandlers.current.onOpenMenu(title),
+      onOpened: (title) => latestHandlers.current.onOpened(title),
+      onOpenReco: (title) => latestHandlers.current.onOpenReco(title),
+      markRecoSeen: (title, formData) => latestHandlers.current.markRecoSeen(title, formData),
+      onWatched: (title) => latestHandlers.current.onWatched(title),
+      onWatchError: (title, message) => latestHandlers.current.onWatchError(title, message),
+    }),
+    // hClosing is rebuilt each render: depend on what is in it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [hLens, hDayPart, hNow, hDouble, hClosing.total, hClosing.watched, hClosing.notTonight, hClosing.lenses, hClosing.onRestart],
+  );
+
   // The hero's own lens drives the rail; lens + card live in the URL (impressions settle the previous hero first).
   const syncHero = useCallback(
     (title: CoverflowTitle) => {
@@ -476,7 +506,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null, j
         filtersRef.current,
       );
       // Shallow URL sync: router.replace would refetch the server page mid-swipe.
-      window.history.replaceState(null, "", `/?${params}`);
+      replaceUrlAtRest(`/?${params}`);
       if (slug === activeSlugRef.current) {
         return;
       }
@@ -518,6 +548,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null, j
   const wider = budget.maxRuntimeMin == null ? null : widerBudget(budget.id);
 
   const applyFilters = (next: Partial<TonightFilterState>) => {
+    flushRestUrl();
     const merged = { ...filtersRef.current, ...next };
     filtersRef.current = merged;
     setFilters(merged);
@@ -554,7 +585,7 @@ export const TonightSala = ({ decks, initialSlug = null, initialCardId = null, j
     ) : null;
 
   return (
-    <TonightProvider value={handlers}>
+    <TonightProvider value={stableHandlers}>
       <div className="diario-que-ver-shell tonight-sala flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-sm:gap-1">
         {/* The page's one heading (UX-18): the eyebrow and deck carry the visible titles. */}
         <h1 className="sr-only">Hoy</h1>

@@ -14,20 +14,27 @@ describe("deck lite", () => {
 
   it("ignores one janky window (image decode, hydration)", () => {
     const monitor = createFramePaceMonitor();
-    const janky = [...Array(24).fill(45), ...Array(24).fill(16.7), ...Array(24).fill(45)];
+    const janky = [...Array(40).fill(45), ...Array(40).fill(16.7), ...Array(40).fill(45)];
     assert.equal(feed(monitor, janky), false);
   });
 
   it("goes lite after two slow windows in a row", () => {
     const monitor = createFramePaceMonitor();
-    assert.equal(feed(monitor, Array(47).fill(33)), false);
+    assert.equal(feed(monitor, Array(79).fill(33)), false);
     assert.equal(monitor.push(33), true);
   });
 
-  it("judges by the median, so a few long frames don't count", () => {
+  it("trips on a steady 5 % of long frames even with a perfect median", () => {
     const monitor = createFramePaceMonitor();
-    const mostlyFine = Array.from({ length: 96 }, (_, i) => (i % 6 === 0 ? 80 : 16.7));
-    assert.equal(feed(monitor, mostlyFine), false);
+    const stalls = Array.from({ length: 200 }, (_, i) => (i % 20 === 0 ? 60 : 16.7));
+    assert.equal(feed(monitor, stalls), true);
+  });
+
+  it("does not trip on a single long frame, a clean run or an odd stall now and then", () => {
+    assert.equal(feed(createFramePaceMonitor(), [16.7, 16.7, 90, ...Array(200).fill(16.7)]), false);
+    assert.equal(feed(createFramePaceMonitor(), Array(400).fill(16.7)), false);
+    const rare = Array.from({ length: 400 }, (_, i) => (i % 60 === 0 ? 70 : 16.7));
+    assert.equal(feed(createFramePaceMonitor(), rare), false);
   });
 
   it("skips paused or bogus frames", () => {

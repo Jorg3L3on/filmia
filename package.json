@@ -30,6 +30,8 @@
     "db:verify-role": "tsx scripts/verify-db-role.ts",
     "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs",
     "generate:ios-splash": "node scripts/generate-ios-splash.mjs",
+    "perf:mazo": "node scripts/perf/mazo-swipe.mjs",
+    "perf:mazo:shots": "node scripts/perf/mazo-shots.mjs",
     "eval:tonight": "tsx scripts/eval-tonight.ts",
     "eval:affinity": "tsx scripts/eval-affinity.ts",
     "preview:affinity": "tsx scripts/preview-affinity.ts",
