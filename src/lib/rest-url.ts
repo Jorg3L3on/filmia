@@ -3,23 +3,40 @@
  * call per card passed (Safari throws after 100 in 10 s) and it has no business inside a swipe:
  * the URL is written once the deck has rested, and at the latest before anything is clicked or
  * the page is hidden, so Back from a ficha still lands on the same card.
+ *
+ * A write still waiting when the page changes (Back, an iOS edge swipe, a navigation that is
+ * not a click) is dropped: it belongs to the page that queued it, and run later it would put
+ * Hoy's URL on another page's history entry (FIL-I58-8).
  */
 export const REST_URL_DELAY_MS = 400;
 
-let pendingUrl: string | null = null;
+let pending: { url: string; pathname: string } | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let listening = false;
 
-export const flushRestUrl = () => {
+const clearTimer = () => {
   if (timer != null) {
     clearTimeout(timer);
     timer = null;
   }
-  if (pendingUrl == null) {
+};
+
+/** Forgets a write that has not run yet. */
+export const dropRestUrl = () => {
+  clearTimer();
+  pending = null;
+};
+
+export const flushRestUrl = () => {
+  clearTimer();
+  if (pending == null) {
     return;
   }
-  const url = pendingUrl;
-  pendingUrl = null;
+  const { url, pathname } = pending;
+  pending = null;
+  if (window.location.pathname !== pathname) {
+    return;
+  }
   window.history.replaceState(null, "", url);
 };
 
@@ -31,14 +48,14 @@ const listen = () => {
   // Capture phase: runs before the Link's own onClick starts a navigation.
   document.addEventListener("click", flushRestUrl, true);
   window.addEventListener("pagehide", flushRestUrl);
+  // Back/forward already moved to another entry: the write is not for it.
+  window.addEventListener("popstate", dropRestUrl);
 };
 
 /** The last call within the delay wins. */
 export const replaceUrlAtRest = (url: string) => {
   listen();
-  pendingUrl = url;
-  if (timer != null) {
-    clearTimeout(timer);
-  }
+  pending = { url, pathname: window.location.pathname };
+  clearTimer();
   timer = setTimeout(flushRestUrl, REST_URL_DELAY_MS);
 };

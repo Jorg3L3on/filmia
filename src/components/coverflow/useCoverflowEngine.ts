@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { dragFrameMs } from "@/lib/deck-lite";
 import {
   compositorReleaseEnabled,
   planRelease,
@@ -95,8 +96,6 @@ const markDeckMoving = (moving: boolean) => {
   }
 };
 
-/** Past this, a gap between two drag ticks is the finger holding still. */
-const DRAG_STALL_MAX_MS = 100;
 
 export const useCoverflowEngine = (
   titlesLength: number,
@@ -150,6 +149,8 @@ export const useCoverflowEngine = (
     timers: number[];
   } | null>(null);
   const lastDragTickRef = useRef<number | null>(null);
+  /** When the pointer move that asked for the next drag tick happened (event clock). */
+  const dragMoveAtRef = useRef<number | null>(null);
   const suppressClick = useRef(false);
   const titlesLengthRef = useRef(titlesLength);
   const cardWidthRef = useRef(COVERFLOW_CARD_WIDTH);
@@ -232,7 +233,10 @@ export const useCoverflowEngine = (
     }
     releaseRef.current = null;
     release.timers.forEach((timer) => window.clearTimeout(timer));
-    const index = releaseIndexAt(release.plan, nowMs() - release.startedAt);
+    // The animations' own clock: they start on the next frame, not when they were created.
+    const playing = release.animations[0]?.currentTime;
+    const elapsed = typeof playing === "number" ? playing : nowMs() - release.startedAt;
+    const index = releaseIndexAt(release.plan, elapsed);
     displayIndexRef.current = index;
     targetIndexRef.current = index;
     velocityRef.current = 0;
@@ -335,15 +339,39 @@ export const useCoverflowEngine = (
       link: node.querySelector("a"),
     };
     cardNodes.current.set(index, painted);
+    const release = releaseRef.current;
     paintCoverflowCard(
       painted,
       index - displayIndexRef.current,
       sideRoomRef.current,
       compactRef.current,
-      motionModeRef.current !== "idle" || isDraggingRef.current,
+      motionModeRef.current !== "idle" || isDraggingRef.current || release != null,
       cinematicRef.current,
       liteRef.current,
     );
+    // A card mounted while a release plays (the hero moved on and a new neighbour came in)
+    // joins it where it stands; painted still, it would sit at its mount spot and show there
+    // once the deck reached it (FIL-I58-8).
+    if (release) {
+      const frames = releaseKeyframes(release.plan, index, sideRoomRef.current, compactRef.current, true);
+      if (frames) {
+        const playing = release.animations[0]?.currentTime;
+        const elapsed = typeof playing === "number" ? playing : nowMs() - release.startedAt;
+        const timing = { duration: release.plan.durationMs, easing: "linear", fill: "forwards" } as const;
+        const join = (target: HTMLElement, keyframes: Keyframe[]) => {
+          const animation = target.animate(keyframes, timing);
+          animation.currentTime = elapsed;
+          release.animations.push(animation);
+        };
+        join(painted.mover ?? painted.root, frames.mover);
+        if (painted.dim && frames.dim.length > 0) {
+          join(painted.dim, frames.dim);
+        }
+        if (painted.face && frames.face.length > 0) {
+          join(painted.face, frames.face);
+        }
+      }
+    }
   }, []);
 
   const runTick = (now: number) => {
@@ -363,13 +391,14 @@ export const useCoverflowEngine = (
     const frames = dt * 60;
 
     if (mode === "drag") {
-      // The finger's frames count too (FIL-I58-6). A drag ticks once per touch move, so a gap
-      // longer than a brief stall is the finger holding still, not a slow frame.
-      const lastDrag = lastDragTickRef.current;
-      if (lastDrag != null && now - lastDrag <= DRAG_STALL_MAX_MS) {
-        onMotionFrameRef.current?.(now - lastDrag);
+      // The finger's frames count too (FIL-I58-6), but only the gaps the phone made, not the
+      // ones the finger made (FIL-I58-8, see dragFrameMs).
+      const dragFrame = dragFrameMs(lastDragTickRef.current, dragMoveAtRef.current, now);
+      if (dragFrame != null) {
+        onMotionFrameRef.current?.(dragFrame);
       }
       lastDragTickRef.current = now;
+      dragMoveAtRef.current = null;
       displayIndexRef.current = targetIndexRef.current;
       paintCards(true);
       commitActiveIndex();
@@ -607,16 +636,18 @@ export const useCoverflowEngine = (
       return;
     }
 
-    // Grabbing a deck that is still moving: stop where the screen is and carry on as a drag.
-    cancelRelease();
-
     if (allowPageScrollRef.current) {
+      // A release keeps playing until the gesture turns out to be a horizontal drag (see
+      // pointermove): a vertical scroll must not leave the deck stopped between two cards.
       pendingScrollRef.current = true;
       dragStartX.current = event.clientX;
       dragStartY.current = event.clientY;
       dragStartIndex.current = displayIndexRef.current;
       return;
     }
+
+    // Grabbing a deck that is still moving: stop where the screen is and carry on as a drag.
+    cancelRelease();
 
     if (wheelSnapTimeout.current != null) {
       window.clearTimeout(wheelSnapTimeout.current);
@@ -656,6 +687,7 @@ export const useCoverflowEngine = (
           return;
         }
         cancelJumpFade(true);
+        cancelRelease();
         jumpLandingRef.current = null;
         isDraggingRef.current = true;
         motionModeRef.current = "drag";
@@ -693,6 +725,11 @@ export const useCoverflowEngine = (
       const next = clampCoverflowIndex(raw, ceiling);
       targetIndexRef.current = next;
       displayIndexRef.current = next;
+      // The first move since the last tick is the one that asked for the next frame.
+      // event.timeStamp is when the move happened, even if this handler runs late; an old
+      // engine with an epoch-based timeStamp falls back to now.
+      const moveAt = Math.abs(event.timeStamp - now) < 1000 ? event.timeStamp : now;
+      dragMoveAtRef.current ??= moveAt;
       ensureTick();
     };
 
@@ -710,6 +747,8 @@ export const useCoverflowEngine = (
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("pointercancel", handlePointerUp);
     };
+  // The release helpers only touch refs and stable setters (see paintCards).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ensureTick, stopDragging]);
 
   // Read the `?mazo=` flag once on mount: Hoy rewrites the URL as cards pass, and this stores it for the tab.
@@ -867,8 +906,28 @@ export const useCoverflowEngine = (
     onMotionFrameRef.current = onMotionFrame;
   });
 
+  const layoutKeyRef = useRef("");
   useLayoutEffect(() => {
+    const layoutKey = `${cardWidth}|${cinematic}|${lite}|${stageWidth}|${titlesLength}`;
+    const layoutChanged = layoutKey !== layoutKeyRef.current;
+    layoutKeyRef.current = layoutKey;
+    if (releaseRef.current) {
+      if (!layoutChanged) {
+        // A card crossing mid-release re-renders the deck: the animations own the motion, so
+        // only the discrete state is painted and the deck stays «moving» (FIL-I58-8). A full
+        // paint here cleared html[data-deck-moving] and rewrote every card's styles.
+        paintDiscrete(displayIndexRef.current);
+        return;
+      }
+      // The stage changed under the release: its keyframes are stale. Stop and settle.
+      cancelRelease();
+      targetIndexRef.current = clampCoverflowIndex(Math.round(displayIndexRef.current), maxIndex());
+      ensureTick();
+      return;
+    }
     paintCards(motionModeRef.current !== "idle" || isDraggingRef.current);
+  // paintDiscrete / cancelRelease / maxIndex only touch refs (see paintCards).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIndex, cardWidth, cinematic, lite, stageWidth, titlesLength]);
 
   return {

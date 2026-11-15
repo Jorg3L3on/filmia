@@ -77,7 +77,7 @@ type DeckCardProps = {
   index: number;
   compact?: boolean;
   nearFocus?: boolean;
-  /** A phone-sized deck, three or more places from the hero: never visible, so a small poster is enough (FIL-I58-4). */
+  /** A phone-sized deck, four or more places from the hero: culled, and one crossing away from being culled still, so a small poster is enough and the big one loads before the card shows (FIL-I58-4, FIL-I58-8). */
   farPoster?: boolean;
   /** Qué ver cinematic: hide on-poster caption (meta lives below). */
   cinematic?: boolean;

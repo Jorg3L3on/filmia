@@ -26,7 +26,7 @@ export const COVERFLOW_ASOMO_SPREAD = 1.72;
 export const COVERFLOW_ASOMO_ROOM_MAX = 120;
 export const COVERFLOW_PAGE_POSTER_SIZES =
   "(max-width: 640px) 68vw, (max-width: 1024px) 42vw, 400px";
-/** Cards three or more places away on a phone are culled: a thumbnail-sized file will do. */
+/** Cards four or more places away on a phone: culled for at least one more crossing, so a thumbnail-sized file will do (at three the big file must already be loading). */
 export const COVERFLOW_FAR_POSTER_SIZES = "(max-width: 640px) 24vw, 160px";
 export const COVERFLOW_SHEET_POSTER_SIZES = "(max-width: 640px) 36vw, 156px";
 
