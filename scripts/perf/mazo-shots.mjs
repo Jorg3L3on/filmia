@@ -1,6 +1,7 @@
 // Deterministic screenshots of Hoy (loops frozen): at rest and mid-drag, for before/after diffs
 // (FIL-I58). Same server recipe as mazo-swipe.mjs. Prints the share of pixels over 8/255 per state;
 // two runs of the same build set the noise floor (the bar is 0.05 % of pixels over 8/255).
+//   PERF_WIDTH=360 PERF_HEIGHT=780 (default 390x844)
 //   npm run perf:mazo:shots -- <label>            npm run perf:mazo:shots -- --diff a b
 import { writeFileSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -18,14 +19,13 @@ if (process.argv[2] === "--diff") {
 }
 const label = process.argv[2] || "x";
 const browser = await launch();
-const context = await phoneContext(browser, { scale: 2 });
+const context = await phoneContext(browser, { scale: 2, width: Number(process.env.PERF_WIDTH ?? 390), height: Number(process.env.PERF_HEIGHT ?? 844) });
 // Wall-clock text («se pasa 37 min») must not change between runs: freeze Date.
 await context.addInitScript(() => {
   const RealDate = Date;
   const FIXED = new RealDate("2026-11-14T19:00:00-06:00").getTime();
-  // eslint-disable-next-line no-global-assign
   Date = class extends RealDate {
-    constructor(...a) { a.length ? super(...a) : super(FIXED); }
+    constructor(...a) { if (a.length) super(...a); else super(FIXED); }
     static now() { return FIXED; }
   };
 });
