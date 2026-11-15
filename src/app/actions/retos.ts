@@ -11,7 +11,7 @@ import { answerGustos, setJuegosNotasFor, startGustosReto, type GustosAnswerOutc
 import { answerLinkReto, createLinkReto, linkAsMayorView, type LinkAnswerOutcome } from "@/lib/juegos/retos/link";
 import { retoFromFreeMayor, startMayorReto } from "@/lib/juegos/retos/mayor";
 import { notifyRetado, setRetosPushFor } from "@/lib/juegos/retos/push-store";
-import { readRetoFor, RetoError, settleRetoPartida, type RetoRow } from "@/lib/juegos/retos/store";
+import { assertChallengeable, readRetoFor, RetoError, settleRetoPartida, type RetoRow } from "@/lib/juegos/retos/store";
 import {
   answerTrivia,
   askTrivia,
@@ -21,6 +21,8 @@ import {
   type TriviaAnswerOutcome,
   type TriviaView,
 } from "@/lib/juegos/retos/trivia";
+import { juegoLimitError } from "@/lib/juegos/rate-limit";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { requireUserId } from "@/lib/session";
 
 /**
@@ -56,6 +58,8 @@ const settle = async (userId: string, partidaId: string) => {
 export const sendMayorStreak = async (partidaId: string, toUserId: string): Promise<Sent> => {
   const userId = await requireUserId();
   if (typeof partidaId !== "string" || typeof toUserId !== "string") return { ok: false, error: "Reto no válido." };
+  const limited = await juegoLimitError(RATE_LIMITS.juegoStartAccount, userId);
+  if (limited) return { ok: false, error: limited };
   try {
     const reto = await retoFromFreeMayor({ userId, partidaId, toUserId });
     pushLater(reto);
@@ -70,6 +74,8 @@ export const sendMayorStreak = async (partidaId: string, toUserId: string): Prom
 export const makeMayorLink = async (partidaId: string): Promise<{ ok: true; path: string; retoId: string } | { ok: false; error: string }> => {
   const userId = await requireUserId();
   if (typeof partidaId !== "string") return { ok: false, error: "Reto no válido." };
+  const limited = await juegoLimitError(RATE_LIMITS.juegoStartAccount, userId);
+  if (limited) return { ok: false, error: limited };
   try {
     const { reto, path } = await createLinkReto(userId, partidaId);
     revalidateRetos();
@@ -84,13 +90,20 @@ export const startDuel = async (juego: string, toUserId: string, options: { lens
   const userId = await requireUserId();
   const id = parseRetoJuego(juego);
   if (!id || typeof toUserId !== "string") return { ok: false, error: "Duelo no válido." };
+  const limited = await juegoLimitError(RATE_LIMITS.juegoStartAccount, userId);
+  if (limited) return { ok: false, error: limited };
   let rematchOf: string | null = null;
   if (options.rematchOf) {
     const previous = await readRetoFor(userId, options.rematchOf);
     if (!previous) return { ok: false, error: "No encontramos ese duelo." };
+    // A rematch is against the other person of that duel, nobody else.
+    const other = previous.fromUserId === userId ? previous.toUserId : previous.fromUserId;
+    if (other !== toUserId) return { ok: false, error: "No encontramos ese duelo." };
     rematchOf = previous.id;
   }
   try {
+    // Before any game builds its pool or reads the other person: strangers are refused cheaply.
+    await assertChallengeable(userId, toUserId);
     const reto =
       id === "trivia"
         ? await startTriviaReto({ userId, toUserId, rematchOf })

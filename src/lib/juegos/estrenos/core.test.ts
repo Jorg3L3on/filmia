@@ -39,9 +39,10 @@ describe("Quiniela de estrenos · rules (FIL-I55-1)", () => {
     assert.deepEqual(closestOf([], 71), []);
   });
 
-  it("others are revealed only after saving, or once closed", () => {
+  it("others are revealed only once forecasts close, never just for saving", () => {
     assert.equal(mayRevealOthers({ mine: null, releaseDate: "2026-12-18", today: "2026-12-10" }), false);
-    assert.equal(mayRevealOthers({ mine: 74, releaseDate: "2026-12-18", today: "2026-12-10" }), true);
+    // Saving one's own no longer reveals the others: the forecast can still change.
+    assert.equal(mayRevealOthers({ mine: 74, releaseDate: "2026-12-18", today: "2026-12-10" }), false);
     assert.equal(mayRevealOthers({ mine: null, releaseDate: "2026-12-18", today: "2026-12-18" }), true);
   });
 

@@ -16,6 +16,8 @@ import {
   type TandaCorte,
   type TandaOutcome,
 } from "@/lib/juegos/tanda/store";
+import { juegoLimitError } from "@/lib/juegos/rate-limit";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { requireUserId } from "@/lib/session";
 
 /** A visit to the portada: Hoy's «nuevo» dot goes off (FIL-I50-2). */
@@ -60,6 +62,8 @@ export const undoTandaAnswer = async () => {
 /** «Otra tanda» (FIL-I50-7): ten more, as many times as the person wants. */
 export const nextTanda = async (): Promise<NextTandaOutcome> => {
   const userId = await requireUserId();
+  const limited = await juegoLimitError(RATE_LIMITS.tandaAccount, userId);
+  if (limited) return { ok: false, error: limited };
   const outcome = await dealNextTanda(userId).catch(() => ({ ok: false as const, error: "No pudimos repartir otra tanda." }));
   if (outcome.ok) {
     revalidatePath(JUEGOS_PATH);
@@ -89,6 +93,8 @@ export const startMayorFree = async (lens: string): Promise<{ ok: true; view: Ma
   const userId = await requireUserId();
   const parsed = parseMayorLens(lens);
   if (!parsed) return { ok: false, error: "Ese dato no existe." };
+  const limited = await juegoLimitError(RATE_LIMITS.juegoStartAccount, userId);
+  if (limited) return { ok: false, error: limited };
   const view = await startFreeMayor(userId, parsed).catch(() => null);
   return view ? { ok: true, view } : { ok: false, error: "No hay suficientes películas para jugar con ese dato." };
 };

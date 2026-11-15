@@ -34,6 +34,9 @@ export const RATE_LIMITS = {
   personalTokenAccount: { name: "mcp:token", limit: 10, windowMs: 60 * MINUTE },
   /** Opening a public reto link (FIL-I53-4), per IP: the page is outside the session wall. */
   retoLinkIp: { name: "reto:ip", limit: 20, windowMs: 10 * MINUTE },
+  // Extras: each of these reads a large pool or calls TMDB/OMDb, so a script cannot loop them.
+  tandaAccount: { name: "tanda:account", limit: 15, windowMs: 60 * MINUTE },
+  juegoStartAccount: { name: "juego-start:account", limit: 60, windowMs: 60 * MINUTE },
 } as const satisfies Record<string, RateLimitRule>;
 
 export const RATE_LIMIT_MESSAGE = "Demasiados intentos. Espera unos minutos y vuelve a intentarlo.";

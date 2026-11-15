@@ -1,4 +1,5 @@
 import { and, desc, eq, gte, inArray, isNotNull, lt, sql } from "drizzle-orm";
+import { circleOf } from "@/lib/juegos/circle";
 import { catalog, cinemaReleases, db, titles, users } from "@/db";
 import { addDays, mxToday } from "@/lib/cine-core";
 import { mxDayStart } from "@/lib/juegos/core";
@@ -108,7 +109,8 @@ export const loadBingo = async (userId: string, now = new Date()): Promise<Bingo
   const month = today.slice(0, 7);
   const card = bingoCardOf(month);
   const { from, to } = monthBounds(month);
-  const films = await loadDatedFilms({ from, to });
+  // Only the person and the people they know: a stranger's diary never reaches the table.
+  const films = await loadDatedFilms({ from, to, userIds: [...(await circleOf(userId))] });
   const byUser = groupByUser(films);
   const people = byUser.size
     ? await db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, [...byUser.keys()]))

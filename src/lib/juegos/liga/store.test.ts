@@ -102,6 +102,15 @@ describeWithDb("La liga de la semana (FIL-I55-3)", () => {
     ]);
   });
 
+  it("only the person and who they know: strangers' points never show", async () => {
+    // Dani knows nobody: an empty table even though others scored.
+    assert.deepEqual((await loadLiga(dani, "historico", now)).rows, []);
+    // Ana played a duel with Beto but has nothing with Carolina.
+    const names = (await loadLiga(ana, "historico", now)).rows.map((row) => row.name);
+    assert.ok(names.includes("Beto"));
+    assert.ok(!names.includes("Carolina"), "a stranger is not in Ana's liga");
+  });
+
   it("nobody who did not play, never an email", async () => {
     for (const tab of ["semana", "pasada", "historico"] as const) {
       const { rows } = await loadLiga(dani, tab, now);

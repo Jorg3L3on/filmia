@@ -32,7 +32,7 @@ export const DiariaTopBar = ({ eyebrow, title, chip }: { eyebrow: string; title:
 
 /**
  * A daily's result (FIL-I54; the same shape as M-3-diaria): the score, the person's marks, the
- * day table among every account and a small streak. Those who have not played are a count.
+ * day table among the person and who they know, and a small streak. Those who have not played are a count.
  */
 export const DiariaResult = ({
   id,

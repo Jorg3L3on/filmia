@@ -30,6 +30,7 @@ describeWithDb("Bingo del mes (FIL-I55-2)", () => {
   before(async () => {
     ana = await seed.user("Ana Ruiz");
     beto = await seed.user("Beto");
+    await seed.collection(ana, "Juntos", [{ userId: beto, role: "VIEWER" }]);
   });
 
   after(async () => {
@@ -78,5 +79,14 @@ describeWithDb("Bingo del mes (FIL-I55-2)", () => {
     assert.ok(text.includes("Ana"));
     assert.ok(!text.includes("@"));
     assert.ok(!text.includes("Ruiz"));
+  });
+
+  it("a stranger's diary never reaches the table", async () => {
+    const dana = await seed.user("Dana");
+    const view = await loadBingo(dana, now);
+    assert.deepEqual(
+      view.table.map((row) => row.name),
+      view.table.some((row) => row.me) ? ["Tú"] : [],
+    );
   });
 });
