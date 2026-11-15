@@ -6,6 +6,7 @@ import {
   COVERFLOW_CARD_WIDTH_MAX_WIDE,
   COVERFLOW_CARD_WIDTH_MIN,
   getCoverflowCardMetrics,
+  isCoverflowCardCulled,
   measureCoverflowCardWidth,
   paintCoverflowCard,
   stepCoverflowSpring,
@@ -13,6 +14,15 @@ import {
 import { asomoAt } from "./coverflow-projection";
 
 describe("coverflow metrics", () => {
+  it("culls far cards only on phone-sized cinematic stages", () => {
+    assert.equal(isCoverflowCardCulled(3, 60, true), true);
+    assert.equal(isCoverflowCardCulled(-2.6, 60, true), true);
+    assert.equal(isCoverflowCardCulled(2.5, 60, true), false);
+    assert.equal(isCoverflowCardCulled(2, 60, true), false);
+    assert.equal(isCoverflowCardCulled(4, 200, true), false);
+    assert.equal(isCoverflowCardCulled(4, 60, false), false);
+  });
+
   it("clamps the focused index to the deck", () => {
     assert.equal(clampCoverflowIndex(-2, 4), 0);
     assert.equal(clampCoverflowIndex(9, 4), 4);

@@ -26,7 +26,21 @@ export const COVERFLOW_ASOMO_SPREAD = 1.72;
 export const COVERFLOW_ASOMO_ROOM_MAX = 120;
 export const COVERFLOW_PAGE_POSTER_SIZES =
   "(max-width: 640px) 68vw, (max-width: 1024px) 42vw, 400px";
+/** Cards four or more places away on a phone: culled for at least one more crossing, so a thumbnail-sized file will do (at three the big file must already be loading). */
+export const COVERFLOW_FAR_POSTER_SIZES = "(max-width: 640px) 24vw, 160px";
 export const COVERFLOW_SHEET_POSTER_SIZES = "(max-width: 640px) 36vw, 156px";
+
+/** Phone stages never show cards past this many places from the hero (FIL-I58-2). */
+export const COVERFLOW_PHONE_CULL_DISTANCE = 2.5;
+
+/**
+ * Cinematic cards on a phone-sized stage farther than 2.5 places from the hero sit behind the
+ * ±1 and ±2 cards and off the edge: not drawn at all, so the GPU never composites them.
+ */
+export const isCoverflowCardCulled = (offset: number, sideRoom: number, cinematic: boolean) =>
+  cinematic &&
+  Math.max(10, sideRoom) < COVERFLOW_ASOMO_ROOM_MAX &&
+  Math.abs(offset) > COVERFLOW_PHONE_CULL_DISTANCE;
 
 export type CoverflowCardMetrics = {
   rotateY: number;
@@ -43,6 +57,8 @@ export type CoverflowCardMetrics = {
 
 export type CoverflowPaintedCard = {
   root: HTMLElement;
+  /** The thin box that moves (transform, opacity, z-index, visibility); falls back to `root`. */
+  mover?: HTMLElement | null;
   face: HTMLElement | null;
   dim: HTMLElement | null;
   caption: HTMLElement | null;
@@ -149,20 +165,32 @@ const setAttributeIfChanged = (node: HTMLElement, name: string, value: string) =
 /** Side-card blur moves in half-pixel steps: a few re-filters per card per move, not one a frame. */
 export const quantizeCoverflowBlur = (blurPx: number) => Math.round(blurPx * 2) / 2;
 
+/** The card's transform: lite neighbours do not turn. */
+export const coverflowTransform = (metrics: CoverflowCardMetrics, flat: boolean) => {
+  const rotate = flat ? 0 : metrics.rotateY;
+  return `translate3d(${metrics.translateX.toFixed(1)}px, ${metrics.translateY.toFixed(1)}px, ${metrics.translateZ.toFixed(1)}px) rotateY(${rotate.toFixed(2)}deg) scale(${metrics.scale.toFixed(4)})`;
+};
+
 export const paintCoverflowCard = (
   node: CoverflowPaintedCard,
   offset: number,
   sideRoom: number,
   compact: boolean,
-  moving: boolean,
+  // Kept for callers: `will-change` is now set once in CSS (FIL-I58-3), not toggled per move.
+  _moving: boolean,
   cinematic = false,
   lite = false,
+  /** A release is playing these four on the compositor: write only the discrete state (FIL-I58-5). */
+  animated = false,
 ) => {
   const metrics = getCoverflowCardMetrics(offset, sideRoom, compact, cinematic);
   const { root, face, dim, caption, link } = node;
-  const { translateX, translateZ, rotateY, scale } = metrics;
-  const zIndex = metrics.isActive ? Math.max(metrics.zIndex, 920) : metrics.zIndex;
+  const mover = node.mover ?? root;
+  // Stepped by whole places (FIL-I58-3): z-index changes only when two cards swap order, not
+  // every frame; the 3D depth already sorts the cards between those steps.
+  const zIndex = metrics.isActive ? 920 : 900 - Math.round(Math.abs(offset)) * 80;
   const hidden = metrics.opacity < 0.08;
+  const culled = isCoverflowCardCulled(offset, sideRoom, cinematic);
   const painted = (node.painted ??= {});
   const write = (key: string, value: string | number | boolean, apply: () => void) => {
     if (painted[key] !== value) {
@@ -173,14 +201,15 @@ export const paintCoverflowCard = (
 
   // Lite sala (FIL-I21-4): the neighbours keep their spread and scale but do not turn, so a
   // weak phone composites flat layers (translate + scale) instead of 3D-rotated ones.
-  const rotate = lite && cinematic ? 0 : rotateY;
-  const transform = `translate3d(${translateX.toFixed(1)}px, ${metrics.translateY.toFixed(1)}px, ${translateZ.toFixed(1)}px) rotateY(${rotate.toFixed(2)}deg) scale(${scale.toFixed(4)})`;
-  write("transform", transform, () => (root.style.transform = transform));
+  const transform = coverflowTransform(metrics, lite && cinematic);
   const opacity = String(metrics.opacity);
-  write("opacity", opacity, () => (root.style.opacity = opacity));
-  write("zIndex", zIndex, () => (root.style.zIndex = String(zIndex)));
-  write("pointerEvents", hidden, () => (root.style.pointerEvents = hidden ? "none" : "auto"));
-  write("moving", moving, () => (root.style.willChange = moving ? "transform" : "auto"));
+  if (!animated) {
+    write("transform", transform, () => (mover.style.transform = transform));
+    write("opacity", opacity, () => (mover.style.opacity = opacity));
+  }
+  write("zIndex", zIndex, () => (mover.style.zIndex = String(zIndex)));
+  write("culled", culled, () => (mover.style.visibility = culled ? "hidden" : ""));
+  write("pointerEvents", hidden, () => (mover.style.pointerEvents = hidden ? "none" : "auto"));
   // React also renders the class, aria-selected and the link's tabIndex (and may reset
   // them on a re-render): compare with the DOM itself, not the cache.
   if (root.classList.contains("is-focused") !== metrics.isActive) {
@@ -193,7 +222,7 @@ export const paintCoverflowCard = (
     link.tabIndex = tabIndex;
   }
 
-  if (face) {
+  if (face && !animated) {
     // Blur on the face (not the transformed root) so preserve-3d stays intact.
     // Focused hero stays unblurred (overflow clips sides). Lite: no blur at all.
     const rawBlur = metrics.isActive || lite ? 0 : metrics.blur;
@@ -204,12 +233,12 @@ export const paintCoverflowCard = (
     write("filter", filter, () => (face.style.filter = filter));
   }
 
-  if (dim) {
+  if (dim && !animated) {
     const dimOpacity = (1 - metrics.brightness).toFixed(2);
     write("dim", dimOpacity, () => (dim.style.opacity = dimOpacity));
   }
 
-  if (caption) {
+  if (caption && !animated) {
     const captionOpacity = !compact && Math.abs(offset) < 3.2 ? "1" : "0";
     write("caption", captionOpacity, () => (caption.style.opacity = captionOpacity));
   }

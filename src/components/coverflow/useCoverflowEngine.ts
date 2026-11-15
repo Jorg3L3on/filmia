@@ -1,12 +1,22 @@
 "use client";
 
 import {
+  startTransition,
   useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
 } from "react";
+import { dragFrameMs } from "@/lib/deck-lite";
+import {
+  compositorReleaseEnabled,
+  planRelease,
+  releaseIndexAt,
+  releaseKeyframes,
+  releaseStateKey,
+  type Release,
+} from "@/lib/coverflow-release";
 import {
   COVERFLOW_CARD_WIDTH,
   COVERFLOW_CARD_WIDTH_SHEET,
@@ -72,6 +82,21 @@ const JUMP_FADE_IN_MS = 240;
 const MAX_FRAME_SECONDS = 1 / 30;
 
 
+const nowMs = () => performance.now();
+
+/** Tells the CSS to hold the ambient loops while the deck moves (FIL-I58-3). */
+const markDeckMoving = (moving: boolean) => {
+  const root = document.documentElement;
+  if (moving !== ("deckMoving" in root.dataset)) {
+    if (moving) {
+      root.dataset.deckMoving = "";
+    } else {
+      delete root.dataset.deckMoving;
+    }
+  }
+};
+
+
 export const useCoverflowEngine = (
   titlesLength: number,
   isSheet: boolean,
@@ -116,6 +141,16 @@ export const useCoverflowEngine = (
   const prevPointerTime = useRef(0);
   const isDraggingRef = useRef(false);
   const motionModeRef = useRef<"idle" | "drag" | "coast">("idle");
+  /** A release playing on the compositor (FIL-I58-5): its plan, animations and discrete-state timers. */
+  const releaseRef = useRef<{
+    plan: Release;
+    startedAt: number;
+    animations: Animation[];
+    timers: number[];
+  } | null>(null);
+  const lastDragTickRef = useRef<number | null>(null);
+  /** When the pointer move that asked for the next drag tick happened (event clock). */
+  const dragMoveAtRef = useRef<number | null>(null);
   const suppressClick = useRef(false);
   const titlesLengthRef = useRef(titlesLength);
   const cardWidthRef = useRef(COVERFLOW_CARD_WIDTH);
@@ -154,6 +189,9 @@ export const useCoverflowEngine = (
   };
 
   const paintCards = (moving: boolean) => {
+    if (cinematicRef.current) {
+      markDeckMoving(moving);
+    }
     const display = displayIndexRef.current;
     const sideRoom = sideRoomRef.current;
     const compact = compactRef.current;
@@ -171,6 +209,107 @@ export const useCoverflowEngine = (
     });
   };
 
+  /** The discrete state (focused card, stacking, culling) at one point of a release. */
+  const paintDiscrete = (index: number) => {
+    cardNodes.current.forEach((node, cardIndex) => {
+      paintCoverflowCard(
+        node,
+        cardIndex - index,
+        sideRoomRef.current,
+        compactRef.current,
+        true,
+        cinematicRef.current,
+        false,
+        true,
+      );
+    });
+  };
+
+  /** Stops a playing release where the screen is now and commits that position as inline styles. */
+  const cancelRelease = () => {
+    const release = releaseRef.current;
+    if (!release) {
+      return;
+    }
+    releaseRef.current = null;
+    release.timers.forEach((timer) => window.clearTimeout(timer));
+    // The animations' own clock: they start on the next frame, not when they were created.
+    const playing = release.animations[0]?.currentTime;
+    const elapsed = typeof playing === "number" ? playing : nowMs() - release.startedAt;
+    const index = releaseIndexAt(release.plan, elapsed);
+    displayIndexRef.current = index;
+    targetIndexRef.current = index;
+    velocityRef.current = 0;
+    springVelocityRef.current = 0;
+    motionModeRef.current = "idle";
+    for (const animation of release.animations) {
+      animation.cancel();
+    }
+    paintCards(true);
+    commitActiveIndex();
+  };
+
+  const finishRelease = () => {
+    const release = releaseRef.current;
+    if (!release) {
+      return;
+    }
+    releaseRef.current = null;
+    release.timers.forEach((timer) => window.clearTimeout(timer));
+    const rest = release.plan.restIndex;
+    displayIndexRef.current = rest;
+    targetIndexRef.current = rest;
+    velocityRef.current = 0;
+    springVelocityRef.current = 0;
+    jumpLandingRef.current = null;
+    motionModeRef.current = "idle";
+    for (const animation of release.animations) {
+      animation.cancel();
+    }
+    setRestingIndex(rest);
+    paintCards(false);
+    commitActiveIndex();
+  };
+
+  /** Plays the planned release on the compositor; JS only wakes for the few discrete changes. */
+  const startRelease = (plan: Release) => {
+    const animations: Animation[] = [];
+    const timing = { duration: plan.durationMs, easing: "linear", fill: "forwards" } as const;
+    cardNodes.current.forEach((node, cardIndex) => {
+      const frames = releaseKeyframes(plan, cardIndex, sideRoomRef.current, compactRef.current, true);
+      if (!frames) {
+        return;
+      }
+      animations.push((node.mover ?? node.root).animate(frames.mover, timing));
+      if (node.dim && frames.dim.length > 0) {
+        animations.push(node.dim.animate(frames.dim, timing));
+      }
+      if (node.face && frames.face.length > 0) {
+        animations.push(node.face.animate(frames.face, timing));
+      }
+    });
+    const timers: number[] = [];
+    let previousKey = releaseStateKey(plan.samples[0]!.index);
+    for (const sample of plan.samples) {
+      const key = releaseStateKey(sample.index);
+      if (key === previousKey) {
+        continue;
+      }
+      previousKey = key;
+      timers.push(
+        window.setTimeout(() => {
+          displayIndexRef.current = sample.index;
+          paintDiscrete(sample.index);
+          commitActiveIndex();
+        }, sample.t),
+      );
+    }
+    timers.push(window.setTimeout(finishRelease, plan.durationMs));
+    releaseRef.current = { plan, startedAt: nowMs(), animations, timers };
+    // The loops that ask for a style pass a frame hold still while the deck moves.
+    markDeckMoving(true);
+  };
+
   const commitActiveIndex = () => {
     const next = clampCoverflowIndex(
       jumpLandingRef.current ?? Math.round(displayIndexRef.current),
@@ -181,7 +320,8 @@ export const useCoverflowEngine = (
     }
 
     activeIndexRef.current = next;
-    setActiveIndex(next);
+    // Interruptible (FIL-I58-4): a card crossing never blocks the frame that is moving the deck.
+    startTransition(() => setActiveIndex(next));
   };
 
   const registerNode = useCallback((index: number, node: HTMLElement | null) => {
@@ -192,26 +332,54 @@ export const useCoverflowEngine = (
 
     const painted: CoverflowPaintedCard = {
       root: node,
+      mover: node.parentElement?.hasAttribute("data-coverflow-mover") ? node.parentElement : null,
       face: node.querySelector("[data-coverflow-face]"),
       dim: node.querySelector("[data-coverflow-dim]"),
       caption: node.querySelector("[data-coverflow-caption]"),
       link: node.querySelector("a"),
     };
     cardNodes.current.set(index, painted);
+    const release = releaseRef.current;
     paintCoverflowCard(
       painted,
       index - displayIndexRef.current,
       sideRoomRef.current,
       compactRef.current,
-      motionModeRef.current !== "idle" || isDraggingRef.current,
+      motionModeRef.current !== "idle" || isDraggingRef.current || release != null,
       cinematicRef.current,
       liteRef.current,
     );
+    // A card mounted while a release plays (the hero moved on and a new neighbour came in)
+    // joins it where it stands; painted still, it would sit at its mount spot and show there
+    // once the deck reached it (FIL-I58-8).
+    if (release) {
+      const frames = releaseKeyframes(release.plan, index, sideRoomRef.current, compactRef.current, true);
+      if (frames) {
+        const playing = release.animations[0]?.currentTime;
+        const elapsed = typeof playing === "number" ? playing : nowMs() - release.startedAt;
+        const timing = { duration: release.plan.durationMs, easing: "linear", fill: "forwards" } as const;
+        const join = (target: HTMLElement, keyframes: Keyframe[]) => {
+          const animation = target.animate(keyframes, timing);
+          animation.currentTime = elapsed;
+          release.animations.push(animation);
+        };
+        join(painted.mover ?? painted.root, frames.mover);
+        if (painted.dim && frames.dim.length > 0) {
+          join(painted.dim, frames.dim);
+        }
+        if (painted.face && frames.face.length > 0) {
+          join(painted.face, frames.face);
+        }
+      }
+    }
   }, []);
 
   const runTick = (now: number) => {
     const ceiling = maxIndex();
     const mode = motionModeRef.current;
+    if (mode !== "drag") {
+      lastDragTickRef.current = null;
+    }
     if (lastFrameRef.current != null && mode !== "drag") {
       onMotionFrameRef.current?.(now - lastFrameRef.current);
     }
@@ -223,6 +391,14 @@ export const useCoverflowEngine = (
     const frames = dt * 60;
 
     if (mode === "drag") {
+      // The finger's frames count too (FIL-I58-6), but only the gaps the phone made, not the
+      // ones the finger made (FIL-I58-8, see dragFrameMs).
+      const dragFrame = dragFrameMs(lastDragTickRef.current, dragMoveAtRef.current, now);
+      if (dragFrame != null) {
+        onMotionFrameRef.current?.(dragFrame);
+      }
+      lastDragTickRef.current = now;
+      dragMoveAtRef.current = null;
       displayIndexRef.current = targetIndexRef.current;
       paintCards(true);
       commitActiveIndex();
@@ -309,6 +485,7 @@ export const useCoverflowEngine = (
   const snapTo = useCallback(
     (index: number) => {
       const target = clampCoverflowIndex(index, titlesLength - 1);
+      cancelRelease();
       jumpLandingRef.current = null;
       motionModeRef.current = "idle";
       velocityRef.current = 0;
@@ -316,12 +493,15 @@ export const useCoverflowEngine = (
       setRestingIndex(target);
       ensureTick();
     },
+    // The release helpers only touch refs and stable setters (see paintCards).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [ensureTick, titlesLength],
   );
 
   const jumpTo = useCallback(
     (index: number) => {
       const target = clampCoverflowIndex(index, titlesLengthRef.current - 1);
+      cancelRelease();
       // Gliding across a whole chapter strobes through posters: fade out, land just
       // short of the target on the side we came from, and glide the last stretch in.
       if (Math.abs(target - displayIndexRef.current) <= JUMP_GLIDE_MAX) {
@@ -423,7 +603,32 @@ export const useCoverflowEngine = (
       setRestingIndex(nearest);
     }
 
+    if (
+      cinematicRef.current &&
+      !compactRef.current &&
+      !liteRef.current &&
+      !prefersCoverflowReducedMotion() &&
+      typeof document.documentElement.animate === "function" &&
+      compositorReleaseEnabled()
+    ) {
+      const plan = planRelease({
+        display: displayIndexRef.current,
+        velocity: velocityRef.current,
+        springVelocity: springVelocityRef.current,
+        ceiling,
+        settleTarget: nearest,
+        coasting: motionModeRef.current === "coast",
+      });
+      if (plan.samples.length > 2) {
+        motionModeRef.current = "idle";
+        startRelease(plan);
+        return;
+      }
+    }
+
     ensureTick();
+  // The release helpers only touch refs and stable setters (see paintCards).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ensureTick]);
 
   const handlePointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
@@ -432,12 +637,17 @@ export const useCoverflowEngine = (
     }
 
     if (allowPageScrollRef.current) {
+      // A release keeps playing until the gesture turns out to be a horizontal drag (see
+      // pointermove): a vertical scroll must not leave the deck stopped between two cards.
       pendingScrollRef.current = true;
       dragStartX.current = event.clientX;
       dragStartY.current = event.clientY;
       dragStartIndex.current = displayIndexRef.current;
       return;
     }
+
+    // Grabbing a deck that is still moving: stop where the screen is and carry on as a drag.
+    cancelRelease();
 
     if (wheelSnapTimeout.current != null) {
       window.clearTimeout(wheelSnapTimeout.current);
@@ -460,6 +670,8 @@ export const useCoverflowEngine = (
     setGrabbingCursor(true);
     stopRaf();
     paintCards(true);
+  // The release helpers only touch refs and stable setters (see paintCards).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -475,6 +687,7 @@ export const useCoverflowEngine = (
           return;
         }
         cancelJumpFade(true);
+        cancelRelease();
         jumpLandingRef.current = null;
         isDraggingRef.current = true;
         motionModeRef.current = "drag";
@@ -512,6 +725,11 @@ export const useCoverflowEngine = (
       const next = clampCoverflowIndex(raw, ceiling);
       targetIndexRef.current = next;
       displayIndexRef.current = next;
+      // The first move since the last tick is the one that asked for the next frame.
+      // event.timeStamp is when the move happened, even if this handler runs late; an old
+      // engine with an epoch-based timeStamp falls back to now.
+      const moveAt = Math.abs(event.timeStamp - now) < 1000 ? event.timeStamp : now;
+      dragMoveAtRef.current ??= moveAt;
       ensureTick();
     };
 
@@ -529,11 +747,25 @@ export const useCoverflowEngine = (
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("pointercancel", handlePointerUp);
     };
+  // The release helpers only touch refs and stable setters (see paintCards).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ensureTick, stopDragging]);
+
+  // Read the `?mazo=` flag once on mount: Hoy rewrites the URL as cards pass, and this stores it for the tab.
+  useEffect(() => {
+    compositorReleaseEnabled();
+  }, []);
 
   useEffect(() => {
     return () => {
       stopRaf();
+      const release = releaseRef.current;
+      if (release) {
+        release.timers.forEach((timer) => window.clearTimeout(timer));
+        release.animations.forEach((animation) => animation.cancel());
+        releaseRef.current = null;
+      }
+      delete document.documentElement.dataset.deckMoving;
       jumpFadeRef.current?.animation.cancel();
       jumpFadeRef.current = null;
       if (wheelSnapTimeout.current != null) {
@@ -568,6 +800,7 @@ export const useCoverflowEngine = (
       }
 
       event.preventDefault();
+      cancelRelease();
       const delta =
         Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
       const ceiling = Math.max(titlesLengthRef.current - 1, 0);
@@ -598,6 +831,8 @@ export const useCoverflowEngine = (
 
     node.addEventListener("wheel", handleWheel, { passive: false });
     return () => node.removeEventListener("wheel", handleWheel);
+  // The release helpers only touch refs and stable setters (see paintCards).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ensureTick]);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -671,8 +906,28 @@ export const useCoverflowEngine = (
     onMotionFrameRef.current = onMotionFrame;
   });
 
+  const layoutKeyRef = useRef("");
   useLayoutEffect(() => {
+    const layoutKey = `${cardWidth}|${cinematic}|${lite}|${stageWidth}|${titlesLength}`;
+    const layoutChanged = layoutKey !== layoutKeyRef.current;
+    layoutKeyRef.current = layoutKey;
+    if (releaseRef.current) {
+      if (!layoutChanged) {
+        // A card crossing mid-release re-renders the deck: the animations own the motion, so
+        // only the discrete state is painted and the deck stays «moving» (FIL-I58-8). A full
+        // paint here cleared html[data-deck-moving] and rewrote every card's styles.
+        paintDiscrete(displayIndexRef.current);
+        return;
+      }
+      // The stage changed under the release: its keyframes are stale. Stop and settle.
+      cancelRelease();
+      targetIndexRef.current = clampCoverflowIndex(Math.round(displayIndexRef.current), maxIndex());
+      ensureTick();
+      return;
+    }
     paintCards(motionModeRef.current !== "idle" || isDraggingRef.current);
+  // paintDiscrete / cancelRelease / maxIndex only touch refs (see paintCards).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIndex, cardWidth, cinematic, lite, stageWidth, titlesLength]);
 
   return {

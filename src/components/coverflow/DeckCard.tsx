@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useRef, useState, type CSSProperties } from "react";
+import { memo, useCallback, useRef, useState, type CSSProperties } from "react";
 import { MarkSeenEye } from "@/components/MarkSeenEye";
 import { TicketStub } from "@/components/tonight/TicketStub";
 import { ClosingCardContent } from "@/components/tonight/TonightClosingCard";
@@ -21,6 +21,7 @@ import type { CoverflowTitle } from "@/components/coverflow/types";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
 import {
+  COVERFLOW_FAR_POSTER_SIZES,
   COVERFLOW_PAGE_POSTER_SIZES,
   COVERFLOW_SHEET_POSTER_SIZES,
 } from "@/lib/coverflow-metrics";
@@ -76,6 +77,8 @@ type DeckCardProps = {
   index: number;
   compact?: boolean;
   nearFocus?: boolean;
+  /** A phone-sized deck, four or more places from the hero: culled, and one crossing away from being culled still, so a small poster is enough and the big one loads before the card shows (FIL-I58-4, FIL-I58-8). */
+  farPoster?: boolean;
   /** Qué ver cinematic: hide on-poster caption (meta lives below). */
   cinematic?: boolean;
   showMarkSeenEye?: boolean;
@@ -96,11 +99,22 @@ type DeckCardProps = {
 
 const STAMP_MS = 520;
 
+/**
+ * The thin box the engine moves (FIL-I58-3): transform, opacity, z-index and visibility are
+ * written here, so a frame restyles this one element and not the whole card inside it.
+ */
+const CardMover = ({ children }: { children: React.ReactNode }) => (
+  <div data-coverflow-mover className="coverflow-card-mover absolute inset-0 origin-center">
+    {children}
+  </div>
+);
+
 export const DeckCard = memo(function DeckCard({
   title,
   index,
   compact = false,
   nearFocus = false,
+  farPoster = false,
   cinematic = false,
   showMarkSeenEye = false,
   onSelect,
@@ -155,7 +169,9 @@ export const DeckCard = memo(function DeckCard({
     : (title.flatrateProviders?.[0] ? providerDisplayName(title.flatrateProviders[0]) : undefined);
   const posterSizes = compact
     ? COVERFLOW_SHEET_POSTER_SIZES
-    : COVERFLOW_PAGE_POSTER_SIZES;
+    : farPoster
+      ? COVERFLOW_FAR_POSTER_SIZES
+      : COVERFLOW_PAGE_POSTER_SIZES;
   const showCaption = !compact && !cinematic;
   const poster = (
     <PosterImage
@@ -182,22 +198,28 @@ export const DeckCard = memo(function DeckCard({
     event.preventDefault();
   };
 
-  const handleRef = (node: HTMLElement | null) => {
-    rootRef.current = node;
-    registerNode(index, node);
-  };
+  // Stable: a new ref function per render made React detach and re-attach it, and the engine
+  // repainted the card from scratch each time (FIL-I58-4).
+  const handleRef = useCallback(
+    (node: HTMLElement | null) => {
+      rootRef.current = node;
+      registerNode(index, node);
+    },
+    [index, registerNode],
+  );
 
   if (title.closing && sala) {
     // The closing card (FIL-I21-6): the deck's floor made visible. Same transforms as any
     // card (face + dim markers), no ficha, no stub, no hold menu.
     return (
+      <CardMover>
       <article
         ref={handleRef}
         id={`coverflow-item-${title.id}`}
         role="option"
         aria-selected={nearFocus}
         aria-label="Fin del mazo de hoy"
-        className="coverflow-card is-cinematic is-closing absolute inset-0 origin-center"
+        className="coverflow-card is-cinematic is-closing absolute inset-0"
         onPointerDown={onPointerDown}
       >
         <div
@@ -219,6 +241,7 @@ export const DeckCard = memo(function DeckCard({
           <span data-coverflow-dim className="coverflow-card-dim" aria-hidden />
         </div>
       </article>
+      </CardMover>
     );
   }
 
@@ -226,13 +249,14 @@ export const DeckCard = memo(function DeckCard({
     // A door card (FIL-I26-3, «¿Las viste?»): like the closing card, the face is the message.
     const portal = title.portal;
     return (
+      <CardMover>
       <article
         ref={handleRef}
         id={`coverflow-item-${title.id}`}
         role="option"
         aria-selected={nearFocus}
         aria-label={portal.title}
-        className="coverflow-card is-cinematic is-closing absolute inset-0 origin-center"
+        className="coverflow-card is-cinematic is-closing absolute inset-0"
         onPointerDown={onPointerDown}
       >
         <div
@@ -263,6 +287,7 @@ export const DeckCard = memo(function DeckCard({
           <span data-coverflow-dim className="coverflow-card-dim" aria-hidden />
         </div>
       </article>
+      </CardMover>
     );
   }
 
@@ -283,13 +308,14 @@ export const DeckCard = memo(function DeckCard({
   };
 
   return (
+    <CardMover>
     <article
       ref={handleRef}
       id={`coverflow-item-${title.id}`}
       role="option"
       aria-selected={nearFocus}
       className={cn(
-        "coverflow-card absolute inset-0 origin-center",
+        "coverflow-card absolute inset-0",
         compact && "is-compact",
         cinematic && "is-cinematic",
         isTonight && "is-tonight",
@@ -485,6 +511,7 @@ export const DeckCard = memo(function DeckCard({
         />
       ) : null}
     </article>
+    </CardMover>
   );
 });
 
