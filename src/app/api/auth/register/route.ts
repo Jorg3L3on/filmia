@@ -2,6 +2,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db, users } from "@/db";
+import { isReservedAdminEmail } from "@/lib/admin";
 import { setSessionCookie } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth/password";
 import { ensureDefaultLists } from "@/lib/lists";
@@ -45,7 +46,8 @@ export const POST = async (request: Request) => {
     columns: { id: true, passwordHash: true, googleId: true },
   });
 
-  if (existing) {
+  // An unclaimed ADMIN_EMAILS address answers like a taken one (FIL-46): claiming it would be admin.
+  if (existing || isReservedAdminEmail(email)) {
     // One answer for every existing account, whatever its sign-in method (FIL-I41-11): the
     // reply must not tell a stranger how someone signs in, and carries no account flag.
     return NextResponse.json(

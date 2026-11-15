@@ -3,6 +3,7 @@
 import { and, eq, ne, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { db, users } from "@/db";
+import { isReservedAdminEmail } from "@/lib/admin";
 import { refreshSessionUser } from "@/lib/auth";
 import {
   hashPassword,
@@ -56,12 +57,16 @@ export const updateAccount = async (
     };
   }
 
-  const duplicate = await db.query.users.findFirst({
-    where: and(eq(users.email, email), ne(users.id, userId)),
-    columns: { id: true },
-  });
+  const [duplicate, current] = await Promise.all([
+    db.query.users.findFirst({
+      where: and(eq(users.email, email), ne(users.id, userId)),
+      columns: { id: true },
+    }),
+    db.query.users.findFirst({ where: eq(users.id, userId), columns: { email: true } }),
+  ]);
 
-  if (duplicate) {
+  // An ADMIN_EMAILS address stays with the account that has it (FIL-46); same answer as taken.
+  if (duplicate || isReservedAdminEmail(email, current?.email)) {
     return { error: "Ya existe una cuenta con ese correo." };
   }
 
