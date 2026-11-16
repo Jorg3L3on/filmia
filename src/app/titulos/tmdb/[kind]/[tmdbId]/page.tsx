@@ -195,6 +195,7 @@ const TitlePreview = async ({
           providersPromise={providersPromise}
           platformsPromise={platformsPromise}
           cinemaPromise={cinemaPromise}
+          titleName={title.name}
         />
       </Suspense>
 

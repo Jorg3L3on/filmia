@@ -206,6 +206,7 @@ const TitleDetail = async ({ params, searchParams }: TitlePageProps) => {
           providersPromise={providersPromise}
           platformsPromise={platformsPromise}
           cinemaPromise={cinemaPromise}
+          titleName={title.name}
         />
       </Suspense>
 
