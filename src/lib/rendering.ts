@@ -31,6 +31,7 @@
  *                               TMDB/OMDb extras via tagged unstable_cache
  * - `/titulos/nuevo`          → no force-dynamic — redirect-only to `/buscar`
  * - `/perfil`                 → force-dynamic — user profile / platforms
+ * - `/para-ti`                → force-dynamic — per-user ranking of the shared pool (FIL-I60)
  * - `/bienvenida`             → force-dynamic — first-run flow: session claim,
  *                               user library, resume step; year grid via tagged cache
  * - `/login`, `/registro`     → no force-dynamic — public auth screens
@@ -65,6 +66,7 @@ export const AUTH_DYNAMIC_PAGES = [
   "src/app/listas/nueva/page.tsx",
   "src/app/titulos/[id]/page.tsx",
   "src/app/perfil/page.tsx",
+  "src/app/para-ti/page.tsx",
   "src/app/bienvenida/page.tsx",
 ] as const;
 

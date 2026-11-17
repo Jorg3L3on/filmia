@@ -8511,3 +8511,53 @@ html[data-que-ver-lite] .hoy-peek svg {
     animation: juego-fade var(--duration-reduced) linear both;
   }
 }
+
+/*
+ * Perfil as an avatar (FIL-I60-1): the initial on the app icon's gradient. A hairline and a
+ * soft shadow keep it readable over any poster (it floats over Hoy's deck); the current page
+ * draws an accent ring outside it, like a lit tab.
+ */
+.profile-avatar-disc {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #ff7a45 0%, #ff5c6a 55%, #d8468f 100%);
+  color: #fff;
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  box-shadow:
+    0 6px 18px -6px rgb(0 0 0 / 0.65),
+    inset 0 0 0 1px rgb(255 255 255 / 0.22);
+  transition: box-shadow var(--duration-hover) var(--ease-out);
+}
+
+.profile-avatar:hover .profile-avatar-disc {
+  box-shadow:
+    0 6px 18px -6px rgb(0 0 0 / 0.65),
+    inset 0 0 0 1px rgb(255 255 255 / 0.4);
+}
+
+.profile-avatar-disc.is-current {
+  box-shadow:
+    0 0 0 2px var(--canvas),
+    0 0 0 3.5px var(--color-accent),
+    0 6px 18px -6px rgb(0 0 0 / 0.65);
+}
+
+/*
+ * Room for the floating avatar on a phone: a page's first row that runs to the right edge
+ * (Hoy's ánimo rail, a header's actions) ends before it. 44 px target + 8 px gap.
+ */
+@media (max-width: 39.999rem) {
+  .avatar-room {
+    padding-right: 3.25rem;
+  }
+}
+
+/* «Vi esto» lands here: `.nav-receive > :first-child` pulses the disc like a dock tab. */

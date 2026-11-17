@@ -52,6 +52,7 @@ export const pageKeyOf = (href: string) => {
 
 const STATIC_LABELS: Array<[RegExp, string]> = [
   [/^\/$/, "Hoy"],
+  [/^\/para-ti(\/|$)/, "Para ti"],
   [/^\/watchlist(\/|$)/, "Quiero ver"],
   [/^\/listas(\/|$)/, "Listas"],
   [/^\/cine(\/|$)/, "Cine"],

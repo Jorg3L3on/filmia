@@ -2,8 +2,9 @@ import { FICHA_CACHE_LIMIT } from "@/lib/ficha-session";
 
 export const NAV_PREFETCH_HREFS = [
   "/",
-  "/listas",
+  "/para-ti",
   "/buscar",
+  "/listas",
   "/cine",
   "/perfil",
 ] as const;
@@ -11,8 +12,9 @@ export const NAV_PREFETCH_HREFS = [
 /** Soft-nav priority for neighbor warming (mobile-first). */
 export const NAV_PREFETCH_PRIORITY = [
   "/",
-  "/listas",
+  "/para-ti",
   "/buscar",
+  "/listas",
   "/cine",
   "/perfil",
 ] as const;

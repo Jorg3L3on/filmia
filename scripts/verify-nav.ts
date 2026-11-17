@@ -64,11 +64,11 @@ assert(isMobileNavCurrent("/cine", "/cine/cartelera"), "Cine lights up on /cine/
 
 assert(mobileNavItems.length === 4, "Mobile tab bar has 4 tabs around the center Buscar disc");
 assert(
-  mobileNavItems.map((item) => item.label).join("|") === "Hoy|Listas|Cine|Perfil",
-  "Mobile nav order must be Hoy, Listas, (Buscar), Cine, Perfil",
+  mobileNavItems.map((item) => item.label).join("|") === "Hoy|Para ti|Listas|Cine",
+  "Mobile nav order must be Hoy, Para ti, (Buscar), Listas, Cine (FIL-I60-1)",
 );
 assert(mobileNavSearchSlot === 2, "Buscar disc must sit in the middle (3rd) dock column");
-assert(mobileNavItems[3]?.href === "/perfil", "Perfil must be the last mobile nav item");
+assert(mobileNavItems[3]?.href === "/cine", "Cine must be the last mobile nav item (FIL-I60-1)");
 assert(
   mobileNavSearch.href === "/buscar" && mobileNavSearch.label === "Buscar",
   "The center dock disc is Buscar",
@@ -102,13 +102,15 @@ assert(
 
 assert(desktopNavItems[0]?.label === "Hoy", "Desktop nav leads with Hoy");
 assert(
-  desktopNavItems.map((item) => item.label).join("|") === "Hoy|Listas|Buscar|Cine|Perfil",
-  "Desktop nav is Hoy · Listas · Buscar · Cine · Perfil",
+  desktopNavItems.map((item) => item.label).join("|") === "Hoy|Para ti|Buscar|Listas|Cine",
+  "Desktop nav is Hoy · Para ti · Buscar · Listas · Cine (FIL-I60-1)",
 );
-assert(isDesktopNavCurrent("/perfil", "/diario"), "Desktop Perfil tab lights up on /diario");
+assert(isDesktopNavCurrent("/perfil", "/diario"), "Perfil's avatar lights up on /diario");
 {
   const headerNav = readFileSync(path.join(process.cwd(), "src/components/SiteHeaderNav.tsx"), "utf8");
-  assert(!headerNav.includes("LogoutButton") && !headerNav.includes("initial"), "Header has no avatar letter and no Salir");
+  const header = readFileSync(path.join(process.cwd(), "src/components/SiteHeader.tsx"), "utf8");
+  assert(!headerNav.includes("LogoutButton"), "Header has no Salir");
+  assert(header.includes("ProfileAvatarLink"), "Header ends with Perfil's avatar (FIL-I60-1)");
 }
 assert(mobileNavItems[0]?.icon === "today", "Hoy tab uses the dated calendar glyph");
 assert(!isCurrentPath("/", "/diario"), "Hoy stays inactive on Tu diario");
@@ -131,4 +133,4 @@ assert(!isAuthChromePath("/watchlist"), "watchlist keeps app chrome");
 }
 
 console.log("✓ Nested paths highlight Hoy / Listas (Quiero ver) / Cine / Perfil (Tu diario)");
-console.log("✓ Mobile dock is 4 tabs around the center Buscar disc (lit on /buscar) with Perfil at the end; no «+» menu, no header magnifier");
+console.log("✓ Mobile dock is 4 tabs around the center Buscar disc (lit on /buscar) with Cine at the end and Perfil as the avatar; no «+» menu, no header magnifier");

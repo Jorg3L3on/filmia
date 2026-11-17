@@ -1,3 +1,4 @@
+import { profileInitial } from "@/lib/profile-initial";
 import { tmdbPosterUrl } from "@/lib/tmdb";
 
 type ProfileMarqueeProps = {
@@ -12,8 +13,7 @@ export const ProfileMarquee = ({ name, email, posterPath }: ProfileMarqueeProps)
   const poster = tmdbPosterUrl(posterPath, "w342");
   const trimmed = name?.trim() || "";
   const displayName = trimmed || email;
-  // The initial (FIL-I21-8): the name's, or the email's when there is no name.
-  const initial = (trimmed || email).trim().charAt(0).toUpperCase() || "·";
+  const initial = profileInitial(trimmed, email);
   return (
     <header className="relative isolate pb-1">
       <div className="perfil-light" aria-hidden="true">

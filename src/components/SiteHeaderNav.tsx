@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 import { desktopNavItems } from "@/lib/nav";
 import { focusRing } from "@/lib/ui";
 
-/** Desktop header nav. No avatar and no Salir: Perfil is a tab and Salir lives at the end of Perfil. */
+/** Desktop header nav: Hoy · Para ti · Buscar · Listas · Cine. Perfil is the avatar after it (FIL-I60-1); Salir lives at the end of Perfil. */
 export const SiteHeaderNav = () => {
   // A ficha lights the tab it was opened from (FIL-I44-8).
   const matchTab = useNavTabMatch();
