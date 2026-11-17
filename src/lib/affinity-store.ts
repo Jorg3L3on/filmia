@@ -67,6 +67,8 @@ type UserAffinity = {
   scorer: AffinityScorer | null;
   ratedCount: number;
   owned: ReadonlyMap<string, OwnedEntry>;
+  /** Watched titles rated 8 or more (or in Favoritas): Para ti's «Porque te gustó…» anchors (FIL-I60-3). */
+  liked: ReadonlyArray<{ tmdbId: number; kind: TitleKind; title: TonightTitle }>;
 };
 
 const ownedKey = (kind: TitleKind, tmdbId: number) => `${kind}:${tmdbId}`;
@@ -193,7 +195,12 @@ const buildUserAffinity = async (userId: string, now: Date): Promise<UserAffinit
     });
   });
   const ratedCount = library.filter((t) => t.watchedAt != null && t.rating != null).length;
-  return { scorer, ratedCount, owned };
+  const liked = rows.flatMap((row, index) => {
+    const title = library[index]!;
+    const keep = title.watchedAt != null && ((title.rating ?? 0) >= 8 || title.listSlugs.includes("favoritas"));
+    return keep ? [{ tmdbId: row.tmdbId, kind: row.kind, title }] : [];
+  });
+  return { scorer, ratedCount, owned, liked };
 };
 
 /**
@@ -303,6 +310,9 @@ export const fichaAffinity = async (
  * The user's rating of a film they watched, for Buscar rows («vistas muestran tu nota»), and the day
  * they watched it (FIL-I45-1).
  */
+/** Whether the user has the film in their library at all (watched, Quiero ver, dropped, any list). */
+export const ownsFilm = (user: UserAffinity, kind: TitleKind, tmdbId: number) => user.owned.has(ownedKey(kind, tmdbId));
+
 export const watchedRatingOf = (user: UserAffinity, kind: TitleKind, tmdbId: number) => {
   const entry = user.owned.get(ownedKey(kind, tmdbId));
   return entry?.watched ? { rating: entry.rating, on: entry.on } : null;
