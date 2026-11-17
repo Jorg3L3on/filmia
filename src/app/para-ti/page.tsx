@@ -4,13 +4,14 @@ import { Suspense } from "react";
 import { AntojoBack } from "@/components/para-ti/AntojoBack";
 import { AntojoWords } from "@/components/para-ti/AntojoWords";
 import { OpeningMark } from "@/components/para-ti/OpeningMark";
-import { ParaTiPoster } from "@/components/para-ti/ParaTiPoster";
+import { AntojoShelfView } from "@/components/para-ti/AntojoShelfView";
+import { ParaTiFilters } from "@/components/para-ti/ParaTiFilters";
 import { ParaTiRoom } from "@/components/para-ti/ParaTiRoom";
 import { ParaTiShelfRow } from "@/components/para-ti/ParaTiShelfRow";
 import { ColdStartNotice, NoPlatformsNotice } from "@/components/para-ti/ParaTiNotices";
-import { AntojoGridSkeleton, ShelvesSkeleton } from "@/components/para-ti/ParaTiSkeletons";
+import { ShelfSkeleton, ShelvesSkeleton } from "@/components/para-ti/ParaTiSkeletons";
 import { antojoById, isAntojoId, type Antojo } from "@/lib/para-ti/antojos";
-import { filtersToParams, parseFilters, type ParaTiFilters } from "@/lib/para-ti/rank";
+import { filtersToParams, parseFilters, type ParaTiFilters as Filters } from "@/lib/para-ti/rank";
 import { loadAntojoTitles, loadParaTiShelves } from "@/lib/para-ti/store";
 import { requireUserId } from "@/lib/session";
 import { focusRing } from "@/lib/ui";
@@ -40,7 +41,7 @@ export default async function ParaTiPage({ searchParams }: { searchParams: Promi
 }
 
 /** The question and the words are static: they paint at once; the shelves stream in under them. */
-const Opening = ({ userId, filters }: { userId: string; filters: ParaTiFilters }) => {
+const Opening = ({ userId, filters }: { userId: string; filters: Filters }) => {
   const query = new URLSearchParams(filtersToParams(filters)).toString();
   return (
     <div className="para-ti-opening mx-auto w-full max-w-5xl">
@@ -62,7 +63,7 @@ const OpeningHero = () => (
   </header>
 );
 
-const OpeningShelves = async ({ userId, filters }: { userId: string; filters: ParaTiFilters }) => {
+const OpeningShelves = async ({ userId, filters }: { userId: string; filters: Filters }) => {
   const { shelves, noPlatforms, cold } = await loadParaTiShelves(userId, filters);
   return (
     <div className="para-ti-shelves">
@@ -79,7 +80,7 @@ const OpeningShelves = async ({ userId, filters }: { userId: string; filters: Pa
   );
 };
 
-const AntojoView = ({ userId, antojo, filters }: { userId: string; antojo: Antojo; filters: ParaTiFilters }) => (
+const AntojoView = ({ userId, antojo, filters }: { userId: string; antojo: Antojo; filters: Filters }) => (
   <div className="para-ti-antojo mx-auto w-full max-w-5xl">
     <header className="para-ti-antojo-head avatar-room">
       <AntojoBack />
@@ -88,13 +89,15 @@ const AntojoView = ({ userId, antojo, filters }: { userId: string; antojo: Antoj
         <h1 className="para-ti-antojo-title">{antojo.label}</h1>
       </div>
     </header>
-    <Suspense key={JSON.stringify(filters)} fallback={<AntojoGridSkeleton />}>
+    <ParaTiFilters antojo={antojo.id} filters={filters} />
+    {/* No key: a filter change is a transition, so the shelf stays mounted and reshuffles in place. */}
+    <Suspense fallback={<ShelfSkeleton />}>
       <AntojoTitles userId={userId} antojo={antojo} filters={filters} />
     </Suspense>
   </div>
 );
 
-const AntojoTitles = async ({ userId, antojo, filters }: { userId: string; antojo: Antojo; filters: ParaTiFilters }) => {
+const AntojoTitles = async ({ userId, antojo, filters }: { userId: string; antojo: Antojo; filters: Filters }) => {
   const { titles, noPlatforms, cold, withAllPlatforms } = await loadAntojoTitles(userId, antojo.id, filters);
   const allPlatforms = new URLSearchParams({ antojo: antojo.id, ...filtersToParams({ ...filters, onlyMine: false }) });
   return (
@@ -125,11 +128,12 @@ const AntojoTitles = async ({ userId, antojo, filters }: { userId: string; antoj
           </div>
         </div>
       ) : (
-        <div role="list" aria-label={`${antojo.label}: ${titles.length} títulos`} className="para-ti-grid mt-6">
-          {titles.map((title, index) => (
-            <ParaTiPoster key={title.catalogId} title={title} priority={index < 3} />
-          ))}
-        </div>
+        <AntojoShelfView
+          titles={titles}
+          antojo={antojo.id}
+          label={antojo.label}
+          memoryKey={`${antojo.id}?${new URLSearchParams(filtersToParams(filters))}`}
+        />
       )}
     </>
   );

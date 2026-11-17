@@ -8904,3 +8904,372 @@ html[data-que-ver-lite] .hoy-peek svg {
   margin-top: 2.5rem;
   padding-bottom: 1rem;
 }
+
+/* ── Para ti · El estante (FIL-I60-5) ─────────────────────────────────────────────────
+ * Each title is a box in its slot: the spine faces you, the cover is its side. JS poses the
+ * boxes from the scroll position (transform + opacity); CSS only builds them.
+ */
+.para-ti-shelf {
+  margin-top: 0.75rem;
+}
+
+.para-ti-track {
+  display: flex;
+  align-items: center;
+  height: calc(var(--shelf-h) + 4rem);
+  margin-inline: -1rem;
+  /* The track bleeds 1 rem past the page on each side; % is of the page column. */
+  padding-inline: calc(50% + 1rem - var(--slot) / 2);
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  outline: none;
+}
+
+.para-ti-track::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .para-ti-track {
+    margin-inline: 0;
+    padding-inline: calc(50% - var(--slot) / 2);
+  }
+}
+
+.para-ti-slot {
+  position: relative;
+  flex: 0 0 var(--slot);
+  height: var(--shelf-h);
+  scroll-snap-align: center;
+  pointer-events: none;
+}
+
+.para-ti-box-wrap,
+.para-ti-mover,
+.para-ti-item {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transform-style: preserve-3d;
+  /* Hit-testing follows what you see: only the faces take taps, which bubble to the title's link. */
+  pointer-events: none;
+}
+
+.para-ti-spine,
+.para-ti-flat,
+.para-ti-slot[data-center] .para-ti-cover {
+  pointer-events: auto;
+}
+
+.para-ti-item {
+  border-radius: 6px;
+}
+
+.para-ti-box {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+/* The pose is written here every frame. */
+.para-ti-box-wrap {
+  will-change: transform;
+}
+
+.para-ti-face {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.para-ti-spine {
+  left: 0;
+  width: var(--slot);
+  overflow: hidden;
+  border-radius: 3px;
+  background:
+    linear-gradient(90deg, rgb(255 255 255 / 0.2) 0, rgb(255 255 255 / 0) 3px, rgb(0 0 0 / 0) calc(100% - 5px), rgb(0 0 0 / 0.5) 100%),
+    color-mix(in srgb, rgb(var(--ambient)) 58%, #07090b);
+  box-shadow: 0 14px 22px -12px rgb(0 0 0 / 0.75);
+  transform: translateZ(calc(var(--depth) / 2));
+}
+
+.para-ti-spine-sliver {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 24%;
+  background-position: center top;
+  background-size: cover;
+}
+
+.para-ti-spine-sliver::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgb(0 0 0 / 0) 35%, color-mix(in srgb, rgb(var(--ambient)) 58%, #07090b));
+}
+
+.para-ti-spine-title {
+  position: absolute;
+  top: calc(24% + 0.5rem);
+  bottom: 1.75rem;
+  left: 50%;
+  max-height: calc(76% - 2.25rem);
+  overflow: hidden;
+  transform: translateX(-50%);
+  writing-mode: vertical-rl;
+  color: var(--paper);
+  font-family: var(--font-serif);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.12;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
+}
+
+.para-ti-spine-kind {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  writing-mode: vertical-rl;
+  color: rgb(255 255 255 / 0.7);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 640px) {
+  .para-ti-spine-title {
+    font-size: 15px;
+  }
+
+  .para-ti-spine-kind {
+    font-size: 9px;
+  }
+}
+
+.para-ti-cover {
+  left: calc((var(--slot) - var(--depth)) / 2);
+  width: var(--depth);
+  overflow: hidden;
+  border-radius: 6px;
+  background: color-mix(in srgb, rgb(var(--ambient)) 58%, #07090b);
+  box-shadow:
+    0 30px 60px -20px rgb(0 0 0 / 0.85),
+    0 0 0 1px rgb(255 255 255 / 0.08),
+    0 0 60px -10px rgb(var(--room-rgb) / 0.35);
+  transform: rotateY(90deg) translateZ(calc(var(--slot) / 2));
+}
+
+.para-ti-cover-img,
+.para-ti-cover-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.para-ti-track-skeleton {
+  display: flex;
+  height: calc(var(--shelf-h, 258px) + 4rem);
+  align-items: center;
+  justify-content: center;
+  --depth: 172px;
+}
+
+.para-ti-track-skeleton > span {
+  height: 258px;
+}
+
+@media (min-width: 640px) {
+  .para-ti-track-skeleton {
+    --depth: 236px;
+  }
+
+  .para-ti-track-skeleton > span {
+    height: 354px;
+  }
+}
+
+.para-ti-center-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-height: 7rem;
+}
+
+.para-ti-card-title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--paper);
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.para-ti-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  margin-top: 0.375rem;
+  color: var(--fog);
+  font-size: 13px;
+}
+
+.para-ti-score b {
+  color: var(--imdb);
+  font-weight: 700;
+}
+
+.para-ti-card-reason {
+  color: var(--mist);
+  font-size: 12px;
+}
+
+.para-ti-surprise {
+  display: inline-flex;
+  min-height: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgb(var(--room-rgb) / 0.45);
+  border-radius: 9999px;
+  background: rgb(var(--room-rgb) / 0.12);
+  padding: 0 0.95rem;
+  color: var(--paper);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.para-ti-surprise:disabled {
+  opacity: 0.5;
+}
+
+.para-ti-filters {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem -1rem 0;
+  padding: 0 1rem 0.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  transition: opacity var(--duration-hover) var(--ease-out);
+}
+
+.para-ti-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.para-ti-filters[data-pending] {
+  opacity: 0.6;
+}
+
+.para-ti-segment {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 9999px;
+  background: rgb(12 16 24 / 0.5);
+  padding: 2px;
+}
+
+.para-ti-segment-item {
+  min-height: 40px;
+  border-radius: 9999px;
+  padding: 0 0.8rem;
+  color: var(--fog);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.para-ti-segment-item[aria-checked="true"] {
+  background: rgb(255 255 255 / 0.14);
+  color: var(--paper);
+}
+
+.para-ti-select {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.para-ti-select select {
+  min-height: 44px;
+  appearance: none;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 9999px;
+  background: rgb(12 16 24 / 0.5);
+  padding: 0 2rem 0 0.9rem;
+  color: var(--paper);
+  font-size: 13px;
+}
+
+.para-ti-select::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0.85rem;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--fog);
+  border-bottom: 1.5px solid var(--fog);
+  pointer-events: none;
+  transform: translateY(-70%) rotate(45deg);
+}
+
+.para-ti-toggle {
+  display: inline-flex;
+  min-height: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 9999px;
+  background: rgb(12 16 24 / 0.5);
+  padding: 0 0.9rem;
+  color: var(--fog);
+  font-size: 13px;
+}
+
+.para-ti-toggle-dot {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid currentColor;
+  border-radius: 9999px;
+}
+
+.para-ti-toggle[aria-pressed="true"] {
+  color: var(--paper);
+}
+
+.para-ti-toggle[aria-pressed="true"] .para-ti-toggle-dot {
+  border-color: rgb(var(--room-rgb));
+  background: rgb(var(--room-rgb));
+  box-shadow: 0 0 10px rgb(var(--room-rgb) / 0.6);
+}
+
+/* Reduced motion: a flat poster rail on the same snap. */
+.para-ti-flat {
+  position: absolute;
+  inset: 0 6px;
+  display: block;
+}
+
+.para-ti-shelf[data-reduced] [data-center] .para-ti-flat {
+  border-radius: 8px;
+  outline: 2px solid rgb(var(--room-rgb));
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .para-ti-card {
+    animation: para-ti-fade var(--duration-enter) var(--ease-out) both;
+  }
+}

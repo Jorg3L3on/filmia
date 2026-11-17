@@ -18,15 +18,18 @@ export const ShelvesSkeleton = () => (
   </div>
 );
 
-/** An antojo's grid while it loads. */
-export const AntojoGridSkeleton = () => (
-  <div className="para-ti-grid mt-6" aria-busy="true" aria-label="Cargando títulos">
-    {Array.from({ length: 9 }, (_, index) => (
-      <div key={index}>
-        <span className="shimmer block aspect-[2/3] rounded-poster" aria-hidden="true" />
-        <Bar className="mt-2 h-4 w-4/5" />
-        <Bar className="mt-1 h-3 w-1/2" />
+/** An antojo's shelf while it loads: the shelf's height and the card under it. */
+export const ShelfSkeleton = () => (
+  <div className="para-ti-shelf" aria-busy="true" aria-label="Cargando títulos">
+    <div className="para-ti-track-skeleton">
+      <span className="shimmer block h-full w-[var(--depth)] rounded-poster" aria-hidden="true" />
+    </div>
+    <div className="para-ti-center-row">
+      <div className="min-w-0 flex-1">
+        <Bar className="h-7 w-3/4" />
+        <Bar className="mt-2 h-4 w-1/2" />
       </div>
-    ))}
+      <Bar className="h-11 w-36 rounded-full" />
+    </div>
   </div>
 );
