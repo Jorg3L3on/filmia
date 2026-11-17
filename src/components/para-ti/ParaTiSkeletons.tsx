@@ -25,11 +25,10 @@ export const ShelfSkeleton = () => (
       <span className="shimmer block h-full w-[var(--depth)] rounded-poster" aria-hidden="true" />
     </div>
     <div className="para-ti-center-row">
-      <div className="min-w-0 flex-1">
-        <Bar className="h-7 w-3/4" />
-        <Bar className="mt-2 h-4 w-1/2" />
-      </div>
-      <Bar className="h-11 w-36 rounded-full" />
+      <Bar className="float-right ml-3 h-11 w-36 rounded-full" />
+      <Bar className="h-7 w-1/2" />
+      <Bar className="mt-2 h-4 w-1/3" />
+      <Bar className="mt-6 h-11 w-64 rounded-full" />
     </div>
   </div>
 );

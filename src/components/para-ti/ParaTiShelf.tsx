@@ -16,6 +16,7 @@ import {
   type ReactNode,
 } from "react";
 import { PosterImage } from "@/components/PosterImage";
+import { SharedPoster } from "@/components/SharedPoster";
 import { cn } from "@/lib/cn";
 import { usePrefersReducedMotion } from "@/lib/motion";
 import type { ParaTiTitle } from "@/lib/para-ti/rank";
@@ -33,6 +34,7 @@ import {
   type ShelfDims,
 } from "@/lib/para-ti/shelf-geometry";
 import { spineLabel } from "@/components/para-ti/spine-label";
+import { previewPosterKey, rememberPosterFlight } from "@/lib/poster-flight";
 import { previewFichaHref } from "@/lib/title-preview";
 import { tmdbPosterUrl } from "@/lib/tmdb";
 import { focusRing } from "@/lib/ui";
@@ -264,11 +266,17 @@ export const ParaTiShelf = ({ titles, memoryKey, label, lean, renderCenter }: Pa
   // Stable across renders so memoised slots do not re-render when the centre moves; the link
   // itself says whether it is the centred one.
   const onItemClick = useCallback(
-    (index: number, event: MouseEvent) => {
-      if ((event.currentTarget as HTMLElement).getAttribute("aria-current") !== "true") {
+    (index: number, event: MouseEvent, title: ParaTiTitle) => {
+      const link = event.currentTarget as HTMLElement;
+      if (link.getAttribute("aria-current") !== "true") {
         event.preventDefault();
         scrollToIndex(index);
+        return;
       }
+      // Opening the centred title (FIL-I60-6): its cover flies into the ficha's hero, and the
+      // ficha's skeleton shows this same image; on «atrás» it flies home to the shelf.
+      const image = link.querySelector<HTMLImageElement>("[data-shared-poster] img");
+      rememberPosterFlight(previewPosterKey(title.kind, title.tmdbId), image?.currentSrc || image?.src || "");
     },
     [scrollToIndex],
   );
@@ -324,7 +332,7 @@ export const ParaTiShelf = ({ titles, memoryKey, label, lean, renderCenter }: Pa
         {announce}
       </p>
       <div className="para-ti-center-row">
-        {current ? <div className="min-w-0 flex-1">{renderCenter(current)}</div> : null}
+        {/* Floats right of the card's title; the card's lines flow around it. */}
         <button type="button" onClick={surprise} className={cn("para-ti-surprise", focusRing)} disabled={titles.length < 2}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true" className="size-5">
             <rect x="4" y="4" width="16" height="16" rx="4" />
@@ -335,14 +343,17 @@ export const ParaTiShelf = ({ titles, memoryKey, label, lean, renderCenter }: Pa
           </svg>
           Sorpréndeme
         </button>
+        {current ? renderCenter(current) : null}
       </div>
     </div>
   );
 };
 
-const FlatPoster = ({ title }: { title: ParaTiTitle }) => (
+const FlatPoster = ({ title, share }: { title: ParaTiTitle; share: boolean }) => (
   <span className="para-ti-flat">
-    <PosterImage name={title.name} posterPath={title.posterPath} sizes="124px" className="rounded-poster" />
+    <SharedPoster titleId={previewPosterKey(title.kind, title.tmdbId)} share={share}>
+      <PosterImage name={title.name} posterPath={title.posterPath} sizes="124px" className="rounded-poster" />
+    </SharedPoster>
   </span>
 );
 
@@ -356,7 +367,7 @@ type SlotProps = {
   dims: ShelfDims;
   slotRefs: React.RefObject<Map<string, HTMLElement>>;
   linkRefs: React.RefObject<Map<string, HTMLAnchorElement>>;
-  onItemClick: (index: number, event: MouseEvent) => void;
+  onItemClick: (index: number, event: MouseEvent, title: ParaTiTitle) => void;
 };
 
 /** One title's place on the shelf; re-renders only when its own state changes. */
@@ -384,12 +395,16 @@ const Slot = memo(function Slot({ title, index, mounted, isCenter, near, reduced
               aria-label={`${title.name}${title.year ? ` (${title.year})` : ""}`}
               aria-current={isCenter ? "true" : undefined}
               tabIndex={isCenter ? 0 : -1}
-              onClick={(event) => onItemClick(index, event)}
+              onClick={(event) => onItemClick(index, event, title)}
               className={cn("para-ti-item", focusRing)}
               data-ficha={title.catalogId}
               data-para-ti-item
             >
-              {reduced ? <FlatPoster title={title} /> : <Box title={title} dims={dims} near={near} />}
+              {reduced ? (
+                <FlatPoster title={title} share={isCenter} />
+              ) : (
+                <Box title={title} dims={dims} near={near} share={isCenter} />
+              )}
             </Link>
           </div>
         </div>
@@ -404,7 +419,7 @@ const Slot = memo(function Slot({ title, index, mounted, isCenter, near, reduced
  * A title as a box: its spine faces you, its cover is the side that turns out at the centre. Only
  * the boxes near the centre load their cover image; the others show the poster's colour there.
  */
-const Box = ({ title, dims, near }: { title: ParaTiTitle; dims: ShelfDims; near: boolean }) => {
+const Box = ({ title, dims, near, share }: { title: ParaTiTitle; dims: ShelfDims; near: boolean; share: boolean }) => {
   const sliver = tmdbPosterUrl(title.posterPath, "w185");
   return (
     <span
@@ -419,7 +434,10 @@ const Box = ({ title, dims, near }: { title: ParaTiTitle; dims: ShelfDims; near:
       </span>
       <span className="para-ti-face para-ti-cover">
         {near ? (
-          <PosterImage name={title.name} posterPath={title.posterPath} sizes={`${dims.depth}px`} className="para-ti-cover-img" />
+          // Only the centred cover carries the shared name: names must be unique on screen.
+          <SharedPoster titleId={previewPosterKey(title.kind, title.tmdbId)} share={share} className="para-ti-cover-img">
+            <PosterImage name={title.name} posterPath={title.posterPath} sizes={`${dims.depth}px`} className="para-ti-cover-img" />
+          </SharedPoster>
         ) : null}
       </span>
     </span>

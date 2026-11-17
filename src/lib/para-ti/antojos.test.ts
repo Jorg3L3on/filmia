@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ANTOJOS, ANTOJO_IDS, POOL_KINDS, antojoById, isAntojoId } from "./antojos";
+import { ANTOJOS, ANTOJO_IDS, POOL_KINDS, antojoById, antojoForGenres, isAntojoId, moreLikeHref } from "./antojos";
 import { discoverTmdbParams } from "@/lib/tmdb-discover-params";
 
 const NOW = new Date("2026-11-17T18:00:00Z");
@@ -69,5 +69,18 @@ describe("Para ti antojos (FIL-I60-2)", () => {
     assert.equal(movie?.voteAverageGte, 7.3);
     assert.equal(movie?.voteCountGte, 200);
     assert.equal(movie?.voteCountLte, 5000);
+  });
+});
+
+describe("«Más como esto» from Hoy (FIL-I60-6)", () => {
+  it("maps a card's genres to an antojo, the most telling first", () => {
+    assert.equal(antojoForGenres(["Drama", "Terror"]), "miedo");
+    assert.equal(antojoForGenres(["Comedia", "Drama"]), "reir");
+    assert.equal(antojoForGenres(["Acción", "Ciencia ficción"]), "adrenalina");
+    assert.equal(antojoForGenres(["Sci-Fi & Fantasy"]), "pensar");
+    assert.equal(antojoForGenres(["Romance"]), "llorar");
+    assert.equal(antojoForGenres(["Animación"]), null);
+    assert.equal(moreLikeHref(["Terror"]), "/para-ti?antojo=miedo");
+    assert.equal(moreLikeHref([]), "/para-ti");
   });
 });

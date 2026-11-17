@@ -1,9 +1,13 @@
 "use server";
 
+import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { db, titles } from "@/db";
 import { forgetUserAffinity } from "@/lib/affinity-store";
 import { catalogExists, PARA_TI_DISMISS_KIND, PARA_TI_LENS } from "@/lib/para-ti/store";
+import { revalidateWatchlistSurfaces } from "@/lib/revalidate-surfaces";
 import { requireUserId } from "@/lib/session";
+import { removeFromWatchlistFor } from "@/lib/title-writes";
 import { deleteLatestPickEvent, recordPickEvents, scheduleTonightRecompute } from "@/lib/tonight-store";
 
 export type ParaTiActionResult = { ok: true } | { ok: false; error: string };
@@ -23,6 +27,7 @@ export const dismissParaTi = async (catalogId: string): Promise<ParaTiActionResu
   forgetUserAffinity(userId);
   scheduleTonightRecompute(userId);
   revalidatePath("/para-ti");
+  revalidatePath("/");
   return { ok: true };
 };
 
@@ -38,6 +43,36 @@ export const undoDismissParaTi = async (catalogId: string): Promise<ParaTiAction
   }
   forgetUserAffinity(userId);
   scheduleTonightRecompute(userId);
+  revalidatePath("/para-ti");
+  revalidatePath("/");
+  return { ok: true };
+};
+
+/**
+ * «Deshacer» on «Guardar» (FIL-I60-6): out of Quiero ver again. When the save had just created the
+ * person's Title (and nothing was added to it since: unwatched, unrated), the Title goes too, so the
+ * film is back on the shelf; a Title they already had only leaves Quiero ver.
+ */
+export const undoSaveParaTi = async (titleId: string, created: boolean): Promise<ParaTiActionResult> => {
+  const userId = await requireUserId();
+  if (typeof titleId !== "string" || !CATALOG_ID.test(titleId)) {
+    return { ok: false, error: "No encontramos ese título." };
+  }
+  const owned = await db.query.titles.findFirst({
+    where: and(eq(titles.id, titleId), eq(titles.userId, userId)),
+    columns: { id: true },
+  });
+  if (!owned) {
+    return { ok: false, error: "No encontramos ese título." };
+  }
+  await removeFromWatchlistFor(userId, titleId);
+  if (created) {
+    await db
+      .delete(titles)
+      .where(and(eq(titles.id, titleId), eq(titles.userId, userId), isNull(titles.watchedAt), isNull(titles.rating)));
+  }
+  forgetUserAffinity(userId);
+  revalidateWatchlistSurfaces(titleId);
   revalidatePath("/para-ti");
   return { ok: true };
 };

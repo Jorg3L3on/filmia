@@ -23,6 +23,15 @@ export const titleIdFromHref = (href: string | null | undefined) => {
   return match && match[1] !== "nuevo" ? match[1] : null;
 };
 
+/**
+ * The shared-poster key of a ficha preview: the same `tmdb-{KIND}-{tmdbId}` the preview page and
+ * Buscar's rows use. Accepts the URL slug (`pelicula` / `serie`) or the kind itself.
+ */
+export const previewPosterKey = (kind: string, tmdbId: number | string) => {
+  const upper = kind === "pelicula" ? "MOVIE" : kind === "serie" ? "SERIES" : kind;
+  return `tmdb-${upper}-${tmdbId}`;
+};
+
 export const rememberPosterFlight = (titleId: string, src: string, now = Date.now()) => {
   if (!titleId) return;
   openedId = titleId;

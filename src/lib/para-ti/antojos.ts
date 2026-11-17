@@ -152,3 +152,29 @@ export const antojoById = (id: string | null | undefined): Antojo | null =>
   ANTOJOS.find((antojo) => antojo.id === id) ?? null;
 
 export const POOL_KINDS: readonly TitleKind[] = ["MOVIE", "SERIES"];
+
+/**
+ * «Más como esto» from a recommended card in Hoy (FIL-I60-6): the antojo its genres point to, in
+ * this order (the most telling genre wins), or null when none fits (then the opening screen).
+ * Genre names as the catalog stores them: es-MX for movies, TMDB's English for TV-only ones.
+ */
+const GENRE_ANTOJO: ReadonlyArray<[AntojoId, readonly string[]]> = [
+  ["miedo", ["terror"]],
+  ["reir", ["comedia"]],
+  ["adrenalina", ["accion", "aventura", "suspense", "action & adventure", "crimen"]],
+  ["pensar", ["ciencia ficcion", "documental", "historia", "misterio", "belica", "sci-fi & fantasy", "war & politics"]],
+  ["llorar", ["drama", "romance"]],
+];
+
+const fold = (value: string) => value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
+
+export const antojoForGenres = (names: readonly string[]): AntojoId | null => {
+  const folded = new Set(names.map(fold));
+  return GENRE_ANTOJO.find(([, genres]) => genres.some((genre) => folded.has(genre)))?.[0] ?? null;
+};
+
+/** Where «Más como esto» goes. */
+export const moreLikeHref = (genreNames: readonly string[]) => {
+  const antojo = antojoForGenres(genreNames);
+  return antojo ? `/para-ti?antojo=${antojo}` : "/para-ti";
+};

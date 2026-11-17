@@ -12,6 +12,7 @@ import { deckAvailabilityPlatform, providerDisplayName } from "@/lib/streaming-p
 import { formatRuntimeShort } from "@/lib/tonight/time";
 import { endsAtLabel } from "@/lib/tonight/double-feature";
 import { reasonPerson } from "@/lib/watchlist-credits";
+import { moreLikeHref } from "@/lib/para-ti/antojos";
 import { buildPersonSearchHref } from "@/lib/person-filmography";
 import { focusRing, personLinkClass } from "@/lib/ui";
 
@@ -76,6 +77,15 @@ export const TonightFooter = ({ title, className }: TonightFooterProps) => {
         ) : recommended ? (
           <p className="reco-eyebrow">
             {recoSaved ? "Ya está en Quiero ver" : "Recomendada · no está en Quiero ver"}
+            {/* The one door from Hoy into Para ti (FIL-I60-6): the antojo of this card's genres. */}
+            <span aria-hidden="true"> · </span>
+            <Link
+              href={moreLikeHref((title.genres ?? []).map((genre) => genre.name))}
+              className={cn("reco-more-like underline decoration-current/40 underline-offset-2 hover:decoration-current", focusRing)}
+              data-more-like
+            >
+              Más como esto
+            </Link>
           </p>
         ) : null}
         <h2 className="tonight-title font-serif text-[1.55rem] font-semibold leading-tight text-paper sm:text-3xl md:text-4xl">

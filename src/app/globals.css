@@ -9097,10 +9097,8 @@ html[data-que-ver-lite] .hoy-peek svg {
 }
 
 .para-ti-center-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  min-height: 7rem;
+  display: flow-root;
+  min-height: 9.5rem;
 }
 
 .para-ti-card-title {
@@ -9136,6 +9134,8 @@ html[data-que-ver-lite] .hoy-peek svg {
 }
 
 .para-ti-surprise {
+  float: right;
+  margin: 0 0 0.5rem 0.75rem;
   display: inline-flex;
   min-height: 44px;
   flex-shrink: 0;
@@ -9272,4 +9272,51 @@ html[data-que-ver-lite] .hoy-peek svg {
   .para-ti-card {
     animation: para-ti-fade var(--duration-enter) var(--ease-out) both;
   }
+}
+
+/* Para ti · actions on the centred title (FIL-I60-6). */
+.para-ti-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.875rem;
+}
+
+.para-ti-action {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 9999px;
+  background: rgb(12 16 24 / 0.55);
+  padding: 0 0.9rem;
+  color: var(--paper);
+  font-size: 13px;
+  font-weight: 600;
+  transition: opacity var(--duration-hover) var(--ease-out);
+}
+
+.para-ti-action.is-primary {
+  border-color: transparent;
+  background: rgb(var(--room-rgb));
+  color: var(--ink);
+}
+
+.para-ti-action.is-quiet {
+  color: var(--fog);
+}
+
+.para-ti-action.is-icon {
+  width: 44px;
+  justify-content: center;
+  padding: 0;
+}
+
+.para-ti-actions {
+  clear: both;
+}
+
+.para-ti-action:disabled {
+  opacity: 0.55;
 }
