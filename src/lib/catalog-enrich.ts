@@ -21,10 +21,12 @@ export const enrichCatalog = async (
   options: {
     /** Backfills pass the stored row: only its empty columns get filled. */
     onlyMissing?: Record<string, unknown>;
+    /** False: TMDB only, no OMDb call (Para ti's pool, FIL-I60-2); ratings come with a later save or backfill. */
+    omdb?: boolean;
   } = {},
 ) => {
   const [resolved] = await Promise.all([
-    resolveTitleMetadata(row.tmdbId, row.kind).catch(() => null),
+    resolveTitleMetadata(row.tmdbId, row.kind, { omdb: options.omdb }).catch(() => null),
     enrichWatchProvidersOnSave(row.id, row.tmdbId, row.kind),
   ]);
 

@@ -246,6 +246,13 @@
       "when": 1794598720591,
       "tag": "0035_estrenos",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1794943160446,
+      "tag": "0036_para_ti",
+      "breakpoints": true
     }
   ]
 }

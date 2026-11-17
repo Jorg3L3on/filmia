@@ -44,13 +44,15 @@ export const metadataServicesConfigured = () => ({
 export const resolveTitleMetadata = async (
   tmdbId: number,
   kind: TitleKind,
+  /** `omdb: false` skips the OMDb call (its free quota is small): TMDB data only (FIL-I60-2). */
+  options: { omdb?: boolean } = {},
 ): Promise<TitleMetadata> => {
   const [details, imdbId] = await Promise.all([
     getTmdbDetails(tmdbId, kind),
     getTmdbExternalIds(tmdbId, kind),
   ]);
 
-  const score = imdbId ? await fetchImdbScore(imdbId) : EMPTY_SCORE;
+  const score = imdbId && options.omdb !== false ? await fetchImdbScore(imdbId) : EMPTY_SCORE;
 
   return {
     tmdbId: details.tmdbId,

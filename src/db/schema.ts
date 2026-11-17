@@ -481,6 +481,33 @@ export const tonightRecos = pgTable(
 );
 
 /**
+ * Para ti's shared candidate pool (FIL-I60-2): per antojo and kind, the titles TMDB discover
+ * gave back, ranked, refreshed by the daily `para-ti` cron. One pool for everyone; only the
+ * ranking is per user, at read time. A cache: safe to delete, rebuilt on the next runs.
+ */
+export const paraTiPool = pgTable(
+  "ParaTiPool",
+  {
+    /** `src/lib/para-ti/antojos.ts` id: reir, llorar, miedo, adrenalina, pensar, reciente, corta, joya. */
+    antojo: text("antojo").notNull(),
+    kind: titleKindEnum("kind").notNull(),
+    catalogId: text("catalogId")
+      .notNull()
+      .references(() => catalog.id, { onDelete: "cascade" }),
+    /** Order TMDB gave it in this pool, 0 first. */
+    rank: integer("rank").notNull(),
+    /** TMDB's average and votes from the discover payload: quality before OMDb has seen it. */
+    voteAverage: real("voteAverage"),
+    voteCount: integer("voteCount").notNull().default(0),
+    fetchedAt: timestamp("fetchedAt", { precision: 3, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.antojo, table.kind, table.catalogId] }),
+    index("ParaTiPool_antojo_kind_rank_idx").on(table.antojo, table.kind, table.rank),
+  ],
+);
+
+/**
  * Fixed-window counters for login, signup and password change (FIL-I10-2). `key` is
  * `<rule>:<subject>` with the subject hashed; expired rows are swept on write.
  */
