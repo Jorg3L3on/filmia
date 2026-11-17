@@ -8561,3 +8561,346 @@ html[data-que-ver-lite] .hoy-peek svg {
 }
 
 /* «Vi esto» lands here: `.nav-receive > :first-child` pulses the disc like a dock tab. */
+
+/* ── Para ti (FIL-I60-4) ──────────────────────────────────────────────────────────────
+ * Each antojo is a room: a light painted behind the page (`.para-ti-light`), cross-faded by
+ * opacity. Only the active room's light may loop, never with reduced motion. Gradients,
+ * opacity and transforms only. Durations are the app's tokens.
+ */
+.para-ti {
+  position: relative;
+}
+
+/* The body paints its own background over a negative z-index: the room sits at 0, the page above it. */
+.para-ti > :not(.para-ti-backdrop) {
+  position: relative;
+  z-index: 1;
+}
+
+.para-ti-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.para-ti-light {
+  position: absolute;
+  inset: -12%;
+  opacity: 0;
+  background:
+    radial-gradient(95% 55% at 50% 0%, rgb(var(--room-rgb) / 0.5), transparent 74%),
+    radial-gradient(70% 45% at 100% 100%, rgb(var(--room-rgb-2) / 0.22), transparent 72%),
+    linear-gradient(to bottom, rgb(var(--room-rgb) / 0.08), transparent 70%);
+  transition: opacity var(--duration-sheet) var(--ease-out);
+}
+
+.para-ti-light[data-active] {
+  opacity: 1;
+}
+
+.para-ti-light[data-light="flicker"] {
+  background:
+    radial-gradient(90% 50% at 50% 0%, rgb(var(--room-rgb) / 0.62), transparent 72%),
+    radial-gradient(60% 45% at 0% 100%, rgb(var(--room-rgb) / 0.22), transparent 70%),
+    linear-gradient(to bottom, rgb(0 0 0 / 0.2), rgb(0 0 0 / 0.55));
+}
+
+.para-ti-light[data-light="strobe"] {
+  background:
+    linear-gradient(118deg, transparent 34%, rgb(var(--room-rgb) / 0.22) 46%, transparent 47%, transparent 52%, rgb(var(--room-rgb-2) / 0.16) 53%, transparent 64%),
+    radial-gradient(95% 55% at 50% 0%, rgb(var(--room-rgb) / 0.55), transparent 70%),
+    radial-gradient(70% 45% at 100% 100%, rgb(var(--room-rgb-2) / 0.28), transparent 70%);
+}
+
+.para-ti-light[data-light="crisp"] {
+  background:
+    radial-gradient(70% 38% at 50% 0%, rgb(var(--room-rgb) / 0.6), transparent 66%),
+    radial-gradient(60% 40% at 0% 100%, rgb(var(--room-rgb-2) / 0.18), transparent 70%),
+    linear-gradient(to bottom, rgb(var(--room-rgb) / 0.1), transparent 60%);
+}
+
+.para-ti-light[data-light="glint"] {
+  background:
+    radial-gradient(80% 45% at 50% 0%, rgb(var(--room-rgb) / 0.34), transparent 72%),
+    radial-gradient(40% 30% at 85% 30%, rgb(var(--room-rgb) / 0.16), transparent 70%),
+    linear-gradient(to bottom, rgb(0 0 0 / 0.4), rgb(0 0 0 / 0.2));
+}
+
+.para-ti-light[data-light="glint"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 44%, rgb(var(--room-rgb) / 0.28) 50%, transparent 56%);
+  transform: translateX(-60%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .para-ti-light[data-active][data-light="flicker"] {
+    animation: para-ti-flicker var(--duration-ambient-fast) steps(1, end) infinite;
+  }
+
+  .para-ti-light[data-active][data-light="warm"],
+  .para-ti-light[data-active][data-light="cool"] {
+    animation: para-ti-breathe var(--duration-ambient-slow) var(--ease-cut) infinite alternate;
+  }
+
+  .para-ti-light[data-active][data-light="quick"] {
+    animation: para-ti-breathe var(--duration-ambient-fast) var(--ease-cut) infinite alternate;
+  }
+
+  .para-ti-light[data-active][data-light="glint"]::after {
+    animation: para-ti-glint var(--duration-ambient) var(--ease-cut) infinite;
+  }
+}
+
+@keyframes para-ti-flicker {
+  0%, 100% { opacity: 1; }
+  41% { opacity: 0.55; }
+  42% { opacity: 1; }
+  44% { opacity: 0.7; }
+  45% { opacity: 1; }
+  78% { opacity: 0.8; }
+  79% { opacity: 1; }
+}
+
+@keyframes para-ti-breathe {
+  from { transform: translateY(0) scale(1); }
+  to { transform: translateY(2%) scale(1.04); }
+}
+
+@keyframes para-ti-glint {
+  0%, 55% { transform: translateX(-60%); }
+  100% { transform: translateX(60%); }
+}
+
+.para-ti-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  /* Mixed toward paper: a dark room (Miedo) would otherwise drop under 4.5:1. */
+  color: color-mix(in oklab, rgb(var(--room-rgb)) 55%, var(--paper));
+}
+
+.para-ti-question {
+  margin-top: 0.35rem;
+  font-family: var(--font-serif);
+  font-size: clamp(2.375rem, 10vw, 4.75rem);
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+  color: var(--paper);
+  text-wrap: balance;
+}
+
+.para-ti-words {
+  margin-top: 1.25rem;
+}
+
+.para-ti-word-list {
+  display: grid;
+  gap: 0.125rem 2rem;
+}
+
+@media (min-width: 640px) {
+  .para-ti-word-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.para-ti-word {
+  display: flex;
+  min-height: 44px;
+  align-items: baseline;
+  gap: 0.6rem;
+  border-radius: 0.5rem;
+  color: var(--paper);
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 9.4vw, 3.5rem);
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+  transition: color var(--duration-hover) var(--ease-out), text-shadow var(--duration-hover) var(--ease-out);
+}
+
+.para-ti-word-list li:nth-child(even) .para-ti-word {
+  font-style: italic;
+  font-weight: 400;
+}
+
+.para-ti-word-index {
+  flex-shrink: 0;
+  transform: translateY(-0.9em);
+  color: color-mix(in oklab, rgb(var(--room-rgb)) 55%, var(--paper));
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+.para-ti-word:hover,
+.para-ti-word:focus-visible {
+  color: color-mix(in oklab, rgb(var(--room-rgb)) 70%, var(--paper));
+  text-shadow: 0 0 28px rgb(var(--room-rgb) / 0.45);
+}
+
+.para-ti-antojo-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.para-ti-antojo-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.5rem, 12vw, 5rem);
+  font-weight: 600;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  color: var(--paper);
+  text-shadow: 0 0 36px rgb(var(--room-rgb) / 0.4);
+}
+
+.para-ti[data-antojo="joya"] .para-ti-antojo-title,
+.para-ti[data-antojo="llorar"] .para-ti-antojo-title,
+.para-ti[data-antojo="pensar"] .para-ti-antojo-title {
+  font-style: italic;
+  font-weight: 400;
+}
+
+.para-ti-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .para-ti-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1.5rem 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .para-ti-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.para-ti-notice {
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.875rem;
+  background: rgb(12 16 24 / 0.55);
+  padding: 0.625rem 0.875rem;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--fog);
+}
+
+.para-ti-empty {
+  margin-top: 2.5rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 1.25rem;
+  background: rgb(12 16 24 / 0.5);
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+}
+
+.para-ti-cta {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  border-radius: 9999px;
+  background: rgb(var(--room-rgb));
+  padding: 0 1.125rem;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.para-ti-cta.is-ghost {
+  border: 1px solid rgb(255 255 255 / 0.18);
+  background: transparent;
+  color: var(--paper);
+}
+
+/* Entrances: about a second for the question and the words, once per view; per antojo, its own. */
+@media (prefers-reduced-motion: no-preference) {
+  .para-ti-hero,
+  .para-ti-word-list li {
+    animation: para-ti-rise var(--duration-stagger) var(--ease-out) both;
+  }
+
+  .para-ti-word-list li {
+    animation-delay: calc(var(--cascade-1) + var(--cascade-step) * var(--i));
+  }
+
+  .para-ti[data-entrance] .para-ti-antojo-head,
+  .para-ti[data-entrance] .para-ti-grid {
+    animation: para-ti-rise var(--duration-stagger) var(--ease-out) both;
+  }
+
+  .para-ti[data-entrance] .para-ti-grid {
+    animation-delay: var(--cascade-2);
+  }
+
+  .para-ti[data-entrance="bounce"] .para-ti-antojo-head,
+  .para-ti[data-entrance="bounce"] .para-ti-grid {
+    animation: para-ti-pop var(--duration-pop) var(--spring) both;
+  }
+
+  .para-ti[data-entrance="slow"] .para-ti-antojo-head,
+  .para-ti[data-entrance="slow"] .para-ti-grid {
+    animation: para-ti-fade var(--duration-sweep) var(--ease-out) both;
+  }
+
+  .para-ti[data-entrance="fast"] .para-ti-antojo-head,
+  .para-ti[data-entrance="fast"] .para-ti-grid,
+  .para-ti[data-entrance="quick"] .para-ti-antojo-head,
+  .para-ti[data-entrance="quick"] .para-ti-grid {
+    animation: para-ti-dash var(--duration-enter) var(--ease-out) both;
+  }
+
+  .para-ti[data-entrance="flicker"] .para-ti-antojo-head {
+    animation: para-ti-flicker-in var(--duration-cut) steps(1, end) both;
+  }
+}
+
+@keyframes para-ti-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes para-ti-pop {
+  from { opacity: 0; transform: translateY(18px) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes para-ti-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes para-ti-dash {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes para-ti-flicker-in {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  30% { opacity: 0.2; }
+  45% { opacity: 1; }
+  55% { opacity: 0.4; }
+  70%, 100% { opacity: 1; }
+}
+
+.para-ti-shelves {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  margin-top: 2.5rem;
+  padding-bottom: 1rem;
+}
