@@ -45,3 +45,13 @@ describe("spine shelf geometry (FIL-I60-5)", () => {
     assert.equal(surpriseIndex(1, 0), 0);
   });
 });
+
+describe("spine labels (FIL-I60-5)", () => {
+  it("cuts a long title to two spine lines with an ellipsis", async () => {
+    const { spineLabel } = await import("@/components/para-ti/spine-label");
+    const long = "El increíble y nunca antes contado viaje de la familia Robles";
+    const phone = spineLabel(long, SHELF_PHONE);
+    assert.ok(phone.endsWith("…") && phone.length <= Math.floor((SHELF_PHONE.height * 0.7) / 8.4) * 2);
+    assert.equal(spineLabel("Shrek", SHELF_PHONE), "Shrek");
+  });
+});
