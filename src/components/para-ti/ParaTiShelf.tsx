@@ -48,6 +48,8 @@ type ParaTiShelfProps = {
   lean: number;
   /** The centred title's card and actions (F6), drawn under the shelf. */
   renderCenter: (title: ParaTiTitle) => ReactNode;
+  /** A title to centre when the list changes (one that came back after a failure or «Deshacer»). */
+  centerOn?: string | null;
 };
 
 const subscribeWide = (onChange: () => void) => {
@@ -85,7 +87,7 @@ const remember = (key: string, catalogId: string) => {
  * scroll position (transforms and opacity only). The centred box turns a quarter to show its
  * cover. Keyboard: arrows move one title, Enter opens it. Reduced motion: a flat poster rail.
  */
-export const ParaTiShelf = ({ titles, memoryKey, label, lean, renderCenter }: ParaTiShelfProps) => {
+export const ParaTiShelf = ({ titles, memoryKey, label, lean, renderCenter, centerOn = null }: ParaTiShelfProps) => {
   const reduced = usePrefersReducedMotion();
   const dims = useDims();
   const trackRef = useRef<HTMLDivElement>(null);
@@ -94,6 +96,10 @@ export const ParaTiShelf = ({ titles, memoryKey, label, lean, renderCenter }: Pa
   const frame = useRef(0);
   const lastCenter = useRef(0);
   const [center, setCenter] = useState(0);
+  /** The list and centre of the last layout, for reshuffles; kept current by the scroll handler. */
+  const previous = useRef<{ titles: ParaTiTitle[]; at: number } | null>(null);
+  /** False until the start position is placed: no scroll is remembered before that. */
+  const restored = useRef(false);
   const [announce, setAnnounce] = useState("");
   const [spinning, setSpinning] = useState(false);
 
@@ -136,8 +142,15 @@ export const ParaTiShelf = ({ titles, memoryKey, label, lean, renderCenter }: Pa
       pose(at, velocity);
       const rounded = clamp(Math.round(at), 0, titles.length - 1);
       setCenter((previous) => (previous === rounded ? previous : rounded));
+      // Remembered from real scroll positions only, once the start position is in place, so
+      // «atrás» from a ficha lands on the same title.
+      const id = titles[rounded]?.catalogId;
+      if (id && restored.current) {
+        remember(memoryKey, id);
+        if (previous.current) previous.current.at = rounded;
+      }
     });
-  }, [dims, pose, reduced, titles.length]);
+  }, [dims, memoryKey, pose, reduced, titles]);
 
   // Straighten the lean once the shelf stops (scrollend, with a timer for browsers without it).
   useEffect(() => {
@@ -170,15 +183,33 @@ export const ParaTiShelf = ({ titles, memoryKey, label, lean, renderCenter }: Pa
   );
 
   // First paint and every new list: keep the remembered (or the same) title centred, then pose.
-  const previous = useRef<{ titles: ParaTiTitle[]; at: number } | null>(null);
   useLayoutEffect(() => {
     const track = trackRef.current;
     if (!track) return;
     const step = reduced ? flatDims : dims;
     const before = previous.current;
-    const keepId = before ? before.titles[Math.round(before.at)]?.catalogId : readRemembered(memoryKey);
+    const keepId =
+      centerOn && indexById.has(centerOn)
+        ? centerOn
+        : before
+          ? before.titles[Math.round(before.at)]?.catalogId
+          : readRemembered(memoryKey);
     const target = keepId != null && indexById.has(keepId) ? indexById.get(keepId)! : 0;
-    track.scrollLeft = scrollFor(target, step);
+    // A streamed shelf can mount before it is displayed (back navigation): scrollLeft is ignored
+    // until it has a width, so place it once it does.
+    let tries = 0;
+    let raf = 0;
+    const place = () => {
+      if (track.clientWidth === 0 && tries < 60) {
+        tries += 1;
+        raf = requestAnimationFrame(place);
+        return;
+      }
+      track.scrollLeft = scrollFor(target, step);
+      restored.current = true;
+    };
+    restored.current = false;
+    place();
     lastCenter.current = target;
     setCenter(target);
     pose(target, 0);
@@ -210,17 +241,16 @@ export const ParaTiShelf = ({ titles, memoryKey, label, lean, renderCenter }: Pa
       }
     }
     previous.current = { titles, at: target };
+    return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs per list and per layout, not per pose
   }, [titles, dims, reduced]);
 
-  // Keep the remembered centre and the reshuffle anchor current; announce the centred title.
+  // Announce the centred title.
   useEffect(() => {
     if (!current) return;
-    remember(memoryKey, current.catalogId);
-    if (previous.current) previous.current.at = center;
     const timer = window.setTimeout(() => setAnnounce(`${current.name}${current.year ? `, ${current.year}` : ""}`), 250);
     return () => window.clearTimeout(timer);
-  }, [center, current, memoryKey]);
+  }, [center, current]);
 
   useEffect(() => () => cancelAnimationFrame(frame.current), []);
 
@@ -245,6 +275,20 @@ export const ParaTiShelf = ({ titles, memoryKey, label, lean, renderCenter }: Pa
     scrollToIndex(index);
     const id = titles[index]?.catalogId;
     if (id) window.requestAnimationFrame(() => linkRefs.current.get(id)?.focus({ preventScroll: true }));
+  };
+
+  /**
+   * Browsers hit-test the turned cover unreliably (it sits in a 3D scene), so a tap that falls
+   * through to the track inside the centred cover's on-screen box opens that title.
+   */
+  const onTrackClick = (event: MouseEvent) => {
+    if (event.target !== trackRef.current || !current) return;
+    const link = linkRefs.current.get(current.catalogId);
+    const face = link?.querySelector(".para-ti-cover, .para-ti-flat");
+    const box = face?.getBoundingClientRect();
+    if (link && box && event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom) {
+      link.click();
+    }
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
@@ -310,6 +354,7 @@ export const ParaTiShelf = ({ titles, memoryKey, label, lean, renderCenter }: Pa
         style={{ "--slot": `${step.slot}px`, "--depth": `${step.depth}px`, "--shelf-h": `${step.height}px` } as CSSProperties}
         onScroll={onScroll}
         onKeyDown={onKeyDown}
+        onClick={onTrackClick}
         data-shelf-track
       >
         {titles.map((title, index) => (

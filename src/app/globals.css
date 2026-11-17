@@ -8964,6 +8964,10 @@ html[data-que-ver-lite] .hoy-peek svg {
   pointer-events: auto;
 }
 
+.para-ti-track {
+  cursor: default;
+}
+
 .para-ti-item {
   border-radius: 6px;
 }
@@ -9319,4 +9323,10 @@ html[data-que-ver-lite] .hoy-peek svg {
 
 .para-ti-action:disabled {
   opacity: 0.55;
+}
+
+/* A poster that just flew in shows that image until its own loads: its frame must not hide it (FIL-I60-6). */
+[data-shared-poster].has-flight > *,
+[data-shared-poster].has-flight > * > * {
+  background-color: transparent;
 }

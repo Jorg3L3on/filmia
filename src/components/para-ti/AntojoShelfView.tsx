@@ -49,16 +49,20 @@ export const AntojoShelfView = ({
   const router = useRouter();
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
   const [busy, setBusy] = useState<string | null>(null);
+  /** A title that just came back (failure or «Deshacer») is centred again. */
+  const [centerOn, setCenterOn] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const shown = titles.filter((title) => !hidden.has(title.catalogId));
 
   const hide = (id: string) => setHidden((current) => new Set(current).add(id));
-  const unhide = (id: string) =>
+  const unhide = (id: string) => {
+    setCenterOn(id);
     setHidden((current) => {
       const next = new Set(current);
       next.delete(id);
       return next;
     });
+  };
 
   const run = (title: ParaTiTitle, work: () => Promise<void>) => {
     if (busy) return;
@@ -174,6 +178,7 @@ export const AntojoShelfView = ({
       label={label}
       memoryKey={memoryKey}
       lean={ROOMS[antojo].motion.lean}
+      centerOn={centerOn}
       renderCenter={(title) => (
         <CenterCard title={title}>
           <div className="para-ti-actions" role="group" aria-label={`Acciones para ${title.name}`}>
