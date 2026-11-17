@@ -4,6 +4,7 @@ import { Button } from "@/components/Button";
 import type { Platform } from "@/db";
 import { cn } from "@/lib/cn";
 import { isUserStreamingProvider, providerDisplayName } from "@/lib/streaming-platforms";
+import { providerHasOwnLink, providerWatchHref } from "@/lib/provider-links";
 import { focusRing } from "@/lib/ui";
 import type { WatchProviderOffer, WatchProvidersMxData } from "@/lib/watch-providers";
 
@@ -70,7 +71,21 @@ type ProviderSectionProps = {
   label: string;
   providers: WatchProviderOffer[];
   link?: string | null;
+  titleName?: string | null;
   userPlatforms: Platform[];
+};
+
+/** TMDB lists «Prime Video» and «Prime Video with Ads» apart; one chip per name we show (FIL-I59). */
+const uniqueByDisplayName = (providers: WatchProviderOffer[]) => {
+  const seen = new Set<string>();
+  return providers.filter((provider) => {
+    const name = providerDisplayName(provider).toLowerCase();
+    if (seen.has(name)) {
+      return false;
+    }
+    seen.add(name);
+    return true;
+  });
 };
 
 const sortProvidersForUser = (
@@ -87,13 +102,14 @@ const ProviderSection = ({
   label,
   providers,
   link,
+  titleName,
   userPlatforms,
 }: ProviderSectionProps) => {
   if (providers.length === 0) {
     return null;
   }
 
-  const ordered = sortProvidersForUser(providers, userPlatforms);
+  const ordered = uniqueByDisplayName(sortProvidersForUser(providers, userPlatforms));
 
   return (
     <div className="space-y-2">
@@ -109,15 +125,20 @@ const ProviderSection = ({
               ? "border-accent bg-accent/10 text-paper"
               : "border-chrome bg-surface text-paper hover:border-accent/40 hover:text-paper",
           );
+          const name = providerDisplayName(provider);
+          // FIL-I59: the chip opens the service (its app on a phone) searching this title.
+          const href = providerWatchHref(provider, titleName, link ?? null);
+          const ownLink = Boolean(titleName?.trim()) && providerHasOwnLink(provider);
+          const where = ownLink ? `Buscar ${titleName!.trim()} en ${name}` : name;
           const ariaLabel = isMine
-            ? `${providerDisplayName(provider)} en ${label.toLowerCase()} (tu plataforma)`
-            : `${providerDisplayName(provider)} en ${label.toLowerCase()}`;
+            ? `${where}, ${label.toLowerCase()} (tu plataforma)`
+            : `${where}, ${label.toLowerCase()}`;
 
           return (
             <li key={`${label}-${provider.providerId}`}>
-              {link ? (
+              {href ? (
                 <a
-                  href={link}
+                  href={href}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={cn(chipClass, focusRing)}
@@ -171,6 +192,8 @@ const ProviderLogo = ({ provider }: { provider: WatchProviderOffer }) => {
 
 type WatchProvidersMxProps = {
   data: WatchProvidersMxData | null;
+  /** The title each chip searches inside its service (FIL-I59). */
+  titleName?: string | null;
   userPlatforms?: Platform[];
   tmdbConfigured?: boolean;
   stale?: boolean;
@@ -178,6 +201,7 @@ type WatchProvidersMxProps = {
 
 export const WatchProvidersMx = ({
   data,
+  titleName = null,
   userPlatforms = [],
   tmdbConfigured = true,
   stale = false,
@@ -274,18 +298,21 @@ export const WatchProvidersMx = ({
             label="Incluido"
             providers={data.flatrate}
             link={data.link}
+            titleName={titleName}
             userPlatforms={userPlatforms}
           />
           <ProviderSection
             label="Rentar"
             providers={data.rent}
             link={data.link}
+            titleName={titleName}
             userPlatforms={userPlatforms}
           />
           <ProviderSection
             label="Comprar"
             providers={data.buy}
             link={data.link}
+            titleName={titleName}
             userPlatforms={userPlatforms}
           />
         </div>

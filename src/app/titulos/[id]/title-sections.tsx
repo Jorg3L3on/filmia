@@ -350,9 +350,12 @@ export const TitleProvidersBlock = async ({
   providersPromise,
   platformsPromise,
   cinemaPromise,
+  titleName,
 }: {
   providersPromise: Promise<WatchProvidersResult>;
   platformsPromise: Promise<UserPlatforms>;
+  /** FIL-I59: each platform chip searches this title inside its service. */
+  titleName: string;
   /** Cine (FIL-I17-4): the film's MX theatrical release, when it has one. */
   cinemaPromise?: Promise<CinemaRelease>;
 }) => {
@@ -367,6 +370,7 @@ export const TitleProvidersBlock = async ({
   const providers = (
     <WatchProvidersMx
       data={watchProvidersResult.data}
+      titleName={titleName}
       userPlatforms={userPlatforms}
       tmdbConfigured={isTmdbConfigured()}
       stale={watchProvidersResult.stale}
