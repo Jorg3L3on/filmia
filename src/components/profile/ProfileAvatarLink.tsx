@@ -11,8 +11,8 @@ type ProfileAvatarLinkProps = {
   /** The person's initial (`profileInitial`); null when nobody is signed in. */
   initial: string | null;
   /**
-   * `header`: desktop, the right end of the header. `float`: phone, fixed top right over the
-   * page. `inline`: inside a row that already owns the top (Buscar's field row on a phone).
+   * `header`: desktop, the right end of the header. `float`: phone, top right of the page (it
+   * scrolls with it). `inline`: inside a row that already owns the top (Buscar's field row).
    */
   placement: "header" | "float" | "inline";
   className?: string;
@@ -41,8 +41,10 @@ export const ProfileAvatarLink = ({ initial, placement, className }: ProfileAvat
         "profile-avatar press-scale inline-flex size-11 shrink-0 items-center justify-center rounded-full",
         focusRing,
         placement !== "float" && "relative",
+        // Absolute, not fixed: it scrolls away with the page instead of floating over what scrolls
+        // under it (FIL-I60-7); the dock stays the way around.
         placement === "float" &&
-          "fixed right-[max(1rem,env(safe-area-inset-right))] top-[calc(env(safe-area-inset-top)+1.375rem)] z-[45] sm:hidden",
+          "absolute right-[max(1rem,env(safe-area-inset-right))] top-[calc(env(safe-area-inset-top)+1.375rem)] z-[45] sm:hidden",
         placement === "header" && "-my-1 ml-1",
         className,
       )}

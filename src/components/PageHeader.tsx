@@ -54,7 +54,7 @@ export const PageHeader = ({
   return (
     <div
       className={cn(
-        "flex justify-between gap-3 sm:gap-4",
+        "page-header flex justify-between gap-3 sm:gap-4",
         inlineActions ? "items-start" : "flex-wrap items-end",
       )}
     >

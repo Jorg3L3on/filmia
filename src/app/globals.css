@@ -8558,6 +8558,16 @@ html[data-que-ver-lite] .hoy-peek svg {
   .avatar-room {
     padding-right: 3.25rem;
   }
+
+  /* A page header's actions (Nueva lista, Filtros…) step left when the avatar is on the page. */
+  body:has([data-profile-avatar="float"]) .page-header {
+    padding-right: 3.25rem;
+  }
+
+  /* Hoy's ánimo rail bleeds to the screen edge; next to the avatar it stops at its row. */
+  .avatar-room .tonight-mood-rail {
+    margin-right: 0;
+  }
 }
 
 /* «Vi esto» lands here: `.nav-receive > :first-child` pulses the disc like a dock tab. */
@@ -9123,7 +9133,7 @@ html[data-que-ver-lite] .hoy-peek svg {
   align-items: center;
   gap: 0.25rem 0.75rem;
   margin-top: 0.375rem;
-  color: var(--fog);
+  color: rgb(240 242 244 / 0.78);
   font-size: 13px;
 }
 
@@ -9189,7 +9199,8 @@ html[data-que-ver-lite] .hoy-peek svg {
   min-height: 40px;
   border-radius: 9999px;
   padding: 0 0.8rem;
-  color: var(--fog);
+  /* Not --fog: over the brighter rooms it falls under 4.5:1 (FIL-I60-7). */
+  color: rgb(240 242 244 / 0.78);
   font-size: 13px;
   font-weight: 500;
 }
@@ -9238,7 +9249,7 @@ html[data-que-ver-lite] .hoy-peek svg {
   border-radius: 9999px;
   background: rgb(12 16 24 / 0.5);
   padding: 0 0.9rem;
-  color: var(--fog);
+  color: rgb(240 242 244 / 0.78);
   font-size: 13px;
 }
 
@@ -9308,7 +9319,7 @@ html[data-que-ver-lite] .hoy-peek svg {
 }
 
 .para-ti-action.is-quiet {
-  color: var(--fog);
+  color: rgb(240 242 244 / 0.78);
 }
 
 .para-ti-action.is-icon {
