@@ -14,20 +14,22 @@ describe("warm nav hrefs", () => {
       collectWarmNavHrefs("/watchlist", ["/titulos/a", "/titulos/a", "/watchlist"]),
       [
         "/listas",
-        "/",
         "/buscar",
         "/cine",
+        "/para-ti",
         "/perfil",
+        "/",
         "/titulos/a",
       ],
     );
   });
 
-  it("keeps the five app surfaces", () => {
+  it("keeps the five tabs and Perfil (FIL-I60-1)", () => {
     assert.deepEqual([...NAV_PREFETCH_HREFS], [
       "/",
-      "/listas",
+      "/para-ti",
       "/buscar",
+      "/listas",
       "/cine",
       "/perfil",
     ]);
@@ -90,8 +92,8 @@ describe("warm nav hrefs", () => {
   it("treats Quiero ver as part of the Listas tab (FIL-34)", () => {
     assert.deepEqual(prioritizeNavHrefs("/watchlist", ["/perfil", "/listas", "/"]), [
       "/listas",
-      "/",
       "/perfil",
+      "/",
     ]);
     assert.equal(collectWarmNavHrefs("/listas")[0], "/watchlist");
     assert.ok(!collectWarmNavHrefs("/watchlist").includes("/watchlist"));

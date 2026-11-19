@@ -1,8 +1,9 @@
 "use client";
 
-import { ViewTransition, useLayoutEffect, useRef } from "react";
+import { ViewTransition, useLayoutEffect, useRef, useState } from "react";
 import { posterTransitionName } from "@/lib/motion-ids";
-import { cssTimeMs, flipFrom, rememberPosterRect, takePosterReturn } from "@/lib/poster-flight";
+import { cn } from "@/lib/cn";
+import { cssTimeMs, flipFrom, posterFlightFor, rememberPosterRect, takePosterReturn } from "@/lib/poster-flight";
 
 /**
  * Back from a ficha (FIL-I46-2): a history traversal runs no view transition, so the poster
@@ -63,6 +64,9 @@ export const SharedPoster = ({
   share = true,
 }: SharedPosterProps) => {
   const ref = usePosterReturn(titleId, share);
+  // The image that just flew here (FIL-I60-6): painted under the poster until its own, often
+  // larger, image has loaded, so the hero never shows an empty block after the morph.
+  const [flight] = useState(() => (share ? posterFlightFor(titleId) : null));
   if (!share) {
     return <div className={className}>{children}</div>;
   }
@@ -70,7 +74,12 @@ export const SharedPoster = ({
   return (
     <ViewTransition name={posterTransitionName(titleId)} share="morph" default="none">
       {/* data-shared-poster: the tap that opens the ficha remembers this image (FIL-I46-2). */}
-      <div ref={ref} className={className} data-shared-poster={titleId}>
+      <div
+        ref={ref}
+        className={cn(className, flight && "has-flight rounded-poster bg-cover bg-center")}
+        style={flight ? { backgroundImage: `url("${flight}")` } : undefined}
+        data-shared-poster={titleId}
+      >
         {children}
       </div>
     </ViewTransition>

@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { ShimmerBlock } from "@/components/PageSkeletons";
 import { SharedPoster } from "@/components/SharedPoster";
-import { posterFlightFor } from "@/lib/poster-flight";
+import { posterFlightFor, previewPosterKey } from "@/lib/poster-flight";
 
 const posterBox = "aspect-[2/3] w-[42vw] max-w-[168px] rounded-poster sm:w-[280px] sm:max-w-none";
 
@@ -13,8 +13,15 @@ const posterBox = "aspect-[2/3] w-[42vw] max-w-[168px] rounded-poster sm:w-[280p
  * inside the same `poster-{id}` transition as the ficha. Without one (a cold load), the shimmer.
  */
 export const FichaLoadingPoster = ({ titleId }: { titleId?: string | null }) => {
-  const params = useParams<{ id?: string }>();
-  const id = titleId ?? (typeof params?.id === "string" ? params.id : null);
+  const params = useParams<{ id?: string; kind?: string; tmdbId?: string }>();
+  // An owned ficha (`/titulos/[id]`) or a preview (`/titulos/tmdb/[kind]/[tmdbId]`, FIL-I60-6).
+  const id =
+    titleId ??
+    (typeof params?.id === "string"
+      ? params.id
+      : typeof params?.kind === "string" && typeof params?.tmdbId === "string"
+        ? previewPosterKey(params.kind, params.tmdbId)
+        : null);
   const [src] = useState(() => posterFlightFor(id));
   if (!id || !src) {
     return <ShimmerBlock className={posterBox} />;

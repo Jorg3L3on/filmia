@@ -49,6 +49,19 @@ export const NavIcon = ({
     );
   }
 
+  if (name === "para-ti") {
+    // A spark with a smaller one beside it: something you did not know was there (FIL-I60-1).
+    return (
+      <svg {...common}>
+        <path
+          strokeLinejoin="round"
+          d="M10.5 4c.55 3.6 2.1 5.15 5.7 5.7-3.6.55-5.15 2.1-5.7 5.7-.55-3.6-2.1-5.15-5.7-5.7 3.6-.55 5.15-2.1 5.7-5.7Z"
+        />
+        <path strokeLinejoin="round" d="M17.25 14.5c.25 1.6.95 2.3 2.5 2.5-1.55.25-2.25.95-2.5 2.5-.25-1.55-.95-2.25-2.5-2.5 1.55-.2 2.25-.9 2.5-2.5Z" />
+      </svg>
+    );
+  }
+
   if (name === "search") {
     return (
       <svg {...common}>

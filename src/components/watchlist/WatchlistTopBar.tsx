@@ -87,7 +87,7 @@ export const WatchlistTopBar = ({
   disabled = false,
   onFilters,
 }: WatchlistTopBarProps) => (
-  <div className="flex items-center gap-2">
+  <div className="page-header flex items-center gap-2">
     <h1 className="flex min-w-0 flex-1 items-baseline gap-2 font-serif text-[1.75rem] leading-7 tracking-tight text-paper">
       <span className="truncate">Quiero ver</span>
       <WatchlistCount shown={shown} total={total} narrowed={narrowed} unknown={disabled} />

@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { TitleKind } from "@/db";
+import { discoverTmdbParams, type TmdbDiscoverOptions } from "@/lib/tmdb-discover-params";
 import {
   countRoles,
   parseFilmography,
@@ -471,30 +472,7 @@ export const searchTmdbMultiPage = async (query: string, page = 1): Promise<Tmdb
 export const searchTmdbMulti = async (query: string): Promise<TmdbCatalogResult[]> =>
   (await searchTmdbMultiPage(query)).results;
 
-export type TmdbDiscoverSort = "popularity.desc" | "vote_count.desc" | "vote_average.desc";
-
-export type TmdbDiscoverOptions = {
-  /** MOVIE (default) → /discover/movie, SERIES → /discover/tv. */
-  kind?: TitleKind;
-  /** `primary_release_year` for movies, `first_air_date_year` for series. */
-  year?: number;
-  /** Movies only: `primary_release_date.gte` / `.lte` years, inclusive (La tanda's epoch, FIL-I50-3). */
-  yearFrom?: number;
-  yearTo?: number;
-  sortBy?: TmdbDiscoverSort;
-  voteCountGte?: number;
-  /** Release-date region (ISO 3166-1), e.g. "MX". */
-  region?: string;
-  /** TMDB provider ids, OR-joined; needs `watchRegion`. */
-  withWatchProviders?: readonly number[];
-  watchRegion?: string;
-  watchMonetizationTypes?: "flatrate";
-  /** TMDB genre ids, AND-joined (a title must carry all of them). */
-  withGenres?: readonly number[];
-  /** TMDB genre ids to leave out, OR-joined (any of them excludes the title). */
-  withoutGenres?: readonly number[];
-  page?: number;
-};
+export { TMDB_TV_TYPE, discoverTmdbParams, type TmdbDiscoverOptions, type TmdbDiscoverSort } from "@/lib/tmdb-discover-params";
 
 export type TmdbDiscoverResult = TmdbCatalogResult & {
   voteAverage: number | null;
@@ -553,37 +531,7 @@ export const discoverTmdb = async (
   options: TmdbDiscoverOptions = {},
 ): Promise<TmdbDiscoverResult[]> => {
   const kind: TitleKind = options.kind ?? "MOVIE";
-  const params: Record<string, string> = {
-    sort_by: options.sortBy ?? "popularity.desc",
-    include_adult: "false",
-    page: String(options.page ?? 1),
-  };
-  if (options.year) {
-    params[kind === "SERIES" ? "first_air_date_year" : "primary_release_year"] = String(options.year);
-  }
-  if (kind === "MOVIE" && options.yearFrom != null) {
-    params["primary_release_date.gte"] = `${options.yearFrom}-01-01`;
-  }
-  if (kind === "MOVIE" && options.yearTo != null) {
-    params["primary_release_date.lte"] = `${options.yearTo}-12-31`;
-  }
-  if (options.voteCountGte != null) {
-    params["vote_count.gte"] = String(options.voteCountGte);
-  }
-  if (options.region) {
-    params.region = options.region;
-  }
-  if (options.withGenres && options.withGenres.length > 0) {
-    params.with_genres = [...options.withGenres].join(",");
-  }
-  if (options.withoutGenres && options.withoutGenres.length > 0) {
-    params.without_genres = [...options.withoutGenres].join("|");
-  }
-  if (options.withWatchProviders && options.withWatchProviders.length > 0) {
-    params.with_watch_providers = [...options.withWatchProviders].join("|");
-    params.watch_region = options.watchRegion ?? "MX";
-    params.with_watch_monetization_types = options.watchMonetizationTypes ?? "flatrate";
-  }
+  const params = discoverTmdbParams(options);
 
   const data = await tmdbFetch<{ results?: TmdbDiscoverItem[] }>(
     kind === "SERIES" ? "/discover/tv" : "/discover/movie",

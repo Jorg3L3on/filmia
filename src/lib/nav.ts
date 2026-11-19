@@ -1,5 +1,8 @@
 const pathOnly = (pathname: string) => pathname.split("?")[0] ?? pathname;
 
+/** Perfil is no tab since FIL-I60-1: it is the avatar at the top right, on phone and desktop. */
+export const PROFILE_HREF = "/perfil";
+
 /** Full-screen routes without header/dock: auth screens, the Bienvenida and public shares. */
 export const isAuthChromePath = (pathname: string) => {
   const path = pathOnly(pathname);
@@ -24,6 +27,18 @@ export const isImmersiveFichaPath = (pathname: string) =>
 export const isListasHubPath = (pathname: string) => {
   const path = pathOnly(pathname);
   return path === "/listas" || path.startsWith("/listas/");
+};
+
+/** Para ti (FIL-I60): discovery outside your lists. */
+export const isParaTiPath = (pathname: string) => {
+  const path = pathOnly(pathname);
+  return path === "/para-ti" || path.startsWith("/para-ti/");
+};
+
+/** Perfil and Tu diario: what the avatar lights since Perfil left the dock (FIL-I60-1). */
+export const isProfilePath = (pathname: string) => {
+  const path = pathOnly(pathname);
+  return path === "/perfil" || path.startsWith("/perfil/") || path === "/diario" || path.startsWith("/diario/");
 };
 
 export const isCinePath = (pathname: string) => {
@@ -71,12 +86,16 @@ export const isJuegoPlayPath = (pathname: string) =>
   (isJuegosPath(pathname) && pathOnly(pathname) !== "/extras") || pathOnly(pathname).startsWith("/reto/");
 
 /**
- * Bottom-nav active state: Cine on /cine/*; Listas on the hub and on Quiero ver (FIL-34);
- * Perfil on /perfil and Tu diario; Hoy on Extras.
+ * Bottom-nav active state: Para ti on /para-ti/*; Cine on /cine/*; Listas on the hub and on
+ * Quiero ver (FIL-34); Hoy on Extras. `/perfil` is the avatar's href (FIL-I60-1): it lights on
+ * /perfil and Tu diario.
  */
 export const isMobileNavCurrent = (href: string, pathname: string) => {
   if (href === "/") {
     return isCurrentPath("/", pathname) || isJuegosPath(pathname);
+  }
+  if (href === "/para-ti") {
+    return isParaTiPath(pathname);
   }
   if (href === "/cine") {
     return isCinePath(pathname);
@@ -84,21 +103,21 @@ export const isMobileNavCurrent = (href: string, pathname: string) => {
   if (href === "/listas") {
     return isListasHubPath(pathname) || isWatchlistPath(pathname);
   }
-  if (href === "/perfil") {
-    return isCurrentPath("/perfil", pathname) || isDiaryPath(pathname);
+  if (href === PROFILE_HREF) {
+    return isProfilePath(pathname);
   }
   return isCurrentPath(href, pathname);
 };
 
 export const desktopNavItems = [
   { href: "/", label: "Hoy" },
-  { href: "/listas", label: "Listas" },
+  { href: "/para-ti", label: "Para ti" },
   { href: "/buscar", label: "Buscar" },
+  { href: "/listas", label: "Listas" },
   { href: "/cine", label: "Cine" },
-  { href: "/perfil", label: "Perfil" },
 ] as const;
 
-/** Desktop header tabs light up like the dock: Cine on /cine/*, Listas on Quiero ver, Perfil on Tu diario. */
+/** Desktop header tabs light up like the dock: Cine on /cine/*, Listas on Quiero ver. */
 export const isDesktopNavCurrent = (href: string, pathname: string) => isMobileNavCurrent(href, pathname);
 
 /**
@@ -108,13 +127,34 @@ export const isDesktopNavCurrent = (href: string, pathname: string) => isMobileN
 export const navTabMatcher = (originTab: string | null) => (href: string, pathname: string) =>
   isTitlePath(pathname) ? href === (originTab ?? "/") : isMobileNavCurrent(href, pathname);
 
-/** Bottom tab bar: four tabs around the center Buscar disc. */
+/** Bottom tab bar: four tabs around the center Buscar disc (Hoy · Para ti · [Buscar] · Listas · Cine). */
 export const mobileNavItems = [
   { href: "/", label: "Hoy", icon: "today" },
+  { href: "/para-ti", label: "Para ti", icon: "para-ti" },
   { href: "/listas", label: "Listas", icon: "lists" },
   { href: "/cine", label: "Cine", icon: "ticket" },
-  { href: "/perfil", label: "Perfil", icon: "profile" },
 ] as const;
+
+/** Perfil as an origin (Buscar's back disc, a ficha opened from Perfil): never drawn as a dock tab. */
+export const profileNavOrigin = { href: PROFILE_HREF, label: "Perfil", icon: "profile" } as const;
+
+/**
+ * Where the floating avatar sits on a phone (FIL-I60-1): the top pages of each tab, Perfil and
+ * Tu diario. Not on fichas, inner screens with a back disc, games, auth or Bienvenida. Buscar
+ * carries it in its top row instead (see BottomNav).
+ */
+export const showsFloatingAvatar = (pathname: string) => {
+  const path = pathOnly(pathname).replace(/\/$/, "") || "/";
+  return (
+    path === "/" ||
+    path === "/para-ti" ||
+    path === "/listas" ||
+    path === "/watchlist" ||
+    path === "/cine" ||
+    path === "/perfil" ||
+    path === "/diario"
+  );
+};
 
 /** Center glass disc of the dock: Buscar is how titles get into Filmia. */
 export const mobileNavSearch = { href: "/buscar", label: "Buscar", icon: "search" } as const;
@@ -122,9 +162,10 @@ export const mobileNavSearch = { href: "/buscar", label: "Buscar", icon: "search
 /** React transition type of the dock's own taps: the dock ⇄ Buscar field morph. */
 export const DOCK_SEARCH_TRANSITION = "dock-search";
 
-/** Grid column the Buscar disc occupies (between Listas and Cine). */
+/** Grid column the Buscar disc occupies (between Para ti and Listas). */
 export const mobileNavSearchSlot = 2;
 
 export type MobileNavIcon =
   | (typeof mobileNavItems)[number]["icon"]
-  | typeof mobileNavSearch.icon;
+  | typeof mobileNavSearch.icon
+  | typeof profileNavOrigin.icon;

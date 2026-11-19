@@ -34,6 +34,8 @@ export const revalidateSearchAddSurfaces = (
   revalidateTitlePages(titleId);
   if (opts.watchlist || opts.watched) {
     revalidatePath("/watchlist");
+    // A saved film leaves Para ti's shelves (FIL-I60-6).
+    revalidatePath("/para-ti");
   }
   if (opts.watched) {
     revalidatePath("/");

@@ -8,10 +8,12 @@ import {
   isCurrentPath,
   isListasHubPath,
   isMobileNavCurrent,
+  isParaTiPath,
   mobileNavItems,
   mobileNavSearch,
   mobileNavSearchSlot,
   navTabMatcher,
+  showsFloatingAvatar,
 } from "./nav";
 
 describe("isCurrentPath nested routes", () => {
@@ -55,12 +57,78 @@ describe("isAuthChromePath", () => {
   });
 });
 
+describe("dock order (FIL-I60-1)", () => {
+  it("is Hoy · Para ti · [Buscar] · Listas · Cine on the phone; Perfil is no tab", () => {
+    assert.deepEqual(
+      mobileNavItems.map((item) => item.label),
+      ["Hoy", "Para ti", "Listas", "Cine"],
+    );
+    assert.equal(mobileNavSearchSlot, 2);
+    assert.equal(mobileNavItems.some((item) => (item.href as string) === "/perfil"), false);
+  });
+
+  it("is Hoy · Para ti · Buscar · Listas · Cine on desktop; Perfil is no tab", () => {
+    assert.deepEqual(
+      desktopNavItems.map((item) => item.label),
+      ["Hoy", "Para ti", "Buscar", "Listas", "Cine"],
+    );
+    assert.equal(desktopNavItems.some((item) => (item.href as string) === "/perfil"), false);
+  });
+
+  it("lights Para ti on /para-ti and a ficha opened from it", () => {
+    assert.equal(isParaTiPath("/para-ti"), true);
+    assert.equal(isParaTiPath("/para-ti?antojo=miedo"), true);
+    assert.equal(isParaTiPath("/para-tiempo"), false);
+    assert.equal(isMobileNavCurrent("/para-ti", "/para-ti?antojo=reir"), true);
+    assert.equal(isMobileNavCurrent("/para-ti", "/"), false);
+    assert.equal(isMobileNavCurrent("/", "/para-ti"), false);
+    assert.equal(navTabMatcher("/para-ti")("/para-ti", "/titulos/tmdb/pelicula/1"), true);
+    assert.equal(navTabMatcher("/para-ti")("/", "/titulos/tmdb/pelicula/1"), false);
+  });
+
+  it("a ficha opened from Perfil lights no tab, only the avatar", () => {
+    const match = navTabMatcher("/perfil");
+    for (const item of mobileNavItems) {
+      assert.equal(match(item.href, "/titulos/abc"), false, item.href);
+    }
+    assert.equal(match("/perfil", "/titulos/abc"), true);
+  });
+
+  it("the avatar lights on Perfil and Tu diario, where no tab is lit", () => {
+    for (const path of ["/perfil", "/perfil/conexiones", "/diario", "/diario?view=grid"]) {
+      assert.equal(isMobileNavCurrent("/perfil", path), true, path);
+      assert.equal(mobileNavItems.some((item) => isMobileNavCurrent(item.href, path)), false, path);
+    }
+  });
+
+  it("floats the avatar on the top pages only", () => {
+    for (const path of ["/", "/para-ti", "/para-ti?antojo=miedo", "/listas", "/watchlist", "/cine", "/perfil", "/diario"]) {
+      assert.equal(showsFloatingAvatar(path), true, path);
+    }
+    for (const path of [
+      "/titulos/abc",
+      "/titulos/tmdb/serie/1",
+      "/listas/abc",
+      "/cine/cartelera",
+      "/extras/tanda",
+      "/reto/x",
+      "/login",
+      "/registro",
+      "/bienvenida",
+      "/buscar",
+      "/perfil/conexiones",
+    ]) {
+      assert.equal(showsFloatingAvatar(path), false, path);
+    }
+  });
+});
+
 describe("mobile Listas tab", () => {
-  it("is the second tab and lights on /listas/* and Quiero ver (FIL-34)", () => {
+  it("is the third tab and lights on /listas/* and Quiero ver (FIL-34)", () => {
     assert.equal(isListasHubPath("/listas/abc"), true);
     assert.equal(isListasHubPath("/tags"), false);
-    assert.equal(mobileNavItems[1]?.href, "/listas");
-    assert.equal(mobileNavItems[1]?.icon, "lists");
+    assert.equal(mobileNavItems[2]?.href, "/listas");
+    assert.equal(mobileNavItems[2]?.icon, "lists");
     for (const path of ["/listas", "/listas/abc", "/watchlist", "/watchlist?orden=fecha"]) {
       assert.equal(isMobileNavCurrent("/listas", path), true, path);
       assert.equal(isMobileNavCurrent("/perfil", path), false, path);
@@ -74,12 +142,8 @@ describe("mobile Listas tab", () => {
 });
 
 describe("mobile Cine tab", () => {
-  it("sits after the Buscar disc and lights on /cine/*", () => {
-    assert.deepEqual(
-      mobileNavItems.map((item) => item.label),
-      ["Hoy", "Listas", "Cine", "Perfil"],
-    );
-    assert.equal(mobileNavItems[mobileNavSearchSlot]?.href, "/cine");
+  it("is the last tab and lights on /cine/*", () => {
+    assert.equal(mobileNavItems[mobileNavItems.length - 1]?.href, "/cine");
     assert.equal(isMobileNavCurrent("/cine", "/cine"), true);
     assert.equal(isMobileNavCurrent("/cine", "/cine/cartelera"), true);
     assert.equal(isMobileNavCurrent("/cine", "/cinema"), false);
@@ -88,14 +152,7 @@ describe("mobile Cine tab", () => {
 });
 
 describe("desktop header nav", () => {
-  it("ends with a Perfil tab", () => {
-    assert.deepEqual(
-      desktopNavItems.map((item) => item.label),
-      ["Hoy", "Listas", "Buscar", "Cine", "Perfil"],
-    );
-  });
-
-  it("lights Perfil on /perfil and on Tu diario", () => {
+  it("lights the avatar's /perfil on /perfil and on Tu diario", () => {
     assert.equal(isDesktopNavCurrent("/perfil", "/perfil"), true);
     assert.equal(isDesktopNavCurrent("/perfil", "/diario"), true);
     assert.equal(isDesktopNavCurrent("/perfil", "/diario?view=grid"), true);

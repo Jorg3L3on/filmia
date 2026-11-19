@@ -48,7 +48,8 @@ const JuegosButton = ({ fresh }: { fresh: boolean }) => (
 /** «Ánimo» over the deck (FIL-I31-2): one tap narrows Hoy. */
 export const TonightFilters = ({ moodId, onMood, juegos = null, trailing = null, className }: TonightFiltersProps) => (
   <div className={cn("flex flex-col gap-1", className)}>
-    <div className="flex items-center gap-2">
+    {/* `avatar-room`: the rail ends before Perfil's avatar on a phone (FIL-I60-1). */}
+    <div className="avatar-room flex items-center gap-2">
       {juegos ? (
         <>
           <JuegosButton fresh={juegos.fresh} />

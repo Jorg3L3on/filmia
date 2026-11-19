@@ -8511,3 +8511,833 @@ html[data-que-ver-lite] .hoy-peek svg {
     animation: juego-fade var(--duration-reduced) linear both;
   }
 }
+
+/*
+ * Perfil as an avatar (FIL-I60-1): the initial on the app icon's gradient. A hairline and a
+ * soft shadow keep it readable over any poster (it floats over Hoy's deck); the current page
+ * draws an accent ring outside it, like a lit tab.
+ */
+.profile-avatar-disc {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #ff7a45 0%, #ff5c6a 55%, #d8468f 100%);
+  color: #fff;
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  box-shadow:
+    0 6px 18px -6px rgb(0 0 0 / 0.65),
+    inset 0 0 0 1px rgb(255 255 255 / 0.22);
+  transition: box-shadow var(--duration-hover) var(--ease-out);
+}
+
+.profile-avatar:hover .profile-avatar-disc {
+  box-shadow:
+    0 6px 18px -6px rgb(0 0 0 / 0.65),
+    inset 0 0 0 1px rgb(255 255 255 / 0.4);
+}
+
+.profile-avatar-disc.is-current {
+  box-shadow:
+    0 0 0 2px var(--canvas),
+    0 0 0 3.5px var(--color-accent),
+    0 6px 18px -6px rgb(0 0 0 / 0.65);
+}
+
+/*
+ * Room for the floating avatar on a phone: a page's first row that runs to the right edge
+ * (Hoy's ánimo rail, a header's actions) ends before it. 44 px target + 8 px gap.
+ */
+@media (max-width: 39.999rem) {
+  .avatar-room {
+    padding-right: 3.25rem;
+  }
+
+  /* A page header's actions (Nueva lista, Filtros…) step left when the avatar is on the page. */
+  body:has([data-profile-avatar="float"]) .page-header {
+    padding-right: 3.25rem;
+  }
+
+  /* Hoy's ánimo rail bleeds to the screen edge; next to the avatar it stops at its row. */
+  .avatar-room .tonight-mood-rail {
+    margin-right: 0;
+  }
+}
+
+/* «Vi esto» lands here: `.nav-receive > :first-child` pulses the disc like a dock tab. */
+
+/* ── Para ti (FIL-I60-4) ──────────────────────────────────────────────────────────────
+ * Each antojo is a room: a light painted behind the page (`.para-ti-light`), cross-faded by
+ * opacity. Only the active room's light may loop, never with reduced motion. Gradients,
+ * opacity and transforms only. Durations are the app's tokens.
+ */
+.para-ti {
+  position: relative;
+}
+
+/* The body paints its own background over a negative z-index: the room sits at 0, the page above it. */
+.para-ti > :not(.para-ti-backdrop) {
+  position: relative;
+  z-index: 1;
+}
+
+.para-ti-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.para-ti-light {
+  position: absolute;
+  inset: -12%;
+  opacity: 0;
+  background:
+    radial-gradient(95% 55% at 50% 0%, rgb(var(--room-rgb) / 0.5), transparent 74%),
+    radial-gradient(70% 45% at 100% 100%, rgb(var(--room-rgb-2) / 0.22), transparent 72%),
+    linear-gradient(to bottom, rgb(var(--room-rgb) / 0.08), transparent 70%);
+  transition: opacity var(--duration-sheet) var(--ease-out);
+}
+
+.para-ti-light[data-active] {
+  opacity: 1;
+}
+
+.para-ti-light[data-light="flicker"] {
+  background:
+    radial-gradient(90% 50% at 50% 0%, rgb(var(--room-rgb) / 0.62), transparent 72%),
+    radial-gradient(60% 45% at 0% 100%, rgb(var(--room-rgb) / 0.22), transparent 70%),
+    linear-gradient(to bottom, rgb(0 0 0 / 0.2), rgb(0 0 0 / 0.55));
+}
+
+.para-ti-light[data-light="strobe"] {
+  background:
+    linear-gradient(118deg, transparent 34%, rgb(var(--room-rgb) / 0.22) 46%, transparent 47%, transparent 52%, rgb(var(--room-rgb-2) / 0.16) 53%, transparent 64%),
+    radial-gradient(95% 55% at 50% 0%, rgb(var(--room-rgb) / 0.55), transparent 70%),
+    radial-gradient(70% 45% at 100% 100%, rgb(var(--room-rgb-2) / 0.28), transparent 70%);
+}
+
+.para-ti-light[data-light="crisp"] {
+  background:
+    radial-gradient(70% 38% at 50% 0%, rgb(var(--room-rgb) / 0.6), transparent 66%),
+    radial-gradient(60% 40% at 0% 100%, rgb(var(--room-rgb-2) / 0.18), transparent 70%),
+    linear-gradient(to bottom, rgb(var(--room-rgb) / 0.1), transparent 60%);
+}
+
+.para-ti-light[data-light="glint"] {
+  background:
+    radial-gradient(80% 45% at 50% 0%, rgb(var(--room-rgb) / 0.34), transparent 72%),
+    radial-gradient(40% 30% at 85% 30%, rgb(var(--room-rgb) / 0.16), transparent 70%),
+    linear-gradient(to bottom, rgb(0 0 0 / 0.4), rgb(0 0 0 / 0.2));
+}
+
+.para-ti-light[data-light="glint"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 44%, rgb(var(--room-rgb) / 0.28) 50%, transparent 56%);
+  transform: translateX(-60%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .para-ti-light[data-active][data-light="flicker"] {
+    animation: para-ti-flicker var(--duration-ambient-fast) steps(1, end) infinite;
+  }
+
+  .para-ti-light[data-active][data-light="warm"],
+  .para-ti-light[data-active][data-light="cool"] {
+    animation: para-ti-breathe var(--duration-ambient-slow) var(--ease-cut) infinite alternate;
+  }
+
+  .para-ti-light[data-active][data-light="quick"] {
+    animation: para-ti-breathe var(--duration-ambient-fast) var(--ease-cut) infinite alternate;
+  }
+
+  .para-ti-light[data-active][data-light="glint"]::after {
+    animation: para-ti-glint var(--duration-ambient) var(--ease-cut) infinite;
+  }
+}
+
+@keyframes para-ti-flicker {
+  0%, 100% { opacity: 1; }
+  41% { opacity: 0.55; }
+  42% { opacity: 1; }
+  44% { opacity: 0.7; }
+  45% { opacity: 1; }
+  78% { opacity: 0.8; }
+  79% { opacity: 1; }
+}
+
+@keyframes para-ti-breathe {
+  from { transform: translateY(0) scale(1); }
+  to { transform: translateY(2%) scale(1.04); }
+}
+
+@keyframes para-ti-glint {
+  0%, 55% { transform: translateX(-60%); }
+  100% { transform: translateX(60%); }
+}
+
+.para-ti-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  /* Mixed toward paper: a dark room (Miedo) would otherwise drop under 4.5:1. */
+  color: color-mix(in oklab, rgb(var(--room-rgb)) 55%, var(--paper));
+}
+
+.para-ti-question {
+  margin-top: 0.35rem;
+  font-family: var(--font-serif);
+  font-size: clamp(2.375rem, 10vw, 4.75rem);
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+  color: var(--paper);
+  text-wrap: balance;
+}
+
+.para-ti-words {
+  margin-top: 1.25rem;
+}
+
+.para-ti-word-list {
+  display: grid;
+  gap: 0.125rem 2rem;
+}
+
+@media (min-width: 640px) {
+  .para-ti-word-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.para-ti-word {
+  display: flex;
+  min-height: 44px;
+  align-items: baseline;
+  gap: 0.6rem;
+  border-radius: 0.5rem;
+  color: var(--paper);
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 9.4vw, 3.5rem);
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+  transition: color var(--duration-hover) var(--ease-out), text-shadow var(--duration-hover) var(--ease-out);
+}
+
+.para-ti-word-list li:nth-child(even) .para-ti-word {
+  font-style: italic;
+  font-weight: 400;
+}
+
+.para-ti-word-index {
+  flex-shrink: 0;
+  transform: translateY(-0.9em);
+  color: color-mix(in oklab, rgb(var(--room-rgb)) 55%, var(--paper));
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+.para-ti-word:hover,
+.para-ti-word:focus-visible {
+  color: color-mix(in oklab, rgb(var(--room-rgb)) 70%, var(--paper));
+  text-shadow: 0 0 28px rgb(var(--room-rgb) / 0.45);
+}
+
+.para-ti-antojo-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.para-ti-antojo-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.5rem, 12vw, 5rem);
+  font-weight: 600;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  color: var(--paper);
+  text-shadow: 0 0 36px rgb(var(--room-rgb) / 0.4);
+}
+
+.para-ti[data-antojo="joya"] .para-ti-antojo-title,
+.para-ti[data-antojo="llorar"] .para-ti-antojo-title,
+.para-ti[data-antojo="pensar"] .para-ti-antojo-title {
+  font-style: italic;
+  font-weight: 400;
+}
+
+.para-ti-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .para-ti-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1.5rem 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .para-ti-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.para-ti-notice {
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.875rem;
+  background: rgb(12 16 24 / 0.55);
+  padding: 0.625rem 0.875rem;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--fog);
+}
+
+.para-ti-empty {
+  margin-top: 2.5rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 1.25rem;
+  background: rgb(12 16 24 / 0.5);
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+}
+
+.para-ti-cta {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  border-radius: 9999px;
+  background: rgb(var(--room-rgb));
+  padding: 0 1.125rem;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.para-ti-cta.is-ghost {
+  border: 1px solid rgb(255 255 255 / 0.18);
+  background: transparent;
+  color: var(--paper);
+}
+
+/* Entrances: about a second for the question and the words, once per view; per antojo, its own. */
+@media (prefers-reduced-motion: no-preference) {
+  .para-ti-hero,
+  .para-ti-word-list li {
+    animation: para-ti-rise var(--duration-stagger) var(--ease-out) both;
+  }
+
+  .para-ti-word-list li {
+    animation-delay: calc(var(--cascade-1) + var(--cascade-step) * var(--i));
+  }
+
+  .para-ti[data-entrance] .para-ti-antojo-head,
+  .para-ti[data-entrance] .para-ti-grid {
+    animation: para-ti-rise var(--duration-stagger) var(--ease-out) both;
+  }
+
+  .para-ti[data-entrance] .para-ti-grid {
+    animation-delay: var(--cascade-2);
+  }
+
+  .para-ti[data-entrance="bounce"] .para-ti-antojo-head,
+  .para-ti[data-entrance="bounce"] .para-ti-grid {
+    animation: para-ti-pop var(--duration-pop) var(--spring) both;
+  }
+
+  .para-ti[data-entrance="slow"] .para-ti-antojo-head,
+  .para-ti[data-entrance="slow"] .para-ti-grid {
+    animation: para-ti-fade var(--duration-sweep) var(--ease-out) both;
+  }
+
+  .para-ti[data-entrance="fast"] .para-ti-antojo-head,
+  .para-ti[data-entrance="fast"] .para-ti-grid,
+  .para-ti[data-entrance="quick"] .para-ti-antojo-head,
+  .para-ti[data-entrance="quick"] .para-ti-grid {
+    animation: para-ti-dash var(--duration-enter) var(--ease-out) both;
+  }
+
+  .para-ti[data-entrance="flicker"] .para-ti-antojo-head {
+    animation: para-ti-flicker-in var(--duration-cut) steps(1, end) both;
+  }
+}
+
+@keyframes para-ti-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes para-ti-pop {
+  from { opacity: 0; transform: translateY(18px) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes para-ti-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes para-ti-dash {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes para-ti-flicker-in {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  30% { opacity: 0.2; }
+  45% { opacity: 1; }
+  55% { opacity: 0.4; }
+  70%, 100% { opacity: 1; }
+}
+
+.para-ti-shelves {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  margin-top: 2.5rem;
+  padding-bottom: 1rem;
+}
+
+/* ── Para ti · El estante (FIL-I60-5) ─────────────────────────────────────────────────
+ * Each title is a box in its slot: the spine faces you, the cover is its side. JS poses the
+ * boxes from the scroll position (transform + opacity); CSS only builds them.
+ */
+.para-ti-shelf {
+  margin-top: 0.75rem;
+}
+
+.para-ti-track {
+  display: flex;
+  align-items: center;
+  height: calc(var(--shelf-h) + 4rem);
+  margin-inline: -1rem;
+  /* The track bleeds 1 rem past the page on each side; % is of the page column. */
+  padding-inline: calc(50% + 1rem - var(--slot) / 2);
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  outline: none;
+}
+
+.para-ti-track::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .para-ti-track {
+    margin-inline: 0;
+    padding-inline: calc(50% - var(--slot) / 2);
+  }
+}
+
+.para-ti-slot {
+  position: relative;
+  flex: 0 0 var(--slot);
+  height: var(--shelf-h);
+  scroll-snap-align: center;
+  pointer-events: none;
+}
+
+.para-ti-box-wrap,
+.para-ti-mover,
+.para-ti-item {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transform-style: preserve-3d;
+  /* Hit-testing follows what you see: only the faces take taps, which bubble to the title's link. */
+  pointer-events: none;
+}
+
+.para-ti-spine,
+.para-ti-flat,
+.para-ti-slot[data-center] .para-ti-cover {
+  pointer-events: auto;
+}
+
+.para-ti-track {
+  cursor: default;
+}
+
+.para-ti-item {
+  border-radius: 6px;
+}
+
+.para-ti-box {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+/* The pose is written here every frame. */
+.para-ti-box-wrap {
+  will-change: transform;
+}
+
+.para-ti-face {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.para-ti-spine {
+  left: 0;
+  width: var(--slot);
+  overflow: hidden;
+  border-radius: 3px;
+  background:
+    linear-gradient(90deg, rgb(255 255 255 / 0.2) 0, rgb(255 255 255 / 0) 3px, rgb(0 0 0 / 0) calc(100% - 5px), rgb(0 0 0 / 0.5) 100%),
+    color-mix(in srgb, rgb(var(--ambient)) 58%, #07090b);
+  box-shadow: 0 14px 22px -12px rgb(0 0 0 / 0.75);
+  transform: translateZ(calc(var(--depth) / 2));
+}
+
+.para-ti-spine-sliver {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 24%;
+  background-position: center top;
+  background-size: cover;
+}
+
+.para-ti-spine-sliver::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgb(0 0 0 / 0) 35%, color-mix(in srgb, rgb(var(--ambient)) 58%, #07090b));
+}
+
+.para-ti-spine-title {
+  position: absolute;
+  top: calc(24% + 0.5rem);
+  bottom: 1.75rem;
+  left: 50%;
+  max-height: calc(76% - 2.25rem);
+  overflow: hidden;
+  transform: translateX(-50%);
+  writing-mode: vertical-rl;
+  color: var(--paper);
+  font-family: var(--font-serif);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.12;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
+}
+
+.para-ti-spine-kind {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  writing-mode: vertical-rl;
+  color: rgb(255 255 255 / 0.7);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 640px) {
+  .para-ti-spine-title {
+    font-size: 15px;
+  }
+
+  .para-ti-spine-kind {
+    font-size: 9px;
+  }
+}
+
+.para-ti-cover {
+  left: calc((var(--slot) - var(--depth)) / 2);
+  width: var(--depth);
+  overflow: hidden;
+  border-radius: 6px;
+  background: color-mix(in srgb, rgb(var(--ambient)) 58%, #07090b);
+  box-shadow:
+    0 30px 60px -20px rgb(0 0 0 / 0.85),
+    0 0 0 1px rgb(255 255 255 / 0.08),
+    0 0 60px -10px rgb(var(--room-rgb) / 0.35);
+  transform: rotateY(90deg) translateZ(calc(var(--slot) / 2));
+}
+
+.para-ti-cover-img,
+.para-ti-cover-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.para-ti-track-skeleton {
+  display: flex;
+  height: calc(var(--shelf-h, 258px) + 4rem);
+  align-items: center;
+  justify-content: center;
+  --depth: 172px;
+}
+
+.para-ti-track-skeleton > span {
+  height: 258px;
+}
+
+@media (min-width: 640px) {
+  .para-ti-track-skeleton {
+    --depth: 236px;
+  }
+
+  .para-ti-track-skeleton > span {
+    height: 354px;
+  }
+}
+
+.para-ti-center-row {
+  display: flow-root;
+  min-height: 9.5rem;
+}
+
+.para-ti-card-title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--paper);
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.para-ti-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  margin-top: 0.375rem;
+  color: rgb(240 242 244 / 0.78);
+  font-size: 13px;
+}
+
+.para-ti-score b {
+  color: var(--imdb);
+  font-weight: 700;
+}
+
+.para-ti-card-reason {
+  color: var(--mist);
+  font-size: 12px;
+}
+
+.para-ti-surprise {
+  float: right;
+  margin: 0 0 0.5rem 0.75rem;
+  display: inline-flex;
+  min-height: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgb(var(--room-rgb) / 0.45);
+  border-radius: 9999px;
+  background: rgb(var(--room-rgb) / 0.12);
+  padding: 0 0.95rem;
+  color: var(--paper);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.para-ti-surprise:disabled {
+  opacity: 0.5;
+}
+
+.para-ti-filters {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem -1rem 0;
+  padding: 0 1rem 0.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  transition: opacity var(--duration-hover) var(--ease-out);
+}
+
+.para-ti-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.para-ti-filters[data-pending] {
+  opacity: 0.6;
+}
+
+.para-ti-segment {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 9999px;
+  background: rgb(12 16 24 / 0.5);
+  padding: 2px;
+}
+
+.para-ti-segment-item {
+  min-height: 40px;
+  border-radius: 9999px;
+  padding: 0 0.8rem;
+  /* Not --fog: over the brighter rooms it falls under 4.5:1 (FIL-I60-7). */
+  color: rgb(240 242 244 / 0.78);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.para-ti-segment-item[aria-checked="true"] {
+  background: rgb(255 255 255 / 0.14);
+  color: var(--paper);
+}
+
+.para-ti-select {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.para-ti-select select {
+  min-height: 44px;
+  appearance: none;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 9999px;
+  background: rgb(12 16 24 / 0.5);
+  padding: 0 2rem 0 0.9rem;
+  color: var(--paper);
+  font-size: 13px;
+}
+
+.para-ti-select::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0.85rem;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--fog);
+  border-bottom: 1.5px solid var(--fog);
+  pointer-events: none;
+  transform: translateY(-70%) rotate(45deg);
+}
+
+.para-ti-toggle {
+  display: inline-flex;
+  min-height: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 9999px;
+  background: rgb(12 16 24 / 0.5);
+  padding: 0 0.9rem;
+  color: rgb(240 242 244 / 0.78);
+  font-size: 13px;
+}
+
+.para-ti-toggle-dot {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid currentColor;
+  border-radius: 9999px;
+}
+
+.para-ti-toggle[aria-pressed="true"] {
+  color: var(--paper);
+}
+
+.para-ti-toggle[aria-pressed="true"] .para-ti-toggle-dot {
+  border-color: rgb(var(--room-rgb));
+  background: rgb(var(--room-rgb));
+  box-shadow: 0 0 10px rgb(var(--room-rgb) / 0.6);
+}
+
+/* Reduced motion: a flat poster rail on the same snap. */
+.para-ti-flat {
+  position: absolute;
+  inset: 0 6px;
+  display: block;
+}
+
+.para-ti-shelf[data-reduced] [data-center] .para-ti-flat {
+  border-radius: 8px;
+  outline: 2px solid rgb(var(--room-rgb));
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .para-ti-card {
+    animation: para-ti-fade var(--duration-enter) var(--ease-out) both;
+  }
+}
+
+/* Para ti · actions on the centred title (FIL-I60-6). */
+.para-ti-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.875rem;
+}
+
+.para-ti-action {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 9999px;
+  background: rgb(12 16 24 / 0.55);
+  padding: 0 0.9rem;
+  color: var(--paper);
+  font-size: 13px;
+  font-weight: 600;
+  transition: opacity var(--duration-hover) var(--ease-out);
+}
+
+.para-ti-action.is-primary {
+  border-color: transparent;
+  background: rgb(var(--room-rgb));
+  color: var(--ink);
+}
+
+.para-ti-action.is-quiet {
+  color: rgb(240 242 244 / 0.78);
+}
+
+.para-ti-action.is-icon {
+  width: 44px;
+  justify-content: center;
+  padding: 0;
+}
+
+.para-ti-actions {
+  clear: both;
+}
+
+.para-ti-action:disabled {
+  opacity: 0.55;
+}
+
+/* A poster that just flew in shows that image until its own loads: its frame must not hide it (FIL-I60-6). */
+[data-shared-poster].has-flight > *,
+[data-shared-poster].has-flight > * > * {
+  background-color: transparent;
+}

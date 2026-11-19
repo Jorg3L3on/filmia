@@ -8,6 +8,7 @@ import { useNavTabMatch } from "@/components/useNavTabMatch";
 import { BottomNavShell } from "@/components/BottomNavShell";
 import { DockSearchField } from "@/components/DockSearchField";
 import { NavIcon } from "@/components/NavIcon";
+import { ProfileAvatarLink } from "@/components/profile/ProfileAvatarLink";
 import { useHoyNovedad } from "@/components/tonight/act-two/useHoyNovedad";
 import { cn } from "@/lib/cn";
 import { dockSearch, readLastDockTab, writeLastDockTab } from "@/lib/dock-search";
@@ -15,9 +16,12 @@ import {
   DOCK_SEARCH_TRANSITION,
   isJuegoPlayPath,
   isMobileNavCurrent,
+  isProfilePath,
   mobileNavItems,
   mobileNavSearch,
   mobileNavSearchSlot,
+  profileNavOrigin,
+  showsFloatingAvatar,
 } from "@/lib/nav";
 import { dockStretchScale } from "@/lib/motion-style";
 import { focusRing, glassIconClass, glassPillClass } from "@/lib/ui";
@@ -49,8 +53,14 @@ export const dockGlassClass =
  * the morph's first frame already shows the right icon; sessionStorage only
  * covers a reload straight into /buscar.
  */
-const useOriginTab = (pathname: string, searchMode: boolean) => {
-  const current = mobileNavItems.find((item) => isMobileNavCurrent(item.href, pathname));
+/** Tabs plus Perfil (the avatar): Perfil is an origin too, so a ficha opened from it lights no tab. */
+const originItems = [...mobileNavItems, profileNavOrigin];
+type OriginItem = (typeof originItems)[number];
+
+const useOriginTab = (pathname: string, searchMode: boolean): OriginItem => {
+  const current: OriginItem | undefined = isProfilePath(pathname)
+    ? profileNavOrigin
+    : mobileNavItems.find((item) => isMobileNavCurrent(item.href, pathname));
   const [lastTab, setLastTab] = useState<string | null>(null);
   if (current && current.href !== lastTab) {
     setLastTab(current.href);
@@ -65,7 +75,7 @@ const useOriginTab = (pathname: string, searchMode: boolean) => {
   // Server snapshot null, so hydration matches; the stored tab shows right after.
   const storedTab = useSyncExternalStore(subscribeNoop, readLastDockTab, noTab);
   const href = current?.href ?? lastTab ?? (searchMode ? storedTab : null);
-  return mobileNavItems.find((item) => item.href === href) ?? mobileNavItems[0];
+  return originItems.find((item) => item.href === href) ?? mobileNavItems[0];
 };
 
 /**
@@ -75,7 +85,7 @@ const useOriginTab = (pathname: string, searchMode: boolean) => {
  * field, which moves to the top of the screen under the header, where people
  * expect a search box (it used to ride at the bottom, above the keyboard).
  */
-export const BottomNav = () => {
+export const BottomNav = ({ initial = null }: { initial?: string | null }) => {
   const pathname = usePathname();
   const day = useTodayDay();
   const searchMode = isMobileNavCurrent(mobileNavSearch.href, pathname);
@@ -99,14 +109,19 @@ export const BottomNav = () => {
   if (searchMode) {
     return (
       <>
-        <SearchDock origin={origin} day={day} />
+        <SearchDock origin={origin} day={day} initial={initial} />
         {/* The person view hides Buscar's row on phones and keeps the tabs at the bottom (FIL-I44-9). */}
         <TabDock day={day} matchTab={matchTab} activeColumn={null} novedad={novedad} persona />
       </>
     );
   }
 
-  return <TabDock day={day} matchTab={matchTab} activeColumn={activeColumn} novedad={novedad} />;
+  return (
+    <>
+      {showsFloatingAvatar(pathname) ? <ProfileAvatarLink initial={initial} placement="float" /> : null}
+      <TabDock day={day} matchTab={matchTab} activeColumn={activeColumn} novedad={novedad} />
+    </>
+  );
 };
 
 type TabDockProps = {
@@ -246,7 +261,7 @@ const TabDock = ({ day, matchTab, activeColumn, persona = false, novedad = false
  * you came from, or, while a person opened from a search is on screen, the
  * one «atrás» to those results (FIL-I22-6).
  */
-const SearchDock = ({ origin, day }: { origin: (typeof mobileNavItems)[number]; day: number | null }) => {
+const SearchDock = ({ origin, day, initial }: { origin: OriginItem; day: number | null; initial: string | null }) => {
   const { back } = useSyncExternalStore(dockSearch.subscribe, dockSearch.getSnapshot, dockSearch.getServerSnapshot);
   const discClass = cn(
     dockGlassClass,
@@ -295,6 +310,8 @@ const SearchDock = ({ origin, day }: { origin: (typeof mobileNavItems)[number]; 
           <ViewTransition name="dock-search" share={DOCK_MORPH} default="none">
             <DockSearchField />
           </ViewTransition>
+          {/* Perfil's avatar ends Buscar's row: the field owns the top of the screen here (FIL-I60-1). */}
+          <ProfileAvatarLink initial={initial} placement="inline" />
         </div>
       </BottomNavShell>
   );
